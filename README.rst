@@ -18,16 +18,15 @@ up and running:
 * X.509 certificates for Moira_
 * `Touchstone integration`_
 
-You will then need to install the Python dependencies specified in the
-``requirements.txt`` file, and run the project:
+You can then use `Docker Compose`_ to run the project:
 
 .. code-block:: bash
 
-    pip install -r requirements.txt
-    python manage.py runserver
+    docker-compose up
 
 
 .. _Office of Digital Learning: http://odl.mit.edu/
 .. _Touchstone: https://ist.mit.edu/touchstone
 .. _Touchstone integration: https://github.com/singingwolfboy/touchstone-notes
 .. _Moira: http://kb.mit.edu/confluence/display/istcontrib/Moira+Overview
+.. _Docker Compose: https://docs.docker.com/compose/

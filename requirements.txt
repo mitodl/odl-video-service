@@ -1,3 +1,11 @@
+# App dependencies
 Django==1.11
+celery[redis]==4.0.2
 mit-moira==0.0.3
 boto3==1.4.4
+
+# Operations dependencies
+dj-database-url==0.4.2
+dj-static==0.0.6
+psycopg2==2.7.1
+uwsgi==2.0.15
