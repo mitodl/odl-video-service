@@ -30,12 +30,15 @@ def stream_to_s3(self, url):
     # call create(), which shouldn't error if the bucket already exists.
     bucket.create()
 
+    # Need to bind this here, because otherwise it gets lost in the callback somehow
+    task_id = self.request.id
+
     def callback(bytes_uploaded):
         data = {
             "uploaded": bytes_uploaded,
             "total": content_length,
         }
-        self.update_state(state="PROGRESS", meta=data)
+        self.update_state(task_id=task_id, state="PROGRESS", meta=data)
 
     bucket.upload_fileobj(
         Fileobj=response.raw,
