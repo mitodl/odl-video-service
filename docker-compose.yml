@@ -22,6 +22,9 @@ services:
 
   web:
     build: .
+    volumes:
+      - .:/src
+      - django_media:/var/media
     command: >
       /bin/bash -c '
       sleep 3 &&
@@ -41,6 +44,9 @@ services:
 
   celery:
     build: .
+    volumes:
+      - .:/src
+      - django_media:/var/media
     command: >
       /bin/bash -c '
       sleep 3;
@@ -52,3 +58,6 @@ services:
     environment:
       DATABASE_URL: postgres://postgres@db:5432/postgres
       BROKER_URL: redis://redis:6379/0
+
+volumes:
+  django_media: {}

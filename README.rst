@@ -15,6 +15,7 @@ You will need to obtain several different secrets in order to get this project
 up and running:
 
 * AWS key and secret
+* Docker app key and secret
 * X.509 certificates for Moira_
 * `Touchstone integration`_
 
@@ -23,7 +24,6 @@ You can then use `Docker Compose`_ to run the project:
 .. code-block:: bash
 
     docker-compose up
-
 
 .. _Office of Digital Learning: http://odl.mit.edu/
 .. _Touchstone: https://ist.mit.edu/touchstone

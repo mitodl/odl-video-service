@@ -3,4 +3,20 @@
 {% block content %}
 <h1>TechTV</h1>
 <p>Welcome to TechTV.</p>
+<div id="container"></div>
+
+<script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="{{ DROPBOX_APP_KEY }}"></script>
+<script>
+  var options = {
+    success: function(files) {
+        alert("Here's the file link: " + files[0].link);
+    },
+    cancel: function() {},
+    linkType: "direct",
+    multiselect: true,
+    extensions: ['video'],
+  };
+  var button = Dropbox.createChooseButton(options);
+  document.getElementById("container").appendChild(button);
+</script>
 {% endblock %}
