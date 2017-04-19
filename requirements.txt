@@ -1,6 +1,7 @@
 # App dependencies
 Django==1.11
 celery[redis]==4.0.2
+requests==2.13.0
 mit-moira==0.0.3
 boto3==1.4.4
 

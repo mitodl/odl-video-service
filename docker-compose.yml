@@ -40,7 +40,7 @@ services:
       DEV_ENV: 'True'
       PORT: 8077
       DATABASE_URL: postgres://postgres@db:5432/postgres
-      BROKER_URL: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
 
   celery:
     build: .
@@ -57,7 +57,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgres://postgres@db:5432/postgres
-      BROKER_URL: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
 
 volumes:
   django_media: {}

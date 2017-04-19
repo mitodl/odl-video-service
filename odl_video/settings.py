@@ -26,8 +26,6 @@ SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
     'ls8t)o32h@bqp1s8e0&6+mepk#t4@^68yx43kjm_#tvdv=m&ke',
 )
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 DROPBOX_APP_KEY = os.environ.get('DROPBOX_APP_KEY')
 DROPBOX_APP_SECRET = os.environ.get('DROPBOX_APP_SECRET')
 
@@ -47,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'ui.apps.UIConfig',
+    'cloudsync.apps.CloudSyncConfig',
 ]
 
 MIDDLEWARE = [
@@ -93,7 +92,8 @@ DATABASES = {
 # Celery
 # http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
 
-CELERY_BROKER_URL = os.environ.get("BROKER_URL")
+CELERY_BROKER_URL = os.environ.get("REDIS_URL")
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 
 
 # Password validation
