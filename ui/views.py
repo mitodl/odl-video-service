@@ -9,6 +9,14 @@ def index(request):
     return render(request, "index.html")
 
 
+def upload(request):
+    return render(request, "upload.html")
+
+
+def view(request):
+    return render(request, "view.html")
+
+
 @require_POST
 def stream(request):
     db_files = json.loads(request.body.decode('utf-8'))

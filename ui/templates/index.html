@@ -3,79 +3,8 @@
 {% block content %}
 <h1>TechTV</h1>
 <p>Welcome to TechTV.</p>
-<div id="container"></div>
-
-<script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="{{ DROPBOX_APP_KEY }}"></script>
-<script>
-  let updateStatus = function(taskId) {
-    fetch('/tasks/status/' + taskId).then(function(response) {
-      let progress = document.getElementById(taskId);
-      if(response.ok) {
-        response.json().then(function(data) {
-          if (data.status === "PENDING") {
-            // no data yet, try in a second
-            setTimeout(updateStatus, 1000, taskId);
-          } else if (data.status == "SUCCESS") {
-            progress.max = 100;
-            progress.value = 100;
-          } else if (data.status == "PROGRESS") {
-            progress.max = data.info.total;
-            progress.value = data.info.uploaded;
-            setTimeout(updateStatus, 1000, taskId);
-          }
-        });
-      } else {
-        console.error("Error updating status for "+taskId);
-        let text = document.createTextNode("error");
-        progress.parentNode.appendChild(text);
-      }
-    });
-  }
-
-
-  let options = {
-    success: function(files) {
-      let headers = new Headers();
-      headers.append("X-CSRFToken", "{{ csrf_token }}");
-      fetch('/stream', {
-        method: "POST",
-        headers: headers,
-        credentials: 'same-origin',
-        body: JSON.stringify(files),
-      }).then(function(response) {
-        if(response.ok) {
-          response.json().then(function(tasks) {
-            let progressList = document.createElement("ul");
-            let name;
-            for (name in tasks) {
-              let taskId = tasks[name];
-              let progress = document.createElement("progress");
-              progress.id = taskId;
-              progress.max = 100;
-              progress.value = 0;
-              let progressItem = document.createElement("li");
-              let progressText = document.createTextNode(name);
-              progressItem.appendChild(progressText);
-              progressItem.appendChild(progress);
-              progressList.appendChild(progressItem);
-              updateStatus(taskId);
-            }
-            // let container = document.getElementById("container");
-            document.body.appendChild(progressList);
-          })
-        } else {
-          alert("Error");
-        }
-      }).catch(function(error) {
-        console.log('Fetch error: ' + error.message);
-      });
-    },
-    cancel: function() {},
-    linkType: "direct",
-    multiselect: true,
-    extensions: ['video'],
-  };
-  let button = Dropbox.createChooseButton(options);
-  document.getElementById("container").appendChild(button);
-</script>
+<ul>
+  <li><a href="/upload">Upload videos</a></li>
+  <li><a href="/view">View videos</a></li>
+</ul>
 {% endblock %}
