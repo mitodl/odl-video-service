@@ -36,7 +36,7 @@ let handleButtonClick = function(event) {
         let signedUrl = obj.url;
         let link = document.createElement("a");
         link.href = signedUrl;
-        link.appendChild(document.createTextNode("signed_link"));
+        link.appendChild(document.createTextNode("signed link"));
         button.replaceWith(link);
       });
     } else {
