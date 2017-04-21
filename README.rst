@@ -20,7 +20,13 @@ up and running:
 * X.509 certificates for Moira_
 * `Touchstone integration`_
 
-You can then use `Docker Compose`_ to run the project:
+Copy the ``.env.example`` file to ``.env``, and put your secrets into this file.
+For the ``AWS_PRIVATE_KEY_CONTENTS`` variable, you'll need to replace literal
+newline characters with ``\n``, so that the entire contents of the file is on
+one line.
+
+Once you've got your ``.env`` file set up, you can use `Docker Compose`_
+to run the project:
 
 .. code-block:: bash
 
