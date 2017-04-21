@@ -14,7 +14,8 @@ Installation
 You will need to obtain several different secrets in order to get this project
 up and running:
 
-* AWS key and secret
+* AWS access key and secret
+* AWS keypair for signing CloudFront URLs
 * Docker app key and secret
 * X.509 certificates for Moira_
 * `Touchstone integration`_
