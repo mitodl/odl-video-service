@@ -19,5 +19,5 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^', include('ui.urls')),
-    url(r'^tasks/', include('cloudsync.urls')),
+    url(r'^', include('cloudsync.urls')),
 ]

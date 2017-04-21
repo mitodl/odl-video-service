@@ -2,5 +2,54 @@
 {% block title %}TechTV{% endblock %}
 {% block content %}
 <h1>TechTV: View</h1>
-<p>Under construction.</p>
+<p>The following items are in the video S3 bucket:</p>
+<ul>
+  {% for object in bucket_objects %}
+    <li data-key="{{ object.key }}">
+      {{ object.key }} <br>
+      <a href="https://{{ cloudfront_dist }}.cloudfront.net/{{ object.key }}">direct link</a> |
+      <button>generate signed link</button>
+    </li>
+  {% empty %}
+    <li><i>bucket is empty</i></li>
+  {% endfor %}
+</ul>
+
+<p>Need to <a href="/upload">upload more videos</a>?</p>
+
+<script>
+let handleButtonClick = function(event) {
+  let button = event.target;
+  let data = {
+    "key": button.parentNode.dataset.key,
+  }
+  let headers = new Headers();
+  headers.append("X-CSRFToken", "{{ csrf_token }}");
+  fetch('/signed_url', {
+    method: "POST",
+    headers: headers,
+    credentials: 'same-origin',
+    body: JSON.stringify(data),
+  }).then(function(response) {
+    if(response.ok) {
+      response.json().then(function(obj) {
+        let signedUrl = obj.url;
+        let link = document.createElement("a");
+        link.href = signedUrl;
+        link.appendChild(document.createTextNode("signed_link"));
+        button.replaceWith(link);
+      });
+    } else {
+      let text = document.createTextNode("error");
+      button.parentNode.appendChild(text);
+    }
+  })
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll("button").forEach(function(button) {
+    button.addEventListener("click", handleButtonClick);
+  });
+});
+</script>
 {% endblock %}

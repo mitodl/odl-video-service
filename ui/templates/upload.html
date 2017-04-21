@@ -8,7 +8,9 @@ to TechTV.</p>
 
 <div id="container"></div>
 
-<script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="{{ DROPBOX_APP_KEY }}"></script>
+<p id="next">Next, <a href="/view">view your uploaded videos</a>.</p>
+
+<script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="{{ dropbox_key }}"></script>
 <script>
   let updateStatus = function(taskId) {
     fetch('/tasks/' + taskId).then(function(response) {
@@ -63,8 +65,8 @@ to TechTV.</p>
               progressList.appendChild(progressItem);
               updateStatus(taskId);
             }
-            // let container = document.getElementById("container");
-            document.body.appendChild(progressList);
+            let nextParagraph = document.getElementById("next");
+            nextParagraph.parentNode.insertBefore(progressList, nextParagraph);
           })
         } else {
           alert("Error");

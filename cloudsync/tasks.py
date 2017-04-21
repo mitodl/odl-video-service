@@ -24,7 +24,7 @@ def stream_to_s3(self, url):
     file_name, content_type, content_length = parse_content_metadata(response)
 
     s3 = boto3.resource('s3')
-    bucket_name = os.environ.get("S3_BUCKET_NAME", "odl-video-service")
+    bucket_name = os.environ.get("VIDEO_S3_BUCKET", "odl-video-service")
     bucket = s3.Bucket(bucket_name)
     # no easy way to tell if a bucket already exists or not, so we'll just
     # call create(), which shouldn't error if the bucket already exists.
