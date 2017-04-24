@@ -6,8 +6,8 @@ from ui.models import Video
 class VideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Video
-        fields = ('created_at', 'title', 'description', 's3_object_key')
-        read_only_fields = ('created_at', 's3_object_key')
+        fields = ('id', 'created_at', 'title', 'description', 's3_object_key')
+        read_only_fields = ('id', 'created_at', 's3_object_key')
 
 
 class DropboxFileSerializer(serializers.Serializer):

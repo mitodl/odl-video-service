@@ -53,21 +53,21 @@ to TechTV.</p>
         body: JSON.stringify(files),
       }).then(function(response) {
         if(response.ok) {
-          response.json().then(function(tasks) {
+          response.json().then(function(videos) {
             let progressList = document.createElement("ul");
-            let name;
-            for (name in tasks) {
-              let taskId = tasks[name];
+            let videoId;
+            for (videoId in videos) {
+              let video = videos[videoId];
               let progress = document.createElement("progress");
-              progress.id = taskId;
+              progress.id = video.task;
               progress.max = 100;
               progress.value = 0;
               let progressItem = document.createElement("li");
-              let progressText = document.createTextNode(name);
+              let progressText = document.createTextNode(video.key);
               progressItem.appendChild(progressText);
               progressItem.appendChild(progress);
               progressList.appendChild(progressItem);
-              updateStatus(taskId);
+              updateStatus(video.task);
             }
             let nextParagraph = document.getElementById("next");
             nextParagraph.parentNode.insertBefore(progressList, nextParagraph);

@@ -49,14 +49,14 @@ def stream(request):
     serializer.is_valid(raise_exception=True)
     videos = serializer.save()
 
-    async_results = {
-        video.s3_object_key: stream_to_s3.delay(video.source_url)
+    response = {
+        video.id: {
+            "key": video.s3_object_key,
+            "task": stream_to_s3.delay(video.source_url).id,
+        }
         for video in videos
     }
-    return JsonResponse({
-        name: result.id
-        for name, result in async_results.items()
-    })
+    return JsonResponse(response)
 
 
 @require_POST
