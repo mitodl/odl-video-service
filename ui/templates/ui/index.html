@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}TechTV{% endblock %}
+{% block pagetitle %}TechTV{% endblock %}
+{% block content %}
+{% if user.is_authenticated %}
+  <p>You are logged in as {{ user.username }}. <a href="{% url 'logout' %}">Logout</a></p>
+  <ul>
+    <li><a href="{% url 'upload' %}">Upload videos</a></li>
+    <li><a href="{% url 'video-list' %}">View videos</a></li>
+  </ul>
+{% else %}
+  <p>Welcome to TechTV. Please log in.</p>
+  <form method="post" action="{% url 'login' %}">
+    {% csrf_token %}
+    <table>
+      {{ login_form }}
+    </table>
+    <input type="submit" value="Login" />
+  </form>
+  <p>Or you can create a new account.</p>
+  <form method="post" action="{% url 'register' %}">
+    {% csrf_token %}
+    <table>
+      {{ register_form }}
+    </table>
+    <input type="submit" value="Register" />
+  </form>
+{% endif %}
+{% endblock %}

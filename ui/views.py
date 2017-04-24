@@ -1,10 +1,14 @@
 import os
 import json
 from datetime import datetime, timedelta
+from django.conf import settings
 from django.views.decorators.http import require_POST
 from django.shortcuts import render
-from django.views.generic import ListView, DetailView
-from django.http import JsonResponse
+from django.views.generic import TemplateView, RedirectView, ListView, DetailView
+from django.http import JsonResponse, HttpResponseRedirect
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
 from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.response import Response
@@ -17,28 +21,34 @@ from ui.serializers import (
 )
 
 
-def index(request):
-    return render(request, "index.html")
+class Index(TemplateView):
+    template_name = "ui/index.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["login_form"] = AuthenticationForm()
+        context["register_form"] = UserCreationForm()
+        return context
 
 
-def upload(request):
-    dropbox_key = os.environ.get("DROPBOX_APP_KEY")
-    if not dropbox_key:
-        raise RuntimeError("Missing required env var: DROPBOX_APP_KEY")
-    context = {
-        "dropbox_key": dropbox_key,
-    }
-    return render(request, "upload.html", context)
+class Upload(TemplateView):
+    template_name = "ui/upload.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        dropbox_key = os.environ.get("DROPBOX_APP_KEY")
+        if not dropbox_key:
+            raise RuntimeError("Missing required env var: DROPBOX_APP_KEY")
+        context["dropbox_key"] = dropbox_key
+        return context
 
 
 class VideoList(ListView):
     model = Video
-    template_name = "video_list.html"
 
 
 class VideoDetail(DetailView):
     model = Video
-    template_name = "video_detail.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -92,3 +102,20 @@ class VideoViewSet(viewsets.ModelViewSet):
             video.s3_object.delete()
         self.perform_destroy(video)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def register(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, "Account created.")
+            return HttpResponseRedirect(settings.LOGIN_REDIRECT_URL)
+    else:
+        form = UserCreationForm
+    context = {
+        "form": form,
+    }
+    return render(request, "registration/register.html", context)
+
