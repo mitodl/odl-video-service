@@ -3,7 +3,7 @@
 
 {% block content %}
 <h1>TechTV: Videos</h1>
-<p>The following items are in the video S3 bucket:</p>
+<p>We know about the following videos:</p>
 <ul>
   {% for video in object_list %}
     <li data-key="{{ video.s3_object_key }}" data-video-id="{{ video.id }}">
@@ -13,7 +13,7 @@
       <button>generate signed link</button>
     </li>
   {% empty %}
-    <li><i>bucket is empty</i></li>
+    <li><i>no known videos</i></li>
   {% endfor %}
 </ul>
 
