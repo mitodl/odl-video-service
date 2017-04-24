@@ -1,6 +1,5 @@
 import os
 import json
-import boto3
 from datetime import datetime, timedelta
 from django.views.decorators.http import require_POST
 from django.shortcuts import render
