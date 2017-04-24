@@ -7,8 +7,8 @@ from django.db import models
 class Video(models.Model):
     s3_object_key = models.TextField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    title = models.CharField(max_length=250)
-    description = models.TextField()
+    title = models.CharField(max_length=250, blank=True)
+    description = models.TextField(blank=True)
     source_url = models.URLField()
 
     @property

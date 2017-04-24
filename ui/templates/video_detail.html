@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}TechTV | Video Detail{% endblock %}
+{% block content %}
+
+<form action="{% url 'api:video-detail' object.id %}" method="PUT">
+  {% csrf_token %}
+  <table>
+  {{ form }}
+  </table>
+  <input type="submit" value="Update" />
+</form>
+<hr>
+<p>Links:</p>
+<ul>
+  <li><a href="{{ object.s3_url }}">S3</a></li>
+  <li><a href="{{ object.cloudfront_url">CloudFront direct</a></li>
+  <li><a href="{{ cloudfront_signed }}">CloudFront signed</a></li>
+</ul>
+
+<script>
+  let handleSubmit = function(event) {
+    event.preventDefault();
+    let form = event.target;
+    let csrf = form.querySelector("[name=csrfmiddlewaretoken]").value;
+    let data = {
+      title: form.querySelector("[name=title]").value,
+      description: form.querySelector("[name=description]").value,
+    }
+    let headers = new Headers();
+    headers.append("X-CSRFToken", csrf);
+    headers.append("Content-Type", "application/json");
+    fetch(form.action, {
+      method: "PUT",
+      headers: headers,
+      credentials: 'same-origin',
+      body: JSON.stringify(data),
+    }).then(function(response) {
+      if (response.ok) {
+        form.appendChild(document.createTextNode("✓"))
+      }
+    });
+  }
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelector("form").addEventListener("submit", handleSubmit);
+  });
+</script>
+{% endblock %}

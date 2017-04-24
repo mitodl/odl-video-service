@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}TechTV{% endblock %}
+{% block title %}TechTV | Upload{% endblock %}
 {% block content %}
 <h1>TechTV: Upload</h1>
 <p>To upload a video to TechTV, first add it to your Dropbox. Then click
@@ -8,10 +8,11 @@ to TechTV.</p>
 
 <div id="container"></div>
 
-<p id="next">Next, <a href="/view">view your uploaded videos</a>.</p>
+<p id="next">Next, <a href="{% url 'video-list' %}">view your uploaded videos</a>.</p>
 
 <script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="{{ dropbox_key }}"></script>
 <script>
+  let CSRF = "{{ csrf_token }}";
   let updateStatus = function(taskId) {
     fetch('/tasks/' + taskId).then(function(response) {
       let progress = document.getElementById(taskId);
@@ -41,41 +42,87 @@ to TechTV.</p>
     });
   }
 
+  let handleStreamResponse = function(response) {
+    if(!response.ok) {
+      alert("Error");
+      return
+    }
+    response.json().then(function(videos) {
+      let progressList = document.createElement("ul");
+      let videoId;
+      for (videoId in videos) {
+        let video = videos[videoId];
+        let progress = document.createElement("progress");
+        progress.id = video.task;
+        progress.max = 100;
+        progress.value = 0;
+        let progressItem = document.createElement("li");
+        let progressText = document.createTextNode(video.key);
+        let form = document.createElement("form")
+        form.action = "/api/videos/" + videoId + "/";
+        form.method = "PUT";
+        let titleLabel = document.createElement("label");
+        titleLabel.appendChild(document.createTextNode("Title:"));
+        let titleField = document.createElement("input");
+        titleField.name = "title";
+        titleLabel.appendChild(titleField);
+        let descriptionLabel = document.createElement("label");
+        descriptionLabel.appendChild(document.createTextNode("Description:"));
+        descriptionField = document.createElement("textarea");
+        descriptionField.name = "description";
+        descriptionLabel.appendChild(descriptionField);
+        form.appendChild(titleLabel);
+        form.appendChild(descriptionLabel);
+        let submitBtn = document.createElement("button")
+        submitBtn.type = "submit";
+        submitBtn.appendChild(document.createTextNode("Update"));
+        form.appendChild(submitBtn);
+        form.addEventListener("submit", formSubmit);
+
+        progressItem.appendChild(progressText);
+        progressItem.appendChild(progress);
+        progressItem.appendChild(form);
+        progressList.appendChild(progressItem);
+        updateStatus(video.task);
+      }
+      let nextParagraph = document.getElementById("next");
+      nextParagraph.parentNode.insertBefore(progressList, nextParagraph);
+    })
+  }
+
+  let formSubmit = function(event) {
+    event.preventDefault();
+    let form = event.target;
+    let data = {
+      title: form.querySelector("[name=title]").value,
+      description: form.querySelector("[name=description]").value,
+    }
+    let headers = new Headers();
+    headers.append("X-CSRFToken", CSRF);
+    headers.append("Content-Type", "application/json");
+    fetch(form.action, {
+      method: "PUT",
+      headers: headers,
+      credentials: 'same-origin',
+      body: JSON.stringify(data),
+    }).then(function(response) {
+      if (response.ok) {
+        form.appendChild(document.createTextNode("✓"))
+      }
+    });
+  }
 
   let options = {
     success: function(files) {
       let headers = new Headers();
-      headers.append("X-CSRFToken", "{{ csrf_token }}");
+      headers.append("X-CSRFToken", CSRF);
+      headers.append("Content-Type", "application/json");
       fetch('/stream', {
         method: "POST",
         headers: headers,
         credentials: 'same-origin',
         body: JSON.stringify(files),
-      }).then(function(response) {
-        if(response.ok) {
-          response.json().then(function(videos) {
-            let progressList = document.createElement("ul");
-            let videoId;
-            for (videoId in videos) {
-              let video = videos[videoId];
-              let progress = document.createElement("progress");
-              progress.id = video.task;
-              progress.max = 100;
-              progress.value = 0;
-              let progressItem = document.createElement("li");
-              let progressText = document.createTextNode(video.key);
-              progressItem.appendChild(progressText);
-              progressItem.appendChild(progress);
-              progressList.appendChild(progressItem);
-              updateStatus(video.task);
-            }
-            let nextParagraph = document.getElementById("next");
-            nextParagraph.parentNode.insertBefore(progressList, nextParagraph);
-          })
-        } else {
-          alert("Error");
-        }
-      }).catch(function(error) {
+      }).then(handleStreamResponse, function(error) {
         console.log('Fetch error: ' + error.message);
       });
     },

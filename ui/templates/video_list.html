@@ -1,13 +1,15 @@
 {% extends "base.html" %}
-{% block title %}TechTV{% endblock %}
+{% block title %}TechTV | Video List{% endblock %}
+
 {% block content %}
-<h1>TechTV: View</h1>
+<h1>TechTV: Videos</h1>
 <p>The following items are in the video S3 bucket:</p>
 <ul>
-  {% for object in bucket_objects %}
-    <li data-key="{{ object.key }}">
-      {{ object.key }} <br>
-      <a href="https://{{ cloudfront_dist }}.cloudfront.net/{{ object.key }}">direct link</a> |
+  {% for video in object_list %}
+    <li data-key="{{ video.s3_object_key }}" data-video-id="{{ video.id }}">
+      <a href="{% url "video-detail" video.id %}">{{ video.title|default:video.s3_object_key }}</a>
+      <br>
+      <a href="{{ video.cloudfront_url }}">direct link</a> |
       <button>generate signed link</button>
     </li>
   {% empty %}
@@ -15,7 +17,7 @@
   {% endfor %}
 </ul>
 
-<p>Need to <a href="/upload">upload more videos</a>?</p>
+<p>Need to <a href="{% url 'upload' %}">upload more videos</a>?</p>
 
 <script>
 let handleButtonClick = function(event) {

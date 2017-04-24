@@ -4,7 +4,7 @@
 <h1>TechTV</h1>
 <p>Welcome to TechTV.</p>
 <ul>
-  <li><a href="/upload">Upload videos</a></li>
-  <li><a href="/view">View videos</a></li>
+  <li><a href="{% url 'upload' %}">Upload videos</a></li>
+  <li><a href="{% url 'video-list' %}">View videos</a></li>
 </ul>
 {% endblock %}

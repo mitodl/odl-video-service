@@ -4,11 +4,13 @@ import boto3
 from datetime import datetime, timedelta
 from django.views.decorators.http import require_POST
 from django.shortcuts import render
+from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from rest_framework import viewsets
 from cloudsync.tasks import stream_to_s3
 from ui.util import cloudfront_signed_url
 from ui.models import Video
+from ui.forms import VideoForm
 from ui.serializers import (
     VideoSerializer, DropboxFileSerializer, CloudFrontSignedURLSerializer
 )
@@ -28,18 +30,24 @@ def upload(request):
     return render(request, "upload.html", context)
 
 
-def view(request):
-    cloudfront_dist = os.environ.get("VIDEO_CLOUDFRONT_DIST")
-    if not cloudfront_dist:
-        raise RuntimeError("Missing required env var: VIDEO_CLOUDFRONT_DIST")
-    s3 = boto3.resource('s3')
-    bucket_name = os.environ.get("VIDEO_S3_BUCKET", "odl-video-service")
-    bucket = s3.Bucket(bucket_name)
-    context = {
-        "cloudfront_dist": cloudfront_dist,
-        "bucket_objects": bucket.objects.all(),
-    }
-    return render(request, "view.html", context)
+class VideoList(ListView):
+    model = Video
+    template_name = "video_list.html"
+
+
+class VideoDetail(DetailView):
+    model = Video
+    template_name = "video_detail.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        video = context["object"]
+        context['form'] = VideoForm(instance=video)
+        context['cloudfront_signed'] = cloudfront_signed_url(
+            key=video.s3_object_key,
+            expires_at=datetime.utcnow() + timedelta(hours=2),
+        )
+        return context
 
 
 @require_POST
