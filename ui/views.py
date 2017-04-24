@@ -7,6 +7,8 @@ from django.shortcuts import render
 from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from rest_framework import viewsets
+from rest_framework import status
+from rest_framework.response import Response
 from cloudsync.tasks import stream_to_s3
 from ui.util import cloudfront_signed_url
 from ui.models import Video
@@ -84,3 +86,10 @@ def generate_signed_url(request):
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        video = self.get_object()
+        if request.GET.get("s3"):
+            video.s3_object.delete()
+        self.perform_destroy(video)
+        return Response(status=status.HTTP_204_NO_CONTENT)

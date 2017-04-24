@@ -2,8 +2,7 @@
 {% block title %}TechTV | Video Detail{% endblock %}
 {% block content %}
 
-<form action="{% url 'api:video-detail' object.id %}" method="PUT">
-  {% csrf_token %}
+<form class="edit-video" action="{% url 'api:video-detail' object.id %}" method="PUT">
   <table>
   {{ form }}
   </table>
@@ -16,18 +15,26 @@
   <li><a href="{{ object.cloudfront_url">CloudFront direct</a></li>
   <li><a href="{{ cloudfront_signed }}">CloudFront signed</a></li>
 </ul>
+<h4>
+<form class="delete-video" action="{% url 'api:video-detail' object.id %}" method="DELETE">
+  <input type="submit" value="Delete video">
+  <label>
+    <input type="checkbox" name="s3" />
+    Also delete from S3
+  </label>
+</form>
 
 <script>
-  let handleSubmit = function(event) {
+  let CSRF = "{{ csrf_token }}";
+  let handleEdit = function(event) {
     event.preventDefault();
     let form = event.target;
-    let csrf = form.querySelector("[name=csrfmiddlewaretoken]").value;
     let data = {
       title: form.querySelector("[name=title]").value,
       description: form.querySelector("[name=description]").value,
     }
     let headers = new Headers();
-    headers.append("X-CSRFToken", csrf);
+    headers.append("X-CSRFToken", CSRF);
     headers.append("Content-Type", "application/json");
     fetch(form.action, {
       method: "PUT",
@@ -40,8 +47,29 @@
       }
     });
   }
+  let handleDelete = function(event) {
+    event.preventDefault();
+    let form = event.target;
+    let headers = new Headers();
+    headers.append("X-CSRFToken", CSRF);
+    headers.append("Content-Type", "application/json");
+    let url = form.action;
+    if (form.querySelector("[name=s3]").checked) {
+      url += "?s3=1";
+    }
+    fetch(url, {
+      method: "DELETE",
+      headers: headers,
+      credentials: 'same-origin',
+    }).then(function(response) {
+      if (response.ok) {
+        form.appendChild(document.createTextNode("✓"))
+      }
+    });
+  }
   document.addEventListener("DOMContentLoaded", function() {
-    document.querySelector("form").addEventListener("submit", handleSubmit);
+    document.querySelector("form.edit-video").addEventListener("submit", handleEdit);
+    document.querySelector("form.delete-video").addEventListener("submit", handleDelete);
   });
 </script>
 {% endblock %}
