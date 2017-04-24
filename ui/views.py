@@ -4,11 +4,13 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.views.decorators.http import require_POST
 from django.shortcuts import render
-from django.views.generic import TemplateView, RedirectView, ListView, DetailView
+from django.views.generic import TemplateView, ListView, DetailView
 from django.http import JsonResponse, HttpResponseRedirect
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.contrib.auth import authenticate, login
 from django.contrib import messages
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.utils.decorators import method_decorator
 from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.response import Response
@@ -31,6 +33,8 @@ class Index(TemplateView):
         return context
 
 
+@method_decorator(login_required, name='dispatch')
+@method_decorator(user_passes_test(lambda u: u.is_staff), name='dispatch')
 class Upload(TemplateView):
     template_name = "ui/upload.html"
 
@@ -43,10 +47,12 @@ class Upload(TemplateView):
         return context
 
 
+@method_decorator(login_required, name='dispatch')
 class VideoList(ListView):
     model = Video
 
 
+@method_decorator(login_required, name='dispatch')
 class VideoDetail(DetailView):
     model = Video
 
@@ -62,6 +68,7 @@ class VideoDetail(DetailView):
 
 
 @require_POST
+@login_required
 def stream(request):
     data = json.loads(request.body.decode('utf-8'))
     serializer = DropboxFileSerializer(data=data, many=True)
@@ -79,6 +86,7 @@ def stream(request):
 
 
 @require_POST
+@login_required
 def generate_signed_url(request):
     data = json.loads(request.body.decode('utf-8'))
     serializer = CloudFrontSignedURLSerializer(data=data)

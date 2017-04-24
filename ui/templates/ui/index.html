@@ -5,8 +5,12 @@
 {% if user.is_authenticated %}
   <p>You are logged in as {{ user.username }}. <a href="{% url 'logout' %}">Logout</a></p>
   <ul>
-    <li><a href="{% url 'upload' %}">Upload videos</a></li>
     <li><a href="{% url 'video-list' %}">View videos</a></li>
+    {% if user.is_staff %}
+      <li><a href="{% url 'upload' %}">Upload videos</a></li>
+    {% else %}
+      <li><i>You do not have permission to upload videos.</i></li>
+    {% endif %}
   </ul>
 {% else %}
   <p>Welcome to TechTV. Please log in.</p>
