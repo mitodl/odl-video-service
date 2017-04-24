@@ -1,13 +1,17 @@
 import os
 import json
-import iso8601
 import boto3
 from datetime import datetime, timedelta
 from django.views.decorators.http import require_POST
 from django.shortcuts import render
 from django.http import JsonResponse
+from rest_framework import viewsets
 from cloudsync.tasks import stream_to_s3
 from ui.util import cloudfront_signed_url
+from ui.models import Video
+from ui.serializers import (
+    VideoSerializer, DropboxFileSerializer, CloudFrontSignedURLSerializer
+)
 
 
 def index(request):
@@ -40,31 +44,35 @@ def view(request):
 
 @require_POST
 def stream(request):
-    dropbox_files = json.loads(request.body.decode('utf-8'))
-    results = {
-        dropbox_file['name']: stream_to_s3.delay(dropbox_file['link'])
-        for dropbox_file in dropbox_files
+    data = json.loads(request.body.decode('utf-8'))
+    serializer = DropboxFileSerializer(data=data, many=True)
+    serializer.is_valid(raise_exception=True)
+    videos = serializer.save()
+
+    async_results = {
+        video.s3_object_key: stream_to_s3.delay(video.source_url)
+        for video in videos
     }
     return JsonResponse({
         name: result.id
-        for name, result in results.items()
+        for name, result in async_results.items()
     })
 
 
 @require_POST
 def generate_signed_url(request):
     data = json.loads(request.body.decode('utf-8'))
-    if "key" not in data:
-        return JsonResponse({
-            "message": 'missing "key"'
-        }, status_code=400)
-    key = data["key"]
-    if "expires_at" in data:
-        expires_at = iso8601.parse_date(data["expires_at"])
-    else:
-        expires_at = datetime.utcnow() + timedelta(hours=2)
+    serializer = CloudFrontSignedURLSerializer(data=data)
+    serializer.is_valid(raise_exception=True)
+    key = serializer.validated_data["key"]
+    expires_at = serializer.calculated_expiration()
     signed_url = cloudfront_signed_url(key=key, expires_at=expires_at)
     return JsonResponse({
         "url": signed_url,
         "expires_at": expires_at.isoformat(),
     })
+
+
+class VideoViewSet(viewsets.ModelViewSet):
+    queryset = Video.objects.all()
+    serializer_class = VideoSerializer
