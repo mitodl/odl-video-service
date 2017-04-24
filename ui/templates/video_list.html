@@ -33,18 +33,17 @@ let handleButtonClick = function(event) {
     credentials: 'same-origin',
     body: JSON.stringify(data),
   }).then(function(response) {
-    if(response.ok) {
-      response.json().then(function(obj) {
-        let signedUrl = obj.url;
-        let link = document.createElement("a");
-        link.href = signedUrl;
-        link.appendChild(document.createTextNode("signed link"));
-        button.replaceWith(link);
-      });
-    } else {
-      let text = document.createTextNode("error");
-      button.parentNode.appendChild(text);
+    if (!response.ok) {
+      button.parentNode.appendChild(document.createTextNode("error"));
+      return;
     }
+    response.json().then(function(obj) {
+      let signedUrl = obj.url;
+      let link = document.createElement("a");
+      link.href = signedUrl;
+      link.appendChild(document.createTextNode("signed link"));
+      button.replaceWith(link);
+    });
   })
 }
 
