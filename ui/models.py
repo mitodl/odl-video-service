@@ -36,3 +36,9 @@ class Video(models.Model):
             dist=distribution,
             key=encoded_key,
         )
+
+    def __str__(self):
+        return self.title or ""
+
+    def __repr__(self):
+        return '<Video {self.title!r} {self.s3_object_key!r}>'.format(self=self)
