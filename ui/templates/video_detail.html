@@ -13,7 +13,7 @@
 <ul>
   <li><a href="{{ object.s3_url }}">S3</a></li>
   <li><a href="{{ object.cloudfront_url }}">CloudFront direct</a></li>
-  <li><a href="{{ cloudfront_signed }}">CloudFront signed</a></li>
+  <li><a href="{{ cloudfront_signed_url }}">CloudFront signed</a></li>
 </ul>
 <h4>
 <form class="delete-video" action="{% url 'api:video-detail' object.id %}" method="DELETE">

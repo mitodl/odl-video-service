@@ -44,7 +44,7 @@ class VideoDetail(DetailView):
         context = super().get_context_data(**kwargs)
         video = context["object"]
         context['form'] = VideoForm(instance=video)
-        context['cloudfront_signed'] = cloudfront_signed_url(
+        context['cloudfront_signed_url'] = cloudfront_signed_url(
             key=video.s3_object_key,
             expires_at=datetime.utcnow() + timedelta(hours=2),
         )
