@@ -45,7 +45,7 @@ Set the key ID as the ``CLOUDFRONT_KEY_ID`` environment variable, using the
 
 You'll also need to set an S3 bucket for storing video files, and a CloudFront
 distribution that is hooked up to that S3 bucket. The files in the S3 bucket
-should _not_ be publicly accessible, and the CloudFront distribution should
+should *not* be publicly accessible, and the CloudFront distribution should
 be set up to serve private content. `(See the CloudFront documentation for
 more information.)
 <http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html>`_
