@@ -9,9 +9,24 @@
       <th>Uploaded by:</th>
       <td>{{ object.creator }}</td>
     </tr>
-  {{ form }}
+    <tr>
+      <th>{{ form.title.label_tag }}</th>
+      <td>{{ form.title }}</td>
+    </tr>
+    <tr>
+      <th>{{ form.description.label_tag }}</th>
+      <td>{{ form.description }}</td>
+    </tr>
+    <tr>
+      <th>{{ form.moira_lists.label_tag }}</th>
+      <td>
+        {{ form.moira_lists }}
+        <span>Type in as many lists as you want, separated by spaces.</span>
+      </td>
+    </tr>
   </table>
-  <input type="submit" value="Update" />
+  <input type="submit" value="Update"
+    {% if not request.user.is_staff %}disabled{% endif %} />
 </form>
 <hr>
 <p>Links:</p>
@@ -22,7 +37,8 @@
 </ul>
 <h4>
 <form class="delete-video" action="{% url 'api:video-detail' object.id %}" method="DELETE">
-  <input type="submit" value="Delete video">
+  <input type="submit" value="Delete video"
+    {% if not request.user.is_staff %}disabled{% endif %} />
   <label>
     <input type="checkbox" name="s3" />
     Also delete from S3
@@ -58,6 +74,7 @@
     let data = {
       title: form.querySelector("[name=title]").value,
       description: form.querySelector("[name=description]").value,
+      moira_lists: form.querySelector("[name=moira_lists]").value.split(" "),
     }
     let headers = new Headers();
     headers.append("X-CSRFToken", CSRF);

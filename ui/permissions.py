@@ -1,5 +1,7 @@
 from django.contrib.auth.decorators import user_passes_test
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import (
+    BasePermission, IsAuthenticated, SAFE_METHODS
+)
 
 
 admin_required = user_passes_test(lambda u: u.is_staff)
@@ -10,4 +12,17 @@ class IsAdminOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         else:
-            return request.user.is_staff
+            return request.user and request.user.is_staff
+
+
+class IsAdminOrHasMoiraPermissions(IsAuthenticated):
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_staff:
+            return True
+        moira_user = request.user.email
+        if moira_user.endswith("@mit.edu"):
+            moira_user = moira_user[:-8]
+        for moira_list in obj.moira_lists.all():
+            if moira_user in moira_list.members():
+                return True
+        return False

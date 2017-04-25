@@ -15,13 +15,14 @@ from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import detail_route
-from rest_framework.permissions import IsAuthenticated
 from cloudsync.tasks import stream_to_s3
 from ui.util import get_expiration
 from ui.models import Video
 from ui.forms import VideoForm
 from ui.serializers import VideoSerializer, DropboxFileSerializer
-from ui.permissions import admin_required, IsAdminOrReadOnly
+from ui.permissions import (
+    admin_required, IsAdminOrReadOnly, IsAdminOrHasMoiraPermissions
+)
 
 
 class Index(TemplateView):
@@ -110,10 +111,10 @@ class VideoViewSet(viewsets.ModelViewSet):
         self.perform_destroy(video)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @detail_route(permission_classes=(IsAuthenticated,))
+    @detail_route(permission_classes=(IsAdminOrHasMoiraPermissions,))
     def signed_url(self, request, pk=None):
         video = self.get_object()
-        # for non-admin users, need to check Moira lists...
+        self.check_object_permissions(self.request, video)
         expires = get_expiration(request.query_params)
         signed_url = video.cloudfront_signed_url(expires=expires)
         return Response({

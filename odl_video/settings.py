@@ -24,7 +24,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY_FILE = "/run/secrets/django-secret-key"
 if os.path.isfile(SECRET_KEY_FILE):
-    with open(SECRET_KEY_FILE) as keyfile:
+    with open(SECRET_KEY_FILE, 'rb') as keyfile:
         SECRET_KEY = keyfile.read()
 else:
     SECRET_KEY = os.environ.get(

@@ -1,6 +1,8 @@
 import os.path
 from datetime import datetime, timedelta
+from functools import lru_cache
 
+from mit_moira import Moira
 from django.utils.dateparse import parse_datetime, parse_duration
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -66,3 +68,27 @@ def get_expiration(query_params, default_duration=timedelta(hours=2)):
             return datetime.utcnow() + parsed
 
     return datetime.utcnow() + default_duration
+
+
+@lru_cache(1)  # memoize this function
+def get_moira_client():
+    cert_file_path = "/run/secrets/mit-ws-cert"
+    cert_file_exists = os.path.isfile(cert_file_path)
+    key_file_path = "/run/secrets/mit-ws-key"
+    key_file_exists = os.path.isfile(key_file_path)
+    if not cert_file_exists and not key_file_exists:
+        msg = "Missing required secrets: {cert} {key}".format(
+            cert=cert_file_path, key=key_file_path,
+        )
+        raise RuntimeError(msg)
+    if not cert_file_exists:
+        msg = "Missing required secret: {cert}".format(
+            cert=cert_file_path,
+        )
+        raise RuntimeError(msg)
+    if not key_file_exists:
+        msg = "Missing required secret: {key}".format(
+            key=key_file_path,
+        )
+        raise RuntimeError(msg)
+    return Moira(cert_file_path, key_file_path)

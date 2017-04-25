@@ -4,6 +4,21 @@ import boto3
 from django.db import models
 from django.conf import settings
 from ui.util import cloudfront_signed_url as make_cloudfront_signed_url
+from ui.util import get_moira_client
+
+
+class MoiraList(models.Model):
+    name = models.CharField(max_length=250)
+
+    def members(self):
+        moira = get_moira_client()
+        return moira.list_members(self.name)
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return '<MoiraList: {self.name!r}>'.format(self=self)
 
 
 class Video(models.Model):
@@ -16,6 +31,7 @@ class Video(models.Model):
     title = models.CharField(max_length=250, blank=True)
     description = models.TextField(blank=True)
     source_url = models.URLField()
+    moira_lists = models.ManyToManyField(MoiraList)
 
     @property
     def s3_object(self):
@@ -50,7 +66,7 @@ class Video(models.Model):
         )
 
     def __str__(self):
-        return self.title or ""
+        return self.title or "<untitled video>"
 
     def __repr__(self):
-        return '<Video {self.title!r} {self.s3_object_key!r}>'.format(self=self)
+        return '<Video: {self.title!r} {self.s3_object_key!r}>'.format(self=self)
