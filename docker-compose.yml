@@ -1,4 +1,4 @@
-version: '3'
+version: '3.1'
 services:
   db:
     image: postgres
@@ -25,6 +25,13 @@ services:
     volumes:
       - .:/src
       - django_media:/var/media
+    secrets:
+      - django-secret-key
+      - aws-credentials
+      - cloudfront-key
+      - dropbox-credentials
+      - mit-ws-cert
+      - mit-ws-key
     command: >
       /bin/bash -c '
       sleep 3 &&
@@ -47,6 +54,9 @@ services:
     volumes:
       - .:/src
       - django_media:/var/media
+    secrets:
+      - django-secret-key
+      - aws-credentials
     command: >
       /bin/bash -c '
       sleep 3;
@@ -61,3 +71,18 @@ services:
 
 volumes:
   django_media: {}
+
+secrets:
+  django-secret-key:
+    file: secrets/django-secret-key
+  aws-credentials:
+    file: secrets/aws-credentials.ini
+  cloudfront-key:
+    file: secrets/cloudfront-key.pem
+  dropbox-credentials:
+    file: secrets/dropbox-credentials.ini
+  mit-ws-cert:
+    file: secrets/mit-ws-cert.crt
+  mit-ws-key:
+    file: secrets/mit-ws-key.pem
+

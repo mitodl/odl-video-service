@@ -1,5 +1,6 @@
-import os
+import os.path
 import json
+import configparser
 from django.conf import settings
 from django.views.decorators.http import require_POST
 from django.shortcuts import render
@@ -40,10 +41,15 @@ class Upload(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        dropbox_key = os.environ.get("DROPBOX_APP_KEY")
-        if not dropbox_key:
-            raise RuntimeError("Missing required env var: DROPBOX_APP_KEY")
-        context["dropbox_key"] = dropbox_key
+        dropbox_credentials_file_path = "/run/secrets/dropbox-credentials"
+        if not os.path.isfile(dropbox_credentials_file_path):
+            msg = "Missing required secret: {path}".format(
+                path=dropbox_credentials_file_path
+            )
+            raise RuntimeError(msg)
+        config = configparser.ConfigParser()
+        config.read_file(open(dropbox_credentials_file_path))
+        context["dropbox_key"] = config.get("default", "dropbox_app_key")
         return context
 
 

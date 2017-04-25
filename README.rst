@@ -11,22 +11,76 @@ production.
 Installation
 ------------
 
-You will need to obtain several different secrets in order to get this project
-up and running:
+You will need to obtain several different pieces of information
+in order to get this project up and running. Secrets will be stored in the
+``secrets`` directory, which is not versioned with Git. Non-secret settings
+will be stored in environment variables. In order to make it easier to get
+started, you can copy ``.env.example`` to ``.env``.
 
-* AWS access key and secret
-* AWS keypair for signing CloudFront URLs
-* Docker app key and secret
-* X.509 certificates for Moira_
-* `Touchstone integration`_
+Django
+~~~~~~
+Create a secret key for Django, and store it in the file
+``secrets/django-secret-key``. You can run this code to do so:
 
-Copy the ``.env.example`` file to ``.env``, and put your secrets into this file.
-For the ``AWS_PRIVATE_KEY_CONTENTS`` variable, you'll need to replace literal
-newline characters with ``\n``, so that the entire contents of the file is on
-one line.
+.. code-block:: bash
 
-Once you've got your ``.env`` file set up, you can use `Docker Compose`_
-to run the project:
+    head -c 50 /dev/urandom > secrets/django-secret-key
+
+AWS
+~~~
+
+You'll need an AWS access key ID and secret access key. Store them in the file
+``secrets/aws-credentials.ini``, like this:
+
+.. code-block:: ini
+
+    [default]
+    aws_access_key_id=foo
+    aws_secret_access_key=bar
+
+You'll also need a CloudFront private key, for generated signed URLs for
+CloudFront. Store the private key file in ``secrets/cloudfront-key.pem``.
+Set the key ID as the ``CLOUDFRONT_KEY_ID`` environment variable, using the
+``.env`` file.
+
+You'll also need to set an S3 bucket for storing video files, and a CloudFront
+distribution that is hooked up to that S3 bucket. The files in the S3 bucket
+should _not_ be publicly accessible, and the CloudFront distribution should
+be set up to serve private content. `(See the CloudFront documentation for
+more information.)
+<http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html>`_
+Set the S3 bucket name as the ``VIDEO_S3_BUCKET`` environment variable, and
+set the CloudFront distribution ID as the ``VIDEO_CLOUDFRONT_DIST`` environment
+variable, using the ``.env`` file.
+
+You can also optionally create a public CloudFront distribution for
+serving static files for the web application. If you want to do this, set the
+CloudFront distribution ID as the ``STATIC_CLOUDFRONT_DIST`` environment
+variable, using the ``.env`` file.
+
+Dropbox
+~~~~~~~
+
+Sign up for an app key and app secret. Store them in the file
+``secrets/dropbox-credentials.ini``, like this:
+
+.. code-block:: ini
+
+    [default]
+    dropbox_app_key=foo
+    dropbox_app_secret=bar
+
+MIT Web Services
+~~~~~~~~~~~~~~~~
+
+You'll need an X.509 certificate and private key to access MIT web services,
+including the Moira_ web API. Store the certificate in the file
+``secrets/mit-ws-cert.crt``, and the private key in the file
+``secrets/mit-ws-key.pem``.
+
+Running
+-------
+To run the application, install Docker and `Docker Compose`_, then run:
 
 .. code-block:: bash
 
