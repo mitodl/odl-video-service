@@ -61,7 +61,8 @@ variable, using the ``.env`` file.
 Dropbox
 ~~~~~~~
 
-Sign up for an app key and app secret. Store them in the file
+`Create an app on Dropbox <https://www.dropbox.com/developers/apps/create>`_,
+and store the app key and app secret in the file
 ``secrets/dropbox-credentials.ini``, like this:
 
 .. code-block:: ini
@@ -74,9 +75,17 @@ MIT Web Services
 ~~~~~~~~~~~~~~~~
 
 You'll need an X.509 certificate and private key to access MIT web services,
-including the Moira_ web API. Store the certificate in the file
+including the Moira_ web API. Follow `MIT's instructions for how to get an
+X.509 certificate <https://wikis.mit.edu/confluence/display/devtools/How+to+acquire+and+verify+a+x509+Application+Certificate>`_.
+Store the certificate in the file
 ``secrets/mit-ws-cert.crt``, and the private key in the file
 ``secrets/mit-ws-key.pem``.
+
+Touchstone
+~~~~~~~~~~
+
+Touchstone hasn't been configured yet, but here are some instructions for
+`Touchstone integration`_.
 
 Running
 -------
