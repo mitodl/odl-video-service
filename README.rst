@@ -1,6 +1,8 @@
 ODL Video Service
 =================
 
+|build-status| |coverage-status|
+
 This is a video hosting platform, designed for MIT's
 `Office of Digital Learning`_ (ODL). It is tightly integrated with MIT's
 Touchstone_ authentication system and Moira_ permission system.
@@ -110,3 +112,10 @@ like this:
 .. _Touchstone integration: https://github.com/singingwolfboy/touchstone-notes
 .. _Moira: http://kb.mit.edu/confluence/display/istcontrib/Moira+Overview
 .. _Docker Compose: https://docs.docker.com/compose/
+
+.. |build-status| image:: https://travis-ci.org/mitodl/odl-video-service.svg?branch=master&style=flat
+   :target: https://travis-ci.org/mitodl/odl-video-service
+   :alt: Build status
+.. |coverage-status| image:: http://codecov.io/github/mitodl/odl-video-service/coverage.svg?branch=master
+   :target: http://codecov.io/github/mitodl/odl-video-service?branch=master
+   :alt: Test coverage
