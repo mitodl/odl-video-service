@@ -1,6 +1,7 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from django.utils.dateparse import parse_datetime, parse_duration
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -25,12 +26,12 @@ def rsa_signer(message):
     return signer.finalize()
 
 
-def cloudfront_signed_url(key, expires_at):
+def cloudfront_signed_url(key, expires):
     """
     Given an object key in S3, return a signed URL to access that S3 object
     from CloudFront.
     """
-    assert expires_at > datetime.utcnow(), \
+    assert expires > datetime.utcnow(), \
         "Not useful to generate a signed URL that has already expired"
 
     private_key_id = os.environ.get("AWS_PRIVATE_KEY_ID")
@@ -44,6 +45,24 @@ def cloudfront_signed_url(key, expires_at):
     )
     cloudfront_signer = CloudFrontSigner(private_key_id, rsa_signer)
     signed_url = cloudfront_signer.generate_presigned_url(
-        url, date_less_than=expires_at,
+        url, date_less_than=expires,
     )
     return signed_url
+
+
+def get_expiration(query_params, default_duration=timedelta(hours=2)):
+    """
+    Try to get an expiration time from query params
+    """
+    expires = query_params.get("expires")
+    if expires:
+        parsed = parse_datetime(expires)
+        if parsed:
+            return parsed
+    duration = query_params.get("duration")
+    if duration:
+        parsed = parse_duration(duration)
+        if parsed:
+            return datetime.utcnow() + parsed
+
+    return datetime.utcnow() + default_duration

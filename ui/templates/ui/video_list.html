@@ -22,16 +22,9 @@
 <script>
 let handleButtonClick = function(event) {
   let button = event.target;
-  let data = {
-    "key": button.parentNode.dataset.key,
-  }
-  let headers = new Headers();
-  headers.append("X-CSRFToken", "{{ csrf_token }}");
-  fetch('/signed_url', {
-    method: "POST",
-    headers: headers,
+  let videoId = button.parentNode.dataset.videoId;
+  fetch(`/api/videos/${videoId}/signed_url/`, {
     credentials: 'same-origin',
-    body: JSON.stringify(data),
   }).then(function(response) {
     if (!response.ok) {
       button.parentNode.appendChild(document.createTextNode("error"));

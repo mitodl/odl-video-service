@@ -2,10 +2,16 @@ import os
 import urllib.parse
 import boto3
 from django.db import models
+from django.conf import settings
+from ui.util import cloudfront_signed_url as make_cloudfront_signed_url
 
 
 class Video(models.Model):
     s3_object_key = models.TextField(unique=True)
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=250, blank=True)
     description = models.TextField(blank=True)
@@ -35,6 +41,12 @@ class Video(models.Model):
         return "https://{dist}.cloudfront.net/{key}".format(
             dist=distribution,
             key=encoded_key,
+        )
+
+    def cloudfront_signed_url(self, expires):
+        return make_cloudfront_signed_url(
+            key=self.s3_object_key,
+            expires=expires,
         )
 
     def __str__(self):

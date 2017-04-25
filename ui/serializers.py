@@ -24,24 +24,3 @@ class DropboxFileSerializer(serializers.Serializer):
             defaults={'source_url': validated_data["link"]},
         )
         return video
-
-
-class CloudFrontSignedURLSerializer(serializers.Serializer):
-    key = serializers.CharField()
-    expires_at = serializers.DateTimeField(required=False)
-    duration = serializers.DurationField(required=False)
-
-    def calculated_expiration(self, default_duration=timedelta(hours=2)):
-        """
-        Calculate the ``expires_at`` value. Uses the ``expires_at`` field
-        if provided, otherwise uses the ``duration`` field if provided,
-        otherwise uses a default duration.
-        """
-        self.is_valid()  # populate self.validated_data
-        data = self.validated_data
-        if "expires_at" in data:
-            return data["expires_at"]
-        elif "duration" in data:
-            return datetime.utcnow() + data["duration"]
-        else:
-            return datetime.utcnow() + default_duration

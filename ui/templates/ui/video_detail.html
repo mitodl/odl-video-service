@@ -5,16 +5,20 @@
 
 <form class="edit-video" action="{% url 'api:video-detail' object.id %}" method="PUT">
   <table>
+    <tr>
+      <th>Uploaded by:</th>
+      <td>{{ object.creator }}</td>
+    </tr>
   {{ form }}
   </table>
   <input type="submit" value="Update" />
 </form>
 <hr>
 <p>Links:</p>
-<ul>
-  <li><a href="{{ object.s3_url }}">S3</a></li>
-  <li><a href="{{ object.cloudfront_url }}">CloudFront direct</a></li>
-  <li><a href="{{ cloudfront_signed_url }}">CloudFront signed</a></li>
+<ul data-video-id="{{ object.id }}">
+  <li><a href="{{ object.s3_url }}">S3 link</a></li>
+  <li><a href="{{ object.cloudfront_url }}">CloudFront direct link</a></li>
+  <li><button>Generate CloudFront signed link</button></li>
 </ul>
 <h4>
 <form class="delete-video" action="{% url 'api:video-detail' object.id %}" method="DELETE">
@@ -27,6 +31,27 @@
 
 <script>
   let CSRF = "{{ csrf_token }}";
+
+  let handleButtonClick = function(event) {
+    let button = event.target;
+    let videoId = button.parentNode.parentNode.dataset.videoId;
+    fetch(`/api/videos/${videoId}/signed_url/`, {
+      credentials: 'same-origin',
+    }).then(function(response) {
+      if (!response.ok) {
+        button.parentNode.appendChild(document.createTextNode("error"));
+        return;
+      }
+      response.json().then(function(obj) {
+        let signedUrl = obj.url;
+        let link = document.createElement("a");
+        link.href = signedUrl;
+        link.appendChild(document.createTextNode("CloudFront signed link"));
+        button.replaceWith(link);
+      });
+    })
+  }
+
   let handleEdit = function(event) {
     event.preventDefault();
     let form = event.target;
@@ -69,6 +94,7 @@
     });
   }
   document.addEventListener("DOMContentLoaded", function() {
+    document.querySelector("button").addEventListener("click", handleButtonClick);
     document.querySelector("form.edit-video").addEventListener("submit", handleEdit);
     document.querySelector("form.delete-video").addEventListener("submit", handleDelete);
   });

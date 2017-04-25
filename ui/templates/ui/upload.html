@@ -116,7 +116,7 @@ to TechTV.</p>
       let headers = new Headers();
       headers.append("X-CSRFToken", CSRF);
       headers.append("Content-Type", "application/json");
-      fetch('/stream', {
+      fetch('/stream/', {
         method: "POST",
         headers: headers,
         credentials: 'same-origin',

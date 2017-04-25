@@ -1,6 +1,5 @@
 import os
 import json
-from datetime import datetime, timedelta
 from django.conf import settings
 from django.views.decorators.http import require_POST
 from django.shortcuts import render
@@ -9,18 +8,19 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.decorators import detail_route
+from rest_framework.permissions import IsAuthenticated
 from cloudsync.tasks import stream_to_s3
-from ui.util import cloudfront_signed_url
+from ui.util import get_expiration
 from ui.models import Video
 from ui.forms import VideoForm
-from ui.serializers import (
-    VideoSerializer, DropboxFileSerializer, CloudFrontSignedURLSerializer
-)
+from ui.serializers import VideoSerializer, DropboxFileSerializer
+from ui.permissions import admin_required, IsAdminOrReadOnly
 
 
 class Index(TemplateView):
@@ -34,7 +34,7 @@ class Index(TemplateView):
 
 
 @method_decorator(login_required, name='dispatch')
-@method_decorator(user_passes_test(lambda u: u.is_staff), name='dispatch')
+@method_decorator(admin_required, name='dispatch')
 class Upload(TemplateView):
     template_name = "ui/upload.html"
 
@@ -60,49 +60,42 @@ class VideoDetail(DetailView):
         context = super().get_context_data(**kwargs)
         video = context["object"]
         context['form'] = VideoForm(instance=video)
-        context['cloudfront_signed_url'] = cloudfront_signed_url(
-            key=video.s3_object_key,
-            expires_at=datetime.utcnow() + timedelta(hours=2),
-        )
         return context
 
 
 @require_POST
 @login_required
+@admin_required
 def stream(request):
     data = json.loads(request.body.decode('utf-8'))
     serializer = DropboxFileSerializer(data=data, many=True)
     serializer.is_valid(raise_exception=True)
-    videos = serializer.save()
-
-    response = {
-        video.id: {
+    dropbox_files = serializer.validated_data
+    response = {}
+    for dropbox_file in dropbox_files:
+        video, created = Video.objects.get_or_create(
+            s3_object_key=dropbox_file["name"],
+            defaults={
+                "source_url": dropbox_file["link"],
+                "creator": request.user,
+            }
+        )
+        # make sure these values are set
+        video.source_url = dropbox_file["link"]
+        video.creator = request.user
+        video.save()
+        task_result = stream_to_s3.delay(video.source_url)
+        response[video.id] = {
             "key": video.s3_object_key,
-            "task": stream_to_s3.delay(video.source_url).id,
+            "task": task_result.id,
         }
-        for video in videos
-    }
     return JsonResponse(response)
-
-
-@require_POST
-@login_required
-def generate_signed_url(request):
-    data = json.loads(request.body.decode('utf-8'))
-    serializer = CloudFrontSignedURLSerializer(data=data)
-    serializer.is_valid(raise_exception=True)
-    key = serializer.validated_data["key"]
-    expires_at = serializer.calculated_expiration()
-    signed_url = cloudfront_signed_url(key=key, expires_at=expires_at)
-    return JsonResponse({
-        "url": signed_url,
-        "expires_at": expires_at.isoformat(),
-    })
 
 
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
+    permission_classes = (IsAdminOrReadOnly,)
 
     def destroy(self, request, *args, **kwargs):
         video = self.get_object()
@@ -110,6 +103,17 @@ class VideoViewSet(viewsets.ModelViewSet):
             video.s3_object.delete()
         self.perform_destroy(video)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @detail_route(permission_classes=(IsAuthenticated,))
+    def signed_url(self, request, pk=None):
+        video = self.get_object()
+        # for non-admin users, need to check Moira lists...
+        expires = get_expiration(request.query_params)
+        signed_url = video.cloudfront_signed_url(expires=expires)
+        return Response({
+            "url": signed_url,
+            "expires": expires,
+        })
 
 
 def register(request):
