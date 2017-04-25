@@ -95,6 +95,16 @@ To run the application, install Docker and `Docker Compose`_, then run:
 
     docker-compose up
 
+Tests
+-----
+To run the tests, install the development dependencies and then run ``pytest``,
+like this:
+
+.. code-block:: bash
+
+    pip install -r dev-requirements.txt
+    pytest
+
 .. _Office of Digital Learning: http://odl.mit.edu/
 .. _Touchstone: https://ist.mit.edu/touchstone
 .. _Touchstone integration: https://github.com/singingwolfboy/touchstone-notes
