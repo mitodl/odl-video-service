@@ -1,0 +1,19 @@
+sudo: false
+language: python
+cache: pip
+python:
+  - 3.5
+services:
+  - postgresql
+env:
+  - DATABASE_URI=postgresql://localhost/travis_ci_test
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres;
+install:
+  - travis_retry pip install -r requirements.txt
+  - travis_retry pip install -r dev-requirements.txt
+  - travis_retry pip install codecov
+script:
+  - pytest --cov=odl_video,cloudsync,ui
+after_success:
+  - codecov
