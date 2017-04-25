@@ -27,7 +27,11 @@ let handleButtonClick = function(event) {
     credentials: 'same-origin',
   }).then(function(response) {
     if (!response.ok) {
-      button.parentNode.appendChild(document.createTextNode("error"));
+      let text = "error";
+      if (response.status === 403) {
+        text = "forbidden";
+      }
+      button.parentNode.appendChild(document.createTextNode(text));
       return;
     }
     response.json().then(function(obj) {
