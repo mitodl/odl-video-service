@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from rest_framework.relations import RelatedField

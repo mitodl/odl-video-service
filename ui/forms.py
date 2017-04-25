@@ -1,7 +1,8 @@
 from django.forms.widgets import TextInput
-from django.forms.fields import Field
-from django.forms.models import ModelMultipleChoiceField
+from django.forms.fields import Field, EmailField
 from django.forms import ModelForm
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
 from ui.models import MoiraList, Video
 
 ## Widget
@@ -52,3 +53,18 @@ class VideoForm(ModelForm):
     class Meta:
         model = Video
         fields = ('title', 'description', 'moira_lists')
+
+
+class UserCreationForm(BaseUserCreationForm):
+    email = EmailField(required=True)
+
+    class Meta:
+        model = get_user_model()
+        fields = ("username", "email", "password1", "password2")
+
+    def save(self, commit=True):
+        user = super(UserCreationForm, self).save(commit=False)
+        user.email = self.cleaned_data["email"]
+        if commit:
+            user.save()
+        return user

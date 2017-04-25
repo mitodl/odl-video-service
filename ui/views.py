@@ -7,7 +7,7 @@ from django.shortcuts import render
 from django.views.generic import TemplateView, ListView, DetailView
 from django.http import JsonResponse, HttpResponseRedirect
 from django.contrib import messages
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -18,7 +18,7 @@ from rest_framework.decorators import detail_route
 from cloudsync.tasks import stream_to_s3
 from ui.util import get_expiration
 from ui.models import Video
-from ui.forms import VideoForm
+from ui.forms import VideoForm, UserCreationForm
 from ui.serializers import VideoSerializer, DropboxFileSerializer
 from ui.permissions import (
     admin_required, IsAdminOrReadOnly, IsAdminOrHasMoiraPermissions
