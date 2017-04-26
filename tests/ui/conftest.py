@@ -1,11 +1,11 @@
 import pytest
-from django.contrib.auth.models import User
 from ui.models import Video
 
 
 @pytest.fixture
 @pytest.mark.django_db
-def user():
+def user(django_user_model):
+    User = django_user_model
     obj = User(username="example", email="example@mit.edu")
     obj.set_password("ex4mple")
     obj.save()

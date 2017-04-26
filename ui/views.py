@@ -16,7 +16,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import detail_route
 from cloudsync.tasks import stream_to_s3
-from ui.util import get_expiration
+from ui.util import get_expiration, get_dropbox_credentials
 from ui.models import Video
 from ui.forms import VideoForm, UserCreationForm
 from ui.serializers import VideoSerializer, DropboxFileSerializer
@@ -42,15 +42,8 @@ class Upload(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        dropbox_credentials_file_path = "/run/secrets/dropbox-credentials"
-        if not os.path.isfile(dropbox_credentials_file_path):
-            msg = "Missing required secret: {path}".format(
-                path=dropbox_credentials_file_path
-            )
-            raise RuntimeError(msg)
-        config = configparser.ConfigParser()
-        config.read_file(open(dropbox_credentials_file_path))
-        context["dropbox_key"] = config.get("default", "dropbox_app_key")
+        key, secret = get_dropbox_credentials()
+        context["dropbox_key"] = key
         return context
 
 
@@ -65,8 +58,7 @@ class VideoDetail(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        video = context["object"]
-        context['form'] = VideoForm(instance=video)
+        context['form'] = VideoForm(instance=context["object"])
         return context
 
 

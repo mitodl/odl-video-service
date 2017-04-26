@@ -1,6 +1,7 @@
 import os.path
 from datetime import datetime, timedelta
 from functools import lru_cache
+import configparser
 
 from mit_moira import Moira
 from django.utils.dateparse import parse_datetime, parse_duration
@@ -9,6 +10,44 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from botocore.signers import CloudFrontSigner
+
+
+@lru_cache(1)  # memoize this function
+def get_dropbox_credentials():
+    file_path = "/run/secrets/dropbox-credentials"
+    if not os.path.isfile(file_path):
+        msg = "Missing required secret: {path}".format(path=file_path)
+        raise RuntimeError(msg)
+    config = configparser.ConfigParser()
+    config.read_file(open(file_path))
+    key = config.get("default", "dropbox_app_key")
+    secret = config.get("default", "dropbox_app_secret")
+    return key, secret
+
+
+@lru_cache(1)  # memoize this function
+def get_moira_client():
+    cert_file_path = "/run/secrets/mit-ws-cert"
+    cert_file_exists = os.path.isfile(cert_file_path)
+    key_file_path = "/run/secrets/mit-ws-key"
+    key_file_exists = os.path.isfile(key_file_path)
+    if not cert_file_exists and not key_file_exists:
+        msg = "Missing required secrets: {cert} {key}".format(
+            cert=cert_file_path, key=key_file_path,
+        )
+        raise RuntimeError(msg)
+    if not cert_file_exists:
+        msg = "Missing required secret: {cert}".format(
+            cert=cert_file_path,
+        )
+        raise RuntimeError(msg)
+    if not key_file_exists:
+        msg = "Missing required secret: {key}".format(
+            key=key_file_path,
+        )
+        raise RuntimeError(msg)
+    return Moira(cert_file_path, key_file_path)
+
 
 # http://boto3.readthedocs.io/en/stable/reference/services/cloudfront.html#generate-a-signed-url-for-amazon-cloudfront
 
@@ -68,27 +107,3 @@ def get_expiration(query_params, default_duration=timedelta(hours=2)):
             return datetime.utcnow() + parsed
 
     return datetime.utcnow() + default_duration
-
-
-@lru_cache(1)  # memoize this function
-def get_moira_client():
-    cert_file_path = "/run/secrets/mit-ws-cert"
-    cert_file_exists = os.path.isfile(cert_file_path)
-    key_file_path = "/run/secrets/mit-ws-key"
-    key_file_exists = os.path.isfile(key_file_path)
-    if not cert_file_exists and not key_file_exists:
-        msg = "Missing required secrets: {cert} {key}".format(
-            cert=cert_file_path, key=key_file_path,
-        )
-        raise RuntimeError(msg)
-    if not cert_file_exists:
-        msg = "Missing required secret: {cert}".format(
-            cert=cert_file_path,
-        )
-        raise RuntimeError(msg)
-    if not key_file_exists:
-        msg = "Missing required secret: {key}".format(
-            key=key_file_path,
-        )
-        raise RuntimeError(msg)
-    return Moira(cert_file_path, key_file_path)
