@@ -19,6 +19,8 @@ def stream_to_s3(self, url):
     """
     Stream the contents of the given URL to Amazon S3
     """
+    if not url:
+        return False
     response = requests.get(url, stream=True)
     response.raise_for_status()
     file_name, content_type, content_length = parse_content_metadata(response)
@@ -26,9 +28,6 @@ def stream_to_s3(self, url):
     s3 = boto3.resource('s3')
     bucket_name = os.environ.get("VIDEO_S3_BUCKET", "odl-video-service")
     bucket = s3.Bucket(bucket_name)
-    # no easy way to tell if a bucket already exists or not, so we'll just
-    # call create(), which shouldn't error if the bucket already exists.
-    bucket.create()
 
     # Need to bind this here, because otherwise it gets lost in the callback somehow
     task_id = self.request.id
