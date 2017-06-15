@@ -6,11 +6,8 @@
 <p>We know about the following videos:</p>
 <ul>
   {% for video in object_list %}
-    <li data-key="{{ video.s3_object_key }}" data-video-id="{{ video.id }}">
-      <a href="{% url "video-detail" video.id %}">{{ video.title|default:video.s3_object_key }}</a>
-      <br>
-      <a href="{{ video.cloudfront_url }}">direct link</a> |
-      <button>generate signed link</button>
+    <li data-key="{{ video.s3_subkey }}" data-video-id="{{ video.id }}">
+      <a href="{% url "video-detail" video.id %}">{{ video.title }}</a>
     </li>
   {% empty %}
     <li><i>no known videos</i></li>
@@ -19,35 +16,4 @@
 
 <p>Need to <a href="{% url 'upload' %}">upload more videos</a>?</p>
 
-<script>
-let handleButtonClick = function(event) {
-  let button = event.target;
-  let videoId = button.parentNode.dataset.videoId;
-  fetch(`/api/videos/${videoId}/signed_url/`, {
-    credentials: 'same-origin',
-  }).then(function(response) {
-    if (!response.ok) {
-      let text = "error";
-      if (response.status === 403) {
-        text = "forbidden";
-      }
-      button.parentNode.appendChild(document.createTextNode(text));
-      return;
-    }
-    response.json().then(function(obj) {
-      let signedUrl = obj.url;
-      let link = document.createElement("a");
-      link.href = signedUrl;
-      link.appendChild(document.createTextNode("signed link"));
-      button.replaceWith(link);
-    });
-  })
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-  document.querySelectorAll("button").forEach(function(button) {
-    button.addEventListener("click", handleButtonClick);
-  });
-});
-</script>
 {% endblock %}

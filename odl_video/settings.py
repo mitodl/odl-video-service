@@ -86,7 +86,7 @@ WSGI_APPLICATION = 'odl_video.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-SQLITE_FILE = "sqlite://" + os.path.join(BASE_DIR, 'db.sqlite3')
+SQLITE_FILE = "sqlite:///" + os.path.join(BASE_DIR, 'db.sqlite3')
 DATABASES = {
     'default': dj_database_url.config(default=SQLITE_FILE),
 }
@@ -149,3 +149,7 @@ STATICFILES_DIRS = (
 # OTHER
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
+
+VIDEO_S3_BUCKET = os.environ.get('VIDEO_S3_BUCKET', 'odl-video-service')
+VIDEO_CLOUDFRONT_DIST = os.environ.get('VIDEO_CLOUDFRONT_DIST', '')
+AWS_S3_DOMAIN = os.environ.get('AWS_S3_DOMAIN', 's3.amazonaws.com')

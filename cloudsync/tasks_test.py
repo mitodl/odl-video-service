@@ -1,6 +1,8 @@
 """
 Tests for tasks
 """
+import pytest
+
 from cloudsync.tasks import stream_to_s3
 
 
@@ -8,13 +10,14 @@ def test_empty_url():
     """
     Tests that an empty URL does not give a result
     """
-    result = stream_to_s3("")  # pylint: disable=no-value-for-parameter
+    result = stream_to_s3("", "no_url")  # pylint: disable=no-value-for-parameter
     assert not result
 
 
+@pytest.mark.django_db
 def test_happy_path(mocker, reqmocker, mock_video_url, mock_video_headers, mock_video_file):
     """
-    Tests happy path
+    Test that a file can be uploaded to a mocked S3 bucket.
     """
     reqmocker.get(
         mock_video_url,
@@ -23,8 +26,7 @@ def test_happy_path(mocker, reqmocker, mock_video_url, mock_video_headers, mock_
     )
     mock_boto3 = mocker.patch('cloudsync.tasks.boto3')
     mock_bucket = mock_boto3.resource.return_value.Bucket.return_value
-
-    stream_to_s3(mock_video_url)  # pylint: disable=no-value-for-parameter
+    stream_to_s3(mock_video_url, 'video.mp4')  # pylint: disable=no-value-for-parameter
 
     mock_bucket.upload_fileobj.assert_called_with(
         Fileobj=mocker.ANY,

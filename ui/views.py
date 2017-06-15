@@ -1,6 +1,5 @@
 """Views for ui app"""
 import json
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
@@ -16,15 +15,11 @@ from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 
 from cloudsync.tasks import stream_to_s3
-from ui.util import get_expiration, get_dropbox_credentials
-from ui.models import Video
+from ui.util import get_dropbox_credentials
+from ui.models import Video, VideoFile
 from ui.forms import VideoForm, UserCreationForm
 from ui.serializers import VideoSerializer, DropboxFileSerializer
-from ui.permissions import (
-    admin_required,
-    IsAdminOrReadOnly,
-    IsAdminOrHasMoiraPermissions
-)
+from ui.permissions import admin_required, IsAdminOrReadOnly, IsAdminOrHasMoiraPermissions
 
 
 class Index(TemplateView):
@@ -79,22 +74,28 @@ def stream(request):
     dropbox_files = serializer.validated_data
     response = {}
     for dropbox_file in dropbox_files:
-        video, _ = Video.objects.get_or_create(
-            s3_object_key=dropbox_file["name"],
-            defaults={
-                "source_url": dropbox_file["link"],
-                "creator": request.user,
-            }
+        video = Video.objects.create(
+            source_url=dropbox_file["link"],
+            creator=request.user,
+            title=dropbox_file["name"]
         )
-        # make sure these values are set
-        video.source_url = dropbox_file["link"]
-        video.creator = request.user
-        video.save()
-        task_result = stream_to_s3.delay(video.source_url)
+        try:
+            VideoFile.objects.create(
+                s3_object_key=video.s3_key(),
+                video_id=video.id,
+                bucket_name=settings.VIDEO_S3_BUCKET
+            )
+        except Exception as e:
+            # Delete the video object if videofile object can't be created, no point in keeping it around
+            video.delete()
+            raise e
+
+        task_result = stream_to_s3.delay(video.source_url, video.s3_key())
         response[video.id] = {
-            "key": video.s3_object_key,
+            "key": video.s3_key(),
             "task": task_result.id,
         }
+
     return JsonResponse(response)
 
 
@@ -107,20 +108,20 @@ class VideoViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         video = self.get_object()
         if request.GET.get("s3"):
-            video.s3_object.delete()
+            for file in video.videofile_set.all():
+                file.s3_object.delete()
         self.perform_destroy(video)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @detail_route(permission_classes=(IsAdminOrHasMoiraPermissions,))
-    def signed_url(self, request, pk=None):  # pylint: disable=unused-argument
+    @detail_route(permission_classes=(IsAdminOrHasMoiraPermissions,), url_path=r'signed_url/(?P<encoding>\w+)')
+    def signed_url(self, request, pk, encoding):  # pylint: disable=unused-argument
         """signed_url"""
         video = self.get_object()
         self.check_object_permissions(self.request, video)
-        expires = get_expiration(request.query_params)
-        signed_url = video.cloudfront_signed_url(expires=expires)
+        video_file = video.videofile_set.get(encoding=encoding)
+        signed_url = video_file.cloudfront_signed_url
         return Response({
-            "url": signed_url,
-            "expires": expires,
+            "url": signed_url
         })
 
 

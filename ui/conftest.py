@@ -2,7 +2,10 @@
 conftest for pytest in this module
 """
 import pytest
-from ui.models import Video
+
+from odl_video import settings
+from ui.encodings import EncodingNames
+from ui.models import Video, VideoFile
 
 
 @pytest.fixture
@@ -25,10 +28,25 @@ def video(user):  # pylint: disable=redefined-outer-name
     """
     obj = Video(
         creator=user,
-        s3_object_key="BigBuckBunny.m4v",
         source_url="https://dl.dropboxusercontent.com/1/view/abc123/BigBuckBunny.m4v",
         title="Big Buck Bunny",
         description="Open source video from Blender",
+    )
+    obj.save()
+    return obj
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def videofile(video):  # pylint: disable=redefined-outer-name
+    """
+    Fixture to create a video file
+    """
+    obj = VideoFile(
+        video=video,
+        s3_object_key=video.s3_key,
+        encoding=EncodingNames.ORIGINAL,
+        bucket_name=settings.VIDEO_S3_BUCKET
     )
     obj.save()
     return obj

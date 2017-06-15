@@ -1,16 +1,17 @@
 """Utils for ui app"""
 import os.path
+import configparser
 from datetime import datetime, timedelta
 from functools import lru_cache
-import configparser
-
-from mit_moira import Moira
+from urllib.parse import quote
+from pytz import UTC
 from django.utils.dateparse import parse_datetime, parse_duration
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from botocore.signers import CloudFrontSigner
+from mit_moira import Moira
 
 
 @lru_cache(1)  # memoize this function
@@ -76,8 +77,7 @@ def cloudfront_signed_url(key, expires):
     Given an object key in S3, return a signed URL to access that S3 object
     from CloudFront.
     """
-    assert expires > datetime.utcnow(), \
-        "Not useful to generate a signed URL that has already expired"
+    assert expires > datetime.now(tz=UTC), "Not useful to generate a signed URL that has already expired"
 
     key_id = os.environ.get("CLOUDFRONT_KEY_ID")
     if not key_id:
@@ -85,13 +85,9 @@ def cloudfront_signed_url(key, expires):
     cloudfront_dist = os.environ.get("VIDEO_CLOUDFRONT_DIST")
     if not cloudfront_dist:
         raise RuntimeError("Missing required env var: VIDEO_CLOUDFRONT_DIST")
-    url = "https://{dist}.cloudfront.net/{key}".format(
-        dist=cloudfront_dist, key=key,
-    )
+    url = "https://{dist}.cloudfront.net/{key}".format(dist=cloudfront_dist, key=quote(key),)
     cloudfront_signer = CloudFrontSigner(key_id, rsa_signer)
-    signed_url = cloudfront_signer.generate_presigned_url(
-        url, date_less_than=expires,
-    )
+    signed_url = cloudfront_signer.generate_presigned_url(url, date_less_than=expires,)
     return signed_url
 
 
