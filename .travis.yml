@@ -1,19 +1,15 @@
 sudo: false
-language: python
-cache: pip
-python:
-  - 3.5
-services:
-  - postgresql
-env:
-  - DATABASE_URI=postgresql://localhost/travis_ci_test
-before_script:
-  - psql -c 'create database travis_ci_test;' -U postgres;
-install:
-  - travis_retry pip install -r requirements.txt
-  - travis_retry pip install -r dev-requirements.txt
-  - travis_retry pip install codecov
-script:
-  - pytest --cov=odl_video --cov=cloudsync --cov=ui
-after_success:
-  - codecov
+# Set Ruby as the language so it doesn't download the pip things. Instead, let docker do that.
+language: ruby
+
+matrix:
+  include:
+    - install:
+      - env | grep TRAVIS > .env
+      - env | grep CI >> .env
+      - docker-compose -f docker-compose-travis.yml run celery echo
+      script: (docker-compose -f docker-compose-travis.yml up celery &); sleep 5; docker-compose -f docker-compose-travis.yml run web tox
+      services:
+        - docker
+      env:
+        name: Python

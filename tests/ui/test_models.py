@@ -1,7 +1,9 @@
+"""
+Tests for the UI models
+"""
 import pytest
 from boto3.resources.base import ServiceResource
 from django.db import IntegrityError
-from django.contrib.auth.models import User
 from ui.models import Video
 
 
@@ -9,6 +11,9 @@ pytestmark = pytest.mark.django_db
 
 
 def test_s3_object_uniqueness(user, video):
+    """
+    Tests s3 object uniqueness
+    """
     video2 = Video(
         creator=user,
         s3_object_key=video.s3_object_key,
@@ -19,6 +24,9 @@ def test_s3_object_uniqueness(user, video):
 
 
 def test_video_aws_integration(video):
+    """
+    Tests video aws integration
+    """
     s3_obj = video.s3_object
     assert isinstance(s3_obj, ServiceResource)
     assert s3_obj.key == video.s3_object_key
@@ -29,4 +37,3 @@ def test_video_aws_integration(video):
     assert isinstance(cf_url, str)
     assert cf_url.startswith("https://video-cf.cloudfront.net/")
     assert callable(video.cloudfront_signed_url)
-

@@ -1,4 +1,7 @@
-from django.utils.translation import ugettext_lazy as _
+"""
+serializers for ui
+"""
+from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
@@ -6,6 +9,9 @@ from ui.models import MoiraList, Video
 
 
 class SingleAttrRelatedField(RelatedField):
+    """
+    SingleAttrRelatedField serializer
+    """
     def __init__(self, model, attribute="pk", **kwargs):
         self.model = model
         self.attribute = attribute
@@ -21,15 +27,15 @@ class SingleAttrRelatedField(RelatedField):
         )
         self.html_cutoff_text = kwargs.pop(
             'html_cutoff_text',
-            self.html_cutoff_text or _(api_settings.HTML_SELECT_CUTOFF_TEXT)
+            self.html_cutoff_text or ugettext_lazy(api_settings.HTML_SELECT_CUTOFF_TEXT)
         )
         kwargs.pop('many', None)
         kwargs.pop('allow_empty', None)
-        super(RelatedField, self).__init__(**kwargs)
+        super(RelatedField, self).__init__(**kwargs)  # pylint: disable=bad-super-call
 
     def to_internal_value(self, data):
         kwargs = {self.attribute: data}
-        instance, created = self.model.objects.get_or_create(**kwargs)
+        instance, _ = self.model.objects.get_or_create(**kwargs)
         return instance
 
     def to_representation(self, value):
@@ -37,6 +43,7 @@ class SingleAttrRelatedField(RelatedField):
 
 
 class VideoSerializer(serializers.ModelSerializer):
+    """Video Serializer"""
     moira_lists = SingleAttrRelatedField(
         model=MoiraList, attribute="name", many=True
     )
@@ -51,6 +58,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
 
 class DropboxFileSerializer(serializers.Serializer):
+    """Dropbox File Serializer"""
     name = serializers.CharField()
     link = serializers.URLField()
     bytes = serializers.IntegerField(min_value=0)
@@ -59,7 +67,7 @@ class DropboxFileSerializer(serializers.Serializer):
     isDir = serializers.BooleanField()
 
     def create(self, validated_data):
-        video, created = Video.objects.get_or_create(
+        video, _ = Video.objects.get_or_create(
             s3_object_key=validated_data["name"],
             defaults={'source_url': validated_data["link"]},
         )

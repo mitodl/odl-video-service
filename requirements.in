@@ -1,0 +1,17 @@
+boto3==1.4.4
+celery==4.0.2
+cryptography==1.8.1
+dj-database-url==0.4.2
+dj-static==0.0.6
+django-redis==4.7.0
+Django==1.10.5
+djangorestframework==3.6.2
+ipython
+mit-moira==0.0.3
+newrelic
+psycopg2==2.7.1
+pytz
+raven
+redis==2.10.5
+requests==2.18.1
+uwsgi

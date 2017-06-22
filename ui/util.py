@@ -1,3 +1,4 @@
+"""Utils for ui app"""
 import os.path
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -14,6 +15,7 @@ from botocore.signers import CloudFrontSigner
 
 @lru_cache(1)  # memoize this function
 def get_dropbox_credentials():
+    """get dropbox credentials"""
     file_path = "/run/secrets/dropbox-credentials"
     if not os.path.isfile(file_path):
         msg = "Missing required secret: {path}".format(path=file_path)
@@ -27,6 +29,7 @@ def get_dropbox_credentials():
 
 @lru_cache(1)  # memoize this function
 def get_moira_client():
+    """get moira client"""
     cert_file_path = "/run/secrets/mit-ws-cert"
     cert_file_exists = os.path.isfile(cert_file_path)
     key_file_path = "/run/secrets/mit-ws-key"
@@ -52,6 +55,7 @@ def get_moira_client():
 # http://boto3.readthedocs.io/en/stable/reference/services/cloudfront.html#generate-a-signed-url-for-amazon-cloudfront
 
 def rsa_signer(message):
+    """rsa signer"""
     private_key_file_path = "/run/secrets/cloudfront-key"
     if not os.path.isfile(private_key_file_path):
         msg = "Missing required secret: {path}".format(path=private_key_file_path)

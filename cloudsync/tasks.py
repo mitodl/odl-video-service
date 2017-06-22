@@ -1,11 +1,15 @@
+"""
+Tasks for cloudsync app
+"""
+
 import os
-import os.path
 import re
 from urllib.parse import unquote
-from celery import shared_task
-from celery.utils.log import get_task_logger
+
 import boto3
 import requests
+from celery import shared_task
+from celery.utils.log import get_task_logger
 
 
 logger = get_task_logger(__name__)
@@ -33,6 +37,9 @@ def stream_to_s3(self, url):
     task_id = self.request.id
 
     def callback(bytes_uploaded):
+        """
+        Callback function after upload
+        """
         data = {
             "uploaded": bytes_uploaded,
             "total": content_length,

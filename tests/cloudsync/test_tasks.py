@@ -1,18 +1,21 @@
-import pytest
-import boto3
+"""
+Tests for tasks
+"""
 from cloudsync.tasks import stream_to_s3
 
 
 def test_empty_url():
-    result = stream_to_s3("")
+    """
+    Tests that an empty URL does not give a result
+    """
+    result = stream_to_s3("")  # pylint: disable=no-value-for-parameter
     assert not result
 
-# @pytest.mark.reqmocker
-# @pytest.mark.mocked_video_request
-def test_happy_path(
-        mocker,
-        reqmocker, mock_video_url, mock_video_headers, mock_video_file
-    ):
+
+def test_happy_path(mocker, reqmocker, mock_video_url, mock_video_headers, mock_video_file):
+    """
+    Tests happy path
+    """
     reqmocker.get(
         mock_video_url,
         headers=mock_video_headers,
@@ -21,7 +24,7 @@ def test_happy_path(
     mock_boto3 = mocker.patch('cloudsync.tasks.boto3')
     mock_bucket = mock_boto3.resource.return_value.Bucket.return_value
 
-    stream_to_s3(mock_video_url)
+    stream_to_s3(mock_video_url)  # pylint: disable=no-value-for-parameter
 
     mock_bucket.upload_fileobj.assert_called_with(
         Fileobj=mocker.ANY,

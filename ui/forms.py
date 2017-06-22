@@ -1,3 +1,7 @@
+"""
+Forms for ui app
+"""
+
 from django.forms.widgets import TextInput
 from django.forms.fields import Field, EmailField
 from django.forms import ModelForm
@@ -5,9 +9,11 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
 from ui.models import MoiraList, Video
 
-## Widget
 
 class SeparatedMultiTextInput(TextInput):
+    """
+    Separated Multi Text Input Widget
+    """
     def __init__(self, separator=" ", attrs=None):
         super().__init__(attrs=attrs)
         self.separator = separator
@@ -20,9 +26,11 @@ class SeparatedMultiTextInput(TextInput):
         return text.split(self.separator)
 
 
-## Field
-
 class DynamicModelMultipleChoiceField(Field):
+    """
+    Dynamic Model Multiple Choice Field
+    """
+    # pylint: disable=too-many-arguments, missing-docstring, arguments-differ
     widget = SeparatedMultiTextInput
 
     def __init__(self, model, field="pk", required=True, widget=None, label=None,
@@ -37,25 +45,30 @@ class DynamicModelMultipleChoiceField(Field):
 
     def to_model(self, value):
         kwargs = {self.field: value.strip()}
-        instance, created = self.model.get_or_create(**kwargs)
+        instance, _ = self.model.get_or_create(**kwargs)
         return instance
 
     def to_python(self, values):
         return [self.to_model(value) for value in values]
 
 
-## Forms
-
 class VideoForm(ModelForm):
+    """
+    Video Form
+    """
     moira_lists = DynamicModelMultipleChoiceField(
         model=MoiraList, field="name",
     )
+
     class Meta:
         model = Video
         fields = ('title', 'description', 'moira_lists')
 
 
 class UserCreationForm(BaseUserCreationForm):
+    """
+    User Creation Form
+    """
     email = EmailField(required=True)
 
     class Meta:

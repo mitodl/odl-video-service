@@ -24,7 +24,8 @@ RUN mkdir /var/media && chown -R mitodl:mitodl /var/media
 
 # Install project packages
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install -r requirements.txt
+COPY test_requirements.txt /tmp/test_requirements.txt
+RUN pip install -r requirements.txt -r test_requirements.txt
 
 # Add project
 COPY . /src
