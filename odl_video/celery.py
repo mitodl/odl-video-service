@@ -1,3 +1,6 @@
+"""
+Celery configuration
+"""
 import os
 from celery import Celery
 
@@ -18,4 +21,7 @@ app.autodiscover_tasks()
 
 @app.task(bind=True)
 def debug_task(self):
+    """
+    Task for debugging purposes
+    """
     print('Request: {0!r}'.format(self.request))

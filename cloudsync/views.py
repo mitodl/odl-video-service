@@ -1,8 +1,14 @@
+"""
+Views for cloudsync app
+"""
 from celery.result import AsyncResult
 from django.http import JsonResponse
 
 
-def status(request, task_id):
+def status(request, task_id):  # pylint: disable=unused-argument
+    """
+    Returns the status of a task
+    """
     result = AsyncResult(task_id)
     if isinstance(result.info, Exception):
         return JsonResponse({

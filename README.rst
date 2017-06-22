@@ -104,8 +104,7 @@ like this:
 
 .. code-block:: bash
 
-    pip install -r dev-requirements.txt
-    pytest
+    docker-compose run web tox
 
 .. _Office of Digital Learning: http://odl.mit.edu/
 .. _Touchstone: https://ist.mit.edu/touchstone

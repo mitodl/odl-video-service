@@ -1,3 +1,6 @@
+"""
+Models for UI app
+"""
 import os
 import urllib.parse
 import boto3
@@ -8,9 +11,13 @@ from ui.util import get_moira_client
 
 
 class MoiraList(models.Model):
+    """
+    Model for Moira
+    """
     name = models.CharField(max_length=250)
 
     def members(self):
+        """Members"""
         moira = get_moira_client()
         return moira.list_members(self.name)
 
@@ -22,6 +29,9 @@ class MoiraList(models.Model):
 
 
 class Video(models.Model):
+    """
+    Model for Video
+    """
     s3_object_key = models.TextField(unique=True)
     creator = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -35,12 +45,14 @@ class Video(models.Model):
 
     @property
     def s3_object(self):
+        """s3 object"""
         bucket_name = os.environ.get("VIDEO_S3_BUCKET", "odl-video-service")
         s3 = boto3.resource('s3')
         return s3.Object(bucket_name, self.s3_object_key)
 
     @property
     def s3_url(self):
+        """s3 url"""
         bucket_name = os.environ.get("VIDEO_S3_BUCKET", "odl-video-service")
         encoded_key = urllib.parse.quote_plus(self.s3_object_key)
         return "https://s3.amazonaws.com/{bucket}/{key}".format(
@@ -50,6 +62,7 @@ class Video(models.Model):
 
     @property
     def cloudfront_url(self):
+        """cloudfront url"""
         distribution = os.environ.get("VIDEO_CLOUDFRONT_DIST")
         if not distribution:
             raise RuntimeError("Missing required env var: VIDEO_CLOUDFRONT_DIST")
@@ -60,6 +73,7 @@ class Video(models.Model):
         )
 
     def cloudfront_signed_url(self, expires):
+        """cloudfront signed url"""
         return make_cloudfront_signed_url(
             key=self.s3_object_key,
             expires=expires,

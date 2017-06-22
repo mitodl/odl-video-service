@@ -1,5 +1,10 @@
+"""
+Tests for views
+"""
+
 
 def test_index_anonymous(client):
+    """Test index anonymous"""
     response = client.get('/')
     assert response.status_code == 200
     assert 'login_form' in response.context_data
@@ -8,12 +13,14 @@ def test_index_anonymous(client):
 
 
 def test_upload_anonymous(client):
+    """Test upload anonymous"""
     response = client.get('/upload/')
     assert response.status_code == 302
     assert response['Location'] == '/login/?next=/upload/'
 
 
 def test_upload(client, user):
+    """Test upload"""
     client.force_login(user)
     response = client.get('/upload/')
     assert response.status_code == 302
@@ -21,6 +28,7 @@ def test_upload(client, user):
 
 
 def test_upload_admin(admin_client, mocker):
+    """Test upload admin"""
     mocker.patch(
         'ui.views.get_dropbox_credentials',
         return_value=('dbkey', 'dbsecret')

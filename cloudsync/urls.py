@@ -1,3 +1,7 @@
+"""
+URLs for cloudsync app
+"""
+
 from django.conf.urls import url
 from cloudsync import views
 
