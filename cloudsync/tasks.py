@@ -1,16 +1,15 @@
 """
 Tasks for cloudsync app
 """
-
 import os
 import re
 from urllib.parse import unquote
 
-import boto3
 import requests
+import boto3
 from celery import shared_task
 from celery.utils.log import get_task_logger
-
+from django.conf import settings
 
 logger = get_task_logger(__name__)
 CONTENT_DISPOSITION_RE = re.compile(
@@ -19,7 +18,7 @@ CONTENT_DISPOSITION_RE = re.compile(
 
 
 @shared_task(bind=True)
-def stream_to_s3(self, url):
+def stream_to_s3(self, url, s3_key):
     """
     Stream the contents of the given URL to Amazon S3
     """
@@ -27,10 +26,10 @@ def stream_to_s3(self, url):
         return False
     response = requests.get(url, stream=True)
     response.raise_for_status()
-    file_name, content_type, content_length = parse_content_metadata(response)
+    _, content_type, content_length = parse_content_metadata(response)
 
     s3 = boto3.resource('s3')
-    bucket_name = os.environ.get("VIDEO_S3_BUCKET", "odl-video-service")
+    bucket_name = settings.VIDEO_S3_BUCKET
     bucket = s3.Bucket(bucket_name)
 
     # Need to bind this here, because otherwise it gets lost in the callback somehow
@@ -48,7 +47,7 @@ def stream_to_s3(self, url):
 
     bucket.upload_fileobj(
         Fileobj=response.raw,
-        Key=file_name,
+        Key=s3_key,
         ExtraArgs={"ContentType": content_type},
         Callback=callback,
     )

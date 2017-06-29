@@ -5,7 +5,8 @@ from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
-from ui.models import MoiraList, Video
+
+from ui.models import MoiraList, Video, VideoFile
 
 
 class SingleAttrRelatedField(RelatedField):
@@ -44,17 +45,20 @@ class SingleAttrRelatedField(RelatedField):
 
 class VideoSerializer(serializers.ModelSerializer):
     """Video Serializer"""
-    moira_lists = SingleAttrRelatedField(
-        model=MoiraList, attribute="name", many=True
-    )
+    moira_lists = SingleAttrRelatedField(model=MoiraList, attribute="name", many=True)
 
     class Meta:
         model = Video
-        fields = (
-            'id', 'created_at', 'title', 'description', 'moira_lists',
-            's3_object_key',
-        )
-        read_only_fields = ('id', 'created_at', 's3_object_key')
+        fields = ('id', 'created_at', 'title', 'description', 'moira_lists', 'videofile_set',)
+        read_only_fields = ('id', 'created_at', 'videofile_set')
+
+
+class VideoFileSerializer(serializers.ModelSerializer):
+    """Video File Serializer"""
+    class Meta:
+        model = VideoFile
+        fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name')
+        read_only_fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name')
 
 
 class DropboxFileSerializer(serializers.Serializer):
@@ -65,10 +69,3 @@ class DropboxFileSerializer(serializers.Serializer):
     icon = serializers.URLField()
     thumbnailLink = serializers.URLField()
     isDir = serializers.BooleanField()
-
-    def create(self, validated_data):
-        video, _ = Video.objects.get_or_create(
-            s3_object_key=validated_data["name"],
-            defaults={'source_url': validated_data["link"]},
-        )
-        return video
