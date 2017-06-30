@@ -34,6 +34,7 @@ def test_happy_path(mocker, reqmocker, mock_video_url, mock_video_headers, mock_
         Key="video.mp4",
         ExtraArgs={"ContentType": "video/mp4"},
         Callback=mocker.ANY,
+        Config=mocker.ANY
     )
     fileobj = mock_bucket.upload_fileobj.call_args[1]['Fileobj']
     # compare the first 50 bytes of each
