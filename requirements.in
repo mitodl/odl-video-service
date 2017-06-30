@@ -11,6 +11,7 @@ mit-moira==0.0.3
 newrelic
 psycopg2==2.7.1
 pytz
+pyyaml==3.12
 raven
 redis==2.10.5
 requests==2.18.1

@@ -7,6 +7,7 @@ from urllib.parse import unquote
 
 import requests
 import boto3
+from boto3.s3.transfer import TransferConfig
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
@@ -14,7 +15,7 @@ from dj_elastictranscoder.transcoder import Transcoder
 
 from ui.models import VideoFile
 
-logger = get_task_logger(__name__)
+log = get_task_logger(__name__)
 CONTENT_DISPOSITION_RE = re.compile(
     r"filename\*=UTF-8''(?P<filename>[^ ]+)"
 )
@@ -50,11 +51,14 @@ def stream_to_s3(self, url, s3_key):
         }
         self.update_state(task_id=task_id, state="PROGRESS", meta=data)
 
+    config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
+
     bucket.upload_fileobj(
         Fileobj=response.raw,
         Key=s3_key,
         ExtraArgs={"ContentType": content_type},
         Callback=callback,
+        Config=config
     )
 
 

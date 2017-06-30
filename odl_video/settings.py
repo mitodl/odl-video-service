@@ -9,10 +9,48 @@ https://docs.djangoproject.com/en/1.11/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
-
+import ast
 import os
 from urllib.parse import urljoin
+
 import dj_database_url
+import yaml
+
+
+VERSION = "0.0.0"
+
+CONFIG_PATHS = [
+    os.environ.get('ODL_VIDEO_CONFIG', ''),
+    os.path.join(os.getcwd(), 'odl_video.yml'),
+    os.path.join(os.path.expanduser('~'), 'odl_video.yml'),
+    '/etc/odl_video.yml',
+]
+
+
+def load_fallback():
+    """Load optional yaml config"""
+    fallback_config = {}
+    config_file_path = None
+    for config_path in CONFIG_PATHS:
+        if os.path.isfile(config_path):
+            config_file_path = config_path
+            break
+    if config_file_path is not None:
+        with open(config_file_path) as config_file:
+            fallback_config = yaml.safe_load(config_file)
+    return fallback_config
+
+FALLBACK_CONFIG = load_fallback()
+
+
+def get_var(name, default):
+    """Return the settings in a precedence way with default"""
+    try:
+        value = os.environ.get(name, FALLBACK_CONFIG.get(name, default))
+        return ast.literal_eval(value)
+    except (SyntaxError, ValueError):
+        return value
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +59,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
-SECRETS_DIR = os.environ.get('SECRETS_DIR', '/run/secrets/')
+SECRETS_DIR = get_var('SECRETS_DIR', '/run/secrets/')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY_FILE = os.path.join(SECRETS_DIR, "django-secret-key")
@@ -29,7 +67,7 @@ if os.path.isfile(SECRET_KEY_FILE):
     with open(SECRET_KEY_FILE, 'rb') as keyfile:
         SECRET_KEY = keyfile.read()
 else:
-    SECRET_KEY = os.environ.get(
+    SECRET_KEY = get_var(
         'DJANGO_SECRET_KEY',
         'ls8t)o32h@bqp1s8e0&6+mepk#t4@^68yx43kjm_#tvdv=m&ke',
     )
@@ -65,12 +103,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
-AWS_REGION = os.environ.get('AWS_REGION', '')
-AWS_S3_DOMAIN = os.environ.get('AWS_S3_DOMAIN', 's3.amazonaws.com')
+AWS_ACCESS_KEY_ID = get_var('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = get_var('AWS_SECRET_ACCESS_KEY', '')
+AWS_REGION = get_var('AWS_REGION', '')
+AWS_S3_DOMAIN = get_var('AWS_S3_DOMAIN', 's3.amazonaws.com')
 
-if os.environ.get('USE_SHIBBOLETH', '') == 'True':
+if get_var('USE_SHIBBOLETH', '') == 'True':
     # TOUCHSTONE
     MIDDLEWARE.append('shibboleth.middleware.ShibbolethRemoteUserMiddleware')
     SHIBBOLETH_ATTRIBUTE_MAP = {
@@ -119,7 +157,7 @@ DATABASES = {
 # Celery
 # http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
 
-CELERY_BROKER_URL = os.environ.get("REDIS_URL")
+CELERY_BROKER_URL = get_var("REDIS_URL", None)
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 
 
@@ -160,7 +198,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-CLOUDFRONT_DIST = os.environ.get('STATIC_CLOUDFRONT_DIST')
+CLOUDFRONT_DIST = get_var('STATIC_CLOUDFRONT_DIST', None)
 if CLOUDFRONT_DIST:
     STATIC_URL = urljoin('https://{dist}.cloudfront.net'.format(dist=CLOUDFRONT_DIST), STATIC_URL)
     AWS_S3_CUSTOM_DOMAIN = '{dist}.cloudfront.net'.format(dist=CLOUDFRONT_DIST)
@@ -174,11 +212,38 @@ STATICFILES_DIRS = (
 LOGIN_REDIRECT_URL = "/"
 
 # AWS ElasticTranscoder
-ET_PIPELINE_ID = os.environ.get('ET_PIPELINE_ID', '')
-ET_PRESET_IDS = os.environ.get('ET_PRESET_IDS',
-                               '1351620000001-200015,1351620000001-200035,1351620000001-200055').split(',')
+ET_PIPELINE_ID = get_var('ET_PIPELINE_ID', '')
+# not using get_var for the following because the values in the strings would be interpreted as single instrunctions
+ET_PRESET_IDS = os.environ.get(
+    'ET_PRESET_IDS',
+    '1351620000001-200015,1351620000001-200035,1351620000001-200055'
+).split(',')
 
-VIDEO_CLOUDFRONT_DIST = os.environ.get('VIDEO_CLOUDFRONT_DIST', '')
-VIDEO_S3_BUCKET = os.environ.get('VIDEO_S3_BUCKET', 'odl-video-service')
-VIDEO_S3_TRANSCODE_BUCKET = os.environ.get('VIDEO_S3_TRANSCODE_BUCKET', '{}_transcoded'.format(VIDEO_S3_BUCKET))
-VIDEO_S3_THUMBNAIL_BUCKET = os.environ.get('VIDEO_S3_THUMBNAIL_BUCKET', '{}_thumbnails'.format(VIDEO_S3_BUCKET))
+VIDEO_CLOUDFRONT_DIST = get_var('VIDEO_CLOUDFRONT_DIST', '')
+VIDEO_S3_BUCKET = get_var('VIDEO_S3_BUCKET', 'odl-video-service')
+VIDEO_S3_TRANSCODE_BUCKET = get_var('VIDEO_S3_TRANSCODE_BUCKET', '{}_transcoded'.format(VIDEO_S3_BUCKET))
+VIDEO_S3_THUMBNAIL_BUCKET = get_var('VIDEO_S3_THUMBNAIL_BUCKET', '{}_thumbnails'.format(VIDEO_S3_BUCKET))
+
+# AWS S3 upload settings
+# the defaults values come from the default configuration in boto3.s3.transfer.TransferConfig
+# apart from the first 2
+KB = 1024
+MB = KB * KB
+
+AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB = get_var('AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB', 32)
+AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB = get_var('AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB', 32)
+AWS_S3_UPLOAD_MAX_CONCURRENCY = get_var('AWS_S3_UPLOAD_MAX_CONCURRENCY', 10)
+AWS_S3_UPLOAD_NUM_DOWNLOAD_ATTEMPTS = get_var('AWS_S3_UPLOAD_NUM_DOWNLOAD_ATTEMPTS', 5)
+AWS_S3_UPLOAD_MAX_IO_QUEUE = get_var('AWS_S3_UPLOAD_MAX_IO_QUEUE', 100)
+AWS_S3_UPLOAD_IO_CHUNKSIZE_KB = get_var('AWS_S3_UPLOAD_IO_CHUNKSIZE_KB', 256)
+AWS_S3_UPLOAD_USE_THREADS = get_var('AWS_S3_UPLOAD_USE_THREADS', True)
+
+AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
+    multipart_threshold=AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB * MB,
+    multipart_chunksize=AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB * MB,
+    max_concurrency=AWS_S3_UPLOAD_MAX_CONCURRENCY,
+    num_download_attempts=AWS_S3_UPLOAD_NUM_DOWNLOAD_ATTEMPTS,
+    max_io_queue=AWS_S3_UPLOAD_MAX_IO_QUEUE,
+    io_chunksize=AWS_S3_UPLOAD_IO_CHUNKSIZE_KB * KB,
+    use_threads=AWS_S3_UPLOAD_USE_THREADS
+)
