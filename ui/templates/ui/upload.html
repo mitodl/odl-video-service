@@ -14,7 +14,7 @@ to TechTV.</p>
 <script>
   let CSRF = "{{ csrf_token }}";
   let updateStatus = function(taskId) {
-    fetch('/tasks/' + taskId).then(function(response) {
+    fetch('/api/v0/tasks/' + taskId).then(function(response) {
       let progress = document.getElementById(taskId);
       if (!response.ok) {
         console.error("Error updating status for "+taskId);
@@ -59,7 +59,7 @@ to TechTV.</p>
         let progressItem = document.createElement("li");
         let progressText = document.createTextNode(videoFile);
         let form = document.createElement("form")
-        form.action = "/api/videos/" + videoId + "/";
+        form.action = "/api/v0/videos/" + videoId + "/";
         form.method = "PUT";
         let titleLabel = document.createElement("label");
         titleLabel.appendChild(document.createTextNode("Title:"));
@@ -124,7 +124,7 @@ to TechTV.</p>
       let headers = new Headers();
       headers.append("X-CSRFToken", CSRF);
       headers.append("Content-Type", "application/json");
-      fetch('/stream/', {
+      fetch("{% url 'upload-videos' %}", {
         method: "POST",
         headers: headers,
         credentials: 'same-origin',
