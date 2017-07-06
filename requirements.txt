@@ -29,7 +29,7 @@ django-redis==4.7.0
 django-server-status==0.3.2
 django-webpack-loader==0.4.1
 django==1.10.5
-djangorestframework==3.6.2
+djangorestframework==3.6.3
 docutils==0.13.1          # via botocore
 elasticsearch==5.4.0
 enum34==1.1.6

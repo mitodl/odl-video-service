@@ -3,7 +3,7 @@
 {% block pagetitle %}TechTV: Video Detail{% endblock %}
 {% block content %}
 
-<form class="edit-video" action="{% url 'api:video-detail' object.id %}" method="PUT">
+<form class="edit-video" action="{% url 'video-api:video-detail' object.id %}" method="PUT">
   <table>
     <tr>
       <th>Uploaded by:</th>
@@ -53,7 +53,7 @@
     {% endfor %}
 </ul>
 <h4>
-<form class="delete-video" action="{% url 'api:video-detail' object.id %}" method="DELETE">
+<form class="delete-video" action="{% url 'video-api:video-detail' object.id %}" method="DELETE">
   <input type="submit" value="Delete video"
     {% if not request.user.is_staff %}disabled{% endif %} />
 </form>
@@ -65,7 +65,7 @@
     let button = event.target;
     let videoId = button.parentNode.parentNode.parentNode.dataset.videoId;
     let encoding = button.parentNode.dataset.linkId;
-    fetch(`/api/videos/${videoId}/signed_url/${encoding}`, {
+    fetch(`/api/v0/videos/${videoId}/signed_url/${encoding}`, {
       credentials: 'same-origin',
     }).then(function(response) {
       if (!response.ok) {

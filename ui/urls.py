@@ -13,7 +13,7 @@ urlpatterns = [
     url(r'^upload/$', views.Upload.as_view(), name='upload'),
     url(r'^videos/$', views.VideoList.as_view(), name='video-list'),
     url(r'^videos/(?P<pk>\d+)/$', views.VideoDetail.as_view(), name='video-detail'),
-    url(r'^stream/$', views.stream),
-    url(r'^api/', include(router.urls, namespace='api')),
     url(r'^transcode/', include('dj_elastictranscoder.urls')),
+    url(r'^api/v0/upload_videos/$', views.UploadVideosFromDropbox.as_view(), name='upload-videos'),
+    url(r'^api/v0/', include(router.urls, namespace='video-api')),
 ]
