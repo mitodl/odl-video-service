@@ -60,6 +60,8 @@ variable, using the ``.env`` file.
 The Buckets should each have a CORS configuration that will allow for cross-origin requests,
 for example:
 
+You also must have a proper Elastic Transcoder pipeline configured to use the specified 3 bucket names.
+
 ...code-block: xml
 
     <?xml version="1.0" encoding="UTF-8"?>
