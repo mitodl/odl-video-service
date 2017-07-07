@@ -2,8 +2,9 @@
 Tests for tasks
 """
 import pytest
-
-from cloudsync.tasks import stream_to_s3
+from cloudsync.conftest import MockClientET, MockBoto
+from cloudsync.tasks import stream_to_s3, transcode_from_s3, Transcoder
+from ui.conftest import user, video, videofile  # pylint: disable=unused-import
 
 
 def test_empty_url():
@@ -40,3 +41,20 @@ def test_happy_path(mocker, reqmocker, mock_video_url, mock_video_headers, mock_
     mock_video_file.seek(0)
     expected = fileobj.read(50)
     assert actual == expected
+
+
+def test_transcode(mocker, user, video, videofile):  # pylint: disable=unused-argument,redefined-outer-name
+    """
+    Test transcode task, verify there is an EncodeJob associated with the video to encode
+    """
+    mocker.patch.multiple('cloudsync.tasks.settings',
+                          ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+    mocker.patch('cloudsync.tasks.Transcoder.encode')
+    mocker.patch.object(Transcoder, 'message', {'Job': {'Id': 'foo'}}, create=True)
+    MockClientET.preset = {'Preset': {'Thumbnails': {'MaxHeight': 190, 'MaxWidth': 100}, 'Container': 'mp4'}}
+    mocker.patch('ui.util.boto3', MockBoto)
+
+    # Transcode the video
+    transcode_from_s3(video.id)  # pylint: disable=no-value-for-parameter
+    assert len(video.encode_jobs.all()) == 1

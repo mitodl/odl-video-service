@@ -24,6 +24,12 @@
         <span>Type in as many lists as you want, separated by spaces.</span>
       </td>
     </tr>
+    <tr>
+        <th>Encoding Status:</th>
+        <td>
+            {{ object.status }}
+        </td>
+    </tr>
   </table>
   <input type="submit" value="Update"
     {% if not request.user.is_staff %}disabled{% endif %} />
@@ -39,15 +45,17 @@
         <li data-link-id="{{ link.encoding }}"><button>Generate CloudFront signed link</button></li>
     </ul>
   {%  endfor %}
+    <li>Thumbnails</li>
+    {% for thumb in video.videothumbnail_set.all %}
+        <ul>
+            <li><img src="{{ thumb.cloudfront_signed_url }}" height="{{ thumb.max_height }}"></li>
+        </ul>
+    {% endfor %}
 </ul>
 <h4>
 <form class="delete-video" action="{% url 'api:video-detail' object.id %}" method="DELETE">
   <input type="submit" value="Delete video"
     {% if not request.user.is_staff %}disabled{% endif %} />
-  <label>
-    <input type="checkbox" name="s3" />
-    Also delete from S3
-  </label>
 </form>
 
 <script>
@@ -107,9 +115,6 @@
     headers.append("X-CSRFToken", CSRF);
     headers.append("Content-Type", "application/json");
     let url = form.action;
-    if (form.querySelector("[name=s3]").checked) {
-      url += "?s3=1";
-    }
     fetch(url, {
       method: "DELETE",
       headers: headers,

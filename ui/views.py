@@ -1,5 +1,7 @@
 """Views for ui app"""
 import json
+
+from celery import chain
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
@@ -14,12 +16,15 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 
-from cloudsync.tasks import stream_to_s3
+from cloudsync.tasks import stream_to_s3, transcode_from_s3
+from ui.api import refresh_status
 from ui.util import get_dropbox_credentials
 from ui.models import Video, VideoFile
 from ui.forms import VideoForm, UserCreationForm
 from ui.serializers import VideoSerializer, DropboxFileSerializer
-from ui.permissions import admin_required, IsAdminOrReadOnly, IsAdminOrHasMoiraPermissions
+from ui.permissions import (
+    admin_required, IsAdminOrHasMoiraPermissions
+)
 
 
 class Index(TemplateView):
@@ -59,7 +64,9 @@ class VideoDetail(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['form'] = VideoForm(instance=context["object"])
+        video = context["object"]
+        refresh_status(video)
+        context['form'] = VideoForm(instance=video)
         return context
 
 
@@ -89,8 +96,8 @@ def stream(request):
             # Delete the video object if videofile object can't be created, no point in keeping it around
             video.delete()
             raise e
-
-        task_result = stream_to_s3.delay(video.source_url, video.s3_key())
+        # Kick off chained async celery tasks to transfer file to S3, then start a transcode job
+        task_result = chain(stream_to_s3.s(dropbox_file["link"], video.s3_key()), transcode_from_s3.si(video.id))()
         response[video.id] = {
             "key": video.s3_key(),
             "task": task_result.id,
@@ -99,23 +106,24 @@ def stream(request):
     return JsonResponse(response)
 
 
+@method_decorator(login_required, name='dispatch')
 class VideoViewSet(viewsets.ModelViewSet):
     """VideoViewSet"""
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = [IsAdminOrHasMoiraPermissions]
 
-    def destroy(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def destroy(self, request, *args, **kwargs):  # pylint:disable=unused-argument
+        """Destroy the video via REST API"""
         video = self.get_object()
-        if request.GET.get("s3"):
-            for file in video.videofile_set.all():
-                file.s3_object.delete()
         self.perform_destroy(video)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @detail_route(permission_classes=(IsAdminOrHasMoiraPermissions,), url_path=r'signed_url/(?P<encoding>\w+)')
-    def signed_url(self, request, pk, encoding):  # pylint: disable=unused-argument
-        """signed_url"""
+    def signed_url(self, request, pk=None, encoding=None):  # pylint:disable=unused-argument
+        """
+        REST API route for getting a signed URL
+        """
         video = self.get_object()
         self.check_object_permissions(self.request, video)
         video_file = video.videofile_set.get(encoding=encoding)

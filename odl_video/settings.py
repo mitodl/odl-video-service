@@ -21,8 +21,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
+SECRETS_DIR = os.environ.get('SECRETS_DIR', '/run/secrets/')
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY_FILE = "/run/secrets/django-secret-key"
+SECRET_KEY_FILE = os.path.join(SECRETS_DIR, "django-secret-key")
 if os.path.isfile(SECRET_KEY_FILE):
     with open(SECRET_KEY_FILE, 'rb') as keyfile:
         SECRET_KEY = keyfile.read()
@@ -50,6 +52,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'ui.apps.UIConfig',
     'cloudsync.apps.CloudSyncConfig',
+    'dj_elastictranscoder',
 ]
 
 MIDDLEWARE = [
@@ -61,6 +64,27 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+AWS_REGION = os.environ.get('AWS_REGION', '')
+AWS_S3_DOMAIN = os.environ.get('AWS_S3_DOMAIN', 's3.amazonaws.com')
+
+if os.environ.get('USE_SHIBBOLETH', '') == 'True':
+    # TOUCHSTONE
+    MIDDLEWARE.append('shibboleth.middleware.ShibbolethRemoteUserMiddleware')
+    SHIBBOLETH_ATTRIBUTE_MAP = {
+        "EPPN": (True, "username"),
+        "MAIL": (True, "email"),
+        # full name is in the "DISPLAY_NAME" header,
+        # but no way to parse that into first_name and last_name...
+    }
+    AUTHENTICATION_BACKENDS = [
+        'shibboleth.backends.ShibbolethRemoteUserBackend',
+    ]
+    LOGIN_URL = "/Shibboleth.sso/Login"
+else:
+    LOGIN_URL = "/login/"
 
 ROOT_URLCONF = 'odl_video.urls'
 
@@ -147,9 +171,14 @@ STATICFILES_DIRS = (
 )
 
 # OTHER
-LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 
-VIDEO_S3_BUCKET = os.environ.get('VIDEO_S3_BUCKET', 'odl-video-service')
+# AWS ElasticTranscoder
+ET_PIPELINE_ID = os.environ.get('ET_PIPELINE_ID', '')
+ET_PRESET_IDS = os.environ.get('ET_PRESET_IDS',
+                               '1351620000001-200015,1351620000001-200035,1351620000001-200055').split(',')
+
 VIDEO_CLOUDFRONT_DIST = os.environ.get('VIDEO_CLOUDFRONT_DIST', '')
-AWS_S3_DOMAIN = os.environ.get('AWS_S3_DOMAIN', 's3.amazonaws.com')
+VIDEO_S3_BUCKET = os.environ.get('VIDEO_S3_BUCKET', 'odl-video-service')
+VIDEO_S3_TRANSCODE_BUCKET = os.environ.get('VIDEO_S3_TRANSCODE_BUCKET', '{}_transcoded'.format(VIDEO_S3_BUCKET))
+VIDEO_S3_THUMBNAIL_BUCKET = os.environ.get('VIDEO_S3_THUMBNAIL_BUCKET', '{}_thumbnails'.format(VIDEO_S3_BUCKET))

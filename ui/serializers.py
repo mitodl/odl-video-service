@@ -6,7 +6,7 @@ from rest_framework import serializers
 from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
 
-from ui.models import MoiraList, Video, VideoFile
+from ui.models import MoiraList, Video, VideoFile, VideoThumbnail
 
 
 class SingleAttrRelatedField(RelatedField):
@@ -59,6 +59,14 @@ class VideoFileSerializer(serializers.ModelSerializer):
         model = VideoFile
         fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name')
         read_only_fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name')
+
+
+class VideoThumbnailSerializer(serializers.ModelSerializer):
+    """VideoThumbnail serializer"""
+    class Meta:
+        model = VideoThumbnail
+        fields = ('id', 'created_at', 's3_object_key', 'bucket_name')
+        read_only_fields = ('id', 'created_at', 's3_object_key', 'bucket_name')
 
 
 class DropboxFileSerializer(serializers.Serializer):

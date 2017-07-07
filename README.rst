@@ -45,20 +45,47 @@ CloudFront. Store the private key file in ``secrets/cloudfront-key.pem``.
 Set the key ID as the ``CLOUDFRONT_KEY_ID`` environment variable, using the
 ``.env`` file.
 
-You'll also need to set an S3 bucket for storing video files, and a CloudFront
+You'll also need to set three S3 bucket for storing video files, and a CloudFront
 distribution that is hooked up to that S3 bucket. The files in the S3 bucket
 should *not* be publicly accessible, and the CloudFront distribution should
 be set up to serve private content. `(See the CloudFront documentation for
 more information.)
 <http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html>`_
-Set the S3 bucket name as the ``VIDEO_S3_BUCKET`` environment variable, and
+Set the S3 upload bucket name as the ``VIDEO_S3_BUCKET`` environment variable, the
+transcode bucket name as the ``VIDEO_S3_TRANSCODE_BUCKET``` environment variable, the
+thumbnail bucket name as the ``VIDEO_S3_THUMBNAIL_BUCKET``` environment variable, and
 set the CloudFront distribution ID as the ``VIDEO_CLOUDFRONT_DIST`` environment
 variable, using the ``.env`` file.
+
+The Buckets should each have a CORS configuration that will allow for cross-origin requests,
+for example:
+
+...code-block: xml
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+    <CORSRule>
+        <AllowedOrigin>video.odl.mit.edu</AllowedOrigin>
+        <AllowedMethod>GET</AllowedMethod>
+        <AllowedMethod>PUT</AllowedMethod>
+        <AllowedMethod>POST</AllowedMethod>
+        <AllowedMethod>DELETE</AllowedMethod>
+        <AllowedMethod>HEAD</AllowedMethod>
+        <MaxAgeSeconds>3000</MaxAgeSeconds>
+        <AllowedHeader>*</AllowedHeader>
+    </CORSRule>
+    </CORSConfiguration>
+
+The Cloudfront distribution's behaviors should also forward and whitelist the 'Origin' headers.
 
 You can also optionally create a public CloudFront distribution for
 serving static files for the web application. If you want to do this, set the
 CloudFront distribution ID as the ``STATIC_CLOUDFRONT_DIST`` environment
 variable, using the ``.env`` file.
+
+This app expects the transcoding to use HLS, and the ```PRESET_IDS``` environment variable
+should be a comma-delimited list of Video HLS presets for AWS ElasticTranscode.  The defaults
+are standard presets (2M, 1M, 600K).
 
 Dropbox
 ~~~~~~~
@@ -96,6 +123,7 @@ To run the application, install Docker and `Docker Compose`_, then run:
 .. code-block:: bash
 
     docker-compose up
+
 
 Tests
 -----
