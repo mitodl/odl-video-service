@@ -14,4 +14,5 @@ urlpatterns = [
     url(r'^videos/(?P<pk>\d+)/$', views.VideoDetail.as_view(), name='video-detail'),
     url(r'^stream/$', views.stream),
     url(r'^api/', include(router.urls, namespace='api')),
+    url(r'^transcode/', include('dj_elastictranscoder.urls')),
 ]

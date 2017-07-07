@@ -4,7 +4,11 @@ import configparser
 from datetime import datetime, timedelta
 from functools import lru_cache
 from urllib.parse import quote
+
 from pytz import UTC
+import boto3
+from django.conf import settings
+
 from django.utils.dateparse import parse_datetime, parse_duration
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -17,7 +21,7 @@ from mit_moira import Moira
 @lru_cache(1)  # memoize this function
 def get_dropbox_credentials():
     """get dropbox credentials"""
-    file_path = "/run/secrets/dropbox-credentials"
+    file_path = os.path.join(settings.SECRETS_DIR, "dropbox-credentials")
     if not os.path.isfile(file_path):
         msg = "Missing required secret: {path}".format(path=file_path)
         raise RuntimeError(msg)
@@ -31,9 +35,9 @@ def get_dropbox_credentials():
 @lru_cache(1)  # memoize this function
 def get_moira_client():
     """get moira client"""
-    cert_file_path = "/run/secrets/mit-ws-cert"
+    cert_file_path = os.path.join(settings.SECRETS_DIR, "mit-ws-cert")
     cert_file_exists = os.path.isfile(cert_file_path)
-    key_file_path = "/run/secrets/mit-ws-key"
+    key_file_path = os.path.join(settings.SECRETS_DIR, "mit-ws-key")
     key_file_exists = os.path.isfile(key_file_path)
     if not cert_file_exists and not key_file_exists:
         msg = "Missing required secrets: {cert} {key}".format(
@@ -56,8 +60,16 @@ def get_moira_client():
 # http://boto3.readthedocs.io/en/stable/reference/services/cloudfront.html#generate-a-signed-url-for-amazon-cloudfront
 
 def rsa_signer(message):
-    """rsa signer"""
-    private_key_file_path = "/run/secrets/cloudfront-key"
+    """
+    Create an RSA signature for use in a signed URL
+
+    Args:
+        message(bytes): The message to be signed
+
+    Returns:
+        RSA signer
+    """
+    private_key_file_path = os.path.join(settings.SECRETS_DIR, "cloudfront-key")
     if not os.path.isfile(private_key_file_path):
         msg = "Missing required secret: {path}".format(path=private_key_file_path)
         raise RuntimeError(msg)
@@ -107,3 +119,42 @@ def get_expiration(query_params, default_duration=timedelta(hours=2)):
             return datetime.utcnow() + parsed
 
     return datetime.utcnow() + default_duration
+
+
+def get_et_job(job_id):
+    """
+    Get the status of an ElasticTranscode job
+
+    Args:
+        job_id(str): ID of ElasticTranscode Job
+
+    Returns:
+        JSON representation of job status/details
+    """
+    et = get_transcoder_client()
+    job = et.read_job(Id=job_id)
+    return job['Job']
+
+
+def get_et_preset(preset_id):
+    """
+    Get the JSON configuration of an ElasticTranscode preset
+    Args:
+        preset_id(str):
+
+    Returns:
+        Preset configuration
+    """
+    et = get_transcoder_client()
+    return et.read_preset(Id=preset_id)['Preset']
+
+
+def get_bucket(bucket_name):
+    """Get an S3 bucket by name"""
+    s3 = boto3.resource("s3")
+    return s3.Bucket(bucket_name)
+
+
+def get_transcoder_client():
+    """Get an ElasticTranscoder client object"""
+    return boto3.client('elastictranscoder', settings.AWS_REGION)

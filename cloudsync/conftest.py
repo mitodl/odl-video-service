@@ -3,6 +3,7 @@ conftest for pytest in this module
 """
 import io
 import os
+
 import pytest
 import requests_mock
 import botocore.session
@@ -67,3 +68,33 @@ def stub_aws_upload():
     stubber.activate()
     yield stubber
     stubber.deactivate()
+
+
+class MockClientET:
+    """
+    Mock boto3 ElasticTranscoder client, because ElasticTranscode isn't supported by moto yet
+    """
+    job = None
+    preset = None
+
+    def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
+        """Mock __init__"""
+        pass
+
+    def read_job(self, **kwargs):  # pylint: disable=unused-argument
+        """Mock read_job method"""
+        return self.job
+
+    def read_preset(self, *args, **kwargs):  # pylint: disable=unused-argument
+        """Mock read_preset method"""
+        return self.preset
+
+
+class MockBoto:
+    """
+    Mock boto3 class for returning mock elastictranscoder client
+    """
+    def client(*args, **kwargs):  # pylint: disable=unused-argument,no-method-argument
+        """Return a mock client"""
+        if args[0] == 'elastictranscoder':
+            return MockClientET()

@@ -15,3 +15,10 @@ raven
 redis==2.10.5
 requests==2.18.1
 uwsgi
+
+
+# Touchstone
+-e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
+
+# Django-Elastic-Transcoder
+-e git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder

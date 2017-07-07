@@ -2,8 +2,9 @@
 Tests for the UI models
 """
 import uuid
+
+import boto3
 import pytest
-from boto3.resources.base import ServiceResource
 from django.db import IntegrityError
 
 from odl_video import settings
@@ -39,9 +40,10 @@ def test_video_model_s3keys(user):
     Test that the Video.s3_subkey and s3_key properties return expected values
     """
     new_video = Video(source_url="http://fake.com/fake.mp4", creator=user)
-    assert new_video.s3_key() is not None
     assert isinstance(new_video.s3_subkey, uuid.UUID)
-    assert new_video.s3_key() == '{}/{}/fake.mp4'.format(user.id, new_video.s3_subkey)
+    s3key = new_video.s3_key()
+    assert s3key is not None
+    assert s3key == '{}/{}/fake.mp4'.format(user.id, new_video.s3_subkey)
 
 
 def test_video_aws_integration(videofile):
@@ -49,7 +51,7 @@ def test_video_aws_integration(videofile):
     Tests video aws integration
     """
     s3_obj = videofile.s3_object
-    assert isinstance(s3_obj, ServiceResource)
+    assert isinstance(s3_obj, boto3.resources.base.ServiceResource)
     assert s3_obj.key == videofile.s3_object_key
     s3_url = videofile.s3_url
     assert isinstance(s3_url, str)
@@ -74,3 +76,12 @@ def test_signed_url_spaces(video, mocker):
     )
     signed_url = videofile.cloudfront_signed_url
     assert 'video%20with%20spaces.mp4' in signed_url
+
+
+def test_video_transcode_key(user, video, videofile):  # pylint: disable=unused-argument,redefined-outer-name
+    """
+    Test that the Video.transcode_key method returns expected results
+    """
+    preset = 'pre01'
+    assert video.transcode_key(preset) == 'transcoded/{}/{}/BigBuckBunny_pre01'.format(
+        user.id, str(video.s3_subkey))

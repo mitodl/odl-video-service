@@ -10,11 +10,16 @@ import boto3
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.conf import settings
+from dj_elastictranscoder.transcoder import Transcoder
+
+from ui.models import VideoFile
 
 logger = get_task_logger(__name__)
 CONTENT_DISPOSITION_RE = re.compile(
     r"filename\*=UTF-8''(?P<filename>[^ ]+)"
 )
+
+THUMBNAIL_PATTERN = "thumbnails/{}_thumbnail_{{count}}"
 
 
 @shared_task(bind=True)
@@ -51,6 +56,49 @@ def stream_to_s3(self, url, s3_key):
         ExtraArgs={"ContentType": content_type},
         Callback=callback,
     )
+
+
+@shared_task(bind=True)
+def transcode_from_s3(self, video_id):  # pylint: disable=unused-argument
+    """
+    Given an S3 object key, transcode that object using a video pipeline, overwrite the original when done.
+
+    Args:
+        video_id(int): The video primary key
+    """
+    if not settings.ET_PRESET_IDS:
+        raise ValueError("At least one transcode preset required in settings")
+
+    video_file = VideoFile.objects.get(video__id=video_id, encoding='original')
+    video = video_file.video
+
+    video_input = {
+        'Key': video_file.s3_object_key,
+    }
+
+    # Generate an output video file for each encoding (assumed to be HLS)
+    outputs = [{
+        'Key': video.transcode_key(preset),
+        'PresetId': preset,
+        'SegmentDuration': '10.0'
+    } for preset in settings.ET_PRESET_IDS]
+
+    playlists = [{
+        'Format': 'HLSv4',
+        'Name': video.transcode_key('_index'),
+        'OutputKeys': [output['Key'] for output in outputs]
+    }]
+
+    # Generate thumbnails for the 1st encoding (no point in doing so for each).
+    outputs[0]['ThumbnailPattern'] = THUMBNAIL_PATTERN.format(video_file.s3_basename)
+    transcoder = Transcoder(
+        settings.ET_PIPELINE_ID,
+        settings.AWS_REGION,
+        settings.AWS_ACCESS_KEY_ID,
+        settings.AWS_SECRET_ACCESS_KEY
+    )
+    transcoder.encode(video_input, outputs, Playlists=playlists)
+    transcoder.create_job_for_object(video)
 
 
 def parse_content_metadata(response):

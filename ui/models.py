@@ -5,14 +5,19 @@ import os
 import datetime
 from uuid import uuid4
 
-import boto3
 import pytz
+import boto3
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.conf import settings
+from dj_elastictranscoder.models import EncodeJob
 
 from ui.encodings import EncodingNames
 from ui.util import cloudfront_signed_url as make_cloudfront_signed_url
 from ui.util import get_moira_client
+from ui.tasks import delete_s3_objects
+
+TRANSCODE_PREFIX = 'transcoded'
 
 
 class MoiraList(models.Model):
@@ -49,6 +54,7 @@ class Video(models.Model):
     moira_lists = models.ManyToManyField(MoiraList)
     status = models.TextField(max_length=24, blank=True)
     s3_subkey = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
+    encode_jobs = GenericRelation(EncodeJob)
 
     def s3_key(self):
         """
@@ -66,6 +72,23 @@ class Video(models.Model):
             user=self.creator.id, uuid=str(self.s3_subkey), base=basename, ext=extension)
         return newkey
 
+    def transcode_key(self, preset=None):
+        """
+        Get the S3 key for a video playlist file
+
+        Args:
+            encoding(str): The encoding preset to use (should be one included in settings.ET_PRESET_IDS)
+
+        Returns:
+            str: The S3 key to used for the encoded file.
+        """
+        original_s3_key = self.videofile_set.get(encoding='original').s3_object_key
+        if not preset:
+            return original_s3_key
+        output_template = '{prefix}/{s3key}_{preset}'
+        basename, _ = os.path.splitext(original_s3_key)
+        return output_template.format(prefix=TRANSCODE_PREFIX, s3key=basename, preset=preset)
+
     def __str__(self):
         return self.title or "<untitled video>"
 
@@ -73,15 +96,15 @@ class Video(models.Model):
         return '<Video: {self.title!r} {self.s3_subkey!r}>'.format(self=self)
 
 
-class VideoFile(models.Model):
+class VideoS3(models.Model):
     """
-    A file associated with a Video object, either the original upload or a transcoded file.
+    Abstract class with methods/properties common to both VideoFile and VideoThumbnail models
     """
+
     created_at = models.DateTimeField(auto_now_add=True)
     s3_object_key = models.TextField(unique=True, blank=False, null=False)
     bucket_name = models.CharField(max_length=63, blank=False, null=False)
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
-    encoding = models.CharField(max_length=128, default=EncodingNames.ORIGINAL)
     preset_id = models.CharField(max_length=128, blank=True, null=True)
 
     @property
@@ -108,6 +131,16 @@ class VideoFile(models.Model):
             bucket=self.bucket_name,
             key=self.s3_object_key,
         )
+
+    @property
+    def s3_basename(self):
+        """
+        The S3 object key without any file extensions
+
+        Returns:
+            str: S3 base key name
+        """
+        return os.path.splitext(self.s3_object_key)[0]
 
     @property
     def cloudfront_url(self):
@@ -137,8 +170,49 @@ class VideoFile(models.Model):
             expires=expires,
         )
 
+    def delete_from_s3(self):
+        """
+        Delete the S3 object for this this thumbnail
+        """
+        delete_s3_objects.delay(self.bucket_name, self.s3_object_key)
+
+    class Meta:
+        abstract = True
+
+
+class VideoFile(VideoS3):
+    """
+    A file associated with a Video object, either the original upload or a transcoded file.
+    """
+    encoding = models.CharField(max_length=128, default=EncodingNames.ORIGINAL)
+
+    def delete_from_s3(self):
+        """
+        HLS encoding creates multiple S3 objects, use this method to delete them all.
+        """
+        if self.encoding == EncodingNames.HLS:
+            key = os.path.dirname(self.s3_object_key)
+            delete_s3_objects.delay(self.bucket_name, key, as_filter=True)
+        else:
+            super().delete_from_s3()
+
     def __str__(self):
         return '{}: {} encoding'.format(self.video.title, self.encoding)
 
     def __repr__(self):
         return '<VideoFile: {self.video.title!r} {self.s3_object_key!r} {self.encoding!r}>'.format(self=self)
+
+
+class VideoThumbnail(VideoS3):
+    """
+    A thumbnail associated with a video object; the number of thumbnails for a video
+    will depend on the length of the video.
+    """
+    max_width = models.IntegerField(null=True, blank=True)
+    max_height = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return '{}: {}'.format(self.video.title, self.s3_object_key)
+
+    def __repr__(self):
+        return '<VideoThumbnail: {self.s3_object_key!r} {self.max_width!r} {self.max_height!r}>'.format(self=self)

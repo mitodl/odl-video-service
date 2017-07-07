@@ -23,7 +23,7 @@ class IsAdminOrReadOnly(BasePermission):
 class IsAdminOrHasMoiraPermissions(IsAuthenticated):
     """IsAdminOrHasMoiraPermissions permission"""
     def has_object_permission(self, request, view, obj):
-        if request.user.is_staff:
+        if request.user == obj.creator or request.user.is_superuser:
             return True
         moira_user = request.user.email
         if moira_user.endswith("@mit.edu"):
