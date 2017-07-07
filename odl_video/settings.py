@@ -220,6 +220,8 @@ ET_PRESET_IDS = os.environ.get(
 ).split(',')
 
 VIDEO_CLOUDFRONT_DIST = get_var('VIDEO_CLOUDFRONT_DIST', '')
+# IMPORTANT: you MUST have a proper configuration for an elastic transcoder
+# pipeline using the following 3 buckets names
 VIDEO_S3_BUCKET = get_var('VIDEO_S3_BUCKET', 'odl-video-service')
 VIDEO_S3_TRANSCODE_BUCKET = get_var('VIDEO_S3_TRANSCODE_BUCKET', '{}_transcoded'.format(VIDEO_S3_BUCKET))
 VIDEO_S3_THUMBNAIL_BUCKET = get_var('VIDEO_S3_THUMBNAIL_BUCKET', '{}_thumbnails'.format(VIDEO_S3_BUCKET))
