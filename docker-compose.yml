@@ -16,7 +16,7 @@ services:
       - ./config/nginx.conf:/etc/nginx/conf.d/web.conf
       - ./:/src
     ports:
-      - "8079:8079"
+      - "8089:8089"
     links:
       - web
 
@@ -38,14 +38,14 @@ services:
       python3 manage.py migrate &&
       uwsgi uwsgi.ini'
     ports:
-      - "8077:8077"
+      - "8087:8087"
     links:
       - db
       - redis
     env_file: .env
     environment:
       DEV_ENV: 'True'
-      PORT: 8077
+      PORT: 8087
       DATABASE_URL: postgres://postgres@db:5432/postgres
       REDIS_URL: redis://redis:6379/0
       COVERAGE_DIR: htmlcov

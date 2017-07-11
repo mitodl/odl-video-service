@@ -18,7 +18,7 @@ services:
     environment:
       DEBUG: 'False'
       COVERAGE_DIR: htmlcov
-      PORT: 8079
+      PORT: 8089
       NODE_ENV: 'production'
       DATABASE_URL: postgres://postgres@db:5432/postgres
       BOOTCAMP_SECURE_SSL_REDIRECT: 'False'
@@ -35,9 +35,9 @@ services:
       /bin/bash -c '
       sleep 3 &&
       python3 manage.py migrate &&
-      ./with_host.sh python3 manage.py runserver 0.0.0.0:8079'
+      ./with_host.sh python3 manage.py runserver 0.0.0.0:8089'
     ports:
-      - "8079:8079"
+      - "8089:8089"
     links:
       - db
 
