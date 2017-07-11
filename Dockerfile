@@ -40,6 +40,6 @@ USER mitodl
 # Set pip cache folder, as it is breaking pip when it is on a shared volume
 ENV XDG_CACHE_HOME /tmp/.cache
 
-EXPOSE 8079
-ENV PORT 8079
+EXPOSE 8089
+ENV PORT 8089
 CMD uwsgi uwsgi.ini
