@@ -21,6 +21,8 @@ services:
       PORT: 8089
       NODE_ENV: 'production'
       DATABASE_URL: postgres://postgres@db:5432/postgres
+      ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
+      ODL_VIDEO_DB_DISABLE_SSL: 'True'
       BOOTCAMP_SECURE_SSL_REDIRECT: 'False'
       BOOTCAMP_DB_DISABLE_SSL: 'True'
       REDIS_URL: redis://redis:6379/0

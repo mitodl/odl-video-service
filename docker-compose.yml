@@ -45,7 +45,11 @@ services:
     env_file: .env
     environment:
       DEV_ENV: 'True'
+      ODL_VIDEO_SERVICE_USE_WEBPACK_DEV_SERVER: 'True'
+      WEBPACK_DEV_SERVER_HOST: ${WEBPACK_DEV_SERVER_HOST:-localhost}
       PORT: 8087
+      ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
+      ODL_VIDEO_DB_DISABLE_SSL: 'True'
       DATABASE_URL: postgres://postgres@db:5432/postgres
       REDIS_URL: redis://redis:6379/0
       COVERAGE_DIR: htmlcov
@@ -70,8 +74,27 @@ services:
       DATABASE_URL: postgres://postgres@db:5432/postgres
       REDIS_URL: redis://redis:6379/0
 
+  watch:
+    build:
+      context: .
+      dockerfile: Dockerfile-node
+    working_dir: /src
+    command: >
+      /bin/bash -c './webpack_dev_server.sh --install'
+    ports:
+      - "8082:8082"
+    volumes:
+      - .:/src
+      - yarn-cache:/home/mitodl/.cache/yarn
+    environment:
+      NODE_ENV: 'development'
+      DOCKER_HOST: ${DOCKER_HOST:-missing}
+      CONTAINER_NAME: 'watch'
+    env_file: .env
+
 volumes:
   django_media: {}
+  yarn-cache: {}
 
 secrets:
   django-secret-key:

@@ -129,12 +129,12 @@ To run the application, install Docker and `Docker Compose`_, then run:
 
 Tests
 -----
-To run the tests, install the development dependencies and then run ``pytest``,
+To run the tests, install the development dependencies and then run the test suite,
 like this:
 
 .. code-block:: bash
 
-    docker-compose run web tox
+    ./scripts/test/test_suite.sh
 
 .. _Office of Digital Learning: http://odl.mit.edu/
 .. _Touchstone: https://ist.mit.edu/touchstone
