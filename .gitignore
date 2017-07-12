@@ -15,8 +15,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+./lib/
+./lib64/
 parts/
 sdist/
 var/
@@ -44,6 +44,8 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+coverage/
+.nyc_output/
 
 # Translations
 *.mo
@@ -51,6 +53,7 @@ coverage.xml
 
 # Django stuff:
 *.log
+celerybeat-schedule.db
 local_settings.py
 *.sqlite3
 
@@ -67,13 +70,48 @@ docs/_build/
 # PyBuilder
 target/
 
-# IPython Notebook
+#Ipython/Jupyter Notebook
 .ipynb_checkpoints
+*.ipynb
 
 # pyenv
 .python-version
 
-# celery beat schedule file
+# Heroku/Foreman
+.env
+
+# webpack
+static/bundles
+node_modules
+
+# JS directories
+!static/js/lib
+
+# Editor stuff
+*.swp
+*.orig
+
+/nbproject
+.idea/
+.redcar/
+codekit-config.json
+.pycharm_helpers/
+
+.project
+.pydevproject
+
+*.DS_Store
+
+# Django static
+staticfiles/
+
+.venv
+release-notes-checklist
+
+# Webpack
+webpack-stats.json
+
+# Celery Beat
 celerybeat-schedule
 
 # dotenv

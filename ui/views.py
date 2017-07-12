@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import login as login_view
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
@@ -18,6 +19,8 @@ from rest_framework.response import Response
 
 from cloudsync.tasks import stream_to_s3, transcode_from_s3
 from ui.api import refresh_status
+from ui.encodings import EncodingNames
+from ui.templatetags.render_bundle import public_path
 from ui.util import get_dropbox_credentials
 from ui.models import Video, VideoFile
 from ui.forms import VideoForm, UserCreationForm
@@ -25,6 +28,14 @@ from ui.serializers import VideoSerializer, DropboxFileSerializer
 from ui.permissions import (
     admin_required, IsAdminOrHasMoiraPermissions
 )
+
+
+def default_js_settings(request):
+    """Default JS settings for views"""
+    return json.dumps({
+        "gaTrackingID": settings.GA_TRACKING_ID,
+        "public_path": public_path(request),
+    })
 
 
 class Index(TemplateView):
@@ -35,6 +46,7 @@ class Index(TemplateView):
         context = super().get_context_data(**kwargs)
         context["login_form"] = AuthenticationForm()
         context["register_form"] = UserCreationForm()
+        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
         return context
 
 
@@ -48,6 +60,7 @@ class Upload(TemplateView):
         context = super().get_context_data(**kwargs)
         key, _ = get_dropbox_credentials()
         context["dropbox_key"] = key
+        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
         return context
 
 
@@ -55,6 +68,11 @@ class Upload(TemplateView):
 class VideoList(ListView):
     """VideoList"""
     model = Video
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
+        return context
 
 
 @method_decorator(login_required, name='dispatch')
@@ -67,6 +85,8 @@ class VideoDetail(DetailView):
         video = context["object"]
         refresh_status(video)
         context['form'] = VideoForm(instance=video)
+        context['videofile'] = context['object'].videofile_set.filter(encoding=EncodingNames.HLS)
+        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
         return context
 
 
@@ -147,4 +167,13 @@ def register(request):
     context = {
         "form": form,
     }
+    context["js_settings_json"] = default_js_settings(request)
     return render(request, "registration/register.html", context)
+
+
+def ui_login(request, *args, **kwargs):
+    """login"""
+    extra_context = {
+        "js_settings_json": default_js_settings(request)
+    }
+    return login_view(request, *args, extra_context=extra_context, **kwargs)
