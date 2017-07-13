@@ -71,6 +71,9 @@ services:
       - redis
     env_file: .env
     environment:
+      DEV_ENV: 'True'
+      ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
+      ODL_VIDEO_DB_DISABLE_SSL: 'True'
       DATABASE_URL: postgres://postgres@db:5432/postgres
       REDIS_URL: redis://redis:6379/0
 
