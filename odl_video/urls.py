@@ -18,6 +18,7 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^status/', include('server_status.urls')),
     url(r'^', include('ui.urls')),
     url(r'^', include('django.contrib.auth.urls')),
     url(r'^', include('cloudsync.urls')),
