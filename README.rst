@@ -40,7 +40,7 @@ You'll need an AWS access key ID and secret access key. Store them in the file
     aws_access_key_id=foo
     aws_secret_access_key=bar
 
-You'll also need a CloudFront private key, for generated signed URLs for
+You'll also need a CloudFront private key for generating signed URLs for
 CloudFront. Store the private key file in ``secrets/cloudfront-key.pem``.
 Set the key ID as the ``CLOUDFRONT_KEY_ID`` environment variable, using the
 ``.env`` file.
@@ -52,8 +52,8 @@ be set up to serve private content. `(See the CloudFront documentation for
 more information.)
 <http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html>`_
 Set the S3 upload bucket name as the ``VIDEO_S3_BUCKET`` environment variable, the
-transcode bucket name as the ``VIDEO_S3_TRANSCODE_BUCKET``` environment variable, the
-thumbnail bucket name as the ``VIDEO_S3_THUMBNAIL_BUCKET``` environment variable, and
+transcode bucket name as the ``VIDEO_S3_TRANSCODE_BUCKET`` environment variable, the
+thumbnail bucket name as the ``VIDEO_S3_THUMBNAIL_BUCKET`` environment variable, and
 set the CloudFront distribution ID as the ``VIDEO_CLOUDFRONT_DIST`` environment
 variable, using the ``.env`` file.
 
@@ -62,7 +62,7 @@ for example:
 
 You also must have a proper Elastic Transcoder pipeline configured to use the specified 3 bucket names.
 
-...code-block: xml
+.. code-block:: xml
 
     <?xml version="1.0" encoding="UTF-8"?>
     <CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -85,7 +85,7 @@ serving static files for the web application. If you want to do this, set the
 CloudFront distribution ID as the ``STATIC_CLOUDFRONT_DIST`` environment
 variable, using the ``.env`` file.
 
-This app expects the transcoding to use HLS, and the ```PRESET_IDS``` environment variable
+This app expects the transcoding to use HLS, and the ``PRESET_IDS`` environment variable
 should be a comma-delimited list of Video HLS presets for AWS ElasticTranscode.  The defaults
 are standard presets (2M, 1M, 600K).
 
