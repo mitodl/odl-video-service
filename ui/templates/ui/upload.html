@@ -51,7 +51,7 @@ to TechTV.</p>
       let videoId;
       for (videoId in videos) {
         let video = videos[videoId];
-        let videoFile = video.key.split("/")[2];
+        let videoFile = video.title;
         let progress = document.createElement("progress");
         progress.id = video.task;
         progress.max = 100;

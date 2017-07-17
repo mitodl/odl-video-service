@@ -43,7 +43,7 @@ def test_video_model_s3keys(user):
     assert isinstance(new_video.s3_subkey, uuid.UUID)
     s3key = new_video.s3_key()
     assert s3key is not None
-    assert s3key == '{}/{}/fake.mp4'.format(user.id, new_video.s3_subkey)
+    assert s3key == '{user}/{uuid}/video.mp4'.format(user=user.id, uuid=new_video.s3_subkey)
 
 
 def test_video_aws_integration(videofile):
@@ -83,5 +83,5 @@ def test_video_transcode_key(user, video, videofile):  # pylint: disable=unused-
     Test that the Video.transcode_key method returns expected results
     """
     preset = 'pre01'
-    assert video.transcode_key(preset) == 'transcoded/{}/{}/BigBuckBunny_pre01'.format(
-        user.id, str(video.s3_subkey))
+    assert video.transcode_key(preset) == 'transcoded/{user}/{uuid}/video_{preset}'.format(
+        user=user.id, uuid=str(video.s3_subkey), preset=preset)
