@@ -67,9 +67,9 @@ class Video(models.Model):
         Returns:
             str: A unique S3 key including the user id as a virtual subfolder
         """
-        basename, extension = os.path.splitext(self.source_url.split('/')[-1])
-        newkey = '{user}/{uuid}/{base}{ext}'.format(
-            user=self.creator.id, uuid=str(self.s3_subkey), base=basename, ext=extension)
+        _, extension = os.path.splitext(self.source_url.split('/')[-1])
+        newkey = '{user}/{uuid}/video{ext}'.format(
+            user=self.creator.id, uuid=str(self.s3_subkey), ext=extension)
         return newkey
 
     def transcode_key(self, preset=None):

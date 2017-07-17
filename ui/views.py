@@ -136,6 +136,7 @@ class UploadVideosFromDropbox(APIView):
 
             response_data[video.id] = {
                 "key": video.s3_key(),
+                "title": video.title,
                 "task": task_result.id,
             }
 
