@@ -42,6 +42,7 @@ def load_fallback():
             fallback_config = yaml.safe_load(config_file)
     return fallback_config
 
+
 FALLBACK_CONFIG = load_fallback()
 
 
@@ -230,6 +231,7 @@ def get_all_config_keys():
     """Returns all the configuration keys from both environment and configuration files"""
     return list(set(os.environ.keys()).union(set(FALLBACK_CONFIG.keys())))
 
+
 ODL_VIDEO_FEATURES_PREFIX = get_var('ODL_VIDEO_FEATURES_PREFIX', 'FEATURE_')
 FEATURES = {
     key[len(ODL_VIDEO_FEATURES_PREFIX):]: get_var(key, None) for key
@@ -237,8 +239,10 @@ FEATURES = {
 }
 
 MIDDLEWARE_FEATURE_FLAG_QS_PREFIX = get_var("MIDDLEWARE_FEATURE_FLAG_QS_PREFIX", None)
-MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME = get_var('MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME', 'ODL_VIDEO_FEATURE_FLAGS')
-MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS = get_var('MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS', 60 * 60)
+MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME = get_var(
+    'MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME', 'ODL_VIDEO_FEATURE_FLAGS')
+MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS = get_var(
+    'MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS', 60 * 60)
 
 if MIDDLEWARE_FEATURE_FLAG_QS_PREFIX:
     MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
@@ -462,8 +466,8 @@ ET_PRESET_IDS = os.environ.get(
 
 VIDEO_CLOUDFRONT_DIST = get_var('VIDEO_CLOUDFRONT_DIST', '')
 VIDEO_S3_BUCKET = get_var('VIDEO_S3_BUCKET', 'odl-video-service')
-VIDEO_S3_TRANSCODE_BUCKET = get_var('VIDEO_S3_TRANSCODE_BUCKET', '{}_transcoded'.format(VIDEO_S3_BUCKET))
-VIDEO_S3_THUMBNAIL_BUCKET = get_var('VIDEO_S3_THUMBNAIL_BUCKET', '{}_thumbnails'.format(VIDEO_S3_BUCKET))
+VIDEO_S3_TRANSCODE_BUCKET = get_var('VIDEO_S3_TRANSCODE_BUCKET', '{}-transcoded'.format(VIDEO_S3_BUCKET))
+VIDEO_S3_THUMBNAIL_BUCKET = get_var('VIDEO_S3_THUMBNAIL_BUCKET', '{}-thumbnails'.format(VIDEO_S3_BUCKET))
 
 # server-status
 STATUS_TOKEN = get_var("STATUS_TOKEN", "")
