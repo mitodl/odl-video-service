@@ -6,7 +6,7 @@ import pytest
 from dj_elastictranscoder.models import EncodeJob
 from django.contrib.contenttypes.models import ContentType
 
-from odl_video import settings
+from django.conf import settings
 from ui.encodings import EncodingNames
 from ui.models import Video, VideoFile
 
@@ -41,6 +41,23 @@ def video(user):  # pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
+def video_unencoded(user):  # pylint: disable=redefined-outer-name
+    """
+    Fixture to create a video
+    """
+    obj = Video(
+        creator=user,
+        source_url="https://dl.dropboxusercontent.com/1/view/abc123/StarWars.m4v",
+        title="Star Wars",
+        description="A long time ago in a galaxy far far away",
+        s3_subkey='a5c876ed-e1f9-4e62-9a2f-4a68b27c7979',
+        status='Complete'
+    )
+    obj.save()
+    return obj
+
+
+@pytest.fixture
 @pytest.mark.django_db
 def videofile(video):  # pylint: disable=redefined-outer-name
     """
@@ -50,6 +67,38 @@ def videofile(video):  # pylint: disable=redefined-outer-name
         video=video,
         s3_object_key=video.s3_key(),
         encoding=EncodingNames.ORIGINAL,
+        bucket_name=settings.VIDEO_S3_BUCKET
+    )
+    obj.save()
+    return obj
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def videofile_unencoded(video_unencoded):  # pylint: disable=redefined-outer-name
+    """
+    Fixture to create a video file
+    """
+    obj = VideoFile(
+        video=video_unencoded,
+        s3_object_key=video_unencoded.s3_key(),
+        encoding=EncodingNames.ORIGINAL,
+        bucket_name=settings.VIDEO_S3_BUCKET
+    )
+    obj.save()
+    return obj
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def videofileHLS(video):  # pylint: disable=redefined-outer-name
+    """
+    Fixture to create a video file
+    """
+    obj = VideoFile(
+        video=video,
+        s3_object_key=video.s3_key(),
+        encoding=EncodingNames.HLS,
         bucket_name=settings.VIDEO_S3_BUCKET
     )
     obj.save()

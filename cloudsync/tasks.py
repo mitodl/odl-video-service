@@ -88,7 +88,7 @@ def transcode_from_s3(self, video_id):  # pylint: disable=unused-argument
     } for preset in settings.ET_PRESET_IDS]
 
     playlists = [{
-        'Format': 'HLSv4',
+        'Format': 'HLSv3',
         'Name': video.transcode_key('_index'),
         'OutputKeys': [output['Key'] for output in outputs]
     }]

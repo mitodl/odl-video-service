@@ -3,6 +3,11 @@
 {% block pagetitle %}TechTV: Video Detail{% endblock %}
 {% block content %}
 
+{% if videofile %}
+    <div id="odl-video-player" class="video-odl-medium"></div>
+{% else %}
+    <div>Your video is still processing. Please try again later.</div>
+{% endif %}
 <form class="edit-video" action="{% url 'video-api:video-detail' object.id %}" method="PUT">
   <table>
     <tr>
@@ -42,13 +47,13 @@
     <ul>
         <li><a href="{{ link.s3_url }}">S3 link</a></li>
         <li><a href="{{ link.cloudfront_url }}">CloudFront direct link</a></li>
-        <li data-link-id="{{ link.encoding }}"><button>Generate CloudFront signed link</button></li>
+        <li><a href="{{ link.cloudfront_signed_url }}">CloudFront signed link</a></li>
     </ul>
   {%  endfor %}
     <li>Thumbnails</li>
     {% for thumb in video.videothumbnail_set.all %}
         <ul>
-            <li><img src="{{ thumb.cloudfront_signed_url }}" height="{{ thumb.max_height }}"></li>
+            <li><img src="{{ thumb.cloudfront_url }}" height="{{ thumb.max_height }}"></li>
         </ul>
     {% endfor %}
 </ul>
@@ -60,31 +65,6 @@
 
 <script>
   let CSRF = "{{ csrf_token }}";
-
-  let handleButtonClick = function(event) {
-    let button = event.target;
-    let videoId = button.parentNode.parentNode.parentNode.dataset.videoId;
-    let encoding = button.parentNode.dataset.linkId;
-    fetch(`/api/v0/videos/${videoId}/signed_url/${encoding}`, {
-      credentials: 'same-origin',
-    }).then(function(response) {
-      if (!response.ok) {
-        let text = "error";
-        if (response.status === 403) {
-          text = "forbidden";
-        }
-        button.parentNode.appendChild(document.createTextNode(text));
-        return;
-      }
-      response.json().then(function(obj) {
-        let signedUrl = obj.url;
-        let link = document.createElement("a");
-        link.href = signedUrl;
-        link.appendChild(document.createTextNode("CloudFront signed link"));
-        button.replaceWith(link);
-      });
-    })
-  }
 
   let handleEdit = function(event) {
     event.preventDefault();
@@ -126,14 +106,10 @@
     });
   }
   document.addEventListener("DOMContentLoaded", function() {
-    [].forEach.call(
-        document.querySelectorAll("button"),
-          function (el) {
-            el.addEventListener("click", handleButtonClick)
-          }
-    );
     document.querySelector("form.edit-video").addEventListener("submit", handleEdit);
     document.querySelector("form.delete-video").addEventListener("submit", handleDelete);
   });
 </script>
+{% load render_bundle %}
+{% render_bundle 'video' %}
 {% endblock %}

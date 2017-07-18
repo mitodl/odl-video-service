@@ -7,7 +7,7 @@ import boto3
 import pytest
 from django.db import IntegrityError
 
-from odl_video import settings
+from django.conf import settings
 from ui.models import Video, VideoFile
 
 pytestmark = pytest.mark.django_db
