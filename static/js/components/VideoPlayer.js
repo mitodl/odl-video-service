@@ -16,8 +16,12 @@ export default class VideoPlayer extends React.Component {
     Basic component based on https://github.com/videojs/video.js/blob/master/docs/guides/react.md
     TODO: Add more configuration options, including optional rendering of <TextTrack> elements for subtitles.
    */
+
+  player: null;
+  videoNode: null;
+
   componentDidMount() {
-    // instantiate video.js
+    // $FlowFixMe
     this.player = videojs(this.videoNode, this.props, function onPlayerReady() { // eslint-disable-line no-undef
       this.enableTouchActivity();
       this.qualityPickerPlugin();
