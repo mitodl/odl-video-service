@@ -197,7 +197,7 @@ DATABASES = {
 
 # Celery
 # http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
-
+USE_CELERY = True
 CELERY_BROKER_URL = get_var("REDIS_URL", None)
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 
