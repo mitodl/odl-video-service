@@ -458,10 +458,10 @@ AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
 
 # AWS ElasticTranscoder
 ET_PIPELINE_ID = get_var('ET_PIPELINE_ID', '')
-# not using get_var for the following because the values in the strings would be interpreted as single instrunctions
+# not using get_var for the following because the values in the strings would be interpreted as single instructions
 ET_PRESET_IDS = os.environ.get(
     'ET_PRESET_IDS',
-    '1351620000001-200015,1351620000001-200035,1351620000001-200055'
+    '1351620000001-200010,1351620000001-200020,1351620000001-200050'
 ).split(',')
 
 VIDEO_CLOUDFRONT_DIST = get_var('VIDEO_CLOUDFRONT_DIST', '')

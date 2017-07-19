@@ -1,2 +1,27 @@
 // Layout goes here
 
+.video-odl-medium{
+  height: 500px;
+  width: 100%;
+}
+
+.video-js {
+    position: relative !important;
+    width: inherit !important;
+    height: inherit !important;
+}
+
+.vjs-tech {
+    position: relative !important;
+    width: inherit !important;
+    height: inherit !important;
+}
+
+.vjs-poster {
+    position: absolute !important;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+

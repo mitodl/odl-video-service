@@ -91,8 +91,14 @@ class VideoDetail(DetailView):
         video = context["object"]
         refresh_status(video)
         context['form'] = VideoForm(instance=video)
-        context['videofile'] = context['object'].videofile_set.filter(encoding=EncodingNames.HLS)
-        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
+        try:
+            videofile = video.videofile_set.get(encoding=EncodingNames.HLS)
+        except VideoFile.DoesNotExist:
+            videofile = None
+        context['videofile'] = videofile
+        default_settings = json.loads(default_js_settings(self.request))
+        default_settings['videofile'] = videofile.cloudfront_signed_url if videofile else ''
+        context["js_settings_json"] = json.dumps(default_settings)
         return context
 
 
