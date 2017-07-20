@@ -1,0 +1,119 @@
+{
+  "addons": [
+    "heroku-postgresql:hobby-dev",
+    "newrelic:wayne",
+    "rediscloud:30"
+  ],
+  "buildpacks": [
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-nodejs"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-python"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-pgbouncer"
+    },
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-nginx"
+    }
+  ],
+  "description": "MIT ODL Video Service",
+  "env": {
+    "ALLOWED_HOSTS": {
+      "default": "['*']",
+      "description": "Array of allowed hostnames"
+    },
+    "MAILGUN_KEY": {
+      "description": "The token for authenticating against the Mailgun API",
+      "required": false
+    },
+    "ODL_VIDEO_ADMIN_EMAIL": {
+      "description": "E-mail to send 500 reports to.",
+      "required": false
+    },
+    "ODL_VIDEO_DB_CONN_MAX_AGE": {
+      "required": true,
+      "value": "0"
+    },
+    "ODL_VIDEO_DB_DISABLE_SSL": {
+      "required": true,
+      "value": "true"
+    },
+    "ODL_VIDEO_EMAIL_HOST": {
+      "description": "Outgoing e-mail settings",
+      "required": false
+    },
+    "ODL_VIDEO_EMAIL_PASSWORD": {
+      "description": "Outgoing e-mail settings",
+      "required": false
+    },
+    "ODL_VIDEO_EMAIL_PORT": {
+      "description": "Outgoing e-mail settings",
+      "required": false,
+      "value": "587"
+    },
+    "ODL_VIDEO_EMAIL_TLS": {
+      "description": "Outgoing e-mail settings",
+      "required": false,
+      "value": "True"
+    },
+    "ODL_VIDEO_EMAIL_USER": {
+      "description": "Outgoing e-mail settings",
+      "required": false
+    },
+    "ODL_VIDEO_ENVIRONMENT": {
+      "description": "The execution environment that the app is in (e.g. dev, staging, prod)"
+    },
+    "ODL_VIDEO_FROM_EMAIL": {
+      "value": "MIT ODL Video Service <micromasters-support@mit.edu>"
+    },
+    "ODL_VIDEO_SECURE_SSL_REDIRECT": {
+      "description": "Application-level SSL redirect setting.",
+      "required": false,
+      "value": "True"
+    },
+    "ODL_VIDEO_SUPPORT_EMAIL": {
+      "description": "ODL Video Service support email",
+      "required": true
+    },
+    "NEW_RELIC_APP_NAME": {
+      "default": "ODL Video Service",
+      "description": "Application identifier in New Relic."
+    },
+    "NODE_MODULES_CACHE": {
+      "description": "If false, disables the node_modules cache to fix yarn install",
+      "value": "false"
+    },
+    "PGBOUNCER_DEFAULT_POOL_SIZE": {
+      "value": "50"
+    },
+    "PGBOUNCER_MIN_POOL_SIZE": {
+      "value": "5"
+    },
+    "SECRET_KEY": {
+      "description": "Django secret key.",
+      "generator": "secret"
+    },
+    "SENTRY_DSN": {
+      "description": "The connection settings for Sentry"
+    },
+    "STATUS_TOKEN": {
+      "description": "Token to access the status API.",
+      "required": true
+    }
+  },
+  "keywords": [
+    "Django",
+    "Python",
+    "MIT",
+    "Office of Digital Learning"
+  ],
+  "name": "odl-video-service",
+  "repository": "https://github.com/mitodl/odl-video-service",
+  "scripts": {
+    "postdeploy": "./manage.py migrate"
+  },
+  "success_url": "/",
+  "website": "https://github.com/mitodl/odl-video-service"
+}
