@@ -342,6 +342,7 @@ else:
 # Logging configuration
 LOG_LEVEL = get_var('ODL_VIDEO_LOG_LEVEL', 'INFO')
 DJANGO_LOG_LEVEL = get_var('DJANGO_LOG_LEVEL', 'INFO')
+SENTRY_LOG_LEVEL = get_var('SENTRY_LOG_LEVEL', 'ERROR')
 
 # For logging to a remote syslog host
 LOG_HOST = get_var('ODL_VIDEO_LOG_HOST', 'localhost')
@@ -394,7 +395,7 @@ LOGGING = {
             'class': 'django.utils.log.AdminEmailHandler'
         },
         'sentry': {
-            'level': 'ERROR',
+            'level': SENTRY_LOG_LEVEL,
             'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
             'formatter': 'verbose'
         },
@@ -416,7 +417,7 @@ LOGGING = {
             'level': 'INFO',
         },
         'raven': {
-            'level': 'DEBUG',
+            'level': SENTRY_LOG_LEVEL,
             'handlers': []
         },
         'nplusone': {
@@ -424,6 +425,15 @@ LOGGING = {
             'level': 'ERROR',
         }
     },
+}
+
+# Sentry
+ENVIRONMENT = get_var('ODL_VIDEO_ENVIRONMENT', 'dev')
+SENTRY_CLIENT = 'raven.contrib.django.raven_compat.DjangoClient'
+RAVEN_CONFIG = {
+    'dsn': get_var('SENTRY_DSN', ''),
+    'environment': ENVIRONMENT,
+    'release': VERSION
 }
 
 # AWS S3 upload settings
