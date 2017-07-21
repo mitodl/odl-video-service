@@ -1,6 +1,6 @@
 /* global SETTINGS: false */
 require('react-hot-loader/patch');
-require('videojs5-hlsjs-source-handler');
+require('videojs-contrib-hls');
 import 'expose-loader?videojs!video.js'; // Needs to be available as a global
 
 import React from 'react';
