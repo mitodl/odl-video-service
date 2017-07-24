@@ -38,6 +38,9 @@ module.exports = {
         "node_modules"
       ],
       extensions: ['.js', '.jsx'],
+      alias: {
+        'videojs-contrib-hls': path.resolve(__dirname, 'node_modules/videojs-contrib-hls/dist/videojs-contrib-hls.js'),
+      }
     },
     performance: {
       hints: false

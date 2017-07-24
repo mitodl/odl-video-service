@@ -75,7 +75,7 @@
     "style-loader": "^0.18.1",
     "url-loader": "^0.5.8",
     "video.js": "5.20.1",
-    "videojs5-hlsjs-source-handler": "git+https://github.com/streamroot/videojs5-hlsjs-source-handler.git#1a66611",
+    "videojs-contrib-hls": "^5.8.2",
     "webpack": "^2.6.1",
     "webpack-bundle-tracker": "^0.2.0",
     "webpack-dev-middleware": "^1.9.0",

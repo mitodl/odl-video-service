@@ -20,7 +20,6 @@ export default class VideoPlayer extends React.Component {
     // instantiate video.js
     this.player = videojs(this.videoNode, this.props, function onPlayerReady() { // eslint-disable-line no-undef
       this.enableTouchActivity();
-      this.qualityPickerPlugin();
     });
   }
 
