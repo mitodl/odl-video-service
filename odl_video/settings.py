@@ -104,6 +104,9 @@ WEBPACK_DEV_SERVER_PORT = get_var('WEBPACK_DEV_SERVER_PORT', '8082')
 # Application definition
 
 INSTALLED_APPS = [
+    'ui.apps.UIConfig',
+    'cloudsync.apps.CloudSyncConfig',
+    'dj_elastictranscoder',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -113,9 +116,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'server_status',
     'raven.contrib.django.raven_compat',
-    'ui.apps.UIConfig',
-    'cloudsync.apps.CloudSyncConfig',
-    'dj_elastictranscoder',
 ]
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
