@@ -1,5 +1,4 @@
 Django==1.10.5
-PyYAML==3.11
 boto3==1.4.4
 celery==4.0.2
 cryptography==1.8.1
