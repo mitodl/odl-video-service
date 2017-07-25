@@ -14,34 +14,38 @@ Installation
 ------------
 
 You will need to obtain several different pieces of information
-in order to get this project up and running. Secrets will be stored in the
-``secrets`` directory, which is not versioned with Git. Non-secret settings
+in order to get this project up and running. Secret and non-secret settings
 will be stored in environment variables. In order to make it easier to get
 started, you can copy ``.env.example`` to ``.env``.
 
 Django
 ~~~~~~
-Create a secret key for Django, and store it in the file
-``secrets/django-secret-key``. You can run this code to do so:
+Create a secret key for Django, and store it in the ``.env`` file as SECRET_KEY.
+You can run this code to create a key:
 
 .. code-block:: bash
 
-    head -c 50 /dev/urandom > secrets/django-secret-key
+    head -c 50 /dev/urandom | base64
 
 AWS
 ~~~
 
 You'll need an AWS access key ID and secret access key. Store them in the file
-``secrets/aws-credentials.ini``, like this:
+``.env``, like this:
 
 .. code-block:: ini
 
-    [default]
-    aws_access_key_id=foo
-    aws_secret_access_key=bar
+    AWS_ACCESS_KEY_ID=foo
+    AWS_SECRET_ACCESS_KEY=bar
 
 You'll also need a CloudFront private key for generating signed URLs for
-CloudFront. Store the private key file in ``secrets/cloudfront-key.pem``.
+CloudFront. Store the private key file in ``.env`` in one single string
+(careful with the newlines), like this:
+
+.. code-block:: ini
+
+    CLOUDFRONT_PRIVATE_KEY==----BEGIN RSA PRIVATE KEY-----\nMIICXAIBAAKBgQCQMjkVo9gogtb8DI2bZyFGvnnN81Q4d0crS4S9UDrxHJU/yrKg\n...
+
 Set the key ID as the ``CLOUDFRONT_KEY_ID`` environment variable, using the
 ``.env`` file.
 
@@ -93,14 +97,12 @@ Dropbox
 ~~~~~~~
 
 `Create an app on Dropbox <https://www.dropbox.com/developers/apps/create>`_,
-and store the app key and app secret in the file
-``secrets/dropbox-credentials.ini``, like this:
+and store the app key in the file
+``.env``, like this:
 
 .. code-block:: ini
 
-    [default]
-    dropbox_app_key=foo
-    dropbox_app_secret=bar
+    DROPBOX_KEY=foo
 
 MIT Web Services
 ~~~~~~~~~~~~~~~~
@@ -108,9 +110,13 @@ MIT Web Services
 You'll need an X.509 certificate and private key to access MIT web services,
 including the Moira_ web API. Follow `MIT's instructions for how to get an
 X.509 certificate <https://wikis.mit.edu/confluence/display/devtools/How+to+acquire+and+verify+a+x509+Application+Certificate>`_.
-Store the certificate in the file
-``secrets/mit-ws-cert.crt``, and the private key in the file
-``secrets/mit-ws-key.pem``.
+Store the certificate and the private key in the file ``.env``
+in one line strings (careful with the newlines), like this:
+
+.. code-block:: ini
+
+    MIT_WS_CERTIFICATE=foo\nblah\n...
+    MIT_WS_PRIVATE_KEY=bar\nblah\n...
 
 Touchstone
 ~~~~~~~~~~

@@ -66,7 +66,7 @@ def test_signed_url_spaces(video, mocker):
     Test that filename spaces are represented as '%20's in cloudfront link
     """
     mocker.patch(
-        'ui.util.rsa_signer',
+        'ui.utils.rsa_signer',
         return_value=FAKE_RSA
     )
     videofile = VideoFile(

@@ -7,7 +7,7 @@ from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 
 from ui.encodings import EncodingNames
-from ui.util import get_et_preset, get_bucket, get_et_job
+from ui.utils import get_et_preset, get_bucket, get_et_job
 from ui.models import VideoFile, VideoThumbnail
 
 

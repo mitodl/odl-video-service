@@ -27,7 +27,6 @@ from cloudsync.tasks import stream_to_s3, transcode_from_s3
 from ui.api import refresh_status
 from ui.encodings import EncodingNames
 from ui.templatetags.render_bundle import public_path
-from ui.util import get_dropbox_credentials
 from ui.models import Video, VideoFile
 from ui.forms import VideoForm, UserCreationForm
 from ui.serializers import VideoSerializer, DropboxFileSerializer
@@ -64,8 +63,7 @@ class Upload(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        key, _ = get_dropbox_credentials()
-        context["dropbox_key"] = key
+        context["dropbox_key"] = settings.DROPBOX_KEY
         context["js_settings_json"] = json.dumps(default_js_settings(self.request))
         return context
 

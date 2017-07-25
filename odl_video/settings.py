@@ -12,6 +12,7 @@ from odl_video.envs import (
     get_any,
     get_bool,
     get_int,
+    get_key,
     get_string,
 )
 
@@ -24,18 +25,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
-SECRETS_DIR = get_string('SECRETS_DIR', '/run/secrets/')
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY_FILE = os.path.join(SECRETS_DIR, "django-secret-key")
-if os.path.isfile(SECRET_KEY_FILE):
-    with open(SECRET_KEY_FILE, 'rb') as keyfile:
-        SECRET_KEY = keyfile.read()
-else:
-    SECRET_KEY = get_string(
-        'DJANGO_SECRET_KEY',
-        'ls8t)o32h@bqp1s8e0&6+mepk#t4@^68yx43kjm_#tvdv=m&ke',
-    )
+SECRET_KEY = get_string(
+    'DJANGO_SECRET_KEY',
+    'ls8t)o32h@bqp1s8e0&6+mepk#t4@^68yx43kjm_#tvdv=m&ke',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = get_bool('DEBUG', False)
@@ -260,10 +253,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-CLOUDFRONT_DIST = get_string('STATIC_CLOUDFRONT_DIST', None)
-if CLOUDFRONT_DIST:
-    STATIC_URL = urljoin('https://{dist}.cloudfront.net'.format(dist=CLOUDFRONT_DIST), STATIC_URL)
-    AWS_S3_CUSTOM_DOMAIN = '{dist}.cloudfront.net'.format(dist=CLOUDFRONT_DIST)
 
 STATIC_ROOT = 'staticfiles'
 STATICFILES_DIRS = (
@@ -398,6 +387,13 @@ RAVEN_CONFIG = {
     'release': VERSION
 }
 
+# MIT keys
+MIT_WS_CERTIFICATE = get_key('MIT_WS_CERTIFICATE', '')
+MIT_WS_PRIVATE_KEY = get_key('MIT_WS_PRIVATE_KEY', '')
+
+# Dropbox key
+DROPBOX_KEY = get_string('DROPBOX_KEY', '')
+
 # AWS S3 upload settings
 # the defaults values come from the default configuration in boto3.s3.transfer.TransferConfig
 # apart from the first 2
@@ -405,6 +401,15 @@ KB = 1024
 MB = KB * KB
 
 # AWS
+CLOUDFRONT_PRIVATE_KEY = get_key('CLOUDFRONT_PRIVATE_KEY', '')
+CLOUDFRONT_KEY_ID = get_string('CLOUDFRONT_KEY_ID', '')
+VIDEO_CLOUDFRONT_DIST = get_string('VIDEO_CLOUDFRONT_DIST', '')
+
+CLOUDFRONT_DIST = get_string('STATIC_CLOUDFRONT_DIST', None)
+if CLOUDFRONT_DIST:
+    STATIC_URL = urljoin('https://{dist}.cloudfront.net'.format(dist=CLOUDFRONT_DIST), STATIC_URL)
+    AWS_S3_CUSTOM_DOMAIN = '{dist}.cloudfront.net'.format(dist=CLOUDFRONT_DIST)
+
 AWS_ACCESS_KEY_ID = get_string('AWS_ACCESS_KEY_ID', '')
 AWS_SECRET_ACCESS_KEY = get_string('AWS_SECRET_ACCESS_KEY', '')
 AWS_REGION = get_string('AWS_REGION', '')

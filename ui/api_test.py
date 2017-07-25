@@ -20,7 +20,7 @@ def test_video_job_status(mocker, video, encodejob):  # pylint: disable=unused-a
     Verify that Video.job_status property returns the status of its encoding job
     """
     MockClientET.job = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}}
-    mocker.patch('ui.util.boto3', MockBoto)
+    mocker.patch('ui.utils.boto3', MockBoto)
     refresh_status(video)
     assert video.status == 'Error'
 
@@ -89,7 +89,7 @@ def test_process_transcode_results(mocker, video, videofile):  # pylint: disable
            'Status': 'Complete'}
 
     MockClientET.preset = {'Preset': {'Thumbnails': {'MaxHeight': 190, 'MaxWidth': 100}}}
-    mocker.patch('ui.util.get_transcoder_client', return_value=MockClientET())
+    mocker.patch('ui.utils.get_transcoder_client', return_value=MockClientET())
     process_transcode_results(video, job)
     assert len(video.videofile_set.all()) == 2
     assert len(video.videothumbnail_set.all()) == 1
