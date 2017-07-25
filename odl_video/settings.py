@@ -12,7 +12,6 @@ from odl_video.envs import (
     get_any,
     get_bool,
     get_int,
-    get_list_of_str,
     get_string,
 )
 
