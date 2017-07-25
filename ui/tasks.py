@@ -3,7 +3,7 @@ ui celery tasks
 """
 from celery import shared_task
 
-from ui.util import get_bucket
+from ui.utils import get_bucket
 
 
 @shared_task(bind=True)

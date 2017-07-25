@@ -8,6 +8,7 @@ from odl_video.envs import (
     get_any,
     get_bool,
     get_int,
+    get_key,
     get_list_of_str,
     get_string,
 )
@@ -25,6 +26,12 @@ FAKE_ENVIRONS = {
     'string': 'a b c d e f g',
     'list_of_int': '[3,4,5]',
     'list_of_str': '["x", "y", \'z\']',
+    'key': ('-----BEGIN PUBLIC KEY-----\\n'
+            'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCQMjkVo9gogtb8DI2bZyFGvnnN\\n'
+            '81Q4d0crS4S9UDrxHJU/yrKg1UJAYwhecZdOOQnmWilZg9m25Q4hxx8kETivje11\\n'
+            '9Pg6aoiaVt59+ThgIIsOgwuDAdZdCBzuR+FfG9tVGrR+ek7AWm3Rp/kJt/6h4jN7\\n'
+            '/q0txR0v1rqmowS1mQIDAQAB\\n'
+            '-----END PUBLIC KEY-----\\n')
 }
 
 
@@ -44,6 +51,12 @@ def test_get_any():
         'string': 'a b c d e f g',
         'list_of_int': '[3,4,5]',
         'list_of_str': '["x", "y", \'z\']',
+        'key': ('-----BEGIN PUBLIC KEY-----\\n'
+                'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCQMjkVo9gogtb8DI2bZyFGvnnN\\n'
+                '81Q4d0crS4S9UDrxHJU/yrKg1UJAYwhecZdOOQnmWilZg9m25Q4hxx8kETivje11\\n'
+                '9Pg6aoiaVt59+ThgIIsOgwuDAdZdCBzuR+FfG9tVGrR+ek7AWm3Rp/kJt/6h4jN7\\n'
+                '/q0txR0v1rqmowS1mQIDAQAB\\n'
+                '-----END PUBLIC KEY-----\\n')
     }
     with patch('odl_video.envs.os', environ=FAKE_ENVIRONS):
         for key, value in expected.items():
@@ -120,3 +133,18 @@ def test_get_list_of_str():
                 )
 
         assert get_list_of_str('missing', 'default') == 'default'
+
+
+def test_get_key():
+    """get_key should parse the string, escape and return a bytestring"""
+    with patch('odl_video.envs.os', environ=FAKE_ENVIRONS):
+        assert get_key('foo_key', None) is None
+        assert get_key('foo_key', '') == b''
+        assert get_key('key', None) == (
+            b'-----BEGIN PUBLIC KEY-----\n'
+            b'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCQMjkVo9gogtb8DI2bZyFGvnnN\n'
+            b'81Q4d0crS4S9UDrxHJU/yrKg1UJAYwhecZdOOQnmWilZg9m25Q4hxx8kETivje11\n'
+            b'9Pg6aoiaVt59+ThgIIsOgwuDAdZdCBzuR+FfG9tVGrR+ek7AWm3Rp/kJt/6h4jN7\n'
+            b'/q0txR0v1rqmowS1mQIDAQAB\n'
+            b'-----END PUBLIC KEY-----\n'
+        )

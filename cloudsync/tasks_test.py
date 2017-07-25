@@ -54,7 +54,7 @@ def test_transcode(mocker, user, video, videofile):  # pylint: disable=unused-ar
     mocker.patch('cloudsync.tasks.Transcoder.encode')
     mocker.patch.object(Transcoder, 'message', {'Job': {'Id': 'foo'}}, create=True)
     MockClientET.preset = {'Preset': {'Thumbnails': {'MaxHeight': 190, 'MaxWidth': 100}, 'Container': 'mp4'}}
-    mocker.patch('ui.util.boto3', MockBoto)
+    mocker.patch('ui.utils.boto3', MockBoto)
 
     # Transcode the video
     transcode_from_s3(video.id)  # pylint: disable=no-value-for-parameter

@@ -4,6 +4,7 @@ Tests for views
 import json
 
 from django.conf import settings
+from django.test.utils import override_settings
 from rest_framework.reverse import reverse
 
 
@@ -31,12 +32,9 @@ def test_upload(client, user):
     assert response['Location'] == '/login/?next=/upload/'
 
 
-def test_upload_admin(admin_client, mocker):
-    """Test upload admin"""
-    mocker.patch(
-        'ui.views.get_dropbox_credentials',
-        return_value=('dbkey', 'dbsecret')
-    )
+@override_settings(DROPBOX_KEY='dbkey')
+def test_dropbox_keys_in_context(admin_client):
+    """Test dropbox keys in context"""
     response = admin_client.get('/upload/')
     assert response.status_code == 200
     assert response.context_data['dropbox_key'] == 'dbkey'
@@ -45,7 +43,7 @@ def test_upload_admin(admin_client, mocker):
 
 def test_video_detail_hls(admin_client, video, videofileHLS, mocker):  # pylint: disable=unused-argument
     """Test video detail page when HLS videofile is available"""
-    mocker.patch('ui.models.make_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
+    mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
     video.status = 'Complete'
     url = reverse('video-detail', kwargs={'pk': video.id})
     response = admin_client.get(url)
@@ -58,10 +56,10 @@ def test_video_detail_hls(admin_client, video, videofileHLS, mocker):  # pylint:
     }
 
 
-def test_video_detail_unencoded(admin_client, video_unencoded,
-                                videofile_unencoded, mocker):  # pylint: disable=unused-argument
+def test_video_detail_unencoded(
+        admin_client, video_unencoded, videofile_unencoded, mocker):  # pylint: disable=unused-argument
     """Test video detail page when HLS videofile is not available"""
-    mocker.patch('ui.models.make_cloudfront_signed_url', return_value=videofile_unencoded.cloudfront_url)
+    mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofile_unencoded.cloudfront_url)
     url = reverse('video-detail', kwargs={'pk': video_unencoded.id})
     video_unencoded.status = 'Complete'
     response = admin_client.get(url)

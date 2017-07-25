@@ -12,9 +12,8 @@ from django.db import models
 from django.conf import settings
 from dj_elastictranscoder.models import EncodeJob
 
+from ui import utils
 from ui.encodings import EncodingNames
-from ui.util import cloudfront_signed_url as make_cloudfront_signed_url
-from ui.util import get_moira_client
 from ui.tasks import delete_s3_objects
 
 TRANSCODE_PREFIX = 'transcoded'
@@ -28,7 +27,7 @@ class MoiraList(models.Model):
 
     def members(self):
         """Members"""
-        moira = get_moira_client()
+        moira = utils.get_moira_client()
         return moira.list_members(self.name)
 
     def __str__(self):
@@ -165,8 +164,8 @@ class VideoS3(models.Model):
         when this property is called.
         """
         expires = datetime.datetime.now(tz=pytz.UTC) + datetime.timedelta(hours=2)
-        return make_cloudfront_signed_url(
-            key=self.s3_object_key,
+        return utils.get_cloudfront_signed_url(
+            s3_key=self.s3_object_key,
             expires=expires,
         )
 
