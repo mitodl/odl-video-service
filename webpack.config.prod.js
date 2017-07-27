@@ -27,6 +27,11 @@ module.exports = Object.assign(prodConfig, {
         'NODE_ENV': '"production"'
       }
     }),
+    // This is necessary to make videojs & uglify work together:
+    // https://github.com/videojs/videojs-contrib-hls/issues/600#issuecomment-295730581
+    new webpack.DefinePlugin({
+      'typeof global': JSON.stringify('undefined')
+    }),
     new webpack.optimize.UglifyJsPlugin({
       compress: {
         warnings: false
