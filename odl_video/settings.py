@@ -7,6 +7,7 @@ import platform
 from urllib.parse import urljoin
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 from odl_video.envs import (
     get_any,
@@ -163,7 +164,12 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TIMEZONE = 'UTC'
-
+CELERY_BEAT_SCHEDULE = {
+    'update-statuses': {
+        'task': 'cloudsync.tasks.update_video_statuses',
+        'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
+    }
+}
 
 # django cache back-ends
 CACHES = {
@@ -440,10 +446,14 @@ ET_PRESET_IDS = get_string(
     '1351620000001-200010,1351620000001-200020,1351620000001-200050'
 ).split(',')
 
+if ET_PRESET_IDS == ['']:  # This may happen if `ET_PRESET_IDS=` is in .env file.
+    raise ImproperlyConfigured('ET_PRESET_IDS cannot be blank, please check your settings & environment')
+
 VIDEO_CLOUDFRONT_DIST = get_string('VIDEO_CLOUDFRONT_DIST', '')
 VIDEO_S3_BUCKET = get_string('VIDEO_S3_BUCKET', 'odl-video-service')
 VIDEO_S3_TRANSCODE_BUCKET = get_string('VIDEO_S3_TRANSCODE_BUCKET', '{}-transcoded'.format(VIDEO_S3_BUCKET))
 VIDEO_S3_THUMBNAIL_BUCKET = get_string('VIDEO_S3_THUMBNAIL_BUCKET', '{}-thumbnails'.format(VIDEO_S3_BUCKET))
+
 
 # server-status
 STATUS_TOKEN = get_string("STATUS_TOKEN", "")

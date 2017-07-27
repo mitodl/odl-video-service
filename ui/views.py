@@ -24,7 +24,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cloudsync.tasks import stream_to_s3, transcode_from_s3
-from ui.api import refresh_status
 from ui.encodings import EncodingNames
 from ui.templatetags.render_bundle import public_path
 from ui.models import Video, VideoFile
@@ -87,7 +86,6 @@ class VideoDetail(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         video = context["object"]
-        refresh_status(video)
         context['form'] = VideoForm(instance=video)
         try:
             videofile = video.videofile_set.get(encoding=EncodingNames.HLS)
@@ -128,18 +126,18 @@ class UploadVideosFromDropbox(APIView):
                     title=dropbox_file["name"]
                 )
                 VideoFile.objects.create(
-                    s3_object_key=video.s3_key(),
+                    s3_object_key=video.get_s3_key(),
                     video_id=video.id,
                     bucket_name=settings.VIDEO_S3_BUCKET
                 )
             # Kick off chained async celery tasks to transfer file to S3, then start a transcode job
             task_result = chain(
-                stream_to_s3.s(dropbox_file["link"], video.s3_key()),
+                stream_to_s3.s(video.id),
                 transcode_from_s3.si(video.id)
             )()
 
             response_data[video.id] = {
-                "key": video.s3_key(),
+                "key": video.get_s3_key(),
                 "title": video.title,
                 "task": task_result.id,
             }

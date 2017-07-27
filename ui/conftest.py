@@ -65,7 +65,7 @@ def videofile(video):  # pylint: disable=redefined-outer-name
     """
     obj = VideoFile(
         video=video,
-        s3_object_key=video.s3_key(),
+        s3_object_key=video.get_s3_key(),
         encoding=EncodingNames.ORIGINAL,
         bucket_name=settings.VIDEO_S3_BUCKET
     )
@@ -81,7 +81,7 @@ def videofile_unencoded(video_unencoded):  # pylint: disable=redefined-outer-nam
     """
     obj = VideoFile(
         video=video_unencoded,
-        s3_object_key=video_unencoded.s3_key(),
+        s3_object_key=video_unencoded.get_s3_key(),
         encoding=EncodingNames.ORIGINAL,
         bucket_name=settings.VIDEO_S3_BUCKET
     )
@@ -97,7 +97,7 @@ def videofileHLS(video):  # pylint: disable=redefined-outer-name
     """
     obj = VideoFile(
         video=video,
-        s3_object_key=video.s3_key(),
+        s3_object_key=video.get_s3_key(),
         encoding=EncodingNames.HLS,
         bucket_name=settings.VIDEO_S3_BUCKET
     )

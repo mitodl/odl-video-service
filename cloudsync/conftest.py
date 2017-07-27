@@ -1,9 +1,6 @@
 """
 conftest for pytest in this module
 """
-import io
-import os
-
 import pytest
 import requests_mock
 import botocore.session
@@ -18,12 +15,6 @@ def reqmocker():
 
 
 @pytest.fixture
-def mock_video_url():
-    """Mocks video url"""
-    return "http://example.com/video.mp4"
-
-
-@pytest.fixture
 def mock_video_headers():
     """mocks video headers"""
     disp = "inline; filename=video.mp4; filename*=UTF-8''video.mp4"
@@ -32,13 +23,6 @@ def mock_video_headers():
         "Content-Length": "6250000",
         "Content-Disposition": disp,
     }
-
-
-@pytest.fixture
-def mock_video_file():
-    """Mocks video file"""
-    # 50 MB of random noise
-    return io.BytesIO(os.urandom(6250000))
 
 
 @pytest.fixture
@@ -76,17 +60,23 @@ class MockClientET:
     """
     job = None
     preset = None
+    error = None
 
     def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
         """Mock __init__"""
-        pass
+        if 'error' in kwargs:
+            self.error = kwargs['error']
 
     def read_job(self, **kwargs):  # pylint: disable=unused-argument
         """Mock read_job method"""
+        if self.error:
+            raise self.error
         return self.job
 
     def read_preset(self, *args, **kwargs):  # pylint: disable=unused-argument
         """Mock read_preset method"""
+        if self.error:
+            raise self.error
         return self.preset
 
 

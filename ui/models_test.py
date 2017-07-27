@@ -37,11 +37,11 @@ def test_s3_object_uniqueness(videofile):
 
 def test_video_model_s3keys(user):
     """
-    Test that the Video.s3_subkey and s3_key properties return expected values
+    Test that the Video.s3_subkey and get_s3_key properties return expected values
     """
     new_video = Video(source_url="http://fake.com/fake.mp4", creator=user)
     assert isinstance(new_video.s3_subkey, uuid.UUID)
-    s3key = new_video.s3_key()
+    s3key = new_video.get_s3_key()
     assert s3key is not None
     assert s3key == '{user}/{uuid}/video.mp4'.format(user=user.id, uuid=new_video.s3_subkey)
 
