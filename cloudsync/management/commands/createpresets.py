@@ -1,5 +1,5 @@
 """
-Script for creating TechTV presets from a JSON file
+Script for creating OVS presets from a JSON file
 """
 
 import os
@@ -14,7 +14,7 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 
 class Command(BaseCommand):
     """
-    Create video transcoding presets for TechTV
+    Create video transcoding presets for OVS
     """
 
     def add_arguments(self, parser):
