@@ -3,10 +3,10 @@ API methods
 """
 import logging
 
-from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 
 from ui.encodings import EncodingNames
+from ui.constants import VideoStatus
 from ui.utils import get_et_preset, get_bucket, get_et_job
 from ui.models import VideoFile, VideoThumbnail
 
@@ -53,19 +53,23 @@ def process_transcode_results(video, job):
             )
 
 
-def refresh_status(video):
+def refresh_status(video, encode_job=None):
     """
     Check the encode job status & if not complete, update the status via a query to AWS.
 
     Args:
         video(ui.models.Video): Video object to refresh status of.
+        encode_job(dj_elastictranscoder.models.EncodeJob): EncodeJob associated with Video
     """
-    if video.status not in ['Complete', 'Error']:
-        try:
-            job = get_et_job(video.encode_jobs.latest("created_at").id)
-            if job['Status'] == 'Complete':
-                process_transcode_results(video, job)
-            video.status = job['Status']
-            video.save()
-        except EncodeJob.DoesNotExist:
-            log.error("No encoding job exists for video id %d", video.id)
+    if video.status == VideoStatus.TRANSCODING:
+        if not encode_job:
+            encode_job = video.encode_jobs.latest("created_at")
+        et_job = get_et_job(encode_job.id)
+        if et_job['Status'] == VideoStatus.COMPLETE:
+            process_transcode_results(video, et_job)
+            video.update_status(VideoStatus.COMPLETE)
+        elif et_job['Status'] == VideoStatus.ERROR:
+            video.update_status(VideoStatus.TRANSCODE_FAILED)
+            log.error('Transcoding failed for video %d', video.id)
+        encode_job.message = et_job
+        encode_job.save()

@@ -11,18 +11,45 @@ from moto import mock_s3
 
 from cloudsync.conftest import MockClientET, MockBoto
 from ui.api import process_transcode_results, refresh_status
+from ui.constants import VideoStatus
 
 pytestmark = pytest.mark.django_db
 
 
-def test_video_job_status(mocker, video, encodejob):  # pylint: disable=unused-argument
+def test_video_job_status_error(mocker, video, encodejob):  # pylint: disable=unused-argument
     """
     Verify that Video.job_status property returns the status of its encoding job
     """
+    video.status = VideoStatus.TRANSCODING
     MockClientET.job = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}}
     mocker.patch('ui.utils.boto3', MockBoto)
-    refresh_status(video)
-    assert video.status == 'Error'
+    refresh_status(video, encodejob)
+    assert video.status == VideoStatus.TRANSCODE_FAILED
+
+
+def test_video_job_status_complete(mocker, video, encodejob):  # pylint: disable=unused-argument
+    """
+    Verify that Video.job_status property returns the status of its encoding job
+    """
+    video.status = VideoStatus.TRANSCODING
+    MockClientET.job = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Complete'}}
+    mocker.patch('ui.utils.boto3', MockBoto)
+    mocker.patch('ui.api.process_transcode_results')
+    refresh_status(video, encodejob)
+    assert video.status == VideoStatus.COMPLETE
+
+
+def test_video_job_othererror(mocker, video, encodejob):  # pylint: disable=unused-argument
+    """
+    Verify that refresh_status does not raise ClientError
+    """
+    video.status = VideoStatus.TRANSCODING
+    mocker.patch('ui.utils.boto3', MockBoto)
+    error = Exception("unexpected exception")
+    mocker.patch('ui.utils.get_transcoder_client',
+                 return_value=MockClientET(error=error))
+    with pytest.raises(Exception):
+        refresh_status(video)
 
 
 @mock_s3

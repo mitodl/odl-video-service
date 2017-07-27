@@ -30,12 +30,12 @@ to TechTV.</p>
           progress.value = data.info.uploaded;
           // get an update in one second
           setTimeout(updateStatus, 1000, taskId);
-        } else if (data.status == "SUCCESS") {
-          progress.max = 100;
-          progress.value = 100;
         } else if (data.status == "FAILURE") {
           let text = document.createTextNode("failed");
           progress.parentNode.appendChild(text);
+        } else {
+          progress.max = 100;
+          progress.value = 100;
         }
       });
     });

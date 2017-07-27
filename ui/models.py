@@ -55,7 +55,7 @@ class Video(models.Model):
     s3_subkey = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     encode_jobs = GenericRelation(EncodeJob)
 
-    def s3_key(self):
+    def get_s3_key(self):
         """
         Avoid duplicate S3 keys/filenames when transferring videos from Dropbox
 
@@ -87,6 +87,16 @@ class Video(models.Model):
         output_template = '{prefix}/{s3key}_{preset}'
         basename, _ = os.path.splitext(original_s3_key)
         return output_template.format(prefix=TRANSCODE_PREFIX, s3key=basename, preset=preset)
+
+    def update_status(self, status):
+        """
+        Assign and save the status of a Video
+
+        Args:
+            status(str): The status to assign the video
+        """
+        self.status = status
+        self.save()
 
     def __str__(self):
         return self.title or "<untitled video>"
