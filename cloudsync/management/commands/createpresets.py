@@ -38,5 +38,6 @@ class Command(BaseCommand):
                               aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
                               aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY)
         for preset in presets:
-            created = client.create_preset(**preset)
-            self.stdout.write("{}:{}".format(created['Preset']['Id'], created['Preset']['Name']))
+            preset['created'] = client.create_preset(**preset)
+        self.stdout.write('ET_PRESET_IDS={}'.format(','.join(
+            [preset['created']['Preset']['Id'] for preset in presets])))

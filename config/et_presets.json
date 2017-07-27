@@ -1,257 +1,166 @@
 [
   {
+    "Audio": {
+      "BitRate": "96",
+      "Channels": "1",
+      "Codec": "AAC",
+      "CodecOptions": {
+        "Profile": "AAC-LC"
+      },
+      "SampleRate": "44100"
+    },
     "Container": "ts",
-    "Name": "HLS 1080P",
-    "Description": "HLS 1080P",
+    "Description": "HLS for low network bandwidth",
+    "Name": "HLS_AV_1_0mpbs",
     "Thumbnails": {
-      "Format": "png",
+      "Format": "jpg",
       "Interval": "300",
-      "MaxHeight": "108",
+      "MaxHeight": "144",
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
-      "SizingPolicy": "ShrinkToFit"
+      "SizingPolicy": "Fit"
     },
     "Video": {
-      "BitRate": "5400",
+      "BitRate": "1000",
       "Codec": "H.264",
       "CodecOptions": {
-        "BufferSize": "48600",
         "ColorSpaceConversionMode": "None",
         "InterlacedMode": "Progressive",
         "Level": "4",
-        "MaxBitRate": "5400",
-        "MaxReferenceFrames": "3",
-        "Profile": "main"
+        "MaxReferenceFrames": "1",
+        "Profile": "baseline"
       },
       "DisplayAspectRatio": "auto",
       "FixedGOP": "true",
-      "FrameRate": "auto",
+      "FrameRate": "30",
       "KeyframesMaxDist": "90",
-      "MaxFrameRate": "29.97",
-      "MaxHeight": "1080",
-      "MaxWidth": "1920",
+      "MaxHeight": "540",
+      "MaxWidth": "960",
       "PaddingPolicy": "NoPad",
-      "SizingPolicy": "ShrinkToFit",
-      "Watermarks": [
-        {
-          "HorizontalAlign": "Left",
-          "HorizontalOffset": "10%",
-          "Id": "TopLeft",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Top",
-          "VerticalOffset": "10%"
-        },
-        {
-          "HorizontalAlign": "Right",
-          "HorizontalOffset": "10%",
-          "Id": "TopRight",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Top",
-          "VerticalOffset": "10%"
-        },
-        {
-          "HorizontalAlign": "Left",
-          "HorizontalOffset": "10%",
-          "Id": "BottomLeft",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Bottom",
-          "VerticalOffset": "10%"
-        },
-        {
-          "HorizontalAlign": "Right",
-          "HorizontalOffset": "10%",
-          "Id": "BottomRight",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Bottom",
-          "VerticalOffset": "10%"
-        }
-      ]
+      "SizingPolicy": "Fit"
     }
   },
   {
+    "Audio": {
+      "BitRate": "128",
+      "Channels": "1",
+      "Codec": "AAC",
+      "CodecOptions": {
+        "Profile": "AAC-LC"
+      },
+      "SampleRate": "44100"
+    },
     "Container": "ts",
-    "Name": "HLS 720P",
-    "Description": "HLS 720P",
+    "Description": "HLS for medium network bandwidth",
+    "Name": "HLS_1_8mpbs",
     "Thumbnails": {
-      "Format": "png",
+      "Format": "jpg",
       "Interval": "300",
-      "MaxHeight": "108",
+      "MaxHeight": "144",
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
-      "SizingPolicy": "ShrinkToFit"
+      "SizingPolicy": "Fit"
     },
     "Video": {
-      "BitRate": "2400",
+      "BitRate": "1708",
       "Codec": "H.264",
       "CodecOptions": {
-        "BufferSize": "21600",
         "ColorSpaceConversionMode": "None",
         "InterlacedMode": "Progressive",
-        "Level": "4",
-        "MaxBitRate": "2400",
-        "MaxReferenceFrames": "3",
-        "Profile": "main"
+        "Level": "3",
+        "MaxReferenceFrames": "1",
+        "Profile": "baseline"
       },
       "DisplayAspectRatio": "auto",
       "FixedGOP": "true",
-      "FrameRate": "auto",
+      "FrameRate": "30",
       "KeyframesMaxDist": "90",
-      "MaxFrameRate": "29.97",
+      "MaxHeight": "540",
+      "MaxWidth": "960",
+      "PaddingPolicy": "NoPad",
+      "SizingPolicy": "Fit"
+    }
+  },
+  {
+    "Audio": {
+      "BitRate": "160",
+      "Channels": "2",
+      "Codec": "AAC",
+      "CodecOptions": {
+        "Profile": "AAC-LC"
+      },
+      "SampleRate": "44100"
+    },
+    "Container": "ts",
+    "Description": "HLS for high network bandwidth",
+    "Name": "HLS_AV_2_0mpbs",
+    "Thumbnails": {
+      "Format": "jpg",
+      "Interval": "300",
+      "MaxHeight": "144",
+      "MaxWidth": "192",
+      "PaddingPolicy": "NoPad",
+      "SizingPolicy": "Fit"
+    },
+    "Video": {
+      "BitRate": "1800",
+      "Codec": "H.264",
+      "CodecOptions": {
+        "ColorSpaceConversionMode": "None",
+        "InterlacedMode": "Progressive",
+        "Level": "4",
+        "MaxReferenceFrames": "1",
+        "Profile": "baseline"
+      },
+      "DisplayAspectRatio": "auto",
+      "FixedGOP": "true",
+      "FrameRate": "30",
+      "KeyframesMaxDist": "90",
       "MaxHeight": "720",
       "MaxWidth": "1280",
       "PaddingPolicy": "NoPad",
-      "SizingPolicy": "ShrinkToFit",
-      "Watermarks": [
-        {
-          "HorizontalAlign": "Left",
-          "HorizontalOffset": "10%",
-          "Id": "TopLeft",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Top",
-          "VerticalOffset": "10%"
-        },
-        {
-          "HorizontalAlign": "Right",
-          "HorizontalOffset": "10%",
-          "Id": "TopRight",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Top",
-          "VerticalOffset": "10%"
-        },
-        {
-          "HorizontalAlign": "Left",
-          "HorizontalOffset": "10%",
-          "Id": "BottomLeft",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Bottom",
-          "VerticalOffset": "10%"
-        },
-        {
-          "HorizontalAlign": "Right",
-          "HorizontalOffset": "10%",
-          "Id": "BottomRight",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Bottom",
-          "VerticalOffset": "10%"
-        }
-      ]
+      "SizingPolicy": "Fit"
     }
   },
   {
+    "Audio": {
+      "BitRate": "224",
+      "Channels": "2",
+      "Codec": "AAC",
+      "CodecOptions": {
+        "Profile": "AAC-LC"
+      },
+      "SampleRate": "44100"
+    },
     "Container": "ts",
-    "Name": "HLS 480P",
-    "Description": "HLS 480P",
+    "Description": "HLS for highest network bandwidth",
+    "Name": "HLS_AV_4_0mpbs",
     "Thumbnails": {
-      "Format": "png",
+      "Format": "jpg",
       "Interval": "300",
-      "MaxHeight": "108",
+      "MaxHeight": "144",
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
-      "SizingPolicy": "ShrinkToFit"
+      "SizingPolicy": "Fit"
     },
     "Video": {
-      "BitRate": "1200",
+      "BitRate": "4000",
       "Codec": "H.264",
       "CodecOptions": {
-        "BufferSize": "10800",
         "ColorSpaceConversionMode": "None",
         "InterlacedMode": "Progressive",
         "Level": "4",
-        "MaxBitRate": "1200",
-        "MaxReferenceFrames": "3",
-        "Profile": "main"
+        "MaxReferenceFrames": "1",
+        "Profile": "baseline"
       },
       "DisplayAspectRatio": "auto",
       "FixedGOP": "true",
-      "FrameRate": "auto",
+      "FrameRate": "30",
       "KeyframesMaxDist": "90",
-      "MaxFrameRate": "29.97",
-      "MaxHeight": "480",
-      "MaxWidth": "854",
+      "MaxHeight": "720",
+      "MaxWidth": "1280",
       "PaddingPolicy": "NoPad",
-      "SizingPolicy": "ShrinkToFit",
-      "Watermarks": [
-        {
-          "HorizontalAlign": "Left",
-          "HorizontalOffset": "10%",
-          "Id": "TopLeft",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Top",
-          "VerticalOffset": "10%"
-        },
-        {
-          "HorizontalAlign": "Right",
-          "HorizontalOffset": "10%",
-          "Id": "TopRight",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Top",
-          "VerticalOffset": "10%"
-        },
-        {
-          "HorizontalAlign": "Left",
-          "HorizontalOffset": "10%",
-          "Id": "BottomLeft",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Bottom",
-          "VerticalOffset": "10%"
-        },
-        {
-          "HorizontalAlign": "Right",
-          "HorizontalOffset": "10%",
-          "Id": "BottomRight",
-          "MaxHeight": "10%",
-          "MaxWidth": "10%",
-          "Opacity": "100",
-          "SizingPolicy": "ShrinkToFit",
-          "Target": "Content",
-          "VerticalAlign": "Bottom",
-          "VerticalOffset": "10%"
-        }
-      ]
+      "SizingPolicy": "Fit"
     }
   }
 ]
