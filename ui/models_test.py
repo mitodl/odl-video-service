@@ -5,9 +5,11 @@ import uuid
 
 import boto3
 import pytest
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 
-from django.conf import settings
+from ui.constants import VideoStatus
 from ui.models import Video, VideoFile
 
 pytestmark = pytest.mark.django_db
@@ -85,3 +87,15 @@ def test_video_transcode_key(user, video, videofile):  # pylint: disable=unused-
     preset = 'pre01'
     assert video.transcode_key(preset) == 'transcoded/{user}/{uuid}/video_{preset}'.format(
         user=user.id, uuid=str(video.s3_subkey), preset=preset)
+
+
+def test_video_status(video):
+    """
+    Tests that a video cannnot have a status different from he allowed
+    """
+    for status in VideoStatus.ALL_STATUSES:
+        video.status = status
+        video.save()
+    with pytest.raises(ValidationError):
+        video.status = 'foostatus'
+        video.save()
