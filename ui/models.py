@@ -13,6 +13,7 @@ from django.conf import settings
 from dj_elastictranscoder.models import EncodeJob
 
 from ui import utils
+from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
 from ui.tasks import delete_s3_objects
 
@@ -51,7 +52,12 @@ class Video(models.Model):
     description = models.TextField(blank=True)
     source_url = models.URLField()
     moira_lists = models.ManyToManyField(MoiraList)
-    status = models.TextField(max_length=24, blank=True)
+    status = models.TextField(
+        null=False,
+        default=VideoStatus.CREATED,
+        choices=[(status, status) for status in VideoStatus.ALL_STATUSES],
+        max_length=30,
+    )
     s3_subkey = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     encode_jobs = GenericRelation(EncodeJob)
 
@@ -97,6 +103,13 @@ class Video(models.Model):
         """
         self.status = status
         self.save()
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        """
+        Overridden method to run a preventive validation before saving the object.
+        """
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title or "<untitled video>"
