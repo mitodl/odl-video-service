@@ -153,9 +153,9 @@ DATABASES = {
 
 # Celery
 # http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
+REDIS_URL = get_string("REDIS_URL", None)
 USE_CELERY = True
-CELERY_BROKER_URL = get_string("REDIS_URL", None)
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL = REDIS_URL
 
 CELERY_TASK_ALWAYS_EAGER = get_bool("CELERY_TASK_ALWAYS_EAGER", False)
 CELERY_TASK_EAGER_PROPAGATES = get_bool("CELERY_TASK_EAGER_PROPAGATES", True)
@@ -462,3 +462,19 @@ HEALTH_CHECK = ['CELERY', 'REDIS', 'POSTGRES']
 ADWORDS_CONVERSION_ID = get_string("ADWORDS_CONVERSION_ID", "")
 GA_TRACKING_ID = get_string("GA_TRACKING_ID", "")
 REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
+
+# List of mandatory settings. If any of these is not set, the app will not start
+# and will raise an ImproperlyConfigured exception
+MANDATORY_SETTINGS = [
+    'AWS_ACCESS_KEY_ID',
+    'AWS_REGION',
+    'AWS_S3_DOMAIN',
+    'AWS_SECRET_ACCESS_KEY',
+    'CLOUDFRONT_KEY_ID',
+    'CLOUDFRONT_PRIVATE_KEY',
+    'DROPBOX_KEY',
+    'ET_PIPELINE_ID',
+    'REDIS_URL',
+    'SECRET_KEY',
+    'VIDEO_CLOUDFRONT_DIST',
+]
