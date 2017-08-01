@@ -47,6 +47,7 @@ services:
       DATABASE_URL: postgres://postgres@db:5432/postgres
       REDIS_URL: redis://redis:6379/0
       COVERAGE_DIR: htmlcov
+      DOCKER_HOST: ${DOCKER_HOST:-missing}
 
   celery:
     build: .

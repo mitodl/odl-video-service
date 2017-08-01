@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}OVS | Collection List{% endblock %}
+{% block pagetitle %}OVS: Collection List{% endblock %}
+
+{% block content %}
+
+<ul>
+  {% for collection in collection_list %}
+    <li><a href="{% url "collection-detail" collection.hexkey %}">{{ collection.title }}</a></li>
+  {% empty %}
+    <li><i>Please create a collection first</i></li>
+  {% endfor %}
+</ul>
+
+<hr>
+
+<h2>Create New Collection</h2>
+<form class="create-collection" action="{% url 'models-api:collection-list'%}" method="POST">
+  <table>
+    <tr>
+      <th>{{ form.title.label_tag }}</th>
+      <td>{{ form.title }}</td>
+    </tr>
+    <tr>
+      <th>{{ form.description.label_tag }}</th>
+      <td>{{ form.description }}</td>
+    </tr>
+  </table>
+  {{ form.owner }}
+  <input type="submit" value="Create" />
+</form>
+
+<script>
+  let CSRF = "{{ csrf_token }}";
+
+  let handleCreate = function(event) {
+    event.preventDefault();
+    let form = event.target;
+    let data = {
+      title: form.querySelector("[name=title]").value,
+      description: form.querySelector("[name=description]").value,
+      owner: form.querySelector("[name=owner]").value,
+    }
+    let headers = new Headers();
+    headers.append("X-CSRFToken", CSRF);
+    headers.append("Content-Type", "application/json");
+    fetch(form.action, {
+      method: "POST",
+      headers: headers,
+      credentials: 'same-origin',
+      body: JSON.stringify(data),
+    }).then(function(response) {
+      if (response.ok) {
+        location.reload();
+      }
+    });
+  }
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelector("form.create-collection").addEventListener("submit", handleCreate);
+  });
+</script>
+
+{% endblock %}

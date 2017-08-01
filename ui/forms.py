@@ -1,13 +1,13 @@
 """
 Forms for ui app
 """
-
+from django import forms
 from django.forms.widgets import TextInput
-from django.forms.fields import Field, EmailField
+from django.forms.fields import Field
 from django.forms import ModelForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm as BaseUserCreationForm
-from ui.models import MoiraList, Video
+from ui import models
 
 
 class SeparatedMultiTextInput(TextInput):
@@ -52,24 +52,37 @@ class DynamicModelMultipleChoiceField(Field):
         return [self.to_model(value) for value in values]
 
 
+class CollectionForm(ModelForm):
+    """
+    Form to create a collection
+    """
+    title = forms.CharField()
+    owner = forms.CharField(widget=forms.HiddenInput)
+    moira_lists = DynamicModelMultipleChoiceField(
+        model=models.MoiraList,
+        field="name",
+        required=False,
+    )
+
+    class Meta:
+        model = models.Collection
+        fields = ('title', 'description', 'owner', 'moira_lists', )
+
+
 class VideoForm(ModelForm):
     """
     Video Form
     """
-    moira_lists = DynamicModelMultipleChoiceField(
-        model=MoiraList, field="name",
-    )
-
     class Meta:
-        model = Video
-        fields = ('title', 'description', 'moira_lists')
+        model = models.Video
+        fields = ('title', 'description', )
 
 
 class UserCreationForm(BaseUserCreationForm):
     """
     User Creation Form
     """
-    email = EmailField(required=True)
+    email = forms.EmailField(required=True)
 
     class Meta:
         model = get_user_model()

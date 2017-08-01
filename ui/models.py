@@ -38,29 +38,63 @@ class MoiraList(models.Model):
         return '<MoiraList: {self.name!r}>'.format(self=self)
 
 
+class Collection(models.Model):
+    """
+    Model for Video Collections
+    """
+    key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
+    title = models.TextField()
+    description = models.TextField(null=True, blank=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL)
+    moira_lists = models.ManyToManyField(MoiraList, blank=True)
+
+    def __str__(self):
+        return self.title
+
+    def __repr__(self):
+        return '<Collection: title="{self.title!r}", owner={self.owner.username!r}>'.format(self=self)
+
+    @property
+    def hexkey(self):
+        """
+        Return the hex representation of the key
+        """
+        return self.key.hex
+
+    @classmethod
+    def for_owner(cls, owner):
+        """
+        Returns a queryset of all the objects filtered by owner
+        """
+        return cls.objects.filter(owner=owner)
+
+
 class Video(models.Model):
     """
     Represents an uploaded video, primarily in terms of metadata (source url, title, etc).
     The actual video files (original and encoded) are represented by the VideoFile model.
     """
-    creator = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-    )
+    key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
+    collection = models.ForeignKey(Collection, related_name='videos')
     created_at = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=250, blank=True)
     description = models.TextField(blank=True)
     source_url = models.URLField()
-    moira_lists = models.ManyToManyField(MoiraList)
     status = models.TextField(
         null=False,
         default=VideoStatus.CREATED,
         choices=[(status, status) for status in VideoStatus.ALL_STATUSES],
         max_length=30,
     )
-    s3_subkey = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     encode_jobs = GenericRelation(EncodeJob)
     multiangle = models.BooleanField(null=False, default=False)
+
+    @property
+    def hexkey(self):
+        """
+        Return the hex representation of the key
+        """
+        return self.key.hex
 
     def get_s3_key(self):
         """
@@ -74,8 +108,7 @@ class Video(models.Model):
             str: A unique S3 key including the user id as a virtual subfolder
         """
         _, extension = os.path.splitext(self.source_url.split('/')[-1])
-        newkey = '{user}/{uuid}/video{ext}'.format(
-            user=self.creator.id, uuid=str(self.s3_subkey), ext=extension)
+        newkey = '{uuid}/video{ext}'.format(uuid=str(self.hexkey), ext=extension)
         return newkey
 
     def transcode_key(self, preset=None):
@@ -116,7 +149,7 @@ class Video(models.Model):
         return self.title or "<untitled video>"
 
     def __repr__(self):
-        return '<Video: {self.title!r} {self.s3_subkey!r}>'.format(self=self)
+        return '<Video: {self.title!r} {self.key!r}>'.format(self=self)
 
 
 class VideoS3(models.Model):

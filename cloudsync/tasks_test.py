@@ -12,9 +12,36 @@ from mock import PropertyMock
 
 from cloudsync.conftest import MockBoto
 from cloudsync.tasks import stream_to_s3, transcode_from_s3, VideoTask, update_video_statuses
-from ui.conftest import user, video, videofile  # pylint: disable=unused-import
+from ui.factories import (
+    VideoFactory,
+    VideoFileFactory,
+    UserFactory,
+)
 from ui.models import Video
 from ui.constants import VideoStatus
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture()
+def video():
+    """Fixture to create a video"""
+    return VideoFactory()
+
+
+@pytest.fixture()
+def videofile():
+    """Fixture to create a video"""
+    return VideoFileFactory()
+
+
+@pytest.fixture(scope="module")
+def user():
+    """Fixture to create a video"""
+    return UserFactory()
+
+
+# pylint: disable=redefined-outer-name
 
 
 def test_empty_video_id():
@@ -26,7 +53,7 @@ def test_empty_video_id():
 
 
 @pytest.mark.django_db
-def test_happy_path(mocker, reqmocker, mock_video_headers, video):  # pylint: disable=redefined-outer-name
+def test_happy_path(mocker, reqmocker, mock_video_headers, video):
     """
     Test that a file can be uploaded to a mocked S3 bucket.
     """
@@ -56,7 +83,7 @@ def test_happy_path(mocker, reqmocker, mock_video_headers, video):  # pylint: di
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOADING
 
 
-def test_upload_failure(mocker, reqmocker, mock_video_headers, video):  # pylint: disable=redefined-outer-name
+def test_upload_failure(mocker, reqmocker, mock_video_headers, video):
     """
     Test that video status is updated properly after an upload failure
     """
@@ -73,10 +100,11 @@ def test_upload_failure(mocker, reqmocker, mock_video_headers, video):  # pylint
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
 
 
-def test_transcode_failure(mocker, user, video, videofile):  # pylint: disable=unused-argument,redefined-outer-name
+def test_transcode_failure(mocker, videofile):
     """
     Test transcode task, verify there is an EncodeJob associated with the video to encode
     """
+    video = videofile.video
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
@@ -86,7 +114,7 @@ def test_transcode_failure(mocker, user, video, videofile):  # pylint: disable=u
     mocker.patch('dj_elastictranscoder.transcoder.Session')
     mocker.patch('celery.app.task.Task.update_state')
     mocker.patch('ui.utils.boto3', MockBoto)
-    mocker.patch('ui.api.get_et_job',
+    mocker.patch('cloudsync.api.get_et_job',
                  return_value=job_result['Job'])
     # Transcode the video
     with pytest.raises(ClientError):
@@ -95,19 +123,20 @@ def test_transcode_failure(mocker, user, video, videofile):  # pylint: disable=u
     assert Video.objects.get(id=video.id).status == VideoStatus.TRANSCODE_FAILED
 
 
-def test_transcode_starting(mocker, user, video, videofile):  # pylint: disable=unused-argument,redefined-outer-name
+def test_transcode_starting(mocker, videofile):
     """
     Test that video status is updated properly after a transcode failure
     """
+    video = videofile.video
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
     mocker.patch('cloudsync.tasks.VideoTranscoder.encode')
     mocker.patch('dj_elastictranscoder.transcoder.Session')
     mocker.patch('celery.app.task.Task.update_state')
-    mocker.patch('ui.api.process_transcode_results')
+    mocker.patch('cloudsync.api.process_transcode_results')
     mocker.patch('ui.utils.boto3', MockBoto)
-    mocker.patch('ui.api.get_et_job',
+    mocker.patch('cloudsync.api.get_et_job',
                  return_value={'Id': '1498220566931-qtmtcu', 'Status': 'Complete'})
     transcode_from_s3(video.id)  # pylint: disable=no-value-for-parameter
     assert len(video.encode_jobs.all()) == 1
@@ -176,7 +205,7 @@ def test_video_task_no_chain(mocker):
     assert task.get_task_id() == task.request.id
 
 
-def test_update_video_statuses_nojob(mocker, video):  # pylint: disable=unused-argument,redefined-outer-name
+def test_update_video_statuses_nojob(mocker, video):  # pylint: disable=unused-argument
     """Test NoEncodeJob error handling"""
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=EncodeJob.DoesNotExist())
@@ -185,7 +214,7 @@ def test_update_video_statuses_nojob(mocker, video):  # pylint: disable=unused-a
     assert VideoStatus.TRANSCODE_FAILED == Video.objects.get(id=video.id).status
 
 
-def test_update_video_statuses_clienterror(mocker, video):  # pylint: disable=unused-argument,redefined-outer-name
+def test_update_video_statuses_clienterror(mocker, video):  # pylint: disable=unused-argument
     """Test NoEncodeJob error handling"""
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch('cloudsync.tasks.refresh_status',

@@ -8,11 +8,12 @@ to OVS.</p>
 
 <div id="container"></div>
 
-<p id="next">Next, <a href="{% url 'video-list' %}">view your uploaded videos</a>.</p>
+<p id="next">Next, <a href="{% url 'collection-detail' collection.hexkey %}">view your uploaded videos</a>.</p>
 
 <script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="{{ dropbox_key }}"></script>
 <script>
   let CSRF = "{{ csrf_token }}";
+  let COLLECTION_KEY = "{{ collection.hexkey }}";
   let updateStatus = function(taskId) {
     fetch('/api/v0/tasks/' + taskId).then(function(response) {
       let progress = document.getElementById(taskId);
@@ -128,7 +129,7 @@ to OVS.</p>
         method: "POST",
         headers: headers,
         credentials: 'same-origin',
-        body: JSON.stringify(files),
+        body: JSON.stringify({'collection': COLLECTION_KEY, 'files': files}),
       }).then(handleStreamResponse, function(error) {
         console.log('Fetch error: ' + error.message);
       });
