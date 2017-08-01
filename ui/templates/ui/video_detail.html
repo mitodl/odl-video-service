@@ -2,14 +2,18 @@
 {% block title %}OVS | Video Detail{% endblock %}
 {% block pagetitle %}OVS: Video Detail{% endblock %}
 {% block content %}
+
 {% if user.is_authenticated %}
     <p>You are logged in as {{ user.username }}. <a href="{% url 'logout' %}">Logout</a></p>
 {% else %}
     <p><a href="{% url 'index' %}">Login</a></p>
 {% endif %}
+
+<p>Part of <a href="{% url 'collection-detail' video.collection.hexkey %}">{{ video.collection.title }}</a></p>
+
 {% if videofile %}
     {% if video.multiangle %}
-        <iframe src="{% url 'video-uswitch' video.id %}" class="video-odl-medium" frameborder="0"
+        <iframe src="{% url 'video-uswitch' video.hexkey %}" class="video-odl-medium" frameborder="0"
                 scrolling="no" allowfullscreen="allowfullscreen"></iframe>
     {% else %}
         <div id="odl-video-player" class="video-odl-medium"></div>
@@ -17,12 +21,8 @@
 {% else %}
     <div>Your video is still processing. Please try again later.</div>
 {% endif %}
-<form class="edit-video" action="{% url 'video-api:video-detail' object.id %}" method="PUT">
+<form class="edit-video" action="{% url 'models-api:video-detail' video.hexkey %}" method="PUT">
   <table>
-    <tr>
-      <th>Uploaded by:</th>
-      <td>{{ object.creator }}</td>
-    </tr>
     <tr>
       <th>{{ form.title.label_tag }}</th>
       <td>{{ form.title }}</td>
@@ -32,16 +32,9 @@
       <td>{{ form.description }}</td>
     </tr>
     <tr>
-      <th>{{ form.moira_lists.label_tag }}</th>
-      <td>
-        {{ form.moira_lists }}
-        <span>Type in as many lists as you want, separated by spaces.</span>
-      </td>
-    </tr>
-    <tr>
         <th>Encoding Status:</th>
         <td>
-            {{ object.status }}
+            {{ video.status }}
         </td>
     </tr>
   </table>
@@ -50,7 +43,7 @@
 </form>
 <hr>
 <p>Links:</p>
-<ul data-video-id="{{ object.id }}">
+<ul data-video-key="{{ video.hexkey }}">
   {% for link in video.videofile_set.all %}
     <li>{{  link.encoding }}</li>
     <ul>
@@ -67,13 +60,14 @@
     {% endfor %}
 </ul>
 <h4>
-<form class="delete-video" action="{% url 'video-api:video-detail' object.id %}" method="DELETE">
+<form class="delete-video" action="{% url 'models-api:video-detail' video.hexkey %}" method="DELETE">
   <input type="submit" value="Delete video"
     {% if not request.user.is_staff %}disabled{% endif %} />
 </form>
 
 <script>
   let CSRF = "{{ csrf_token }}";
+  let COLLECTION_DETAIL_URL = "{% url 'collection-detail' video.collection.hexkey %}";
 
   let handleEdit = function(event) {
     event.preventDefault();
@@ -81,7 +75,6 @@
     let data = {
       title: form.querySelector("[name=title]").value,
       description: form.querySelector("[name=description]").value,
-      moira_lists: form.querySelector("[name=moira_lists]").value.split(" "),
     }
     let headers = new Headers();
     headers.append("X-CSRFToken", CSRF);
@@ -110,7 +103,7 @@
       credentials: 'same-origin',
     }).then(function(response) {
       if (response.ok) {
-        form.appendChild(document.createTextNode("✓"))
+        window.location.href = COLLECTION_DETAIL_URL;
       }
     });
   }

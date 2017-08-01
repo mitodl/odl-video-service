@@ -1,122 +1,93 @@
 """
 Tests for ui/api.py
 """
+from uuid import uuid4
 
-from io import BytesIO
-
-import boto3
+from django.http import Http404
 import pytest
-from django.conf import settings
-from moto import mock_s3
 
-from cloudsync.conftest import MockClientET, MockBoto
-from ui.api import process_transcode_results, refresh_status
-from ui.constants import VideoStatus
+from ui import (
+    api,
+    models,
+)
+from ui.factories import (
+    CollectionFactory,
+)
+
 
 pytestmark = pytest.mark.django_db
 
 
-def test_video_job_status_error(mocker, video, encodejob):  # pylint: disable=unused-argument
+def test_process_dropbox_data_happy_path(mocker):
     """
-    Verify that Video.job_status property returns the status of its encoding job
+    Tests that the process_dropbox_data in case everything is fine
     """
-    video.status = VideoStatus.TRANSCODING
-    MockClientET.job = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}}
-    mocker.patch('ui.utils.boto3', MockBoto)
-    refresh_status(video, encodejob)
-    assert video.status == VideoStatus.TRANSCODE_FAILED
+    mocked_chain = mocker.patch('ui.api.chain')
+    mocked_stream_to_s3 = mocker.patch('cloudsync.tasks.stream_to_s3')
+    mocked_transcode_from_s3 = mocker.patch('cloudsync.tasks.transcode_from_s3')
+    collection = CollectionFactory()
+
+    input_data = {
+        'collection': collection.hexkey,
+        'files': [{'name': name, 'link': 'http://example.com/{}'.format(name)} for name in ('foo', 'bar',)],
+    }
+
+    results = api.process_dropbox_data(input_data)
+    assert len(results) == 2
+    assert mocked_chain.call_count == 2
+    for key, data in results.items():
+        qset = models.Video.objects.filter(key=key)
+        assert qset.exists()
+        assert qset.count() == 1
+        video = qset.first()
+        assert video.collection == collection
+        assert video.title == data['title']
+        assert video.get_s3_key() == data['s3key']
+        # checking that the functions in the chain have been called
+        mocked_stream_to_s3.s.assert_any_call(video.id)
+        mocked_transcode_from_s3.si.assert_any_call(video.id)
+        mocked_chain.assert_any_call(
+            mocked_stream_to_s3.s(video.id),
+            mocked_transcode_from_s3.si(video.id)
+        )
 
 
-def test_video_job_status_complete(mocker, video, encodejob):  # pylint: disable=unused-argument
+def test_process_dropbox_data_empty_link_list(mocker):
     """
-    Verify that Video.job_status property returns the status of its encoding job
+    Tests that the process_dropbox_data in case the collection does not exist
     """
-    video.status = VideoStatus.TRANSCODING
-    MockClientET.job = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Complete'}}
-    mocker.patch('ui.utils.boto3', MockBoto)
-    mocker.patch('ui.api.process_transcode_results')
-    refresh_status(video, encodejob)
-    assert video.status == VideoStatus.COMPLETE
+    mocked_chain = mocker.patch('ui.api.chain')
+    mocked_stream_to_s3 = mocker.patch('cloudsync.tasks.stream_to_s3')
+    mocked_transcode_from_s3 = mocker.patch('cloudsync.tasks.transcode_from_s3')
+    collection = CollectionFactory()
+
+    assert api.process_dropbox_data(
+        {
+            'collection': collection.hexkey,
+            'files': [],
+        }
+    ) == {}
+    assert mocked_chain.call_count == 0
+    assert mocked_stream_to_s3.s.call_count == 0
+    assert mocked_transcode_from_s3.si.call_count == 0
 
 
-def test_video_job_othererror(mocker, video, encodejob):  # pylint: disable=unused-argument
+def test_process_dropbox_data_wrong_collection():
     """
-    Verify that refresh_status does not raise ClientError
+    Tests that the process_dropbox_data in case the collection does not exist
     """
-    video.status = VideoStatus.TRANSCODING
-    mocker.patch('ui.utils.boto3', MockBoto)
-    error = Exception("unexpected exception")
-    mocker.patch('ui.utils.get_transcoder_client',
-                 return_value=MockClientET(error=error))
-    with pytest.raises(Exception):
-        refresh_status(video)
+    with pytest.raises(ValueError):
+        api.process_dropbox_data(
+            {
+                'collection': 'fooooooooo',
+                'files': [],
+            }
+        )
 
-
-@mock_s3
-def test_process_transcode_results(mocker, video, videofile):  # pylint: disable=unused-argument,redefined-outer-name
-    """
-    Verify that a videofile object is created for each output in the job JSON, and a thumbnail
-    is created for each S3 object in the appropriate bucket virtual subfolder.
-    """
-    # We need to create the thumbnail bucket since this is all in the Moto virtual AWS account
-    conn = boto3.resource('s3', region_name='us-east-1')
-    bucket = conn.create_bucket(Bucket=settings.VIDEO_S3_THUMBNAIL_BUCKET)
-
-    # Throw a fake thumbnail in the bucket:
-    data = BytesIO(b'00000001111111')
-    bucket.upload_fileobj(
-        data, 'thumbnails/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_00001.jpg')
-
-    job = {'Id': '1498765896748-e0p0qr',
-           'Input': {'Key': '1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi.mp4'},
-           'Inputs': [{'Key': '1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi.mp4'}],
-           'Output': {'Id': '1',
-                      'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700489769-iyi2t4',
-                      'PresetId': '1498700489769-iyi2t4',
-                      'SegmentDuration': '10.0',
-                      'Status': 'Complete'},
-           'Outputs': [{'Id': '1',
-                        'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700489769-iyi2t4',
-                        'PresetId': '1498700489769-iyi2t4',
-                        'SegmentDuration': '10.0',
-                        'Status': 'Complete',
-                        'ThumbnailPattern': 'thumbnails/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_{count}',
-                        'Watermarks': [],
-                        'Width': 1280},
-                       {'Id': '2',
-                        'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700403561-zc5oo5',
-                        'PresetId': '1498700403561-zc5oo5',
-                        'SegmentDuration': '10.0',
-                        'Status': 'Complete',
-                        'Watermarks': [],
-                        'Width': 1280},
-                       {'Id': '3',
-                        'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700578799-qvvjor',
-                        'PresetId': '1498700578799-qvvjor',
-                        'SegmentDuration': '10.0',
-                        'Status': 'Complete',
-                        'Watermarks': [],
-                        'Width': 854},
-                       {'Id': '4',
-                        'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700649488-6t9m3h',
-                        'PresetId': '1498700649488-6t9m3h',
-                        'SegmentDuration': '10.0',
-                        'Status': 'Complete',
-                        'Watermarks': [],
-                        'Width': 640}],
-           'PipelineId': '1497455687488-evsuze',
-           'Playlists': [{'Format': 'HLSv4',
-                          'Name': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi__index',
-                          'OutputKeys': [
-                              'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700489769-iyi2t4',
-                              'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700403561-zc5oo5',
-                              'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700578799-qvvjor',
-                              'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700649488-6t9m3h'],
-                          'Status': 'Complete'}],
-           'Status': 'Complete'}
-
-    MockClientET.preset = {'Preset': {'Thumbnails': {'MaxHeight': 190, 'MaxWidth': 100}}}
-    mocker.patch('ui.utils.get_transcoder_client', return_value=MockClientET())
-    process_transcode_results(video, job)
-    assert len(video.videofile_set.all()) == 2
-    assert len(video.videothumbnail_set.all()) == 1
+    with pytest.raises(Http404):
+        api.process_dropbox_data(
+            {
+                'collection': uuid4().hex,
+                'files': [],
+            }
+        )

@@ -6,12 +6,7 @@
 {% block content %}
 {% if user.is_authenticated %}
   <ul>
-    <li><a href="{% url 'video-list' %}">View videos</a></li>
-    {% if user.is_staff %}
-      <li><a href="{% url 'upload' %}">Upload videos</a></li>
-    {% else %}
-      <li><i>You do not have permission to upload videos.</i></li>
-    {% endif %}
+    <li><a href="{% url 'collection-list' %}">View collections</a></li>
   </ul>
 {% else %}
   <p>Welcome to OVS. Please log in.</p>

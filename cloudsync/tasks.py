@@ -15,7 +15,7 @@ from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 
 from cloudsync.utils import VideoTranscoder
-from ui.api import refresh_status
+from cloudsync.api import refresh_status
 from ui.models import VideoFile, Video
 from ui.constants import VideoStatus
 

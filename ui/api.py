@@ -3,73 +3,53 @@ API methods
 """
 import logging
 
+from celery import chain
 from django.conf import settings
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 
-from ui.encodings import EncodingNames
-from ui.constants import VideoStatus
-from ui.utils import get_et_preset, get_bucket, get_et_job
-from ui.models import VideoFile, VideoThumbnail
+from cloudsync import tasks
+from ui import models
 
 
 log = logging.getLogger(__name__)
 
 
-def process_transcode_results(video, job):
+def process_dropbox_data(dropbox_upload_data):
     """
-    Create VideoFile and VideoThumbnail objects for a Video based on AWS ET job output
+    Takes care of processing a list of videos to be uploaded from dropbox
 
     Args:
-        video(Video): Video object to which files and thumbnails belong
-        job(JSON): JSON representation of AWS ET job output
+        dropbox_links_list (dict): a dictionary containing the collection key and a list of dropbox links
+
+    Returns:
+        list: A list of dictionaries containing informations about the videos
     """
-
-    for playlist in job['Playlists']:
-        VideoFile.objects.get_or_create(
-            s3_object_key='{}.m3u8'.format(playlist['Name']),  # This assumes HLS encoding
-            defaults={
-                'video': video,
-                'bucket_name': settings.VIDEO_S3_TRANSCODE_BUCKET,
-                'encoding': EncodingNames.HLS,
-                'preset_id': ','.join([output['PresetId'] for output in job['Outputs']]),
-            }
-
-        )
-    for output in job['Outputs']:
-        if 'ThumbnailPattern' not in output:
-            continue
-        thumbnail_pattern = output['ThumbnailPattern'].replace("{count}", "")
-        preset = get_et_preset(output['PresetId'])
-        bucket = get_bucket(settings.VIDEO_S3_THUMBNAIL_BUCKET)
-        for thumb in bucket.objects.filter(Prefix=thumbnail_pattern):
-            VideoThumbnail.objects.get_or_create(
-                s3_object_key=thumb.key,
-                defaults={
-                    'video': video,
-                    'bucket_name': settings.VIDEO_S3_THUMBNAIL_BUCKET,
-                    'preset_id': output['PresetId'],
-                    'max_height': int(preset['Thumbnails']['MaxHeight']),
-                    'max_width': int(preset['Thumbnails']['MaxWidth'])
-                }
+    collection_key = dropbox_upload_data['collection']
+    dropbox_links_list = dropbox_upload_data['files']
+    collection = get_object_or_404(models.Collection, key=collection_key)
+    response_data = {}
+    for dropbox_link in dropbox_links_list:
+        with transaction.atomic():
+            video = models.Video.objects.create(
+                source_url=dropbox_link["link"],
+                title=dropbox_link["name"],
+                collection=collection,
             )
+            models.VideoFile.objects.create(
+                s3_object_key=video.get_s3_key(),
+                video_id=video.id,
+                bucket_name=settings.VIDEO_S3_BUCKET
+            )
+        # Kick off chained async celery tasks to transfer file to S3, then start a transcode job
+        task_result = chain(
+            tasks.stream_to_s3.s(video.id),
+            tasks.transcode_from_s3.si(video.id)
+        )()
 
-
-def refresh_status(video, encode_job=None):
-    """
-    Check the encode job status & if not complete, update the status via a query to AWS.
-
-    Args:
-        video(ui.models.Video): Video object to refresh status of.
-        encode_job(dj_elastictranscoder.models.EncodeJob): EncodeJob associated with Video
-    """
-    if video.status == VideoStatus.TRANSCODING:
-        if not encode_job:
-            encode_job = video.encode_jobs.latest("created_at")
-        et_job = get_et_job(encode_job.id)
-        if et_job['Status'] == VideoStatus.COMPLETE:
-            process_transcode_results(video, et_job)
-            video.update_status(VideoStatus.COMPLETE)
-        elif et_job['Status'] == VideoStatus.ERROR:
-            video.update_status(VideoStatus.TRANSCODE_FAILED)
-            log.error('Transcoding failed for video %d', video.id)
-        encode_job.message = et_job
-        encode_job.save()
+        response_data[video.hexkey] = {
+            "s3key": video.get_s3_key(),
+            "title": video.title,
+            "task": task_result.id,
+        }
+    return response_data
