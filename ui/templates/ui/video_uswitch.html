@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block prebundle %}
+ <link rel="stylesheet" href="{{ uswitchPlayerURL }}/style/style.css" />
+    <script type="text/javascript" src="{{ uswitchPlayerURL }}/lib/omni-external-libs.js"></script>
+    <script type="text/javascript" src="{{ uswitchPlayerURL }}/lib/omni-min.js"></script>
+    <script type="text/javascript" src="{{ uswitchPlayerURL }}/lib/hls.min.js"></script>
+{% endblock %}
+{% block content %}
+    <div id="odl-video-player" class="video-odl-medium"></div>
+    {% load render_bundle %}
+    {% render_bundle 'uswitch' %}
+{%  endblock %}

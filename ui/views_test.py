@@ -71,10 +71,10 @@ def test_video_detail_unencoded(
     assert response.context_data['videofile'] is None
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert 'videofile' in js_settings_json
-    assert js_settings_json['videofile'] == ''
+    assert js_settings_json['videofile'] is None
 
 
-def test_video_detail_omniplayer(admin_client, video, videofileHLS, mocker):
+def test_video_detail_uswitch(admin_client, video, videofileHLS, mocker):
     """Test video detail page when Video.multiangle is True"""
     mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
     video.status = 'Complete'
@@ -82,6 +82,6 @@ def test_video_detail_omniplayer(admin_client, video, videofileHLS, mocker):
     video.save()
     url = reverse('video-detail', kwargs={'pk': video.id})
     response = admin_client.get(url)
-    assert 'uswitchPlayerURL' in response.context_data
+    assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
     js_settings_json = json.loads(response.context_data['js_settings_json'])
-    assert js_settings_json['uswitchPlayerURL'] == settings.USWITCH_URL
+    assert js_settings_json['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'

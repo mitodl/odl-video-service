@@ -7,7 +7,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 import VideoPlayer from '../components/VideoPlayer';
-const videoSource = SETTINGS.videofile; // eslint-disable-line no-undef
+const videoSource = SETTINGS.videofile;
 
 const videoJsOptions = {
   autoplay: true,

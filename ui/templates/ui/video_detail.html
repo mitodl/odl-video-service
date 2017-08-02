@@ -1,15 +1,19 @@
 {% extends "base.html" %}
 {% block title %}OVS | Video Detail{% endblock %}
 {% block pagetitle %}OVS: Video Detail{% endblock %}
-{% block prebundle %}
-    {%  if video.multiangle %}
-        <link rel="stylesheet" href="{{ uswitchPlayerURL }}/style/style.css">
-    {%  endif %}
-{% endblock %}
 {% block content %}
-
+{% if user.is_authenticated %}
+    <p>You are logged in as {{ user.username }}. <a href="{% url 'logout' %}">Logout</a></p>
+{% else %}
+    <p><a href="{% url 'index' %}">Login</a></p>
+{% endif %}
 {% if videofile %}
-    <div id="odl-video-player" class="video-odl-medium"></div>
+    {% if video.multiangle %}
+        <iframe src="{% url 'video-uswitch' video.id %}" class="video-odl-medium" frameborder="0"
+                scrolling="no" allowfullscreen="allowfullscreen"></iframe>
+    {% else %}
+        <div id="odl-video-player" class="video-odl-medium"></div>
+    {% endif %}
 {% else %}
     <div>Your video is still processing. Please try again later.</div>
 {% endif %}
@@ -117,9 +121,7 @@
 </script>
 {% load render_bundle %}
 {% if videofile %}
-    {%  if video.multiangle %}
-        {% render_bundle 'uswitch' %}
-    {%  else %}
+    {%  if not video.multiangle %}
         {% render_bundle 'video' %}
     {% endif %}
 {% endif %}

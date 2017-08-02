@@ -100,10 +100,44 @@ class VideoDetail(DetailView):
                 default_settings["uswitchPlayerURL"] = settings.USWITCH_URL
         except VideoFile.DoesNotExist:
             videofile = None
-            default_settings['videofile'] = ''
+            default_settings['videofile'] = None
 
         context['videofile'] = videofile
         context["js_settings_json"] = json.dumps(default_settings)
+        return context
+
+
+@method_decorator(login_required, name='dispatch')
+class VideoUswitch(DetailView):
+    """Display video using USwitch"""
+    model = Video
+    template_name = 'ui/video_uswitch.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        default_settings = json.loads(default_js_settings(self.request))
+        video = context["object"]
+        videofile = video.videofile_set.get(encoding=EncodingNames.HLS)
+        default_settings['videofile'] = {
+            "src": videofile.cloudfront_url,
+            "title": video.title,
+            "description": video.description,
+        }
+        context['uswitchPlayerURL'] = settings.USWITCH_URL
+        default_settings["uswitchPlayerURL"] = settings.USWITCH_URL
+        context['videofile'] = videofile
+        context["js_settings_json"] = json.dumps(default_settings)
+        return context
+
+
+@method_decorator(login_required, name='dispatch')
+class MosaicView(TemplateView):
+    """Display USwitch cameras in separate window"""
+    template_name = "ui/mosaic.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['uswitchPlayerURL'] = settings.USWITCH_URL
         return context
 
 
