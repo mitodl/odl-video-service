@@ -90,14 +90,7 @@ class VideoDetail(DetailView):
         context['form'] = VideoForm(instance=video)
         try:
             videofile = video.videofile_set.get(encoding=EncodingNames.HLS)
-            default_settings['videofile'] = {
-                "src": videofile.cloudfront_url,
-                "title": video.title,
-                "description": video.description,
-            }
-            if video.multiangle:
-                context['uswitchPlayerURL'] = settings.USWITCH_URL
-                default_settings["uswitchPlayerURL"] = settings.USWITCH_URL
+            default_settings['videofile'] = videofile.cloudfront_url
         except VideoFile.DoesNotExist:
             videofile = None
             default_settings['videofile'] = None
