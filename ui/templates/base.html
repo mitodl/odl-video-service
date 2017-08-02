@@ -10,6 +10,8 @@
     <script type="text/javascript">
       var SETTINGS = {{ js_settings_json|safe }};
     </script>
+    {% block prebundle %}
+    {% endblock %}
     {% load render_bundle %}
     {% render_bundle "common" %}
     {% render_bundle 'style' %}
@@ -29,11 +31,6 @@
       <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
       {% endfor %}
     </ul>
-  {% endif %}
-  {% if user.is_authenticated %}
-    <p>You are logged in as {{ user.username }}. <a href="{% url 'logout' %}">Logout</a></p>
-  {% else %}
-    <p><a href="{% url 'index' %}">Login</a></p>
   {% endif %}
   {% block content %}{% endblock %}
 </body>

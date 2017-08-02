@@ -478,3 +478,5 @@ MANDATORY_SETTINGS = [
     'SECRET_KEY',
     'VIDEO_CLOUDFRONT_DIST',
 ]
+# This is necessary for loading USwitch video player code from an external source
+USWITCH_URL = get_string('USWITCH_URL', '')

@@ -50,7 +50,7 @@ def test_video_detail_hls(admin_client, video, videofileHLS, mocker):  # pylint:
     assert 'videofile' in response.context_data
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert js_settings_json == {
-        'videofile': response.context_data['videofile'].cloudfront_signed_url,
+        'videofile': response.context_data['videofile'].cloudfront_url,
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": '/static/bundles/'
     }
@@ -67,4 +67,35 @@ def test_video_detail_unencoded(
     assert response.context_data['videofile'] is None
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert 'videofile' in js_settings_json
-    assert js_settings_json['videofile'] == ''
+    assert js_settings_json['videofile'] is None
+
+
+def test_video_uswitch(admin_client, video, videofileHLS, mocker, settings):  # pylint: disable=redefined-outer-name
+    """Test video detail page when Video.multiangle is True"""
+    settings.USWITCH_URL = 'https://testing_odl.mit.edu'
+    mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
+    video.status = 'Complete'
+    video.multiangle = True
+    video.save()
+    url = reverse('video-uswitch', kwargs={'pk': video.id})
+    response = admin_client.get(url)
+    assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
+    js_settings_json = json.loads(response.context_data['js_settings_json'])
+    assert js_settings_json == {
+        'videofile': {
+            'src': response.context_data['videofile'].cloudfront_url,
+            'title': video.title,
+            'description': video.description,
+        },
+        'uswitchPlayerURL': 'https://testing_odl.mit.edu',
+        'gaTrackingID': settings.GA_TRACKING_ID,
+        'public_path': '/static/bundles/'
+    }
+
+
+def test_mosaic_view(admin_client, settings):  # pylint: disable=redefined-outer-name
+    """Test the MosaicView"""
+    settings.USWITCH_URL = 'https://testing_odl.mit.edu'
+    url = reverse('video-mosaic')
+    response = admin_client.get(url)
+    assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
