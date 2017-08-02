@@ -10,6 +10,8 @@
     <script type="text/javascript">
       var SETTINGS = {{ js_settings_json|safe }};
     </script>
+    {% block prebundle %}
+    {% endblock %}
     {% load render_bundle %}
     {% render_bundle "common" %}
     {% render_bundle 'style' %}

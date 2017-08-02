@@ -60,6 +60,7 @@ class Video(models.Model):
     )
     s3_subkey = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     encode_jobs = GenericRelation(EncodeJob)
+    multiangle = models.BooleanField(null=False, default=False)
 
     def get_s3_key(self):
         """

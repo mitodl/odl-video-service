@@ -6,7 +6,8 @@ module.exports = {
     entry: {
       'root': ['babel-polyfill', './static/js/entry/root'],
       'style': './static/js/entry/style',
-      'video': './static/js/entry/video'
+      'video': './static/js/entry/video',
+      'uswitch': './static/js/entry/uswitch'
     },
     module: {
       rules: [

@@ -14,7 +14,7 @@ const videoJsOptions = {
   controls: true,
   fluid: false,
   sources: [{
-    src: videoSource,
+    src: videoSource.src,
     type: 'application/x-mpegURL'
   }]
 };

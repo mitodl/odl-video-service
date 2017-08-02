@@ -71,6 +71,7 @@
     "sanctuary": "^0.12.2",
     "sass-lint": "^1.10.2",
     "sass-loader": "^6.0.5",
+    "scriptjs": "^2.5.8",
     "sinon": "^2.3.1",
     "style-loader": "^0.18.1",
     "url-loader": "^0.5.8",

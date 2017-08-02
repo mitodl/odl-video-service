@@ -50,7 +50,11 @@ def test_video_detail_hls(admin_client, video, videofileHLS, mocker):  # pylint:
     assert 'videofile' in response.context_data
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert js_settings_json == {
-        'videofile': response.context_data['videofile'].cloudfront_signed_url,
+        'videofile': {
+            'src': response.context_data['videofile'].cloudfront_signed_url,
+            'title': video.title,
+            'description': video.description,
+        },
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": '/static/bundles/'
     }
@@ -68,3 +72,16 @@ def test_video_detail_unencoded(
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert 'videofile' in js_settings_json
     assert js_settings_json['videofile'] == ''
+
+
+def test_video_detail_omniplayer(admin_client, video, videofileHLS, mocker):
+    """Test video detail page when Video.multiangle is True"""
+    mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
+    video.status = 'Complete'
+    video.multiangle = True
+    video.save()
+    url = reverse('video-detail', kwargs={'pk': video.id})
+    response = admin_client.get(url)
+    assert 'omniPlayerURL' in response.context_data
+    js_settings_json = json.loads(response.context_data['js_settings_json'])
+    assert js_settings_json['omniPlayerURL'] == settings.OMNIPLAYER_URL

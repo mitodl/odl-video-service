@@ -85,15 +85,24 @@ class VideoDetail(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        default_settings = json.loads(default_js_settings(self.request))
         video = context["object"]
         context['form'] = VideoForm(instance=video)
         try:
             videofile = video.videofile_set.get(encoding=EncodingNames.HLS)
+            default_settings['videofile'] = {
+                "src": videofile.cloudfront_url,
+                "title": video.title,
+                "description": video.description,
+            }
+            if video.multiangle:
+                context['uswitchPlayerURL'] = settings.USWITCH_URL
+                default_settings["uswitchPlayerURL"] = settings.USWITCH_URL
         except VideoFile.DoesNotExist:
             videofile = None
+            default_settings['videofile'] = ''
+
         context['videofile'] = videofile
-        default_settings = json.loads(default_js_settings(self.request))
-        default_settings['videofile'] = videofile.cloudfront_signed_url if videofile else ''
         context["js_settings_json"] = json.dumps(default_settings)
         return context
 

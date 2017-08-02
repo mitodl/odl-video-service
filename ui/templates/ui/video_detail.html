@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block title %}OVS | Video Detail{% endblock %}
 {% block pagetitle %}OVS: Video Detail{% endblock %}
+{% block prebundle %}
+    {%  if video.multiangle %}
+        <link rel="stylesheet" href="{{ uswitchPlayerURL }}/style/style.css">
+    {%  endif %}
+{% endblock %}
 {% block content %}
 
 {% if videofile %}
@@ -111,5 +116,11 @@
   });
 </script>
 {% load render_bundle %}
-{% render_bundle 'video' %}
+{% if videofile %}
+    {%  if video.multiangle %}
+        {% render_bundle 'uswitch' %}
+    {%  else %}
+        {% render_bundle 'video' %}
+    {% endif %}
+{% endif %}
 {% endblock %}
