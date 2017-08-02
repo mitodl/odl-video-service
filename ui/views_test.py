@@ -70,8 +70,9 @@ def test_video_detail_unencoded(
     assert js_settings_json['videofile'] is None
 
 
-def test_video_uswitch(admin_client, video, videofileHLS, mocker):
+def test_video_uswitch(admin_client, video, videofileHLS, mocker, settings):  # pylint: disable=redefined-outer-name
     """Test video detail page when Video.multiangle is True"""
+    settings.USWITCH_URL = 'https://testing_odl.mit.edu'
     mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
     video.status = 'Complete'
     video.multiangle = True
@@ -92,8 +93,9 @@ def test_video_uswitch(admin_client, video, videofileHLS, mocker):
     }
 
 
-def test_mosaic_view(admin_client):
+def test_mosaic_view(admin_client, settings):  # pylint: disable=redefined-outer-name
     """Test the MosaicView"""
+    settings.USWITCH_URL = 'https://testing_odl.mit.edu'
     url = reverse('video-mosaic')
     response = admin_client.get(url)
     assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
