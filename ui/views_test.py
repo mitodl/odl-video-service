@@ -82,6 +82,6 @@ def test_video_detail_omniplayer(admin_client, video, videofileHLS, mocker):
     video.save()
     url = reverse('video-detail', kwargs={'pk': video.id})
     response = admin_client.get(url)
-    assert 'omniPlayerURL' in response.context_data
+    assert 'uswitchPlayerURL' in response.context_data
     js_settings_json = json.loads(response.context_data['js_settings_json'])
-    assert js_settings_json['omniPlayerURL'] == settings.OMNIPLAYER_URL
+    assert js_settings_json['uswitchPlayerURL'] == settings.USWITCH_URL
