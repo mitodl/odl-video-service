@@ -1,5 +1,24 @@
 [
   {
+    "Video": {
+      "BitRate": "900",
+      "Codec": "H.264",
+      "CodecOptions": {
+        "ColorSpaceConversionMode": "None",
+        "InterlacedMode": "Progressive",
+        "Level": "3.1",
+        "MaxReferenceFrames": "1",
+        "Profile": "main"
+      },
+      "DisplayAspectRatio": "auto",
+      "FixedGOP": "true",
+      "FrameRate": "30",
+      "KeyframesMaxDist": "90",
+      "MaxHeight": "360",
+      "MaxWidth": "640",
+      "PaddingPolicy": "NoPad",
+      "SizingPolicy": "Fit"
+    },
     "Audio": {
       "BitRate": "96",
       "Channels": "1",
@@ -19,16 +38,18 @@
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
-    },
+    }
+  },
+  {
     "Video": {
-      "BitRate": "1000",
+      "BitRate": "1300",
       "Codec": "H.264",
       "CodecOptions": {
         "ColorSpaceConversionMode": "None",
         "InterlacedMode": "Progressive",
-        "Level": "4",
+        "Level": "3.1",
         "MaxReferenceFrames": "1",
-        "Profile": "baseline"
+        "Profile": "main"
       },
       "DisplayAspectRatio": "auto",
       "FixedGOP": "true",
@@ -38,9 +59,7 @@
       "MaxWidth": "960",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
-    }
-  },
-  {
+    },
     "Audio": {
       "BitRate": "128",
       "Channels": "1",
@@ -52,7 +71,7 @@
     },
     "Container": "ts",
     "Description": "HLS for medium network bandwidth",
-    "Name": "HLS_1_8mpbs",
+    "Name": "HLS_1_5mpbs",
     "Thumbnails": {
       "Format": "jpg",
       "Interval": "300",
@@ -60,28 +79,28 @@
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
-    },
+    }
+  },
+  {
     "Video": {
-      "BitRate": "1708",
+      "BitRate": "1800",
       "Codec": "H.264",
       "CodecOptions": {
         "ColorSpaceConversionMode": "None",
         "InterlacedMode": "Progressive",
-        "Level": "3",
+        "Level": "3.1",
         "MaxReferenceFrames": "1",
-        "Profile": "baseline"
+        "Profile": "main"
       },
       "DisplayAspectRatio": "auto",
       "FixedGOP": "true",
       "FrameRate": "30",
       "KeyframesMaxDist": "90",
-      "MaxHeight": "540",
-      "MaxWidth": "960",
+      "MaxHeight": "720",
+      "MaxWidth": "1280",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
-    }
-  },
-  {
+    },
     "Audio": {
       "BitRate": "160",
       "Channels": "2",
@@ -101,28 +120,28 @@
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
-    },
+    }
+  },
+  {
     "Video": {
-      "BitRate": "1800",
+      "BitRate": "3800",
       "Codec": "H.264",
       "CodecOptions": {
         "ColorSpaceConversionMode": "None",
         "InterlacedMode": "Progressive",
-        "Level": "4",
+        "Level": "3.1",
         "MaxReferenceFrames": "1",
-        "Profile": "baseline"
+        "Profile": "main"
       },
       "DisplayAspectRatio": "auto",
       "FixedGOP": "true",
       "FrameRate": "30",
       "KeyframesMaxDist": "90",
-      "MaxHeight": "720",
-      "MaxWidth": "1280",
+      "MaxHeight": "1080",
+      "MaxWidth": "1920",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
-    }
-  },
-  {
+    },
     "Audio": {
       "BitRate": "224",
       "Channels": "2",
@@ -140,25 +159,6 @@
       "Interval": "300",
       "MaxHeight": "144",
       "MaxWidth": "192",
-      "PaddingPolicy": "NoPad",
-      "SizingPolicy": "Fit"
-    },
-    "Video": {
-      "BitRate": "4000",
-      "Codec": "H.264",
-      "CodecOptions": {
-        "ColorSpaceConversionMode": "None",
-        "InterlacedMode": "Progressive",
-        "Level": "4",
-        "MaxReferenceFrames": "1",
-        "Profile": "baseline"
-      },
-      "DisplayAspectRatio": "auto",
-      "FixedGOP": "true",
-      "FrameRate": "30",
-      "KeyframesMaxDist": "90",
-      "MaxHeight": "720",
-      "MaxWidth": "1280",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
     }
