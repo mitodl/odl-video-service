@@ -1,5 +1,8 @@
 [
   {
+    "Name": "HLS_AV_1_0Mbps",
+    "Description": "HLS for low network bandwidth",
+    "Container": "ts",
     "Video": {
       "BitRate": "900",
       "Codec": "H.264",
@@ -28,19 +31,19 @@
       },
       "SampleRate": "44100"
     },
-    "Container": "ts",
-    "Description": "HLS for low network bandwidth",
-    "Name": "HLS_AV_1_0mpbs",
     "Thumbnails": {
       "Format": "jpg",
       "Interval": "300",
-      "MaxHeight": "144",
+      "MaxHeight": "108",
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
     }
   },
   {
+    "Name": "HLS_AV_1_5Mbps",
+    "Description": "HLS for medium network bandwidth",
+    "Container": "ts",
     "Video": {
       "BitRate": "1300",
       "Codec": "H.264",
@@ -69,19 +72,19 @@
       },
       "SampleRate": "44100"
     },
-    "Container": "ts",
-    "Description": "HLS for medium network bandwidth",
-    "Name": "HLS_1_5mpbs",
     "Thumbnails": {
       "Format": "jpg",
       "Interval": "300",
-      "MaxHeight": "144",
+      "MaxHeight": "108",
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
     }
   },
   {
+    "Name": "HLS_AV_2_0Mbps",
+    "Description": "HLS for high network bandwidth",
+    "Container": "ts",
     "Video": {
       "BitRate": "1800",
       "Codec": "H.264",
@@ -110,19 +113,19 @@
       },
       "SampleRate": "44100"
     },
-    "Container": "ts",
-    "Description": "HLS for high network bandwidth",
-    "Name": "HLS_AV_2_0mpbs",
     "Thumbnails": {
       "Format": "jpg",
       "Interval": "300",
-      "MaxHeight": "144",
+      "MaxHeight": "108",
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
     }
   },
   {
+    "Name": "HLS_AV_4_0Mbps",
+    "Description": "HLS for highest network bandwidth",
+    "Container": "ts",
     "Video": {
       "BitRate": "3800",
       "Codec": "H.264",
@@ -151,13 +154,10 @@
       },
       "SampleRate": "44100"
     },
-    "Container": "ts",
-    "Description": "HLS for highest network bandwidth",
-    "Name": "HLS_AV_4_0mpbs",
     "Thumbnails": {
       "Format": "jpg",
       "Interval": "300",
-      "MaxHeight": "144",
+      "MaxHeight": "108",
       "MaxWidth": "192",
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
