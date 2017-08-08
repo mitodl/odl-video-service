@@ -51,7 +51,7 @@ class Video(models.Model):
     title = models.CharField(max_length=250, blank=True)
     description = models.TextField(blank=True)
     source_url = models.URLField()
-    moira_lists = models.ManyToManyField(MoiraList)
+    moira_lists = models.ManyToManyField(MoiraList, blank=True)
     status = models.TextField(
         null=False,
         default=VideoStatus.CREATED,
