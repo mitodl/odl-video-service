@@ -26,7 +26,11 @@
     },
     "MAILGUN_KEY": {
       "description": "The token for authenticating against the Mailgun API",
-      "required": false
+      "required": true
+    },
+    "MAILGUN_URL": {
+      "description": "The url for the Mailgun API",
+      "required": true
     },
     "ODL_VIDEO_ADMIN_EMAIL": {
       "description": "E-mail to send 500 reports to.",
@@ -67,6 +71,10 @@
     },
     "ODL_VIDEO_FROM_EMAIL": {
       "value": "MIT ODL Video Service <micromasters-support@mit.edu>"
+    },
+    "ODL_VIDEO_BASE_URL": {
+      "description": "Application base URL",
+      "required": true
     },
     "ODL_VIDEO_SECURE_SSL_REDIRECT": {
       "description": "Application-level SSL redirect setting.",

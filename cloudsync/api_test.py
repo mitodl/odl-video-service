@@ -13,11 +13,7 @@ from django.db import transaction
 from django.test import override_settings
 from moto import mock_s3
 
-from cloudsync.api import (process_transcode_results,
-                           refresh_status,
-                           extract_title,
-                           process_watch_file,
-                           transcode_video)
+from cloudsync import api
 from cloudsync.conftest import MockClientET, MockBoto
 from cloudsync.exceptions import VideoFilenameError
 from ui.constants import VideoStatus
@@ -45,19 +41,45 @@ def videofile():
     return VideoFileFactory()
 
 
-def test_video_job_status_error(mocker):
+def test_get_error_type_from_et_erro():
+    """
+    Tests get_error_type_from_et_error
+    """
+    # weird strings
+    for str_error in ('', None, 'foo', '1234foo', ):
+        assert api.get_error_type_from_et_error(str_error) == VideoStatus.TRANSCODE_FAILED_INTERNAL
+
+    # actual error like string that should be an internal error
+    assert api.get_error_type_from_et_error(
+        '1234 this is an internal error') == VideoStatus.TRANSCODE_FAILED_INTERNAL
+
+    # actual error like string that should be a video error
+    assert api.get_error_type_from_et_error(
+        '4123 this is a video error') == VideoStatus.TRANSCODE_FAILED_VIDEO
+
+
+def test_refresh_status_video_job_status_error(mocker):
     """
     Verify that Video.job_status property returns the status of its encoding job
     """
     video = VideoFactory(status=VideoStatus.TRANSCODING)
     encodejob = EncodeJobFactory(video=video)
-    MockClientET.job = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}}
+    MockClientET.job = {
+        'Job': {
+            'Id': '1498220566931-qtmtcu',
+            'Status': 'Error',
+            'Output': {
+                'StatusDetail': ('4000 45585321-f360-4557-aef7-91d46460eac5: '
+                                 'Amazon Elastic Transcoder could not interpret the media file.')
+            }
+        }
+    }
     mocker.patch('ui.utils.boto3', MockBoto)
-    refresh_status(video, encodejob)
-    assert video.status == VideoStatus.TRANSCODE_FAILED
+    api.refresh_status(video, encodejob)
+    assert video.status == VideoStatus.TRANSCODE_FAILED_VIDEO
 
 
-def test_video_job_status_complete(mocker):
+def test_refresh_status_video_job_status_complete(mocker):
     """
     Verify that Video.job_status property returns the status of its encoding job
     """
@@ -66,11 +88,11 @@ def test_video_job_status_complete(mocker):
     MockClientET.job = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Complete'}}
     mocker.patch('ui.utils.boto3', MockBoto)
     mocker.patch('cloudsync.api.process_transcode_results')
-    refresh_status(video, encodejob)
+    api.refresh_status(video, encodejob)
     assert video.status == VideoStatus.COMPLETE
 
 
-def test_video_job_othererror(mocker):
+def test_refresh_status_video_job_othererror(mocker):
     """
     Verify that refresh_status does not raise ClientError
     """
@@ -81,7 +103,7 @@ def test_video_job_othererror(mocker):
     error = Exception("unexpected exception")
     mocker.patch('ui.utils.get_transcoder_client', return_value=MockClientET(error=error))
     with pytest.raises(Exception):
-        refresh_status(video)
+        api.refresh_status(video)
 
 
 @mock_s3
@@ -151,7 +173,7 @@ def test_process_transcode_results(mocker):
 
     MockClientET.preset = {'Preset': {'Thumbnails': {'MaxHeight': 190, 'MaxWidth': 100}}}
     mocker.patch('ui.utils.get_transcoder_client', return_value=MockClientET())
-    process_transcode_results(video, job)
+    api.process_transcode_results(video, job)
     assert len(video.videofile_set.all()) == 2
     assert len(video.videothumbnail_set.all()) == 1
 
@@ -173,7 +195,7 @@ def test_extract_title():
                  ('MIT-Simons Lecture Series-lec-mit-0000-2017aug10-0956-2-10.mp4', 'MIT-Simons Lecture Series-2-10'),
                  ('/&*3:<>俺正和-lec-mit-0000-2017aug10-0956.mp4', '/&*3:<>俺正和'))
     for filename, title in filenames:
-        assert extract_title(filename) == title
+        assert api.extract_title(filename) == title
 
 
 def test_extract_bad_title():
@@ -184,7 +206,7 @@ def test_extract_bad_title():
 
     for name in bad_names:
         with pytest.raises(VideoFilenameError):
-            extract_title(name)
+            api.extract_title(name)
 
 
 @mock_s3
@@ -200,7 +222,7 @@ def test_watch_nouser():
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
     bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
     with pytest.raises(User.DoesNotExist):
-        process_watch_file(upload)
+        api.process_watch_file(upload)
     assert not Video.objects.filter(title=upload).exists()
 
 
@@ -217,7 +239,7 @@ def test_watch_s3_error():
     bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
     with transaction.atomic():
         with pytest.raises(ClientError):
-            process_watch_file(upload)
+            api.process_watch_file(upload)
     assert not Video.objects.filter(title=upload).exists()
 
 
@@ -235,7 +257,7 @@ def test_watch_filename_error():
     bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
     with transaction.atomic():
         with pytest.raises(VideoFilenameError):
-            process_watch_file(upload)
+            api.process_watch_file(upload)
     assert not Video.objects.filter(title=upload).exists()
 
 
@@ -255,7 +277,7 @@ def test_process_watch(mocker):
     s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
     bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
-    process_watch_file(upload)
+    api.process_watch_file(upload)
     videos = Video.objects.filter(title=upload)
     assert videos.count() == 1
     new_video = videos[0]
@@ -298,7 +320,7 @@ def test_transcode_job(mocker, videofile):
                           ET_PRESET_IDS=('1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
-    transcode_video(new_video, videofile)  # pylint: disable=no-value-for-parameter
+    api.transcode_video(new_video, videofile)  # pylint: disable=no-value-for-parameter
     mock_encoder.assert_called_once_with(
         {
             "Key": videofile.s3_object_key
@@ -337,7 +359,7 @@ def test_transcode_job_failure(mocker, videofile):
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode',
                                 side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
     with pytest.raises(ClientError):
-        transcode_video(new_video, videofile)
+        api.transcode_video(new_video, videofile)
     mock_encoder.assert_called_once_with(
         {
             "Key": videofile.s3_object_key
@@ -354,4 +376,4 @@ def test_transcode_job_failure(mocker, videofile):
         }]
     )
     assert len(new_video.encode_jobs.all()) == 1
-    assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODE_FAILED
+    assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL

@@ -63,6 +63,30 @@ def process_transcode_results(video, job):
             )
 
 
+def get_error_type_from_et_error(et_error):
+    """
+    Parses an Elastic transcoder error string and matches the error to an error in VideoStatus
+
+    Args:
+        et_error (str): a string representing the description of the Elastic Transcoder Error
+
+    Returns:
+        ui.constants.VideoStatus: a string representing the video status
+    """
+    if not et_error:
+        log.error('Elastic transcoder did not return an error string')
+        return VideoStatus.TRANSCODE_FAILED_INTERNAL
+    error_code = et_error.split(' ')[0]
+    try:
+        error_code = int(error_code)
+    except ValueError:
+        log.error('Elastic transcoder did not return an expected error string')
+        return VideoStatus.TRANSCODE_FAILED_INTERNAL
+    if 4000 <= error_code < 5000:
+        return VideoStatus.TRANSCODE_FAILED_VIDEO
+    return VideoStatus.TRANSCODE_FAILED_INTERNAL
+
+
 def refresh_status(video, encode_job=None):
     """
     Check the encode job status & if not complete, update the status via a query to AWS.
@@ -79,7 +103,7 @@ def refresh_status(video, encode_job=None):
             process_transcode_results(video, et_job)
             video.update_status(VideoStatus.COMPLETE)
         elif et_job['Status'] == VideoStatus.ERROR:
-            video.update_status(VideoStatus.TRANSCODE_FAILED)
+            video.update_status(get_error_type_from_et_error(et_job.get('Output', {}).get('StatusDetail')))
             log.error('Transcoding failed for video %d', video.id)
         encode_job.message = et_job
         encode_job.save()
@@ -124,13 +148,13 @@ def transcode_video(video, video_file):
         transcoder.encode(video_input, outputs, Playlists=playlists)
     except ClientError as exc:
         log.error('Transcode job creation failed for video %s', video.id)
-        video.update_status(VideoStatus.TRANSCODE_FAILED)
+        video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
         if hasattr(exc, 'response'):
             transcoder.message = exc.response
         raise
     finally:
         transcoder.create_job_for_object(video)
-        if video.status != VideoStatus.TRANSCODE_FAILED:
+        if video.status not in (VideoStatus.TRANSCODE_FAILED_INTERNAL, VideoStatus.TRANSCODE_FAILED_VIDEO, ):
             video.update_status(VideoStatus.TRANSCODING)
 
 

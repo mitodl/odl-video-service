@@ -143,11 +143,11 @@ def update_video_statuses(self):  # pylint: disable=unused-argument
         except EncodeJob.DoesNotExist:
             # Log the exception but don't raise it so other videos can be checked.
             log.exception("No EncodeJob object exists for video id %d", video.id)
-            video.update_status(VideoStatus.TRANSCODE_FAILED)
+            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
         except ClientError as exc:
             # Log the exception but don't raise it so other videos can be checked.
             log.exception("AWS error when refreshing job status for video %d: %s", video.id, exc.response)
-            video.update_status(VideoStatus.TRANSCODE_FAILED)
+            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
 
 
 @shared_task(bind=True)

@@ -10,6 +10,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 
+from mail import tasks
 from ui.factories import (
     VideoFactory,
     VideoFileFactory,
@@ -117,6 +118,25 @@ def test_video_status(video):
     with pytest.raises(ValidationError):
         video.status = 'foostatus'
         video.save()
+
+
+def test_video_update_status_email(video, mocker):
+    """
+    Tests the Video.update_status method to sends emails with some statuses
+    """
+    mocked_send_email = mocker.patch(
+        'mail.tasks.async_send_notification_email',
+        return_value=FAKE_RSA,
+        autospec=True
+    )
+    for video_status in tasks.STATUS_TO_NOTIFICATION:
+        video.update_status(video_status)
+        mocked_send_email.delay.assert_called_once_with(video.id)
+        mocked_send_email.reset_mock()
+
+    # email is not sent for other statuses
+    video.update_status(VideoStatus.TRANSCODING)
+    assert mocked_send_email.delay.call_count == 0
 
 
 def test_video_hexkey(video):
