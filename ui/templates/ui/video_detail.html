@@ -38,8 +38,7 @@
         </td>
     </tr>
   </table>
-  <input type="submit" value="Update"
-    {% if not request.user.is_staff %}disabled{% endif %} />
+  <input type="submit" value="Update" />
 </form>
 <hr>
 <p>Links:</p>
@@ -61,8 +60,7 @@
 </ul>
 <h4>
 <form class="delete-video" action="{% url 'models-api:video-detail' video.hexkey %}" method="DELETE">
-  <input type="submit" value="Delete video"
-    {% if not request.user.is_staff %}disabled{% endif %} />
+  <input type="submit" value="Delete video" />
 </form>
 
 <script>
