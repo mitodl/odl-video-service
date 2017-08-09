@@ -17,7 +17,7 @@ export default class USwitchPlayer extends React.Component {
     const options = {
       "nbCamera": 4,
       "live": false,
-      "thumbnailTop": true,
+      "thumbnailTop": false,
       "formats": {
         "HLS": this.props.src
       },
@@ -60,7 +60,9 @@ export default class USwitchPlayer extends React.Component {
 
   render() {
     return (
-        <div ref={ node => this.videoNode = node }  id='omniPlayer'></div>
+        <div ref={ node => this.videoNode = node }  allowFullScreen id='omniPlayer'>
+          <video id='video'></video>
+        </div>
     );
   }
 }

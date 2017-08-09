@@ -17,6 +17,6 @@ describe("USwitchPlayer", () => {
 
   it('div element with id of omniPlayer is rendered', () => {
     let wrapper = renderVideoPlayer();
-    assert.equal(wrapper.html(),'<div id="omniPlayer"></div>');
+    assert.equal(wrapper.html(),'<div allowfullscreen="" id="omniPlayer"><video id="video"></video></div>');
   });
 });
