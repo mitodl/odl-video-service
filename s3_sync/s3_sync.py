@@ -3,7 +3,7 @@
 """
 
 Read in setting values from ini file and then run s3 sync between local folder
-and specified S3 bucket. Send results to local logfile and notify slack channel.
+and specified S3 bucket. Send results to local logfile & notify slack channel.
 
 Use:
 python s3_sync.py -i <settings_file.ini>
@@ -33,10 +33,9 @@ config = ConfigParser(interpolation = ExtendedInterpolation())
 config.read(settings_file)
 
 # Configure logbook logging
-logger = RotatingFileHandler(config['Logs']['logfile'],
-							max_size = int(config['Logs']['max_size']),
-							backup_count = int(config['Logs']['backup_count']),
-							level = int(config['Logs']['level']))
+logger = RotatingFileHandler(config['Logs']['logfile'], max_size = int(config['Logs']['max_size']),
+	backup_count = int(config['Logs']['backup_count']),
+	level = int(config['Logs']['level']))
 logger.push_application()
 logger = Logger(__name__)
 
@@ -60,7 +59,8 @@ def verify_local_folder_exists(local_video_records_done_folder):
     Check whether the local video records done folder exists
 
     Args:
-      local_video_records_done_folder (str): The path of the local video records done folder.
+      local_video_records_done_folder (str): The path of the local video
+      	records done folder.
 
     Returns:
       If folder exists return None, and if not, logs error and exit.
@@ -76,7 +76,7 @@ def verify_aws_cli_installed(aws_cli_binary):
 	Check whether AWS CLI is installed
 
 	Args:
-	  aws cli binary (str): abosule path to aws cli binary file.
+	  aws cli binary (str): absolute path to aws cli binary file.
 
 	Returns:
 	  If file exists, return None, else log error and exit.
@@ -96,14 +96,15 @@ def verify_s3_bucket_exists(s3_bucket_name):
 	  s3_bucket_name (str): The s3 bucket name
 
 	Returns:
-	  list: if connection established and bucket found, return list of objects in bucket otherwise,
-	  error and exit on any issues trying to list objects in bucket.
+	  list: if connection established and bucket found, return list of
+	  	objects in bucket otherwise error and exit on any issues trying
+	  	to list objects in bucket.
 	"""
 	try:
 		ls_s3_bucket_cmd = 'aws s3 ls {}'.format(s3_bucket_name)
-		cmd_output = subprocess.run(ls_s3_bucket_cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		subprocess.run(ls_s3_bucket_cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		return
-	except subprocess.SubprocessError as err:
+	except subprocess.SubprocessError:
 		logger.exception("Failed to list specified s3 bucket")
 		sys.exit("[-] Failed to list specified s3 bucket")
 
@@ -116,8 +117,8 @@ def notify_slack_channel(slack_message):
 	"""
 	try:
 		resp = requests.post(os.environ.get('slack_webhook_url'), json={"text": slack_message,
-																	"username": config['Slack']['bot_username'],
-																	"icon_emoji": config['Slack']['bot_emoji'],})
+			"username": config['Slack']['bot_username'],
+			"icon_emoji": config['Slack']['bot_emoji'],})
 		return
 	except (requests.exceptions.RequestException, NameError) as err:
 		logger.warn("Failed to notify slack channel with following error: {}", err)
@@ -128,13 +129,15 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
 	Sync local files to specified S3 bucket
 
 	Args:
-	  local_video_records_done_folder (str): local folder containing video files ready to be copied to S3
+	  local_video_records_done_folder (str): local folder containing video files
+	   	ready to be copied to S3.
 	  s3_bucket_name (str): s3 bucket name
 	"""
 	try:
 		s3_sync_cmd = 'aws s3 sync {local_video_records_done_folder} "s3://"{s3_bucket_name}'.format(
 			local_video_records_done_folder=local_video_records_done_folder, s3_bucket_name=s3_bucket_name)
-		cmd_output = subprocess.run(s3_sync_cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		cmd_output = subprocess.run(s3_sync_cmd, shell=True, check=True, stdout=subprocess.PIPE,
+			stderr=subprocess.PIPE)
 		logger.info("S3 sync successfully ran: {}", cmd_output)
 		notify_slack_channel("Sync succeeded on: " + "*" + computer_name + "*" + "\n" + "`" + str(cmd_output) + "`")
 		logger.info("Syncing complete")
