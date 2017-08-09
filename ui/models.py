@@ -12,6 +12,7 @@ from django.db import models
 from django.conf import settings
 from dj_elastictranscoder.models import EncodeJob
 
+from mail import tasks
 from ui import utils
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
@@ -80,11 +81,11 @@ class Video(models.Model):
     title = models.CharField(max_length=250, blank=True)
     description = models.TextField(blank=True)
     source_url = models.URLField()
-    status = models.TextField(
+    status = models.CharField(
         null=False,
         default=VideoStatus.CREATED,
         choices=[(status, status) for status in VideoStatus.ALL_STATUSES],
-        max_length=30,
+        max_length=50,
     )
     encode_jobs = GenericRelation(EncodeJob)
     multiangle = models.BooleanField(null=False, default=False)
@@ -137,6 +138,8 @@ class Video(models.Model):
         """
         self.status = status
         self.save()
+        if status in tasks.STATUS_TO_NOTIFICATION.keys():
+            tasks.async_send_notification_email.delay(self.id)
 
     def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
         """

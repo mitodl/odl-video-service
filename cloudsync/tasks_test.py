@@ -124,7 +124,7 @@ def test_transcode_failure(mocker, videofile):
     with pytest.raises(ClientError):
         transcode_from_s3(video.id)  # pylint: disable=no-value-for-parameter
     assert video.encode_jobs.count() == 1
-    assert Video.objects.get(id=video.id).status == VideoStatus.TRANSCODE_FAILED
+    assert Video.objects.get(id=video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL
 
 
 def test_transcode_starting(mocker, videofile):
@@ -215,7 +215,7 @@ def test_update_video_statuses_nojob(mocker, video):  # pylint: disable=unused-a
                  side_effect=EncodeJob.DoesNotExist())
     video.update_status(VideoStatus.TRANSCODING)
     update_video_statuses()  # pylint: disable=no-value-for-parameter
-    assert VideoStatus.TRANSCODE_FAILED == Video.objects.get(id=video.id).status
+    assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
 
 
 def test_update_video_statuses_clienterror(mocker, video):  # pylint: disable=unused-argument
@@ -225,7 +225,7 @@ def test_update_video_statuses_clienterror(mocker, video):  # pylint: disable=un
                  side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
     video.update_status(VideoStatus.TRANSCODING)
     update_video_statuses()  # pylint: disable=no-value-for-parameter
-    assert VideoStatus.TRANSCODE_FAILED == Video.objects.get(id=video.id).status
+    assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
 
 
 def test_stream_to_s3_no_video():

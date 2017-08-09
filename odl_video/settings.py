@@ -62,6 +62,7 @@ WEBPACK_DEV_SERVER_PORT = get_int('WEBPACK_DEV_SERVER_PORT', 8082)
 INSTALLED_APPS = [
     'ui.apps.UIConfig',
     'cloudsync.apps.CloudSyncConfig',
+    'mail.apps.MailConfig',
     'dj_elastictranscoder',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -150,6 +151,9 @@ DATABASES = {
     'default': DEFAULT_DATABASE_CONFIG
 }
 
+
+# the full URL of the current application is mandatory
+ODL_VIDEO_BASE_URL = get_string('ODL_VIDEO_BASE_URL', None)
 
 # Celery
 # http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
@@ -482,9 +486,12 @@ MANDATORY_SETTINGS = [
     'CLOUDFRONT_PRIVATE_KEY',
     'DROPBOX_KEY',
     'ET_PIPELINE_ID',
+    'LECTURE_CAPTURE_USER',
+    'MAILGUN_KEY',
+    'MAILGUN_URL',
+    'ODL_VIDEO_BASE_URL',
     'REDIS_URL',
     'SECRET_KEY',
-    'VIDEO_CLOUDFRONT_DIST',
     'USWITCH_URL',
-    'LECTURE_CAPTURE_USER'
+    'VIDEO_CLOUDFRONT_DIST',
 ]
