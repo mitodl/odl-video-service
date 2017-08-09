@@ -72,14 +72,8 @@ to OVS.</p>
         descriptionField = document.createElement("textarea");
         descriptionField.name = "description";
         descriptionLabel.appendChild(descriptionField);
-        let moiraLabel = document.createElement("label");
-        moiraLabel.appendChild(document.createTextNode("Moira Lists (separated by spaces):"));
-        moiraField = document.createElement("input");
-        moiraField.name = "moira_lists";
-        moiraLabel.appendChild(moiraField);
         form.appendChild(titleLabel);
         form.appendChild(descriptionLabel);
-        form.appendChild(moiraLabel);
         let submitBtn = document.createElement("button")
         submitBtn.type = "submit";
         submitBtn.appendChild(document.createTextNode("Update"));
@@ -103,7 +97,6 @@ to OVS.</p>
     let data = {
       title: form.querySelector("[name=title]").value,
       description: form.querySelector("[name=description]").value,
-      moira_lists: form.querySelector("[name=moira_lists]").value.split(" ")
     }
     let headers = new Headers();
     headers.append("X-CSRFToken", CSRF);
