@@ -50,6 +50,7 @@ class VideoFactory(DjangoModelFactory):
     title = FuzzyText(prefix="Video ")
     description = Faker('text')
     source_url = '{url}{file_name}'.format(url=FAKE.url(), file_name=FAKE.file_name('video'))
+    multiangle = False
 
     class Meta:
         model = models.Video

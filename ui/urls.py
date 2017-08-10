@@ -16,7 +16,7 @@ urlpatterns = [
     url(r'^collections/(?P<collection_key>[0-9a-f]+)/upload/$', views.Upload.as_view(), name='upload'),
     url(r'^videos/(?P<video_key>[0-9a-f]+)/$', views.VideoDetail.as_view(), name='video-detail'),
     url(r'^videos/(?P<video_key>[0-9a-f]+)/uswitch/$', views.VideoUswitch.as_view(), name='video-uswitch'),
-    url(r'^videos/\d+/uswitch/mosaic.html$', views.MosaicView.as_view(), name='video-mosaic'),
+    url(r'^videos/(?P<video_key>[0-9a-f]+)/uswitch/mosaic.html$', views.MosaicView.as_view(), name='video-mosaic'),
     url(r'^transcode/', include('dj_elastictranscoder.urls')),
     url(r'^api/v0/upload_videos/$', views.UploadVideosFromDropbox.as_view(), name='upload-videos'),
     url(r'^api/v0/', include(router.urls, namespace='models-api')),
