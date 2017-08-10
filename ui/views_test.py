@@ -108,12 +108,14 @@ def test_video_uswitch(logged_in_client, mocker, settings):  # pylint: disable=r
     """Test video detail page when Video.multiangle is True"""
     settings.USWITCH_URL = 'https://testing_odl.mit.edu'
     client, user = logged_in_client
-    videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
+    videofileHLS = VideoFileFactory(
+        hls=True,
+        video__collection__owner=user,
+        video__multiangle=True,
+        video__status='Complete'
+    )
     video = videofileHLS.video
     mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
-    video.status = 'Complete'
-    video.multiangle = True
-    video.save()
     url = reverse('video-uswitch', kwargs={'video_key': video.hexkey})
     response = client.get(url)
     assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
@@ -133,9 +135,11 @@ def test_video_uswitch(logged_in_client, mocker, settings):  # pylint: disable=r
 def test_mosaic_view(logged_in_client, settings):  # pylint: disable=redefined-outer-name
     """Test the MosaicView"""
     client, _ = logged_in_client
+    video = VideoFactory(multiangle=True)
     settings.USWITCH_URL = 'https://testing_odl.mit.edu'
-    url = reverse('video-mosaic')
+    url = reverse('video-mosaic', kwargs={'video_key': video.hexkey})
     response = client.get(url)
+    assert response.status_code == status.HTTP_200_OK
     assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
 
 
