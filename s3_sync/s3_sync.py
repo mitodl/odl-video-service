@@ -85,7 +85,7 @@ def verify_local_folder_exists(local_video_records_done_folder):
     if os.path.exists(local_video_records_done_folder):
         return
     else:
-        logger.exception("Local Video Records Done folder not found")
+        logger.error("Local Video Records Done folder not found")
         sys.exit("[-] Local Video Records Done folder not found")
 
 
@@ -103,16 +103,8 @@ def verify_aws_cli_installed(aws_cli_binary):
     if os.path.exists(aws_cli_binary):
         return
     else:
-        try:
-            r = requests.get(config.get('AWS','CLI', fallback='https://s3.amazonaws.com/aws-cli/AWSCLI64.msi'), stream=True)
-            with open('aws_cli.msi', 'wb') as fd:
-                for chunk in r.iter_content(chunk_size=128):
-                    fd.write(chunk)
-            subprocess.run('msiexec /i aws_cli.msi /qn', check=True,
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        except:
-            logger.exception("Failed to install AWS CLI")
-            sys.exit("[-] Failed to install AWS CLI")
+        logger.error("Could not find AWS CLI executable")
+        sys.exit("[-] Could not find AWS CLI executable")
 
 
 def verify_s3_bucket_exists(s3_bucket_name):
@@ -150,7 +142,6 @@ def notify_slack_channel(slack_message):
                             "icon_emoji": config['Slack']['bot_emoji'], })
     except (requests.exceptions.RequestException, NameError) as err:
         logger.warn("Failed to notify slack channel with following error: {}", err)
-        return
 
 
 def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
@@ -170,7 +161,6 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
         logger.info("S3 sync successfully ran: {}", cmd_output)
         notify_slack_channel(f"Sync succeeded on: *{computer_name}* \n `str({cmd_output})`")
         logger.info("Syncing complete")
-        return
     except subprocess.SubprocessError as err:
         logger.exception("Failed to sync local files to s3 bucket")
         notify_slack_channel(f"Sync failed: *{computer_name}* \n `{err}`")
@@ -180,7 +170,7 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
 def main():
     set_environment_variables()
     verify_local_folder_exists(config['Paths']['local_video_records_done_folder'])
-    verify_aws_cli_installed(config.get('Paths', 'aws_cli_binary', fallback='C:\Program Files\Amazon\AWSCLI\paws.exe'))
+    verify_aws_cli_installed(config.get('Paths', 'aws_cli_binary', fallback='C:\Program Files\Amazon\AWSCLI\\aws.exe'))
     verify_s3_bucket_exists(config['AWS']['s3_bucket_name'])
     sync_local_to_s3(config['Paths']['local_video_records_done_folder'], config['AWS']['s3_bucket_name'])
 
