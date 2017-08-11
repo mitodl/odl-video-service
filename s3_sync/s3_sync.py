@@ -9,18 +9,18 @@ Use:
 python s3_sync.py -i <settings_file.ini>
 
 """
+import argparse
+import os
+import subprocess
+import sys
+from configparser import ConfigParser, ExtendedInterpolation
+
 try:
-    import argparse
-    import json
-    import logging
-    import os
     import requests
-    import subprocess
-    import sys
-    from configparser import ConfigParser, ExtendedInterpolation
     from logbook import Logger, RotatingFileHandler
 except ImportError as err:
-    sys.exit(err)
+    print("Failed to import module: ", err)
+    sys.exit("Make sure to pip install requests and logbook")
 
 # Instantiate argparse to get settings_file as argument
 parser = argparse.ArgumentParser(description='.')
@@ -30,14 +30,14 @@ args = parser.parse_args()
 settings_file = args.settings_file
 
 # Read settings_file
-config = ConfigParser(interpolation = ExtendedInterpolation())
+config = ConfigParser(interpolation=ExtendedInterpolation())
 config.read(settings_file)
 
 # Configure logbook logging
 logger = RotatingFileHandler(config['Logs']['logfile'],
-                             max_size = int(config['Logs']['max_size']),
-                             backup_count = int(config['Logs']['backup_count']),
-                             level = int(config['Logs']['level']))
+                             max_size=int(config['Logs']['max_size']),
+                             backup_count=int(config['Logs']['backup_count']),
+                             level=int(config['Logs']['level']))
 logger.push_application()
 logger = Logger(__name__)
 
@@ -154,7 +154,7 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
       s3_bucket_name (str): s3 bucket name
     """
     try:
-        s3_sync_cmd = 'aws s3 sync {local_video_records_done_folder} "s3://"{s3_bucket_name}'.format(local_video_records_done_folder=local_video_records_done_folder, s3_bucket_name=s3_bucket_name)
+        s3_sync_cmd = 'aws s3 sync {} "s3://"{}'.format(local_video_records_done_folder, s3_bucket_name)
         cmd_output = subprocess.run(s3_sync_cmd, check=True,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
@@ -168,9 +168,14 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
 
 
 def main():
+    """
+    Set local environment variables from settings file,
+    then run some verficiation checks, and then sync local
+    files to specified s3 bucket.
+    """
     set_environment_variables()
     verify_local_folder_exists(config['Paths']['local_video_records_done_folder'])
-    verify_aws_cli_installed(config.get('Paths', 'aws_cli_binary', fallback='C:\Program Files\Amazon\AWSCLI\\aws.exe'))
+    verify_aws_cli_installed(config.get('Paths', 'aws_cli_binary', fallback='C:/Program Files/Amazon/AWSCLI/aws.exe'))
     verify_s3_bucket_exists(config['AWS']['s3_bucket_name'])
     sync_local_to_s3(config['Paths']['local_video_records_done_folder'], config['AWS']['s3_bucket_name'])
 
