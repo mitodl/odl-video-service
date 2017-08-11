@@ -1,5 +1,6 @@
 /* global SETTINGS: false */
-require('react-hot-loader/patch');
+__webpack_public_path__ = SETTINGS.public_path;  // eslint-disable-line no-undef, camelcase
+import 'react-hot-loader/patch';
 import React from 'react';
 import ReactDOM from 'react-dom';
 

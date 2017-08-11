@@ -1,21 +1,18 @@
 // @flow
 import React from 'react';
-import { connect } from 'react-redux';
-import {} from '../actions';
+import type { Match } from 'react-router';
 
-class App extends React.Component {
+export default class App extends React.Component {
   props: {
-    dispatch: () => void,
+    match: Match
   };
 
   render() {
-    return null;
+    return (
+      <div
+        // routes go in children here
+        className="app">
+      </div>
+    );
   }
 }
-
-const mapStateToProps = (state) => {  // eslint-disable-line no-unused-vars
-  return {
-  };
-};
-
-export default connect(mapStateToProps)(App);

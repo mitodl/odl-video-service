@@ -36,9 +36,9 @@ export default class VideoPlayer extends React.Component {
 
   render() {
     return (
-        <div data-vjs-player>
-          <video ref={ node => this.videoNode = node } className="video-js vjs-default-skin" controls></video>
-        </div>
+      <div data-vjs-player>
+        <video ref={ node => this.videoNode = node } className="video-js vjs-default-skin" controls></video>
+      </div>
     );
   }
 }
