@@ -1,4 +1,4 @@
-version: '3.1'
+version: '2.1'
 services:
   db:
     image: postgres
@@ -19,55 +19,50 @@ services:
       - "8089:8089"
     links:
       - web
+      - watch
 
-  web:
+  python:
     build: .
+    command: /bin/true
     volumes:
       - .:/src
       - django_media:/var/media
+    environment:
+      DEBUG: 'True'
+      DEV_ENV: 'True'
+      NODE_ENV: 'development'
+      PORT: 8087
+      COVERAGE_DIR: htmlcov
+      DATABASE_URL: postgres://postgres@db:5432/postgres
+      ODL_VIDEO_SERVICE_USE_WEBPACK_DEV_SERVER: 'True'
+      ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
+      ODL_VIDEO_DB_DISABLE_SSL: 'True'
+      CELERY_TASK_ALWAYS_EAGER: 'False'
+      CELERY_BROKER_URL: redis://redis:6379/4
+      CELERY_RESULT_BACKEND: redis://redis:6379/4
+      DOCKER_HOST: ${DOCKER_HOST:-missing}
+      WEBPACK_DEV_SERVER_HOST: ${WEBPACK_DEV_SERVER_HOST:-localhost}
+      REDIS_URL: redis://redis:6379/0
+      COVERAGE_DIR: htmlcov
+      DOCKER_HOST: ${DOCKER_HOST:-missing}
+    env_file: .env
+
+
+  web:
+    image: odl_video_python
+    extends:
+      service: python
     command: >
       /bin/bash -c '
       sleep 3 &&
       python3 manage.py collectstatic --noinput &&
-      python3 manage.py migrate &&
+      python3 manage.py migrate --noinput &&
       uwsgi uwsgi.ini'
     ports:
       - "8087:8087"
     links:
       - db
       - redis
-    env_file: .env
-    environment:
-      DEV_ENV: 'True'
-      ODL_VIDEO_SERVICE_USE_WEBPACK_DEV_SERVER: 'True'
-      WEBPACK_DEV_SERVER_HOST: ${WEBPACK_DEV_SERVER_HOST:-localhost}
-      PORT: 8087
-      ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
-      ODL_VIDEO_DB_DISABLE_SSL: 'True'
-      DATABASE_URL: postgres://postgres@db:5432/postgres
-      REDIS_URL: redis://redis:6379/0
-      COVERAGE_DIR: htmlcov
-      DOCKER_HOST: ${DOCKER_HOST:-missing}
-
-  celery:
-    build: .
-    volumes:
-      - .:/src
-      - django_media:/var/media
-    command: >
-      /bin/bash -c '
-      sleep 3;
-      celery -A odl_video worker -B -l debug'
-    links:
-      - db
-      - redis
-    env_file: .env
-    environment:
-      DEV_ENV: 'True'
-      ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
-      ODL_VIDEO_DB_DISABLE_SSL: 'True'
-      DATABASE_URL: postgres://postgres@db:5432/postgres
-      REDIS_URL: redis://redis:6379/0
 
   watch:
     build:
@@ -86,6 +81,18 @@ services:
       DOCKER_HOST: ${DOCKER_HOST:-missing}
       CONTAINER_NAME: 'watch'
     env_file: .env
+
+  celery:
+    image: odl_video_python
+    extends:
+      service: python
+    command: >
+      /bin/bash -c '
+      sleep 3;
+      celery -A odl_video worker -B -l debug'
+    links:
+      - db
+      - redis
 
 volumes:
   django_media: {}
