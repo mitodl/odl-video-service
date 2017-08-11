@@ -1,5 +1,6 @@
 /* global SETTINGS: false */
-require('react-hot-loader/patch');
+__webpack_public_path__ = SETTINGS.public_path;  // eslint-disable-line no-undef, camelcase
+import 'react-hot-loader/patch';
 require('videojs-contrib-hls');
 import 'expose-loader?videojs!video.js'; // Needs to be available as a global
 

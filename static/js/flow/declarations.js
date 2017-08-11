@@ -5,6 +5,7 @@ declare var SETTINGS: {
   FEATURES: {
     [key: string]: boolean,
   },
+  reactGaDebug: string,
 };
 
 // mocha

@@ -60,9 +60,9 @@ export default class USwitchPlayer extends React.Component {
 
   render() {
     return (
-        <div ref={ node => this.videoNode = node }  allowFullScreen id='omniPlayer'>
-          <video id='video'></video>
-        </div>
+      <div ref={ node => this.videoNode = node }  allowFullScreen id='omniPlayer'>
+        <video id='video'></video>
+      </div>
     );
   }
 }
