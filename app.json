@@ -105,6 +105,14 @@
     "STATUS_TOKEN": {
       "description": "Token to access the status API.",
       "required": true
+    },
+    "LECTURE_CAPTURE_USER": {
+      "description": "Owner of LectureCapture collections",
+      "required": true
+    },
+    "USWITCH_URL": {
+      "description": "Base URL of USwitch JS files",
+      "required": true
     }
   },
   "keywords": [
