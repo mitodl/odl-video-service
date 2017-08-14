@@ -1,24 +1,48 @@
 """
 Tests for api
 """
-
-from io import BytesIO
+import os
+import io
 
 import boto3
 import pytest
+from botocore.exceptions import ClientError
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.test import override_settings
 from moto import mock_s3
 
-from cloudsync.api import process_transcode_results, refresh_status
+from cloudsync.api import (process_transcode_results,
+                           refresh_status,
+                           extract_title,
+                           process_watch_file,
+                           transcode_video)
 from cloudsync.conftest import MockClientET, MockBoto
+from cloudsync.exceptions import VideoFilenameError
 from ui.constants import VideoStatus
 from ui.factories import (
     VideoFactory,
     EncodeJobFactory,
     VideoFileFactory,
-)
+    UserFactory)
+from ui.models import Video
 
 pytestmark = pytest.mark.django_db
+
+# pylint: disable=redefined-outer-name
+
+
+@pytest.fixture()
+def video():
+    """Fixture to create a video"""
+    return VideoFactory()
+
+
+@pytest.fixture()
+def videofile():
+    """Fixture to create a videofile"""
+    return VideoFileFactory()
 
 
 def test_video_job_status_error(mocker):
@@ -73,7 +97,7 @@ def test_process_transcode_results(mocker):
     bucket = conn.create_bucket(Bucket=settings.VIDEO_S3_THUMBNAIL_BUCKET)
 
     # Throw a fake thumbnail in the bucket:
-    data = BytesIO(b'00000001111111')
+    data = io.BytesIO(b'00000001111111')
     bucket.upload_fileobj(
         data, 'thumbnails/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_00001.jpg')
 
@@ -130,3 +154,204 @@ def test_process_transcode_results(mocker):
     process_transcode_results(video, job)
     assert len(video.videofile_set.all()) == 2
     assert len(video.videothumbnail_set.all()) == 1
+
+
+def test_extract_title():
+    """
+    Test that a correctly formatted title is returned for a video file.
+    """
+    filenames = (('MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4', 'MIT-6.046-2017-Spring-L01'),
+                 ('MIT-6.046-2018-Fall-lec-mit-0000-2017apr06-0404.mp4', 'MIT-6.046-2018-Fall'),
+                 ('MIT-6.046-lec-mit-0000-2017apr06-0404.mp4', 'MIT-6.046'),
+                 ('MIT-6.046-lec-mit-0000-2017apr06-0404-L02.mp4', 'MIT-6.046-L02'),
+                 ('MIT-STS.001-2015-Fall-lec-mit-0000-2015dec21-2222-L03_2.mp4', 'MIT-STS.001-2015-Fall-L03'),
+                 ('MIT-HST.969-2018-Spring-lec-mit-0000-2018mar09-0001-L01.mp4', 'MIT-HST.969-2018-Spring-L01'),
+                 ('NUS-7.S939-2019-Spring-lec-mit-0000-2019apr02-1210-L05.mp4', 'NUS-7.S939-2019-Spring-L05'),
+                 ('MIT-Adhoc-lec-mit-0000-2017aug10-0954-2-190.mp4', 'MIT-Adhoc-2-190'),
+                 ('MIT-18.test-lec-mit-0000-2017aug10-0956-L01.mp4', 'MIT-18.test-L01'),
+                 ('MIT-18.test-lec-mit-0000-2017aug10-0956.mp4', 'MIT-18.test'),
+                 ('MIT-Simons Lecture Series-lec-mit-0000-2017aug10-0956-2-10.mp4', 'MIT-Simons Lecture Series-2-10'),
+                 ('/&*3:<>俺正和-lec-mit-0000-2017aug10-0956.mp4', '/&*3:<>俺正和'))
+    for filename, title in filenames:
+        assert extract_title(filename) == title
+
+
+def test_extract_bad_title():
+    """Assert that a VideoFilenameError is raised for a bad filename"""
+    bad_names = ('MIT-6.046-1510-L01.mp4',  # Missing -lec-mit-0000
+                 'Completely random name.mp4',  # No similarity to expected format
+                 'MIT-6.046-lec-mit-0000-2017apr06-L01')  # no extension
+
+    for name in bad_names:
+        with pytest.raises(VideoFilenameError):
+            extract_title(name)
+
+
+@mock_s3
+@override_settings(LECTURE_CAPTURE_USER='admin')
+def test_watch_nouser():
+    """
+    Test that an exception is correctly handled when the LECTURE_CAPTURE_USER doesn't exist
+    """
+    s3 = boto3.resource('s3')
+    s3c = boto3.client('s3')
+    upload = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
+    bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
+    with pytest.raises(User.DoesNotExist):
+        process_watch_file(upload)
+    assert not Video.objects.filter(title=upload).exists()
+
+
+@mock_s3
+@override_settings(LECTURE_CAPTURE_USER='admin')
+def test_watch_s3_error():
+    """Test that an AWS S3 ClientError is correctly handled"""
+    UserFactory(username='admin')  # pylint: disable=unused-variable
+    s3 = boto3.resource('s3')
+    s3c = boto3.client('s3')
+    upload = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
+    bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
+    with transaction.atomic():
+        with pytest.raises(ClientError):
+            process_watch_file(upload)
+    assert not Video.objects.filter(title=upload).exists()
+
+
+@mock_s3
+@override_settings(LECTURE_CAPTURE_USER='admin')
+def test_watch_filename_error():
+    """Test that a bad filename raises a VideoFilenameError"""
+    UserFactory(username='admin')  # pylint: disable=unused-variable
+    s3 = boto3.resource('s3')
+    s3c = boto3.client('s3')
+    upload = 'Bad filename.mp4'
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
+    bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
+    with transaction.atomic():
+        with pytest.raises(VideoFilenameError):
+            process_watch_file(upload)
+    assert not Video.objects.filter(title=upload).exists()
+
+
+@mock_s3
+@override_settings(LECTURE_CAPTURE_USER='admin')
+def test_process_watch(mocker):
+    """Test that a file with valid filename is processed"""
+    mocker.patch.multiple('cloudsync.tasks.settings',
+                          ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+    mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
+    UserFactory(username='admin')  # pylint: disable=unused-variable
+    s3 = boto3.resource('s3')
+    s3c = boto3.client('s3')
+    upload = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
+    bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
+    process_watch_file(upload)
+    videos = Video.objects.filter(title=upload)
+    assert videos.count() == 1
+    new_video = videos[0]
+    videofile = new_video.videofile_set.first()
+    mock_encoder.assert_called_once_with(
+        {
+            "Key": videofile.s3_object_key
+        },
+        [{
+            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000061",
+            "PresetId": "1351620000001-000061",
+            "SegmentDuration": "10.0",
+            "ThumbnailPattern": "thumbnails/" + new_video.hexkey + "/video_thumbnail_{count}"
+        }, {
+            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
+            "PresetId": "1351620000001-000040",
+            "SegmentDuration": "10.0"
+        }, {
+            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000020",
+            "PresetId": "1351620000001-000020",
+            "SegmentDuration": "10.0"
+        }],
+        Playlists=[{
+            "Format": "HLSv3",
+            "Name": "transcoded/" + new_video.hexkey + "/video__index",
+            "OutputKeys": [
+                "transcoded/" + new_video.hexkey + "/video_1351620000001-000061",
+                "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
+                "transcoded/" + new_video.hexkey + "/video_1351620000001-000020"
+            ]
+        }])
+
+
+def test_transcode_job(mocker, videofile):
+    """
+    Test that video status is updated properly after a transcode job is successfully created
+    """
+    new_video = videofile.video
+    mocker.patch.multiple('cloudsync.tasks.settings',
+                          ET_PRESET_IDS=('1351620000001-000040', '1351620000001-000020'),
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+    mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
+    transcode_video(new_video, videofile)  # pylint: disable=no-value-for-parameter
+    mock_encoder.assert_called_once_with(
+        {
+            "Key": videofile.s3_object_key
+        }, [{
+            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
+            "PresetId": "1351620000001-000040",
+            "SegmentDuration": "10.0",
+            "ThumbnailPattern": "thumbnails/" + new_video.hexkey + "/video_thumbnail_{count}"
+        }, {
+            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000020",
+            "PresetId": "1351620000001-000020",
+            "SegmentDuration": "10.0"
+        }],
+        Playlists=[{
+            "Format": "HLSv3",
+            "Name": "transcoded/" + new_video.hexkey + "/video__index",
+            "OutputKeys": [
+                "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
+                "transcoded/" + new_video.hexkey + "/video_1351620000001-000020"
+            ]
+        }]
+    )
+    assert len(new_video.encode_jobs.all()) == 1
+    assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODING
+
+
+def test_transcode_job_failure(mocker, videofile):
+    """
+    Test that video status is updated properly after a transcode job creation fails
+    """
+    new_video = videofile.video
+    job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
+    mocker.patch.multiple('cloudsync.tasks.settings',
+                          ET_PRESET_IDS=('1351620000001-000020',),
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+    mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode',
+                                side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
+    with pytest.raises(ClientError):
+        transcode_video(new_video, videofile)
+    mock_encoder.assert_called_once_with(
+        {
+            "Key": videofile.s3_object_key
+        }, [{
+            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000020",
+            "PresetId": "1351620000001-000020",
+            "SegmentDuration": "10.0",
+            "ThumbnailPattern": "thumbnails/" + new_video.hexkey + "/video_thumbnail_{count}"
+        }],
+        Playlists=[{
+            "Format": "HLSv3",
+            "Name": "transcoded/" + new_video.hexkey + "/video__index",
+            "OutputKeys": ["transcoded/" + new_video.hexkey + "/video_1351620000001-000020"]
+        }]
+    )
+    assert len(new_video.encode_jobs.all()) == 1
+    assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODE_FAILED

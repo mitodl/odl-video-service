@@ -168,6 +168,10 @@ CELERY_BEAT_SCHEDULE = {
     'update-statuses': {
         'task': 'cloudsync.tasks.update_video_statuses',
         'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
+    },
+    'watch-bucket': {
+        'task': 'cloudsync.tasks.monitor_watch_bucket',
+        'schedule': get_int('VIDEO_WATCH_BUCKET_FREQUENCY', 900)
     }
 }
 
@@ -453,7 +457,7 @@ VIDEO_CLOUDFRONT_DIST = get_string('VIDEO_CLOUDFRONT_DIST', '')
 VIDEO_S3_BUCKET = get_string('VIDEO_S3_BUCKET', 'odl-video-service')
 VIDEO_S3_TRANSCODE_BUCKET = get_string('VIDEO_S3_TRANSCODE_BUCKET', '{}-transcoded'.format(VIDEO_S3_BUCKET))
 VIDEO_S3_THUMBNAIL_BUCKET = get_string('VIDEO_S3_THUMBNAIL_BUCKET', '{}-thumbnails'.format(VIDEO_S3_BUCKET))
-
+VIDEO_S3_WATCH_BUCKET = get_string('VIDEO_S3_WATCH_BUCKET', '{}-watch'.format(VIDEO_S3_BUCKET))
 
 # server-status
 STATUS_TOKEN = get_string("STATUS_TOKEN", "")
@@ -462,6 +466,10 @@ HEALTH_CHECK = ['CELERY', 'REDIS', 'POSTGRES']
 ADWORDS_CONVERSION_ID = get_string("ADWORDS_CONVERSION_ID", "")
 GA_TRACKING_ID = get_string("GA_TRACKING_ID", "")
 REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
+
+# This is necessary for loading USwitch video player code from an external source
+USWITCH_URL = get_string('USWITCH_URL', '')
+LECTURE_CAPTURE_USER = get_string('LECTURE_CAPTURE_USER', '')
 
 # List of mandatory settings. If any of these is not set, the app will not start
 # and will raise an ImproperlyConfigured exception
@@ -477,6 +485,6 @@ MANDATORY_SETTINGS = [
     'REDIS_URL',
     'SECRET_KEY',
     'VIDEO_CLOUDFRONT_DIST',
+    'USWITCH_URL',
+    'LECTURE_CAPTURE_USER'
 ]
-# This is necessary for loading USwitch video player code from an external source
-USWITCH_URL = get_string('USWITCH_URL', '')
