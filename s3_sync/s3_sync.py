@@ -25,7 +25,7 @@ except ImportError as err:
 # Instantiate argparse to get settings_file as argument
 parser = argparse.ArgumentParser(description='.')
 parser.add_argument('-i', dest="settings_file", required=True,
-                    help='ini file containing configs', metavar='FILE')
+                    help='path to ini file containing configs', metavar='FILE')
 args = parser.parse_args()
 settings_file = args.settings_file
 
@@ -43,23 +43,6 @@ logger = Logger(__name__)
 
 # Get Computer name
 computer_name = os.environ['COMPUTERNAME']
-
-
-def verify_settings_file_exists(settings_file):
-    """
-    Verify that settings file exists.
-
-    Args:
-      settings_file (str): Path for the local settings file.
-
-    Returns:
-      If file exists, return None, otherwise exit.
-    """
-    if os.path.exists(settings_file):
-        return
-    else:
-        logger.error("Settings file not found:", settings_file)
-        sys.exit("[-] Settings file not found")
 
 
 def set_environment_variables():
@@ -82,9 +65,7 @@ def verify_local_folder_exists(local_video_records_done_folder):
     Returns:
       If folder exists return None, and if not, logs error and exit.
     """
-    if os.path.exists(local_video_records_done_folder):
-        return
-    else:
+    if not os.path.exists(local_video_records_done_folder):
         logger.error("Local Video Records Done folder not found")
         sys.exit("[-] Local Video Records Done folder not found")
 
@@ -100,9 +81,7 @@ def verify_aws_cli_installed(aws_cli_binary):
       If file exists, return None, else log error and exit.
 
     """
-    if os.path.exists(aws_cli_binary):
-        return
-    else:
+    if not os.path.exists(aws_cli_binary):
         logger.error("Could not find AWS CLI executable")
         sys.exit("[-] Could not find AWS CLI executable")
 
@@ -119,12 +98,12 @@ def verify_s3_bucket_exists(s3_bucket_name):
         objects in bucket otherwise error and exit on any issues trying
         to list objects in bucket.
     """
+    ls_s3_bucket_cmd = 'aws s3 ls {}'.format(s3_bucket_name)
     try:
-        ls_s3_bucket_cmd = 'aws s3 ls {}'.format(s3_bucket_name)
         subprocess.run(ls_s3_bucket_cmd, check=True,
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except subprocess.SubprocessError:
-        logger.exception("Failed to list specified s3 bucket")
+        logger.exception("Failed to list specified s3 bucket: {}", s3_bucket_name)
         sys.exit("[-] Failed to list specified s3 bucket")
 
 
@@ -136,10 +115,12 @@ def notify_slack_channel(slack_message):
       slack_message (str): message to send to slack
     """
     try:
-        requests.post(os.environ.get('slack_webhook_url'),
-                      json={"text": slack_message,
-                            "username": config['Slack']['bot_username'],
-                            "icon_emoji": config['Slack']['bot_emoji'], })
+        requests.post(
+            os.environ.get('slack_webhook_url'),
+            json={
+                "text": slack_message,
+                "username": config['Slack']['bot_username'],
+                "icon_emoji": config['Slack']['bot_emoji'], })
     except (requests.exceptions.RequestException, NameError) as err:
         logger.warn("Failed to notify slack channel with following error: {}", err)
 
@@ -153,18 +134,18 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
         files ready to be copied to S3.
       s3_bucket_name (str): s3 bucket name
     """
+    s3_sync_cmd = 'aws s3 sync {} "s3://"{}'.format(local_video_records_done_folder, s3_bucket_name)
     try:
-        s3_sync_cmd = 'aws s3 sync {} "s3://"{}'.format(local_video_records_done_folder, s3_bucket_name)
         cmd_output = subprocess.run(s3_sync_cmd, check=True,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-        logger.info("S3 sync successfully ran: {}", cmd_output)
-        notify_slack_channel(f"Sync succeeded on: *{computer_name}* \n `str({cmd_output})`")
-        logger.info("Syncing complete")
     except subprocess.SubprocessError as err:
         logger.exception("Failed to sync local files to s3 bucket")
         notify_slack_channel(f"Sync failed: *{computer_name}* \n `{err}`")
         sys.exit("[-] Failed to sync local files to s3 bucket")
+    logger.info("S3 sync successfully ran: {}", cmd_output)
+    notify_slack_channel(f"Sync succeeded on: *{computer_name}* \n `str({cmd_output})`")
+    logger.info("Syncing complete")
 
 
 def main():
