@@ -31,7 +31,10 @@ settings_file = args.settings_file
 
 # Read settings_file
 config = ConfigParser(interpolation=ExtendedInterpolation())
-config.read(settings_file)
+try:
+    config.read(settings_file)
+except IOError:
+    sys.exit("[-] Failed to read settings file")
 
 # Configure logbook logging
 logger = RotatingFileHandler(config['Logs']['logfile'],
