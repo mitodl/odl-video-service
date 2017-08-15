@@ -27,22 +27,21 @@ from ui import (
     serializers,
     forms,
 )
-from ui.encodings import EncodingNames
 from ui.templatetags.render_bundle import public_path
 from ui.models import (
     Collection,
     Video,
-    VideoFile,
 )
 from ui.permissions import IsCollectionOwner, CanUploadToCollection
+from ui.serializers import VideoSerializer
 
 
 def default_js_settings(request):
     """Default JS settings for views"""
-    return json.dumps({
+    return {
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": public_path(request),
-    })
+    }
 
 
 class Index(TemplateView):
@@ -86,7 +85,7 @@ class CollectionDetail(TemplateView):
         collection = get_object_or_404(Collection, key=collection_key)
         video_list = Video.objects.filter(collection=collection)
 
-        default_settings = json.loads(default_js_settings(self.request))
+        default_settings = default_js_settings(self.request)
         context["collection"] = collection
         context["video_list"] = video_list
         context["js_settings_json"] = json.dumps(default_settings)
@@ -117,42 +116,28 @@ class VideoDetail(TemplateView):
 
     def get_context_data(self, video_key, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
-        default_settings = json.loads(default_js_settings(self.request))
         video = get_object_or_404(Video, key=video_key)
-        context['video'] = video
-        context['form'] = forms.VideoForm(instance=video)
-        try:
-            videofile = video.videofile_set.get(encoding=EncodingNames.HLS)
-            default_settings['videofile'] = videofile.cloudfront_url
-        except VideoFile.DoesNotExist:
-            videofile = None
-            default_settings['videofile'] = None
-
-        context['videofile'] = videofile
-        context["js_settings_json"] = json.dumps(default_settings)
+        context["js_settings_json"] = json.dumps({
+            **default_js_settings(self.request),
+            'videoKey': video.key.hex,
+        })
         return context
 
 
 @method_decorator(login_required, name='dispatch')
-class VideoUswitch(TemplateView):
-    """Display video using USwitch"""
-    model = Video
-    template_name = 'ui/video_uswitch.html'
+class VideoEmbed(TemplateView):
+    """Display embedded video"""
+    template_name = 'ui/video_embed.html'
 
     def get_context_data(self, video_key, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
-        default_settings = json.loads(default_js_settings(self.request))
         video = get_object_or_404(Video, key=video_key)
-        videofile = video.videofile_set.get(encoding=EncodingNames.HLS)
-        default_settings['videofile'] = {
-            "src": videofile.cloudfront_url,
-            "title": video.title,
-            "description": video.description,
-        }
+        context['video'] = video
+        context["js_settings_json"] = json.dumps({
+            **default_js_settings(self.request),
+            'video': VideoSerializer(video).data,
+        })
         context['uswitchPlayerURL'] = settings.USWITCH_URL
-        default_settings["uswitchPlayerURL"] = settings.USWITCH_URL
-        context['videofile'] = videofile
-        context["js_settings_json"] = json.dumps(default_settings)
         return context
 
 
@@ -285,13 +270,13 @@ def register(request):
     context = {
         "form": form,
     }
-    context["js_settings_json"] = default_js_settings(request)
+    context["js_settings_json"] = json.dumps(default_js_settings(request))
     return render(request, "registration/register.html", context)
 
 
 def ui_login(request, *args, **kwargs):
     """login"""
     extra_context = {
-        "js_settings_json": default_js_settings(request)
+        "js_settings_json": json.dumps(default_js_settings(request))
     }
     return login_view(request, *args, extra_context=extra_context, **kwargs)

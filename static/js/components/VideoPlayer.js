@@ -1,44 +1,37 @@
 // @flow
-/* SETTINGS videojs: false */
 import React from 'react';
 
-/**
- * Before using, import the following (as in ../entry/videojs):
- *     require('videojs5-hlsjs-source-handler');
- *     import 'expose-loader?videojs!video.js';
- * These are not imported here due to babel issues
- * with expose-loader & a hlsjs dependency that cause
- * tests to fail.
- */
+import HTML5VideoPlayer from "./HTML5VideoPlayer";
+import USwitchPlayer from "./USwitchPlayer";
+
+import { makeEmbedUrl } from "../lib/urls";
+
+import type { Video } from '../flow/videoTypes';
 
 export default class VideoPlayer extends React.Component {
-  /*
-    Basic component based on https://github.com/videojs/video.js/blob/master/docs/guides/react.md
-    TODO: Add more configuration options, including optional rendering of <TextTrack> elements for subtitles.
-   */
-
-  player: null;
-  videoNode: null;
-
-  componentDidMount() {
-    // $FlowFixMe
-    this.player = videojs(this.videoNode, this.props, function onPlayerReady() { // eslint-disable-line no-undef
-      this.enableTouchActivity();
-    });
-  }
-
-  // destroy player on unmount
-  componentWillUnmount() {
-    if (this.player) {
-      this.player.dispose();
-    }
-  }
+  props: {
+    video: Video,
+    useIframeForUSwitch: boolean,
+  };
 
   render() {
-    return (
-      <div data-vjs-player>
-        <video ref={ node => this.videoNode = node } className="video-js vjs-default-skin" controls></video>
-      </div>
-    );
+    const { video, useIframeForUSwitch } = this.props;
+    const embedUrl = makeEmbedUrl(video.key);
+
+    if (video.multiangle) {
+      if (useIframeForUSwitch) {
+        return <iframe
+          src={embedUrl}
+          className="video-odl-medium"
+          frameBorder="0"
+          scrolling="no"
+          allowFullScreen={true}
+        />;
+      } else {
+        return <USwitchPlayer video={video} />;
+      }
+    } else {
+      return <HTML5VideoPlayer video={video} />;
+    }
   }
 }

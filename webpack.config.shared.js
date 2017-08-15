@@ -1,13 +1,13 @@
 const path = require("path");
 const webpack = require("webpack");
+const glob = require('glob');
 
 module.exports = {
   config: {
     entry: {
-      'root': ['babel-polyfill', './static/js/entry/root'],
+      'video_detail': ['babel-polyfill', './static/js/entry/video_detail'],
+      'video_embed': ['babel-polyfill', './static/js/entry/video_embed'],
       'style': './static/js/entry/style',
-      'video': './static/js/entry/video',
-      'uswitch': './static/js/entry/uswitch'
     },
     module: {
       rules: [
@@ -17,12 +17,35 @@ module.exports = {
         },
         {
           test: /\.scss$/,
-          exclude: /node_modules/,
           use: [
-            { loader: 'style-loader' },
-            { loader: 'css-loader' },
-            { loader: 'postcss-loader' },
-            { loader: 'sass-loader' },
+            {
+              loader: 'style-loader',
+              options: {
+                sourceMap: true
+              }
+            },
+            {
+              loader: 'css-loader',
+              options: {
+                sourceMap: true
+              }
+            },
+            {
+              loader: 'postcss-loader',
+              options: {
+                sourceMap: true
+              }
+            },
+            {
+              loader: 'sass-loader',
+              options: {
+                sourceMap: true,
+                includePaths: ['node_modules', 'node_modules/@material/*']
+                  .map(dir => path.join(__dirname, dir))
+                  .map(fullPath => glob.sync(fullPath))
+                  .reduce((acc, matches) => acc.concat(matches), []),
+              }
+            },
           ]
         },
         {

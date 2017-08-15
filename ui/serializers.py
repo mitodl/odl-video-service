@@ -47,8 +47,8 @@ class VideoFileSerializer(serializers.ModelSerializer):
     """Video File Serializer"""
     class Meta:
         model = models.VideoFile
-        fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name')
-        read_only_fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name')
+        fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name', 'cloudfront_url')
+        read_only_fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name', 'cloudfront_url')
 
 
 class VideoThumbnailSerializer(serializers.ModelSerializer):
@@ -62,12 +62,22 @@ class VideoThumbnailSerializer(serializers.ModelSerializer):
 class VideoSerializer(serializers.ModelSerializer):
     """Video Serializer"""
     key = serializers.SerializerMethodField()
+    collection_key = serializers.SerializerMethodField()
+    collection_title = serializers.SerializerMethodField()
     videofile_set = VideoFileSerializer(many=True, read_only=True)
     videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
 
     def get_key(self, obj):
         """Custom getter for the key"""
         return obj.hexkey
+
+    def get_collection_key(self, obj):
+        """Get collection key"""
+        return obj.collection.hexkey
+
+    def get_collection_title(self, obj):
+        """Get collection title"""
+        return obj.collection.title
 
     class Meta:
         model = models.Video
@@ -76,12 +86,17 @@ class VideoSerializer(serializers.ModelSerializer):
             'created_at',
             'title',
             'description',
+            'collection_key',
+            'collection_title',
+            'multiangle',
+            'status',
             'videofile_set',
             'videothumbnail_set',
         )
         read_only_fields = (
             'key',
             'created_at',
+            'multiangle',
         )
 
 

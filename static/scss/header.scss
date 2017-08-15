@@ -1,0 +1,19 @@
+@import '_variables';
+
+.mdc-toolbar__icon--menu {
+  color: $mit-red !important;
+}
+
+.mdc-toolbar {
+  background-color: white !important;
+  color: #585858 !important;
+}
+
+.mdc-toolbar__title {
+  display: flex;
+  align-items: center;
+}
+
+.title {
+  padding-left: 30px;
+}

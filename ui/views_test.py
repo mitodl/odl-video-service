@@ -16,7 +16,10 @@ from ui.factories import (
     VideoFileFactory,
     VideoFactory,
 )
-from ui.serializers import DropboxUploadSerializer
+from ui.serializers import (
+    DropboxUploadSerializer,
+    VideoSerializer,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -72,40 +75,24 @@ def test_dropbox_keys_in_context(logged_in_client):
     assert response.template_name == ['ui/upload.html']
 
 
-def test_video_detail_hls(logged_in_client, mocker):
-    """Test video detail page when HLS videofile is available"""
+def test_video_detail(logged_in_client, mocker):
+    """Test video detail page"""
     client, user = logged_in_client
     videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
     mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
     videofileHLS.video.status = 'Complete'
     url = reverse('video-detail', kwargs={'video_key': videofileHLS.video.hexkey})
     response = client.get(url)
-    assert 'videofile' in response.context_data
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert js_settings_json == {
-        'videofile': response.context_data['videofile'].cloudfront_url,
         "gaTrackingID": settings.GA_TRACKING_ID,
-        "public_path": '/static/bundles/'
+        "public_path": '/static/bundles/',
+        "videoKey": videofileHLS.video.hexkey,
     }
 
 
-def test_video_detail_unencoded(logged_in_client, mocker):
-    """Test video detail page when HLS videofile is not available"""
-    client, user = logged_in_client
-    videofile_unencoded = VideoFileFactory(unencoded=True, video__collection__owner=user)
-    mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofile_unencoded.cloudfront_url)
-    url = reverse('video-detail', kwargs={'video_key': videofile_unencoded.video.hexkey})
-    videofile_unencoded.video.status = 'Complete'
-    response = client.get(url)
-    assert 'videofile' in response.context_data
-    assert response.context_data['videofile'] is None
-    js_settings_json = json.loads(response.context_data['js_settings_json'])
-    assert 'videofile' in js_settings_json
-    assert js_settings_json['videofile'] is None
-
-
-def test_video_uswitch(logged_in_client, mocker, settings):  # pylint: disable=redefined-outer-name
-    """Test video detail page when Video.multiangle is True"""
+def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=redefined-outer-name
+    """Test video embed page"""
     settings.USWITCH_URL = 'https://testing_odl.mit.edu'
     client, user = logged_in_client
     videofileHLS = VideoFileFactory(
@@ -116,17 +103,12 @@ def test_video_uswitch(logged_in_client, mocker, settings):  # pylint: disable=r
     )
     video = videofileHLS.video
     mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
-    url = reverse('video-uswitch', kwargs={'video_key': video.hexkey})
+    url = reverse('video-embed', kwargs={'video_key': video.hexkey})
     response = client.get(url)
     assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert js_settings_json == {
-        'videofile': {
-            'src': response.context_data['videofile'].cloudfront_url,
-            'title': video.title,
-            'description': video.description,
-        },
-        'uswitchPlayerURL': 'https://testing_odl.mit.edu',
+        'video': VideoSerializer(video).data,
         'gaTrackingID': settings.GA_TRACKING_ID,
         'public_path': '/static/bundles/'
     }

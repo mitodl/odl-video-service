@@ -4,6 +4,7 @@ Tests for serialisers module
 import uuid
 
 import pytest
+from rest_framework.serializers import DateTimeField
 
 from ui import factories, serializers
 
@@ -57,14 +58,17 @@ def test_video_serializer():
 
     expected = {
         'key': video.hexkey,
+        'collection_key': video.collection.hexkey,
+        'collection_title': video.collection.title,
+        'created_at': DateTimeField().to_representation(video.created_at),
+        'multiangle': video.multiangle,
         'title': video.title,
         'description': video.description,
         'videofile_set': serializers.VideoFileSerializer(video_files, many=True).data,
         'videothumbnail_set': serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data,
+        'status': video.status,
     }
-    result = serializers.VideoSerializer(video).data
-    for key, val in expected.items():
-        assert result[key] == val
+    assert serializers.VideoSerializer(video).data == expected
 
 
 def test_dropbox_upload_serializer():
@@ -85,7 +89,7 @@ def test_dropbox_upload_serializer():
             }
         ]
     }
-    expecte_data = {
+    expected_data = {
         "collection": str(uuid.UUID("9734262d30144b8cbedb94a872158581")),
         "files": [
             {
@@ -100,4 +104,4 @@ def test_dropbox_upload_serializer():
     }
     serializer = serializers.DropboxUploadSerializer(data=input_data)
     assert serializer.is_valid()
-    assert serializer.data == expecte_data
+    assert serializer.data == expected_data

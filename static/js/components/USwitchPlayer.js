@@ -1,30 +1,34 @@
 // @flow
-/* SETTINGS OmniPlayer: false */
+/* global OmniPlayer: false */
 import React from 'react';
+
+import { getHLSEncodedUrl } from '../lib/video';
+import type { Video } from "../flow/videoTypes";
 
 export default class USwitchPlayer extends React.Component {
   /* Display the OmniPlayer for multiangle videos */
 
+  props: {
+    video: Video,
+  };
+
   player: null;
-  videoNode: null;
-  src: null;
-  title: null;
-  description: null;
 
   componentDidMount() {
-    // $FlowFixMe
-    this.player = OmniPlayer(); // eslint-disable-line no-undef
+    const { video } = this.props;
+
+    this.player = OmniPlayer();
     const options = {
       "nbCamera": 4,
       "live": false,
       "thumbnailTop": false,
       "formats": {
-        "HLS": this.props.src
+        "HLS": getHLSEncodedUrl(video),
       },
       "informations": {
         "poster": null,
-        "title": this.props.title,
-        "description": this.props.description
+        "title": video.title,
+        "description": video.description
       },
       "configuration": {
         "defaultFormat": 1,
@@ -48,6 +52,7 @@ export default class USwitchPlayer extends React.Component {
         ]
       }
     };
+    // $FlowFixMe: Flow thinks this.player might be null
     this.player.load(options);
   }
 
@@ -60,8 +65,8 @@ export default class USwitchPlayer extends React.Component {
 
   render() {
     return (
-      <div ref={ node => this.videoNode = node }  allowFullScreen id='omniPlayer'>
-        <video id='video'></video>
+      <div allowFullScreen id='omniPlayer'>
+        <video id='video' />
       </div>
     );
   }

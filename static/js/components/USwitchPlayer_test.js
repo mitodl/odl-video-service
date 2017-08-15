@@ -1,17 +1,16 @@
-// @flow
 import React from 'react';
 import { shallow } from 'enzyme';
 import { assert } from 'chai';
+
 import USwitchPlayer from './USwitchPlayer';
+import { makeVideo } from "../factories/video";
 
 describe("USwitchPlayer", () => {
   let renderVideoPlayer = () => {
+    const video = makeVideo();
+    video.multiangle = true;
     return shallow(
-      <USwitchPlayer  />, {
-        context: {
-          router: {}
-        }
-      }
+      <USwitchPlayer video={video} />
     );
   };
 

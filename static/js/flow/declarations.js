@@ -6,6 +6,8 @@ declare var SETTINGS: {
     [key: string]: boolean,
   },
   reactGaDebug: string,
+  video: Video,
+  videoKey: string,
 };
 
 // mocha
@@ -20,3 +22,6 @@ declare var __webpack_public_path__: string; // eslint-disable-line camelcase
 declare var module: {
   hot: any,
 }
+
+declare var videojs: Function;
+declare var OmniPlayer: Function;

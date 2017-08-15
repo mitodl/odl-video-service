@@ -1,7 +1,11 @@
 // Define globals we would usually get from Django
 import ReactDOM from 'react-dom';
+import { makeVideo } from './factories/video';
 
-const _createSettings = () => ({});
+const _createSettings = () => ({
+  videoKey: 'a_video_key',
+  video: makeVideo('a_video_key'),
+});
 
 global.SETTINGS = _createSettings();
 
