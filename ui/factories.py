@@ -110,3 +110,13 @@ class EncodeJobFactory(DjangoModelFactory):
     class Meta:
         model = EncodeJob
         exclude = ('video',)
+
+
+class MoiraListFactory(DjangoModelFactory):
+    """
+    Factory for a MoiraList
+    """
+    name = FuzzyText(prefix="odl-")
+
+    class Meta:
+        model = models.MoiraList

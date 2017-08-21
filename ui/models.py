@@ -28,9 +28,14 @@ class MoiraList(models.Model):
     name = models.CharField(max_length=250)
 
     def members(self):
-        """Members"""
+        """
+        Retrieve the members of a moira list
+
+        Returns: (set) a unique set of moira list members.
+
+        """
         moira = utils.get_moira_client()
-        return moira.list_members(self.name)
+        return set(moira.list_members(self.name, type=''))
 
     def __str__(self):
         return self.name

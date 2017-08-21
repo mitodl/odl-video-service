@@ -21,3 +21,7 @@ class UIConfig(AppConfig):
         if missing_settings:
             raise ImproperlyConfigured(
                 'The following settings are missing: {}'.format(', '.join(missing_settings)))
+
+        # write the x509 certification & key to files
+        from ui.utils import write_x509_files
+        write_x509_files()
