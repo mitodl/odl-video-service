@@ -16,7 +16,7 @@ from ui.factories import (
     VideoFileFactory,
     CollectionFactory,
     UserFactory,
-)
+    MoiraListFactory)
 from ui.constants import VideoStatus
 from ui.models import Collection
 
@@ -44,6 +44,12 @@ def video():
 def videofile():
     """Fixture to create a video file"""
     return VideoFileFactory()
+
+
+@pytest.fixture
+def moiralist():
+    """Fixture to create a moira list"""
+    return MoiraListFactory()
 
 
 def test_s3_object_uniqueness(videofile):
@@ -165,3 +171,14 @@ def test_collection_for_for_owner():
     assert qset.count() == 5
     assert list(qset) == collections
     assert extra_collection not in qset
+
+
+def test_moira_members(mocker, moiralist):
+    """
+    Tests the MoiraList.members method
+    """
+    member_list = ['joe', 'nancy', 'nancy', 'foo', 'bar', 'bar@mit.edu']
+    mock_client = mocker.patch('ui.models.utils.get_moira_client')
+    mock_client().list_members.return_value = member_list
+    assert mock_client().list_members.called_once_with(moiralist.name)
+    assert moiralist.members() == set(member_list)

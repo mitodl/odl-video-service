@@ -12,7 +12,6 @@ factory_boy
 faker
 html5lib==0.999999999
 ipython
-mit-moira==0.0.3
 newrelic
 psycopg2==2.6
 pytz
@@ -24,6 +23,9 @@ uwsgi
 
 # Touchstone
 -e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
+
+# MIT-Moira
+-e git+https://github.com/mitodl/mit-moira.git#egg=mit-moira
 
 # Django-Elastic-Transcoder
 -e git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder

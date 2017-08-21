@@ -405,6 +405,10 @@ RAVEN_CONFIG = {
 MIT_WS_CERTIFICATE = get_key('MIT_WS_CERTIFICATE', '')
 MIT_WS_PRIVATE_KEY = get_key('MIT_WS_PRIVATE_KEY', '')
 
+# x509 filenames
+MIT_WS_CERTIFICATE_FILE = os.path.join(BASE_DIR, STATIC_ROOT, 'mit_x509.cert')
+MIT_WS_PRIVATE_KEY_FILE = os.path.join(BASE_DIR, STATIC_ROOT, 'mit_x509.key')
+
 # Dropbox key
 DROPBOX_KEY = get_string('DROPBOX_KEY', '')
 
@@ -475,6 +479,7 @@ REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
 USWITCH_URL = get_string('USWITCH_URL', '')
 LECTURE_CAPTURE_USER = get_string('LECTURE_CAPTURE_USER', '')
 
+
 # List of mandatory settings. If any of these is not set, the app will not start
 # and will raise an ImproperlyConfigured exception
 MANDATORY_SETTINGS = [
@@ -494,4 +499,7 @@ MANDATORY_SETTINGS = [
     'SECRET_KEY',
     'USWITCH_URL',
     'VIDEO_CLOUDFRONT_DIST',
+    'LECTURE_CAPTURE_USER',
+    'MIT_WS_CERTIFICATE',
+    'MIT_WS_PRIVATE_KEY'
 ]

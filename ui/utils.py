@@ -1,4 +1,5 @@
 """Utils for ui app"""
+import os
 from datetime import datetime, timedelta
 from functools import lru_cache
 from urllib.parse import quote
@@ -13,43 +14,23 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from botocore.signers import CloudFrontSigner
-# from mit_moira import Moira
+from mit_moira import Moira
 
 
 @lru_cache(1)  # memoize this function
 def get_moira_client():
     """
     Gets a moira client.
-    IMPORTANT: This function will always raise an error until we fix the Moira client library to
-    accept certificate and key from strings.
-    For the time being this function will simply raise every time it is called.
     """
-    raise NotImplementedError(
-        'get_moira_client needs to be fixed after moira client library '
-        'is upgraded to support secrets from strings and not only from files'
-    )
-    # leaving the old code around as an example of what needs to be done
-
-    # cert_file_path = os.path.join(settings.SECRETS_DIR, "mit-ws-cert")
-    # cert_file_exists = os.path.isfile(cert_file_path)
-    # key_file_path = os.path.join(settings.SECRETS_DIR, "mit-ws-key")
-    # key_file_exists = os.path.isfile(key_file_path)
-    # if not cert_file_exists and not key_file_exists:
-    #     msg = "Missing required secrets: {cert} {key}".format(
-    #         cert=cert_file_path, key=key_file_path,
-    #     )
-    #     raise RuntimeError(msg)
-    # if not cert_file_exists:
-    #     msg = "Missing required secret: {cert}".format(
-    #         cert=cert_file_path,
-    #     )
-    #     raise RuntimeError(msg)
-    # if not key_file_exists:
-    #     msg = "Missing required secret: {key}".format(
-    #         key=key_file_path,
-    #     )
-    #     raise RuntimeError(msg)
-    # return Moira(cert_file_path, key_file_path)
+    errors = []
+    for required_secret_file in [settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE]:
+        if not os.path.isfile(required_secret_file):
+            errors.append(
+                "Missing required secret: {}".format(required_secret_file)
+            )
+    if errors:
+        raise RuntimeError('\n'.join(errors))
+    return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
 
 
 # http://boto3.readthedocs.io/en/stable/reference/services/cloudfront.html#generate-a-signed-url-for-amazon-cloudfront
@@ -152,3 +133,24 @@ def get_bucket(bucket_name):
 def get_transcoder_client():
     """Get an ElasticTranscoder client object"""
     return boto3.client('elastictranscoder', settings.AWS_REGION)
+
+
+def write_to_file(filename, contents):
+    """
+    Write content to a file in binary mode, creating directories if necessary
+
+    Args:
+        filename (str): The full-path filename to write to.
+        contents (str): What to write to the file.
+
+    """
+    if not os.path.exists(os.path.dirname(filename)):
+        os.makedirs(os.path.dirname(filename))
+    with open(filename, 'wb') as infile:
+        infile.write(contents)
+
+
+def write_x509_files():
+    """Write the x509 certificate and key to files"""
+    write_to_file(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_CERTIFICATE)
+    write_to_file(settings.MIT_WS_PRIVATE_KEY_FILE, settings.MIT_WS_PRIVATE_KEY)
