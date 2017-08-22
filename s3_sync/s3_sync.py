@@ -101,7 +101,7 @@ def verify_s3_bucket_exists(s3_bucket_name):
         objects in bucket otherwise error and exit on any issues trying
         to list objects in bucket.
     """
-    ls_s3_bucket_cmd = 'aws s3 ls {}'.format(s3_bucket_name)
+    ls_s3_bucket_cmd = 'aws s3api head-bucket --bucket {}'.format(s3_bucket_name)
     try:
         subprocess.run(ls_s3_bucket_cmd, check=True,
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -151,6 +151,27 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
     logger.info("Syncing complete")
 
 
+def move_files_to_synced_folder(local_video_records_done_folder, local_video_records_synced_folder):
+    """
+    Move local files in the done folder that have already been synced to S3, to the local synced folder.
+
+    Args:
+      local_video_records_done_folder (str): local folder containing video
+        files that should have been copied to S3.
+      local_video_records_synced_folder (str): local folder containing video
+        files that have already been copied to S3.
+    """
+    files_in_done_folder = os.listdir(local_video_records_done_folder)
+    for file in files_in_done_folder:
+        done_file = local_video_records_done_folder + "/" + file
+        synced_file = local_video_records_synced_folder + "/" + file
+        try:
+            os.rename(done_file, synced_file)
+        except OSError as err:
+            logger.exception("Failed to copy or remove local file", err)
+            sys.exit("[-] Failed to copy or remove local file ")
+
+
 def main():
     """
     Set local environment variables from settings file,
@@ -162,6 +183,7 @@ def main():
     verify_aws_cli_installed(config.get('Paths', 'aws_cli_binary', fallback='C:/Program Files/Amazon/AWSCLI/aws.exe'))
     verify_s3_bucket_exists(config['AWS']['s3_bucket_name'])
     sync_local_to_s3(config['Paths']['local_video_records_done_folder'], config['AWS']['s3_bucket_name'])
+    move_files_to_synced_folder(config['Paths']['local_video_records_done_folder'], config['Paths']['local_video_records_synced_folder'])
 
 
 if __name__ == '__main__':
