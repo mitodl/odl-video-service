@@ -163,10 +163,9 @@ def move_files_to_synced_folder(local_video_records_done_folder, local_video_rec
     """
     files_in_done_folder = os.listdir(local_video_records_done_folder)
     for file in files_in_done_folder:
-        done_file = local_video_records_done_folder + "/" + file
-        synced_file = local_video_records_synced_folder + "/" + file
         try:
-            os.rename(done_file, synced_file)
+            os.rename(f"{local_video_records_done_folder}/{file}",
+                      f"{local_video_records_synced_folder}/{file}")
         except OSError as err:
             logger.exception("Failed to copy or remove local file", err)
             sys.exit("[-] Failed to copy or remove local file ")
