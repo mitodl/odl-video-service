@@ -11,6 +11,7 @@ python s3_sync.py -i <settings_file.ini>
 """
 import argparse
 import os
+import re
 import subprocess
 import sys
 from configparser import ConfigParser, ExtendedInterpolation
@@ -128,7 +129,9 @@ def notify_slack_channel(slack_message):
         logger.warn("Failed to notify slack channel with following error: {}", err)
 
 
-def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
+def sync_local_to_s3(local_video_records_done_folder,
+                     s3_bucket_name,
+                     s3_sync_result_file):
     """
     Sync local files to specified S3 bucket
 
@@ -137,9 +140,13 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
         files ready to be copied to S3.
       s3_bucket_name (str): s3 bucket name
     """
-    s3_sync_cmd = 'aws s3 sync {} "s3://"{}'.format(local_video_records_done_folder, s3_bucket_name)
+    s3_sync_cmd = 'aws s3 sync {} s3://{} > {}'.format(local_video_records_done_folder,
+                                                       s3_bucket_name,
+                                                       s3_sync_result_file)
     try:
-        cmd_output = subprocess.run(s3_sync_cmd, check=True,
+        cmd_output = subprocess.run(s3_sync_cmd,
+                                    check=True,
+                                    shell=True,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
     except subprocess.SubprocessError as err:
@@ -151,18 +158,28 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
     logger.info("Syncing complete")
 
 
-def move_files_to_synced_folder(local_video_records_done_folder, local_video_records_synced_folder):
+def move_files_to_synced_folder(local_video_records_done_folder,
+                                local_video_records_synced_folder,
+                                s3_sync_result_file):
     """
-    Move local files in the done folder that have already been synced to S3, to the local synced folder.
+    Move local files in the done folder that have already been synced to S3,
+    to the local synced folder.
 
     Args:
       local_video_records_done_folder (str): local folder containing video
         files that should have been copied to S3.
       local_video_records_synced_folder (str): local folder containing video
         files that have already been copied to S3.
+      s3_sync_result_file (str): local file containing result of s3 sync operation.
     """
-    files_in_done_folder = os.listdir(local_video_records_done_folder)
-    for file in files_in_done_folder:
+    if not os.path.exists(s3_sync_result_file):
+        logger.warning("Could not find S3 sync results file",
+                       s3_sync_result_file)
+        sys.exit("[-] Could not find S3 sync results file")
+    with open(s3_sync_result_file) as file:
+        s3_sync_result_data = file.read()
+    file.closed
+    for file in re.findall(r"upload:\s(?:\w*[\/\\])*(\w*)\s", s3_sync_result_data):
         try:
             os.rename(f"{local_video_records_done_folder}/{file}",
                       f"{local_video_records_synced_folder}/{file}")
@@ -181,8 +198,12 @@ def main():
     verify_local_folder_exists(config['Paths']['local_video_records_done_folder'])
     verify_aws_cli_installed(config.get('Paths', 'aws_cli_binary', fallback='C:/Program Files/Amazon/AWSCLI/aws.exe'))
     verify_s3_bucket_exists(config['AWS']['s3_bucket_name'])
-    sync_local_to_s3(config['Paths']['local_video_records_done_folder'], config['AWS']['s3_bucket_name'])
-    move_files_to_synced_folder(config['Paths']['local_video_records_done_folder'], config['Paths']['local_video_records_synced_folder'])
+    sync_local_to_s3(config['Paths']['local_video_records_done_folder'],
+                     config['AWS']['s3_bucket_name'],
+                     config['Logs']['sync_results'])
+    move_files_to_synced_folder(config['Paths']['local_video_records_done_folder'],
+                                config['Paths']['local_video_records_synced_folder'],
+                                config['Logs']['sync_results'])
 
 
 if __name__ == '__main__':
