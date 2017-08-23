@@ -25,7 +25,8 @@ def test_collection_serializer():
         'description': collection.description,
         'owner': collection.owner.id,
         'videos': serializers.VideoSerializer(videos, many=True).data,
-        'moira_lists': [],  # this needs to be updated when we figure out moira lists
+        'view_lists': [],
+        'admin_lists': []
     }
     expected['videos'].sort(key=lambda x: x['key'])
     serialized_data = serializers.CollectionSerializer(collection).data
@@ -44,6 +45,8 @@ def test_collection_list_serializer():
         'title': collection.title,
         'description': collection.description,
         'owner': collection.owner.id,
+        'view_lists': [],
+        'admin_lists': []
     }
     assert serializers.CollectionListSerializer(collection).data == expected
 

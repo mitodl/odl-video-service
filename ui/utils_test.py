@@ -3,11 +3,9 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 
-from ui import utils
-
+from ui.utils import write_to_file, get_moira_client
 
 # pylint: disable=unused-argument
-from ui.utils import write_to_file
 
 
 @pytest.mark.parametrize("key_file, cert_file", [
@@ -20,7 +18,7 @@ def test_get_moira_client_missing_secrets(mock_moira, settings, key_file, cert_f
     settings.MIT_WS_PRIVATE_KEY_FILE = 'bad/file/path' if not key_file else key_file.name
     settings.MIT_WS_CERTIFICATE_FILE = 'bad/file/path' if not cert_file else cert_file.name
     with pytest.raises(RuntimeError) as err:
-        utils.get_moira_client()
+        get_moira_client()
         assert not mock_moira.called
         if key_file is None:
             assert settings.MIT_WS_PRIVATE_KEY_FILE in str(err)
@@ -33,7 +31,7 @@ def test_get_moira_client_success(mock_moira, settings):
     tempfile1, tempfile2 = (NamedTemporaryFile(), NamedTemporaryFile())
     settings.MIT_WS_PRIVATE_KEY_FILE = tempfile1.name
     settings.MIT_WS_CERTIFICATE_FILE = tempfile2.name
-    utils.get_moira_client()
+    get_moira_client()
     assert mock_moira.called_once_with(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
 
 

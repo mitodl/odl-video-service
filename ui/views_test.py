@@ -2,6 +2,7 @@
 Tests for views
 """
 import json
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -10,6 +11,7 @@ from django.test.utils import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 
+from ui import factories
 from ui.factories import (
     UserFactory,
     CollectionFactory,
@@ -23,7 +25,7 @@ from ui.serializers import (
 
 pytestmark = pytest.mark.django_db
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,unused-argument
 
 
 @pytest.fixture()
@@ -36,7 +38,7 @@ def logged_in_client(client):
     return client, user
 
 
-@pytest.fixture()
+@pytest.fixture
 def logged_in_apiclient(apiclient):
     """
     Fixture for a Django client that is logged in for the test user
@@ -44,6 +46,30 @@ def logged_in_apiclient(apiclient):
     user = UserFactory()
     apiclient.force_login(user)
     return apiclient, user
+
+
+@pytest.fixture
+def user_view_list_data():
+    """
+    Fixture for testing VideoDetail view permissions with a collection view_list
+    """
+    video = VideoFactory()
+    collection = video.collection
+    moira_list = factories.MoiraListFactory()
+    collection.view_lists = [moira_list]
+    return SimpleNamespace(video=video, moira_list=moira_list, collection=collection)
+
+
+@pytest.fixture
+def user_admin_list_data():
+    """
+    Fixture for testing VideoDetail view permissions with a collection admin_list
+    """
+    video = VideoFactory()
+    collection = video.collection
+    moira_list = factories.MoiraListFactory()
+    collection.admin_lists = [moira_list]
+    return SimpleNamespace(video=video, moira_list=moira_list, collection=collection)
 
 
 def test_index_anonymous(client):
@@ -85,6 +111,7 @@ def test_video_detail(logged_in_client, mocker):
     response = client.get(url)
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert js_settings_json == {
+        'editable': True,
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": '/static/bundles/',
         "videoKey": videofileHLS.video.hexkey,
@@ -125,14 +152,17 @@ def test_mosaic_view(logged_in_client, settings):  # pylint: disable=redefined-o
     assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
 
 
-def test_upload_dropbox_videos_authentication(logged_in_apiclient):
+def test_upload_dropbox_videos_authentication(mock_moira_client, logged_in_apiclient):
     """
-    Tests that only authenticated users can call UploadVideosFromDropbox
+    Tests that only authenticated users with collection admin permissions can call UploadVideosFromDropbox
     """
     client, user = logged_in_apiclient
     client.logout()
     url = reverse('upload-videos')
     collection = CollectionFactory(owner=user)
+    moira_list = factories.MoiraListFactory()
+    collection.admin_lists = [moira_list]
+    collection.save()
     other_user = UserFactory()
     input_data = {
         "collection": collection.hexkey,
@@ -218,7 +248,7 @@ def test_collection_viewset_permissions(logged_in_apiclient):
         assert client.post(url, {'owner': 1}).status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_collection_viewset_list(logged_in_apiclient):
+def test_collection_viewset_list(mock_moira_client, logged_in_apiclient):
     """
     Tests the list of collections for an user
     """
@@ -264,7 +294,9 @@ def test_collection_viewset_create(logged_in_apiclient):
 
     input_data = {
         'owner': user.id,
-        'title': 'foo title'
+        'title': 'foo title',
+        'view_lists': [],
+        'admin_lists': []
     }
     result = client.post(url, input_data, format='json')
     assert result.status_code == status.HTTP_201_CREATED
@@ -279,13 +311,17 @@ def test_collection_viewset_create(logged_in_apiclient):
     other_user = UserFactory()
     input_data = {
         'owner': other_user.id,
-        'title': 'foo title'
+        'title': 'foo title',
+        'view_lists': [],
+        'admin_lists': []
     }
     assert client.post(url, input_data, format='json').status_code == status.HTTP_403_FORBIDDEN
 
     # or if does not specify the owner id
     input_data = {
-        'title': 'foo title'
+        'title': 'foo title',
+        'view_lists': [],
+        'admin_lists': []
     }
     result = client.post(url, input_data, format='json')
     assert client.post(url, input_data, format='json').status_code == status.HTTP_403_FORBIDDEN
@@ -302,7 +338,9 @@ def test_collection_viewset_create_as_superuser(logged_in_apiclient):
 
     input_data = {
         'owner': user.id,
-        'title': 'foo title'
+        'title': 'foo title',
+        'view_lists': [],
+        'admin_lists': []
     }
     result = client.post(url, input_data, format='json')
     assert result.status_code == status.HTTP_201_CREATED
@@ -312,19 +350,23 @@ def test_collection_viewset_create_as_superuser(logged_in_apiclient):
     other_user = UserFactory()
     input_data = {
         'owner': other_user.id,
+        'view_lists': [],
+        'admin_lists': [],
         'title': 'foo title'
     }
     assert client.post(url, input_data, format='json').status_code == status.HTTP_201_CREATED
 
     # if does not specify the owner id it gets a different error
     input_data = {
-        'title': 'foo title'
+        'title': 'foo title',
+        'view_lists': [],
+        'admin_lists': []
     }
     result = client.post(url, input_data, format='json')
     assert client.post(url, input_data, format='json').status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_collection_viewset_detail(logged_in_apiclient):
+def test_collection_viewset_detail(mock_moira_client, logged_in_apiclient):
     """
     Tests to retrieve a collection details for an user
     """
@@ -339,7 +381,11 @@ def test_collection_viewset_detail(logged_in_apiclient):
     for video_data in result.data['videos']:
         assert video_data['key'] in videos
 
-    result = client.put(url, {'title': 'foo title', 'owner': user.id}, format='json')
+    result = client.put(url, {'title': 'foo title',
+                              'owner': user.id,
+                              'view_lists': [],
+                              'admin_lists': []},
+                        format='json')
     assert result.status_code == status.HTTP_200_OK
     assert result.data['title'] == 'foo title'
 
@@ -370,10 +416,95 @@ def test_collection_viewset_detail_as_superuser(logged_in_apiclient):
     assert result.status_code == status.HTTP_200_OK
     assert 'videos' in result.data
 
-    result = client.put(url, {'title': 'foo title', 'owner': user.id}, format='json')
+    result = client.put(url, {'title': 'foo title',
+                              'owner': user.id,
+                              'view_lists': [],
+                              'admin_lists': []},
+                        format='json')
     assert result.status_code == status.HTTP_200_OK
     assert result.data['title'] == 'foo title'
 
     # user can delete the collection
     result = client.delete(url)
     assert result.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_collection_detail_permission_as_superuser(logged_in_apiclient):
+    """
+    Tests that a superuser can view a collection created by another user
+    """
+    client, user = logged_in_apiclient
+    user.is_superuser = True
+    user.save()
+    collection = CollectionFactory(owner=UserFactory())
+    url = reverse('collection-detail', kwargs={'collection_key': collection.hexkey})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+
+
+def test_collection_detail_as_owner(logged_in_apiclient):
+    """
+    Tests that a user can view a collection created by that same user
+    """
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    url = reverse('collection-detail', kwargs={'collection_key': collection.hexkey})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+
+
+def test_collection_detail_admin_permission(mock_moira_client, logged_in_apiclient, user_admin_list_data):
+    """
+    Tests that a user can view a collection if user is a member of collection's admin_lists
+    """
+    client, _ = logged_in_apiclient
+    mock_moira_client.return_value.user_lists.return_value = [user_admin_list_data.moira_list.name]
+    url = reverse('collection-detail', kwargs={'collection_key': user_admin_list_data.collection.hexkey})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+
+
+def test_collection_detail_view_permission(mock_moira_client, logged_in_apiclient, user_view_list_data):
+    """
+    Tests that a user cannot view a collection if user is a member of collection's view_lists
+    """
+    client, _ = logged_in_apiclient
+    mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
+    url = reverse('collection-detail', kwargs={'collection_key': user_view_list_data.collection.hexkey})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_video_detail_view_permission(mock_moira_client, logged_in_apiclient, user_view_list_data):
+    """
+    Tests that a user can view a video if user is a member of collection's view_lists
+    """
+    client, _ = logged_in_apiclient
+    mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
+    url = reverse('video-detail', kwargs={'video_key': user_view_list_data.video.hexkey})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert json.loads(result.context_data['js_settings_json'])['editable'] is False
+
+
+def test_video_detail_admin_permission(logged_in_apiclient, mock_moira_client, user_admin_list_data):
+    """
+    Tests that a user can view a video if user is a member of collection's admin_lists
+    """
+    client, _ = logged_in_apiclient
+    mock_moira_client.return_value.user_lists.return_value = [user_admin_list_data.moira_list.name]
+    url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert json.loads(result.context_data['js_settings_json'])['editable'] is True
+
+
+def test_video_detail_no_permission(mock_moira_client, logged_in_apiclient, user_admin_list_data):
+    """
+    Tests that a user cannot view a video if user is not a member of collection's lists
+    """
+    client, _ = logged_in_apiclient
+    mock_moira_client.return_value.user_lists.return_value = ['other_list']
+    url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_403_FORBIDDEN

@@ -1,9 +1,12 @@
 """Utils for ui app"""
+import logging
 import os
+from collections import namedtuple
 from datetime import datetime, timedelta
 from functools import lru_cache
 from urllib.parse import quote
 
+import re
 from pytz import UTC
 import boto3
 from django.conf import settings
@@ -15,6 +18,10 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from botocore.signers import CloudFrontSigner
 from mit_moira import Moira
+
+log = logging.getLogger(__name__)
+
+MoiraUser = namedtuple('MoiraUser', 'username type')
 
 
 @lru_cache(1)  # memoize this function
@@ -31,6 +38,43 @@ def get_moira_client():
     if errors:
         raise RuntimeError('\n'.join(errors))
     return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
+
+
+def get_moira_user(user):
+    """
+    Return the most likely username & type (USER, STRING) for a user in moira lists based on email.
+    If the email ends with 'mit.edu', assume kerberos id = email prefix
+    Otherwise use the entire email address as the username.
+
+    Args:
+        user (django.contrib.auth.User): the Django user to return a Moira user for.
+
+    Returns:
+        A namedtuple containing username and type
+
+    """
+    if re.search(r'(@|\.)mit.edu$', user.email):
+        return MoiraUser(user.email.split('@')[0], 'USER')
+    return MoiraUser(user.email, 'STRING')
+
+
+def user_moira_lists(user):
+    """
+    Get a list of all the moira lists a user has access to.
+
+    Args:
+        user (django.contrib.auth.User): the Django user.
+
+    Returns:
+        A list of moira lists the user has access to.
+    """
+    moira_user = get_moira_user(user)
+    try:
+        moira = get_moira_client()
+        return moira.user_lists(moira_user.username, moira_user.type)
+    except Exception as exc:  # pylint: disable=broad-except
+        log.exception('Something went wrong with the moira client: %s', str(exc))
+        return []
 
 
 # http://boto3.readthedocs.io/en/stable/reference/services/cloudfront.html#generate-a-signed-url-for-amazon-cloudfront
