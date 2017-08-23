@@ -8,6 +8,7 @@ declare var SETTINGS: {
   reactGaDebug: string,
   video: Video,
   videoKey: string,
+  editable: boolean
 };
 
 // mocha

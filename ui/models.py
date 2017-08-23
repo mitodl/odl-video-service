@@ -12,6 +12,7 @@ from django.db import models
 from django.conf import settings
 from dj_elastictranscoder.models import EncodeJob
 
+
 from mail import tasks
 from ui import utils
 from ui.constants import VideoStatus
@@ -25,7 +26,7 @@ class MoiraList(models.Model):
     """
     Model for Moira
     """
-    name = models.CharField(max_length=250)
+    name = models.CharField(max_length=250, unique=True)
 
     def members(self):
         """
@@ -44,6 +45,48 @@ class MoiraList(models.Model):
         return '<MoiraList: {self.name!r}>'.format(self=self)
 
 
+class CollectionManager(models.Manager):
+    """
+    Custom manager for the Collection model
+    """
+
+    def all_viewable(self, user):
+        """
+        Return all collections that a user has view permissions for.  Currently not used. Only
+        users who are admins can see a list of collections (via `get_collections_editable`).
+
+        Args:
+            user (django.contrib.auth.User): the Django user.
+
+        Returns:
+            A list of collections the user has view access to.
+        """
+        user_lists = utils.user_moira_lists(user)
+        if user.is_superuser:
+            return self.all()
+        return self.filter(
+            models.Q(view_lists__in=MoiraList.objects.filter(name__in=user_lists)) |
+            models.Q(admin_lists__in=MoiraList.objects.filter(name__in=user_lists)) |
+            models.Q(owner=user))
+
+    def all_admin(self, user):
+        """
+        Return all collections that a user has admin permissions for.
+
+        Args:
+            user (django.contrib.auth.User): the Django user.
+
+        Returns:
+            A list of collections the user has admin access to.
+
+        """
+        if user.is_superuser:
+            return self.all()
+        return self.filter(
+            models.Q(admin_lists__in=MoiraList.objects.filter(name__in=utils.user_moira_lists(user))) |
+            models.Q(owner=user))
+
+
 class Collection(models.Model):
     """
     Model for Video Collections
@@ -52,7 +95,10 @@ class Collection(models.Model):
     title = models.TextField()
     description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL)
-    moira_lists = models.ManyToManyField(MoiraList, blank=True)
+    view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
+    admin_lists = models.ManyToManyField(MoiraList, blank=True, related_name='admin_lists')
+
+    objects = CollectionManager()
 
     def __str__(self):
         return self.title
