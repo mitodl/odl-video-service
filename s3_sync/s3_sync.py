@@ -141,8 +141,8 @@ def sync_local_to_s3(local_video_records_done_folder,
       s3_bucket_name (str): s3 bucket name
     """
     s3_sync_cmd = 'aws s3 sync {} s3://{} > "{}"'.format(local_video_records_done_folder,
-                                                       s3_bucket_name,
-                                                       s3_sync_result_file)
+                                                         s3_bucket_name,
+                                                         s3_sync_result_file)
     try:
         cmd_output = subprocess.run(s3_sync_cmd,
                                     check=True,
@@ -178,7 +178,6 @@ def move_files_to_synced_folder(local_video_records_done_folder,
         sys.exit("[-] Could not find S3 sync results file")
     with open(s3_sync_result_file) as file:
         s3_sync_result_data = file.read()
-    file.closed
     for file in re.findall(r"upload:\s(?:.*\\)(.*)to", s3_sync_result_data):
         try:
             os.rename(f"{local_video_records_done_folder}/{file}",
