@@ -12,8 +12,13 @@ body {
   font-size: .9rem;
 }
 
+p.channelLink {
+  margin-bottom: 0px;
+}
+
 a, a:link, a:visited, a:active {
   color: $linkcolor;
+  text-decoration: none;
 }
 
 .fontgray {
@@ -37,7 +42,7 @@ button {
 
 /*---------------------------------------
    SECTION:  FORM STYLES
-
+-----------------------------------------*/
 
 label {
   width: 88px;
@@ -48,4 +53,3 @@ label {
   width: calc(100% - 100px);
   max-width: 500px;
 }
------------------------------------------*/

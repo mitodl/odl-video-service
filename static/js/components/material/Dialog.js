@@ -74,7 +74,7 @@ export default class Dialog extends React.Component {
             Cancel
           </Button>
           <Button type="button" className="mdc-dialog__footer__button mdc-dialog__footer__button--accept edit-button">
-            Edit
+            Save
           </Button>
         </footer>
       </div>

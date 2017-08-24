@@ -129,15 +129,19 @@ class VideoDetailPage extends React.Component {
       <Drawer open={videoDetailUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
       { video ? this.renderVideoPlayer(video) : null }
       <div className="summary">
-        <a className="collection-link mdc-typography--subheading1" href={collectionUrl}>
-          {video.collection_title}
-        </a>
+        <p className="channelLink mdc-typography--subheading1">
+          <a className="collection-link" href={collectionUrl}>
+            {video.collection_title}
+          </a>
+        </p>
         <h2 className="video-title mdc-typography--title">
           {video.title}
         </h2>
-        <p className="video-description mdc-typography--body1">
-          {video.description}
-        </p>
+        { video.description
+          ?  <p className="video-description mdc-typography--body1">
+            {video.description}
+          </p>
+          : null }
         <span className="upload-date mdc-typography--subheading1 fontgray">
           Uploaded {formattedCreation}
         </span>
