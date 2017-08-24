@@ -83,7 +83,7 @@ describe('VideoDetailPage', () => {
     assert.equal(wrapper.find(".video-title").text(), video.title);
     assert.equal(wrapper.find(".video-description").text(), video.description);
     const formatted = moment(video.created_at).format(MM_DD_YYYY);
-    assert.equal(wrapper.find(".upload-date").text(), `Uploaded ${formatted}.`);
+    assert.equal(wrapper.find(".upload-date").text(), `Uploaded ${formatted}`);
     let link = wrapper.find(".collection-link");
     assert.equal(link.props().href, makeCollectionUrl(video.collection_key));
     assert.equal(link.text(), video.collection_title);

@@ -15,7 +15,7 @@
   align-items: center;
 
   @include breakpoint(phone) {
-  	margin-left: 8px !important;
+    margin-left: 8px !important;
   }
 }
 
@@ -23,7 +23,7 @@
   padding-left: 30px;
 
   @include breakpoint(phone) {
-  	padding-left: 15px;
+    padding-left: 15px;
   }
 }
 
