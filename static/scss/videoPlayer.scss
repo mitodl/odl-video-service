@@ -1,8 +1,6 @@
 // Video.JS styles
-.video-odl-medium,.video-message {
+.video-odl-medium, .video-message {
   width: 100%;
-  height: 500px !important;
-
 }
 
 .video-message {
@@ -28,6 +26,8 @@
   position: relative !important;
   width: inherit !important;
   height: inherit !important;
+  max-height: 650px;
+  max-height: calc(100vh - 200px);
 }
 
 .vjs-poster {

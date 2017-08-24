@@ -1,0 +1,52 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.mdc-typography--title {
+  line-height: 1.5rem;
+  font-size: 1.4rem;
+}
+
+.mdc-typography--body1 {
+  font-size: .9rem;
+}
+
+a, a:link, a:visited, a:active {
+  color: $linkcolor;
+}
+
+.fontgray {
+  color: $fontgray;
+}
+
+button {
+
+  .material-icons {
+    position: relative;
+  	top: 5px;
+    font-size: 21px;
+    margin-right: 5px;
+  }
+}
+
+.mdc-button--raised {
+  background: #ececec;
+}
+
+
+
+/*---------------------------------------
+   SECTION:  FORM STYLES
+
+
+label {
+  width: 88px;
+  display: inline-block;
+}
+
+.mdc-textfield {
+  width: calc(100% - 100px);
+  max-width: 500px;
+}
+-----------------------------------------*/

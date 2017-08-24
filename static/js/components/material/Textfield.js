@@ -12,7 +12,7 @@ export default class Textfield extends React.Component {
 
     return <span>
       <label htmlFor={id}>{label}</label>
-      <div className="mdc-textfield mdc-textfield--box">
+      <div className="mdc-textfield">
         <input type="text" className="mdc-textfield__input" id={id} {...otherProps} />
       </div>
     </span>;
