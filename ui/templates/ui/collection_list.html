@@ -4,6 +4,7 @@
 
 {% block content %}
 
+<h2>Collections</h2>
 <ul>
   {% for collection in collection_list %}
     <li><a href="{% url "collection-detail" collection.hexkey %}">{{ collection.title }}</a></li>
@@ -26,6 +27,14 @@
       <th>{{ form.description.label_tag }}</th>
       <td>{{ form.description }}</td>
     </tr>
+    <tr>
+      <th>{{ form.view_lists.label_tag }}</th>
+      <td>{{ form.view_lists }}</td>
+    </tr>
+    <tr>
+      <th>{{ form.admin_lists.label_tag }}</th>
+      <td>{{ form.admin_lists }}</td>
+    </tr>
   </table>
   {{ form.owner }}
   <input type="submit" value="Create" />
@@ -34,6 +43,11 @@
 <script>
   let CSRF = "{{ csrf_token }}";
 
+  let formatMoiraList = function(listVal) {
+      // Split the form value by commas or spaces and remove empty strings
+      return listVal.split(/[,\s]+/).filter(function(item){return item});
+  };
+
   let handleCreate = function(event) {
     event.preventDefault();
     let form = event.target;
@@ -41,8 +55,8 @@
       title: form.querySelector("[name=title]").value,
       description: form.querySelector("[name=description]").value,
       owner: form.querySelector("[name=owner]").value,
-      view_lists: [],
-      admin_lists: []
+      view_lists: formatMoiraList(form.querySelector("[name=view_lists]").value),
+      admin_lists: formatMoiraList(form.querySelector("[name=admin_lists]").value)
     };
     let headers = new Headers();
     headers.append("X-CSRFToken", CSRF);
@@ -62,5 +76,8 @@
     document.querySelector("form.create-collection").addEventListener("submit", handleCreate);
   });
 </script>
+{%  else %}
+<div>You do not have permission to create new video collections.</div>
 {%  endif %}
+
 {% endblock %}

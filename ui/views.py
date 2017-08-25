@@ -69,7 +69,8 @@ class CollectionList(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['collection_list'] = Collection.objects.all_admin(self.request.user)
-        context['form'] = forms.CollectionForm(initial={'owner': self.request.user.id})
+        if ui_permissions.is_staff_or_superuser(self.request.user):
+            context['form'] = forms.CollectionForm(initial={'owner': self.request.user.id})
         context["js_settings_json"] = json.dumps(default_js_settings(self.request))
         return context
 
@@ -85,7 +86,6 @@ class CollectionDetail(TemplateView):
         if not ui_permissions.has_admin_permission(collection, self.request):
             raise PermissionDenied
         video_list = Video.objects.filter(collection=collection)
-
         default_settings = default_js_settings(self.request)
         context["collection"] = collection
         context["video_list"] = video_list
@@ -205,7 +205,7 @@ class CollectionViewSet(viewsets.ModelViewSet):
     )
     permission_classes = (
         permissions.IsAuthenticated,
-        ui_permissions.HasCollectionPermissions,
+        ui_permissions.HasCollectionPermissions
     )
 
     def get_queryset(self):
@@ -225,21 +225,6 @@ class CollectionViewSet(viewsets.ModelViewSet):
         if self.kwargs.get('key') is not None:
             return serializers.CollectionSerializer
         return serializers.CollectionListSerializer
-
-    def create(self, request, *args, **kwargs):
-        """
-        Customized create object method to check that the user can only create
-        collections for herself.
-        """
-        owner_id = request.data.get('owner')
-        if not request.user.is_superuser and (owner_id is None or int(owner_id) != request.user.id):
-            return Response(
-                {
-                    'error': 'You do not have permissions to perform this action'
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        return super().create(request, *args, **kwargs)
 
 
 class VideoViewSet(ModelDetailViewset):

@@ -30,6 +30,13 @@ def has_common_lists(user, list_names):
     return len(set(user_moira_lists(user)).intersection(list_names)) > 0
 
 
+def is_staff_or_superuser(user):
+    """
+    Determine if a user is either a staff or super user
+    """
+    return user and (user.is_superuser or user.is_staff)
+
+
 def has_view_permission(obj, request):
     """
     Determine if a user can view a collection or its videos based
@@ -85,8 +92,19 @@ class IsAdminOrReadOnly(BasePermission):
 
 class HasCollectionPermissions(IsAuthenticated):
     """
-    Permission to view or edit collection, currently both limited to users with admin access
+    Permission to view, edit, or create collections
+    View/edit currently both limited to users with admin access
+    Creation currently limited to staff or superusers
     """
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            if not is_staff_or_superuser(request.user):
+                return False
+            owner = str(request.data.get('owner'))
+            if request.user.is_staff and owner and owner.isdigit():
+                return int(owner) == request.user.id
+        return True
+
     def has_object_permission(self, request, view, obj):
         return has_admin_permission(obj, request)
 

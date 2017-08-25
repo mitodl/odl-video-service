@@ -71,7 +71,7 @@ class CollectionForm(ModelForm):
 
     class Meta:
         model = models.Collection
-        fields = ('title', 'description', 'owner', "view_lists", "admin_lists")
+        fields = ('title', 'description', 'owner', 'view_lists', 'admin_lists')
 
 
 class VideoForm(ModelForm):
