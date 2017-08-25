@@ -67,7 +67,7 @@ class CollectionManager(models.Manager):
         return self.filter(
             models.Q(view_lists__in=MoiraList.objects.filter(name__in=user_lists)) |
             models.Q(admin_lists__in=MoiraList.objects.filter(name__in=user_lists)) |
-            models.Q(owner=user))
+            models.Q(owner=user)).distinct()
 
     def all_admin(self, user):
         """
@@ -84,7 +84,7 @@ class CollectionManager(models.Manager):
             return self.all()
         return self.filter(
             models.Q(admin_lists__in=MoiraList.objects.filter(name__in=utils.user_moira_lists(user))) |
-            models.Q(owner=user))
+            models.Q(owner=user)).distinct()
 
 
 class Collection(models.Model):

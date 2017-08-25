@@ -72,6 +72,20 @@ def user_admin_list_data():
     return SimpleNamespace(video=video, moira_list=moira_list, collection=collection)
 
 
+@pytest.fixture
+def post_data(logged_in_apiclient):
+    """Fixture for testing collection creation using valid post data"""
+    _, user = logged_in_apiclient
+
+    input_data = {
+        'owner': user.id,
+        'title': 'foo title',
+        'view_lists': [],
+        'admin_lists': []
+    }
+    return input_data
+
+
 def test_index_anonymous(client):
     """Test index anonymous"""
     response = client.get(reverse('index'))
@@ -285,25 +299,30 @@ def test_collection_viewset_list_superuser(logged_in_apiclient):
         assert coll_data['key'] in collections
 
 
-def test_collection_viewset_create(logged_in_apiclient):
+def test_collection_viewset_create_as_normal_user(post_data, logged_in_apiclient):
     """
-    Tests to create a collection for an user
+    Tests that a normal user is not allowed to create a collection
+    """
+    client, _ = logged_in_apiclient
+    url = reverse('models-api:collection-list')
+    result = client.post(url, post_data, format='json')
+    assert result.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_collection_viewset_create_as_staff(post_data, logged_in_apiclient):
+    """
+    Tests that a staff user can create a collection with self as owner but nobody else
     """
     client, user = logged_in_apiclient
+    user.is_staff = True
+    user.save()
     url = reverse('models-api:collection-list')
-
-    input_data = {
-        'owner': user.id,
-        'title': 'foo title',
-        'view_lists': [],
-        'admin_lists': []
-    }
-    result = client.post(url, input_data, format='json')
+    result = client.post(url, post_data, format='json')
     assert result.status_code == status.HTTP_201_CREATED
     assert 'videos' not in result.data
 
     # the creation should work also without a JSON request
-    result = client.post(url, input_data)
+    result = client.post(url, post_data)
     assert result.status_code == status.HTTP_201_CREATED
     assert 'videos' not in result.data
 
@@ -323,26 +342,18 @@ def test_collection_viewset_create(logged_in_apiclient):
         'view_lists': [],
         'admin_lists': []
     }
-    result = client.post(url, input_data, format='json')
-    assert client.post(url, input_data, format='json').status_code == status.HTTP_403_FORBIDDEN
+    assert client.post(url, input_data, format='json').status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_collection_viewset_create_as_superuser(logged_in_apiclient):
+def test_collection_viewset_create_as_superuser(post_data, logged_in_apiclient):
     """
-    Tests to create a collection for a superuser
+    Tests that a superuser can create a collection for anyone as owner (but owner can't be None).
     """
     client, user = logged_in_apiclient
     user.is_superuser = True
     user.save()
     url = reverse('models-api:collection-list')
-
-    input_data = {
-        'owner': user.id,
-        'title': 'foo title',
-        'view_lists': [],
-        'admin_lists': []
-    }
-    result = client.post(url, input_data, format='json')
+    result = client.post(url, post_data, format='json')
     assert result.status_code == status.HTTP_201_CREATED
     assert 'videos' not in result.data
 
@@ -362,7 +373,6 @@ def test_collection_viewset_create_as_superuser(logged_in_apiclient):
         'view_lists': [],
         'admin_lists': []
     }
-    result = client.post(url, input_data, format='json')
     assert client.post(url, input_data, format='json').status_code == status.HTTP_400_BAD_REQUEST
 
 
@@ -508,3 +518,25 @@ def test_video_detail_no_permission(mock_moira_client, logged_in_apiclient, user
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_collection_list_nocreate(logged_in_apiclient):
+    """
+    Tests that form is not sent back in the response context if user can't add new collections
+    """
+    client, _ = logged_in_apiclient
+    url = reverse('collection-list')
+    result = client.get(url)
+    assert 'form' not in result.context_data
+
+
+def test_collection_list_create(logged_in_apiclient):
+    """
+    Tests that form is sent back in the response context if user can add new collections
+    """
+    client, user = logged_in_apiclient
+    user.is_staff = True
+    user.save()
+    url = reverse('collection-list')
+    result = client.get(url)
+    assert 'form' in result.context_data
