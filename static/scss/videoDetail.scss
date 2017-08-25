@@ -3,7 +3,7 @@
 .summary {
   display: flex;
   flex-direction: column;
-  margin: 30px 10% 80px;
+  margin: 15px 10% 80px;
   min-height: 300px;
 
   @include breakpoint(phone) {
