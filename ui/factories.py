@@ -116,7 +116,7 @@ class MoiraListFactory(DjangoModelFactory):
     """
     Factory for a MoiraList
     """
-    name = FuzzyText(prefix="odl-")
+    name = FuzzyText()
 
     class Meta:
         model = models.MoiraList

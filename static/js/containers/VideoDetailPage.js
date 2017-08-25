@@ -34,6 +34,7 @@ class VideoDetailPage extends React.Component {
     videoKey: string,
     needsUpdate: boolean,
     videoDetailUi: VideoDetailUIState,
+    editable: boolean
   };
 
   componentDidMount() {
@@ -53,8 +54,8 @@ class VideoDetailPage extends React.Component {
   };
 
   openDialog = () => {
-    const { dispatch, video } = this.props;
-    if (video) {
+    const { dispatch, video, editable } = this.props;
+    if (video && editable) {
       dispatch(setTitle(video.title));
       dispatch(setDescription(video.description));
     }
@@ -112,7 +113,7 @@ class VideoDetailPage extends React.Component {
   };
 
   render() {
-    const { video, videoDetailUi } = this.props;
+    const { video, videoDetailUi, editable } = this.props;
     if (!video) {
       return null;
     }
@@ -146,7 +147,7 @@ class VideoDetailPage extends React.Component {
           Uploaded {formattedCreation}
         </span>
         <span className="actions">
-          <Button className="edit mdc-button--raised" onClick={this.openDialog}>
+          <Button className="edit mdc-button--raised" onClick={this.openDialog} disabled={!editable}>
             <span className="material-icons">edit</span> Edit
           </Button>
           <Button className="share mdc-button--raised">

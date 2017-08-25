@@ -16,5 +16,11 @@ def apiclient():
 
 @pytest.fixture
 def mock_moira(mocker):
-    """Return a fake moira client"""
+    """Return a fake mit_moira.Moira object"""
     return mocker.patch('ui.utils.Moira')
+
+
+@pytest.fixture
+def mock_moira_client(mocker):
+    """Return a fake moira client"""
+    return mocker.patch('ui.utils.get_moira_client', autospec=True)

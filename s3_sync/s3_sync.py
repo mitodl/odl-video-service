@@ -11,6 +11,7 @@ python s3_sync.py -i <settings_file.ini>
 """
 import argparse
 import os
+import re
 import subprocess
 import sys
 from configparser import ConfigParser, ExtendedInterpolation
@@ -101,7 +102,7 @@ def verify_s3_bucket_exists(s3_bucket_name):
         objects in bucket otherwise error and exit on any issues trying
         to list objects in bucket.
     """
-    ls_s3_bucket_cmd = 'aws s3 ls {}'.format(s3_bucket_name)
+    ls_s3_bucket_cmd = 'aws s3api head-bucket --bucket {}'.format(s3_bucket_name)
     try:
         subprocess.run(ls_s3_bucket_cmd, check=True,
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -128,7 +129,9 @@ def notify_slack_channel(slack_message):
         logger.warn("Failed to notify slack channel with following error: {}", err)
 
 
-def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
+def sync_local_to_s3(local_video_records_done_folder,
+                     s3_bucket_name,
+                     s3_sync_result_file):
     """
     Sync local files to specified S3 bucket
 
@@ -137,9 +140,13 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
         files ready to be copied to S3.
       s3_bucket_name (str): s3 bucket name
     """
-    s3_sync_cmd = 'aws s3 sync {} "s3://"{}'.format(local_video_records_done_folder, s3_bucket_name)
+    s3_sync_cmd = 'aws s3 sync {} s3://{} > "{}"'.format(local_video_records_done_folder,
+                                                         s3_bucket_name,
+                                                         s3_sync_result_file)
     try:
-        cmd_output = subprocess.run(s3_sync_cmd, check=True,
+        cmd_output = subprocess.run(s3_sync_cmd,
+                                    check=True,
+                                    shell=True,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
     except subprocess.SubprocessError as err:
@@ -149,6 +156,35 @@ def sync_local_to_s3(local_video_records_done_folder, s3_bucket_name):
     logger.info("S3 sync successfully ran: {}", cmd_output)
     notify_slack_channel(f"Sync succeeded on: *{computer_name}* \n `str({cmd_output})`")
     logger.info("Syncing complete")
+
+
+def move_files_to_synced_folder(local_video_records_done_folder,
+                                local_video_records_synced_folder,
+                                s3_sync_result_file):
+    """
+    Move local files in the done folder that have already been synced to S3,
+    to the local synced folder.
+
+    Args:
+      local_video_records_done_folder (str): local folder containing video
+        files that should have been copied to S3.
+      local_video_records_synced_folder (str): local folder containing video
+        files that have already been copied to S3.
+      s3_sync_result_file (str): local file containing result of s3 sync operation.
+    """
+    if not os.path.exists(s3_sync_result_file):
+        logger.warning("Could not find S3 sync results file",
+                       s3_sync_result_file)
+        sys.exit("[-] Could not find S3 sync results file")
+    with open(s3_sync_result_file) as file:
+        s3_sync_result_data = file.read()
+    for file in re.findall(r"upload:\s(?:.*\\)(.*)to", s3_sync_result_data):
+        try:
+            os.rename(f"{local_video_records_done_folder}/{file}",
+                      f"{local_video_records_synced_folder}/{file}")
+        except OSError as err:
+            logger.exception("Failed to copy or remove local file", err)
+            sys.exit("[-] Failed to copy or remove local file ")
 
 
 def main():
@@ -161,7 +197,12 @@ def main():
     verify_local_folder_exists(config['Paths']['local_video_records_done_folder'])
     verify_aws_cli_installed(config.get('Paths', 'aws_cli_binary', fallback='C:/Program Files/Amazon/AWSCLI/aws.exe'))
     verify_s3_bucket_exists(config['AWS']['s3_bucket_name'])
-    sync_local_to_s3(config['Paths']['local_video_records_done_folder'], config['AWS']['s3_bucket_name'])
+    sync_local_to_s3(config['Paths']['local_video_records_done_folder'],
+                     config['AWS']['s3_bucket_name'],
+                     config['Logs']['sync_results'])
+    move_files_to_synced_folder(config['Paths']['local_video_records_done_folder'],
+                                config['Paths']['local_video_records_synced_folder'],
+                                config['Logs']['sync_results'])
 
 
 if __name__ == '__main__':

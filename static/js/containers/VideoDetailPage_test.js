@@ -105,14 +105,20 @@ describe('VideoDetailPage', () => {
     );
   });
 
-  it('opens the dialog when the edit button is clicked', async () => {
-    let wrapper = await renderPage();
+  it('opens the dialog when the edit button is clicked and video is editable', async () => {
+    let wrapper = await renderPage({editable: true});
+    assert.isFalse(wrapper.find(".edit").props().disabled);
     wrapper.find(".edit").props().onClick();
     assert.isTrue(store.getState().videoDetailUi.dialog.visible);
   });
 
-  it('edits the title and description and submits the data to trigger an update', async () => {
+  it('edit button has no effect if video is not editable', async () => {
     let wrapper = await renderPage();
+    assert.isTrue(wrapper.find(".edit").props().disabled);
+  });
+
+  it('edits the title and description and submits the data to trigger an update', async () => {
+    let wrapper = await renderPage({editable: true});
 
     const newTitle = 'new title';
     const newDescription = "omg this is the BEST VIDEO";

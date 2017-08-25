@@ -41,7 +41,7 @@ class DynamicModelMultipleChoiceField(Field):
         self.field = field
 
     def prepare_value(self, values):
-        return [getattr(value, self.field) for value in values]
+        return [getattr(value, self.field) for value in values] if values else []
 
     def to_model(self, value):
         kwargs = {self.field: value.strip()}
@@ -58,7 +58,12 @@ class CollectionForm(ModelForm):
     """
     title = forms.CharField()
     owner = forms.CharField(widget=forms.HiddenInput)
-    moira_lists = DynamicModelMultipleChoiceField(
+    view_lists = DynamicModelMultipleChoiceField(
+        model=models.MoiraList,
+        field="name",
+        required=False,
+    )
+    admin_lists = DynamicModelMultipleChoiceField(
         model=models.MoiraList,
         field="name",
         required=False,
@@ -66,7 +71,7 @@ class CollectionForm(ModelForm):
 
     class Meta:
         model = models.Collection
-        fields = ('title', 'description', 'owner', 'moira_lists', )
+        fields = ('title', 'description', 'owner', "view_lists", "admin_lists")
 
 
 class VideoForm(ModelForm):

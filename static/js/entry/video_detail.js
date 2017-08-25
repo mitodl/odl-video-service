@@ -24,6 +24,7 @@ ReactDOM.render(
   <Provider store={store}>
     <VideoDetailPage
       videoKey={SETTINGS.videoKey}
+      editable={SETTINGS.editable}
     />
   </Provider>,
   rootEl

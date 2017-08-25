@@ -106,6 +106,12 @@ class CollectionSerializer(serializers.ModelSerializer):
     """
     key = serializers.SerializerMethodField()
     videos = VideoSerializer(many=True, read_only=True)
+    view_lists = SingleAttrRelatedField(
+        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+    )
+    admin_lists = SingleAttrRelatedField(
+        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+    )
 
     def get_key(self, obj):
         """Custom getter for the key"""
@@ -119,7 +125,8 @@ class CollectionSerializer(serializers.ModelSerializer):
             'description',
             'owner',
             'videos',
-            'moira_lists',
+            'view_lists',
+            'admin_lists',
         )
         read_only_fields = (
             'key',
@@ -131,6 +138,12 @@ class CollectionListSerializer(serializers.ModelSerializer):
     Serializer for Collection Model
     """
     key = serializers.SerializerMethodField()
+    view_lists = SingleAttrRelatedField(
+        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+    )
+    admin_lists = SingleAttrRelatedField(
+        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+    )
 
     def get_key(self, obj):
         """Custom getter for the key"""
@@ -143,6 +156,8 @@ class CollectionListSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'owner',
+            'view_lists',
+            'admin_lists'
         )
         read_only_fields = (
             'key',

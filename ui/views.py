@@ -7,6 +7,7 @@ from django.contrib.auth import login
 from django.contrib.auth.views import login as login_view
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
+from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.utils.decorators import method_decorator
@@ -26,14 +27,13 @@ from ui import (
     api,
     serializers,
     forms,
+    permissions as ui_permissions
 )
+from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
 from ui.models import (
     Collection,
-    Video,
-)
-from ui.permissions import IsCollectionOwner, CanUploadToCollection
-from ui.serializers import VideoSerializer
+    Video)
 
 
 def default_js_settings(request):
@@ -68,7 +68,7 @@ class CollectionList(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['collection_list'] = Collection.for_owner(self.request.user)
+        context['collection_list'] = Collection.objects.all_admin(self.request.user)
         context['form'] = forms.CollectionForm(initial={'owner': self.request.user.id})
         context["js_settings_json"] = json.dumps(default_js_settings(self.request))
         return context
@@ -81,8 +81,9 @@ class CollectionDetail(TemplateView):
 
     def get_context_data(self, collection_key, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
-
         collection = get_object_or_404(Collection, key=collection_key)
+        if not ui_permissions.has_admin_permission(collection, self.request):
+            raise PermissionDenied
         video_list = Video.objects.filter(collection=collection)
 
         default_settings = default_js_settings(self.request)
@@ -117,9 +118,12 @@ class VideoDetail(TemplateView):
     def get_context_data(self, video_key, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
         video = get_object_or_404(Video, key=video_key)
+        if not ui_permissions.has_view_permission(video.collection, self.request):
+            raise PermissionDenied
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
             'videoKey': video.key.hex,
+            'editable': ui_permissions.has_admin_permission(video.collection, self.request)
         })
         return context
 
@@ -174,7 +178,7 @@ class UploadVideosFromDropbox(APIView):
     )
     permission_classes = (
         permissions.IsAuthenticated,
-        CanUploadToCollection,
+        ui_permissions.CanUploadToCollection,
     )
 
     def post(self, request):
@@ -201,17 +205,16 @@ class CollectionViewSet(viewsets.ModelViewSet):
     )
     permission_classes = (
         permissions.IsAuthenticated,
-        IsCollectionOwner,
+        ui_permissions.HasCollectionPermissions,
     )
 
     def get_queryset(self):
         """
-        Custom get_queryset to filter only the collections for the current owner.
-        NOTE: The Collection.for_owner needs to change when we introduce support for Moira Lists
+        Custom get_queryset to filter collections that user has admin access to.
         """
         if self.request.user.is_superuser:
             return Collection.objects.all()
-        return Collection.for_owner(self.request.user)
+        return Collection.objects.all_admin(self.request.user)
 
     def get_serializer_class(self):
         """
@@ -253,6 +256,7 @@ class VideoViewSet(ModelDetailViewset):
     )
     permission_classes = (
         permissions.IsAuthenticated,
+        ui_permissions.HasViewPermissionsForVideo
     )
 
 
