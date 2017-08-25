@@ -26,10 +26,17 @@
   position: relative !important;
   width: inherit !important;
   height: inherit !important;
-  max-height: calc(100vh - 200px);
+}
 
-  @include breakpoint(phone) {
-    max-height: calc(100vh - 60px);
+.video-js {
+  &:not(.vjs-fullscreen) {
+    .vjs-tech {
+      max-height: calc(100vh - 200px);
+
+      @include breakpoint(mobile) {
+        max-height: calc(100vh - 60px);
+      }
+    }
   }
 }
 
