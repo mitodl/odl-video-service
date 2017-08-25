@@ -1,3 +1,6 @@
+@import '_variables';
+@import 'breakpoints';
+
 // Imports
 @import "~video.js/dist/video-js.css";
 
@@ -8,9 +11,15 @@
 @import "~@material/list/mdc-list";
 @import "~@material/textfield/mdc-textfield";
 @import "~@material/toolbar/mdc-toolbar";
+@import "~@material/typography/mdc-typography";
 
 // our imports
 @import 'header';
 @import 'videoDetail';
 @import 'footer';
 @import 'videoPlayer';
+@import 'generalStyles';
+
+
+
+

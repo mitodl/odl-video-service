@@ -1,6 +1,20 @@
+@import 'breakpoints';
+
 .summary {
   display: flex;
   flex-direction: column;
-  margin: 30px 10%;
+  margin: 15px 10% 80px;
   min-height: 300px;
+
+  @include breakpoint(phone) {
+    margin: 30px 5% 80px;
+  }
+}
+
+.actions {
+  margin-top: 20px;
+
+  button {
+    margin-right: 12px;
+  }
 }

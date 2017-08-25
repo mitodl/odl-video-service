@@ -10,11 +10,11 @@ export default class Textfield extends React.Component {
   render() {
     const { label, id, ...otherProps } = this.props;
 
-    return <span>
+    return <div>
       <label htmlFor={id}>{label}</label>
-      <div className="mdc-textfield mdc-textfield--box">
+      <div className="mdc-textfield">
         <input type="text" className="mdc-textfield__input" id={id} {...otherProps} />
       </div>
-    </span>;
+    </div>;
   }
 }

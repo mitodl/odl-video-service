@@ -122,7 +122,7 @@ class VideoDetailPage extends React.Component {
     const collectionUrl = makeCollectionUrl(video.collection_key);
     return <div>
       <Toolbar onClickMenu={this.setDrawerOpen.bind(this, true)}>
-        <img src="/static/images/mit_logo_grey_red.png" height="36" width="68"/>
+        <img src="/static/images/mit_logo_grey_red.png" className="logo"/>
         <span className="title">
           ODL Video Services
         </span>
@@ -130,26 +130,28 @@ class VideoDetailPage extends React.Component {
       <Drawer open={videoDetailUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
       { video ? this.renderVideoPlayer(video) : null }
       <div className="summary">
-        <a className="collection-link" href={collectionUrl}>
-          {video.collection_title}
-        </a>
-        <span className="video-title">
+        <p className="channelLink mdc-typography--subheading1">
+          <a className="collection-link" href={collectionUrl}>
+            {video.collection_title}
+          </a>
+        </p>
+        <h2 className="video-title mdc-typography--title">
           {video.title}
-        </span>
-        <span className="video-description">
-          {video.description}
-        </span>
-        <span className="upload-date">
-          Uploaded {formattedCreation}.
+        </h2>
+        { video.description
+          ?  <p className="video-description mdc-typography--body1">
+            {video.description}
+          </p>
+          : null }
+        <span className="upload-date mdc-typography--subheading1 fontgray">
+          Uploaded {formattedCreation}
         </span>
         <span className="actions">
-          <Button className="edit" onClick={this.openDialog} disabled={!editable}>
-            Edit
-            <span className="material-icons">mode-edit</span>
+          <Button className="edit mdc-button--raised" onClick={this.openDialog} disabled={!editable}>
+            <span className="material-icons">edit</span> Edit
           </Button>
-          <Button className="share">
-            Share
-            <span className="material-icons">share</span>
+          <Button className="share mdc-button--raised">
+            <span className="material-icons">share</span> Share
           </Button>
         </span>
       </div>
@@ -160,18 +162,20 @@ class VideoDetailPage extends React.Component {
         onCancel={this.clearDialog}
         title="Edit video details"
       >
-        <Textfield
-          label="New title:"
-          id="video-title"
-          onChange={this.setTitle}
-          value={videoDetailUi.dialog.title}
-        />
-        <Textfield
-          label="Description:"
-          id="video-description"
-          onChange={this.setDescription}
-          value={videoDetailUi.dialog.description}
-        />
+        <div className="mdc-form-field mdc-form-field--align-end">
+          <Textfield
+            label="New title:"
+            id="video-title"
+            onChange={this.setTitle}
+            value={videoDetailUi.dialog.title}
+          />
+          <Textfield
+            label="Description:"
+            id="video-description"
+            onChange={this.setDescription}
+            value={videoDetailUi.dialog.description}
+          />
+        </div>
       </Dialog>
     </div>;
   }

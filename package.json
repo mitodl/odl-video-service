@@ -15,6 +15,7 @@
     "@material/menu": "^0.4.3",
     "@material/textfield": "^0.3.3",
     "@material/toolbar": "^0.4.4",
+    "@material/typography": "^0.3.0",
     "autoprefixer": "^7.1.2",
     "babel-core": "^6.25.0",
     "babel-eslint": "^7.2.3",

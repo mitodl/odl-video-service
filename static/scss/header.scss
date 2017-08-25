@@ -1,5 +1,3 @@
-@import '_variables';
-
 .mdc-toolbar__icon--menu {
   color: $mit-red !important;
 }
@@ -12,8 +10,20 @@
 .mdc-toolbar__title {
   display: flex;
   align-items: center;
+
+  @include breakpoint(phone) {
+    margin-left: 8px !important;
+  }
 }
 
 .title {
   padding-left: 30px;
+
+  @include breakpoint(phone) {
+    padding-left: 15px;
+  }
+}
+
+.logo {
+  width: 50px;
 }

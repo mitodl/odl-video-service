@@ -1,8 +1,6 @@
 // Video.JS styles
-.video-odl-medium,.video-message {
+.video-odl-medium, .video-message {
   width: 100%;
-  height: 500px !important;
-
 }
 
 .video-message {
@@ -17,17 +15,23 @@
   height: 100% !important;
 }
 
-
 .video-js {
-  position: relative !important;
-  width: inherit !important;
-  height: inherit !important;
-}
+  &:not(.vjs-fullscreen) {
+    position: relative !important;
+    width: inherit !important;
+    height: inherit !important;
 
-.vjs-tech {
-  position: relative !important;
-  width: inherit !important;
-  height: inherit !important;
+    .vjs-tech {
+      position: relative !important;
+      width: inherit !important;
+      height: inherit !important;
+      max-height: calc(100vh - 200px);
+
+      @include breakpoint(mobile) {
+        max-height: calc(100vh - 60px);
+      }
+    }
+  }
 }
 
 .vjs-poster {
