@@ -11,16 +11,19 @@ import Toolbar from '../components/material/Toolbar';
 import Footer from '../components/Footer';
 import VideoPlayer from '../components/VideoPlayer';
 import Textfield from "../components/material/Textfield";
+import Textarea from "../components/material/Textarea";
 
 import { actions } from '../actions';
 import {
-  setDialogVisibility,
+  setEditDialogVisibility,
   setDrawerOpen,
   setTitle,
   setDescription,
-  clearDialog,
+  clearEditDialog,
+  setShareDialogVisibility,
+  clearShareDialog
 } from '../actions/videoDetailUi';
-import { makeCollectionUrl } from '../lib/urls';
+import { makeCollectionUrl, makeEmbedUrl } from '../lib/urls';
 import { videoIsProcessing, videoHasError } from '../lib/video';
 import { MM_DD_YYYY } from '../constants';
 
@@ -53,29 +56,39 @@ class VideoDetailPage extends React.Component {
     }
   };
 
-  openDialog = () => {
+  openEditDialog = () => {
     const { dispatch, video, editable } = this.props;
     if (video && editable) {
       dispatch(setTitle(video.title));
       dispatch(setDescription(video.description));
     }
-    dispatch(setDialogVisibility(true));
+    dispatch(setEditDialogVisibility(true));
+  };
+
+  openshareDialog = () => {
+    const {dispatch} = this.props;
+    dispatch(setShareDialogVisibility(true));
   };
 
   submitForm = () => {
     const { dispatch, videoKey, videoDetailUi } = this.props;
-    const { title, description } = videoDetailUi.dialog;
+    const { editDialog: {title, description} } = videoDetailUi;
 
-    dispatch(clearDialog());
+    dispatch(clearEditDialog());
     dispatch(actions.videos.patch(videoKey, {
       title,
       description,
     }));
   };
 
-  clearDialog = () => {
+  clearEditDialog = () => {
     const { dispatch } = this.props;
-    dispatch(clearDialog());
+    dispatch(clearEditDialog());
+  };
+
+  clearshareDialog = () => {
+    const { dispatch } = this.props;
+    dispatch(clearShareDialog());
   };
 
   setTitle = (event: Object) => {
@@ -117,7 +130,7 @@ class VideoDetailPage extends React.Component {
     if (!video) {
       return null;
     }
-
+    const videoShareUrl = `${window.location.origin}${makeEmbedUrl(video.key)}`;
     const formattedCreation = moment(video.created_at).format(MM_DD_YYYY);
     const collectionUrl = makeCollectionUrl(video.collection_key);
     return <div>
@@ -147,33 +160,58 @@ class VideoDetailPage extends React.Component {
           Uploaded {formattedCreation}
         </span>
         <span className="actions">
-          <Button className="edit mdc-button--raised" onClick={this.openDialog} disabled={!editable}>
+          <Button className="edit mdc-button--raised" onClick={this.openEditDialog} disabled={!editable}>
             <span className="material-icons">edit</span> Edit
           </Button>
-          <Button className="share mdc-button--raised">
+          <Button className="share mdc-button--raised"  onClick={this.openshareDialog}>
             <span className="material-icons">share</span> Share
           </Button>
         </span>
       </div>
       <Footer />
       <Dialog
-        open={videoDetailUi.dialog.visible}
+        open={videoDetailUi.editDialog.visible}
         onAccept={this.submitForm}
-        onCancel={this.clearDialog}
+        onCancel={this.clearEditDialog}
         title="Edit video details"
+        id="editDialog"
       >
         <div className="mdc-form-field mdc-form-field--align-end">
           <Textfield
             label="New title:"
             id="video-title"
             onChange={this.setTitle}
-            value={videoDetailUi.dialog.title}
+            value={videoDetailUi.editDialog.title}
           />
           <Textfield
             label="Description:"
             id="video-description"
             onChange={this.setDescription}
-            value={videoDetailUi.dialog.description}
+            value={videoDetailUi.editDialog.description}
+          />
+        </div>
+      </Dialog>
+      <Dialog
+        open={videoDetailUi.shareDialog.visible}
+        title="Share this Video"
+        onCancel={this.clearshareDialog}
+        cancelText="Close"
+        noSubmit={true}
+        id="shareDialog"
+      >
+        <div className="mdc-form-field mdc-form-field--align-end">
+          <Textfield
+            readOnly
+            label="Video URL:"
+            id="video-url"
+            value={videoShareUrl}
+          />
+          <Textarea
+            readOnly
+            label="Embed HTML:"
+            id="video-embed-code"
+            rows="4"
+            value={`<iframe src="${videoShareUrl}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`}
           />
         </div>
       </Dialog>

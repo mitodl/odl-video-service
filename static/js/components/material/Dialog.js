@@ -10,11 +10,16 @@ type DialogProps = {
   onCancel: () => void,
   children: React.Children,
   title: string,
+  cancelText: string,
+  submitText: string,
+  noSubmit: boolean,
+  id: string
 };
 
 export default class Dialog extends React.Component {
   dialog: null;
   dialogRoot: null;
+  // $FlowFixMe: Flow doesn't like the extra props that aren't part of mdc.dialog class
   props: DialogProps;
 
   componentDidMount() {
@@ -50,10 +55,10 @@ export default class Dialog extends React.Component {
   }
 
   render() {
-    const { title, children } = this.props;
+    const { title, children, cancelText, submitText, noSubmit, id } = this.props;
 
     return <aside
-      id="my-mdc-dialog"
+      id={id ? id : 'mdc-dialog'}
       className="mdc-dialog"
       role="alertdialog"
       aria-labelledby="my-mdc-dialog-label"
@@ -71,14 +76,17 @@ export default class Dialog extends React.Component {
         </section>
         <footer className="mdc-dialog__footer">
           <Button type="button" className="mdc-dialog__footer__button mdc-dialog__footer__button--cancel cancel-button">
-            Cancel
+            {cancelText || 'Cancel'}
           </Button>
-          <Button type="button" className="mdc-dialog__footer__button mdc-dialog__footer__button--accept edit-button">
-            Save
-          </Button>
+          {noSubmit ? null : (
+            <Button
+              type="button"
+              className="mdc-dialog__footer__button mdc-dialog__footer__button--accept edit-button">
+              {submitText || 'Save'}
+            </Button>)}
         </footer>
       </div>
-      <div className="mdc-dialog__backdrop" />
+      <div className="mdc-dialog__backdrop"/>
     </aside>;
   }
 

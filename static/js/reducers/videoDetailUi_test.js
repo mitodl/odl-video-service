@@ -5,8 +5,10 @@ import { assert } from 'chai';
 
 import rootReducer from '../reducers';
 import {
-  clearDialog,
-  setDialogVisibility,
+  clearEditDialog,
+  clearShareDialog,
+  setEditDialogVisibility,
+  setShareDialogVisibility,
   setDrawerOpen,
   setTitle,
   setDescription,
@@ -27,23 +29,32 @@ describe('videoDetailUi', () => {
     sandbox.restore();
   });
 
-  it('should clear the ui', () => {
+  it('should clear the edit dialog ui', () => {
     store.dispatch(setTitle("something"));
-    store.dispatch(clearDialog());
+    store.dispatch(clearEditDialog());
     assert.deepEqual(store.getState().videoDetailUi, INITIAL_UI_STATE);
   });
 
   it('sets the title', () => {
-    assertReducerResultState(setTitle, ui => ui.dialog.title, '');
+    assertReducerResultState(setTitle, ui => ui.editDialog.title, '');
   });
 
   it('sets the description', () => {
-    assertReducerResultState(setDescription, ui => ui.dialog.description, '');
+    assertReducerResultState(setDescription, ui => ui.editDialog.description, '');
   });
 
 
-  it('sets the dialog visibility', () => {
-    assertReducerResultState(setDialogVisibility, ui => ui.dialog.visible, false);
+  it('sets the edit dialog visibility', () => {
+    assertReducerResultState(setEditDialogVisibility, ui => ui.editDialog.visible, false);
+  });
+
+  it('sets the share dialog visibility', () => {
+    assertReducerResultState(setShareDialogVisibility, ui => ui.shareDialog.visible, false);
+  });
+
+  it('should clear the share dialog ui', () => {
+    store.dispatch(clearShareDialog());
+    assert.deepEqual(store.getState().videoDetailUi, INITIAL_UI_STATE);
   });
 
   it('sets the drawer visibility', () => {
