@@ -12,10 +12,12 @@ import VideoDetailPage from './VideoDetailPage';
 import * as api from '../lib/api';
 import { actions } from '../actions';
 import {
-  CLEAR_DIALOG,
-  SET_DIALOG_VISIBILITY,
+  CLEAR_EDIT_DIALOG,
+  SET_EDIT_DIALOG_VISIBILITY,
   SET_TITLE,
   SET_DESCRIPTION,
+  SET_SHARE_DIALOG_VISIBILITY,
+  CLEAR_SHARE_DIALOG
 } from '../actions/videoDetailUi';
 import rootReducer from '../reducers';
 import { makeVideo } from '../factories/video';
@@ -109,7 +111,7 @@ describe('VideoDetailPage', () => {
     let wrapper = await renderPage({editable: true});
     assert.isFalse(wrapper.find(".edit").props().disabled);
     wrapper.find(".edit").props().onClick();
-    assert.isTrue(store.getState().videoDetailUi.dialog.visible);
+    assert.isTrue(store.getState().videoDetailUi.editDialog.visible);
   });
 
   it('edit button has no effect if video is not editable', async () => {
@@ -130,17 +132,17 @@ describe('VideoDetailPage', () => {
     await listenForActions([
       actions.videos.patch.requestType,
       actions.videos.patch.successType,
-      SET_DIALOG_VISIBILITY,
+      SET_EDIT_DIALOG_VISIBILITY,
       SET_DESCRIPTION,
       SET_DESCRIPTION,
       SET_TITLE,
       SET_TITLE,
-      CLEAR_DIALOG,
+      CLEAR_EDIT_DIALOG,
     ], () => {
       wrapper.find(".edit").props().onClick();
       wrapper.find("#video-title").props().onChange({target: {value: newTitle}});
       wrapper.find("#video-description").props().onChange({target: {value: newDescription}});
-      wrapper.find("Dialog").props().onAccept();
+      wrapper.find('Dialog').at(0).props().onAccept();
     });
 
     assert.deepEqual(store.getState().videos.data.get(expectedVideo.key), expectedVideo);
@@ -148,6 +150,27 @@ describe('VideoDetailPage', () => {
       title: newTitle,
       description: newDescription,
     });
+  });
+
+  it('show the share dialog', async () => {
+    let wrapper = await renderPage({editable: true});
+    await listenForActions([
+      SET_SHARE_DIALOG_VISIBILITY,
+      CLEAR_SHARE_DIALOG,
+    ], () => {
+      wrapper.find(".share").props().onClick();
+      assert.equal(wrapper.find("#video-url").props().value, `http://fake/videos/${video.key}/embed/`);
+      wrapper.find("Dialog").at(1).props().onCancel();
+    });
+  });
+
+  it('share dialog shows the correct content', async () => {
+    let wrapper = await renderPage({editable: true});
+    wrapper.find(".share").props().onClick();
+    assert.equal(wrapper.find("#video-url").props().value, `http://fake/videos/${video.key}/embed/`);
+    assert.isTrue(wrapper.find("#video-embed-code").props().value.startsWith(
+      `<iframe src="http://fake/videos/${video.key}/embed/"`));
+    wrapper.find("Dialog").at(1).props().onCancel();
   });
 
   it('has a toolbar whose handler will dispatch an action to open the drawer', async () => {

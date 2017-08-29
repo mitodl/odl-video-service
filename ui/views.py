@@ -136,6 +136,8 @@ class VideoEmbed(TemplateView):
     def get_context_data(self, video_key, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
         video = get_object_or_404(Video, key=video_key)
+        if not ui_permissions.has_view_permission(video.collection, self.request):
+            raise PermissionDenied
         context['video'] = video
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
