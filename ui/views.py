@@ -83,7 +83,7 @@ class CollectionDetail(TemplateView):
     def get_context_data(self, collection_key, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
         collection = get_object_or_404(Collection, key=collection_key)
-        if not ui_permissions.has_admin_permission(collection, self.request):
+        if not ui_permissions.has_view_permission(collection, self.request):
             raise PermissionDenied
         video_list = Video.objects.filter(collection=collection)
         default_settings = default_js_settings(self.request)
@@ -212,9 +212,9 @@ class CollectionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Custom get_queryset to filter collections that user has admin access to.
+        Custom get_queryset to filter collections.
         """
-        if self.request.user.is_superuser:
+        if self.kwargs.get('key') is not None:
             return Collection.objects.all()
         return Collection.objects.all_admin(self.request.user)
 
@@ -243,7 +243,7 @@ class VideoViewSet(ModelDetailViewset):
     )
     permission_classes = (
         permissions.IsAuthenticated,
-        ui_permissions.HasViewPermissionsForVideo
+        ui_permissions.HasVideoPermissions
     )
 
 

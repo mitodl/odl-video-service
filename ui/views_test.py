@@ -404,7 +404,7 @@ def test_collection_viewset_detail(mock_moira_client, logged_in_apiclient):
     collection.owner = other_user
     collection.save()
     result = client.delete(url)
-    assert result.status_code == status.HTTP_404_NOT_FOUND
+    assert result.status_code == status.HTTP_403_FORBIDDEN
 
     collection.owner = user
     collection.save()
@@ -476,13 +476,13 @@ def test_collection_detail_admin_permission(mock_moira_client, logged_in_apiclie
 
 def test_collection_detail_view_permission(mock_moira_client, logged_in_apiclient, user_view_list_data):
     """
-    Tests that a user cannot view a collection if user is a member of collection's view_lists
+    Tests that a user can view a collection if user is a member of collection's view_lists
     """
     client, _ = logged_in_apiclient
     mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
     url = reverse('collection-detail', kwargs={'collection_key': user_view_list_data.collection.hexkey})
     result = client.get(url)
-    assert result.status_code == status.HTTP_403_FORBIDDEN
+    assert result.status_code == status.HTTP_200_OK
 
 
 def test_video_detail_view_permission(mock_moira_client, logged_in_apiclient, user_view_list_data):
