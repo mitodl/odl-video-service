@@ -40,7 +40,7 @@ describe('VideoPlayer', () => {
     let wrapper = renderPlayer({ useIframeForUSwitch: true });
     assert.deepEqual(wrapper.find("iframe").props(), {
       allowFullScreen: true,
-      className: "video-odl-medium",
+      className: "uswitch-odl-medium",
       frameBorder: "0",
       scrolling: "no",
       src: makeEmbedUrl(video.key),

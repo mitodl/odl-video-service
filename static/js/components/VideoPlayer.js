@@ -22,7 +22,7 @@ export default class VideoPlayer extends React.Component {
       if (useIframeForUSwitch) {
         return <iframe
           src={embedUrl}
-          className="video-odl-medium"
+          className="uswitch-odl-medium"
           frameBorder="0"
           scrolling="no"
           allowFullScreen={true}
