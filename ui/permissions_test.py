@@ -16,6 +16,7 @@ from ui.models import Collection
 
 pytestmark = pytest.mark.django_db
 
+
 # pylint: disable=redefined-outer-name
 
 
@@ -28,7 +29,7 @@ def collection_owner_permission():
 
 
 @pytest.fixture(scope='module')
-def collection_admin_permission():
+def collection_permission():
     """
     Returns an instance of HasCollectionPermissions
     """
@@ -36,19 +37,11 @@ def collection_admin_permission():
 
 
 @pytest.fixture(scope='module')
-def video_view_permission():
+def video_permission():
     """
-    Returns an instance of HasViewPermissionsForVideo
+    Returns an instance of HasVideoPermissions
     """
-    return permissions.HasViewPermissionsForVideo()
-
-
-@pytest.fixture(scope='module')
-def video_admin_permission():
-    """
-    Returns an instance of HasAdminPermissionsForVideo
-    """
-    return permissions.HasAdminPermissionsForVideo()
+    return permissions.HasVideoPermissions()
 
 
 @pytest.fixture
@@ -170,33 +163,33 @@ def test_is_collection_owner_user_superuser(collection_owner_permission, collect
                                                              collection) is True
 
 
-def test_is_collection_admin_anonymous_users(collection_admin_permission, collection, request_data_anon):
+def test_is_collection_admin_anonymous_users(collection_permission, collection, request_data_anon):
     """
     Test for HasCollectionPermissions.has_object_permission to verify that
     anonymous users do not have permission.
     """
-    assert collection_admin_permission.has_object_permission(request_data_anon.request,
-                                                             request_data_anon.view,
-                                                             collection) is False
+    assert collection_permission.has_object_permission(request_data_anon.request,
+                                                       request_data_anon.view,
+                                                       collection) is False
 
 
-def test_is_collection_admin_user_different_from_collecton_owner(collection_admin_permission,
+def test_is_collection_admin_user_different_from_collecton_owner(collection_permission,
                                                                  collection,
                                                                  request_data):
     """
     Test for HasCollectionPermissions.has_object_permission to verify
     that user who does not own the collection does not have permission
     """
-    assert collection_admin_permission.has_object_permission(request_data.request,
-                                                             request_data.view,
-                                                             collection) is False
+    assert collection_permission.has_object_permission(request_data.request,
+                                                       request_data.view,
+                                                       collection) is False
 
 
-def test_is_collection_user_no_matching_lists(mock_moira_client,
-                                              moira_list,
-                                              collection_admin_permission,
-                                              collection,
-                                              request_data):
+def test_is_collection_user_not_matching_admin_lists(mock_moira_client,
+                                                     moira_list,
+                                                     collection_permission,
+                                                     collection,
+                                                     request_data):
     """
     Test for HasCollectionPermissions.has_object_permission to verify
     that user who does not match a collection moira admin list does not have permission
@@ -204,16 +197,16 @@ def test_is_collection_user_no_matching_lists(mock_moira_client,
     collection.admin_lists = [moira_list]
     mock_moira_client.return_value.user_lists.return_value = ['bar']
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert collection_admin_permission.has_object_permission(request_data.request,
-                                                             request_data.view,
-                                                             collection) is False
+    assert collection_permission.has_object_permission(request_data.request,
+                                                       request_data.view,
+                                                       collection) is False
 
 
-def test_is_collection_user_matching_lists(mock_moira_client,
-                                           moira_list,
-                                           collection_admin_permission,
-                                           collection,
-                                           request_data):
+def test_is_collection_user_matching_admin_lists(mock_moira_client,
+                                                 moira_list,
+                                                 collection_permission,
+                                                 collection,
+                                                 request_data):
     """
     Test for HasCollectionPermissions.has_object_permission to verify
     that user who is in one of the collection's admin lists has permission
@@ -221,9 +214,43 @@ def test_is_collection_user_matching_lists(mock_moira_client,
     collection.admin_lists = [moira_list]
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert collection_admin_permission.has_object_permission(request_data.request,
-                                                             request_data.view,
-                                                             collection) is True
+    assert collection_permission.has_object_permission(request_data.request,
+                                                       request_data.view,
+                                                       collection) is True
+
+
+def test_is_collection_user_not_matching_view_lists(mock_moira_client,
+                                                    moira_list,
+                                                    collection_permission,
+                                                    collection,
+                                                    request_data):
+    """
+    Test for HasCollectionPermissions.has_object_permission to verify
+    that user who does not match a collection moira view list does not have permission
+    """
+    collection.view_lists = [moira_list]
+    mock_moira_client.return_value.user_lists.return_value = ['bar']
+    assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
+    assert collection_permission.has_object_permission(request_data.request,
+                                                       request_data.view,
+                                                       collection) is False
+
+
+def test_is_collection_user_matching_view_lists(mock_moira_client,
+                                                moira_list,
+                                                collection_permission,
+                                                collection,
+                                                request_data):
+    """
+    Test for HasCollectionPermissions.has_object_permission to verify
+    that user who is in one of the collection's view lists has permission
+    """
+    collection.view_lists = [moira_list]
+    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
+    assert collection_permission.has_object_permission(request_data.request,
+                                                       request_data.view,
+                                                       collection) is True
 
 
 @pytest.fixture(scope='module')
@@ -302,140 +329,129 @@ def test_can_upload_to_collection(can_upload_to_collection_permission, collectio
     assert can_upload_to_collection_permission.has_permission(request_data.request, request_data.view) is True
 
 
-def test_video_view_permission_anonymous_users(video_view_permission, video, request_data_anon):
+def test_video_view_permission_anonymous_users(video_permission, video, request_data_anon):
     """
-    Test for HasViewPermissionsForVideo.has_object_permission to verify that anonymous users
+    Test for HasVideoPermissions.has_object_permission to verify that anonymous users
     do not have permission to view the video
     """
-    assert video_view_permission.has_object_permission(request_data_anon.request,
-                                                       request_data_anon.view,
-                                                       video) is False
+    assert video_permission.has_object_permission(request_data_anon.request, request_data_anon.view, video) is False
 
 
-def test_video_view_permission_other_user(video_view_permission, video, request_data):
+def test_video_view_permission_other_user(video_permission, video, request_data):
     """
-    Test for HasViewPermissionsForVideo.has_object_permission to verify
+    Test for HasVideoPermissions.has_object_permission to verify
     that user who does not own the video's collection does not have permission
     """
-    assert video_view_permission.has_object_permission(request_data.request, request_data.view, video) is False
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is False
 
 
-def test_video_view_permission_collection_owner(video_view_permission, video, request_data):
+def test_video_view_permission_collection_owner(video_permission, video, request_data):
     """
-    Test for HasViewPermissionsForVideo.has_object_permission to verify
+    Test for HasVideoPermissions.has_object_permission to verify
     that user who owns the video's collection has permission
     """
     video.collection.owner = request_data.user
-    assert video_view_permission.has_object_permission(request_data.request, request_data.view, video) is True
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
 
 
-def test_video_view_permission_user_superuser(video_view_permission, video, request_data_su):
+def test_video_view_permission_user_superuser(video_permission, video, request_data_su):
     """
-    Test for HasViewPermissionsForVideo.has_object_permission to verify that superusers have permission
+    Test for HasVideoPermissions.has_object_permission to verify that superusers have permission
     """
-    assert video_view_permission.has_object_permission(request_data_su.request,
-                                                       request_data_su.view,
-                                                       video) is True
+    assert video_permission.has_object_permission(request_data_su.request, request_data_su.view, video) is True
 
 
-def test_video_view_permission_no_matching_lists(mock_moira_client,
-                                                 moira_list,
-                                                 video_view_permission,
-                                                 video,
-                                                 request_data):
+def test_video_view_permission_no_matching_lists(mock_moira_client, moira_list, video_permission, video, request_data):
     """
-    Test for HasViewPermissionsForVideo.has_object_permission to verify
+    Test for HasVideoPermissions.has_object_permission to verify
     that user who is not in the video collection's view-only moira lists cannot see it.
     """
     video.collection.view_lists = [moira_list]
     mock_moira_client.return_value.user_lists.return_value = ['bar']
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert video_view_permission.has_object_permission(request_data.request, request_data.view, video) is False
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is False
 
 
-def test_video_view_permission_matching_lists(mock_moira_client,
-                                              moira_list,
-                                              video_view_permission,
-                                              video,
-                                              request_data):
+def test_video_view_permission_matching_lists(mock_moira_client, moira_list, video_permission, video, request_data):
     """
-    Test for HasViewPermissionsForVideo.has_object_permission to verify
+    Test for HasVideoPermissions.has_object_permission to verify
     that a user in one of the video collection's view-only moira lists can see it.
     """
     video.collection.view_lists = [moira_list]
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert video_view_permission.has_object_permission(request_data.request, request_data.view, video) is True
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
 
 
 def test_video_view_permission_matching_lists_post(mock_moira_client,
                                                    moira_list,
-                                                   video_view_permission,
+                                                   video_permission,
                                                    video,
                                                    request_data):
     """
-    Test for HasViewPermissionsForVideo.has_object_permission to verify
+    Test for HasVideoPermissions.has_object_permission to verify
     that a user in one of the video collection's view-only moira lists cannot use unsafe methods.
     """
     video.collection.view_lists = [moira_list]
     request_data.request.method = 'POST'
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert video_view_permission.has_object_permission(request_data.request, request_data.view, video) is False
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is False
 
 
 def test_video_view_permission_matching_admin_lists(mock_moira_client,
                                                     moira_list,
-                                                    video_view_permission,
+                                                    video_permission,
                                                     video,
                                                     request_data):
     """
-    Test for HasViewPermissionsForVideo.has_object_permission to verify
+    Test for HasVideoPermissions.has_object_permission to verify
     that a user in one of the video collection's admin-only moira lists can see it.
     """
     video.collection.admin_lists = [moira_list]
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert video_view_permission.has_object_permission(request_data.request, request_data.view, video) is True
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
 
 
-def test_video_admin_permission_anonymous_users(video_admin_permission, video, request_data_anon):
+def test_video_admin_permission_anonymous_users(video_permission, video, request_data_anon):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify that anonymous users
     do not have permission to edit the video
     """
-    assert video_admin_permission.has_object_permission(request_data_anon.request,
-                                                        request_data_anon.view,
-                                                        video) is False
+    request_data_anon.request.method = 'POST'
+    assert video_permission.has_object_permission(request_data_anon.request, request_data_anon.view, video) is False
 
 
-def test_video_admin_permission_other_user(video_admin_permission, video, request_data):
+def test_video_admin_permission_other_user(video_permission, video, request_data):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify
     that user who does not own the video's collection does not have permission
     """
-    assert video_admin_permission.has_object_permission(request_data.request, request_data.view, video) is False
+    request_data.request.method = 'POST'
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is False
 
 
-def test_video_admin_permission_collection_owner(video_admin_permission, video, request_data):
+def test_video_admin_permission_collection_owner(video_permission, video, request_data):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify
     that user who owns the video's collection has permission
     """
     video.collection.owner = request_data.user
-    assert video_admin_permission.has_object_permission(request_data.request, request_data.view, video) is True
+    request_data.request.method = 'POST'
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
 
 
-def test_video_admin_permission_superuser(video_admin_permission, video, request_data_su):
+def test_video_admin_permission_superuser(video_permission, video, request_data_su):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify that superusers have permission
     """
-    assert video_admin_permission.has_object_permission(request_data_su.request, request_data_su.view, video) is True
+    request_data_su.request.method = 'POST'
+    assert video_permission.has_object_permission(request_data_su.request, request_data_su.view, video) is True
 
 
-def test_video_admin_permission_no_matching_lists(mock_moira_client,
-                                                  moira_list,
-                                                  video_admin_permission,
+def test_video_admin_permission_no_matching_lists(mock_moira_client, moira_list,
+                                                  video_permission,
                                                   video,
                                                   request_data):
     """
@@ -444,13 +460,14 @@ def test_video_admin_permission_no_matching_lists(mock_moira_client,
     """
     video.collection.admin_lists = [moira_list]
     mock_moira_client.return_value.user_lists.return_value = ['bar']
+    request_data.request.method = 'POST'
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert video_admin_permission.has_object_permission(request_data.request, request_data.view, video) is False
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is False
 
 
 def test_video_admin_permission_matching_view_lists(mock_moira_client,
                                                     moira_list,
-                                                    video_admin_permission,
+                                                    video_permission,
                                                     video,
                                                     request_data):
     """
@@ -459,13 +476,14 @@ def test_video_admin_permission_matching_view_lists(mock_moira_client,
     """
     video.collection.view_lists = [moira_list]
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    request_data.request.method = 'POST'
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert video_admin_permission.has_object_permission(request_data.request, request_data.view, video) is False
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is False
 
 
 def test_video_admin_permission_matching_admin_lists(mock_moira_client,
                                                      moira_list,
-                                                     video_admin_permission,
+                                                     video_permission,
                                                      video,
                                                      request_data):
     """
@@ -474,13 +492,14 @@ def test_video_admin_permission_matching_admin_lists(mock_moira_client,
     """
     video.collection.admin_lists = [moira_list]
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    request_data.request.method = 'POST'
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert video_admin_permission.has_object_permission(request_data.request, request_data.view, video) is True
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
 
 
 def test_video_admin_permission_matching_lists_post(mock_moira_client,
                                                     moira_list,
-                                                    video_admin_permission,
+                                                    video_permission,
                                                     video,
                                                     request_data):
     """
@@ -489,8 +508,9 @@ def test_video_admin_permission_matching_lists_post(mock_moira_client,
     """
     video.collection.admin_lists = [moira_list]
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    request_data.request.method = 'POST'
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
-    assert video_admin_permission.has_object_permission(request_data.request, request_data.view, video) is True
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
 
 
 def test_collections_view(mock_moira_client, moira_list, collection, alt_moira_data):

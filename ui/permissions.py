@@ -106,18 +106,16 @@ class HasCollectionPermissions(IsAuthenticated):
         return True
 
     def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return has_view_permission(obj, request)
         return has_admin_permission(obj, request)
 
 
-class HasViewPermissionsForVideo(IsAuthenticated):
+class HasVideoPermissions(IsAuthenticated):
     """Permission to view a video, based on its collection"""
     def has_object_permission(self, request, view, obj):
-        return has_view_permission(obj.collection, request)
-
-
-class HasAdminPermissionsForVideo(IsAuthenticated):
-    """Permission to edit a video, based on its collection"""
-    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return has_view_permission(obj.collection, request)
         return has_admin_permission(obj.collection, request)
 
 
