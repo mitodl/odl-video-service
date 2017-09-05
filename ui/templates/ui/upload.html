@@ -61,30 +61,9 @@ to OVS.</p>
         progress.value = 0;
         let progressItem = document.createElement("li");
         let progressText = document.createTextNode(videoFile);
-        let form = document.createElement("form")
-        form.action = "/api/v0/videos/" + videoId + "/";
-        form.method = "PUT";
-        let titleLabel = document.createElement("label");
-        titleLabel.appendChild(document.createTextNode("Title:"));
-        let titleField = document.createElement("input");
-        titleField.name = "title";
-        titleLabel.appendChild(titleField);
-        let descriptionLabel = document.createElement("label");
-        descriptionLabel.appendChild(document.createTextNode("Description:"));
-        descriptionField = document.createElement("textarea");
-        descriptionField.name = "description";
-        descriptionLabel.appendChild(descriptionField);
-        form.appendChild(titleLabel);
-        form.appendChild(descriptionLabel);
-        let submitBtn = document.createElement("button")
-        submitBtn.type = "submit";
-        submitBtn.appendChild(document.createTextNode("Update"));
-        form.appendChild(submitBtn);
-        form.addEventListener("submit", formSubmit);
 
         progressItem.appendChild(progressText);
         progressItem.appendChild(progress);
-        progressItem.appendChild(form);
         progressList.appendChild(progressItem);
         updateStatus(video.task);
       }

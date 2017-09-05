@@ -1,12 +1,23 @@
-$video-card-width: 415px;
+$video-card-width: 32%;
 
 .collection-list-content,
 .collection-detail-content {
   background-color: $body-bg-color;
   padding: 30px;
+
+  h2 {
+    font-weight: 400;
+  }
 }
 
 .collection-list-content {
+
+  .centered-content {
+    max-width: 1300px;
+    min-width: 800px;
+    margin: 0 auto 100px auto;
+  }
+
   ul li {
     padding: 5px 0;
 
@@ -18,7 +29,7 @@ $video-card-width: 415px;
 
   a, a:visited {
     display: inline-block;
-    font-size: 20px;
+    font-size: 18px;
     line-height: 24px;
     vertical-align: middle;
     color: $linkcolor;
@@ -32,6 +43,13 @@ $video-card-width: 415px;
 }
 
 .collection-detail-content {
+
+  .centered-content {
+    max-width: 1300px;
+    min-width: 800px;
+    margin: 0 auto;
+  }
+
   header {
     padding: 0 0 10px 0;
 
@@ -46,37 +64,46 @@ $video-card-width: 415px;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
+    width: 100%;
 
     .video-card {
-      margin: 0 20px 20px 0;
+      margin: 0 1% 20px 0;
       background-color: #ffffff;
       width: $video-card-width;
+      overflow: hidden;
 
       .thumbnail {
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 200px;
+
+        a {
+          width: 100%;
+          display: block;
+        }
 
         img {
-          max-width: $video-card-width;
-          max-height: 200px;
+          width: 100%;
         }
       }
 
       .video-card-body {
-        padding: 10px;
+        padding: 16px 15px 27px 20px;
 
         h4 {
           margin: 0;
           padding: 0 5px 10px 0;
-          line-height: 1.75rem;
-          height: 3.3rem;
+          line-height: 1.3rem;
           overflow: hidden;
-          font-weight: bold;
+          font-weight: 400;
+
+          a {
+            color: rgba(0,0,0,.87);
+          }
         }
 
         .actions {
+          display: none;
           margin: 0;
           padding: 0;
           color: #9a9a9a;

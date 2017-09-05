@@ -63,7 +63,7 @@ class CollectionListPage extends React.Component {
   render() {
     const formLink = SETTINGS.editable
       ? (
-        <a href="/collection_form" target="_blank">
+        <a href="/collection_form">
           Create New Collection&nbsp;
           <i className="material-icons">library_add</i>
         </a>
@@ -73,9 +73,11 @@ class CollectionListPage extends React.Component {
     return <div>
       <OVSToolbar setDrawerOpen={() => {}} />
       <div className="collection-list-content">
-        <h2>Collections</h2>
-        { this.renderCollectionLinks() }
-        { formLink }
+        <div className="centered-content">
+          <h2>Collections</h2>
+          { this.renderCollectionLinks() }
+          { formLink }
+        </div>
       </div>
       <Footer />
     </div>;
