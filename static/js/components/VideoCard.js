@@ -13,7 +13,7 @@ type VideoCardProps = {
 const VideoCard = (props: VideoCardProps) => (
   <Card className="video-card">
     <div className="thumbnail">
-      <img src={makeVideoThumbnailUrl(props.video)} />
+      <a href={makeVideoUrl(props.video.key)}><img src={makeVideoThumbnailUrl(props.video)} /></a>
     </div>
     <div className="video-card-body">
       <h4 className="mdc-typography--subheading2">

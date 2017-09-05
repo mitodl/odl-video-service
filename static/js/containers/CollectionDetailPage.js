@@ -62,7 +62,7 @@ class CollectionDetailPage extends React.Component {
       ? collection.title
       : `${ collection.title } (${ videos.length })`;
 
-    return <div>
+    return <div className="centered-content">
       <header>
         <h2 className="mdc-typography--title">
           { collectionTitle }
