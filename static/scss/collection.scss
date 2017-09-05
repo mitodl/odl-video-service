@@ -4,9 +4,20 @@ $video-card-width: 32%;
 .collection-detail-content {
   background-color: $body-bg-color;
   padding: 30px;
+
+  h2 {
+    font-weight: 400;
+  }
 }
 
 .collection-list-content {
+
+  .centered-content {
+    max-width: 1300px;
+    min-width: 800px;
+    margin: 0 auto 100px auto;
+  }
+
   ul li {
     padding: 5px 0;
 
@@ -18,7 +29,7 @@ $video-card-width: 32%;
 
   a, a:visited {
     display: inline-block;
-    font-size: 20px;
+    font-size: 18px;
     line-height: 24px;
     vertical-align: middle;
     color: $linkcolor;
