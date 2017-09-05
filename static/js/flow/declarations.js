@@ -9,7 +9,8 @@ declare var SETTINGS: {
   thumbnail_base_url: string,
   video: Video,
   videoKey: string,
-  editable: boolean
+  editable: boolean,
+  user: string
 };
 
 // mocha

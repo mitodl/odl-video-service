@@ -42,6 +42,7 @@ def default_js_settings(request):
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": public_path(request),
         "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
+        "user": (request.user.email or request.user.username) if request.user.is_authenticated else "Not logged in"
     }
 
 
