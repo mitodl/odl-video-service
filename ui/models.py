@@ -141,6 +141,9 @@ class Video(models.Model):
     encode_jobs = GenericRelation(EncodeJob)
     multiangle = models.BooleanField(null=False, default=False)
 
+    class Meta:
+        ordering = ['-created_at', ]
+
     @property
     def hexkey(self):
         """

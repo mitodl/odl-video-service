@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load render_bundle %}
+
+{% block title %}OVS | Video Collection{% endblock %}
+{% block pagetitle %}OVS: Video Collection{% endblock %}
+{% block content %}
+
+  <div id="container"></div>
+
+{% render_bundle 'collections' %}
+{% endblock %}

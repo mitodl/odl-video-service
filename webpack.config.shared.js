@@ -5,6 +5,7 @@ const glob = require('glob');
 module.exports = {
   config: {
     entry: {
+      'collections': ['babel-polyfill', './static/js/entry/collections'],
       'video_detail': ['babel-polyfill', './static/js/entry/video_detail'],
       'video_embed': ['babel-polyfill', './static/js/entry/video_embed'],
       'style': './static/js/entry/style',

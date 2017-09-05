@@ -11,9 +11,11 @@ urlpatterns = [
     url(r'^$', views.Index.as_view(), name='index'),
     url(r'^register/$', views.register, name='register'),
     url(r'^login/$', views.ui_login, name='login'),
-    url(r'^collections/$', views.CollectionList.as_view(), name='collection-list'),
-    url(r'^collections/(?P<collection_key>[0-9a-f]+)/$', views.CollectionDetail.as_view(), name='collection-detail'),
-    url(r'^collections/(?P<collection_key>[0-9a-f]+)/upload/$', views.Upload.as_view(), name='upload'),
+
+    url(r'^collections/', views.CollectionReactView.as_view(), name='collection-react-view'),
+    url(r'^collection_form/$', views.CollectionFormView.as_view(), name='collection-form-view'),
+    url(r'^collection_upload/(?P<collection_key>[0-9a-f]+)$', views.Upload.as_view(), name='upload'),
+
     url(r'^videos/(?P<video_key>[0-9a-f]+)/$', views.VideoDetail.as_view(), name='video-detail'),
     url(r'^videos/(?P<video_key>[0-9a-f]+)/embed/$', views.VideoEmbed.as_view(), name='video-embed'),
     url(r'^videos/(?P<video_key>[0-9a-f]+)/embed/mosaic.html$', views.MosaicView.as_view(), name='video-mosaic'),

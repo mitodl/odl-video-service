@@ -1,0 +1,92 @@
+$video-card-width: 415px;
+
+.collection-list-content,
+.collection-detail-content {
+  background-color: $body-bg-color;
+  padding: 30px;
+}
+
+.collection-list-content {
+  ul li {
+    padding: 5px 0;
+
+    .material-icons {
+      border-radius: 12px;
+      background-color: #eee;
+    }
+  }
+
+  a, a:visited {
+    display: inline-block;
+    font-size: 20px;
+    line-height: 24px;
+    vertical-align: middle;
+    color: $linkcolor;
+  }
+
+  .material-icons {
+    width: 24px;
+    text-align: center;
+    vertical-align: middle;
+  }
+}
+
+.collection-detail-content {
+  header {
+    padding: 0 0 10px 0;
+
+    h2, p.description {
+      margin: 0;
+      padding: 0 0 20px 0;
+    }
+  }
+
+  .videos {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+
+    .video-card {
+      margin: 0 20px 20px 0;
+      background-color: #ffffff;
+      width: $video-card-width;
+
+      .thumbnail {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+
+        img {
+          max-width: $video-card-width;
+          max-height: 200px;
+        }
+      }
+
+      .video-card-body {
+        padding: 10px;
+
+        h4 {
+          margin: 0;
+          padding: 0 5px 10px 0;
+          line-height: 1.75rem;
+          height: 3.3rem;
+          overflow: hidden;
+          font-weight: bold;
+        }
+
+        .actions {
+          margin: 0;
+          padding: 0;
+          color: #9a9a9a;
+          text-align: right;
+
+          * {
+            margin-left: 10px;
+          }
+        }
+      }
+    }
+  }
+}

@@ -14,12 +14,9 @@
 @import "~@material/typography/mdc-typography";
 
 // our imports
-@import 'header';
-@import 'videoDetail';
-@import 'footer';
-@import 'videoPlayer';
 @import 'generalStyles';
-
-
-
-
+@import 'header';
+@import 'footer';
+@import 'videoDetail';
+@import 'videoPlayer';
+@import 'collection';
