@@ -130,6 +130,7 @@ def test_video_detail(logged_in_client, mocker):
         "public_path": '/static/bundles/',
         "videoKey": videofileHLS.video.hexkey,
         "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
+        "user": user.email
     }
 
 
@@ -150,10 +151,11 @@ def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=red
     assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert js_settings_json == {
-        'video': VideoSerializer(video).data,
-        'gaTrackingID': settings.GA_TRACKING_ID,
-        'public_path': '/static/bundles/',
+        "video": VideoSerializer(video).data,
+        "gaTrackingID": settings.GA_TRACKING_ID,
+        "public_path": "/static/bundles/",
         "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
+        "user": user.email
     }
 
 

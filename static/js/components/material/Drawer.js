@@ -1,22 +1,32 @@
 // @flow
+/* global SETTINGS: false */
 import React from 'react';
+import type { Dispatch } from "redux";
+import { connect } from 'react-redux';
 import { MDCTemporaryDrawer } from '@material/drawer/dist/mdc.drawer';
+
+import { actions } from '../../actions';
+import { makeCollectionUrl } from "../../lib/urls";
+import type { Collection } from "../../flow/collectionTypes";
 
 type DrawerProps = {
   open: boolean,
   onDrawerClose: () => void,
+  dispatch: Dispatch,
+  needsUpdate: boolean,
+  collections: Array<Collection>
 };
 
-export default class Drawer extends React.Component {
+class Drawer extends React.Component {
   drawer: null;
   drawerRoot: null;
-
   props: DrawerProps;
 
   componentDidMount() {
-    const { onDrawerClose } = this.props;
+    const {onDrawerClose} = this.props;
     this.drawer = new MDCTemporaryDrawer(this.drawerRoot);
     this.drawer.listen('MDCTemporaryDrawer:close', onDrawerClose);
+    this.updateRequirements();
   }
 
   componentWillUnmount() {
@@ -24,6 +34,13 @@ export default class Drawer extends React.Component {
       this.drawer.destroy();
     }
   }
+
+  updateRequirements = () => {
+    const { dispatch, needsUpdate } = this.props;
+    if (needsUpdate) {
+      dispatch(actions.collectionsList.get());
+    }
+  };
 
   componentWillReceiveProps(nextProps: DrawerProps) {
     if (this.drawer) {
@@ -34,22 +51,53 @@ export default class Drawer extends React.Component {
   }
 
   render() {
+    const { collections } = this.props;
     return <aside className="mdc-temporary-drawer mdc-typography" ref={div => this.drawerRoot = div}>
       <nav className="mdc-temporary-drawer__drawer">
+        <nav id="nav-username" className="mdc-temporary-drawer__content mdc-list">
+          <a className="mdc-list-item mdc-link" href="#">
+            {SETTINGS.user}
+            <i className="material-icons mdc-list-item__end-detail" aria-hidden="true">keyboard_arrow_left</i>
+          </a>
+        </nav>
+        <div className="mdc-temporary-drawer__toolbar-spacer"></div>
         <header className="mdc-temporary-drawer__header">
           <div className="mdc-temporary-drawer__header-content">
-            Header here
+            Collections
           </div>
         </header>
+        <nav id="nav-collections" className="mdc-temporary-drawer__content mdc-list">
+          {collections.map(col =>
+            <a
+              className="mdc-list-item mdc-temporary-drawer--selected"
+              href={makeCollectionUrl(col.key)}
+              key={col.key}
+            >
+              { col.title }
+            </a>
+          )}
+        </nav>
+        <div className="mdc-temporary-drawer__toolbar-spacer"></div>
         <nav id="icon-with-text-demo" className="mdc-temporary-drawer__content mdc-list">
-          <a className="mdc-list-item mdc-temporary-drawer--selected" href="#">
-            <i className="material-icons mdc-list-item__start-detail" aria-hidden="true">inbox</i>Inbox
-          </a>
-          <a className="mdc-list-item" href="#">
-            <i className="material-icons mdc-list-item__start-detail" aria-hidden="true">star</i>Star
+          <a className="mdc-list-item mdc-link" href="/logout/">
+            <i className="material-icons mdc-list-item__start-detail" aria-hidden="true">input</i>
+            Log out
           </a>
         </nav>
       </nav>
     </aside>;
   }
 }
+
+const mapStateToProps = (state) => {
+  const { collectionsList } = state;
+  const collections = collectionsList.loaded ? collectionsList.data : [];
+  const needsUpdate = !collectionsList.processing && !collectionsList.loaded;
+
+  return {
+    collections,
+    needsUpdate
+  };
+};
+
+export default connect(mapStateToProps)(Drawer);

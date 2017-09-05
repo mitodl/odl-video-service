@@ -12,4 +12,3 @@ export type Collection = {
   admin_lists:        Array<string>,
   created_at:         string
 };
-

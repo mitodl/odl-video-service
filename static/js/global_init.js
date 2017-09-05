@@ -5,7 +5,8 @@ import { makeVideo } from './factories/video';
 const _createSettings = () => ({
   videoKey: 'a_video_key',
   video: makeVideo('a_video_key'),
-  editable: false
+  editable: false,
+  user: ''
 });
 
 global.SETTINGS = _createSettings();
