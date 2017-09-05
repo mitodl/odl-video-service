@@ -6,6 +6,7 @@ declare var SETTINGS: {
     [key: string]: boolean,
   },
   reactGaDebug: string,
+  thumbnail_base_url: string,
   video: Video,
   videoKey: string,
   editable: boolean

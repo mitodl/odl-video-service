@@ -1,6 +1,14 @@
 // @flow
 import { fetchJSONWithCSRF } from 'redux-hammock/django_csrf_fetch';
 
+export function getCollections() {
+  return fetchJSONWithCSRF(`/api/v0/collections/`);
+}
+
+export function getCollection(collectionKey: string) {
+  return fetchJSONWithCSRF(`/api/v0/collections/${encodeURI(collectionKey)}/`);
+}
+
 // import to allow mocking in tests
 export function getVideo(videoKey: string) {
   return fetchJSONWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/`);

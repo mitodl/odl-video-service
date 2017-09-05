@@ -1,4 +1,5 @@
 // @flow
+import _ from "lodash";
 import casual from "casual-browserify";
 
 import {
@@ -6,20 +7,9 @@ import {
   ENCODING_ORIGINAL,
   VIDEO_STATUS_COMPLETE,
 } from "../constants";
+import { makeCounter } from "../util/test_utils";
 
 import type { Video } from "../flow/videoTypes";
-
-const makeCounter = (): (() => number) => {
-  let gen = (function*() {
-    let i = 1;
-    while (true) {  // eslint-disable-line no-constant-condition
-      yield i;
-      i += 1;
-    }
-  })();
-  // $FlowFixMe: Flow doesn't know that this always returns a number
-  return () => gen.next().value;
-};
 
 const videoFileId = makeCounter();
 
@@ -64,3 +54,8 @@ export const makeVideo = (videoKey: string = casual.uuid, collectionKey: string 
   ],
   status: VIDEO_STATUS_COMPLETE,
 });
+
+export const makeVideos = (n: number, collectionKey: string = casual.uuid): Array<Video> => (
+  // $FlowFixMe: This returns an array of Videos, Flow. I promise.
+  _.times(n, () => makeVideo(casual.uuid, collectionKey))
+);

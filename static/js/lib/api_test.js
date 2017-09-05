@@ -2,11 +2,15 @@
 /* global SETTINGS: false */
 import { assert } from 'chai';
 import sinon from 'sinon';
+import _ from 'lodash';
 import { PATCH } from 'redux-hammock/constants';
 import * as fetchFuncs from "redux-hammock/django_csrf_fetch";
 
+import { makeCollection } from '../factories/collection';
 import { makeVideo } from '../factories/video';
 import {
+  getCollections,
+  getCollection,
   getVideo,
   updateVideo,
 } from '../lib/api';
@@ -21,6 +25,24 @@ describe('api', () => {
 
   afterEach(() => {
     sandbox.restore();
+  });
+
+  it("gets collection list", async () => {
+    const collections = _.times(2, () => makeCollection());
+    fetchStub.returns(Promise.resolve(collections));
+
+    const result = await getCollections();
+    sinon.assert.calledWith(fetchStub, `/api/v0/collections/`);
+    assert.deepEqual(result, collections);
+  });
+
+  it("gets collection detail", async () => {
+    const collection = makeCollection();
+    fetchStub.returns(Promise.resolve(collection));
+
+    const result = await getCollection(collection.key);
+    sinon.assert.calledWith(fetchStub, `/api/v0/collections/${collection.key}/`);
+    assert.deepEqual(result, collection);
   });
 
   it("gets video details", async () => {

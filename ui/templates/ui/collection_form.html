@@ -1,19 +1,8 @@
 {% extends "base.html" %}
-{% block title %}OVS | Collection List{% endblock %}
-{% block pagetitle %}OVS: Collection List{% endblock %}
+{% block title %}OVS | Collection Form{% endblock %}
+{% block pagetitle %}OVS: Collection Form{% endblock %}
 
 {% block content %}
-
-<h2>Collections</h2>
-<ul>
-  {% for collection in collection_list %}
-    <li><a href="{% url "collection-detail" collection.hexkey %}">{{ collection.title }}</a></li>
-  {% empty %}
-    <li><i>Please create a collection first</i></li>
-  {% endfor %}
-</ul>
-
-<hr>
 
 {%  if form %}
 <h2>Create New Collection</h2>
@@ -68,7 +57,7 @@
       body: JSON.stringify(data),
     }).then(function(response) {
       if (response.ok) {
-        location.reload();
+        location.href = '/collections';
       }
     });
   }

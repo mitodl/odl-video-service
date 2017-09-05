@@ -2,13 +2,15 @@
 {% block title %}OVS | Upload{% endblock %}
 {% block pagetitle %}OVS: Upload{% endblock %}
 {% block content %}
+
+<h2>Collection: {{ collection.title }}</h2>
 <p>To upload a video to OVS, first add it to your Dropbox. Then click
 on the button below to choose the video (or videos) that you want to upload
 to OVS.</p>
 
 <div id="container"></div>
 
-<p id="next">Next, <a href="{% url 'collection-detail' collection.hexkey %}">view your uploaded videos</a>.</p>
+<p id="next">Next, <a href="{% url 'collection-react-view' %}{{ collection.hexkey }}">view your uploaded videos</a>.</p>
 
 <script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="{{ dropbox_key }}"></script>
 <script>

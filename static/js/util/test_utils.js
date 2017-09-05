@@ -22,3 +22,18 @@ export function createAssertReducerResultState (store: Store, getReducerState: (
 }
 
 export const stringStrip = R.compose(R.join(" "), _.words);
+
+export const makeCounter = (): (() => number) => {
+  let gen = (function*() {
+    let i = 1;
+    while (true) {  // eslint-disable-line no-constant-condition
+      yield i;
+      i += 1;
+    }
+  })();
+  // $FlowFixMe: Flow doesn't know that this always returns a number
+  return () => gen.next().value;
+};
+
+// Helper method for test descriptions
+export const expect = (expectation: boolean) => expectation ? "should" : "should not";

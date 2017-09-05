@@ -2,6 +2,7 @@ body {
   margin: 0;
   padding: 0;
   color: rgba(0,0,0,.87);
+  font-family: Roboto, sans-serif;
 }
 
 .mdc-typography--title {
@@ -44,6 +45,17 @@ button {
   background: #ececec;
 }
 
+.card {
+  background-color: $card-bg-color;
+  box-shadow: 0 0 5px $card-shadow;
+  border-radius: 2px;
+
+  .title {
+    font-size: 18px;
+    font-weight: 400;
+    margin: 10px 0 7px 10px;
+  }
+}
 
 /*---------------------------------------
    SECTION:  FORM STYLES

@@ -41,6 +41,7 @@ def default_js_settings(request):
     return {
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": public_path(request),
+        "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
     }
 
 
@@ -50,7 +51,7 @@ class Index(TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated():
-            return HttpResponseRedirect(reverse('collection-list'))
+            return HttpResponseRedirect(reverse('collection-react-view'))
         return super(Index, self).dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -62,34 +63,32 @@ class Index(TemplateView):
 
 
 @method_decorator(login_required, name='dispatch')
-class CollectionList(TemplateView):
+class CollectionReactView(TemplateView):
     """List of collections"""
-    template_name = "ui/collection_list.html"
+    template_name = "ui/collections.html"
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
-        context['collection_list'] = Collection.objects.all_admin(self.request.user)
-        if ui_permissions.is_staff_or_superuser(self.request.user):
-            context['form'] = forms.CollectionForm(initial={'owner': self.request.user.id})
-        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
+        context["js_settings_json"] = json.dumps({
+            **default_js_settings(self.request),
+            'editable': ui_permissions.is_staff_or_superuser(self.request.user)
+        })
         return context
 
 
 @method_decorator(login_required, name='dispatch')
-class CollectionDetail(TemplateView):
-    """Details of a collection"""
-    template_name = "ui/collection_detail.html"
+class CollectionFormView(TemplateView):
+    """View for a new collection form"""
+    template_name = "ui/collection_form.html"
 
-    def get_context_data(self, collection_key, **kwargs):  # pylint: disable=arguments-differ
-        context = super().get_context_data(**kwargs)
-        collection = get_object_or_404(Collection, key=collection_key)
-        if not ui_permissions.has_view_permission(collection, self.request):
+    def get_context_data(self, **kwargs):
+        if not ui_permissions.is_staff_or_superuser(self.request.user):
             raise PermissionDenied
-        video_list = Video.objects.filter(collection=collection)
-        default_settings = default_js_settings(self.request)
-        context["collection"] = collection
-        context["video_list"] = video_list
-        context["js_settings_json"] = json.dumps(default_settings)
+        context = super().get_context_data(**kwargs)
+        form = forms.CollectionForm(initial={'owner': self.request.user.id})
+        context['form'] = form
+        context['success'] = form.is_valid()
+        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
         return context
 
 
