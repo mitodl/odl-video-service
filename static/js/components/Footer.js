@@ -15,7 +15,6 @@ export default class Footer extends React.Component {
               <img src="/static/images/mit-logo-ltgray-white@72x38.svg" alt="MIT" width="72" height="38"/>
             </a>
             <div className="footer-links">
-              <a href="https://www.edx.org/" target="_blank" rel="noopener noreferrer">edX</a>
               <a href="https://odl.mit.edu/" target="_blank" rel="noopener noreferrer">Office of Digital Learning</a>
             </div>
             <address className="footer-address">
@@ -23,15 +22,6 @@ export default class Footer extends React.Component {
             </address>
           </div>
           <div className="col-md-4">
-            <div className="footer-button footer-cta non-marketing-pages">
-              <a
-                href="https://giving.mit.edu/explore/campus-student-life/digital-learning" target="_blank"
-                rel="noopener noreferrer"
-                className="mdl-button footer-button no-float"
-              >
-                Give to MIT
-              </a>
-            </div>
             <div className="footer-copy">&copy; 2016-{currentYear()} Massachusetts Institute of Technology</div>
           </div>
         </div>
