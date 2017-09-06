@@ -8,9 +8,11 @@ import { Link } from "react-router-dom";
 
 import { actions } from '../actions';
 import OVSToolbar from '../components/OVSToolbar';
+import Drawer from '../components/material/Drawer';
 import Footer from '../components/Footer';
 import { makeCollectionUrl } from "../lib/urls";
-
+import {setDrawerOpen} from "../actions/commonUi";
+import type { CommonUIState } from "../reducers/commonUi";
 import type { Collection } from "../flow/collectionTypes";
 
 class CollectionListPage extends React.Component {
@@ -19,6 +21,7 @@ class CollectionListPage extends React.Component {
     collections: Array<Collection>,
     editable: boolean,
     needsUpdate: boolean,
+    commonUi: CommonUIState
   };
 
   componentDidMount() {
@@ -34,6 +37,11 @@ class CollectionListPage extends React.Component {
     if (needsUpdate) {
       dispatch(actions.collectionsList.get());
     }
+  };
+
+  setDrawerOpen = (open: boolean): void => {
+    const { dispatch } = this.props;
+    dispatch(setDrawerOpen(open));
   };
 
   renderCollectionLinks() {
@@ -61,6 +69,7 @@ class CollectionListPage extends React.Component {
   }
 
   render() {
+    const {commonUi} = this.props;
     const formLink = SETTINGS.editable
       ? (
         <a href="/collection_form">
@@ -71,7 +80,8 @@ class CollectionListPage extends React.Component {
       : null;
 
     return <div>
-      <OVSToolbar setDrawerOpen={() => {}} />
+      <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
+      <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
       <div className="collection-list-content">
         <div className="centered-content">
           <h2>Collections</h2>
@@ -85,12 +95,13 @@ class CollectionListPage extends React.Component {
 }
 
 const mapStateToProps = (state) => {
-  const { collectionsList } = state;
+  const { collectionsList, commonUi } = state;
   const collections = collectionsList.loaded ? collectionsList.data : [];
   const needsUpdate = !collectionsList.processing && !collectionsList.loaded;
 
   return {
     collections,
+    commonUi,
     needsUpdate
   };
 };

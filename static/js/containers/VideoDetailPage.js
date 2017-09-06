@@ -7,7 +7,7 @@ import type { Dispatch } from "redux";
 import Button from '../components/material/Button';
 import Dialog from '../components/material/Dialog';
 import Drawer from '../components/material/Drawer';
-import Toolbar from '../components/material/Toolbar';
+import OVSToolbar from '../components/OVSToolbar';
 import Footer from '../components/Footer';
 import VideoPlayer from '../components/VideoPlayer';
 import Textfield from "../components/material/Textfield";
@@ -16,19 +16,20 @@ import Textarea from "../components/material/Textarea";
 import { actions } from '../actions';
 import {
   setEditDialogVisibility,
-  setDrawerOpen,
   setTitle,
   setDescription,
   clearEditDialog,
   setShareDialogVisibility,
   clearShareDialog
 } from '../actions/videoDetailUi';
+import {setDrawerOpen} from '../actions/commonUi';
 import { makeCollectionUrl, makeEmbedUrl } from '../lib/urls';
 import { videoIsProcessing, videoHasError } from '../lib/video';
 import { MM_DD_YYYY } from '../constants';
 
 import type { Video } from "../flow/videoTypes";
 import type { VideoDetailUIState } from "../reducers/videoDetailUi";
+import type { CommonUIState } from "../reducers/commonUi";
 
 class VideoDetailPage extends React.Component {
   props: {
@@ -37,6 +38,7 @@ class VideoDetailPage extends React.Component {
     videoKey: string,
     needsUpdate: boolean,
     videoDetailUi: VideoDetailUIState,
+    commonUi: CommonUIState,
     editable: boolean
   };
 
@@ -71,7 +73,7 @@ class VideoDetailPage extends React.Component {
   };
 
   submitForm = () => {
-    const { dispatch, videoKey, videoDetailUi } = this.props;
+    const { dispatch, videoKey, videoDetailUi} = this.props;
     const { editDialog: {title, description} } = videoDetailUi;
 
     dispatch(clearEditDialog());
@@ -126,7 +128,7 @@ class VideoDetailPage extends React.Component {
   };
 
   render() {
-    const { video, videoDetailUi, editable } = this.props;
+    const { video, videoDetailUi, commonUi, editable } = this.props;
     if (!video) {
       return null;
     }
@@ -134,13 +136,8 @@ class VideoDetailPage extends React.Component {
     const formattedCreation = moment(video.created_at).format(MM_DD_YYYY);
     const collectionUrl = makeCollectionUrl(video.collection_key);
     return <div>
-      <Toolbar onClickMenu={this.setDrawerOpen.bind(this, true)}>
-        <img src="/static/images/mit_logo_grey_red.png" className="logo"/>
-        <span className="title">
-          ODL Video Services
-        </span>
-      </Toolbar>
-      <Drawer open={videoDetailUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
+      <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
+      <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
       { video ? this.renderVideoPlayer(video) : null }
       <div className="summary">
         <p className="channelLink mdc-typography--subheading1">
@@ -221,14 +218,15 @@ class VideoDetailPage extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
   const { videoKey } = ownProps;
-  const { videos, videoDetailUi } = state;
+  const { videos, videoDetailUi, commonUi } = state;
   const video = videos.data ? videos.data.get(videoKey) : null;
   const needsUpdate = !videos.processing && !videos.loaded;
 
   return {
     video,
     needsUpdate,
-    videoDetailUi
+    videoDetailUi,
+    commonUi
   };
 };
 

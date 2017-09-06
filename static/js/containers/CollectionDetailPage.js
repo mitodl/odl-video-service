@@ -7,11 +7,14 @@ import _ from 'lodash';
 import OVSToolbar from '../components/OVSToolbar';
 import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
+import Drawer from '../components/material/Drawer';
 import { actions } from '../actions';
+import {setDrawerOpen} from '../actions/commonUi';
 import { getActiveCollectionDetail } from '../lib/collection';
 
 import type { Collection } from '../flow/collectionTypes';
 import type { Video } from '../flow/videoTypes';
+import type { CommonUIState } from "../reducers/commonUi";
 
 class CollectionDetailPage extends React.Component {
   props: {
@@ -21,6 +24,7 @@ class CollectionDetailPage extends React.Component {
     collectionKey: string,
     editable: boolean,
     needsUpdate: boolean,
+    commonUi: CommonUIState
   };
 
   componentDidMount() {
@@ -36,6 +40,11 @@ class CollectionDetailPage extends React.Component {
     if (needsUpdate) {
       dispatch(actions.collections.get(collectionKey));
     }
+  };
+
+  setDrawerOpen = (open: boolean): void => {
+    const { dispatch } = this.props;
+    dispatch(setDrawerOpen(open));
   };
 
   renderCollectionDescription = (description: ?string) => (
@@ -80,7 +89,7 @@ class CollectionDetailPage extends React.Component {
   };
 
   render() {
-    const { collection, collectionError } = this.props;
+    const { collection, collectionError, commonUi } = this.props;
 
     if (!collection) return null;
 
@@ -89,7 +98,8 @@ class CollectionDetailPage extends React.Component {
       : this.renderBody(collection);
 
     return <div>
-      <OVSToolbar setDrawerOpen={() => {}} />
+      <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
+      <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
       <div className="collection-detail-content">
         { detailBody }
       </div>
@@ -100,7 +110,7 @@ class CollectionDetailPage extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
   const { match } = ownProps;
-  const { collections } = state;
+  const { collections, commonUi } = state;
 
   const collection = collections.loaded && collections.data ? collections.data : null;
   const collectionError = collections.error || null;
@@ -113,7 +123,8 @@ const mapStateToProps = (state, ownProps) => {
     collectionKey,
     collection,
     collectionError,
-    needsUpdate
+    needsUpdate,
+    commonUi
   };
 };
 

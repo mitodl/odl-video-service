@@ -91,4 +91,11 @@ describe('CollectionDetailPage', () => {
       assert.equal(titleText.indexOf(`(${videoCount})`) >= 0, shouldShow);
     });
   });
+
+  it('has a toolbar whose handler will dispatch an action to open the drawer', async () => {
+    let wrapper = await renderPage();
+    wrapper.find(".menu-button").simulate('click');
+    assert.isTrue(store.getState().commonUi.drawerOpen);
+  });
+
 });
