@@ -13,9 +13,9 @@ export default class OVSToolbar extends React.Component {
 
     return <Toolbar onClickMenu={setDrawerOpen}>
       <img src="/static/images/mit_logo_grey_red.png" className="logo"/>
-      <span className="title">
+      <a className="title" href="/">
         ODL Video Services
-      </span>
+      </a>
     </Toolbar>;
   }
 }

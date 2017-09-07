@@ -63,7 +63,7 @@ class Drawer extends React.Component {
     const { collections } = this.props;
     return <aside className="mdc-temporary-drawer mdc-typography" ref={div => this.drawerRoot = div}>
       <nav className="mdc-temporary-drawer__drawer">
-        <nav className="mdc-temporary-drawer__content mdc-list">
+        <nav id="nav-username" className="mdc-temporary-drawer__content mdc-list">
           <a id="collapse_item" className="mdc-list-item mdc-link" href="#">
             {SETTINGS.user}
           </a>

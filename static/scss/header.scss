@@ -17,8 +17,9 @@
   }
 }
 
-.title {
+a.title {
   padding-left: 30px;
+  color: rgba(0,0,0,.7);
 
   @include breakpoint(phone) {
     padding-left: 15px;
