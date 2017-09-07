@@ -16,6 +16,10 @@
     padding: 11px 0 11px;
     font-size: 15px;
     border-bottom: 1px solid rgba(255,255,255,.4);
+
+    @include breakpoint(phone) {
+      padding: 5px 0 4px;
+    }
   }
 
   #nav-collections {
@@ -26,6 +30,10 @@
   	  color: rgba(255,255,255,.7);
   	  padding: 0 24px;
   	  font-weight: 400;
+
+      @include breakpoint(phone) {
+        height: 44px;
+      }
     }
 
     a:hover {
@@ -37,6 +45,10 @@
   #icon-with-text-demo {
   	padding: 20px 0;
   	border-top: 1px solid rgba(255,255,255,.4);
+
+    @include breakpoint(phone) {
+      padding: 15px 0;
+    }
 
     .mdc-list-item {
   	  font-size: .95rem;
@@ -60,6 +72,10 @@
   	  font-size: 17px;
   	  color: white;
   	  padding: 30px 24px;
+
+      @include breakpoint(phone) {
+        padding: 25px 24px;
+      }
     }
   }
 }
