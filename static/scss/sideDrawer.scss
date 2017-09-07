@@ -7,9 +7,9 @@
   }
 
   .mdc-list-item {
-  	font-size: .95rem;
-  	color: rgba(255,255,255,.7);
-  	padding: 0 24px;
+    font-size: .95rem;
+    color: rgba(255,255,255,.7);
+    padding: 0 24px;
   }
 
   #nav-username {
@@ -23,13 +23,13 @@
   }
 
   #nav-collections {
-  	padding: 0 0 30px;
+    padding: 0 0 30px;
 
     .mdc-list-item {
-  	  font-size: .95rem;
-  	  color: rgba(255,255,255,.7);
-  	  padding: 0 24px;
-  	  font-weight: 400;
+      font-size: .95rem;
+      color: rgba(255,255,255,.7);
+      padding: 0 24px;
+      font-weight: 400;
 
       @include breakpoint(phone) {
         height: 44px;
@@ -43,16 +43,16 @@
   }
 
   #icon-with-text-demo {
-  	padding: 20px 0;
-  	border-top: 1px solid rgba(255,255,255,.4);
+    padding: 20px 0;
+    border-top: 1px solid rgba(255,255,255,.4);
 
     @include breakpoint(phone) {
       padding: 15px 0;
     }
 
     .mdc-list-item {
-  	  font-size: .95rem;
-  	  font-weight: 400;
+      font-size: .95rem;
+      font-weight: 400;
     }
 
     a:hover {
@@ -67,11 +67,11 @@
 
   .mdc-temporary-drawer__header {
     .mdc-temporary-drawer__header-content {
-  	  position: static;
-  	  font-weight: 500;
-  	  font-size: 17px;
-  	  color: white;
-  	  padding: 30px 24px;
+      position: static;
+      font-weight: 500;
+      font-size: 17px;
+      color: white;
+      padding: 30px 24px;
 
       @include breakpoint(phone) {
         padding: 25px 24px;
@@ -80,8 +80,8 @@
   }
 }
 
- .mdc-temporary-drawer {
-   .mdc-list-item__start-detail {
-     color: rgba(255,255,255,.5);
-   }
- }
+.mdc-temporary-drawer {
+  .mdc-list-item__start-detail {
+    color: rgba(255,255,255,.5);
+  }
+}
