@@ -66,10 +66,8 @@ class Drawer extends React.Component {
         <nav className="mdc-temporary-drawer__content mdc-list">
           <a id="collapse_item" className="mdc-list-item mdc-link" href="#">
             {SETTINGS.user}
-            <i className="material-icons mdc-list-item__end-detail" aria-hidden="true">keyboard_arrow_left</i>
           </a>
         </nav>
-        <div className="mdc-temporary-drawer__toolbar-spacer"></div>
         <header className="mdc-temporary-drawer__header">
           <div className="mdc-temporary-drawer__header-content">
             Collections
@@ -86,7 +84,6 @@ class Drawer extends React.Component {
             </a>
           )}
         </nav>
-        <div className="mdc-temporary-drawer__toolbar-spacer"></div>
         <nav id="icon-with-text-demo" className="mdc-temporary-drawer__content mdc-list">
           <a className="mdc-list-item mdc-link" href="/logout/">
             <i className="material-icons mdc-list-item__start-detail" aria-hidden="true">input</i>
