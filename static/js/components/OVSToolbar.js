@@ -12,10 +12,12 @@ export default class OVSToolbar extends React.Component {
     const {setDrawerOpen} = this.props;
 
     return <Toolbar onClickMenu={setDrawerOpen}>
-      <img src="/static/images/mit_logo_grey_red.png" className="logo"/>
-      <span className="title">
+      <a href="http://www.mit.edu">
+        <img src="/static/images/mit_logo_grey_red.png" className="logo"/>
+      </a>
+      <a className="title" href="/">
         ODL Video Services
-      </span>
+      </a>
     </Toolbar>;
   }
 }
