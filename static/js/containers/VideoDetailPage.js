@@ -22,14 +22,14 @@ import {
   setShareDialogVisibility,
   clearShareDialog
 } from '../actions/videoDetailUi';
-import {setDrawerOpen} from '../actions/commonUi';
+import { setDrawerOpen } from '../actions/commonUi';
 import { makeCollectionUrl, makeEmbedUrl } from '../lib/urls';
 import { videoIsProcessing, videoHasError } from '../lib/video';
 import { MM_DD_YYYY } from '../constants';
 
 import type { Video } from "../flow/videoTypes";
 import type { VideoDetailUIState } from "../reducers/videoDetailUi";
-import type { CommonUIState } from "../reducers/commonUi";
+import type { CommonUiState } from "../reducers/commonUi";
 
 class VideoDetailPage extends React.Component {
   props: {
@@ -38,7 +38,7 @@ class VideoDetailPage extends React.Component {
     videoKey: string,
     needsUpdate: boolean,
     videoDetailUi: VideoDetailUIState,
-    commonUi: CommonUIState,
+    commonUi: CommonUiState,
     editable: boolean
   };
 
@@ -73,7 +73,7 @@ class VideoDetailPage extends React.Component {
   };
 
   submitForm = () => {
-    const { dispatch, videoKey, videoDetailUi} = this.props;
+    const { dispatch, videoKey, videoDetailUi } = this.props;
     const { editDialog: {title, description} } = videoDetailUi;
 
     dispatch(clearEditDialog());

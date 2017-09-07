@@ -11,8 +11,8 @@ import OVSToolbar from '../components/OVSToolbar';
 import Drawer from '../components/material/Drawer';
 import Footer from '../components/Footer';
 import { makeCollectionUrl } from "../lib/urls";
-import {setDrawerOpen} from "../actions/commonUi";
-import type { CommonUIState } from "../reducers/commonUi";
+import { setDrawerOpen } from "../actions/commonUi";
+import type { CommonUiState } from "../reducers/commonUi";
 import type { Collection } from "../flow/collectionTypes";
 
 class CollectionListPage extends React.Component {
@@ -21,7 +21,7 @@ class CollectionListPage extends React.Component {
     collections: Array<Collection>,
     editable: boolean,
     needsUpdate: boolean,
-    commonUi: CommonUIState
+    commonUi: CommonUiState
   };
 
   componentDidMount() {
@@ -69,7 +69,7 @@ class CollectionListPage extends React.Component {
   }
 
   render() {
-    const {commonUi} = this.props;
+    const { commonUi } = this.props;
     const formLink = SETTINGS.editable
       ? (
         <a href="/collection_form">

@@ -9,12 +9,12 @@ import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
 import Drawer from '../components/material/Drawer';
 import { actions } from '../actions';
-import {setDrawerOpen} from '../actions/commonUi';
+import { setDrawerOpen } from '../actions/commonUi';
 import { getActiveCollectionDetail } from '../lib/collection';
 
 import type { Collection } from '../flow/collectionTypes';
 import type { Video } from '../flow/videoTypes';
-import type { CommonUIState } from "../reducers/commonUi";
+import type { CommonUiState } from "../reducers/commonUi";
 
 class CollectionDetailPage extends React.Component {
   props: {
@@ -24,7 +24,7 @@ class CollectionDetailPage extends React.Component {
     collectionKey: string,
     editable: boolean,
     needsUpdate: boolean,
-    commonUi: CommonUIState
+    commonUi: CommonUiState
   };
 
   componentDidMount() {
