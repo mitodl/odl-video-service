@@ -9,14 +9,13 @@ import {
   clearShareDialog,
   setEditDialogVisibility,
   setShareDialogVisibility,
-  setDrawerOpen,
   setTitle,
   setDescription,
 } from '../actions/videoDetailUi';
 import { createAssertReducerResultState } from "../util/test_utils";
 import { INITIAL_UI_STATE } from "./videoDetailUi";
 
-describe('videoDetailUi', () => {
+describe('VideoDetailUi', () => {
   let sandbox, assertReducerResultState, store;
 
   beforeEach(() => {
@@ -55,9 +54,5 @@ describe('videoDetailUi', () => {
   it('should clear the share dialog ui', () => {
     store.dispatch(clearShareDialog());
     assert.deepEqual(store.getState().videoDetailUi, INITIAL_UI_STATE);
-  });
-
-  it('sets the drawer visibility', () => {
-    assertReducerResultState(setDrawerOpen, ui => ui.drawerOpen, false);
   });
 });

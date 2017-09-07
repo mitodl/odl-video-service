@@ -27,6 +27,15 @@ class Drawer extends React.Component {
     this.drawer = new MDCTemporaryDrawer(this.drawerRoot);
     this.drawer.listen('MDCTemporaryDrawer:close', onDrawerClose);
     this.updateRequirements();
+
+    // Close drawer on button click; this is a necessary hack to get around MDC limitations
+    let item = document.querySelector('#collapse_item');
+    if (item) {
+      item.addEventListener('click', (evt: MouseEvent) => {
+        evt.preventDefault();
+        onDrawerClose();
+      }, false);
+    }
   }
 
   componentWillUnmount() {
@@ -54,8 +63,8 @@ class Drawer extends React.Component {
     const { collections } = this.props;
     return <aside className="mdc-temporary-drawer mdc-typography" ref={div => this.drawerRoot = div}>
       <nav className="mdc-temporary-drawer__drawer">
-        <nav id="nav-username" className="mdc-temporary-drawer__content mdc-list">
-          <a className="mdc-list-item mdc-link" href="#">
+        <nav className="mdc-temporary-drawer__content mdc-list">
+          <a id="collapse_item" className="mdc-list-item mdc-link" href="#">
             {SETTINGS.user}
             <i className="material-icons mdc-list-item__end-detail" aria-hidden="true">keyboard_arrow_left</i>
           </a>
