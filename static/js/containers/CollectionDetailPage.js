@@ -38,7 +38,9 @@ class CollectionDetailPage extends React.Component {
   }
 
   componentDidUpdate() {
-    this.updateRequirements();
+    if (!this.props.collectionError) {
+      this.updateRequirements();
+    }
   }
 
   updateRequirements = () => {
