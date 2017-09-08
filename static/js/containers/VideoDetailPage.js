@@ -175,13 +175,13 @@ class VideoDetailPage extends React.Component {
       >
         <div className="mdc-form-field mdc-form-field--align-end">
           <Textfield
-            label="New title:"
+            label="New title"
             id="video-title"
             onChange={this.setTitle}
             value={videoDetailUi.editDialog.title}
           />
-          <Textfield
-            label="Description:"
+          <Textarea
+            label="Description"
             id="video-description"
             onChange={this.setDescription}
             value={videoDetailUi.editDialog.description}
@@ -199,13 +199,13 @@ class VideoDetailPage extends React.Component {
         <div className="mdc-form-field mdc-form-field--align-end">
           <Textfield
             readOnly
-            label="Video URL:"
+            label="Video URL"
             id="video-url"
             value={videoShareUrl}
           />
           <Textarea
             readOnly
-            label="Embed HTML:"
+            label="Embed HTML"
             id="video-embed-code"
             rows="4"
             value={`<iframe src="${videoShareUrl}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`}
