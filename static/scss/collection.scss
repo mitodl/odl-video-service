@@ -51,11 +51,29 @@ $video-card-width: 32%;
   }
 
   header {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
     padding: 0 0 10px 0;
 
-    h2, p.description {
-      margin: 0;
-      padding: 0 0 20px 0;
+    .text {
+
+      h2, p.description {
+        margin: 0;
+        padding: 0 0 20px 0;
+      }
+    }
+
+    .tools {
+      a {
+        display: inline-block;
+        color: #000;
+
+        &:hover {
+          cursor: pointer;
+        }
+      }
     }
   }
 
@@ -112,6 +130,59 @@ $video-card-width: 32%;
           * {
             margin-left: 10px;
           }
+        }
+      }
+    }
+  }
+}
+
+.collection-form-dialog {
+  label {
+    display: block;
+    padding-bottom: 5px;
+    width: 100%;
+  }
+
+  label[for=collection-desc] {
+    padding-top: 5px;
+  }
+
+  input[type=text], textarea {
+    display: block;
+    padding: 5px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  .permission-group {
+    padding: 20px;
+    margin-top: 15px;
+    background-color: #f5f5f5;
+
+    .mdc-form-field div {
+      align-self: center;
+    }
+
+    h4 {
+      padding: 0 0 15px 0;
+      margin: 0;
+    }
+
+    .mdc-form-field {
+      display: flex;
+      flex-direction: row;
+
+      label {
+        align-self: center;
+        width: 88px;
+        padding: 0;
+      }
+
+      .mdc-textfield-container {
+        flex-grow: 1;
+
+        .mdc-textfield {
+          display: inline-block;
+          margin: 0 0 0 5px;
         }
       }
     }

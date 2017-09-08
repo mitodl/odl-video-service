@@ -1,6 +1,6 @@
 // @flow
 import React from 'react';
-import {MDCToolbar } from '@material/toolbar/dist/mdc.toolbar';
+import { MDCToolbar } from '@material/toolbar/dist/mdc.toolbar';
 
 export default class Toolbar extends React.Component {
   toolbar: null;

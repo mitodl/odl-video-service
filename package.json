@@ -13,6 +13,7 @@
     "@material/drawer": "^0.5.4",
     "@material/list": "^0.2.14",
     "@material/menu": "^0.4.3",
+    "@material/radio": "^0.2.13",
     "@material/textfield": "^0.3.3",
     "@material/toolbar": "^0.4.4",
     "@material/typography": "^0.3.0",

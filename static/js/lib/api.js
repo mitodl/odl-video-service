@@ -9,6 +9,13 @@ export function getCollection(collectionKey: string) {
   return fetchJSONWithCSRF(`/api/v0/collections/${encodeURI(collectionKey)}/`);
 }
 
+export function updateCollection(collectionKey: string, payload: Object) {
+  return fetchJSONWithCSRF(`/api/v0/collections/${encodeURI(collectionKey)}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+}
+
 // import to allow mocking in tests
 export function getVideo(videoKey: string) {
   return fetchJSONWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/`);

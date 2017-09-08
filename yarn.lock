@@ -10,6 +10,10 @@
   version "0.2.3"
   resolved "https://registry.yarnpkg.com/@material/base/-/base-0.2.3.tgz#c4eb26b6d6e5840c254ad487588dc4f69b971f3e"
 
+"@material/base@^0.2.5":
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/@material/base/-/base-0.2.5.tgz#d721a8add68bbfa8ed6759c6bbd9107cd272a2b0"
+
 "@material/button@^0.3.11":
   version "0.3.11"
   resolved "https://registry.yarnpkg.com/@material/button/-/button-0.3.11.tgz#17ab4cd5d55389e3da3496b1c1626dce4f6a7839"
@@ -68,6 +72,16 @@
     "@material/theme" "^0.1.7"
     "@material/typography" "^0.3.0"
 
+"@material/radio@^0.2.13":
+  version "0.2.13"
+  resolved "https://registry.yarnpkg.com/@material/radio/-/radio-0.2.13.tgz#935798330b8e38108c19ea8bf73f870c223e146f"
+  dependencies:
+    "@material/animation" "^0.3.1"
+    "@material/base" "^0.2.5"
+    "@material/ripple" "^0.8.6"
+    "@material/selection-control" "^0.1.1"
+    "@material/theme" "^0.3.0"
+
 "@material/ripple@^0.8.2":
   version "0.8.2"
   resolved "https://registry.yarnpkg.com/@material/ripple/-/ripple-0.8.2.tgz#f1844079701121b3905fa4c47c83035dc10ed60a"
@@ -75,9 +89,22 @@
     "@material/base" "^0.2.3"
     "@material/theme" "^0.1.7"
 
+"@material/ripple@^0.8.6":
+  version "0.8.6"
+  resolved "https://registry.yarnpkg.com/@material/ripple/-/ripple-0.8.6.tgz#039ec22937f78bcfefa330d3533c77852466d8d8"
+  dependencies:
+    "@material/base" "^0.2.5"
+    "@material/theme" "^0.3.0"
+
 "@material/rtl@^0.1.7":
   version "0.1.7"
   resolved "https://registry.yarnpkg.com/@material/rtl/-/rtl-0.1.7.tgz#b38b771af183bcf34d643f600f17fc433698535a"
+
+"@material/selection-control@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@material/selection-control/-/selection-control-0.1.1.tgz#974822771d61da1034737236c5dc20e63a9c52d3"
+  dependencies:
+    "@material/ripple" "^0.8.6"
 
 "@material/textfield@^0.3.3":
   version "0.3.3"
@@ -93,6 +120,10 @@
 "@material/theme@^0.1.7":
   version "0.1.7"
   resolved "https://registry.yarnpkg.com/@material/theme/-/theme-0.1.7.tgz#d94a7c5099feae9dc318c639802327c7ae82e872"
+
+"@material/theme@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@material/theme/-/theme-0.3.0.tgz#d0e7622c77aebbd9416e6561c31ff4a8338d1f06"
 
 "@material/toolbar@^0.4.4":
   version "0.4.4"

@@ -23,7 +23,7 @@ describe('CommonUi', () => {
 
   it('Should open the drawer in the UI', () => {
     store.dispatch(setDrawerOpen(true));
-    assert.deepEqual(store.getState().commonUi, {drawerOpen: true});
+    assert.include(store.getState().commonUi, {drawerOpen: true});
   });
 
   it('Should close the drawer in the UI', () => {

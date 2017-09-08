@@ -1,6 +1,6 @@
 // @flow
 import React from 'react';
-import {MDCDialog} from '@material/dialog/dist/mdc.dialog';
+import { MDCDialog } from '@material/dialog/dist/mdc.dialog';
 
 import Button from './Button';
 
@@ -24,12 +24,14 @@ export default class Dialog extends React.Component {
 
   componentDidMount() {
     const { open, onAccept, onCancel } = this.props;
-    this.dialog = new MDCDialog(this.dialogRoot);
 
+    // Hack to get dialog to play nicely with JS tests
+    if (!this.dialogRoot || !this.dialogRoot.dataset) return;
+
+    this.dialog = new MDCDialog(this.dialogRoot);
     this.dialog.listen('MDCDialog:accept', onAccept);
     // $FlowFixMe: Flow thinks this.dialog might be null
     this.dialog.listen('MDCDialog:cancel', onCancel);
-
     if (open) {
       // $FlowFixMe: Flow thinks this.dialog might be null
       this.dialog.show();
@@ -55,7 +57,10 @@ export default class Dialog extends React.Component {
   }
 
   render() {
-    const { title, children, cancelText, submitText, noSubmit, id } = this.props;
+    const { title, children, cancelText, submitText, noSubmit, id, open } = this.props;
+
+    // Hack to avoid showing unstyled dialog contents before the stylesheets are ready
+    let styleProp = open ? {} : {display: 'none'};
 
     return <aside
       id={id ? id : 'mdc-dialog'}
@@ -63,6 +68,7 @@ export default class Dialog extends React.Component {
       role="alertdialog"
       aria-labelledby="my-mdc-dialog-label"
       aria-describedby="my-mdc-dialog-description"
+      style={styleProp}
       ref={node => this.dialogRoot = node}
     >
       <div className="mdc-dialog__surface">
