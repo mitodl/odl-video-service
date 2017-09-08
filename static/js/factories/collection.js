@@ -16,5 +16,6 @@ export const makeCollection = (collectionKey: string = casual.uuid): Collection 
   owner: ownerId(),
   videos: makeVideos(2),
   view_lists: casual.array_of_words(2),
-  admin_lists: casual.array_of_words(2)
+  admin_lists: casual.array_of_words(2),
+  is_admin: true
 });

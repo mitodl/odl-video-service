@@ -26,12 +26,29 @@ def test_collection_serializer():
         'owner': collection.owner.id,
         'videos': serializers.VideoSerializer(videos, many=True).data,
         'view_lists': [],
-        'admin_lists': []
+        'admin_lists': [],
+        'is_admin': None
     }
     expected['videos'].sort(key=lambda x: x['key'])
     serialized_data = serializers.CollectionSerializer(collection).data
     serialized_data['videos'].sort(key=lambda x: x['key'])
     assert serialized_data == expected
+
+
+@pytest.mark.parametrize("has_permission", [True, False])
+def test_collection_serializer_admin_flag(mocker, has_permission):
+    """
+    Test that the is_admin flag returns an expected value based on a user's admin permission
+    """
+    mocked_admin_permission = mocker.patch('ui.permissions.has_admin_permission', return_value=has_permission)
+    mocked_request = mocker.MagicMock()
+    collection = factories.CollectionFactory()
+    serialized_data = serializers.CollectionSerializer(
+        collection,
+        context=dict(request=mocked_request)
+    ).data
+    mocked_admin_permission.assert_called_with(collection, mocked_request)
+    assert serialized_data['is_admin'] is has_permission
 
 
 def test_collection_list_serializer():

@@ -6,7 +6,7 @@ from rest_framework import serializers
 from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
 
-from ui import models
+from ui import models, permissions as ui_permissions
 
 
 class SingleAttrRelatedField(RelatedField):
@@ -112,10 +112,17 @@ class CollectionSerializer(serializers.ModelSerializer):
     admin_lists = SingleAttrRelatedField(
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
     )
+    is_admin = serializers.SerializerMethodField()
 
     def get_key(self, obj):
         """Custom getter for the key"""
         return obj.hexkey
+
+    def get_is_admin(self, obj):
+        """Custom field to indicate whether or not the requesting user is an admin"""
+        if self.context.get('request'):
+            return ui_permissions.has_admin_permission(obj, self.context['request'])
+        return None
 
     class Meta:
         model = models.Collection
@@ -127,9 +134,11 @@ class CollectionSerializer(serializers.ModelSerializer):
             'videos',
             'view_lists',
             'admin_lists',
+            'is_admin',
         )
         read_only_fields = (
             'key',
+            'is_admin',
         )
 
 

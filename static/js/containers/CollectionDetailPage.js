@@ -2,15 +2,20 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import type { Dispatch } from 'redux';
+import R from 'ramda';
 import _ from 'lodash';
 
 import OVSToolbar from '../components/OVSToolbar';
 import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
 import Drawer from '../components/material/Drawer';
+import NewCollection from '../components/dialogs/CollectionFormDialog';
+import { withDialogs } from '../components/dialogs/hoc';
+
 import { actions } from '../actions';
 import { setDrawerOpen } from '../actions/commonUi';
 import { getActiveCollectionDetail } from '../lib/collection';
+import { DIALOGS } from '../constants';
 
 import type { Collection } from '../flow/collectionTypes';
 import type { Video } from '../flow/videoTypes';
@@ -24,7 +29,8 @@ class CollectionDetailPage extends React.Component {
     collectionKey: string,
     editable: boolean,
     needsUpdate: boolean,
-    commonUi: CommonUiState
+    commonUi: CommonUiState,
+    showDialog: Function
   };
 
   componentDidMount() {
@@ -66,6 +72,8 @@ class CollectionDetailPage extends React.Component {
   );
 
   renderBody(collection: Collection) {
+    const { showDialog } = this.props;
+
     const videos = collection.videos || [];
     const collectionTitle = videos.length === 0
       ? collection.title
@@ -73,10 +81,20 @@ class CollectionDetailPage extends React.Component {
 
     return <div className="centered-content">
       <header>
-        <h2 className="mdc-typography--title">
-          { collectionTitle }
-        </h2>
-        { this.renderCollectionDescription(collection.description) }
+        <div className="text">
+          <h2 className="mdc-typography--title">
+            { collectionTitle }
+          </h2>
+          { this.renderCollectionDescription(collection.description) }
+        </div>
+        <div className="tools">
+          {
+            collection.is_admin &&
+            <a onClick={ showDialog.bind(this, DIALOGS.NEW_COLLECTION) }>
+              <i className="material-icons">settings</i>
+            </a>
+          }
+        </div>
       </header>
       { this.renderCollectionVideos(videos) }
     </div>;
@@ -128,4 +146,9 @@ const mapStateToProps = (state, ownProps) => {
   };
 };
 
-export default connect(mapStateToProps)(CollectionDetailPage);
+export default R.compose(
+  connect(mapStateToProps),
+  withDialogs([
+    {name: DIALOGS.NEW_COLLECTION, component: NewCollection}
+  ])
+)(CollectionDetailPage);

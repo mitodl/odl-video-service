@@ -87,7 +87,7 @@ describe('CollectionDetailPage', () => {
     it(`video count ${expect(shouldShow)} be shown with ${testDescriptor}`, async () => {
       collection.videos = makeVideos(videoCount, collection.key);
       let wrapper = await renderPage();
-      let titleText = wrapper.find("h2").text();
+      let titleText = wrapper.find(".collection-detail-content h2").text();
       assert.equal(titleText.indexOf(`(${videoCount})`) >= 0, shouldShow);
     });
   });
