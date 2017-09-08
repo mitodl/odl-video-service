@@ -47,8 +47,8 @@ button {
 
 .card {
   background-color: $card-bg-color;
-  box-shadow: 0 0 5px $card-shadow;
-  border-radius: 2px;
+  box-shadow: 1px 2px 11px $card-shadow;
+  border-radius: 3px;
 
   .title {
     font-size: 18px;
@@ -62,11 +62,29 @@ button {
 -----------------------------------------*/
 
 label {
-  width: 88px;
-  display: inline-block;
+  display: block;
+  padding: 0 0 8px 2px;
+  color: #444;
+  font-size: 15px;
+  width: 100%;
 }
 
 .mdc-textfield {
-  width: calc(100% - 100px);
-  max-width: 500px;
+  width: 100%;
+}
+
+input[type=text], textarea, .mdc-textfield__input, input[type=text].mdc-textfield__input {
+  display: block;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+  padding: 10px;
+  background: #fff;
+}
+
+.mdc-textfield-container, .mdc-textarea-container {
+  margin: 0 0 14px 0;
+}
+
+textarea {
+  height: 110px;
 }

@@ -144,8 +144,8 @@ class CollectionFormDialog extends React.Component {
       collectionUi: { collectionForm }
     } = this.props;
 
-    let title = collection ? "Update Collection" : "Create a New Collection";
-    let submitText = collection ? "Update Collection" : "Create Collection";
+    let title = collection ? "Edit Collection" : "Create a New Collection";
+    let submitText = collection ? "Save Changes" : "Create Collection";
 
     return (
       <Dialog

@@ -1,9 +1,10 @@
-$video-card-width: 32%;
+$video-card-width: 31%;
 
 .collection-list-content,
 .collection-detail-content {
   background-color: $body-bg-color;
   padding: 30px;
+  min-height: calc(100vh - 421px);
 
   h2 {
     font-weight: 400;
@@ -63,15 +64,20 @@ $video-card-width: 32%;
         margin: 0;
         padding: 0 0 20px 0;
       }
+
+      p.description {
+        color: #666;
+      }
     }
 
     .tools {
       a {
         display: inline-block;
-        color: #000;
+        color: #007de1;
 
         &:hover {
           cursor: pointer;
+          color: #30a2fd;
         }
       }
     }
@@ -85,7 +91,7 @@ $video-card-width: 32%;
     width: 100%;
 
     .video-card {
-      margin: 0 1% 20px 0;
+      margin: 0 1.6% 20px 0;
       background-color: #ffffff;
       width: $video-card-width;
       overflow: hidden;
@@ -137,25 +143,13 @@ $video-card-width: 32%;
 }
 
 .collection-form-dialog {
-  label {
-    display: block;
-    padding-bottom: 5px;
-    width: 100%;
-  }
-
   label[for=collection-desc] {
     padding-top: 5px;
   }
 
-  input[type=text], textarea {
-    display: block;
-    padding: 5px;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-  }
-
   .permission-group {
     padding: 20px;
-    margin-top: 15px;
+    margin: 0 0 20px;
     background-color: #f5f5f5;
 
     .mdc-form-field div {
@@ -165,6 +159,8 @@ $video-card-width: 32%;
     h4 {
       padding: 0 0 15px 0;
       margin: 0;
+      color: rgba(0,0,0,.87);
+      font-weight: 500;
     }
 
     .mdc-form-field {
@@ -179,6 +175,7 @@ $video-card-width: 32%;
 
       .mdc-textfield-container {
         flex-grow: 1;
+        margin-bottom: 0;
 
         .mdc-textfield {
           display: inline-block;
