@@ -2,16 +2,20 @@
 import sinon from 'sinon';
 import configureTestStore from "redux-asserts";
 import { assert } from 'chai';
+import _ from 'lodash';
 
 import rootReducer from '../reducers';
 import {
   setDrawerOpen,
   setEditVideoTitle,
   setEditVideoDesc,
-  initEditVideoForm
+  initEditVideoForm,
+  showDialog,
+  hideDialog
 } from '../actions/commonUi';
-import { createAssertReducerResultState } from "../util/test_utils";
 import { INITIAL_UI_STATE, INITIAL_EDIT_VIDEO_FORM_STATE } from "./commonUi";
+import { createAssertReducerResultState } from "../util/test_utils";
+import { DIALOGS } from "../constants";
 
 describe('CommonUi', () => {
   let sandbox, assertReducerResultState, store;
@@ -52,5 +56,14 @@ describe('CommonUi', () => {
     let formObj = {key: 'key', title: 'title', description: 'description'};
     store.dispatch(initEditVideoForm(formObj));
     assert.deepEqual(store.getState().commonUi.editVideoForm, formObj);
+  });
+
+  it('has actions that open and close dialogs', () => {
+    _.mapKeys(DIALOGS, (dialogKey) => {
+      store.dispatch(showDialog(dialogKey));
+      assert.deepEqual(store.getState().commonUi.dialogVisibility[dialogKey], true);
+      store.dispatch(hideDialog(dialogKey));
+      assert.deepEqual(store.getState().commonUi.dialogVisibility[dialogKey], false);
+    });
   });
 });

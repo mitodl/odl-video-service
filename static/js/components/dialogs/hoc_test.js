@@ -5,31 +5,58 @@ import { mount } from 'enzyme';
 import { Provider } from 'react-redux';
 import configureTestStore from 'redux-asserts';
 import R from 'ramda';
+import { connect } from 'react-redux';
 
+import Dialog from "../material/Dialog";
+import { withDialogs } from './hoc';
+import { DIALOGS } from '../../constants';
 import rootReducer from '../../reducers';
 import { INITIAL_UI_STATE } from '../../reducers/commonUi';
-import { withDialogs } from './hoc';
-import { SHOW_DIALOG } from '../../actions/commonUi';
+import { SHOW_DIALOG, HIDE_DIALOG } from '../../actions/commonUi';
 
 describe('Dialog higher-order component', () => {
-  let sandbox, store, listenForActions, dialogName;
-  dialogName = 'TEST_DIALOG';
+  let sandbox, store, listenForActions, dialogName, selectors;
+  dialogName = DIALOGS.SHARE_VIDEO;
+  selectors = {
+    OPEN_BTN: "#open-btn",
+    CLOSE_BTN: ".cancel-button"
+  };
 
   class TestContainerPage extends React.Component {
     render() {
       return <div>
-        <button id="open-btn" onClick={this.props.showDialog.bind(this, dialogName)}>Open Dialog</button>
+        <button
+          id="open-btn"
+          onClick={this.props.showDialog.bind(this, dialogName)}
+        >
+          Open Dialog
+        </button>
       </div>;
     }
   }
 
   class TestDialog extends React.Component {
     render() {
-      return <div>Fake Dialog</div>;
+      return (
+        <Dialog
+          title="Test Dialog"
+          id="test-dialog"
+          cancelText="Close"
+          submitText=""
+          noSubmit={true}
+          onCancel={this.props.hideDialog}
+          open={this.props.open}
+        >
+          Fake Dialog
+        </Dialog>
+      );
     }
   }
 
   const WrappedTestContainerPage = R.compose(
+    connect((state) => ({
+      commonUi: state.commonUi
+    })),
     withDialogs([
       {name: dialogName, component: TestDialog}
     ])
@@ -50,7 +77,7 @@ describe('Dialog higher-order component', () => {
       <Provider store={store}>
         <WrappedTestContainerPage
           dispatch={store.dispatch}
-          commonUi={{ ...INITIAL_UI_STATE, dialogVisibility: { [dialogName]: false }}}
+          commonUi={{...INITIAL_UI_STATE}}
         />
       </Provider>
     )
@@ -64,12 +91,25 @@ describe('Dialog higher-order component', () => {
     assert.isFunction(testDialog.props().hideDialog);
   });
 
-  it('should provide a function that lets the wrapped component launch the dialog', () => {
+  it('should provide a function that lets the wrapped component launch the dialog', async () => {
     let wrapper = renderTestComponentWithDialogs();
-    return listenForActions([SHOW_DIALOG], () => {
-      wrapper.find('#open-btn').simulate('click');
-    }).then((state) => {
-      assert.isTrue(state.commonUi.dialogVisibility[dialogName]);
+    let testDialog = wrapper.find("TestDialog");
+    assert.isFalse(testDialog.prop("open"));
+
+    return await listenForActions([SHOW_DIALOG], () => {
+      wrapper.find(selectors.OPEN_BTN).prop('onClick')();
+    }).then(() => {
+      assert.isTrue(testDialog.prop("open"));
+      assert.isTrue(testDialog.find("Dialog").prop("open"));
+    });
+  });
+
+  it('should provide a function that lets the wrapped component hide the dialog', async () => {
+    let wrapper = renderTestComponentWithDialogs();
+
+    await listenForActions([SHOW_DIALOG, HIDE_DIALOG], () => {
+      wrapper.find(selectors.OPEN_BTN).prop('onClick')();
+      wrapper.find("Dialog").prop('onCancel')();
     });
   });
 });

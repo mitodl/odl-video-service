@@ -6,28 +6,21 @@ import type { Dispatch } from "redux";
 import R from 'ramda';
 
 import Button from '../components/material/Button';
-import Dialog from '../components/material/Dialog';
 import Drawer from '../components/material/Drawer';
 import OVSToolbar from '../components/OVSToolbar';
 import Footer from '../components/Footer';
 import VideoPlayer from '../components/VideoPlayer';
-import Textfield from "../components/material/Textfield";
-import Textarea from "../components/material/Textarea";
 import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
+import ShareVideoDialog from '../components/dialogs/ShareVideoDialog';
+import { withDialogs } from '../components/dialogs/hoc';
 
 import { actions } from '../actions';
-import {
-  setShareDialogVisibility,
-  clearShareDialog
-} from '../actions/videoDetailUi';
 import { setDrawerOpen } from '../actions/commonUi';
-import { withDialogs } from '../components/dialogs/hoc';
-import { makeCollectionUrl, makeEmbedUrl } from '../lib/urls';
+import { makeCollectionUrl } from '../lib/urls';
 import { videoIsProcessing, videoHasError } from '../lib/video';
 import { DIALOGS, MM_DD_YYYY } from '../constants';
 
 import type { Video } from "../flow/videoTypes";
-import type { VideoDetailUIState } from "../reducers/videoDetailUi";
 import type { CommonUiState } from "../reducers/commonUi";
 
 class VideoDetailPage extends React.Component {
@@ -36,7 +29,6 @@ class VideoDetailPage extends React.Component {
     video: ?Video,
     videoKey: string,
     needsUpdate: boolean,
-    videoDetailUi: VideoDetailUIState,
     commonUi: CommonUiState,
     showDialog: Function,
     editable: boolean
@@ -56,16 +48,6 @@ class VideoDetailPage extends React.Component {
     if (needsUpdate) {
       dispatch(actions.videos.get(videoKey));
     }
-  };
-
-  openShareDialog = () => {
-    const {dispatch} = this.props;
-    dispatch(setShareDialogVisibility(true));
-  };
-
-  clearShareDialog = () => {
-    const { dispatch } = this.props;
-    dispatch(clearShareDialog());
   };
 
   setDrawerOpen = (open: boolean): void => {
@@ -93,11 +75,10 @@ class VideoDetailPage extends React.Component {
   };
 
   render() {
-    const { video, videoDetailUi, commonUi, editable, showDialog } = this.props;
+    const { video, commonUi, editable, showDialog } = this.props;
     if (!video) {
       return null;
     }
-    const videoShareUrl = `${window.location.origin}${makeEmbedUrl(video.key)}`;
     const formattedCreation = moment(video.created_at).format(MM_DD_YYYY);
     const collectionUrl = makeCollectionUrl(video.collection_key);
     return <div>
@@ -132,50 +113,28 @@ class VideoDetailPage extends React.Component {
               <span className="material-icons">edit</span> Edit
             </Button>
           }
-          <Button className="share mdc-button--raised"  onClick={this.openShareDialog}>
+          <Button
+            className="share mdc-button--raised"
+            onClick={showDialog.bind(this, DIALOGS.SHARE_VIDEO)}
+          >
             <span className="material-icons">share</span> Share
           </Button>
         </span>
       </div>
       <Footer />
-      <Dialog
-        open={videoDetailUi.shareDialog.visible}
-        title="Share this Video"
-        onCancel={this.clearShareDialog}
-        cancelText="Close"
-        noSubmit={true}
-        id="shareDialog"
-      >
-        <div className="mdc-form-field mdc-form-field--align-end">
-          <Textfield
-            readOnly
-            label="Video URL"
-            id="video-url"
-            value={videoShareUrl}
-          />
-          <Textarea
-            readOnly
-            label="Embed HTML"
-            id="video-embed-code"
-            rows="4"
-            value={`<iframe src="${videoShareUrl}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`}
-          />
-        </div>
-      </Dialog>
     </div>;
   }
 }
 
 const mapStateToProps = (state, ownProps) => {
   const { videoKey } = ownProps;
-  const { videos, videoDetailUi, commonUi } = state;
+  const { videos, commonUi } = state;
   const video = videos.data ? videos.data.get(videoKey) : null;
   const needsUpdate = !videos.processing && !videos.loaded;
 
   return {
     video,
     needsUpdate,
-    videoDetailUi,
     commonUi
   };
 };
@@ -183,6 +142,7 @@ const mapStateToProps = (state, ownProps) => {
 export default R.compose(
   connect(mapStateToProps),
   withDialogs([
-    {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog}
+    {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog},
+    {name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog}
   ])
 )(VideoDetailPage);

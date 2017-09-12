@@ -10,6 +10,7 @@ import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
 import Drawer from '../components/material/Drawer';
 import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
+import ShareVideoDialog from '../components/dialogs/ShareVideoDialog';
 import CollectionFormDialog from '../components/dialogs/CollectionFormDialog';
 import { withDialogs } from '../components/dialogs/hoc';
 
@@ -58,6 +59,12 @@ class CollectionDetailPage extends React.Component {
     showDialog(DIALOGS.EDIT_VIDEO);
   };
 
+  showShareVideoDialog = (videoKey: string) => {
+    const { dispatch, showDialog } = this.props;
+    dispatch(setSelectedVideoKey(videoKey));
+    showDialog(DIALOGS.SHARE_VIDEO);
+  };
+
   setDrawerOpen = (open: boolean): void => {
     const { dispatch } = this.props;
     dispatch(setDrawerOpen(open));
@@ -78,7 +85,8 @@ class CollectionDetailPage extends React.Component {
               video={video}
               key={video.key}
               isAdmin={isAdmin}
-              showDialog={this.showEditVideoDialog.bind(this, video.key)}
+              showEditDialog={this.showEditVideoDialog.bind(this, video.key)}
+              showShareDialog={this.showShareVideoDialog.bind(this, video.key)}
             />
           ), this)}
         </div>
@@ -165,6 +173,7 @@ export default R.compose(
   connect(mapStateToProps),
   withDialogs([
     {name: DIALOGS.NEW_COLLECTION, component: CollectionFormDialog},
-    {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog}
+    {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog},
+    {name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog}
   ])
 )(CollectionDetailPage);

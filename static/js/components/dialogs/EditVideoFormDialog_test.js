@@ -16,12 +16,8 @@ import {
   setEditVideoTitle,
   setEditVideoDesc,
 } from '../../actions/commonUi';
-import {
-  setSelectedVideoKey
-} from '../../actions/collectionUi';
-import {
-  INITIAL_UI_STATE
-} from '../../reducers/commonUi';
+import { setSelectedVideoKey } from '../../actions/collectionUi';
+import { INITIAL_UI_STATE } from '../../reducers/commonUi';
 import * as api from '../../lib/api';
 import { makeVideo } from "../../factories/video";
 import { makeCollection } from "../../factories/collection";
