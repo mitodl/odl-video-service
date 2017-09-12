@@ -7,7 +7,9 @@ import { makeVideoThumbnailUrl, makeVideoUrl } from "../lib/urls";
 import type { Video } from "../flow/videoTypes";
 
 type VideoCardProps = {
-  video: Video
+  video: Video,
+  isAdmin: boolean,
+  showDialog: Function
 }
 
 const VideoCard = (props: VideoCardProps) => (
@@ -20,8 +22,10 @@ const VideoCard = (props: VideoCardProps) => (
         <a href={makeVideoUrl(props.video.key)}>{props.video.title}</a>
       </h4>
       <div className="actions">
-        <i className="material-icons">share</i>
-        <i className="material-icons">mode_edit</i>
+        {
+          props.isAdmin &&
+          <a className="material-icons" onClick={props.showDialog}>mode_edit</a>
+        }
       </div>
     </div>
   </Card>

@@ -3,13 +3,13 @@ import type { Action } from '../flow/reduxTypes';
 
 import {
   INIT_COLLECTION_FORM,
-  CLEAR_COLLECTION_FORM,
   SET_COLLECTION_TITLE,
   SET_COLLECTION_DESC,
   SET_VIEW_CHOICE,
   SET_VIEW_LISTS,
   SET_ADMIN_CHOICE,
-  SET_ADMIN_LISTS
+  SET_ADMIN_LISTS,
+  SET_SELECTED_VIDEO_KEY
 } from '../actions/collectionUi';
 import { PERM_CHOICE_NONE } from '../lib/dialog';
 
@@ -22,7 +22,8 @@ export type CollectionUiState = {
     viewLists?: string,
     adminChoice: string,
     adminLists?: string,
-  }
+  },
+  selectedVideoKey: ?string
 };
 
 const INITIAL_COLLECTION_FORM_STATE = {
@@ -32,7 +33,8 @@ const INITIAL_COLLECTION_FORM_STATE = {
 };
 
 export const INITIAL_UI_STATE = {
-  collectionForm: INITIAL_COLLECTION_FORM_STATE
+  collectionForm: INITIAL_COLLECTION_FORM_STATE,
+  selectedVideoKey: null
 };
 
 const updateCollectionForm = (state: CollectionUiState, key: string, newValue: ?string) => ({
@@ -53,11 +55,6 @@ const reducer = (state: CollectionUiState = INITIAL_UI_STATE, action: Action<any
         ...action.payload
       }
     };
-  case CLEAR_COLLECTION_FORM:
-    return {
-      ...state,
-      collectionForm: INITIAL_COLLECTION_FORM_STATE
-    };
   case SET_COLLECTION_TITLE:
     return updateCollectionForm(state, 'title', action.payload);
   case SET_COLLECTION_DESC:
@@ -70,6 +67,8 @@ const reducer = (state: CollectionUiState = INITIAL_UI_STATE, action: Action<any
     return updateCollectionForm(state, 'adminChoice', action.payload);
   case SET_ADMIN_LISTS:
     return updateCollectionForm(state, 'adminLists', action.payload);
+  case SET_SELECTED_VIDEO_KEY:
+    return {...state, selectedVideoKey: action.payload};
   default:
     return state;
   }

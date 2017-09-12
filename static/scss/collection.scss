@@ -5,6 +5,8 @@ $video-card-width: 31%;
   background-color: $body-bg-color;
   padding: 30px;
   min-height: calc(100vh - 421px);
+  max-width: 1300px;
+  min-width: 800px;
 
   h2 {
     font-weight: 400;
@@ -12,10 +14,7 @@ $video-card-width: 31%;
 }
 
 .collection-list-content {
-
   .centered-content {
-    max-width: 1300px;
-    min-width: 800px;
     margin: 0 auto 100px auto;
   }
 
@@ -44,10 +43,7 @@ $video-card-width: 31%;
 }
 
 .collection-detail-content {
-
   .centered-content {
-    max-width: 1300px;
-    min-width: 800px;
     margin: 0 auto;
   }
 
@@ -104,6 +100,7 @@ $video-card-width: 31%;
         a {
           width: 100%;
           display: block;
+          font-size: 1px;
         }
 
         img {
@@ -112,12 +109,14 @@ $video-card-width: 31%;
       }
 
       .video-card-body {
-        padding: 16px 15px 27px 20px;
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 15px;
 
         h4 {
+          flex-shrink: 1;
           margin: 0;
-          padding: 0 5px 10px 0;
-          line-height: 1.3rem;
+          padding: 0 5px;
           overflow: hidden;
           font-weight: 400;
 
@@ -127,14 +126,19 @@ $video-card-width: 31%;
         }
 
         .actions {
-          display: none;
+          align-self: flex-end;
+          flex-wrap: nowrap;
+          flex-shrink: 0;
           margin: 0;
           padding: 0;
           color: #9a9a9a;
-          text-align: right;
 
           * {
             margin-left: 10px;
+          }
+
+          a {
+            cursor: pointer;
           }
         }
       }

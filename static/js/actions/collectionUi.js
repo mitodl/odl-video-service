@@ -6,9 +6,6 @@ export const qualifiedName = (name: string) => `COLLECTION_UI_${name}`;
 export const INIT_COLLECTION_FORM = qualifiedName('INIT_COLLECTION_FORM');
 export const initCollectionForm = createAction(INIT_COLLECTION_FORM);
 
-export const CLEAR_COLLECTION_FORM = qualifiedName('CLEAR_COLLECTION_FORM');
-export const clearCollectionForm = createAction(CLEAR_COLLECTION_FORM);
-
 export const SET_COLLECTION_TITLE = qualifiedName('SET_COLLECTION_TITLE');
 export const setCollectionTitle = createAction(SET_COLLECTION_TITLE);
 
@@ -26,3 +23,6 @@ export const setAdminChoice = createAction(SET_ADMIN_CHOICE);
 
 export const SET_ADMIN_LISTS = qualifiedName('SET_ADMIN_LISTS');
 export const setAdminLists = createAction(SET_ADMIN_LISTS);
+
+export const SET_SELECTED_VIDEO_KEY = qualifiedName('SET_SELECTED_VIDEO_KEY');
+export const setSelectedVideoKey = createAction(SET_SELECTED_VIDEO_KEY);
