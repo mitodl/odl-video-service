@@ -11,18 +11,12 @@ import VideoDetailPage from './VideoDetailPage';
 
 import * as api from '../lib/api';
 import { actions } from '../actions';
-import {
-  CLEAR_EDIT_DIALOG,
-  SET_EDIT_DIALOG_VISIBILITY,
-  SET_TITLE,
-  SET_DESCRIPTION,
-  SET_SHARE_DIALOG_VISIBILITY,
-  CLEAR_SHARE_DIALOG
-} from '../actions/videoDetailUi';
+import { SET_SHARE_DIALOG_VISIBILITY, CLEAR_SHARE_DIALOG } from '../actions/videoDetailUi';
 import rootReducer from '../reducers';
 import { makeVideo } from '../factories/video';
 import { makeCollectionUrl } from "../lib/urls";
 import {
+  DIALOGS,
   MM_DD_YYYY,
   VIDEO_STATUS_TRANSCODING,
   VIDEO_STATUS_ERROR,
@@ -31,7 +25,7 @@ import {
 import type { Video } from "../flow/videoTypes";
 
 describe('VideoDetailPage', () => {
-  let sandbox, store, getVideoStub, updateVideoStub, video: Video, listenForActions;
+  let sandbox, store, getVideoStub, video: Video, listenForActions;
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     store = configureTestStore(rootReducer);
@@ -39,7 +33,6 @@ describe('VideoDetailPage', () => {
     video = makeVideo();
 
     getVideoStub = sandbox.stub(api, 'getVideo').returns(Promise.resolve(video));
-    updateVideoStub = sandbox.stub(api, 'updateVideo').throws();
   });
 
   afterEach(() => {
@@ -111,56 +104,23 @@ describe('VideoDetailPage', () => {
     let wrapper = await renderPage({editable: true});
     assert.isFalse(wrapper.find(".edit").props().disabled);
     wrapper.find(".edit").props().onClick();
-    assert.isTrue(store.getState().videoDetailUi.editDialog.visible);
+    assert.isTrue(store.getState().commonUi.dialogVisibility[DIALOGS.EDIT_VIDEO]);
   });
 
-  it('edit button has no effect if video is not editable', async () => {
+  it('edit button does not appear if video is not editable', async () => {
     let wrapper = await renderPage();
-    assert.isTrue(wrapper.find(".edit").props().disabled);
-  });
-
-  it('edits the title and description and submits the data to trigger an update', async () => {
-    let wrapper = await renderPage({editable: true});
-
-    const newTitle = 'new title';
-    const newDescription = "omg this is the BEST VIDEO";
-    const expectedVideo = {
-      ...video,
-      title: newTitle,
-    };
-    updateVideoStub.returns(Promise.resolve(expectedVideo));
-    await listenForActions([
-      actions.videos.patch.requestType,
-      actions.videos.patch.successType,
-      SET_EDIT_DIALOG_VISIBILITY,
-      SET_DESCRIPTION,
-      SET_DESCRIPTION,
-      SET_TITLE,
-      SET_TITLE,
-      CLEAR_EDIT_DIALOG,
-    ], () => {
-      wrapper.find(".edit").props().onClick();
-      wrapper.find("#video-title").props().onChange({target: {value: newTitle}});
-      wrapper.find("#video-description").props().onChange({target: {value: newDescription}});
-      wrapper.find('Dialog').at(0).props().onAccept();
-    });
-
-    assert.deepEqual(store.getState().videos.data.get(expectedVideo.key), expectedVideo);
-    sinon.assert.calledWith(updateVideoStub, video.key, {
-      title: newTitle,
-      description: newDescription,
-    });
+    assert.isFalse(wrapper.find(".edit").exists());
   });
 
   it('show the share dialog', async () => {
     let wrapper = await renderPage({editable: true});
     await listenForActions([
       SET_SHARE_DIALOG_VISIBILITY,
-      CLEAR_SHARE_DIALOG,
+      CLEAR_SHARE_DIALOG
     ], () => {
-      wrapper.find(".share").props().onClick();
+      wrapper.find(".share").prop('onClick')();
       assert.equal(wrapper.find("#video-url").props().value, `http://fake/videos/${video.key}/embed/`);
-      wrapper.find("Dialog").at(1).props().onCancel();
+      wrapper.find("Dialog").filterWhere(n => n.prop('id') === 'shareDialog').prop('onCancel')();
     });
   });
 
@@ -170,7 +130,7 @@ describe('VideoDetailPage', () => {
     assert.equal(wrapper.find("#video-url").props().value, `http://fake/videos/${video.key}/embed/`);
     assert.isTrue(wrapper.find("#video-embed-code").props().value.startsWith(
       `<iframe src="http://fake/videos/${video.key}/embed/"`));
-    wrapper.find("Dialog").at(1).props().onCancel();
+    wrapper.find("Dialog").filterWhere(n => n.prop('id') === 'shareDialog').prop('onCancel')();
   });
 
   it('has a toolbar whose handler will dispatch an action to open the drawer', async () => {

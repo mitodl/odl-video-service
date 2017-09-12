@@ -98,4 +98,14 @@ describe('CollectionDetailPage', () => {
     assert.isTrue(store.getState().commonUi.drawerOpen);
   });
 
+  [
+    [false, false, 'user without admin permissions'],
+    [true, true, 'user with admin permissions']
+  ].forEach(([adminPermissionSetting, shouldShow, testDescriptor]) => {
+    it(`video controls ${expect(shouldShow)} be shown for ${testDescriptor}`, async () => {
+      collection.is_admin = adminPermissionSetting;
+      let wrapper = await renderPage();
+      assert.equal(wrapper.find("VideoCard").first().prop('isAdmin'), shouldShow);
+    });
+  });
 });

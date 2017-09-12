@@ -9,11 +9,13 @@ import OVSToolbar from '../components/OVSToolbar';
 import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
 import Drawer from '../components/material/Drawer';
-import NewCollection from '../components/dialogs/CollectionFormDialog';
+import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
+import CollectionFormDialog from '../components/dialogs/CollectionFormDialog';
 import { withDialogs } from '../components/dialogs/hoc';
 
 import { actions } from '../actions';
 import { setDrawerOpen } from '../actions/commonUi';
+import { setSelectedVideoKey } from '../actions/collectionUi';
 import { getActiveCollectionDetail } from '../lib/collection';
 import { DIALOGS } from '../constants';
 
@@ -50,6 +52,12 @@ class CollectionDetailPage extends React.Component {
     }
   };
 
+  showEditVideoDialog = (videoKey: string) => {
+    const { dispatch, showDialog } = this.props;
+    dispatch(setSelectedVideoKey(videoKey));
+    showDialog(DIALOGS.EDIT_VIDEO);
+  };
+
   setDrawerOpen = (open: boolean): void => {
     const { dispatch } = this.props;
     dispatch(setDrawerOpen(open));
@@ -61,13 +69,18 @@ class CollectionDetailPage extends React.Component {
       : null
   );
 
-  renderCollectionVideos = (videos: Array<Video>) => (
+  renderCollectionVideos = (videos: Array<Video>, isAdmin: boolean) => (
     videos.length > 0
       ? (
         <div className="videos">
           {videos.map(video => (
-            <VideoCard video={video} key={video.key} />
-          ))}
+            <VideoCard
+              video={video}
+              key={video.key}
+              isAdmin={isAdmin}
+              showDialog={this.showEditVideoDialog.bind(this, video.key)}
+            />
+          ), this)}
         </div>
       )
       : null
@@ -98,7 +111,7 @@ class CollectionDetailPage extends React.Component {
           }
         </div>
       </header>
-      { this.renderCollectionVideos(videos) }
+      { this.renderCollectionVideos(videos, collection.is_admin) }
     </div>;
   }
 
@@ -151,6 +164,7 @@ const mapStateToProps = (state, ownProps) => {
 export default R.compose(
   connect(mapStateToProps),
   withDialogs([
-    {name: DIALOGS.NEW_COLLECTION, component: NewCollection}
+    {name: DIALOGS.NEW_COLLECTION, component: CollectionFormDialog},
+    {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog}
   ])
 )(CollectionDetailPage);

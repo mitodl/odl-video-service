@@ -5,12 +5,8 @@ import { assert } from 'chai';
 
 import rootReducer from '../reducers';
 import {
-  clearEditDialog,
   clearShareDialog,
-  setEditDialogVisibility,
-  setShareDialogVisibility,
-  setTitle,
-  setDescription,
+  setShareDialogVisibility
 } from '../actions/videoDetailUi';
 import { createAssertReducerResultState } from "../util/test_utils";
 import { INITIAL_UI_STATE } from "./videoDetailUi";
@@ -20,31 +16,12 @@ describe('VideoDetailUi', () => {
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
-    assertReducerResultState = createAssertReducerResultState(store, state => state.videoDetailUi);
     store = configureTestStore(rootReducer);
+    assertReducerResultState = createAssertReducerResultState(store, state => state.videoDetailUi);
   });
 
   afterEach(() => {
     sandbox.restore();
-  });
-
-  it('should clear the edit dialog ui', () => {
-    store.dispatch(setTitle("something"));
-    store.dispatch(clearEditDialog());
-    assert.deepEqual(store.getState().videoDetailUi, INITIAL_UI_STATE);
-  });
-
-  it('sets the title', () => {
-    assertReducerResultState(setTitle, ui => ui.editDialog.title, '');
-  });
-
-  it('sets the description', () => {
-    assertReducerResultState(setDescription, ui => ui.editDialog.description, '');
-  });
-
-
-  it('sets the edit dialog visibility', () => {
-    assertReducerResultState(setEditDialogVisibility, ui => ui.editDialog.visible, false);
   });
 
   it('sets the share dialog visibility', () => {

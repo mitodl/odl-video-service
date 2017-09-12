@@ -3,6 +3,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment';
 import type { Dispatch } from "redux";
+import R from 'ramda';
 
 import Button from '../components/material/Button';
 import Dialog from '../components/material/Dialog';
@@ -12,20 +13,18 @@ import Footer from '../components/Footer';
 import VideoPlayer from '../components/VideoPlayer';
 import Textfield from "../components/material/Textfield";
 import Textarea from "../components/material/Textarea";
+import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
 
 import { actions } from '../actions';
 import {
-  setEditDialogVisibility,
-  setTitle,
-  setDescription,
-  clearEditDialog,
   setShareDialogVisibility,
   clearShareDialog
 } from '../actions/videoDetailUi';
 import { setDrawerOpen } from '../actions/commonUi';
+import { withDialogs } from '../components/dialogs/hoc';
 import { makeCollectionUrl, makeEmbedUrl } from '../lib/urls';
 import { videoIsProcessing, videoHasError } from '../lib/video';
-import { MM_DD_YYYY } from '../constants';
+import { DIALOGS, MM_DD_YYYY } from '../constants';
 
 import type { Video } from "../flow/videoTypes";
 import type { VideoDetailUIState } from "../reducers/videoDetailUi";
@@ -39,6 +38,7 @@ class VideoDetailPage extends React.Component {
     needsUpdate: boolean,
     videoDetailUi: VideoDetailUIState,
     commonUi: CommonUiState,
+    showDialog: Function,
     editable: boolean
   };
 
@@ -58,50 +58,15 @@ class VideoDetailPage extends React.Component {
     }
   };
 
-  openEditDialog = () => {
-    const { dispatch, video, editable } = this.props;
-    if (video && editable) {
-      dispatch(setTitle(video.title));
-      dispatch(setDescription(video.description));
-    }
-    dispatch(setEditDialogVisibility(true));
-  };
-
-  openshareDialog = () => {
+  openShareDialog = () => {
     const {dispatch} = this.props;
     dispatch(setShareDialogVisibility(true));
   };
 
-  submitForm = () => {
-    const { dispatch, videoKey, videoDetailUi } = this.props;
-    const { editDialog: {title, description} } = videoDetailUi;
-
-    dispatch(clearEditDialog());
-    dispatch(actions.videos.patch(videoKey, {
-      title,
-      description,
-    }));
-  };
-
-  clearEditDialog = () => {
-    const { dispatch } = this.props;
-    dispatch(clearEditDialog());
-  };
-
-  clearshareDialog = () => {
+  clearShareDialog = () => {
     const { dispatch } = this.props;
     dispatch(clearShareDialog());
   };
-
-  setTitle = (event: Object) => {
-    const { dispatch } = this.props;
-    dispatch(setTitle(event.target.value));
-  };
-
-  setDescription = (event: Object) => {
-    const { dispatch } = this.props;
-    dispatch(setDescription(event.target.value));
-  }
 
   setDrawerOpen = (open: boolean): void => {
     const { dispatch } = this.props;
@@ -128,7 +93,7 @@ class VideoDetailPage extends React.Component {
   };
 
   render() {
-    const { video, videoDetailUi, commonUi, editable } = this.props;
+    const { video, videoDetailUi, commonUi, editable, showDialog } = this.props;
     if (!video) {
       return null;
     }
@@ -157,41 +122,26 @@ class VideoDetailPage extends React.Component {
           Uploaded {formattedCreation}
         </span>
         <span className="actions">
-          <Button className="edit mdc-button--raised" onClick={this.openEditDialog} disabled={!editable}>
-            <span className="material-icons">edit</span> Edit
-          </Button>
-          <Button className="share mdc-button--raised"  onClick={this.openshareDialog}>
+          {
+            editable &&
+            <Button
+              className="edit mdc-button--raised"
+              onClick={showDialog.bind(this, DIALOGS.EDIT_VIDEO)}
+              disabled={!editable}
+            >
+              <span className="material-icons">edit</span> Edit
+            </Button>
+          }
+          <Button className="share mdc-button--raised"  onClick={this.openShareDialog}>
             <span className="material-icons">share</span> Share
           </Button>
         </span>
       </div>
       <Footer />
       <Dialog
-        open={videoDetailUi.editDialog.visible}
-        onAccept={this.submitForm}
-        onCancel={this.clearEditDialog}
-        title="Edit video details"
-        id="editDialog"
-      >
-        <div className="mdc-form-field mdc-form-field--align-end">
-          <Textfield
-            label="New title"
-            id="video-title"
-            onChange={this.setTitle}
-            value={videoDetailUi.editDialog.title}
-          />
-          <Textarea
-            label="Description"
-            id="video-description"
-            onChange={this.setDescription}
-            value={videoDetailUi.editDialog.description}
-          />
-        </div>
-      </Dialog>
-      <Dialog
         open={videoDetailUi.shareDialog.visible}
         title="Share this Video"
-        onCancel={this.clearshareDialog}
+        onCancel={this.clearShareDialog}
         cancelText="Close"
         noSubmit={true}
         id="shareDialog"
@@ -230,4 +180,9 @@ const mapStateToProps = (state, ownProps) => {
   };
 };
 
-export default connect(mapStateToProps)(VideoDetailPage);
+export default R.compose(
+  connect(mapStateToProps),
+  withDialogs([
+    {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog}
+  ])
+)(VideoDetailPage);
