@@ -49,7 +49,7 @@ class CollectionListPage extends React.Component {
 
     if (collections.length === 0) return null;
 
-    return <ul>
+    return <ul className="collections-list-ul">
       {collections.map((collection) => (
         <li key={collection.key}>
           <Link to={makeCollectionUrl(collection.key)}>
@@ -72,9 +72,9 @@ class CollectionListPage extends React.Component {
     const { commonUi } = this.props;
     const formLink = SETTINGS.editable
       ? (
-        <a href="/collection_form">
-          Create New Collection&nbsp;
-          <i className="material-icons">library_add</i>
+        <a className="button-link create-collection-button" href="/collection_form">
+          <i className="material-icons">add</i>
+          Create a Collection
         </a>
       )
       : null;
@@ -84,7 +84,7 @@ class CollectionListPage extends React.Component {
       <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
       <div className="collection-list-content">
         <div className="centered-content">
-          <h2>Collections</h2>
+          <h2 className="mdc-typography--title">Collections</h2>
           { this.renderCollectionLinks() }
           { formLink }
         </div>
