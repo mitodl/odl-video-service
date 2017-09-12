@@ -11,12 +11,10 @@ import VideoDetailPage from './VideoDetailPage';
 
 import * as api from '../lib/api';
 import { actions } from '../actions';
-import { SET_SHARE_DIALOG_VISIBILITY, CLEAR_SHARE_DIALOG } from '../actions/videoDetailUi';
 import rootReducer from '../reducers';
 import { makeVideo } from '../factories/video';
 import { makeCollectionUrl } from "../lib/urls";
 import {
-  DIALOGS,
   MM_DD_YYYY,
   VIDEO_STATUS_TRANSCODING,
   VIDEO_STATUS_ERROR,
@@ -100,37 +98,21 @@ describe('VideoDetailPage', () => {
     );
   });
 
-  it('opens the dialog when the edit button is clicked and video is editable', async () => {
-    let wrapper = await renderPage({editable: true});
-    assert.isFalse(wrapper.find(".edit").props().disabled);
-    wrapper.find(".edit").props().onClick();
-    assert.isTrue(store.getState().commonUi.dialogVisibility[DIALOGS.EDIT_VIDEO]);
+  it('includes the share button and dialog', async () => {
+    let wrapper = await renderPage();
+    assert.isTrue(wrapper.find(".share").exists());
+    assert.isTrue(wrapper.find("ShareVideoDialog").exists());
   });
 
-  it('edit button does not appear if video is not editable', async () => {
+  it('includes the edit button and dialog when the user has correct permissions', async () => {
+    let wrapper = await renderPage({editable: true});
+    assert.isTrue(wrapper.find(".edit").exists());
+    assert.isTrue(wrapper.find("EditVideoFormDialog").exists());
+  });
+
+  it("edit button doesn't appear if video is not editable", async () => {
     let wrapper = await renderPage();
     assert.isFalse(wrapper.find(".edit").exists());
-  });
-
-  it('show the share dialog', async () => {
-    let wrapper = await renderPage({editable: true});
-    await listenForActions([
-      SET_SHARE_DIALOG_VISIBILITY,
-      CLEAR_SHARE_DIALOG
-    ], () => {
-      wrapper.find(".share").prop('onClick')();
-      assert.equal(wrapper.find("#video-url").props().value, `http://fake/videos/${video.key}/embed/`);
-      wrapper.find("Dialog").filterWhere(n => n.prop('id') === 'shareDialog').prop('onCancel')();
-    });
-  });
-
-  it('share dialog shows the correct content', async () => {
-    let wrapper = await renderPage({editable: true});
-    wrapper.find(".share").props().onClick();
-    assert.equal(wrapper.find("#video-url").props().value, `http://fake/videos/${video.key}/embed/`);
-    assert.isTrue(wrapper.find("#video-embed-code").props().value.startsWith(
-      `<iframe src="http://fake/videos/${video.key}/embed/"`));
-    wrapper.find("Dialog").filterWhere(n => n.prop('id') === 'shareDialog').prop('onCancel')();
   });
 
   it('has a toolbar whose handler will dispatch an action to open the drawer', async () => {

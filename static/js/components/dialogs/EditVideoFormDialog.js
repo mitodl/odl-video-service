@@ -2,7 +2,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import type { Dispatch } from 'redux';
-import R from 'ramda';
 
 import Dialog from "../material/Dialog";
 import Textfield from "../material/Textfield";
@@ -10,6 +9,7 @@ import Textarea from "../material/Textarea";
 
 import * as uiActions from '../../actions/commonUi';
 import { actions } from '../../actions';
+import { getVideoWithKey } from '../../lib/collection';
 
 import type { CommonUiState } from "../../reducers/commonUi";
 import type { Video } from '../../flow/videoTypes';
@@ -131,10 +131,7 @@ const mapStateToProps = (state, ownProps) => {
     shouldUpdateCollection = false;
   }
   else if (collection) {
-    selectedVideo = R.compose(
-      R.find(R.propEq('key', selectedVideoKey)),
-      R.defaultTo([])
-    )(collection.videos);
+    selectedVideo = getVideoWithKey(collection, selectedVideoKey);
     shouldUpdateCollection = true;
   }
 

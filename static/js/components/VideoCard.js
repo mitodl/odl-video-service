@@ -9,7 +9,8 @@ import type { Video } from "../flow/videoTypes";
 type VideoCardProps = {
   video: Video,
   isAdmin: boolean,
-  showDialog: Function
+  showEditDialog: Function,
+  showShareDialog: Function
 }
 
 const VideoCard = (props: VideoCardProps) => (
@@ -24,8 +25,9 @@ const VideoCard = (props: VideoCardProps) => (
       <div className="actions">
         {
           props.isAdmin &&
-          <a className="material-icons" onClick={props.showDialog}>mode_edit</a>
+          <a className="material-icons edit-link" onClick={props.showEditDialog}>mode_edit</a>
         }
+        <a className="material-icons share-link" onClick={props.showShareDialog}>share</a>
       </div>
     </div>
   </Card>

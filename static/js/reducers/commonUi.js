@@ -30,7 +30,9 @@ export const INITIAL_EDIT_VIDEO_FORM_STATE = {
 
 export const INITIAL_UI_STATE = {
   dialogVisibility: {
-    [DIALOGS.NEW_COLLECTION]: false
+    [DIALOGS.NEW_COLLECTION]: false,
+    [DIALOGS.SHARE_VIDEO]: false,
+    [DIALOGS.EDIT_VIDEO]: false
   },
   drawerOpen: false,
   editVideoForm: INITIAL_EDIT_VIDEO_FORM_STATE

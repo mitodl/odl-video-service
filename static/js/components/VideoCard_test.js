@@ -9,11 +9,12 @@ import { expect } from "../util/test_utils";
 import { makeVideo } from "../factories/video";
 
 describe('VideoCard', () => {
-  let sandbox, showDialogStub, video;
+  let sandbox, showEditDialogStub, showShareDialogStub, video;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
-    showDialogStub = sandbox.stub();
+    showEditDialogStub = sandbox.stub();
+    showShareDialogStub = sandbox.stub();
     video = makeVideo();
   });
 
@@ -26,7 +27,8 @@ describe('VideoCard', () => {
       <VideoCard
         video={video}
         isAdmin={true}
-        showDialog={showDialogStub}
+        showEditDialog={showEditDialogStub}
+        showShareDialog={showShareDialogStub}
         { ...props }
       />
     )
@@ -39,13 +41,15 @@ describe('VideoCard', () => {
     it(`video controls ${expect(shouldShow)} be shown for ${testDescriptor}`, async () => {
       let isAdmin = adminPermissionSetting;
       let wrapper = renderComponent({isAdmin: isAdmin});
-      assert.equal(wrapper.find(".actions a").exists(), shouldShow);
+      assert.equal(wrapper.find(".actions a.edit-link").exists(), shouldShow);
     });
   });
 
-  it('handles an edit button click', () => {
+  it('handles an edit button and share button click', () => {
     let wrapper = renderComponent({isAdmin: true});
-    wrapper.find(".actions a").prop('onClick')();
-    sinon.assert.called(showDialogStub);
+    wrapper.find(".actions a.edit-link").prop('onClick')();
+    sinon.assert.called(showEditDialogStub);
+    wrapper.find(".actions a.share-link").prop('onClick')();
+    sinon.assert.called(showShareDialogStub);
   });
 });
