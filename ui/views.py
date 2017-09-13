@@ -80,22 +80,6 @@ class CollectionReactView(TemplateView):
 
 
 @method_decorator(login_required, name='dispatch')
-class CollectionFormView(TemplateView):
-    """View for a new collection form"""
-    template_name = "ui/collection_form.html"
-
-    def get_context_data(self, **kwargs):
-        if not ui_permissions.is_staff_or_superuser(self.request.user):
-            raise PermissionDenied
-        context = super().get_context_data(**kwargs)
-        form = forms.CollectionForm(initial={'owner': self.request.user.id})
-        context['form'] = form
-        context['success'] = form.is_valid()
-        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
-        return context
-
-
-@method_decorator(login_required, name='dispatch')
 class VideoDetail(TemplateView):
     """
     Details of a video

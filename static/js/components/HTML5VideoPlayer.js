@@ -2,10 +2,7 @@
 /* global videojs: true */
 import React from 'react';
 
-import videojs from 'video.js';
-// For this to work properly videojs must be available as a global
-global.videojs = videojs;
-require('videojs-contrib-hls');
+import { videojs } from '../lib/video';
 
 import { getHLSEncodedUrl } from "../lib/video";
 

@@ -1,3 +1,5 @@
+$item-color: rgba(255,255,255,.7);
+
 .mdc-temporary-drawer__drawer {
   background: $darkgray-bg;
   color: white;
@@ -8,7 +10,7 @@
 
   .mdc-list-item {
     font-size: .95rem;
-    color: rgba(255,255,255,.7);
+    color: $item-color;
     padding: 0 24px;
   }
 
@@ -27,7 +29,7 @@
 
     .mdc-list-item {
       font-size: .95rem;
-      color: rgba(255,255,255,.7);
+      color: $item-color;
       padding: 0 24px;
       font-weight: 400;
 
@@ -83,5 +85,25 @@
 .mdc-temporary-drawer {
   .mdc-list-item__start-detail {
     color: rgba(255,255,255,.5);
+  }
+
+  .create-collection-button {
+    border: 2px white solid;
+    border-radius: 5px;
+    padding: 5px;
+    margin: 20px;
+    color: $item-color;
+    background: $darkgray-bg;
+    cursor: pointer;
+    vertical-align: center;
+
+    .plus {
+      color: #fff;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, .1);
+      color: #fff;
+    }
   }
 }

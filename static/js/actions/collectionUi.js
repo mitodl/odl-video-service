@@ -1,5 +1,12 @@
 // @flow
 import { createAction } from 'redux-actions';
+import R from 'ramda';
+import type { Dispatch } from 'redux';
+
+import type { Collection } from "../flow/collectionTypes";
+import { showDialog } from './commonUi';
+import { DIALOGS } from "../constants";
+import { makeInitializedForm } from "../components/dialogs/CollectionFormDialog";
 
 export const qualifiedName = (name: string) => `COLLECTION_UI_${name}`;
 
@@ -26,3 +33,14 @@ export const setAdminLists = createAction(SET_ADMIN_LISTS);
 
 export const SET_SELECTED_VIDEO_KEY = qualifiedName('SET_SELECTED_VIDEO_KEY');
 export const setSelectedVideoKey = createAction(SET_SELECTED_VIDEO_KEY);
+
+export const SET_IS_NEW = qualifiedName('SET_IS_NEW');
+export const setIsNew = createAction(SET_IS_NEW);
+
+export const startNewCollectionDialog = (collection: ?Collection = null) =>
+  (dispatch: Dispatch) => {
+    const isNew = R.isNil(collection);
+    dispatch(setIsNew(isNew));
+    dispatch(initCollectionForm(makeInitializedForm(collection)));
+    dispatch(showDialog(DIALOGS.NEW_COLLECTION));
+  };

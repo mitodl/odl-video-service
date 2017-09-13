@@ -14,6 +14,10 @@ const _createSettings = () => ({
 
 global.SETTINGS = _createSettings();
 
+// workarounds for MDC
+global.cancelAnimationFrame = () => null;
+global.requestAnimationFrame = () => null;
+
 // polyfill for Object.entries
 import entries from 'object.entries';
 if (!Object.entries) {

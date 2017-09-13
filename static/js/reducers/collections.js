@@ -6,9 +6,17 @@ import type { Collection, CollectionList } from "../flow/collectionTypes";
 
 export const collectionsListEndpoint = {
   name:              "collectionsList",
-  verbs:             [GET],
+  verbs:             [GET, POST],
   initialState:      { ...INITIAL_STATE, data: [] },
-  getFunc:           (): Promise<CollectionList> => api.getCollections()
+  getFunc:           (): Promise<CollectionList> => api.getCollections(),
+  postFunc:          (collection: Collection) => api.createCollection(collection),
+  postSuccessHandler: (
+    payload: Collection,
+    data: Array<Collection>,
+  ) => {
+    // this should keep it sorted in reverse creation time order
+    return [payload, ...data];
+  }
 };
 
 export const collectionsEndpoint = {

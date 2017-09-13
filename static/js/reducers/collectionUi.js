@@ -9,38 +9,55 @@ import {
   SET_VIEW_LISTS,
   SET_ADMIN_CHOICE,
   SET_ADMIN_LISTS,
-  SET_SELECTED_VIDEO_KEY
+  SET_SELECTED_VIDEO_KEY,
+  SET_IS_NEW,
 } from '../actions/collectionUi';
 import { PERM_CHOICE_NONE } from '../lib/dialog';
 
+export type CollectionFormState = {
+  key: ?string,
+  title: ?string,
+  description: ?string,
+  viewChoice: string,
+  viewLists: ?string,
+  adminChoice: string,
+  adminLists: ?string,
+};
+
 export type CollectionUiState = {
-  collectionForm: {
-    key: ?string,
-    title?: string,
-    description?: string,
-    viewChoice: string,
-    viewLists?: string,
-    adminChoice: string,
-    adminLists?: string,
-  },
+  newCollectionForm: CollectionFormState,
+  editCollectionForm: CollectionFormState,
+  isNew: boolean,
   selectedVideoKey: ?string
 };
 
-const INITIAL_COLLECTION_FORM_STATE = {
-  key: null,
+export const INITIAL_COLLECTION_FORM_STATE = {
+  key: '',
+  title: '',
+  description: '',
   viewChoice: PERM_CHOICE_NONE,
-  adminChoice: PERM_CHOICE_NONE
+  viewLists: null,
+  adminChoice: PERM_CHOICE_NONE,
+  adminLists: null,
 };
 
 export const INITIAL_UI_STATE = {
-  collectionForm: INITIAL_COLLECTION_FORM_STATE,
+  newCollectionForm: INITIAL_COLLECTION_FORM_STATE,
+  editCollectionForm: INITIAL_COLLECTION_FORM_STATE,
+  isNew: true,
   selectedVideoKey: null
 };
 
+const getFormKey = (isNew: boolean): string => isNew ? "newCollectionForm" : "editCollectionForm";
+
+export const getCollectionForm = (
+  state: CollectionUiState
+): CollectionFormState => state[getFormKey(state.isNew)];
+
 const updateCollectionForm = (state: CollectionUiState, key: string, newValue: ?string) => ({
   ...state,
-  collectionForm: {
-    ...state.collectionForm,
+  [getFormKey(state.isNew)]: {
+    ...state[getFormKey(state.isNew)],
     [key]: newValue
   }
 });
@@ -50,8 +67,8 @@ const reducer = (state: CollectionUiState = INITIAL_UI_STATE, action: Action<any
   case INIT_COLLECTION_FORM:
     return {
       ...state,
-      collectionForm: {
-        ...state.collectionForm,
+      [getFormKey(state.isNew)]: {
+        ...state[getFormKey(state.isNew)],
         ...action.payload
       }
     };
@@ -69,6 +86,8 @@ const reducer = (state: CollectionUiState = INITIAL_UI_STATE, action: Action<any
     return updateCollectionForm(state, 'adminLists', action.payload);
   case SET_SELECTED_VIDEO_KEY:
     return {...state, selectedVideoKey: action.payload};
+  case SET_IS_NEW:
+    return { ...state, isNew: action.payload };
   default:
     return state;
   }

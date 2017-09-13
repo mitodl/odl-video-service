@@ -9,6 +9,7 @@ import * as fetchFuncs from "redux-hammock/django_csrf_fetch";
 import { makeCollection } from '../factories/collection';
 import { makeVideo } from '../factories/video';
 import {
+  createCollection,
   getCollections,
   getCollection,
   getVideo,
@@ -35,6 +36,18 @@ describe('api', () => {
     const result = await getCollections();
     sinon.assert.calledWith(fetchStub, `/api/v0/collections/`);
     assert.deepEqual(result, collections);
+  });
+
+  it("creates a new collection", async () => {
+    const newCollection = makeCollection();
+    fetchStub.returns(Promise.resolve(newCollection));
+
+    const result = await createCollection(newCollection);
+    sinon.assert.calledWith(fetchStub, `/api/v0/collections/`, {
+      method: 'POST',
+      body: JSON.stringify(newCollection)
+    });
+    assert.deepEqual(result, newCollection);
   });
 
   it("gets collection detail", async () => {

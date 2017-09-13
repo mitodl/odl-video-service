@@ -6,6 +6,7 @@ import { connect } from 'react-redux';
 import { MDCTemporaryDrawer } from '@material/drawer/dist/mdc.drawer';
 
 import { actions } from '../../actions';
+import * as collectionUiActions from '../../actions/collectionUi';
 import { makeCollectionUrl } from "../../lib/urls";
 import type { Collection } from "../../flow/collectionTypes";
 
@@ -20,20 +21,32 @@ type DrawerProps = {
 class Drawer extends React.Component {
   drawer: null;
   drawerRoot: null;
+  collapseItemButton: null;
+  createCollectionButton: null;
   props: DrawerProps;
 
   componentDidMount() {
-    const {onDrawerClose} = this.props;
+    const { onDrawerClose, dispatch } = this.props;
     this.drawer = new MDCTemporaryDrawer(this.drawerRoot);
     this.drawer.listen('MDCTemporaryDrawer:close', onDrawerClose);
     this.updateRequirements();
 
-    // Close drawer on button click; this is a necessary hack to get around MDC limitations
-    let item = document.querySelector('#collapse_item');
-    if (item) {
-      item.addEventListener('click', (evt: MouseEvent) => {
-        evt.preventDefault();
+    // Attach click listeners here; this is a necessary hack to get around MDC limitations
+    if (this.collapseItemButton) {
+      // make flow happy
+      this.collapseItemButton.addEventListener('click', (event: MouseEvent) => {
+        event.preventDefault();
         onDrawerClose();
+      }, false);
+    }
+
+    // this will be undefined if SETTINGS.editable is false
+    if (this.createCollectionButton) {
+      this.createCollectionButton.addEventListener('click', (event: MouseEvent) => {
+        event.preventDefault();
+
+        onDrawerClose();
+        dispatch(collectionUiActions.startNewCollectionDialog());
       }, false);
     }
   }
@@ -64,7 +77,9 @@ class Drawer extends React.Component {
     return <aside className="mdc-temporary-drawer mdc-typography" ref={div => this.drawerRoot = div}>
       <nav className="mdc-temporary-drawer__drawer">
         <nav id="nav-username" className="mdc-temporary-drawer__content mdc-list">
-          <a id="collapse_item" className="mdc-list-item mdc-link" href="#">
+          <a id="collapse_item" className="mdc-list-item mdc-link" href="#" ref={
+            node => this.collapseItemButton = node
+          }>
             {SETTINGS.user}
           </a>
         </nav>
@@ -83,6 +98,15 @@ class Drawer extends React.Component {
               { col.title }
             </a>
           )}
+          {
+            SETTINGS.editable ?
+              <span>
+                <button className="create-collection-button" ref={node => this.createCollectionButton = node}>
+                  <span className="plus">+</span> Create a Collection
+                </button>
+              </span>
+              : null
+          }
         </nav>
         <nav id="icon-with-text-demo" className="mdc-temporary-drawer__content mdc-list">
           <a className="mdc-list-item mdc-link" href="/logout/">
@@ -96,13 +120,14 @@ class Drawer extends React.Component {
 }
 
 const mapStateToProps = (state) => {
-  const { collectionsList } = state;
+  const { collectionsList, commonUi } = state;
   const collections = collectionsList.loaded ? collectionsList.data : [];
   const needsUpdate = !collectionsList.processing && !collectionsList.loaded;
 
   return {
     collections,
-    needsUpdate
+    needsUpdate,
+    commonUi
   };
 };
 

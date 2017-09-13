@@ -13,6 +13,9 @@ import Drawer from './Drawer';
 import { makeCollection } from '../../factories/collection';
 import { makeCollectionUrl } from "../../lib/urls";
 import type { Collection } from "../../flow/collectionTypes";
+import { SHOW_DIALOG } from "../../actions/commonUi";
+import { INIT_COLLECTION_FORM, SET_IS_NEW } from "../../actions/collectionUi";
+import { DIALOGS } from "../../constants";
 
 describe("Drawer", () => {
   let sandbox, store, collections: Array<Collection>, listenForActions, getCollectionsStub;
@@ -81,5 +84,39 @@ describe("Drawer", () => {
   it('fetches requirements on load', async () => {
     await renderDrawer();
     sinon.assert.calledWith(getCollectionsStub);
+  });
+
+  it('closes the drawer if the user is clicked', async () => {
+    let onDrawerCloseStub = sandbox.stub();
+    let wrapper = await renderDrawer({
+      onDrawerClose: onDrawerCloseStub
+    });
+    wrapper.find("#collapse_item").get(0).click();
+    sinon.assert.calledWith(onDrawerCloseStub);
+  });
+
+  it('hides the create collection button if SETTINGS.editable is false', async () => {
+    SETTINGS.editable = false;
+    let wrapper = await renderDrawer();
+    assert.lengthOf(wrapper.find(".create-collection-button"), 0);
+  });
+
+  it('opens the collection dialog when the create collection button is clicked', async () => {
+    SETTINGS.editable = true;
+    let onDrawerCloseStub = sandbox.stub();
+    let wrapper = await renderDrawer({
+      onDrawerClose: onDrawerCloseStub
+    });
+    let state = await listenForActions([
+      SHOW_DIALOG,
+      SET_IS_NEW,
+      INIT_COLLECTION_FORM,
+    ], () => {
+      wrapper.find(".create-collection-button").get(0).click();
+    });
+
+    assert.isFalse(state.commonUi.drawerOpen);
+    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.NEW_COLLECTION]);
+    sinon.assert.calledWith(onDrawerCloseStub);
   });
 });
