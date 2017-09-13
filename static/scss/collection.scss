@@ -2,7 +2,6 @@ $video-card-width: 31%;
 
 .collection-list-content,
 .collection-detail-content {
-  background-color: $body-bg-color;
   padding: 35px 0;
   min-height: calc(100vh - 379px);
   box-sizing: border-box;
@@ -42,7 +41,7 @@ $video-card-width: 31%;
     @include breakpoint(phone) {
       position: static;
       margin: 28px 0 0 20px;
-      display: block;
+      display: inline-block;
     }
   }
 
