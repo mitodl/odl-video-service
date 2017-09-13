@@ -97,8 +97,12 @@ class Collection(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL)
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
     admin_lists = models.ManyToManyField(MoiraList, blank=True, related_name='admin_lists')
+    created_at = models.DateTimeField(auto_now_add=True)
 
     objects = CollectionManager()
+
+    class Meta:
+        ordering = ['-created_at', ]
 
     def __str__(self):
         return self.title
