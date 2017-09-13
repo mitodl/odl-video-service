@@ -53,6 +53,10 @@
   dependencies:
     "@material/animation" "^0.3.1"
 
+"@material/layout-grid@^0.4.3":
+  version "0.4.3"
+  resolved "https://registry.yarnpkg.com/@material/layout-grid/-/layout-grid-0.4.3.tgz#fb56a81c3b3c48faa81f88493ebd7734159586d9"
+
 "@material/list@^0.2.14":
   version "0.2.14"
   resolved "https://registry.yarnpkg.com/@material/list/-/list-0.2.14.tgz#8388a07b042281ff425f7977942bb5326e762711"

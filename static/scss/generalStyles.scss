@@ -28,6 +28,13 @@ a, a:link, a:visited, a:active {
   text-decoration: none;
 }
 
+.material-icons {
+  color: $icon-color;
+  &:hover {
+    color: $icon-hover;
+  }
+}
+
 .fontgray {
   color: $fontgray;
 }
@@ -98,9 +105,10 @@ a.button-link {
   border-radius: 3px;
   font-weight: 400;
 
-  i {
+  i, i.material-icons {
     margin-right: 5px;
     position: relative;
     bottom: 2px;
+    color: #fff;
   }
 }

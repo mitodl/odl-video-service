@@ -49,20 +49,20 @@ class CollectionListPage extends React.Component {
 
     if (collections.length === 0) return null;
 
-    return <ul className="collections-list-ul">
+    return <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list">
       {collections.map((collection) => (
-        <li key={collection.key}>
-          <Link to={makeCollectionUrl(collection.key)}>
+        <li key={collection.key} className="mdc-list-item">
+          <span className="mdc-list-item__start-detail grey-bg">
+            <i className="material-icons" aria-hidden="true">folder</i>
+          </span>
+          <span className="mdc-list-item__text">
+            <Link to={makeCollectionUrl(collection.key)}>
             {collection.title}
-          </Link>
-          &nbsp;&nbsp;
-          <a
-            href={`/collection_upload/${collection.key}`}
-            target="_blank"
-            className="material-icons"
-          >
-            file_upload
-          </a>
+            </Link>
+            <span className="mdc-list-item__text__secondary">
+            20 Videos
+            </span>
+          </span>
         </li>
       ))}
     </ul>;
@@ -83,8 +83,8 @@ class CollectionListPage extends React.Component {
       <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
       <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
       <div className="collection-list-content">
-        <div className="centered-content">
-          <h2 className="mdc-typography--title">Collections</h2>
+        <div className="card centered-content">
+          <h2 className="mdc-typography--title">My Collections</h2>
           { this.renderCollectionLinks() }
           { formLink }
         </div>
