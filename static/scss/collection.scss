@@ -45,30 +45,31 @@ $video-card-width: 31%;
     }
   }
 
-.mdc-list-item__text a {
-  color: $fontblack;
+  .mdc-list-item__text a {
+    color: $fontblack;
 
-  &:hover {
-    color: $linkcolor;
-  }
-}
-
-.mdc-list-item {
-
-  .mdc-list-item__start-detail {
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .grey-bg {
-    background: $icons-grey-bg;
-    .material-icons {
-      color: #fff;
+    &:hover {
+      color: $linkcolor;
     }
   }
-}
+
+  .mdc-list-item {
+
+    .mdc-list-item__start-detail {
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .grey-bg {
+      background: $icons-grey-bg;
+
+      .material-icons {
+        color: #fff;
+      }
+    }
+  }
 
   .material-icons {
     width: 24px;
