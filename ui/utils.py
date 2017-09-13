@@ -2,7 +2,7 @@
 import logging
 import os
 from collections import namedtuple
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import lru_cache
 from urllib.parse import quote
 
@@ -11,7 +11,6 @@ from pytz import UTC
 import boto3
 from django.conf import settings
 
-from django.utils.dateparse import parse_datetime, parse_duration
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -28,6 +27,9 @@ MoiraUser = namedtuple('MoiraUser', 'username type')
 def get_moira_client():
     """
     Gets a moira client.
+
+    Returns:
+        Moira: A moira client
     """
     errors = []
     for required_secret_file in [settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE]:
@@ -50,8 +52,7 @@ def get_moira_user(user):
         user (django.contrib.auth.User): the Django user to return a Moira user for.
 
     Returns:
-        A namedtuple containing username and type
-
+        MoiraUser: A namedtuple containing username and type
     """
     if re.search(r'(@|\.)mit.edu$', user.email):
         return MoiraUser(user.email.split('@')[0], 'USER')
@@ -66,7 +67,7 @@ def user_moira_lists(user):
         user (django.contrib.auth.User): the Django user.
 
     Returns:
-        A list of moira lists the user has access to.
+        list: A list of moira lists the user has access to.
     """
     moira_user = get_moira_user(user)
     try:
@@ -87,7 +88,7 @@ def rsa_signer(message):
         message(bytes): The message to be signed
 
     Returns:
-        RSA signer
+        callable: RSA signer
     """
     if not settings.CLOUDFRONT_PRIVATE_KEY:
         raise RuntimeError("Missing required cloudfront key secret")
@@ -105,6 +106,13 @@ def get_cloudfront_signed_url(s3_key, expires):
     """
     Given an object key in S3, returns a signed URL to access that S3 object
     from CloudFront.
+
+    Args:
+        s3_key (str): An S3 key
+        expires (datetime.datetime): The expiration datetime
+
+    Returns:
+        str: A signed CloudFront URL
     """
     if not expires > datetime.now(tz=UTC):
         raise ValueError("Not useful to generate a signed URL that has already expired")
@@ -122,33 +130,15 @@ def get_cloudfront_signed_url(s3_key, expires):
     return signed_url
 
 
-def get_expiration(query_params, default_duration=timedelta(hours=2)):
-    """
-    Try to get an expiration time from query params
-    """
-    expires = query_params.get("expires")
-    if expires:
-        parsed = parse_datetime(expires)
-        if parsed:
-            return parsed
-    duration = query_params.get("duration")
-    if duration:
-        parsed = parse_duration(duration)
-        if parsed:
-            return datetime.utcnow() + parsed
-
-    return datetime.utcnow() + default_duration
-
-
 def get_et_job(job_id):
     """
     Get the status of an ElasticTranscode job
 
     Args:
-        job_id(str): ID of ElasticTranscode Job
+        job_id (str): ID of ElasticTranscode Job
 
     Returns:
-        JSON representation of job status/details
+        dict: JSON representation of job status/details
     """
     et = get_transcoder_client()
     job = et.read_job(Id=job_id)
@@ -159,23 +149,37 @@ def get_et_preset(preset_id):
     """
     Get the JSON configuration of an ElasticTranscode preset
     Args:
-        preset_id(str):
+        preset_id (str): A preset id
 
     Returns:
-        Preset configuration
+        dict: Preset configuration
     """
     et = get_transcoder_client()
     return et.read_preset(Id=preset_id)['Preset']
 
 
 def get_bucket(bucket_name):
-    """Get an S3 bucket by name"""
+    """
+    Get an S3 bucket by name
+
+    Args:
+        bucket_name (str): The name of an S3 bucket
+
+    Returns:
+        boto.s3.bucket.Bucket: An S3 bucket
+    """
     s3 = boto3.resource("s3")
     return s3.Bucket(bucket_name)
 
 
 def get_transcoder_client():
-    """Get an ElasticTranscoder client object"""
+    """
+    Get an ElasticTranscoder client object
+
+    Returns:
+        botocore.client.ElasticTranscoder:
+            An ElasticTranscoder client object
+    """
     return boto3.client('elastictranscoder', settings.AWS_REGION)
 
 
@@ -185,7 +189,7 @@ def write_to_file(filename, contents):
 
     Args:
         filename (str): The full-path filename to write to.
-        contents (str): What to write to the file.
+        contents (bytes): What to write to the file.
 
     """
     if not os.path.exists(os.path.dirname(filename)):

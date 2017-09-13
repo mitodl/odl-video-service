@@ -97,6 +97,9 @@ class VideoSerializer(serializers.ModelSerializer):
             'key',
             'created_at',
             'multiangle',
+            'status',
+            'videofile_set',
+            'videothumbnail_set',
         )
 
 
@@ -131,7 +134,6 @@ class CollectionSerializer(serializers.ModelSerializer):
             'created_at',
             'title',
             'description',
-            'owner',
             'videos',
             'view_lists',
             'admin_lists',
@@ -140,6 +142,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         read_only_fields = (
             'key',
             'created_at',
+            'videos',
             'is_admin',
         )
 
@@ -156,6 +159,12 @@ class CollectionListSerializer(serializers.ModelSerializer):
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
     )
 
+    def create(self, validated_data):
+        return super().create({
+            **validated_data,
+            "owner": self.context["request"].user
+        })
+
     def get_key(self, obj):
         """Custom getter for the key"""
         return obj.hexkey
@@ -167,7 +176,6 @@ class CollectionListSerializer(serializers.ModelSerializer):
             'created_at',
             'title',
             'description',
-            'owner',
             'view_lists',
             'admin_lists'
         )

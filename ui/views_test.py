@@ -330,24 +330,6 @@ def test_collection_viewset_create_as_staff(post_data, logged_in_apiclient):
     assert result.status_code == status.HTTP_201_CREATED
     assert 'videos' not in result.data
 
-    # user cannot create the collection if is not owner
-    other_user = UserFactory()
-    input_data = {
-        'owner': other_user.id,
-        'title': 'foo title',
-        'view_lists': [],
-        'admin_lists': []
-    }
-    assert client.post(url, input_data, format='json').status_code == status.HTTP_403_FORBIDDEN
-
-    # or if does not specify the owner id
-    input_data = {
-        'title': 'foo title',
-        'view_lists': [],
-        'admin_lists': []
-    }
-    assert client.post(url, input_data, format='json').status_code == status.HTTP_400_BAD_REQUEST
-
 
 def test_collection_viewset_create_as_superuser(post_data, logged_in_apiclient):
     """
@@ -360,24 +342,6 @@ def test_collection_viewset_create_as_superuser(post_data, logged_in_apiclient):
     result = client.post(url, post_data, format='json')
     assert result.status_code == status.HTTP_201_CREATED
     assert 'videos' not in result.data
-
-    # user can create the collection if is not owner
-    other_user = UserFactory()
-    input_data = {
-        'owner': other_user.id,
-        'view_lists': [],
-        'admin_lists': [],
-        'title': 'foo title'
-    }
-    assert client.post(url, input_data, format='json').status_code == status.HTTP_201_CREATED
-
-    # if does not specify the owner id it gets a different error
-    input_data = {
-        'title': 'foo title',
-        'view_lists': [],
-        'admin_lists': []
-    }
-    assert client.post(url, input_data, format='json').status_code == status.HTTP_400_BAD_REQUEST
 
 
 def test_collection_viewset_detail(mock_moira_client, logged_in_apiclient):
@@ -396,7 +360,6 @@ def test_collection_viewset_detail(mock_moira_client, logged_in_apiclient):
         assert video_data['key'] in videos
 
     result = client.put(url, {'title': 'foo title',
-                              'owner': user.id,
                               'view_lists': [],
                               'admin_lists': []},
                         format='json')
