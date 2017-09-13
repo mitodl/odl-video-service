@@ -22,6 +22,18 @@ export default class Dialog extends React.Component {
   // $FlowFixMe: Flow doesn't like the extra props that aren't part of mdc.dialog class
   props: DialogProps;
 
+  showMdc() {
+    if (this.dialog) {
+      this.dialog.show();
+    }
+  }
+
+  destroyMdc() {
+    if (this.dialog) {
+      this.dialog.destroy();
+    }
+  }
+
   componentDidMount() {
     const { open, onAccept, onCancel } = this.props;
 
@@ -33,25 +45,20 @@ export default class Dialog extends React.Component {
     // $FlowFixMe: Flow thinks this.dialog might be null
     this.dialog.listen('MDCDialog:cancel', onCancel);
     if (open) {
-      // $FlowFixMe: Flow thinks this.dialog might be null
-      this.dialog.show();
+      this.showMdc();
     }
   }
 
   componentWillUnmount() {
-    if (this.dialog) {
-      this.dialog.destroy();
-    }
+    this.destroyMdc();
   }
 
   componentWillReceiveProps(nextProps: DialogProps) {
-    if (this.dialog) {
-      if (this.props.open !== nextProps.open) {
-        if (nextProps.open) {
-          this.dialog.show();
-        } else {
-          this.dialog.close();
-        }
+    if (this.props.open !== nextProps.open) {
+      if (nextProps.open) {
+        this.showMdc();
+      } else {
+        this.destroyMdc();
       }
     }
   }
