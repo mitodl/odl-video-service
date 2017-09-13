@@ -169,7 +169,7 @@ def test_collection_for_for_owner():
     extra_collection = CollectionFactory()
     qset = Collection.for_owner(owner)
     assert qset.count() == 5
-    assert list(qset) == collections
+    assert list(qset) == sorted(collections, key=lambda x: x.created_at, reverse=True)
     assert extra_collection not in qset
 
 

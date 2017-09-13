@@ -128,6 +128,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         model = models.Collection
         fields = (
             'key',
+            'created_at',
             'title',
             'description',
             'owner',
@@ -138,6 +139,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             'key',
+            'created_at',
             'is_admin',
         )
 
@@ -162,6 +164,7 @@ class CollectionListSerializer(serializers.ModelSerializer):
         model = models.Collection
         fields = (
             'key',
+            'created_at',
             'title',
             'description',
             'owner',
@@ -170,6 +173,7 @@ class CollectionListSerializer(serializers.ModelSerializer):
         )
         read_only_fields = (
             'key',
+            'created_at',
         )
 
 

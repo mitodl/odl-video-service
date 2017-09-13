@@ -21,6 +21,7 @@ def test_collection_serializer():
     videos = [factories.VideoFactory(collection=collection) for _ in range(3)]
     expected = {
         'key': collection.hexkey,
+        'created_at': DateTimeField().to_representation(collection.created_at),
         'title': collection.title,
         'description': collection.description,
         'owner': collection.owner.id,
@@ -59,6 +60,7 @@ def test_collection_list_serializer():
     _ = [factories.VideoFactory(collection=collection) for _ in range(3)]
     expected = {
         'key': collection.hexkey,
+        'created_at': DateTimeField().to_representation(collection.created_at),
         'title': collection.title,
         'description': collection.description,
         'owner': collection.owner.id,
