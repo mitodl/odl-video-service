@@ -5,7 +5,6 @@ import logging
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.decorators import user_passes_test
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (
     BasePermission,
@@ -20,21 +19,30 @@ log = logging.getLogger(__name__)
 
 User = get_user_model()
 
-admin_required = user_passes_test(lambda u: u.is_staff)
-
 
 def has_common_lists(user, list_names):
     """
     Return true if the user's moira lists overlap with the collection's
+
+    Returns:
+        bool: True if there is any name in list_names which is in the user's moira lists
     """
+    if user.is_anonymous():
+        return False
     return len(set(user_moira_lists(user)).intersection(list_names)) > 0
 
 
 def is_staff_or_superuser(user):
     """
     Determine if a user is either a staff or super user
+
+    Args:
+        user (django.contrib.auth.models.User): A user
+
+    Returns:
+        bool: True if user is a superuser or staff
     """
-    return user and (user.is_superuser or user.is_staff)
+    return user.is_superuser or user.is_staff
 
 
 def has_view_permission(obj, request):
@@ -47,7 +55,7 @@ def has_view_permission(obj, request):
         request (HTTPRequest): The request object
 
     Returns:
-        True or False
+        bool: True if the user is a superuser, owner, or is on the view or admin moira list
 
     """
     if request.user == obj.owner or request.user.is_superuser:
@@ -55,9 +63,7 @@ def has_view_permission(obj, request):
     if request.method in SAFE_METHODS:
         lists = list(obj.view_lists.values_list('name', flat=True)) + \
                 list(obj.admin_lists.values_list('name', flat=True))
-        if lists and has_common_lists(request.user, lists):
-            return True
-        return False
+        return has_common_lists(request.user, lists)
     return has_admin_permission(obj, request)
 
 
@@ -71,23 +77,14 @@ def has_admin_permission(obj, request):
         request (HTTPRequest): The request object
 
     Returns:
-        True or False
-
+        bool: True if the user is a superuser or owner, or is on the admin moira list
     """
     if request.user == obj.owner or request.user.is_superuser:
         return True
     lists = list(obj.admin_lists.values_list('name', flat=True))
-    if lists and has_common_lists(request.user, lists):
+    if has_common_lists(request.user, lists):
         return True
     return False
-
-
-class IsAdminOrReadOnly(BasePermission):
-    """IsAdminOrReadOnly permission"""
-    def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            return True
-        return request.user and request.user.is_superuser
 
 
 class HasCollectionPermissions(IsAuthenticated):
@@ -100,9 +97,6 @@ class HasCollectionPermissions(IsAuthenticated):
         if request.method == 'POST':
             if not is_staff_or_superuser(request.user):
                 return False
-            owner = str(request.data.get('owner'))
-            if request.user.is_staff and owner and owner.isdigit():
-                return int(owner) == request.user.id
         return True
 
     def has_object_permission(self, request, view, obj):

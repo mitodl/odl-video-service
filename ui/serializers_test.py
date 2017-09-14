@@ -24,7 +24,6 @@ def test_collection_serializer():
         'created_at': DateTimeField().to_representation(collection.created_at),
         'title': collection.title,
         'description': collection.description,
-        'owner': collection.owner.id,
         'videos': serializers.VideoSerializer(videos, many=True).data,
         'view_lists': [],
         'admin_lists': [],
@@ -63,7 +62,6 @@ def test_collection_list_serializer():
         'created_at': DateTimeField().to_representation(collection.created_at),
         'title': collection.title,
         'description': collection.description,
-        'owner': collection.owner.id,
         'view_lists': [],
         'admin_lists': []
     }

@@ -2,10 +2,8 @@
 Models for UI app
 """
 import os
-import datetime
 from uuid import uuid4
 
-import pytz
 import boto3
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
@@ -273,18 +271,6 @@ class VideoS3(models.Model):
         return "https://{dist}.cloudfront.net/{key}".format(
             dist=distribution,
             key=self.s3_object_key
-        )
-
-    @property
-    def cloudfront_signed_url(self):
-        """
-        Get a signed Cloudfront URL with a default expiration date of 2 hours from
-        when this property is called.
-        """
-        expires = datetime.datetime.now(tz=pytz.UTC) + datetime.timedelta(hours=2)
-        return utils.get_cloudfront_signed_url(
-            s3_key=self.s3_object_key,
-            expires=expires,
         )
 
     def delete_from_s3(self):

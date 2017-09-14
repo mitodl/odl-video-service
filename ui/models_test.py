@@ -89,22 +89,6 @@ def test_video_aws_integration(videofile):
     assert cf_url.startswith("https://video-cf.cloudfront.net/")
 
 
-def test_signed_url_spaces(mocker):
-    """
-    Test that filename spaces are represented as '%20's in cloudfront link
-    """
-    mocker.patch(
-        'ui.utils.rsa_signer',
-        return_value=FAKE_RSA
-    )
-    videofile = VideoFileFactory(
-        s3_object_key="video with spaces.mp4",
-        bucket_name=settings.VIDEO_S3_BUCKET
-    )
-    signed_url = videofile.cloudfront_signed_url
-    assert 'video%20with%20spaces.mp4' in signed_url
-
-
 def test_video_transcode_key(videofile):
     """
     Test that the Video.transcode_key method returns expected results
