@@ -59,9 +59,6 @@ class CollectionListPage extends React.Component {
             <Link to={makeCollectionUrl(collection.key)}>
               {collection.title}
             </Link>
-            <span className="mdc-list-item__text__secondary">
-            20 Videos
-            </span>
           </span>
         </li>
       ))}
