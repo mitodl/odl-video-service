@@ -20,8 +20,6 @@ log = logging.getLogger(__name__)
 
 User = get_user_model()
 
-admin_required = user_passes_test(lambda u: u.is_staff)
-
 
 def has_common_lists(user, list_names):
     """
