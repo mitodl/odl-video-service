@@ -14,7 +14,11 @@
 .actions {
   margin-top: 20px;
 
-  button {
+  button.mdc-button {
     margin-right: 12px;
+
+    .material-icons {
+      color: #555;
+    }
   }
 }

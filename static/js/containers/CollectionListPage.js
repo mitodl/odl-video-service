@@ -49,20 +49,17 @@ class CollectionListPage extends React.Component {
 
     if (collections.length === 0) return null;
 
-    return <ul>
+    return <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list">
       {collections.map((collection) => (
-        <li key={collection.key}>
-          <Link to={makeCollectionUrl(collection.key)}>
-            {collection.title}
-          </Link>
-          &nbsp;&nbsp;
-          <a
-            href={`/collection_upload/${collection.key}`}
-            target="_blank"
-            className="material-icons"
-          >
-            file_upload
-          </a>
+        <li key={collection.key} className="mdc-list-item">
+          <span className="mdc-list-item__start-detail grey-bg">
+            <i className="material-icons" aria-hidden="true">folder</i>
+          </span>
+          <span className="mdc-list-item__text">
+            <Link to={makeCollectionUrl(collection.key)}>
+              {collection.title}
+            </Link>
+          </span>
         </li>
       ))}
     </ul>;
@@ -72,9 +69,9 @@ class CollectionListPage extends React.Component {
     const { commonUi } = this.props;
     const formLink = SETTINGS.editable
       ? (
-        <a href="/collection_form">
-          Create New Collection&nbsp;
-          <i className="material-icons">library_add</i>
+        <a className="button-link create-collection-button" href="/collection_form">
+          <i className="material-icons">add</i>
+          Create a Collection
         </a>
       )
       : null;
@@ -83,8 +80,8 @@ class CollectionListPage extends React.Component {
       <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
       <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
       <div className="collection-list-content">
-        <div className="centered-content">
-          <h2>Collections</h2>
+        <div className="card centered-content">
+          <h2 className="mdc-typography--title">My Collections</h2>
           { this.renderCollectionLinks() }
           { formLink }
         </div>
