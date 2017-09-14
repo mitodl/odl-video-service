@@ -39,6 +39,9 @@ def is_staff_or_superuser(user):
 
     Args:
         user (django.contrib.auth.models.User): A user
+
+    Returns:
+        bool: True if user is a superuser or staff
     """
     return user.is_superuser or user.is_staff
 
@@ -53,7 +56,7 @@ def has_view_permission(obj, request):
         request (HTTPRequest): The request object
 
     Returns:
-        True or False
+        bool: True if the user is a superuser, owner, or is on the view or admin moira list
 
     """
     if request.user == obj.owner or request.user.is_superuser:
@@ -61,9 +64,7 @@ def has_view_permission(obj, request):
     if request.method in SAFE_METHODS:
         lists = list(obj.view_lists.values_list('name', flat=True)) + \
                 list(obj.admin_lists.values_list('name', flat=True))
-        if has_common_lists(request.user, lists):
-            return True
-        return False
+        return has_common_lists(request.user, lists)
     return has_admin_permission(obj, request)
 
 
@@ -77,8 +78,7 @@ def has_admin_permission(obj, request):
         request (HTTPRequest): The request object
 
     Returns:
-        True or False
-
+        bool: True if the user is a superuser or owner, or is on the admin moira list
     """
     if request.user == obj.owner or request.user.is_superuser:
         return True
