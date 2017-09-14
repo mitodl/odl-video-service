@@ -119,7 +119,6 @@ def test_video_detail(logged_in_client, mocker):
     """Test video detail page"""
     client, user = logged_in_client
     videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
-    mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
     videofileHLS.video.status = 'Complete'
     url = reverse('video-detail', kwargs={'video_key': videofileHLS.video.hexkey})
     response = client.get(url)
@@ -145,7 +144,6 @@ def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=red
         video__status='Complete'
     )
     video = videofileHLS.video
-    mocker.patch('ui.utils.get_cloudfront_signed_url', return_value=videofileHLS.cloudfront_url)
     url = reverse('video-embed', kwargs={'video_key': video.hexkey})
     response = client.get(url)
     assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'

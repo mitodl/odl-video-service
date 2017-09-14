@@ -275,18 +275,6 @@ class VideoS3(models.Model):
             key=self.s3_object_key
         )
 
-    @property
-    def cloudfront_signed_url(self):
-        """
-        Get a signed Cloudfront URL with a default expiration date of 2 hours from
-        when this property is called.
-        """
-        expires = datetime.datetime.now(tz=pytz.UTC) + datetime.timedelta(hours=2)
-        return utils.get_cloudfront_signed_url(
-            s3_key=self.s3_object_key,
-            expires=expires,
-        )
-
     def delete_from_s3(self):
         """
         Delete the S3 object for this this thumbnail

@@ -102,34 +102,6 @@ def rsa_signer(message):
     return signer.finalize()
 
 
-def get_cloudfront_signed_url(s3_key, expires):
-    """
-    Given an object key in S3, returns a signed URL to access that S3 object
-    from CloudFront.
-
-    Args:
-        s3_key (str): An S3 key
-        expires (datetime.datetime): The expiration datetime
-
-    Returns:
-        str: A signed CloudFront URL
-    """
-    if not expires > datetime.now(tz=UTC):
-        raise ValueError("Not useful to generate a signed URL that has already expired")
-
-    if not settings.CLOUDFRONT_KEY_ID:
-        raise RuntimeError("Missing required env var: CLOUDFRONT_KEY_ID")
-    if not settings.VIDEO_CLOUDFRONT_DIST:
-        raise RuntimeError("Missing required env var: VIDEO_CLOUDFRONT_DIST")
-    url = "https://{dist}.cloudfront.net/{s3_key}".format(
-        dist=settings.VIDEO_CLOUDFRONT_DIST,
-        s3_key=quote(s3_key)
-    )
-    cloudfront_signer = CloudFrontSigner(settings.CLOUDFRONT_KEY_ID, rsa_signer)
-    signed_url = cloudfront_signer.generate_presigned_url(url, date_less_than=expires)
-    return signed_url
-
-
 def get_et_job(job_id):
     """
     Get the status of an ElasticTranscode job
