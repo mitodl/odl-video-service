@@ -2,10 +2,8 @@
 Models for UI app
 """
 import os
-import datetime
 from uuid import uuid4
 
-import pytz
 import boto3
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
