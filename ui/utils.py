@@ -74,30 +74,6 @@ def user_moira_lists(user):
         return []
 
 
-# http://boto3.readthedocs.io/en/stable/reference/services/cloudfront.html#generate-a-signed-url-for-amazon-cloudfront
-
-def rsa_signer(message):
-    """
-    Create an RSA signature for use in a signed URL
-
-    Args:
-        message(bytes): The message to be signed
-
-    Returns:
-        callable: RSA signer
-    """
-    if not settings.CLOUDFRONT_PRIVATE_KEY:
-        raise RuntimeError("Missing required cloudfront key secret")
-    private_key = serialization.load_pem_private_key(
-        settings.CLOUDFRONT_PRIVATE_KEY,
-        password=None,
-        backend=default_backend()
-    )
-    signer = private_key.signer(padding.PKCS1v15(), hashes.SHA1())
-    signer.update(message)
-    return signer.finalize()
-
-
 def get_et_job(job_id):
     """
     Get the status of an ElasticTranscode job
