@@ -90,14 +90,6 @@ def has_admin_permission(obj, request):
     return False
 
 
-class IsAdminOrReadOnly(BasePermission):
-    """IsAdminOrReadOnly permission"""
-    def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            return True
-        return request.user and request.user.is_superuser
-
-
 class HasCollectionPermissions(IsAuthenticated):
     """
     Permission to view, edit, or create collections
