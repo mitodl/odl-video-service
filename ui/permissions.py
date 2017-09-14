@@ -5,7 +5,6 @@ import logging
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.decorators import user_passes_test
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (
     BasePermission,
