@@ -54,10 +54,9 @@ class CollectionListPage extends React.Component {
     </ul>;
   }
 
-  openNewCollectionDialog = (e: MouseEvent) => {
+  openNewCollectionDialog = () => {
     const { dispatch } = this.props;
 
-    e.preventDefault();
     dispatch(collectionUiActions.showNewCollectionDialog());
   };
 
@@ -65,7 +64,7 @@ class CollectionListPage extends React.Component {
     const { commonUi } = this.props;
     const formLink = SETTINGS.editable
       ? (
-        <a href="#" className="button-link create-collection-button" onClick={this.openNewCollectionDialog}>
+        <a className="button-link create-collection-button" onClick={this.openNewCollectionDialog}>
           Create New Collection&nbsp;
           <i className="material-icons">library_add</i>
         </a>
