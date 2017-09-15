@@ -1,6 +1,10 @@
 // @flow
 import { fetchJSONWithCSRF } from 'redux-hammock/django_csrf_fetch';
 
+export type VideoUpdatePayload = {
+  description?: string,
+};
+
 export function getCollections() {
   return fetchJSONWithCSRF(`/api/v0/collections/`);
 }
@@ -16,18 +20,20 @@ export function updateCollection(collectionKey: string, payload: Object) {
   });
 }
 
-// import to allow mocking in tests
 export function getVideo(videoKey: string) {
   return fetchJSONWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/`);
 }
-
-export type VideoUpdatePayload = {
-  description?: string,
-};
 
 export function updateVideo(videoKey: string, payload: VideoUpdatePayload) {
   return fetchJSONWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/`, {
     method: 'PATCH',
     body: JSON.stringify(payload)
+  });
+}
+
+export function uploadVideo(collectionKey: string, files: Array<Object>) {
+  return fetchJSONWithCSRF(`/api/v0/upload_videos/`, {
+    method: 'POST',
+    body: JSON.stringify({'collection': collectionKey, 'files': files})
   });
 }

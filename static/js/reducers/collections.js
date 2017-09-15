@@ -1,9 +1,8 @@
 // @flow
-import { GET, PATCH, INITIAL_STATE } from "redux-hammock/constants";
+import { GET, PATCH, POST, INITIAL_STATE } from "redux-hammock/constants";
 
 import * as api from "../lib/api";
 import type { Collection, CollectionList } from "../flow/collectionTypes";
-
 
 export const collectionsListEndpoint = {
   name:              "collectionsList",
@@ -19,5 +18,14 @@ export const collectionsEndpoint = {
   getFunc: (collectionKey: string): Promise<Collection> => api.getCollection(collectionKey),
   patchFunc: (collectionKey: string, payload: Object): Promise<Collection> => (
     api.updateCollection(collectionKey, payload)
+  )
+};
+
+export const uploadVideoEndpoint = {
+  name: "uploadVideo",
+  verbs: [POST],
+  initialState: { ...INITIAL_STATE },
+  postFunc: (collectionKey: string, files: Array<Object>): Promise<Object> => (
+    api.uploadVideo(collectionKey, files)
   )
 };

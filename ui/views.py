@@ -42,7 +42,8 @@ def default_js_settings(request):
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": public_path(request),
         "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
-        "user": (request.user.email or request.user.username) if request.user.is_authenticated else "Not logged in"
+        "user": (request.user.email or request.user.username) if request.user.is_authenticated else "Not logged in",
+        "support_email_address": settings.EMAIL_SUPPORT,
     }
 
 
@@ -72,7 +73,8 @@ class CollectionReactView(TemplateView):
         context = super().get_context_data(**kwargs)
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
-            'editable': ui_permissions.is_staff_or_superuser(self.request.user)
+            'editable': ui_permissions.is_staff_or_superuser(self.request.user),
+            'dropbox_key': settings.DROPBOX_KEY
         })
         return context
 
@@ -89,21 +91,6 @@ class CollectionFormView(TemplateView):
         form = forms.CollectionForm(initial={'owner': self.request.user.id})
         context['form'] = form
         context['success'] = form.is_valid()
-        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
-        return context
-
-
-@method_decorator(login_required, name='dispatch')
-class Upload(TemplateView):
-    """Upload"""
-    template_name = "ui/upload.html"
-
-    def get_context_data(self, collection_key, **kwargs):  # pylint: disable=arguments-differ
-        context = super().get_context_data(**kwargs)
-
-        collection = get_object_or_404(Collection, key=collection_key)
-        context["collection"] = collection
-        context["dropbox_key"] = settings.DROPBOX_KEY
         context["js_settings_json"] = json.dumps(default_js_settings(self.request))
         return context
 

@@ -72,28 +72,6 @@ to OVS.</p>
     })
   }
 
-  let formSubmit = function(event) {
-    event.preventDefault();
-    let form = event.target;
-    let data = {
-      title: form.querySelector("[name=title]").value,
-      description: form.querySelector("[name=description]").value,
-    }
-    let headers = new Headers();
-    headers.append("X-CSRFToken", CSRF);
-    headers.append("Content-Type", "application/json");
-    fetch(form.action, {
-      method: "PUT",
-      headers: headers,
-      credentials: 'same-origin',
-      body: JSON.stringify(data),
-    }).then(function(response) {
-      if (response.ok) {
-        form.appendChild(document.createTextNode("✓"))
-      }
-    });
-  }
-
   let options = {
     success: function(files) {
       let headers = new Headers();

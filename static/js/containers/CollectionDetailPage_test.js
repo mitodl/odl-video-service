@@ -1,4 +1,5 @@
 // @flow
+/* global SETTINGS: false */
 import React from 'react';
 import sinon from 'sinon';
 import { mount } from 'enzyme';
@@ -17,6 +18,14 @@ import { expect } from "../util/test_utils";
 
 describe('CollectionDetailPage', () => {
   let sandbox, store, getCollectionStub, collection, listenForActions;
+  let selectors = {
+    TITLE: '.collection-detail-content h2',
+    DESCRIPTION: 'p.description',
+    MENU_BTN: '.menu-button',
+    SETTINGS_BTN: '#collection-settings-btn',
+    DROPBOX_BTN: '.dropbox-btn'
+  };
+
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     store = configureTestStore(rootReducer);
@@ -72,7 +81,7 @@ describe('CollectionDetailPage', () => {
     it(`description ${expect(shouldShow)} be shown with ${testDescriptor}`, async () => {
       collection.description = collectionDescription;
       let wrapper = await renderPage();
-      let descriptionEl = wrapper.find("p.description");
+      let descriptionEl = wrapper.find(selectors.DESCRIPTION);
       assert.equal(descriptionEl.exists(), shouldShow);
       if (shouldShow) {
         assert.equal(descriptionEl.text(), collectionDescription);
@@ -87,14 +96,14 @@ describe('CollectionDetailPage', () => {
     it(`video count ${expect(shouldShow)} be shown with ${testDescriptor}`, async () => {
       collection.videos = makeVideos(videoCount, collection.key);
       let wrapper = await renderPage();
-      let titleText = wrapper.find(".collection-detail-content h2").text();
+      let titleText = wrapper.find(selectors.TITLE).text();
       assert.equal(titleText.indexOf(`(${videoCount})`) >= 0, shouldShow);
     });
   });
 
   it('has a toolbar whose handler will dispatch an action to open the drawer', async () => {
     let wrapper = await renderPage();
-    wrapper.find(".menu-button").simulate('click');
+    wrapper.find(selectors.MENU_BTN).simulate('click');
     assert.isTrue(store.getState().commonUi.drawerOpen);
   });
 
@@ -102,10 +111,39 @@ describe('CollectionDetailPage', () => {
     [false, false, 'user without admin permissions'],
     [true, true, 'user with admin permissions']
   ].forEach(([adminPermissionSetting, shouldShow, testDescriptor]) => {
-    it(`video controls ${expect(shouldShow)} be shown for ${testDescriptor}`, async () => {
+    it(`${expect(shouldShow)} render VideoCard with admin flag for ${testDescriptor}`, async () => {
       collection.is_admin = adminPermissionSetting;
       let wrapper = await renderPage();
       assert.equal(wrapper.find("VideoCard").first().prop('isAdmin'), shouldShow);
     });
+  });
+
+  [
+    [false, false, 'user without admin permissions'],
+    [true, true, 'user with admin permissions']
+  ].forEach(([adminPermissionSetting, shouldShow, testDescriptor]) => {
+    it(`${expect(shouldShow)} show dropbox upload & settings buttons for ${testDescriptor}`, async () => {
+      collection.is_admin = adminPermissionSetting;
+      let wrapper = await renderPage();
+      assert.equal(wrapper.find(selectors.DROPBOX_BTN).exists(), shouldShow);
+      assert.equal(wrapper.find(selectors.SETTINGS_BTN).exists(), shouldShow);
+    });
+  });
+
+  it('uploads a video and reloads the collection page', async () => {
+    let uploadVideoStub = sandbox.stub(api, 'uploadVideo').returns(Promise.resolve({}));
+    let mockFiles = [{name: 'file1'}, {name: 'file2'}];
+    collection.is_admin = true;
+    let wrapper = await renderPage();
+
+    await listenForActions([
+      actions.uploadVideo.post.requestType,
+      actions.uploadVideo.post.successType,
+      actions.collections.get.requestType
+    ], () => {
+      wrapper.find('DropboxChooser').prop('success')(mockFiles);
+    });
+
+    sinon.assert.calledWith(uploadVideoStub, collection.key, mockFiles);
   });
 });

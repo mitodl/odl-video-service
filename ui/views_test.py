@@ -7,7 +7,6 @@ from uuid import uuid4
 
 import pytest
 from django.conf import settings
-from django.test.utils import override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -95,26 +94,6 @@ def test_index_anonymous(client):
     assert response.template_name == ['ui/index.html']
 
 
-def test_upload_anonymous(client):
-    """Test upload anonymous"""
-    collection = CollectionFactory()
-    url = reverse('upload', kwargs={'collection_key': collection.hexkey})
-    response = client.get(url)
-    assert response.status_code == status.HTTP_302_FOUND
-    assert response['Location'] == '/login/?next={}'.format(url)
-
-
-@override_settings(DROPBOX_KEY='dbkey')
-def test_dropbox_keys_in_context(logged_in_client):
-    """Test dropbox keys in context"""
-    client, user = logged_in_client
-    collection = CollectionFactory(owner=user)
-    response = client.get(reverse('upload', kwargs={'collection_key': collection.hexkey}))
-    assert response.status_code == status.HTTP_200_OK
-    assert response.context_data['dropbox_key'] == 'dbkey'
-    assert response.template_name == ['ui/upload.html']
-
-
 def test_video_detail(logged_in_client, mocker):
     """Test video detail page"""
     client, user = logged_in_client
@@ -129,7 +108,8 @@ def test_video_detail(logged_in_client, mocker):
         "public_path": '/static/bundles/',
         "videoKey": videofileHLS.video.hexkey,
         "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
-        "user": user.email
+        "user": user.email,
+        "support_email_address": settings.EMAIL_SUPPORT,
     }
 
 
@@ -153,7 +133,8 @@ def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=red
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": "/static/bundles/",
         "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
-        "user": user.email
+        "user": user.email,
+        "support_email_address": settings.EMAIL_SUPPORT,
     }
 
 

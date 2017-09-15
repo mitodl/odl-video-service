@@ -6,7 +6,10 @@ const _createSettings = () => ({
   videoKey: 'a_video_key',
   video: makeVideo('a_video_key'),
   editable: false,
-  user: ''
+  user: '',
+  dropbox_key: 'dropbox_key',
+  thumbnail_base_url: 'http://fake/',
+  support_email_address: 'support@example.com'
 });
 
 global.SETTINGS = _createSettings();

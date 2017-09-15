@@ -28,3 +28,11 @@ export type Video = {
   videothumbnail_set: Array<VideoThumbnail>,
   status:             string,
 };
+
+export type VideoUploadResult = {
+  [string]: {
+    s3key: string,
+    title: string,
+    task: string
+  }
+};

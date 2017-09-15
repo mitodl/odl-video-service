@@ -1,4 +1,5 @@
 // @flow
+/* global SETTINGS: false */
 import React from 'react';
 import { connect } from 'react-redux';
 import type { Dispatch } from 'redux';
@@ -9,10 +10,12 @@ import OVSToolbar from '../components/OVSToolbar';
 import Footer from '../components/Footer';
 import VideoCard from '../components/VideoCard';
 import Drawer from '../components/material/Drawer';
+import Button from "../components/material/Button";
 import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
 import ShareVideoDialog from '../components/dialogs/ShareVideoDialog';
 import CollectionFormDialog from '../components/dialogs/CollectionFormDialog';
 import { withDialogs } from '../components/dialogs/hoc';
+import DropboxChooser from 'react-dropbox-chooser';
 
 import { actions } from '../actions';
 import { setDrawerOpen } from '../actions/commonUi';
@@ -70,6 +73,14 @@ class CollectionDetailPage extends React.Component {
     dispatch(setDrawerOpen(open));
   };
 
+  handleUpload = async (chosenFiles: Array<Object>) => {
+    const { dispatch, collection } = this.props;
+    if (!collection) throw "Collection does not exist";
+    await dispatch(actions.uploadVideo.post(collection.key, chosenFiles));
+    // Reload the collection after the video upload request succeeds
+    dispatch(actions.collections.get(collection.key));
+  };
+
   renderCollectionDescription = (description: ?string) => (
     !_.isEmpty(description)
       ? <p className="description">{ description }</p>
@@ -112,10 +123,24 @@ class CollectionDetailPage extends React.Component {
         </div>
         <div className="tools">
           {
-            collection.is_admin &&
-            <a onClick={ showDialog.bind(this, DIALOGS.NEW_COLLECTION) }>
-              <i className="material-icons">settings</i>
-            </a>
+            collection.is_admin && [
+              <DropboxChooser
+                key="upload"
+                appKey={SETTINGS.dropbox_key}
+                success={this.handleUpload}
+                linkType="direct"
+                multiselect={true}
+                extensions={['video']}
+              >
+                <Button className="dropbox-btn mdc-button--unelevated mdc-ripple-upgraded">
+                  <img src="/static/images/dropbox_logo.png" alt="Dropbox Icon" />
+                  Add Videos from Dropbox
+                </Button>
+              </DropboxChooser>,
+              <a id="collection-settings-btn" key="settings" onClick={ showDialog.bind(this, DIALOGS.NEW_COLLECTION) }>
+                <i className="material-icons">settings</i>
+              </a>
+            ]
           }
         </div>
       </header>
