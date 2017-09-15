@@ -2,11 +2,10 @@
 
 import type { Video } from './videoTypes';
 
-type CollectionListItem = {
+export type CollectionListItem = {
   key:                string,
   title:              string,
   description:        ?string,
-  owner:              number,
   view_lists:         Array<string>,
   admin_lists:        Array<string>
 };
@@ -17,3 +16,20 @@ export type Collection = CollectionListItem & {
 };
 
 export type CollectionList = Array<CollectionListItem>;
+
+export type CollectionFormState = {
+  key: ?string,
+  title: ?string,
+  description: ?string,
+  viewChoice: string,
+  viewLists: ?string,
+  adminChoice: string,
+  adminLists: ?string,
+};
+
+export type CollectionUiState = {
+  newCollectionForm: CollectionFormState,
+  editCollectionForm: CollectionFormState,
+  isNew: boolean,
+  selectedVideoKey: ?string
+};

@@ -2,16 +2,20 @@
 /* global SETTINGS: false */
 
 import React from 'react';
+import R from 'ramda';
 import { connect } from 'react-redux';
 import type { Dispatch } from "redux";
 import { Link } from "react-router-dom";
 
-import { actions } from '../actions';
+import { DIALOGS } from "../constants";
+import * as commonUiActions from '../actions/commonUi';
+import * as collectionUiActions from '../actions/collectionUi';
 import OVSToolbar from '../components/OVSToolbar';
 import Drawer from '../components/material/Drawer';
 import Footer from '../components/Footer';
+import CollectionFormDialog from "../components/dialogs/CollectionFormDialog";
+import { withDialogs } from "../components/dialogs/hoc";
 import { makeCollectionUrl } from "../lib/urls";
-import { setDrawerOpen } from "../actions/commonUi";
 import type { CommonUiState } from "../reducers/commonUi";
 import type { Collection } from "../flow/collectionTypes";
 
@@ -24,24 +28,9 @@ class CollectionListPage extends React.Component {
     commonUi: CommonUiState
   };
 
-  componentDidMount() {
-    this.updateRequirements();
-  }
-
-  componentDidUpdate() {
-    this.updateRequirements();
-  }
-
-  updateRequirements = () => {
-    const { dispatch, needsUpdate } = this.props;
-    if (needsUpdate) {
-      dispatch(actions.collectionsList.get());
-    }
-  };
-
   setDrawerOpen = (open: boolean): void => {
     const { dispatch } = this.props;
-    dispatch(setDrawerOpen(open));
+    dispatch(commonUiActions.setDrawerOpen(open));
   };
 
   renderCollectionLinks() {
@@ -65,13 +54,19 @@ class CollectionListPage extends React.Component {
     </ul>;
   }
 
+  openNewCollectionDialog = () => {
+    const { dispatch } = this.props;
+
+    dispatch(collectionUiActions.showNewCollectionDialog());
+  };
+
   render() {
     const { commonUi } = this.props;
     const formLink = SETTINGS.editable
       ? (
-        <a className="button-link create-collection-button" href="/collection_form">
-          <i className="material-icons">add</i>
-          Create a Collection
+        <a className="button-link create-collection-button" onClick={this.openNewCollectionDialog}>
+          Create New Collection&nbsp;
+          <i className="material-icons">library_add</i>
         </a>
       )
       : null;
@@ -103,4 +98,9 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connect(mapStateToProps)(CollectionListPage);
+export default R.compose(
+  connect(mapStateToProps),
+  withDialogs([
+    {name: DIALOGS.COLLECTION_FORM, component: CollectionFormDialog},
+  ])
+)(CollectionListPage);

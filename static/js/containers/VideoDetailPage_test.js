@@ -12,6 +12,7 @@ import VideoDetailPage from './VideoDetailPage';
 import * as api from '../lib/api';
 import { actions } from '../actions';
 import rootReducer from '../reducers';
+import * as libVideo from '../lib/video';
 import { makeVideo } from '../factories/video';
 import { makeCollectionUrl } from "../lib/urls";
 import {
@@ -31,6 +32,9 @@ describe('VideoDetailPage', () => {
     video = makeVideo();
 
     getVideoStub = sandbox.stub(api, 'getVideo').returns(Promise.resolve(video));
+
+    // silence videojs warnings
+    sandbox.stub(libVideo, 'videojs');
   });
 
   afterEach(() => {

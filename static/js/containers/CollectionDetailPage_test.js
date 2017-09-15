@@ -11,10 +11,18 @@ import CollectionDetailPage from './CollectionDetailPage';
 
 import * as api from '../lib/api';
 import { actions } from '../actions';
+import {
+  INIT_COLLECTION_FORM,
+  SET_IS_NEW,
+  SET_SELECTED_VIDEO_KEY,
+} from "../actions/collectionUi";
+import { INIT_EDIT_VIDEO_FORM, SHOW_DIALOG } from "../actions/commonUi";
 import rootReducer from '../reducers';
 import { makeCollection } from "../factories/collection";
 import { makeVideos } from "../factories/video";
 import { expect } from "../util/test_utils";
+import { DIALOGS } from "../constants";
+import { makeInitializedForm } from "../lib/collection";
 
 describe('CollectionDetailPage', () => {
   let sandbox, store, getCollectionStub, collection, listenForActions;
@@ -22,7 +30,7 @@ describe('CollectionDetailPage', () => {
     TITLE: '.collection-detail-content h2',
     DESCRIPTION: 'p.description',
     MENU_BTN: '.menu-button',
-    SETTINGS_BTN: '#collection-settings-btn',
+    SETTINGS_BTN: '#edit-collection-button',
     DROPBOX_BTN: '.dropbox-btn'
   };
 
@@ -31,8 +39,10 @@ describe('CollectionDetailPage', () => {
     store = configureTestStore(rootReducer);
     listenForActions = store.createListenForActions();
     collection = makeCollection();
+    let collections = [makeCollection(), collection];
 
     getCollectionStub = sandbox.stub(api, 'getCollection').returns(Promise.resolve(collection));
+    sandbox.stub(api, 'getCollections').returns(Promise.resolve(collections));
   });
 
   afterEach(() => {
@@ -145,5 +155,55 @@ describe('CollectionDetailPage', () => {
     });
 
     sinon.assert.calledWith(uploadVideoStub, collection.key, mockFiles);
+  });
+
+  it('shows the edit video dialog', async () => {
+    let wrapper = await renderPage();
+    const state = await listenForActions([
+      SET_SELECTED_VIDEO_KEY,
+      SHOW_DIALOG,
+      INIT_EDIT_VIDEO_FORM,
+    ], () => {
+      wrapper.find("VideoCard").first().prop('showEditDialog')();
+    });
+
+    const video = collection.videos[0];
+    assert.equal(state.collectionUi.selectedVideoKey, video.key);
+    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.EDIT_VIDEO]);
+    assert.deepEqual(state.commonUi.editVideoForm, {
+      description: video.description,
+      key: video.key,
+      title: video.title,
+    });
+  });
+
+  it('shows the share video dialog', async () => {
+    let wrapper = await renderPage();
+    const state = await listenForActions([
+      SET_SELECTED_VIDEO_KEY,
+      SHOW_DIALOG,
+    ], () => {
+      wrapper.find("VideoCard").first().prop('showShareDialog')();
+    });
+    assert.equal(state.collectionUi.selectedVideoKey, collection.videos[0].key);
+    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.SHARE_VIDEO]);
+  });
+
+  it('clicks the edit collection button', async () => {
+    let wrapper = await renderPage();
+    let eventStub = {
+      preventDefault: sandbox.stub()
+    };
+    let state = await listenForActions([
+      INIT_COLLECTION_FORM,
+      SET_IS_NEW,
+      SHOW_DIALOG,
+    ], () => {
+      wrapper.find("#edit-collection-button").prop('onClick')(eventStub);
+    });
+    sinon.assert.calledWith(eventStub.preventDefault);
+    assert.isFalse(state.collectionUi.isNew);
+    assert.deepEqual(state.collectionUi.editCollectionForm, makeInitializedForm(collection));
+    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.COLLECTION_FORM]);
   });
 });

@@ -18,8 +18,8 @@ import { withDialogs } from '../components/dialogs/hoc';
 import DropboxChooser from 'react-dropbox-chooser';
 
 import { actions } from '../actions';
-import { setDrawerOpen } from '../actions/commonUi';
-import { setSelectedVideoKey } from '../actions/collectionUi';
+import * as commonUiActions from '../actions/commonUi';
+import * as collectionUiActions from '../actions/collectionUi';
 import { getActiveCollectionDetail } from '../lib/collection';
 import { DIALOGS } from '../constants';
 
@@ -58,19 +58,19 @@ class CollectionDetailPage extends React.Component {
 
   showEditVideoDialog = (videoKey: string) => {
     const { dispatch, showDialog } = this.props;
-    dispatch(setSelectedVideoKey(videoKey));
+    dispatch(collectionUiActions.setSelectedVideoKey(videoKey));
     showDialog(DIALOGS.EDIT_VIDEO);
   };
 
   showShareVideoDialog = (videoKey: string) => {
     const { dispatch, showDialog } = this.props;
-    dispatch(setSelectedVideoKey(videoKey));
+    dispatch(collectionUiActions.setSelectedVideoKey(videoKey));
     showDialog(DIALOGS.SHARE_VIDEO);
   };
 
   setDrawerOpen = (open: boolean): void => {
     const { dispatch } = this.props;
-    dispatch(setDrawerOpen(open));
+    dispatch(commonUiActions.setDrawerOpen(open));
   };
 
   handleUpload = async (chosenFiles: Array<Object>) => {
@@ -105,9 +105,19 @@ class CollectionDetailPage extends React.Component {
       : null
   );
 
-  renderBody(collection: Collection) {
-    const { showDialog } = this.props;
+  showEditCollectionDialog = (e: MouseEvent) => {
+    const { dispatch, collection } = this.props;
 
+    e.preventDefault();
+    if (!collection) {
+      // make flow happy
+      throw new Error("Expected collection to exist");
+    }
+
+    dispatch(collectionUiActions.showEditCollectionDialog(collection));
+  };
+
+  renderBody(collection: Collection) {
     const videos = collection.videos || [];
     const collectionTitle = videos.length === 0
       ? collection.title
@@ -137,7 +147,7 @@ class CollectionDetailPage extends React.Component {
                   Add Videos from Dropbox
                 </Button>
               </DropboxChooser>,
-              <a id="collection-settings-btn" key="settings" onClick={ showDialog.bind(this, DIALOGS.NEW_COLLECTION) }>
+              <a id="edit-collection-button" key="settings" onClick={ this.showEditCollectionDialog }>
                 <i className="material-icons">settings</i>
               </a>
             ]
@@ -197,7 +207,7 @@ const mapStateToProps = (state, ownProps) => {
 export default R.compose(
   connect(mapStateToProps),
   withDialogs([
-    {name: DIALOGS.NEW_COLLECTION, component: CollectionFormDialog},
+    {name: DIALOGS.COLLECTION_FORM, component: CollectionFormDialog},
     {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog},
     {name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog}
   ])

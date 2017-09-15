@@ -3,7 +3,6 @@ import React from 'react';
 import { connect } from 'react-redux';
 import type { Dispatch } from 'redux';
 import R from 'ramda';
-import _ from 'lodash';
 
 import Radio from "../material/Radio";
 import Dialog from "../material/Dialog";
@@ -13,59 +12,27 @@ import Textarea from "../material/Textarea";
 import * as uiActions from '../../actions/collectionUi';
 import { actions } from '../../actions';
 import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from '../../lib/dialog';
+import { getCollectionForm } from '../../lib/collection';
 
-import type { CollectionUiState } from "../../reducers/collectionUi";
-import type { Collection } from '../../flow/collectionTypes';
+import type {
+  CollectionFormState,
+  CollectionUiState,
+  Collection,
+} from '../../flow/collectionTypes';
+import {makeCollectionUrl} from "../../lib/urls";
 
 type DialogProps = {
   dispatch: Dispatch,
+  history: Object,
   collectionUi: CollectionUiState,
   collection: ?Collection,
+  collectionForm: CollectionFormState,
   open: boolean,
   hideDialog: Function,
 }
 
 class CollectionFormDialog extends React.Component {
   props: DialogProps;
-
-  componentDidMount() {
-    this.checkCollectionForm();
-  }
-
-  componentDidUpdate() {
-    this.checkCollectionForm();
-  }
-
-  checkCollectionForm() {
-    const {
-      open,
-      collection,
-      collectionUi: { collectionForm }
-    } = this.props;
-    if (open && collection && collection.key !== collectionForm.key) {
-      this.initializeFormWithCollection(collection);
-    }
-  }
-
-  initializeFormWithCollection(collection: Collection) {
-    const { dispatch } = this.props;
-
-    let viewChoice = collection.view_lists.length === 0
-      ? PERM_CHOICE_NONE
-      : PERM_CHOICE_LISTS;
-    let adminChoice = collection.admin_lists.length === 0
-      ? PERM_CHOICE_NONE
-      : PERM_CHOICE_LISTS;
-    dispatch(uiActions.initCollectionForm({
-      key: collection.key,
-      title: collection.title,
-      description: collection.description,
-      viewChoice: viewChoice,
-      viewLists: _.join(collection.view_lists, ','),
-      adminChoice: adminChoice,
-      adminLists: _.join(collection.admin_lists, ',')
-    }));
-  }
 
   setCollectionTitle = (event: Object) => {
     const { dispatch } = this.props;
@@ -78,14 +45,14 @@ class CollectionFormDialog extends React.Component {
   };
 
   setCollectionViewPermChoice = (choice: string) => {
-    const { dispatch, collectionUi: { collectionForm } } = this.props;
+    const { dispatch, collectionForm } = this.props;
     if (choice !== collectionForm.viewChoice) {
       dispatch(uiActions.setViewChoice(choice));
     }
   };
 
   setCollectionAdminPermChoice = (choice: string) => {
-    const { dispatch, collectionUi: { collectionForm } } = this.props;
+    const { dispatch, collectionForm } = this.props;
     if (choice !== collectionForm.adminChoice) {
       dispatch(uiActions.setAdminChoice(choice));
     }
@@ -109,25 +76,30 @@ class CollectionFormDialog extends React.Component {
     dispatch(uiActions.setAdminLists(event.target.value));
   };
 
-  submitForm = () => {
+  submitForm = async () => {
     const {
       dispatch,
+      history,
       hideDialog,
-      collectionUi: { collectionForm }
+      collectionUi: { isNew },
+      collectionForm,
     } = this.props;
 
-    let patchData = {
+    const payload = {
       title: collectionForm.title,
       description: collectionForm.description,
       view_lists: this.calculateListPermissionValue(collectionForm.viewChoice, collectionForm.viewLists),
       admin_lists: this.calculateListPermissionValue(collectionForm.adminChoice, collectionForm.adminLists)
     };
-    dispatch(actions.collections.patch(collectionForm.key, patchData)).then(
-      (collection) => {
-        hideDialog();
-        this.initializeFormWithCollection(collection);
-      }
-    );
+
+    if (isNew) {
+      let collection = await dispatch(actions.collectionsList.post(payload));
+      history.push(makeCollectionUrl(collection.key));
+    } else {
+      await dispatch(actions.collections.patch(collectionForm.key, payload));
+    }
+    hideDialog();
+    dispatch(uiActions.clearCollectionForm());
   };
 
   calculateListPermissionValue = (choice: string, listsInput: ?string): Array<string> => (
@@ -140,12 +112,12 @@ class CollectionFormDialog extends React.Component {
     const {
       open,
       hideDialog,
-      collection,
-      collectionUi: { collectionForm }
+      collectionForm,
+      collectionUi: { isNew },
     } = this.props;
 
-    let title = collection ? "Edit Collection" : "Create a New Collection";
-    let submitText = collection ? "Save" : "Create Collection";
+    const title = isNew ? "Create a New Collection" : "Edit Collection";
+    const submitText = isNew ? "Create Collection" : "Save";
 
     return (
       <Dialog
@@ -236,8 +208,10 @@ class CollectionFormDialog extends React.Component {
 const mapStateToProps = (state) => {
   const { collectionUi } = state;
 
+  const collectionForm = getCollectionForm(collectionUi);
   return {
-    collectionUi
+    collectionUi,
+    collectionForm,
   };
 };
 
