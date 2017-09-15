@@ -28,7 +28,6 @@ import {
   showEditCollectionDialog, CLEAR_COLLECTION_FORM,
 } from '../../actions/collectionUi';
 import {
-  getCollectionForm,
   INITIAL_UI_STATE,
 } from '../../reducers/collectionUi';
 import {
@@ -36,6 +35,7 @@ import {
   PERM_CHOICE_NONE,
 } from '../../lib/dialog';
 import * as api from '../../lib/api';
+import { getCollectionForm } from '../../lib/collection';
 import { makeCollection } from "../../factories/collection";
 
 describe('CollectionFormDialog', () => {

@@ -17,8 +17,9 @@ import {
 import rootReducer from '../reducers';
 import { INITIAL_COLLECTION_FORM_STATE } from '../reducers/collectionUi';
 import { PERM_CHOICE_NONE } from '../lib/dialog';
+import { getCollectionForm } from "../lib/collection";
 import { createAssertReducerResultState } from "../util/test_utils";
-import { getCollectionForm, INITIAL_UI_STATE } from "./collectionUi";
+import { INITIAL_UI_STATE } from "./collectionUi";
 
 describe('collectionUi', () => {
   let assertReducerResultState, store;
