@@ -72,7 +72,7 @@ describe('CollectionFormDialog', () => {
 
 
   for (const isNew of [true, false]) {
-    describe(`isNew is ${String(isNew)}`, () => {
+    describe(`with isNew=${String(isNew)}`, () => {
       beforeEach(() => {
         if (isNew) {
           store.dispatch(showNewCollectionDialog());
