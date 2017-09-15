@@ -93,13 +93,11 @@ class CollectionFormDialog extends React.Component {
 
     if (collectionUi.isNew) {
       await dispatch(actions.collectionsList.post(payload));
-      hideDialog();
-      dispatch(uiActions.initCollectionForm(makeInitializedForm()));
     } else {
-      const collection = await dispatch(actions.collections.patch(collectionForm.key, payload));
-      hideDialog();
-      dispatch(uiActions.initCollectionForm(makeInitializedForm(collection)));
+      await dispatch(actions.collections.patch(collectionForm.key, payload));
     }
+    hideDialog();
+    dispatch(uiActions.clearCollectionForm());
   };
 
   calculateListPermissionValue = (choice: string, listsInput: ?string): Array<string> => (

@@ -11,6 +11,7 @@ import {
   SET_ADMIN_LISTS,
   SET_SELECTED_VIDEO_KEY,
   SET_IS_NEW,
+  CLEAR_COLLECTION_FORM,
 } from '../actions/collectionUi';
 import { PERM_CHOICE_NONE } from '../lib/dialog';
 
@@ -88,6 +89,8 @@ const reducer = (state: CollectionUiState = INITIAL_UI_STATE, action: Action<any
     return {...state, selectedVideoKey: action.payload};
   case SET_IS_NEW:
     return { ...state, isNew: action.payload };
+  case CLEAR_COLLECTION_FORM:
+    return INITIAL_UI_STATE;
   default:
     return state;
   }

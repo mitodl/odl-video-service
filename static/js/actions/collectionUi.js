@@ -36,6 +36,9 @@ export const setSelectedVideoKey = createAction(SET_SELECTED_VIDEO_KEY);
 export const SET_IS_NEW = qualifiedName('SET_IS_NEW');
 export const setIsNew = createAction(SET_IS_NEW);
 
+export const CLEAR_COLLECTION_FORM = qualifiedName('CLEAR_COLLECTION_FORM');
+export const clearCollectionForm = createAction(CLEAR_COLLECTION_FORM);
+
 export const showNewCollectionDialog = () =>
   (dispatch: Dispatch) => {
     dispatch(setIsNew(true));

@@ -26,7 +26,7 @@ import {
   SET_VIEW_LISTS,
   INIT_COLLECTION_FORM,
   showNewCollectionDialog,
-  showEditCollectionDialog,
+  showEditCollectionDialog, CLEAR_COLLECTION_FORM,
 } from '../../actions/collectionUi';
 import {
   getCollectionForm,
@@ -120,14 +120,14 @@ describe('CollectionFormDialog', () => {
           expectedActionTypes = [
             actions.collectionsList.post.requestType,
             actions.collectionsList.post.successType,
-            INIT_COLLECTION_FORM,
+            CLEAR_COLLECTION_FORM,
           ];
         } else {
           apiStub = sandbox.stub(api, 'updateCollection').returns(Promise.resolve(collection));
           expectedActionTypes = [
             actions.collections.patch.requestType,
             actions.collections.patch.successType,
-            INIT_COLLECTION_FORM,
+            CLEAR_COLLECTION_FORM,
           ];
         }
 
@@ -149,12 +149,7 @@ describe('CollectionFormDialog', () => {
           sinon.assert.calledWith(apiStub, collection.key, expectedRequestPayload);
         }
         sinon.assert.calledWith(hideDialogStub);
-
-        let expectedForm = isNew ? makeInitializedForm() : makeInitializedForm(collection);
-
-        // hasn't changed, and form is reverted to initial state
-        assert.equal(store.getState().collectionUi.isNew, isNew);
-        assert.deepEqual(getCollectionForm(store.getState().collectionUi), expectedForm);
+        assert.isTrue(store.getState().collectionUi.isNew);
       });
     });
   }

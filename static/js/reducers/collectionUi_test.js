@@ -12,12 +12,13 @@ import {
   setViewChoice,
   setViewLists,
   setIsNew,
+  clearCollectionForm,
 } from '../actions/collectionUi';
 import rootReducer from '../reducers';
 import { INITIAL_COLLECTION_FORM_STATE } from '../reducers/collectionUi';
 import { PERM_CHOICE_NONE } from '../lib/dialog';
 import { createAssertReducerResultState } from "../util/test_utils";
-import {getCollectionForm} from "./collectionUi";
+import { getCollectionForm, INITIAL_UI_STATE } from "./collectionUi";
 
 describe('collectionUi', () => {
   let assertReducerResultState, store;
@@ -44,11 +45,21 @@ describe('collectionUi', () => {
     assertReducerResultState(setIsNew, ui => ui.isNew, true);
   });
 
+  it('resets the dialog to its initial state', () => {
+    store.dispatch(setSelectedVideoKey("key"));
+    store.dispatch(setIsNew(false));
+    store.dispatch(initCollectionForm({
+      field: "that doesn't belong here"
+    }));
+
+    store.dispatch(clearCollectionForm());
+    assert.deepEqual(store.getState().collectionUi, INITIAL_UI_STATE);
+  });
+
   for (const isNew of [true, false]) {
     describe(`when isNew is ${String(isNew)}`, () => {
       beforeEach(() => {
         store.dispatch(setIsNew(isNew));
-        store.dispatch(initCollectionForm());
       });
 
       it('gets the expected form', () => {
