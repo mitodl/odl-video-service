@@ -39,8 +39,10 @@ describe('CollectionDetailPage', () => {
     store = configureTestStore(rootReducer);
     listenForActions = store.createListenForActions();
     collection = makeCollection();
+    let collections = [makeCollection(), collection];
 
     getCollectionStub = sandbox.stub(api, 'getCollection').returns(Promise.resolve(collection));
+    sandbox.stub(api, 'getCollections').returns(Promise.resolve(collections));
   });
 
   afterEach(() => {
@@ -197,7 +199,7 @@ describe('CollectionDetailPage', () => {
       SET_IS_NEW,
       SHOW_DIALOG,
     ], () => {
-      wrapper.find(".edit-collection-button").prop('onClick')(eventStub);
+      wrapper.find("#edit-collection-button").prop('onClick')(eventStub);
     });
     sinon.assert.calledWith(eventStub.preventDefault);
     assert.isFalse(state.collectionUi.isNew);
