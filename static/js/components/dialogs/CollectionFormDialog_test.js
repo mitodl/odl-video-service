@@ -6,7 +6,7 @@ import { assert } from 'chai';
 import { Provider } from 'react-redux';
 import configureTestStore from 'redux-asserts';
 
-import CollectionFormDialog  from './CollectionFormDialog';
+import CollectionFormDialog from './CollectionFormDialog';
 
 import rootReducer from '../../reducers';
 import { actions } from '../../actions';
