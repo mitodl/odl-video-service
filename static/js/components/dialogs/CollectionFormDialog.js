@@ -3,7 +3,6 @@ import React from 'react';
 import { connect } from 'react-redux';
 import type { Dispatch } from 'redux';
 import R from 'ramda';
-import _ from 'lodash';
 
 import Radio from "../material/Radio";
 import Dialog from "../material/Dialog";
@@ -13,18 +12,19 @@ import Textarea from "../material/Textarea";
 import * as uiActions from '../../actions/collectionUi';
 import { actions } from '../../actions';
 import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from '../../lib/dialog';
+import { getCollectionForm } from '../../lib/collection';
 
-import { getCollectionForm } from "../../reducers/collectionUi";
 import type {
   CollectionFormState,
   CollectionUiState,
-} from "../../reducers/collectionUi";
-import type { Collection, CollectionListItem } from '../../flow/collectionTypes';
+  Collection,
+} from '../../flow/collectionTypes';
 
 type DialogProps = {
   dispatch: Dispatch,
   collectionUi: CollectionUiState,
   collection: ?Collection,
+  collectionForm: CollectionFormState,
   open: boolean,
   hideDialog: Function,
 }
@@ -43,16 +43,14 @@ class CollectionFormDialog extends React.Component {
   };
 
   setCollectionViewPermChoice = (choice: string) => {
-    const { dispatch, collectionUi } = this.props;
-    const collectionForm = getCollectionForm(collectionUi);
+    const { dispatch, collectionForm } = this.props;
     if (choice !== collectionForm.viewChoice) {
       dispatch(uiActions.setViewChoice(choice));
     }
   };
 
   setCollectionAdminPermChoice = (choice: string) => {
-    const { dispatch, collectionUi } = this.props;
-    const collectionForm = getCollectionForm(collectionUi);
+    const { dispatch, collectionForm } = this.props;
     if (choice !== collectionForm.adminChoice) {
       dispatch(uiActions.setAdminChoice(choice));
     }
@@ -80,10 +78,10 @@ class CollectionFormDialog extends React.Component {
     const {
       dispatch,
       hideDialog,
-      collectionUi,
+      collectionUi: { isNew },
+      collectionForm,
     } = this.props;
 
-    const collectionForm = getCollectionForm(collectionUi);
     const payload = {
       title: collectionForm.title,
       description: collectionForm.description,
@@ -91,7 +89,7 @@ class CollectionFormDialog extends React.Component {
       admin_lists: this.calculateListPermissionValue(collectionForm.adminChoice, collectionForm.adminLists)
     };
 
-    if (collectionUi.isNew) {
+    if (isNew) {
       await dispatch(actions.collectionsList.post(payload));
     } else {
       await dispatch(actions.collections.patch(collectionForm.key, payload));
@@ -110,13 +108,12 @@ class CollectionFormDialog extends React.Component {
     const {
       open,
       hideDialog,
-      collectionUi,
+      collectionForm,
+      collectionUi: { isNew },
     } = this.props;
 
-    const isNew = collectionUi.isNew;
     const title = isNew ? "Create a New Collection" : "Edit Collection";
     const submitText = isNew ? "Create Collection" : "Save";
-    const collectionForm = getCollectionForm(collectionUi);
 
     return (
       <Dialog
@@ -207,40 +204,11 @@ class CollectionFormDialog extends React.Component {
 const mapStateToProps = (state) => {
   const { collectionUi } = state;
 
+  const collectionForm = getCollectionForm(collectionUi);
   return {
-    collectionUi
+    collectionUi,
+    collectionForm,
   };
 };
 
 export default connect(mapStateToProps)(CollectionFormDialog);
-
-/**
- * Make an initialized form for use with existing collections
- */
-export function makeInitializedForm(collection: ?CollectionListItem): CollectionFormState {
-  if (!collection) {
-    collection = {
-      key: '',
-      title: '',
-      description: '',
-      view_lists: [],
-      admin_lists: [],
-    };
-  }
-  let viewChoice = collection.view_lists.length === 0
-    ? PERM_CHOICE_NONE
-    : PERM_CHOICE_LISTS;
-  let adminChoice = collection.admin_lists.length === 0
-    ? PERM_CHOICE_NONE
-    : PERM_CHOICE_LISTS;
-
-  return {
-    key: collection.key,
-    title: collection.title,
-    description: collection.description,
-    viewChoice: viewChoice,
-    viewLists: _.join(collection.view_lists, ','),
-    adminChoice: adminChoice,
-    adminLists: _.join(collection.admin_lists, ',')
-  };
-}

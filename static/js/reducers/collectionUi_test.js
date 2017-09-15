@@ -62,13 +62,6 @@ describe('collectionUi', () => {
         store.dispatch(setIsNew(isNew));
       });
 
-      it('gets the expected form', () => {
-        const collectionUi = store.getState().collectionUi;
-        const key = isNew ? "newCollectionForm" : "editCollectionForm";
-        // this is explicitly comparing identity, not value equality
-        assert.isTrue(getCollectionForm(collectionUi) === collectionUi[key]);
-      });
-
       it('initializes the collection form', () => {
         store.dispatch(initCollectionForm({
           title: "different title"

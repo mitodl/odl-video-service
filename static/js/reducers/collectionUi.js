@@ -14,23 +14,9 @@ import {
   CLEAR_COLLECTION_FORM,
 } from '../actions/collectionUi';
 import { PERM_CHOICE_NONE } from '../lib/dialog';
+import { getFormKey } from '../lib/collection';
 
-export type CollectionFormState = {
-  key: ?string,
-  title: ?string,
-  description: ?string,
-  viewChoice: string,
-  viewLists: ?string,
-  adminChoice: string,
-  adminLists: ?string,
-};
-
-export type CollectionUiState = {
-  newCollectionForm: CollectionFormState,
-  editCollectionForm: CollectionFormState,
-  isNew: boolean,
-  selectedVideoKey: ?string
-};
+import type { CollectionUiState } from '../flow/collectionTypes';
 
 export const INITIAL_COLLECTION_FORM_STATE = {
   key: '',
@@ -48,12 +34,6 @@ export const INITIAL_UI_STATE = {
   isNew: true,
   selectedVideoKey: null
 };
-
-const getFormKey = (isNew: boolean): string => isNew ? "newCollectionForm" : "editCollectionForm";
-
-export const getCollectionForm = (
-  state: CollectionUiState
-): CollectionFormState => state[getFormKey(state.isNew)];
 
 const updateCollectionForm = (state: CollectionUiState, key: string, newValue: ?string) => ({
   ...state,

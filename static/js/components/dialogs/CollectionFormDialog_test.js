@@ -6,7 +6,7 @@ import { assert } from 'chai';
 import { Provider } from 'react-redux';
 import configureTestStore from 'redux-asserts';
 
-import CollectionFormDialog, { makeInitializedForm } from './CollectionFormDialog';
+import CollectionFormDialog  from './CollectionFormDialog';
 
 import rootReducer from '../../reducers';
 import { actions } from '../../actions';
@@ -24,7 +24,6 @@ import {
   SET_ADMIN_LISTS,
   SET_VIEW_CHOICE,
   SET_VIEW_LISTS,
-  INIT_COLLECTION_FORM,
   showNewCollectionDialog,
   showEditCollectionDialog, CLEAR_COLLECTION_FORM,
 } from '../../actions/collectionUi';
@@ -153,28 +152,4 @@ describe('CollectionFormDialog', () => {
       });
     });
   }
-
-  it('makes a new form without a collection', () => {
-    assert.deepEqual(makeInitializedForm(), {
-      key: '',
-      title: '',
-      description: '',
-      adminChoice: PERM_CHOICE_NONE,
-      adminLists: "",
-      viewChoice: PERM_CHOICE_NONE,
-      viewLists: "",
-    });
-  });
-
-  it('makes a new form with an existing collection', () => {
-    assert.deepEqual(makeInitializedForm(collection), {
-      key: collection.key,
-      title: collection.title,
-      description: collection.description,
-      adminChoice: PERM_CHOICE_LISTS,
-      adminLists: collection.admin_lists.join(","),
-      viewChoice: PERM_CHOICE_LISTS,
-      viewLists: collection.view_lists.join(","),
-    });
-  });
 });

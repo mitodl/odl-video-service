@@ -5,7 +5,7 @@ import type { Dispatch } from 'redux';
 import type { Collection } from "../flow/collectionTypes";
 import { showDialog } from './commonUi';
 import { DIALOGS } from "../constants";
-import { makeInitializedForm } from "../components/dialogs/CollectionFormDialog";
+import { makeInitializedForm } from "../lib/collection";
 
 export const qualifiedName = (name: string) => `COLLECTION_UI_${name}`;
 

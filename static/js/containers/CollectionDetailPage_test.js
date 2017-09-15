@@ -22,7 +22,7 @@ import { makeCollection } from "../factories/collection";
 import { makeVideos } from "../factories/video";
 import { expect } from "../util/test_utils";
 import { DIALOGS } from "../constants";
-import { makeInitializedForm } from "../components/dialogs/CollectionFormDialog";
+import { makeInitializedForm } from "../lib/collection";
 
 describe('CollectionDetailPage', () => {
   let sandbox, store, getCollectionStub, collection, listenForActions;
