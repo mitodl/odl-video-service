@@ -70,7 +70,6 @@ describe('CollectionFormDialog', () => {
     );
   };
 
-
   for (const isNew of [true, false]) {
     describe(`with isNew=${String(isNew)}`, () => {
       beforeEach(() => {
