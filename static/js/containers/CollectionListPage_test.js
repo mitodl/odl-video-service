@@ -79,7 +79,7 @@ describe('CollectionListPage', () => {
       wrapper.find(".collection-list-content .create-collection-button").simulate('click');
     });
     assert.isTrue(state.collectionUi.isNew);
-    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.NEW_COLLECTION]);
+    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.COLLECTION_FORM]);
   });
 
   it('has a toolbar whose handler will dispatch an action to open the drawer', async () => {

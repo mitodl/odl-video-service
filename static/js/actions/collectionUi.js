@@ -39,12 +39,12 @@ export const setIsNew = createAction(SET_IS_NEW);
 export const showNewCollectionDialog = () =>
   (dispatch: Dispatch) => {
     dispatch(setIsNew(true));
-    dispatch(showDialog(DIALOGS.NEW_COLLECTION));
+    dispatch(showDialog(DIALOGS.COLLECTION_FORM));
   };
 
 export const showEditCollectionDialog = (collection: Collection) =>
   (dispatch: Dispatch) => {
     dispatch(setIsNew(false));
     dispatch(initCollectionForm(makeInitializedForm(collection)));
-    dispatch(showDialog(DIALOGS.NEW_COLLECTION));
+    dispatch(showDialog(DIALOGS.COLLECTION_FORM));
   };

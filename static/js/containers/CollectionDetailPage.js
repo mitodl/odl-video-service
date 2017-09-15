@@ -208,7 +208,7 @@ const mapStateToProps = (state, ownProps) => {
 export default R.compose(
   connect(mapStateToProps),
   withDialogs([
-    {name: DIALOGS.NEW_COLLECTION, component: CollectionFormDialog},
+    {name: DIALOGS.COLLECTION_FORM, component: CollectionFormDialog},
     {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog},
     {name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog}
   ])

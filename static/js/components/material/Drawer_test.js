@@ -115,7 +115,7 @@ describe("Drawer", () => {
     });
 
     assert.isFalse(state.commonUi.drawerOpen);
-    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.NEW_COLLECTION]);
+    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.COLLECTION_FORM]);
     sinon.assert.calledWith(onDrawerCloseStub);
   });
 });

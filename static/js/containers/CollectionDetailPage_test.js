@@ -202,6 +202,6 @@ describe('CollectionDetailPage', () => {
     sinon.assert.calledWith(eventStub.preventDefault);
     assert.isFalse(state.collectionUi.isNew);
     assert.deepEqual(state.collectionUi.editCollectionForm, makeInitializedForm(collection));
-    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.NEW_COLLECTION]);
+    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.COLLECTION_FORM]);
   });
 });

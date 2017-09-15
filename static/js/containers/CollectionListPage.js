@@ -102,6 +102,6 @@ const mapStateToProps = (state) => {
 export default R.compose(
   connect(mapStateToProps),
   withDialogs([
-    {name: DIALOGS.NEW_COLLECTION, component: CollectionFormDialog},
+    {name: DIALOGS.COLLECTION_FORM, component: CollectionFormDialog},
   ])
 )(CollectionListPage);
