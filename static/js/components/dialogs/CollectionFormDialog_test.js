@@ -25,7 +25,8 @@ import {
   SET_VIEW_CHOICE,
   SET_VIEW_LISTS,
   showNewCollectionDialog,
-  showEditCollectionDialog, CLEAR_COLLECTION_FORM,
+  showEditCollectionDialog,
+  CLEAR_COLLECTION_FORM,
 } from '../../actions/collectionUi';
 import {
   INITIAL_UI_STATE,
@@ -37,6 +38,7 @@ import {
 import * as api from '../../lib/api';
 import { getCollectionForm } from '../../lib/collection';
 import { makeCollection } from "../../factories/collection";
+import { makeCollectionUrl } from "../../lib/urls";
 
 describe('CollectionFormDialog', () => {
   let sandbox, store, listenForActions, hideDialogStub, collection, uiState;
@@ -104,7 +106,12 @@ describe('CollectionFormDialog', () => {
       it('sends a request to the right endpoint when the form is submitted', async () => {
         let listInput = "list1,list2,list3";
         let expectedListRequestData = ["list1", "list2", "list3"];
-        let wrapper = await renderComponent();
+        const historyPushStub = sandbox.stub();
+        let wrapper = await renderComponent({
+          history: {
+            push: historyPushStub
+          }
+        });
         store.dispatch(setAdminChoice(PERM_CHOICE_LISTS));
         store.dispatch(setAdminLists(listInput));
         store.dispatch(setViewChoice(PERM_CHOICE_LISTS));
@@ -143,8 +150,10 @@ describe('CollectionFormDialog', () => {
 
         if (isNew) {
           sinon.assert.calledWith(apiStub, expectedRequestPayload);
+          sinon.assert.calledWith(historyPushStub, makeCollectionUrl(collection.key));
         } else {
           sinon.assert.calledWith(apiStub, collection.key, expectedRequestPayload);
+          sinon.assert.notCalled(historyPushStub);
         }
         sinon.assert.calledWith(hideDialogStub);
         assert.isTrue(store.getState().collectionUi.isNew);

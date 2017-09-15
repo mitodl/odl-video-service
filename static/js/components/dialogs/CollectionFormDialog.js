@@ -19,9 +19,11 @@ import type {
   CollectionUiState,
   Collection,
 } from '../../flow/collectionTypes';
+import {makeCollectionUrl} from "../../lib/urls";
 
 type DialogProps = {
   dispatch: Dispatch,
+  history: Object,
   collectionUi: CollectionUiState,
   collection: ?Collection,
   collectionForm: CollectionFormState,
@@ -77,6 +79,7 @@ class CollectionFormDialog extends React.Component {
   submitForm = async () => {
     const {
       dispatch,
+      history,
       hideDialog,
       collectionUi: { isNew },
       collectionForm,
@@ -90,7 +93,8 @@ class CollectionFormDialog extends React.Component {
     };
 
     if (isNew) {
-      await dispatch(actions.collectionsList.post(payload));
+      let collection = await dispatch(actions.collectionsList.post(payload));
+      history.push(makeCollectionUrl(collection.key));
     } else {
       await dispatch(actions.collections.patch(collectionForm.key, payload));
     }
