@@ -14,7 +14,6 @@ urlpatterns = [
 
     url(r'^collections/', views.CollectionReactView.as_view(), name='collection-react-view'),
     url(r'^collection_form/$', views.CollectionFormView.as_view(), name='collection-form-view'),
-    url(r'^collection_upload/(?P<collection_key>[0-9a-f]+)$', views.Upload.as_view(), name='upload'),
 
     url(r'^videos/(?P<video_key>[0-9a-f]+)/$', views.VideoDetail.as_view(), name='video-detail'),
     url(r'^videos/(?P<video_key>[0-9a-f]+)/embed/$', views.VideoEmbed.as_view(), name='video-embed'),

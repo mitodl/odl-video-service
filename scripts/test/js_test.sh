@@ -52,6 +52,7 @@ if [[ $(
     cat "$TMP_FILE" |
     grep -v 'ignored, nothing could be mapped' |
     grep -v "This browser doesn't support the \`onScroll\` event" |
+    grep -v "Warning: Accessing PropTypes via the main React package is deprecated" |
     wc -l |
     awk '{print $1}'
     ) -ne 0 ]]  # is file empty?

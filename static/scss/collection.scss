@@ -1,4 +1,5 @@
 $video-card-width: 31%;
+$collection-tools-line-height: 36px;
 
 .collection-list-content,
 .collection-detail-content {
@@ -101,6 +102,7 @@ $video-card-width: 31%;
     padding: 0 1% 18px;
 
     .text {
+      width: 71%;
 
       h2, p.description {
         margin: 0;
@@ -115,11 +117,46 @@ $video-card-width: 31%;
     }
 
     .tools {
+      width: 29%;
+      text-align: right;
+
+      div {
+        display: inline-block;
+      }
+
+      .dropbox-btn {
+        display: inline-block;
+        margin: 0 15px 0 0;
+        background-color: $dropbox-blue;
+        border-radius: 3px;
+        color: #ffffff;
+        font-family: Roboto, sans-serif;
+        text-transform: none;
+        line-height: $collection-tools-line-height;
+
+        img {
+          display: inline-block;
+          position: relative;
+          top: 5px;
+          height: 20px;
+          margin-right: 5px;
+        }
+      }
+
       a {
         display: inline-block;
+        color: $tool-icon-color;
+        line-height: $collection-tools-line-height;
+        vertical-align: middle;
 
         &:hover {
           cursor: pointer;
+          color: $tool-icon-color-hover;
+        }
+
+        i {
+          line-height: $collection-tools-line-height;
+          vertical-align: middle;
         }
       }
     }
@@ -149,6 +186,27 @@ $video-card-width: 31%;
 
       &:hover {
         box-shadow: 7px 8px 28px #c7c7c7;
+      }
+
+      .message {
+        padding: 25px;
+        min-height: 180px;
+        background-color: #313131;
+        color: #ffffff;
+
+        a, a:hover, a:visited {
+          color: $darkgray-bg-link;
+        }
+
+        h5 {
+          margin: 16px 0;
+          font-family: Roboto, sans-serif;
+          font-size: 17px;
+        }
+
+        p {
+          opacity: 0.8;
+        }
       }
 
       .thumbnail {
@@ -203,7 +261,12 @@ $video-card-width: 31%;
           }
 
           a {
-            cursor: pointer;
+            color: $tool-icon-color;
+
+            &:hover {
+              cursor: pointer;
+              color: $tool-icon-color-hover;
+            }
           }
         }
       }

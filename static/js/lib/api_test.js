@@ -3,7 +3,7 @@
 import { assert } from 'chai';
 import sinon from 'sinon';
 import _ from 'lodash';
-import { PATCH } from 'redux-hammock/constants';
+import { PATCH, POST } from 'redux-hammock/constants';
 import * as fetchFuncs from "redux-hammock/django_csrf_fetch";
 
 import { makeCollection } from '../factories/collection';
@@ -13,6 +13,7 @@ import {
   getCollection,
   getVideo,
   updateVideo,
+  uploadVideo
 } from '../lib/api';
 
 describe('api', () => {
@@ -67,5 +68,21 @@ describe('api', () => {
       body: JSON.stringify(payload)
     });
     assert.deepEqual(result, video);
+  });
+
+  it("can upload videos to a collection", async () => {
+    const collectionKey = 'test-key',
+      mockFiles = [{name: 'file1'}, {name: 'file2'}];
+    const payload = {
+      collection: collectionKey,
+      files: mockFiles
+    };
+    fetchStub.returns(Promise.resolve({}));
+
+    await uploadVideo(collectionKey, mockFiles);
+    sinon.assert.calledWith(fetchStub, `/api/v0/upload_videos/`, {
+      method: POST,
+      body: JSON.stringify(payload)
+    });
   });
 });
