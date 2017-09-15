@@ -44,7 +44,6 @@ class Drawer extends React.Component {
     if (this.createCollectionButton) {
       this.createCollectionButton.addEventListener('click', (event: MouseEvent) => {
         event.preventDefault();
-
         onDrawerClose();
         dispatch(collectionUiActions.showNewCollectionDialog());
       }, false);
