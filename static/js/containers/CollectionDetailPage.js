@@ -109,7 +109,6 @@ class CollectionDetailPage extends React.Component {
     const { dispatch, collection } = this.props;
 
     e.preventDefault();
-
     if (!collection) {
       // make flow happy
       throw new Error("Expected collection to exist");
