@@ -14,7 +14,7 @@ import { makeCollection } from '../../factories/collection';
 import { makeCollectionUrl } from "../../lib/urls";
 import type { Collection } from "../../flow/collectionTypes";
 import { SHOW_DIALOG } from "../../actions/commonUi";
-import { INIT_COLLECTION_FORM, SET_IS_NEW } from "../../actions/collectionUi";
+import { SET_IS_NEW } from "../../actions/collectionUi";
 import { DIALOGS } from "../../constants";
 
 describe("Drawer", () => {
@@ -110,7 +110,6 @@ describe("Drawer", () => {
     let state = await listenForActions([
       SHOW_DIALOG,
       SET_IS_NEW,
-      INIT_COLLECTION_FORM,
     ], () => {
       wrapper.find(".create-collection-button").get(0).click();
     });

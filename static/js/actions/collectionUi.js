@@ -1,6 +1,5 @@
 // @flow
 import { createAction } from 'redux-actions';
-import R from 'ramda';
 import type { Dispatch } from 'redux';
 
 import type { Collection } from "../flow/collectionTypes";
@@ -37,10 +36,15 @@ export const setSelectedVideoKey = createAction(SET_SELECTED_VIDEO_KEY);
 export const SET_IS_NEW = qualifiedName('SET_IS_NEW');
 export const setIsNew = createAction(SET_IS_NEW);
 
-export const startNewCollectionDialog = (collection: ?Collection = null) =>
+export const showNewCollectionDialog = () =>
   (dispatch: Dispatch) => {
-    const isNew = R.isNil(collection);
-    dispatch(setIsNew(isNew));
+    dispatch(setIsNew(true));
+    dispatch(showDialog(DIALOGS.NEW_COLLECTION));
+  };
+
+export const showEditCollectionDialog = (collection: Collection) =>
+  (dispatch: Dispatch) => {
+    dispatch(setIsNew(false));
     dispatch(initCollectionForm(makeInitializedForm(collection)));
     dispatch(showDialog(DIALOGS.NEW_COLLECTION));
   };

@@ -58,7 +58,7 @@ class CollectionListPage extends React.Component {
     const { dispatch } = this.props;
 
     e.preventDefault();
-    dispatch(collectionUiActions.startNewCollectionDialog());
+    dispatch(collectionUiActions.showNewCollectionDialog());
   };
 
   render() {

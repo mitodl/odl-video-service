@@ -115,7 +115,7 @@ class CollectionDetailPage extends React.Component {
       throw new Error("Expected collection to exist");
     }
 
-    dispatch(collectionUiActions.startNewCollectionDialog(collection));
+    dispatch(collectionUiActions.showEditCollectionDialog(collection));
   };
 
   renderBody(collection: Collection) {

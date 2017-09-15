@@ -24,7 +24,9 @@ import {
   SET_ADMIN_LISTS,
   SET_VIEW_CHOICE,
   SET_VIEW_LISTS,
-  INIT_COLLECTION_FORM, startNewCollectionDialog,
+  INIT_COLLECTION_FORM,
+  showNewCollectionDialog,
+  showEditCollectionDialog,
 } from '../../actions/collectionUi';
 import {
   getCollectionForm,
@@ -73,7 +75,11 @@ describe('CollectionFormDialog', () => {
   for (const isNew of [true, false]) {
     describe(`isNew is ${String(isNew)}`, () => {
       beforeEach(() => {
-        store.dispatch(startNewCollectionDialog(isNew ? null : collection));
+        if (isNew) {
+          store.dispatch(showNewCollectionDialog());
+        } else {
+          store.dispatch(showEditCollectionDialog(collection));
+        }
       });
 
       for (const [selector, prop, actionType, newValue] of [

@@ -12,10 +12,7 @@ import CollectionListPage from './CollectionListPage';
 
 import * as api from '../lib/api';
 import { actions } from '../actions';
-import {
-  INIT_COLLECTION_FORM,
-  SET_IS_NEW,
-} from "../actions/collectionUi";
+import { SET_IS_NEW } from "../actions/collectionUi";
 import { SHOW_DIALOG } from "../actions/commonUi";
 import rootReducer from '../reducers';
 import { makeCollection } from "../factories/collection";
@@ -78,7 +75,6 @@ describe('CollectionListPage', () => {
     const state = await listenForActions([
       SHOW_DIALOG,
       SET_IS_NEW,
-      INIT_COLLECTION_FORM,
     ], () => {
       wrapper.find(".collection-list-content .create-collection-button").simulate('click');
     });

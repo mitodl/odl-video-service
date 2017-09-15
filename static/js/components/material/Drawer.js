@@ -46,7 +46,7 @@ class Drawer extends React.Component {
         event.preventDefault();
 
         onDrawerClose();
-        dispatch(collectionUiActions.startNewCollectionDialog());
+        dispatch(collectionUiActions.showNewCollectionDialog());
       }, false);
     }
   }
