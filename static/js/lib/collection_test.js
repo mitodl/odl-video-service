@@ -74,6 +74,7 @@ describe('collection library function', () => {
       adminLists: "",
       viewChoice: PERM_CHOICE_NONE,
       viewLists: "",
+      videoCount: 0
     });
   });
 
@@ -87,6 +88,7 @@ describe('collection library function', () => {
       adminLists: collection.admin_lists.join(","),
       viewChoice: PERM_CHOICE_LISTS,
       viewLists: collection.view_lists.join(","),
+      videoCount: collection.video_count
     });
   });
 });

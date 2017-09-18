@@ -108,6 +108,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     Serializer for Collection Model
     """
     key = serializers.SerializerMethodField()
+    video_count = serializers.SerializerMethodField()
     videos = VideoSerializer(many=True, read_only=True)
     view_lists = SingleAttrRelatedField(
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
@@ -120,6 +121,10 @@ class CollectionSerializer(serializers.ModelSerializer):
     def get_key(self, obj):
         """Custom getter for the key"""
         return obj.hexkey
+
+    def get_video_count(self, obj):
+        """Custom getter for video count"""
+        return obj.videos.count()
 
     def get_is_admin(self, obj):
         """Custom field to indicate whether or not the requesting user is an admin"""
@@ -135,6 +140,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'videos',
+            'video_count',
             'view_lists',
             'admin_lists',
             'is_admin',
@@ -143,6 +149,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             'key',
             'created_at',
             'videos',
+            'video_count',
             'is_admin',
         )
 
@@ -152,6 +159,7 @@ class CollectionListSerializer(serializers.ModelSerializer):
     Serializer for Collection Model
     """
     key = serializers.SerializerMethodField()
+    video_count = serializers.SerializerMethodField()
     view_lists = SingleAttrRelatedField(
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
     )
@@ -169,6 +177,10 @@ class CollectionListSerializer(serializers.ModelSerializer):
         """Custom getter for the key"""
         return obj.hexkey
 
+    def get_video_count(self, obj):
+        """Custom getter for video count"""
+        return obj.videos.count()
+
     class Meta:
         model = models.Collection
         fields = (
@@ -177,11 +189,13 @@ class CollectionListSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'view_lists',
-            'admin_lists'
+            'admin_lists',
+            'video_count',
         )
         read_only_fields = (
             'key',
             'created_at',
+            'video_count',
         )
 
 

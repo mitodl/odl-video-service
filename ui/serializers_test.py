@@ -25,6 +25,7 @@ def test_collection_serializer():
         'title': collection.title,
         'description': collection.description,
         'videos': serializers.VideoSerializer(videos, many=True).data,
+        'video_count': len(videos),
         'view_lists': [],
         'admin_lists': [],
         'is_admin': None
@@ -63,7 +64,8 @@ def test_collection_list_serializer():
         'title': collection.title,
         'description': collection.description,
         'view_lists': [],
-        'admin_lists': []
+        'admin_lists': [],
+        'video_count': collection.videos.count(),
     }
     assert serializers.CollectionListSerializer(collection).data == expected
 
