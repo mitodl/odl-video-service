@@ -69,11 +69,17 @@ button {
 .mdc-dialog {
   .mdc-dialog__surface {
     max-height: 90%;
+    overflow: hidden;
   }
 
   .mdc-dialog__body {
     font-size: 1rem;
     overflow-y: scroll;
+  }
+
+  .mdc-dialog__footer {
+    box-shadow: 1px 0px 18px #e4e4e4;
+    z-index: 100;
   }
 }
 
