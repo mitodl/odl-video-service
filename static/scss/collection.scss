@@ -83,7 +83,7 @@ $collection-tools-line-height: 36px;
   .centered-content {
     margin: 0 auto;
     width: 87%;
-    max-width: 1380px;
+    max-width: 1480px;
     box-sizing: border-box;
 
     @include breakpoint(mobile) {
@@ -101,24 +101,37 @@ $collection-tools-line-height: 36px;
     justify-content: space-between;
     padding: 0 1% 18px;
 
+    @include breakpoint(phone) {
+      display: block;
+    }
+
     .text {
-      width: 71%;
+      width: 50%;
+
+      @include breakpoint(phone) {
+        width: 100%;
+      }
 
       h2, p.description {
         margin: 0;
         padding: 0 0 20px 0;
       }
+    }
 
-      p.description {
-        color: #666;
-        font-size: 16px;
-        line-height: 1.4;
-      }
+    p.description {
+      color: #666;
+      font-size: 16px;
+      line-height: 1.4;
     }
 
     .tools {
-      width: 29%;
+      width: 50%;
       text-align: right;
+
+      @include breakpoint(phone) {
+        width: 100%;
+        text-align: left;
+      }
 
       div {
         display: inline-block;
@@ -126,8 +139,8 @@ $collection-tools-line-height: 36px;
 
       .dropbox-btn {
         display: inline-block;
-        margin: 0 15px 0 0;
-        background-color: $dropbox-blue;
+        margin: 0 0 0 23px;
+        background-color: $blue-button;
         border-radius: 3px;
         color: #ffffff;
         font-family: Roboto, sans-serif;
@@ -158,6 +171,13 @@ $collection-tools-line-height: 36px;
           line-height: $collection-tools-line-height;
           vertical-align: middle;
         }
+        i.material-icons {
+          color: $tool-icon-color;
+
+          &:hover {
+            color: $tool-icon-color-hover;
+          }
+        }
       }
     }
   }
@@ -166,12 +186,12 @@ $collection-tools-line-height: 36px;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: space-around;
+    justify-content: flex-start;
     width: 100%;
     align-items: stretch;
 
     .video-card {
-      margin: 0 0 40px;
+      margin: 0 1% 40px;
       background-color: #ffffff;
       width: $video-card-width;
       overflow: hidden;
@@ -185,14 +205,14 @@ $collection-tools-line-height: 36px;
       }
 
       &:hover {
-        box-shadow: 7px 8px 28px #c7c7c7;
+        box-shadow: 7px 8px 18px #c7c7c7;
       }
 
       .message {
         padding: 25px;
         min-height: 180px;
         background-color: #313131;
-        color: #ffffff;
+        color: #fff;
 
         a, a:hover, a:visited {
           color: $darkgray-bg-link;
@@ -202,6 +222,7 @@ $collection-tools-line-height: 36px;
           margin: 16px 0;
           font-family: Roboto, sans-serif;
           font-size: 17px;
+          font-weight: 500;
         }
 
         p {

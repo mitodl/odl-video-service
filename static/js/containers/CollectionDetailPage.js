@@ -129,11 +129,13 @@ class CollectionDetailPage extends React.Component {
           <h2 className="mdc-typography--title">
             { collectionTitle }
           </h2>
-          { this.renderCollectionDescription(collection.description) }
         </div>
         <div className="tools">
           {
             collection.is_admin && [
+              <a id="edit-collection-button" key="settings" onClick={ this.showEditCollectionDialog }>
+                <i className="material-icons">settings</i>
+              </a>,
               <DropboxChooser
                 key="upload"
                 appKey={SETTINGS.dropbox_key}
@@ -146,13 +148,11 @@ class CollectionDetailPage extends React.Component {
                   <img src="/static/images/dropbox_logo.png" alt="Dropbox Icon" />
                   Add Videos from Dropbox
                 </Button>
-              </DropboxChooser>,
-              <a id="edit-collection-button" key="settings" onClick={ this.showEditCollectionDialog }>
-                <i className="material-icons">settings</i>
-              </a>
+              </DropboxChooser>
             ]
           }
         </div>
+        { this.renderCollectionDescription(collection.description) }
       </header>
       { this.renderCollectionVideos(videos, collection.is_admin) }
     </div>;
