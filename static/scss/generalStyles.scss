@@ -16,10 +16,6 @@ body {
   line-height: 1.4rem;
 }
 
-.mdc-dialog__body {
-  font-size: 1rem;
-}
-
 p.channelLink {
   margin-bottom: 0px;
 }
@@ -63,6 +59,21 @@ button {
     font-size: 18px;
     font-weight: 400;
     margin: 10px 0 7px 10px;
+  }
+}
+
+/*---------------------------------------
+   SECTION:  DIALOG STYLES
+-----------------------------------------*/
+
+.mdc-dialog {
+  .mdc-dialog__surface {
+    max-height: 90%;
+  }
+
+  .mdc-dialog__body {
+    font-size: 1rem;
+    overflow-y: scroll;
   }
 }
 
