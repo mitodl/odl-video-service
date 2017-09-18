@@ -44,6 +44,7 @@ export function makeInitializedForm(collection: ?CollectionListItem): Collection
       description: '',
       view_lists: [],
       admin_lists: [],
+      video_count: 0
     };
   }
   let viewChoice = collection.view_lists.length === 0
@@ -60,6 +61,7 @@ export function makeInitializedForm(collection: ?CollectionListItem): Collection
     viewChoice: viewChoice,
     viewLists: _.join(collection.view_lists, ','),
     adminChoice: adminChoice,
-    adminLists: _.join(collection.admin_lists, ',')
+    adminLists: _.join(collection.admin_lists, ','),
+    videoCount: collection.video_count
   };
 }

@@ -87,4 +87,10 @@ describe('CollectionListPage', () => {
     wrapper.find(".menu-button").simulate('click');
     assert.isTrue(store.getState().commonUi.drawerOpen);
   });
+
+  it('has video counts per collection', async () => {
+    let wrapper = await renderPage();
+    let counts = wrapper.find(".mdc-list-item__text__secondary");
+    assert.equal(counts.at(0).text(), `${collections[2].video_count} Videos`);
+  });
 });

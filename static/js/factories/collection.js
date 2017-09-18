@@ -11,7 +11,9 @@ export const makeCollection = (collectionKey: string = casual.uuid): Collection 
   title: casual.text,
   description: casual.text,
   videos: makeVideos(2),
+  video_count: 2,
   view_lists: casual.array_of_words(2),
   admin_lists: casual.array_of_words(2),
   is_admin: true
 });
+

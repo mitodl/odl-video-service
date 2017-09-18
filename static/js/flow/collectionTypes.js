@@ -7,7 +7,8 @@ export type CollectionListItem = {
   title:              string,
   description:        ?string,
   view_lists:         Array<string>,
-  admin_lists:        Array<string>
+  admin_lists:        Array<string>,
+  video_count:        number
 };
 
 export type Collection = CollectionListItem & {
