@@ -10,6 +10,7 @@ from factory import (
     SubFactory,
     LazyAttribute,
     Trait,
+    post_generation,
 )
 from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyText, FuzzyInteger
@@ -40,6 +41,22 @@ class CollectionFactory(DjangoModelFactory):
 
     class Meta:
         model = models.Collection
+
+    @post_generation
+    def admin_lists(self, create, extracted, **kwargs):  # pylint:disable=unused-argument
+        """Post-generation hook to handle admin_lists (if provided)"""
+        if create and extracted:
+            # An object was created and admin_lists were passed in
+            for moira_list in extracted:
+                self.admin_lists.add(moira_list)
+
+    @post_generation
+    def view_lists(self, create, extracted, **kwargs):  # pylint:disable=unused-argument
+        """Post-generation hook to handle admin_lists (if provided)"""
+        if create and extracted:
+            # An object was created and view_lists were passed in
+            for moira_list in extracted:
+                self.view_lists.add(moira_list)
 
 
 class VideoFactory(DjangoModelFactory):

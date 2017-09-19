@@ -59,12 +59,12 @@ class CollectionManager(models.Manager):
         Returns:
             A list of collections the user has view access to.
         """
-        user_lists = utils.user_moira_lists(user)
         if user.is_superuser:
             return self.all()
+        moira_list_qset = MoiraList.objects.filter(name__in=utils.user_moira_lists(user))
         return self.filter(
-            models.Q(view_lists__in=MoiraList.objects.filter(name__in=user_lists)) |
-            models.Q(admin_lists__in=MoiraList.objects.filter(name__in=user_lists)) |
+            models.Q(view_lists__in=moira_list_qset) |
+            models.Q(admin_lists__in=moira_list_qset) |
             models.Q(owner=user)).distinct()
 
     def all_admin(self, user):
