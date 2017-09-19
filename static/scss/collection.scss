@@ -177,6 +177,7 @@ $video-card-width: 31.33%;
       background-color: #ffffff;
       width: $video-card-width;
       overflow: hidden;
+      position: relative;
 
       @include breakpoint(mobile) {
         width: 47%;
@@ -193,7 +194,7 @@ $video-card-width: 31.33%;
       .message {
         padding: 25px;
         min-height: 180px;
-        background-color: #313131;
+        background-color: #272727;
         color: #fff;
 
         a, a:hover, a:visited {
@@ -232,36 +233,30 @@ $video-card-width: 31.33%;
       }
 
       .video-card-body {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
         padding: 10px 15px 14px;
-        height: 100%;
+        margin: 0 0 29px 0;
 
         h4 {
-          flex-shrink: 1;
           margin: 0;
           padding: 8px;
           line-height: 1.3rem;
-          overflow: hidden;
           font-weight: 400;
 
           a {
             color: rgba(0,0,0,.87);
           }
         }
+      }
 
-        .actions {
-          align-self: flex-end;
-          flex-wrap: nowrap;
-          flex-shrink: 0;
-          margin: 17px 0 0 0;
-          padding: 0 6px;
-          color: #9a9a9a;
+      .actions {
+        margin: 0;
+        padding: 0 6px;
+        position: absolute;
+        bottom: 11px;
+        right: 15px;
 
-          * {
-            margin-left: 10px;
-          }
+        * {
+          margin-left: 10px;
         }
       }
     }

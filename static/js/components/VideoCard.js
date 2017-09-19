@@ -53,16 +53,16 @@ const VideoCard = (props: VideoCardProps) => {
       <h4 className="mdc-typography--subheading2">
         { title }
       </h4>
-      <div className="actions">
-        {
-          props.isAdmin &&
-          <a className="material-icons edit-link" onClick={props.showEditDialog}>mode_edit</a>
-        }
-        {
-          !hasError &&
-          <a className="material-icons share-link" onClick={props.showShareDialog}>share</a>
-        }
-      </div>
+    </div>
+    <div className="actions">
+      {
+        props.isAdmin &&
+        <a className="material-icons edit-link" onClick={props.showEditDialog}>mode_edit</a>
+      }
+      {
+        !hasError &&
+        <a className="material-icons share-link" onClick={props.showShareDialog}>share</a>
+      }
     </div>
   </Card>;
 };
