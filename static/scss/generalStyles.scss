@@ -84,6 +84,10 @@ button {
   }
 }
 
+.mdc-dialog--open .mdc-dialog__backdrop {
+  opacity: .75;
+}
+
 /*---------------------------------------
    SECTION:  FORM STYLES
 -----------------------------------------*/
