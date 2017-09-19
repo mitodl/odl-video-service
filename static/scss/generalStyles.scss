@@ -30,6 +30,7 @@ a, a:link, a:visited, a:active {
 
   &:hover {
     color: $icon-hover;
+    cursor: pointer;
   }
 }
 
@@ -69,12 +70,22 @@ button {
 .mdc-dialog {
   .mdc-dialog__surface {
     max-height: 90%;
+    overflow: hidden;
   }
 
   .mdc-dialog__body {
     font-size: 1rem;
     overflow-y: scroll;
   }
+
+  .mdc-dialog__footer {
+    box-shadow: 1px 0px 18px #e4e4e4;
+    z-index: 100;
+  }
+}
+
+.mdc-dialog--open .mdc-dialog__backdrop {
+  opacity: .75;
 }
 
 /*---------------------------------------
@@ -111,8 +122,8 @@ textarea {
 }
 
 a.button-link {
-  background: #006fcf;
-  font-size: 16px;
+  background: $blue-button;
+  font-size: 14px;
   color: rgba(255,255,255,.95);
   padding: 8px 16px;
   border-radius: 3px;
@@ -120,7 +131,7 @@ a.button-link {
   cursor: pointer;
 
   i, i.material-icons {
-    margin-right: 5px;
+    margin-right: 8px;
     position: relative;
     bottom: 2px;
     color: #fff;
