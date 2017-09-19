@@ -1,5 +1,7 @@
 """urls for ui"""
+from django.conf import settings
 from django.conf.urls import url, include
+from django.contrib.auth.views import logout as django_logout_view
 from rest_framework import routers
 from ui import views
 
@@ -11,6 +13,7 @@ urlpatterns = [
     url(r'^$', views.Index.as_view(), name='index'),
     url(r'^register/$', views.register, name='register'),
     url(r'^login/$', views.ui_login, name='login'),
+    url(r'^logout/$', django_logout_view, {'next_page': settings.LOGIN_URL}),
 
     url(r'^collections/', views.CollectionReactView.as_view(), name='collection-react-view'),
 
