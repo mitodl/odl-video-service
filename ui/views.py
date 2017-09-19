@@ -187,7 +187,7 @@ class CollectionViewSet(viewsets.ModelViewSet):
         """
         if self.kwargs.get('key') is not None:
             return Collection.objects.all()
-        return Collection.objects.all_admin(self.request.user)
+        return Collection.objects.all_viewable(self.request.user)
 
     def get_serializer_class(self):
         """

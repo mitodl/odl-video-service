@@ -16,6 +16,7 @@ from ui.factories import (
     CollectionFactory,
     VideoFileFactory,
     VideoFactory,
+    MoiraListFactory,
 )
 from ui.serializers import (
     DropboxUploadSerializer,
@@ -247,19 +248,28 @@ def test_collection_viewset_permissions(logged_in_apiclient):
 
 def test_collection_viewset_list(mock_moira_client, logged_in_apiclient):
     """
-    Tests the list of collections for an user
+    Tests the list of collections for a user
     """
     client, user = logged_in_apiclient
     url = reverse('models-api:collection-list')
-    collections = [CollectionFactory(owner=user).hexkey for _ in range(5)]
-    other_user = UserFactory()
-    CollectionFactory(owner=other_user)
+
+    moira_list = MoiraListFactory()
+    expected_collection_keys = [
+        CollectionFactory(owner=user).hexkey,
+        CollectionFactory(view_lists=[moira_list]).hexkey
+    ]
+    prohibited_collection_keys = [
+        CollectionFactory().hexkey,
+        CollectionFactory(view_lists=[MoiraListFactory()]).hexkey
+    ]
+    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
 
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
-    assert len(result.data) == 5
+    assert len(result.data) == len(expected_collection_keys)
     for coll_data in result.data:
-        assert coll_data['key'] in collections
+        assert coll_data['key'] in expected_collection_keys
+        assert coll_data['key'] not in prohibited_collection_keys
         assert 'videos' not in coll_data
 
 
@@ -325,7 +335,7 @@ def test_collection_viewset_create_as_superuser(post_data, logged_in_apiclient):
 
 def test_collection_viewset_detail(mock_moira_client, logged_in_apiclient):
     """
-    Tests to retrieve a collection details for an user
+    Tests to retrieve a collection details for a user
     """
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
