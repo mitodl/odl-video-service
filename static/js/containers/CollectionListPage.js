@@ -65,7 +65,7 @@ class CollectionListPage extends React.Component {
     const formLink = SETTINGS.editable
       ? (
         <a className="button-link create-collection-button" onClick={this.openNewCollectionDialog}>
-          <i className="material-icons">library_add</i>
+          <i className="material-icons">add</i>
           Create New Collection
         </a>
       )
