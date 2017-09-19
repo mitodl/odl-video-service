@@ -105,8 +105,10 @@ if get_bool('USE_SHIBBOLETH', False):
         'shibboleth.backends.ShibbolethRemoteUserBackend',
     ]
     LOGIN_URL = "/Shibboleth.sso/Login"
+    REDIRECT_FIELD_NAME = 'target'
 else:
     LOGIN_URL = "/login/"
+    REDIRECT_FIELD_NAME = 'next'
 
 ROOT_URLCONF = 'odl_video.urls'
 

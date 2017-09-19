@@ -64,7 +64,7 @@ class Index(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(login_required(redirect_field_name=settings.REDIRECT_FIELD_NAME), name='dispatch')
 class CollectionReactView(TemplateView):
     """List of collections"""
     template_name = "ui/collections.html"
@@ -79,7 +79,7 @@ class CollectionReactView(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(login_required(redirect_field_name=settings.REDIRECT_FIELD_NAME), name='dispatch')
 class VideoDetail(TemplateView):
     """
     Details of a video
@@ -99,7 +99,7 @@ class VideoDetail(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(login_required(redirect_field_name=settings.REDIRECT_FIELD_NAME), name='dispatch')
 class VideoEmbed(TemplateView):
     """Display embedded video"""
     template_name = 'ui/video_embed.html'
@@ -118,7 +118,7 @@ class VideoEmbed(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
+@method_decorator(login_required(redirect_field_name=settings.REDIRECT_FIELD_NAME), name='dispatch')
 class MosaicView(TemplateView):
     """Display USwitch cameras in separate window"""
     template_name = "ui/mosaic.html"
