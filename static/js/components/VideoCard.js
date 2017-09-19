@@ -63,7 +63,7 @@ const VideoCard = (props: VideoCardProps) => {
         !hasError &&
         <a className="material-icons share-link" onClick={props.showShareDialog}>share</a>
       }
-      </div>
+    </div>
   </Card>;
 };
 
