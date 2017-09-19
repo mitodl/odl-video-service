@@ -30,6 +30,7 @@ a, a:link, a:visited, a:active {
 
   &:hover {
     color: $icon-hover;
+    cursor: pointer;
   }
 }
 

@@ -1,5 +1,4 @@
 $video-card-width: 31.33%;
-$collection-tools-line-height: 36px;
 
 .collection-list-content,
 .collection-detail-content {
@@ -145,7 +144,6 @@ $collection-tools-line-height: 36px;
         color: #ffffff;
         font-family: Roboto, sans-serif;
         text-transform: none;
-        line-height: $collection-tools-line-height;
 
         img {
           display: inline-block;
@@ -158,26 +156,9 @@ $collection-tools-line-height: 36px;
 
       a {
         display: inline-block;
-        color: $tool-icon-color;
-        line-height: $collection-tools-line-height;
-        vertical-align: middle;
-
-        &:hover {
-          cursor: pointer;
-          color: $tool-icon-color-hover;
-        }
 
         i {
-          line-height: $collection-tools-line-height;
           vertical-align: middle;
-        }
-
-        i.material-icons {
-          color: $tool-icon-color;
-
-          &:hover {
-            color: $tool-icon-color-hover;
-          }
         }
       }
     }
@@ -280,15 +261,6 @@ $collection-tools-line-height: 36px;
 
           * {
             margin-left: 10px;
-          }
-
-          a {
-            color: $tool-icon-color;
-
-            &:hover {
-              cursor: pointer;
-              color: $tool-icon-color-hover;
-            }
           }
         }
       }
