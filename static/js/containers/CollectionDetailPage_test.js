@@ -31,7 +31,8 @@ describe('CollectionDetailPage', () => {
     DESCRIPTION: 'p.description',
     MENU_BTN: '.menu-button',
     SETTINGS_BTN: '#edit-collection-button',
-    DROPBOX_BTN: '.dropbox-btn'
+    DROPBOX_BTN: '.dropbox-btn',
+    NO_VIDEOS_MSG: '.no-videos'
   };
 
   beforeEach(() => {
@@ -82,6 +83,14 @@ describe('CollectionDetailPage', () => {
 
     let wrapper = await renderPage();
     assert.lengthOf(wrapper.find("VideoCard"), expectedVideoCount);
+  });
+
+  it('shows a message when no videos have been added to the collection yet', async () => {
+    collection.videos = [];
+    let wrapper = await renderPage();
+    let messageContainer = wrapper.find(selectors.NO_VIDEOS_MSG);
+    assert.isTrue(messageContainer.exists());
+    assert.include(messageContainer.text(), "You have not added any videos yet");
   });
 
   [

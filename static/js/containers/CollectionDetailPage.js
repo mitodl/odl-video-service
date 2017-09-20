@@ -87,22 +87,25 @@ class CollectionDetailPage extends React.Component {
       : null
   );
 
+  renderEmptyVideoMessage = () => (
+    <div className="no-videos">
+      <h3>You have not added any videos yet.</h3>
+      <p>Click the button above to add videos from a linked Dropbox account.</p>
+    </div>
+  );
+
   renderCollectionVideos = (videos: Array<Video>, isAdmin: boolean) => (
-    videos.length > 0
-      ? (
-        <div className="videos">
-          {videos.map(video => (
-            <VideoCard
-              video={video}
-              key={video.key}
-              isAdmin={isAdmin}
-              showEditDialog={this.showEditVideoDialog.bind(this, video.key)}
-              showShareDialog={this.showShareVideoDialog.bind(this, video.key)}
-            />
-          ), this)}
-        </div>
-      )
-      : null
+    <div className="videos">
+      {videos.map(video => (
+        <VideoCard
+          video={video}
+          key={video.key}
+          isAdmin={isAdmin}
+          showEditDialog={this.showEditVideoDialog.bind(this, video.key)}
+          showShareDialog={this.showShareVideoDialog.bind(this, video.key)}
+        />
+      ), this)}
+    </div>
   );
 
   showEditCollectionDialog = (e: MouseEvent) => {
@@ -152,7 +155,11 @@ class CollectionDetailPage extends React.Component {
             ]
           }
         </div>
-        { this.renderCollectionDescription(collection.description) }
+        {
+          videos.length > 0
+            ? this.renderCollectionDescription(collection.description)
+            : this.renderEmptyVideoMessage()
+        }
       </header>
       { this.renderCollectionVideos(videos, collection.is_admin) }
     </div>;
