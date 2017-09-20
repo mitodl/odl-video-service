@@ -185,10 +185,12 @@ $video-card-width: 19%;
 
       @include breakpoint(desktop) {
         width: 31.33%;
+        margin: 0 1% 40px;
       }
 
       @include breakpoint(mobile) {
         width: 48%;
+        margin: 0 1% 40px;
       }
 
       @include breakpoint(phone) {
