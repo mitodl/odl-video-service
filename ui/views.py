@@ -20,20 +20,23 @@ from rest_framework import (
     viewsets,
     mixins,
 )
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from cloudsync import api as cloudapi
+from ui.serializers import VideoSerializer
+from ui.templatetags.render_bundle import public_path
 from ui import (
     api,
     serializers,
     forms,
     permissions as ui_permissions
 )
-from ui.serializers import VideoSerializer
-from ui.templatetags.render_bundle import public_path
 from ui.models import (
     Collection,
-    Video)
+    Video,
+    VideoSubtitle)
 
 
 def default_js_settings(request):
@@ -41,7 +44,7 @@ def default_js_settings(request):
     return {
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": public_path(request),
-        "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
+        "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
         "user": (request.user.email or request.user.username) if request.user.is_authenticated else "Not logged in",
         "support_email_address": settings.EMAIL_SUPPORT,
     }
@@ -168,6 +171,39 @@ class UploadVideosFromDropbox(APIView):
         )
 
 
+class UploadVideoSubtitle(APIView):
+    """
+    Class based view for uploading videos from dropbox to S3.
+    """
+    authentication_classes = (
+        authentication.SessionAuthentication,
+    )
+    permission_classes = (
+        permissions.IsAuthenticated,
+        ui_permissions.CanUploadToCollection,
+    )
+    parser_classes = (MultiPartParser,)
+
+    def post(self, request):
+        """
+        Upload the videoSubtitle to S3, create a VideoSubtitle object
+        """
+        file_obj = request.data['file']
+        upload_data = {
+            'video': request.data['video'],
+            'language': request.data['language'],
+            'filename': request.data['filename']
+        }
+        serializer = serializers.VideoSubtitleUploadSerializer(data=upload_data)
+        serializer.is_valid(raise_exception=True)
+
+        subtitle = cloudapi.upload_subtitle_to_s3(serializer.validated_data, file_obj)
+        return Response(
+            data=serializers.VideoSubtitleSerializer(subtitle).data,
+            status=status.HTTP_202_ACCEPTED
+        )
+
+
 class CollectionViewSet(viewsets.ModelViewSet):
     """
     Implements all the REST views for the Collection Model.
@@ -215,6 +251,24 @@ class VideoViewSet(ModelDetailViewset):
     permission_classes = (
         permissions.IsAuthenticated,
         ui_permissions.HasVideoPermissions
+    )
+
+
+class VideoSubtitleViewSet(ModelDetailViewset):
+    """
+    Implements all the REST views for the VideoSubtitle Model.
+    This viewset does not implement `create`: VideoSubtitle objects need
+    to be created via other ways
+    """
+    lookup_field = 'id'
+    queryset = VideoSubtitle.objects.all()
+    serializer_class = serializers.VideoSubtitleSerializer
+    authentication_classes = (
+        authentication.SessionAuthentication,
+    )
+    permission_classes = (
+        permissions.IsAuthenticated,
+        ui_permissions.HasVideoSubtitlePermissions
     )
 
 

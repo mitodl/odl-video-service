@@ -3,17 +3,20 @@ Tests for api
 """
 import os
 import io
+from types import SimpleNamespace
 
 import boto3
 import pytest
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from django.test import override_settings
 from moto import mock_s3
 
 from cloudsync import api
+from cloudsync.api import upload_subtitle_to_s3
 from cloudsync.conftest import MockClientET, MockBoto
 from cloudsync.exceptions import VideoFilenameError
 from ui.constants import VideoStatus
@@ -39,6 +42,16 @@ def video():
 def videofile():
     """Fixture to create a videofile"""
     return VideoFileFactory()
+
+
+@pytest.fixture
+def file_object():
+    """
+    Fixture for tests requiring a file object
+    """
+    filename = 'subtitles.vtt'
+    file_data = SimpleUploadedFile(filename, bytes(1024))
+    return SimpleNamespace(name=filename, data=file_data)
 
 
 def test_get_error_type_from_et_erro():
@@ -377,3 +390,34 @@ def test_transcode_job_failure(mocker, videofile):
     )
     assert len(new_video.encode_jobs.all()) == 1
     assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL
+
+
+def test_upload_subtitle_to_s3(mocker, video, file_object):
+    """
+    Test that a VideoSubtitle object is returned after a .vtt upload to S3
+    """
+    mocker.patch('cloudsync.api.boto3')
+    subtitle_data = {"video": video.hexkey, "language": "en", "filename": file_object.name}
+    subtitle = upload_subtitle_to_s3(subtitle_data, file_object.data)
+    assert subtitle.filename == file_object.name
+    assert subtitle.video == video
+    assert subtitle.language == "en"
+
+
+def test_upload_subtitle_to_s3_no_video(mocker, file_object):
+    """
+    Test that a VideoSubtitle object is not returned with .vtt upload to S3 missing video key
+    """
+    mocker.patch('cloudsync.api.boto3')
+    subtitle_data = {"video": None, "language": "en", "filename": file_object.name}
+    assert upload_subtitle_to_s3(subtitle_data, file_object.data) is None
+
+
+def test_upload_subtitle_to_s3_bad_video(mocker, file_object):
+    """
+    Test that a VideoSubtitle object raises Exception after a .vtt upload to S3 with nonexistent video key
+    """
+    mocker.patch('cloudsync.api.boto3')
+    subtitle_data = {"video": "12345678123456781234567812345678", "language": "en", "filename": file_object.name}
+    with pytest.raises(Video.DoesNotExist):
+        upload_subtitle_to_s3(subtitle_data, file_object.data)

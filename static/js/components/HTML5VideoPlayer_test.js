@@ -57,7 +57,7 @@ describe("HTML5VideoPlayer", (props = {}) => {
     });
     let enableTouchActivityStub = sandbox.stub();
     args[2].call({
-      enableTouchActivity: enableTouchActivityStub,
+      enableTouchActivity: enableTouchActivityStub
     });
     sinon.assert.calledWith(enableTouchActivityStub);
   });

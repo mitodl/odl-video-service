@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import pytest
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -18,10 +19,10 @@ from ui.factories import (
     VideoFactory,
     MoiraListFactory,
 )
+from ui.models import VideoSubtitle
 from ui.serializers import (
     DropboxUploadSerializer,
-    VideoSerializer,
-)
+    VideoSerializer)
 
 pytestmark = pytest.mark.django_db
 
@@ -108,7 +109,7 @@ def test_video_detail(logged_in_client, mocker):
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": '/static/bundles/',
         "videoKey": videofileHLS.video.hexkey,
-        "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
+        "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
         "user": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
     }
@@ -133,7 +134,7 @@ def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=red
         "video": VideoSerializer(video).data,
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": "/static/bundles/",
-        "thumbnail_base_url": settings.VIDEO_THUMBNAIL_BASE_URL,
+        "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
         "user": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
     }
@@ -428,3 +429,59 @@ def test_video_detail_no_permission(mock_moira_client, logged_in_apiclient, user
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_upload_subtitles(logged_in_apiclient, mocker):
+    """
+    Tests for UploadVideoSubtitle
+    """
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    video = VideoFactory(collection=collection)
+    url = reverse('upload-subtitles')
+    filename = 'subtitles.vtt'
+    mocked_api = mocker.patch('ui.views.cloudapi.upload_subtitle_to_s3',
+                              return_value=VideoSubtitle(video=video, filename=filename))
+    input_data = {
+        "collection": collection.hexkey,
+        "video": video.hexkey,
+        "language": "en",
+        "filename": filename,
+        "file": SimpleUploadedFile(filename, bytes(1024))
+    }
+    response = client.post(url, input_data, format='multipart')
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.data == {'language': 'en', 'created_at': None, 'bucket_name': '',
+                             'filename': filename, 's3_object_key': '', 'id': None, 'language_name': 'English'}
+    mocked_api.assert_called_once()
+
+
+def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient, mocker):
+    """
+    Tests that only authenticated users with collection admin permissions can call UploadVideoSubtitle
+    """
+    client, _ = logged_in_apiclient
+    client.logout()
+    url = reverse('upload-subtitles')
+    moira_list = factories.MoiraListFactory()
+    video = VideoFactory(collection=CollectionFactory(admin_lists=[moira_list]))
+    filename = "file.vtt"
+    input_data = {
+        "collection": video.collection.hexkey,
+        "video": video.hexkey,
+        "language": "en",
+        "filename": filename,
+        "file": SimpleUploadedFile(filename, bytes(1024))
+    }
+    mocker.patch(
+        'ui.views.cloudapi.upload_subtitle_to_s3',
+        return_value=VideoSubtitle(video=video, filename=filename))
+    # call with anonymous user
+    assert client.post(url, input_data, format='multipart').status_code == status.HTTP_403_FORBIDDEN
+    # call with another user not on admin list
+    client.force_login(UserFactory())
+    mock_moira_client.return_value.user_lists.return_value = []
+    assert client.post(url, input_data, format='multipart').status_code == status.HTTP_403_FORBIDDEN
+    # call with user on admin list
+    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    assert client.post(url, input_data, format='multipart').status_code == status.HTTP_202_ACCEPTED

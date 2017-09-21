@@ -422,8 +422,8 @@ MB = KB * KB
 CLOUDFRONT_PRIVATE_KEY = get_key('CLOUDFRONT_PRIVATE_KEY', '')
 CLOUDFRONT_KEY_ID = get_string('CLOUDFRONT_KEY_ID', '')
 VIDEO_CLOUDFRONT_DIST = get_string('VIDEO_CLOUDFRONT_DIST', '')
-VIDEO_THUMBNAIL_BASE_URL = get_string(
-    'VIDEO_THUMBNAIL_BASE_URL',
+VIDEO_CLOUDFRONT_BASE_URL = get_string(
+    'VIDEO_CLOUDFRONT_BASE_URL',
     'https://{}.cloudfront.net/'.format(VIDEO_CLOUDFRONT_DIST)
 )
 
@@ -466,10 +466,11 @@ if ET_PRESET_IDS == ['']:  # This may happen if `ET_PRESET_IDS=` is in .env file
     raise ImproperlyConfigured('ET_PRESET_IDS cannot be blank, please check your settings & environment')
 
 VIDEO_CLOUDFRONT_DIST = get_string('VIDEO_CLOUDFRONT_DIST', '')
-VIDEO_S3_BUCKET = get_string('VIDEO_S3_BUCKET', 'odl-video-service')
-VIDEO_S3_TRANSCODE_BUCKET = get_string('VIDEO_S3_TRANSCODE_BUCKET', '{}-transcoded'.format(VIDEO_S3_BUCKET))
-VIDEO_S3_THUMBNAIL_BUCKET = get_string('VIDEO_S3_THUMBNAIL_BUCKET', '{}-thumbnails'.format(VIDEO_S3_BUCKET))
-VIDEO_S3_WATCH_BUCKET = get_string('VIDEO_S3_WATCH_BUCKET', '{}-watch'.format(VIDEO_S3_BUCKET))
+VIDEO_S3_BUCKET = get_string('VIDEO_S3_BUCKET', '')
+VIDEO_S3_TRANSCODE_BUCKET = get_string('VIDEO_S3_TRANSCODE_BUCKET', '')
+VIDEO_S3_THUMBNAIL_BUCKET = get_string('VIDEO_S3_THUMBNAIL_BUCKET', '')
+VIDEO_S3_SUBTITLE_BUCKET = get_string('VIDEO_S3_SUBTITLE_BUCKET', '')
+VIDEO_S3_WATCH_BUCKET = get_string('VIDEO_S3_WATCH_BUCKET', '')
 
 # server-status
 STATUS_TOKEN = get_string("STATUS_TOKEN", "")
@@ -505,5 +506,17 @@ MANDATORY_SETTINGS = [
     'VIDEO_CLOUDFRONT_DIST',
     'LECTURE_CAPTURE_USER',
     'MIT_WS_CERTIFICATE',
-    'MIT_WS_PRIVATE_KEY'
+    'MIT_WS_PRIVATE_KEY',
+    'VIDEO_S3_BUCKET',
+    'VIDEO_S3_TRANSCODE_BUCKET',
+    'VIDEO_S3_THUMBNAIL_BUCKET',
+    'VIDEO_S3_SUBTITLE_BUCKET',
+    'VIDEO_S3_WATCH_BUCKET'
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    )
+}

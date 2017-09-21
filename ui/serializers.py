@@ -59,6 +59,20 @@ class VideoThumbnailSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 's3_object_key', 'bucket_name')
 
 
+class VideoSubtitleSerializer(serializers.ModelSerializer):
+    """VideoSubtitle serializer"""
+    language_name = serializers.SerializerMethodField()
+
+    def get_language_name(self, obj):
+        """Get the language name"""
+        return obj.language_name
+
+    class Meta:
+        model = models.VideoSubtitle
+        fields = ('id', 'created_at', 'filename', 's3_object_key', 'bucket_name', 'language', 'language_name')
+        read_only_fields = ('id', 'created_at', 's3_object_key', 'bucket_name', 'language_name')
+
+
 class VideoSerializer(serializers.ModelSerializer):
     """Video Serializer"""
     key = serializers.SerializerMethodField()
@@ -66,6 +80,7 @@ class VideoSerializer(serializers.ModelSerializer):
     collection_title = serializers.SerializerMethodField()
     videofile_set = VideoFileSerializer(many=True, read_only=True)
     videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
+    videosubtitle_set = VideoSubtitleSerializer(many=True)
 
     def get_key(self, obj):
         """Custom getter for the key"""
@@ -92,6 +107,7 @@ class VideoSerializer(serializers.ModelSerializer):
             'status',
             'videofile_set',
             'videothumbnail_set',
+            'videosubtitle_set'
         )
         read_only_fields = (
             'key',
@@ -100,6 +116,7 @@ class VideoSerializer(serializers.ModelSerializer):
             'status',
             'videofile_set',
             'videothumbnail_set',
+            'videosubtitle_set'
         )
 
 
@@ -213,3 +230,10 @@ class DropboxUploadSerializer(serializers.Serializer):
     """Dropbox Upload Serializer"""
     collection = serializers.UUIDField()
     files = DropboxFileSerializer(many=True)
+
+
+class VideoSubtitleUploadSerializer(serializers.Serializer):
+    """Caption File Serializer"""
+    video = serializers.UUIDField()
+    language = serializers.CharField()
+    filename = serializers.CharField()

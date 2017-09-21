@@ -3,6 +3,7 @@ import logging
 import re
 
 import boto3
+from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -16,7 +17,8 @@ from ui.models import (
     VideoFile,
     VideoThumbnail,
     Collection,
-    Video)
+    Video,
+    VideoSubtitle)
 from ui.utils import get_et_preset, get_bucket, get_et_job
 
 log = logging.getLogger(__name__)
@@ -232,3 +234,50 @@ def extract_title(filename):
         raise VideoFilenameError('No matches found for filename %s with regex %s', filename, rx)
     prefix, _, _, _, session = matches.groups()
     return '-'.join([val for val in (prefix, session) if val])
+
+
+def upload_subtitle_to_s3(caption_data, file_data):
+    """
+    Uploads a subtitle file to S3
+    Args:
+        caption_data(dict): Subtitle upload data
+        file_data(InMemoryUploadedFile): File being uploaded
+
+    Returns:
+        VideoSubtitle or None: New or updated VideoSubtitle (or None)
+    """
+    video_key = caption_data.get('video')
+    filename = caption_data.get('filename')
+    language = caption_data.get('language', 'en')
+    if not video_key:
+        return None
+    try:
+        video = Video.objects.get(key=video_key)
+    except Video.DoesNotExist:
+        log.error("Attempted to upload subtitle to Video that does not exist (key: %d)", video_key)
+        raise
+
+    s3 = boto3.resource('s3')
+    bucket_name = settings.VIDEO_S3_SUBTITLE_BUCKET
+    bucket = s3.Bucket(bucket_name)
+    config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
+    s3_key = video.subtitle_key(language)
+
+    try:
+        bucket.upload_fileobj(
+            Fileobj=file_data,
+            Key=s3_key,
+            ExtraArgs={"ContentType": 'mime/vtt'},
+            Config=config
+        )
+    except Exception:
+        log.error('An error occurred uploading caption file to video %s', video_key)
+        raise
+
+    vt, _ = VideoSubtitle.objects.get_or_create(
+        video=video, language=language,
+        bucket_name=bucket_name,
+        s3_object_key=s3_key)
+    vt.filename = filename
+    vt.save()
+    return vt

@@ -115,6 +115,20 @@ class VideoThumbnailFactory(DjangoModelFactory):
         model = models.VideoThumbnail
 
 
+class VideoSubtitleFactory(DjangoModelFactory):
+    """
+    Factory for a VideoSubtitle
+    """
+    video = SubFactory(VideoFactory)
+    s3_object_key = LazyAttribute(lambda obj: obj.video.subtitle_key())
+    bucket_name = settings.VIDEO_S3_SUBTITLE_BUCKET
+    filename = FuzzyText()
+    language = 'en'
+
+    class Meta:
+        model = models.VideoSubtitle
+
+
 class EncodeJobFactory(DjangoModelFactory):
     """
     Factory for a EncodeJob

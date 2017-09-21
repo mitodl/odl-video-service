@@ -9,6 +9,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.conf import settings
 from dj_elastictranscoder.models import EncodeJob
+from pycountry import languages
 
 
 from mail import tasks
@@ -185,6 +186,17 @@ class Video(models.Model):
         basename, _ = os.path.splitext(original_s3_key)
         return output_template.format(prefix=TRANSCODE_PREFIX, s3key=basename, preset=preset)
 
+    def subtitle_key(self, language='en'):
+        """
+        Returns an S3 object key to be used for a subtitle file
+        Args:
+            language(str): 2-letter language code
+
+        Returns:
+            str: S3 object key
+        """
+        return 'subtitles/{}/subtitle_{}.vtt'.format(self.hexkey, language)
+
     def update_status(self, status):
         """
         Assign and save the status of a Video
@@ -319,3 +331,23 @@ class VideoThumbnail(VideoS3):
 
     def __repr__(self):
         return '<VideoThumbnail: {self.s3_object_key!r} {self.max_width!r} {self.max_height!r}>'.format(self=self)
+
+
+class VideoSubtitle(VideoS3):
+    """A VTT file that provides captions for a Video"""
+    filename = models.CharField(max_length=1024, null=False, blank=True)
+    language = models.CharField(max_length=2, null=False, blank=True, default=languages.get(name='English').alpha_2)
+    unique_together = (("video", "language"),)
+
+    @property
+    def language_name(self):
+        """
+        Gets the name associated with the language code
+        """
+        return languages.get(alpha_2=self.language).name
+
+    def __str__(self):
+        return '{}: {}: {}'.format(self.video.title, self.s3_object_key, self.language)
+
+    def __repr__(self):
+        return '<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >'.format(self=self)
