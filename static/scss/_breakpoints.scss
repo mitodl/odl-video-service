@@ -1,14 +1,22 @@
 @mixin breakpoint($name) {
-  @if $name == desktop {
-    @media (min-width: 1000px) {
+  @if $name == ultrawide {
+    @media (min-width: 2100px) {
+      @content;
+    }
+  } @else if $name == widescreen {
+    @media (min-width: 1600px) and (max-width: 2099px) {
+      @content;
+    }
+  } @else if $name == desktop {
+    @media (min-width: 1000px) and (max-width: 1599px) {
       @content;
     }
   } @else if $name == mobile {
-    @media (max-width: 999px) {
+    @media (min-width: 580px) and (max-width: 999px) {
       @content;
     }
   } @else if $name == phone {
-    @media (max-width: 580px) {
+    @media (max-width: 579px) {
       @content;
     }
   }

@@ -1,4 +1,4 @@
-$video-card-width: 31.33%;
+$video-card-width: 19%;
 
 .collection-list-content,
 .collection-detail-content {
@@ -82,7 +82,6 @@ $video-card-width: 31.33%;
   .centered-content {
     margin: 0 auto;
     width: 90%;
-    max-width: 1480px;
     box-sizing: border-box;
 
     @include breakpoint(mobile) {
@@ -173,15 +172,27 @@ $video-card-width: 31.33%;
     align-items: stretch;
 
     .video-card {
-      margin: 0 1% 40px;
+      margin: 0 .5% 40px;
       background-color: #ffffff;
       width: $video-card-width;
       overflow: hidden;
       position: relative;
 
-      @include breakpoint(mobile) {
-        width: 47%;
+      @include breakpoint(widescreen) {
+        width: 23.6%;
+        margin: 0 .7% 40px;
       }
+
+      @include breakpoint(desktop) {
+        width: 31.33%;
+        margin: 0 1% 40px;
+      }
+
+      @include breakpoint(mobile) {
+        width: 48%;
+        margin: 0 1% 40px;
+      }
+
       @include breakpoint(phone) {
         width: 100%;
         margin: 0 0 25px;
