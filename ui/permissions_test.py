@@ -44,6 +44,14 @@ def video_permission():
     return permissions.HasVideoPermissions()
 
 
+@pytest.fixture(scope='module')
+def subtitle_permission():
+    """
+    Returns an instance of HasVideoPermissions
+    """
+    return permissions.HasVideoSubtitlePermissions()
+
+
 @pytest.fixture
 def collection():
     """
@@ -66,6 +74,14 @@ def video():
     Returns an instance of Video
     """
     return factories.VideoFactory()
+
+
+@pytest.fixture
+def subtitle():
+    """
+    Returns an instance of Video
+    """
+    return factories.VideoSubtitleFactory()
 
 
 @pytest.fixture
@@ -565,3 +581,64 @@ def test_user_moira_lists_error(mock_moira_client):
     other_user = factories.UserFactory()
     lists = permissions.user_moira_lists(other_user)
     assert lists == []
+
+
+def test_subtitle_view_permission_no_matching_lists(mock_moira_client,
+                                                    moira_list,
+                                                    subtitle_permission,
+                                                    subtitle,
+                                                    request_data):
+    """
+    Test for HasVideoSubtitlePermissions.has_object_permission to verify
+    that user who is not in the subtitle collection's view-only moira lists cannot see it.
+    """
+    subtitle.video.collection.view_lists = [moira_list]
+    mock_moira_client.return_value.user_lists.return_value = ['bar']
+    assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
+    assert subtitle_permission.has_object_permission(request_data.request, request_data.view, subtitle) is False
+
+
+def test_subtitle_view_permission_matching_lists(mock_moira_client,
+                                                 moira_list,
+                                                 subtitle_permission,
+                                                 subtitle,
+                                                 request_data):
+    """
+    Test for HasVideoSubtitlePermissions.has_object_permission to verify
+    that a user in one of the subtitle collection's view-only moira lists can see it.
+    """
+    subtitle.video.collection.view_lists = [moira_list]
+    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
+    assert subtitle_permission.has_object_permission(request_data.request, request_data.view, subtitle) is True
+
+
+def test_subtitle_admin_permission_no_matching_lists(mock_moira_client, moira_list,
+                                                     subtitle_permission,
+                                                     subtitle,
+                                                     request_data):
+    """
+    Test for HasVideoSubtitlePermissions.has_object_permission to verify
+    that user who is not in the subtitle collection's admin moira lists cannot edit it.
+    """
+    subtitle.video.collection.admin_lists = [moira_list]
+    mock_moira_client.return_value.user_lists.return_value = ['bar']
+    request_data.request.method = 'POST'
+    assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
+    assert subtitle_permission.has_object_permission(request_data.request, request_data.view, subtitle) is False
+
+
+def test_subtitle_admin_permission_matching_lists(mock_moira_client,
+                                                  moira_list,
+                                                  subtitle_permission,
+                                                  subtitle,
+                                                  request_data):
+    """
+    Test for HasVideoSubtitlePermissions.has_object_permission to verify
+    that a user in one of the subtitle collection's admin moira lists can use unsafe methods.
+    """
+    subtitle.video.collection.admin_lists = [moira_list]
+    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    request_data.request.method = 'POST'
+    assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
+    assert subtitle_permission.has_object_permission(request_data.request, request_data.view, subtitle) is True

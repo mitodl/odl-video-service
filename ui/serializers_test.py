@@ -88,6 +88,7 @@ def test_video_serializer():
         'description': video.description,
         'videofile_set': serializers.VideoFileSerializer(video_files, many=True).data,
         'videothumbnail_set': serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data,
+        'videosubtitle_set': [],
         'status': video.status,
     }
     assert serializers.VideoSerializer(video).data == expected
@@ -127,3 +128,35 @@ def test_dropbox_upload_serializer():
     serializer = serializers.DropboxUploadSerializer(data=input_data)
     assert serializer.is_valid()
     assert serializer.data == expected_data
+
+
+def test_subtitle_upload_serializer():
+    """ Test for the VideoSubtitleUploadSerializer """
+
+    input_data = {"video": "9734262d30144b8cbedb94a872158581", "language": "en", "filename": "foo.vtt"}
+    serializer = serializers.VideoSubtitleUploadSerializer(data=input_data)
+    assert serializer.is_valid()
+    output_data = {
+        "video": str(uuid.UUID("9734262d30144b8cbedb94a872158581")),
+        "language": "en",
+        "filename": "foo.vtt"
+    }
+    assert serializer.data == output_data
+
+
+def test_subtitle_serializer():
+    """
+    Test for VideoSubtitleSerializer
+    """
+    subtitle = factories.VideoSubtitleFactory()
+
+    expected = {
+        'id': subtitle.id,
+        'language': subtitle.language,
+        'language_name': subtitle.language_name,
+        's3_object_key': subtitle.s3_object_key,
+        'bucket_name': subtitle.bucket_name,
+        'filename': subtitle.filename,
+        'created_at': DateTimeField().to_representation(subtitle.created_at)
+    }
+    assert serializers.VideoSubtitleSerializer(subtitle).data == expected

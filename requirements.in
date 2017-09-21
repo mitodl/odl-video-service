@@ -19,7 +19,7 @@ raven
 redis==2.10.5
 requests
 uwsgi
-
+pycountry
 
 # Touchstone
 -e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser

@@ -16,7 +16,7 @@ from ui.factories import (
     VideoFileFactory,
     CollectionFactory,
     UserFactory,
-    MoiraListFactory)
+    MoiraListFactory, VideoSubtitleFactory)
 from ui.constants import VideoStatus
 from ui.models import Collection
 
@@ -44,6 +44,12 @@ def video():
 def videofile():
     """Fixture to create a video file"""
     return VideoFileFactory()
+
+
+@pytest.fixture
+def videosubtitle():
+    """Fixture to create a video subtitle"""
+    return VideoSubtitleFactory()
 
 
 @pytest.fixture
@@ -166,3 +172,8 @@ def test_moira_members(mocker, moiralist):
     mock_client().list_members.return_value = member_list
     assert mock_client().list_members.called_once_with(moiralist.name)
     assert moiralist.members() == set(member_list)
+
+
+def test_video_subtitle_language():
+    """ Tests that the correct language name for a code is returned"""
+    assert VideoSubtitleFactory(language='en').language_name == 'English'

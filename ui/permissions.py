@@ -113,6 +113,14 @@ class HasVideoPermissions(IsAuthenticated):
         return has_admin_permission(obj.collection, request)
 
 
+class HasVideoSubtitlePermissions(IsAuthenticated):
+    """Permission to view/edit a video videoSubtitle"""
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return has_view_permission(obj.video.collection, request)
+        return has_admin_permission(obj.video.collection, request)
+
+
 class IsCollectionOwner(BasePermission):
     """
     Permission to check if user is owner of the collection

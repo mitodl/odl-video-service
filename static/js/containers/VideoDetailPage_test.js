@@ -124,4 +124,27 @@ describe('VideoDetailPage', () => {
     wrapper.find(".menu-button").simulate('click');
     assert.isTrue(store.getState().commonUi.drawerOpen);
   });
+
+  it('has a Subtitles card', async () => {
+    let wrapper = await renderPage();
+    assert.isTrue(wrapper.find('.video-subtitle-card').exists());
+  });
+
+  it('updates videoSubtitleForm when upload button selects file', async () => {
+    let wrapper = await renderPage({editable: true});
+    let uploadBtn = wrapper.find('.upload-input');
+    let file = new File(['foo'], 'filename.vtt');
+    store.getState().videoSubtitleUi.videoSubtitleForm.video = video.key;
+    uploadBtn.prop('onChange')({target: {files: [file]}});
+    assert.equal(store.getState().videoSubtitleUi.videoSubtitleForm.subtitle, file);
+  });
+
+  it('deletes a subtitle when delete button is clicked', async () => {
+    let deleteStub = sandbox.stub(api, 'deleteSubtitle').returns(Promise.resolve({}));
+    let wrapper = await renderPage({editable: true});
+    let deleteBtns = wrapper.find('.delete-btn');
+    assert.equal(deleteBtns.length, 1);
+    deleteBtns.at(0).prop('onClick')();
+    sinon.assert.calledWith(deleteStub, video.videosubtitle_set[0].id);
+  });
 });

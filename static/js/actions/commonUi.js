@@ -20,3 +20,4 @@ export const setEditVideoTitle = createAction(SET_EDIT_VIDEO_TITLE);
 
 export const SET_EDIT_VIDEO_DESC = qualifiedName('SET_EDIT_VIDEO_DESC');
 export const setEditVideoDesc = createAction(SET_EDIT_VIDEO_DESC);
+

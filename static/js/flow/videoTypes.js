@@ -1,5 +1,16 @@
 // @flow
 
+export type VideoSubtitle = {
+  id:             number,
+  created_at:     string,
+  s3_object_key:  string,
+  bucket_name:    string,
+  cloudfront_url: string,
+  language:       string,
+  language_name:  string,
+  filename:       string
+}
+
 export type VideoFile = {
   id:             number,
   created_at:     string,
@@ -26,6 +37,7 @@ export type Video = {
   multiangle:         boolean,
   videofile_set:      Array<VideoFile>,
   videothumbnail_set: Array<VideoThumbnail>,
+  videosubtitle_set:  Array<VideoSubtitle>,
   status:             string,
 };
 

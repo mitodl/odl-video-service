@@ -1,5 +1,5 @@
 // @flow
-import { fetchJSONWithCSRF } from 'redux-hammock/django_csrf_fetch';
+import { fetchJSONWithCSRF, fetchWithCSRF } from 'redux-hammock/django_csrf_fetch';
 import type { Collection } from "../flow/collectionTypes";
 
 export type VideoUpdatePayload = {
@@ -43,5 +43,21 @@ export function uploadVideo(collectionKey: string, files: Array<Object>) {
   return fetchJSONWithCSRF(`/api/v0/upload_videos/`, {
     method: 'POST',
     body: JSON.stringify({'collection': collectionKey, 'files': files})
+  });
+}
+
+export function createSubtitle(payload: FormData) {
+  return fetchWithCSRF(`/api/v0/upload_subtitles/`, {
+    headers: {
+      'Accept': 'application/json',
+    },
+    method: 'POST',
+    body: payload
+  });
+}
+
+export function deleteSubtitle(videoSubtitleKey: number) {
+  return fetchJSONWithCSRF(`/api/v0/subtitles/${videoSubtitleKey}/`, {
+    method: 'DELETE'
   });
 }

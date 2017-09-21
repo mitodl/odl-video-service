@@ -7,14 +7,16 @@ import { PATCH, POST } from 'redux-hammock/constants';
 import * as fetchFuncs from "redux-hammock/django_csrf_fetch";
 
 import { makeCollection } from '../factories/collection';
-import { makeVideo } from '../factories/video';
+import { makeVideo, makeVideoSubtitle } from '../factories/video';
 import {
   createCollection,
   getCollections,
   getCollection,
   getVideo,
   updateVideo,
-  uploadVideo
+  uploadVideo,
+  createSubtitle,
+  deleteSubtitle
 } from '../lib/api';
 
 describe('api', () => {
@@ -97,5 +99,33 @@ describe('api', () => {
       method: POST,
       body: JSON.stringify(payload)
     });
+  });
+
+  it("can upload a video subtitle", async () => {
+    const fetchFormStub = sandbox.stub(fetchFuncs, "fetchWithCSRF");
+    const collectionKey = 'test-key';
+    const videoKey = 'test-key';
+    let payload = new FormData();
+    // $FlowFixMe
+    payload.append('file', [{name: 'file1', data: ''}]);
+    payload.append('collection', collectionKey);
+    payload.append('video', videoKey);
+    payload.append('language', 'en');
+    fetchStub.returns(Promise.resolve({}));
+
+    await createSubtitle(payload);
+    sinon.assert.calledWith(fetchFormStub, `/api/v0/upload_subtitles/`, {
+      method: POST,
+      body: payload,
+      headers: { Accept: "application/json" }
+    });
+  });
+
+  it("can delete a video subtitle", async () => {
+    const subtitle = makeVideoSubtitle();
+    fetchStub.returns(Promise.resolve(subtitle));
+
+    await deleteSubtitle(subtitle.id);
+    sinon.assert.calledWith(fetchStub, `/api/v0/subtitles/${subtitle.id}/`, {method: 'DELETE'});
   });
 });
