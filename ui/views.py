@@ -38,6 +38,88 @@ from ui.models import (
     Video,
     VideoSubtitle)
 
+import logging
+from functools import wraps
+from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.shortcuts import resolve_url
+from django.utils.decorators import available_attrs
+from django.contrib.auth.decorators import urlparse
+from urllib.parse import quote
+
+log = logging.getLogger(__name__)
+TEST_LOG_PREFIX = '*** 231 TEST ***'
+
+
+def ovstest_user_passes_test(test_func, login_url=None, redirect_field_name=REDIRECT_FIELD_NAME):
+    """
+    Decorator for views that checks that the user passes the given test,
+    redirecting to the log-in page if necessary. The test should be a callable
+    that takes the user object and returns True if the user passes.
+    """
+
+    def decorator(view_func):
+        @wraps(view_func, assigned=available_attrs(view_func))
+        def _wrapped_view(request, *args, **kwargs):
+            log.warning(
+                '%s user (%s) passes test? [%s]' % (
+                    TEST_LOG_PREFIX, request.user.username, test_func(request.user)
+                )
+            )
+            if test_func(request.user):
+                log.warning(
+                    '%s login successful. URL: %s. Request meta:' %
+                    (TEST_LOG_PREFIX, request.get_full_path())
+                )
+                for key, value in request.META.items():
+                    log.warning('%s [%s]: %s' % (TEST_LOG_PREFIX, key, value))
+                return view_func(request, *args, **kwargs)
+            path = request.build_absolute_uri()
+            resolved_login_url = resolve_url(login_url or settings.LOGIN_URL)
+            # If the login url is the same scheme and net location then just
+            # use the path as the "next" url.
+            login_scheme, login_netloc = urlparse(resolved_login_url)[:2]
+            current_scheme, current_netloc = urlparse(path)[:2]
+            if ((not login_scheme or login_scheme == current_scheme) and
+                    (not login_netloc or login_netloc == current_netloc)):
+                path = request.get_full_path()
+            from django.contrib.auth.views import redirect_to_login
+            log.warning(
+                '%s login_scheme: [%s], login_netloc: [%s], current_scheme: [%s], current_netloc: [%s]' % (
+                    TEST_LOG_PREFIX, login_scheme, login_netloc, current_scheme, current_netloc
+                )
+            )
+            log.warning(
+                '%s redirecting to path [%s]; LOGIN_URL [%s]; resolved_login_url [%s]; redirect_field_name [%s]' % (
+                    TEST_LOG_PREFIX, path, settings.LOGIN_URL, resolved_login_url, redirect_field_name
+                )
+            )
+            return redirect_to_login(
+                path, resolved_login_url, redirect_field_name)
+        return _wrapped_view
+    return decorator
+
+
+def ovstest_login_required(func=None, redirect_field_name=REDIRECT_FIELD_NAME, login_url=None):
+    """
+    Decorator for views that checks that the user is logged in, redirecting
+    to the log-in page if necessary.
+    """
+    actual_decorator = ovstest_user_passes_test(
+        lambda u: u.is_authenticated,
+        login_url=login_url,
+        redirect_field_name=redirect_field_name
+    )
+    if func:
+        return actual_decorator(func)
+    return actual_decorator
+
+
+def ovs_login_required(cls):
+    return method_decorator(
+        ovstest_login_required,
+        name='dispatch'
+    )(cls)
+
 
 def default_js_settings(request):
     """Default JS settings for views"""
@@ -67,7 +149,7 @@ class Index(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
+@ovs_login_required
 class CollectionReactView(TemplateView):
     """List of collections"""
     template_name = "ui/collections.html"
@@ -82,7 +164,7 @@ class CollectionReactView(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
+@ovs_login_required
 class VideoDetail(TemplateView):
     """
     Details of a video
@@ -102,7 +184,7 @@ class VideoDetail(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
+@ovs_login_required
 class VideoEmbed(TemplateView):
     """Display embedded video"""
     template_name = 'ui/video_embed.html'
@@ -121,7 +203,7 @@ class VideoEmbed(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
+@ovs_login_required
 class MosaicView(TemplateView):
     """Display USwitch cameras in separate window"""
     template_name = "ui/mosaic.html"
