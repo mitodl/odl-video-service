@@ -47,10 +47,6 @@
       margin: 0 0 25px;
     }
 
-    &:hover {
-      box-shadow: 7px 8px 28px #c7c7c7;
-    }
-
     .card-contents {
       display: flex;
       flex-direction: column;
@@ -76,7 +72,8 @@
       }
 
       .actions {
-        color: #9a9a9a;
+
+        margin: 2px 0 14px 0;
 
         * {
           margin-left: 10px;
