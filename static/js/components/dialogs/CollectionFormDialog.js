@@ -80,7 +80,6 @@ class CollectionFormDialog extends React.Component {
     const {
       dispatch,
       history,
-      hideDialog,
       collectionUi: { isNew },
       collectionForm,
     } = this.props;
@@ -98,7 +97,6 @@ class CollectionFormDialog extends React.Component {
     } else {
       await dispatch(actions.collections.patch(collectionForm.key, payload));
     }
-    hideDialog();
     dispatch(uiActions.clearCollectionForm());
   };
 
@@ -125,7 +123,7 @@ class CollectionFormDialog extends React.Component {
         title={title}
         cancelText="Cancel"
         submitText={submitText}
-        onCancel={hideDialog}
+        hideDialog={hideDialog}
         onAccept={this.submitForm}
         open={open}
       >
