@@ -8,11 +8,11 @@
       @content;
     }
   } @else if $name == desktop {
-    @media (min-width: 1000px) and (max-width: 1599px) {
+    @media (min-width: 1200px) and (max-width: 1599px) {
       @content;
     }
   } @else if $name == mobile {
-    @media (min-width: 580px) and (max-width: 999px) {
+    @media (min-width: 580px) and (max-width: 1199px) {
       @content;
     }
   } @else if $name == phone {
