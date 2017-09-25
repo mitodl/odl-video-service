@@ -8,7 +8,6 @@ from uuid import uuid4
 import pytest
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.exceptions import ValidationError
-from urllib3.exceptions import SSLError
 
 from ui import factories, permissions
 from ui.factories import CollectionFactory, MoiraListFactory
@@ -561,26 +560,6 @@ def test_collections_admin(mock_moira_client, collection, moira_list, alt_moira_
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
     assert collection in Collection.objects.all_admin(alt_moira_data.user)
     assert alt_moira_data.collection not in Collection.objects.all_admin(alt_moira_data.user)
-
-
-def test_user_moira_lists(mock_moira_client, moira_list):
-    """
-    Test that the correct list is returned by user_moira_lists
-    """
-    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
-    other_user = factories.UserFactory(email='someone@mit.edu')
-    lists = permissions.user_moira_lists(other_user)
-    assert lists == [moira_list.name]
-
-
-def test_user_moira_lists_error(mock_moira_client):
-    """
-    Test that an empty list is returned if the Moira client can't connect
-    """
-    mock_moira_client.side_effect = SSLError()
-    other_user = factories.UserFactory()
-    lists = permissions.user_moira_lists(other_user)
-    assert lists == []
 
 
 def test_subtitle_view_permission_no_matching_lists(mock_moira_client,

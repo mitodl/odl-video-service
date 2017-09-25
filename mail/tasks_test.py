@@ -10,7 +10,7 @@ from django.urls import reverse
 from mail import tasks
 from mail.models import NotificationEmail
 from ui.constants import VideoStatus
-from ui.factories import VideoFactory
+from ui.factories import VideoFactory, MoiraListFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -18,12 +18,25 @@ pytestmark = pytest.mark.django_db
 # pylint: disable=protected-access
 
 
-def test_get_recipients_for_video():
+@pytest.fixture(autouse=True)
+def mocker_defaults(mocker):
+    """
+    Sets default settings to safe defaults
+    """
+    mocker.patch('mail.tasks.has_common_lists', return_value=False)
+
+
+def test_get_recipients_for_video(mocker):
     """
     Tests the _get_recipients_for_video api
     """
-    video = VideoFactory()
-    assert tasks._get_recipients_for_video(video) == [video.collection.owner.email]
+    lists = MoiraListFactory.create_batch(2)
+    video = VideoFactory(collection__admin_lists=lists)
+    list_emails = ['{}@mit.edu'.format(mlist.name) for mlist in video.collection.admin_lists.all()]
+    mocker.patch('mail.tasks.has_common_lists', return_value=False)
+    assert tasks._get_recipients_for_video(video) == list_emails + [video.collection.owner.email]
+    mocker.patch('mail.tasks.has_common_lists', return_value=True)
+    assert tasks._get_recipients_for_video(video) == list_emails
 
 
 def test_send_notification_email_wrong_status(mocker):

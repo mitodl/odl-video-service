@@ -13,23 +13,11 @@ from rest_framework.permissions import (
 )
 
 from ui.models import Collection
-from ui.utils import user_moira_lists
+from ui.utils import has_common_lists
 
 log = logging.getLogger(__name__)
 
 User = get_user_model()
-
-
-def has_common_lists(user, list_names):
-    """
-    Return true if the user's moira lists overlap with the collection's
-
-    Returns:
-        bool: True if there is any name in list_names which is in the user's moira lists
-    """
-    if user.is_anonymous():
-        return False
-    return len(set(user_moira_lists(user)).intersection(list_names)) > 0
 
 
 def is_staff_or_superuser(user):
