@@ -155,7 +155,6 @@ describe('CollectionFormDialog', () => {
           sinon.assert.calledWith(apiStub, collection.key, expectedRequestPayload);
           sinon.assert.notCalled(historyPushStub);
         }
-        sinon.assert.calledWith(hideDialogStub);
         assert.isTrue(store.getState().collectionUi.isNew);
       });
     });

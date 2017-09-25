@@ -44,7 +44,7 @@ describe('Dialog higher-order component', () => {
           cancelText="Close"
           submitText=""
           noSubmit={true}
-          onCancel={this.props.hideDialog}
+          hideDialog={this.props.hideDialog}
           open={this.props.open}
         >
           Fake Dialog
@@ -109,7 +109,7 @@ describe('Dialog higher-order component', () => {
 
     await listenForActions([SHOW_DIALOG, HIDE_DIALOG], () => {
       wrapper.find(selectors.OPEN_BTN).prop('onClick')();
-      wrapper.find("Dialog").prop('onCancel')();
+      wrapper.find("Dialog").prop('hideDialog')();
     });
   });
 });

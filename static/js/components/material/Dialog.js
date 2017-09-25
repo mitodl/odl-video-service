@@ -6,8 +6,9 @@ import Button from './Button';
 
 type DialogProps = {
   open: boolean,
-  onAccept: () => void,
-  onCancel: () => void,
+  onAccept?: () => void,
+  onCancel?: () => void,
+  hideDialog: () => void,
   children: React.Children,
   title: string,
   cancelText: string,
@@ -22,28 +23,15 @@ export default class Dialog extends React.Component {
   // $FlowFixMe: Flow doesn't like the extra props that aren't part of mdc.dialog class
   props: DialogProps;
 
-  showMdc() {
-    if (this.dialog) {
-      this.dialog.show();
-    }
-  }
-
-  destroyMdc() {
-    if (this.dialog) {
-      this.dialog.destroy();
-    }
-  }
-
   componentDidMount() {
-    const { open, onAccept, onCancel } = this.props;
+    const { open } = this.props;
 
     // Hack to get dialog to play nicely with JS tests
     if (!this.dialogRoot || !this.dialogRoot.dataset) return;
 
     this.dialog = new MDCDialog(this.dialogRoot);
-    this.dialog.listen('MDCDialog:accept', onAccept);
-    // $FlowFixMe: Flow thinks this.dialog might be null
-    this.dialog.listen('MDCDialog:cancel', onCancel);
+    this.attachDialogListeners(this.dialog);
+
     if (open) {
       this.showMdc();
     }
@@ -63,6 +51,32 @@ export default class Dialog extends React.Component {
     }
   }
 
+  // This function only exists because of false Flow errors
+  attachDialogListeners = (dialog: Object) => {
+    const { onAccept, onCancel, hideDialog } = this.props;
+
+    if (onAccept) {
+      dialog.listen('MDCDialog:accept', onAccept);
+    }
+    dialog.listen('MDCDialog:accept', hideDialog);
+    if (onCancel) {
+      dialog.listen('MDCDialog:cancel', onCancel);
+    }
+    dialog.listen('MDCDialog:cancel', hideDialog);
+  };
+
+  showMdc() {
+    if (this.dialog) {
+      this.dialog.show();
+    }
+  }
+
+  destroyMdc() {
+    if (this.dialog) {
+      this.dialog.destroy();
+    }
+  }
+
   render() {
     const { title, children, cancelText, submitText, noSubmit, id, open } = this.props;
 
@@ -70,7 +84,7 @@ export default class Dialog extends React.Component {
     let styleProp = open ? {} : {display: 'none'};
 
     return <aside
-      id={id ? id : 'mdc-dialog'}
+      id={id}
       className="mdc-dialog"
       role="alertdialog"
       aria-labelledby="my-mdc-dialog-label"

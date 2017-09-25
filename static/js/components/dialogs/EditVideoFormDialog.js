@@ -67,7 +67,6 @@ class EditVideoFormDialog extends React.Component {
   submitForm = async () => {
     const {
       dispatch,
-      hideDialog,
       commonUi: { editVideoForm },
       shouldUpdateCollection
     } = this.props;
@@ -77,7 +76,6 @@ class EditVideoFormDialog extends React.Component {
       description: editVideoForm.description
     };
     let video = await dispatch(actions.videos.patch(editVideoForm.key, patchData));
-    hideDialog();
     this.initializeFormWithVideo(video);
     if (shouldUpdateCollection) {
       dispatch(actions.collections.get(video.collection_key));
@@ -97,7 +95,7 @@ class EditVideoFormDialog extends React.Component {
       cancelText="Cancel"
       submitText="Save Changes"
       noSubmit={false}
-      onCancel={hideDialog}
+      hideDialog={hideDialog}
       onAccept={this.submitForm}
       open={open}
     >

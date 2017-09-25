@@ -29,7 +29,7 @@ class ShareVideoDialog extends React.Component {
       id="share-video-dialog"
       cancelText="Close"
       open={open}
-      onCancel={hideDialog}
+      hideDialog={hideDialog}
       noSubmit={true}
     >
       <div className="mdc-form-field mdc-form-field--align-end">
