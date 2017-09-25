@@ -9,7 +9,7 @@ from celery import shared_task
 from mail import api
 from mail.models import NotificationEmail
 from ui.constants import VideoStatus
-
+from ui.utils import has_common_lists
 
 log = logging.getLogger(__name__)
 
@@ -18,19 +18,17 @@ def _get_recipients_for_video(video):
     """
     Returns a list of recipients that will receive notifications for a video.
 
-    NOTE: this needs to be updated to include all the admin moira lists associated to the collection
-    where the video is.
-
     Args:
         video (ui.models.Video): a video object
 
     Returns:
         list: a list of strings representing emails
     """
-    recipients_list = []
-    owner_email = video.collection.owner.email
-    if owner_email:
-        recipients_list.append(owner_email)
+    admin_lists = video.collection.admin_lists.values_list('name', flat=True)
+    recipients_list = ['{}@mit.edu'.format(mlist) for mlist in admin_lists]
+    owner = video.collection.owner
+    if owner.email and not has_common_lists(owner, admin_lists):
+        recipients_list.append(owner.email)
     return recipients_list
 
 

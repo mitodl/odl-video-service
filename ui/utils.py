@@ -66,8 +66,20 @@ def user_moira_lists(user):
         moira = get_moira_client()
         return moira.user_lists(moira_user.username, moira_user.type)
     except Exception as exc:  # pylint: disable=broad-except
-        log.exception('Something went wrong with the moira client: %s', str(exc))
+        log.exception('Something went wrong with the moira client for user %s: %s', user.email, str(exc))
         return []
+
+
+def has_common_lists(user, list_names):
+    """
+    Return true if the user's moira lists overlap with the collection's
+
+    Returns:
+        bool: True if there is any name in list_names which is in the user's moira lists
+    """
+    if user.is_anonymous():
+        return False
+    return len(set(user_moira_lists(user)).intersection(list_names)) > 0
 
 
 def get_et_job(job_id):

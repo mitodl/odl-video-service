@@ -1,11 +1,16 @@
 """Tests for utils methods"""
 from tempfile import NamedTemporaryFile
+from urllib3.exceptions import SSLError
 
 import pytest
 
-from ui.utils import write_to_file, get_moira_client
+from ui import factories
+from ui.utils import write_to_file, get_moira_client, user_moira_lists
+
 
 # pylint: disable=unused-argument
+
+pytestmark = pytest.mark.django_db
 
 
 @pytest.mark.parametrize("key_file, cert_file", [
@@ -42,3 +47,24 @@ def test_write_to_file():
         write_to_file(outfile.name, content)
         with open(outfile.name, 'rb') as infile:
             assert infile.read() == content
+
+
+def test_user_moira_lists(mock_moira_client):
+    """
+    Test that the correct list is returned by user_moira_lists
+    """
+    moira_list = factories.MoiraListFactory()
+    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    other_user = factories.UserFactory(email='someone@mit.edu')
+    lists = user_moira_lists(other_user)
+    assert lists == [moira_list.name]
+
+
+def test_user_moira_lists_error(mock_moira_client):
+    """
+    Test that an empty list is returned if the Moira client can't connect
+    """
+    mock_moira_client.side_effect = SSLError()
+    other_user = factories.UserFactory()
+    lists = user_moira_lists(other_user)
+    assert lists == []
