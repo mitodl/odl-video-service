@@ -203,17 +203,24 @@ $video-card-width: 15.6%;
       }
 
       .message {
-        padding: 25px;
-        min-height: 180px;
+        padding: 56.25% 0 0;
         background-color: #272727;
         color: #fff;
+        position: relative;
+        overflow: hidden;
+
+        >div {
+          position: absolute;
+          top: 26px;
+          padding: 0 6%;
+        }
 
         a, a:hover, a:visited {
           color: $darkgray-bg-link;
         }
 
         h5 {
-          margin: 16px 0;
+          margin: 0 0 16px 0;
           font-family: Roboto, sans-serif;
           font-size: 17px;
           font-weight: 500;
@@ -221,6 +228,7 @@ $video-card-width: 15.6%;
 
         p {
           opacity: 0.8;
+          font-size: 15px;
         }
       }
 
