@@ -1,6 +1,8 @@
 """APIs for coudsync app"""
 import logging
 import re
+from collections import namedtuple
+from datetime import datetime
 
 import boto3
 from boto3.s3.transfer import TransferConfig
@@ -24,6 +26,10 @@ from ui.utils import get_et_preset, get_bucket, get_et_job
 log = logging.getLogger(__name__)
 
 THUMBNAIL_PATTERN = "thumbnails/{}_thumbnail_{{count}}"
+ParsedVideoAttributes = namedtuple(
+    'ParsedVideoAttributes',
+    ['prefix', 'session', 'record_date', 'record_date_str']
+)
 
 
 def process_transcode_results(video, job):
@@ -118,7 +124,6 @@ def transcode_video(video, video_file):
     Args:
         video(ui.models.Video): the video to transcode
         video_file(ui.models.Videofile): the s3 file to use for transcoding
-
     """
 
     video_input = {
@@ -160,26 +165,55 @@ def transcode_video(video, video_file):
             video.update_status(VideoStatus.TRANSCODING)
 
 
-def process_watch_file(s3key):
+def create_lecture_collection_title(video_attributes):
     """
-    Move the file from the watch bucket to the upload bucket, create model objects, and transcode
+    Create a title for a collection based on some attributes of an uploaded video filename
 
     Args:
-        s3key(str): S3 object key
+        video_attributes (ParsedVideoAttributes): Named tuple of lecture video info
+    """
+    return (
+        video_attributes.prefix
+        if not video_attributes.session
+        else '{}-{}'.format(video_attributes.prefix, video_attributes.session)
+    )
 
+
+def create_lecture_video_title(video_attributes):
+    """
+    Create a title for a video based on some attributes of an uploaded video filename
+
+    Args:
+        video_attributes (ParsedVideoAttributes): Named tuple of lecture video info
+    """
+    video_title_date = (
+        video_attributes.record_date_str
+        if not video_attributes.record_date
+        else video_attributes.record_date.strftime('%B %d, %Y')
+    )
+    return 'Lecture - {}'.format(video_title_date)
+
+
+def process_watch_file(s3_filename):
+    """
+    Move the file from the watch bucket to the upload bucket, create model objects, and transcode.
+    The given file is assumed to be a lecture capture video.
+
+    Args:
+        s3_filename (str): S3 object key (i.e.: a filename)
     """
     watch_bucket = get_bucket(settings.VIDEO_S3_WATCH_BUCKET)
+    video_attributes = parse_lecture_video_filename(s3_filename)
 
-    title = extract_title(s3key)
-    collection, _ = Collection.objects.get_or_create(title=title,
-                                                     owner=User.objects.get(username=settings.LECTURE_CAPTURE_USER))
-
-    # Create the necessary models
+    collection, _ = Collection.objects.get_or_create(
+        title=create_lecture_collection_title(video_attributes),
+        owner=User.objects.get(username=settings.LECTURE_CAPTURE_USER)
+    )
     with transaction.atomic():
         video = Video.objects.create(
-            source_url='https://{}/{}/{}'.format(settings.AWS_S3_DOMAIN, settings.VIDEO_S3_WATCH_BUCKET, s3key),
+            source_url='https://{}/{}/{}'.format(settings.AWS_S3_DOMAIN, settings.VIDEO_S3_WATCH_BUCKET, s3_filename),
             collection=collection,
-            title=s3key,
+            title=create_lecture_video_title(video_attributes),
             multiangle=True  # Assume all videos in watch bucket are multi-angle
         )
         video_file = VideoFile.objects.create(
@@ -192,7 +226,7 @@ def process_watch_file(s3key):
     s3_client = boto3.client('s3')
     copy_source = {
         'Bucket': watch_bucket.name,
-        'Key': s3key
+        'Key': s3_filename
     }
     try:
         s3_client.copy(copy_source, settings.VIDEO_S3_BUCKET, video_file.s3_object_key)
@@ -206,23 +240,24 @@ def process_watch_file(s3key):
 
     # Delete the original file from the watch bucket
     try:
-        s3_client.delete_object(Bucket=settings.VIDEO_S3_WATCH_BUCKET, Key=s3key)
+        s3_client.delete_object(Bucket=settings.VIDEO_S3_WATCH_BUCKET, Key=s3_filename)
     except ClientError:
-        log.error('Failed to delete %s from watch bucket', s3key)
+        log.error('Failed to delete %s from watch bucket', s3_filename)
 
     # Start a transcode job for the video
     transcode_video(video, video_file)
 
 
-def extract_title(filename):
+def parse_lecture_video_filename(filename):
     """
     Parses the filename for required course information
+
     Args:
         filename(str): The name of the video file, in format
         'MIT-<course#>-<year>-<semester>-lec-mit-0000-<recording_date>-<time>-<session>.mp4'
 
     Returns:
-        A string which should match a collection title: MIT-<course>-<session>-<year>-<semester>
+        ParsedVideoAttributes: A named tuple of information extracted from the video file name
     """
     rx = (r'(.+)-lec-mit-0000-'  # prefix to be used as the start of the collection name
           r'(\w+)'  # Recording date (required)
@@ -232,8 +267,17 @@ def extract_title(filename):
     matches = re.search(rx, filename)
     if not matches or len(matches.groups()) != 5:
         raise VideoFilenameError('No matches found for filename %s with regex %s', filename, rx)
-    prefix, _, _, _, session = matches.groups()
-    return '-'.join([val for val in (prefix, session) if val])
+    prefix, recording_date_str, _, _, session = matches.groups()
+    try:
+        record_date = datetime.strptime(recording_date_str, "%Y%b%d")
+    except ValueError:
+        record_date = None
+    return ParsedVideoAttributes(
+        prefix=prefix,
+        session=session,
+        record_date=record_date,
+        record_date_str=recording_date_str
+    )
 
 
 def upload_subtitle_to_s3(caption_data, file_data):
