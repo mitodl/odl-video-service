@@ -153,7 +153,8 @@ def update_video_statuses(self):  # pylint: disable=unused-argument
 @shared_task(bind=True)
 def monitor_watch_bucket(self):  # pylint: disable=unused-argument
     """
-    Check the watch bucket for any files and import them if found
+    Check the watch bucket for any files and import them if found. All files found in the
+    S3 bucket indicated by 'VIDEO_S3_WATCH_BUCKET' is assumed to be a lecture capture video.
     """
     watch_bucket = get_bucket(settings.VIDEO_S3_WATCH_BUCKET)
     for key in watch_bucket.objects.all():

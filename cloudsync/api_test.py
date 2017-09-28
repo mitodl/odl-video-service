@@ -4,9 +4,10 @@ Tests for api
 import os
 import io
 from types import SimpleNamespace
+from datetime import datetime
 
-import boto3
 import pytest
+import boto3
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -191,35 +192,47 @@ def test_process_transcode_results(mocker):
     assert len(video.videothumbnail_set.all()) == 1
 
 
-def test_extract_title():
+@pytest.mark.parametrize(
+    'course_prefix, session, date_str, expected_record_date', [
+        ('MIT-6.046-2017-Spring', 'L01', '2017apr06', datetime(2017, 4, 6)),
+        ('abcdefg', 'L01', '2017apr06', datetime(2017, 4, 6)),
+        ('MIT-6.046-2017-Spring', None, '2017apr06', datetime(2017, 4, 6)),
+        ('MIT-6.046-2017-Spring', '2-190', '2017apr06', datetime(2017, 4, 6)),
+        ('/&*3:<>俺正和', None, '2017apr06', datetime(2017, 4, 6)),
+        ('abcdefg', None, '2017badmonthvalue06', None),
+    ]
+)
+def test_parse_lecture_video_filename(course_prefix, session, date_str, expected_record_date):
     """
-    Test that a correctly formatted title is returned for a video file.
+    Test that a tuple of video attributes title is correctly parsed for a video file.
     """
-    filenames = (('MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4', 'MIT-6.046-2017-Spring-L01'),
-                 ('MIT-6.046-2018-Fall-lec-mit-0000-2017apr06-0404.mp4', 'MIT-6.046-2018-Fall'),
-                 ('MIT-6.046-lec-mit-0000-2017apr06-0404.mp4', 'MIT-6.046'),
-                 ('MIT-6.046-lec-mit-0000-2017apr06-0404-L02.mp4', 'MIT-6.046-L02'),
-                 ('MIT-STS.001-2015-Fall-lec-mit-0000-2015dec21-2222-L03_2.mp4', 'MIT-STS.001-2015-Fall-L03'),
-                 ('MIT-HST.969-2018-Spring-lec-mit-0000-2018mar09-0001-L01.mp4', 'MIT-HST.969-2018-Spring-L01'),
-                 ('NUS-7.S939-2019-Spring-lec-mit-0000-2019apr02-1210-L05.mp4', 'NUS-7.S939-2019-Spring-L05'),
-                 ('MIT-Adhoc-lec-mit-0000-2017aug10-0954-2-190.mp4', 'MIT-Adhoc-2-190'),
-                 ('MIT-18.test-lec-mit-0000-2017aug10-0956-L01.mp4', 'MIT-18.test-L01'),
-                 ('MIT-18.test-lec-mit-0000-2017aug10-0956.mp4', 'MIT-18.test'),
-                 ('MIT-Simons Lecture Series-lec-mit-0000-2017aug10-0956-2-10.mp4', 'MIT-Simons Lecture Series-2-10'),
-                 ('/&*3:<>俺正和-lec-mit-0000-2017aug10-0956.mp4', '/&*3:<>俺正和'))
-    for filename, title in filenames:
-        assert api.extract_title(filename) == title
+    filename = '{}-lec-mit-0000-{}-0404{}.mp4'.format(
+        course_prefix,
+        date_str,
+        '' if not session else '-{}'.format(session)
+    )
+    expected_parsed_attrs = api.ParsedVideoAttributes(
+        prefix=course_prefix,
+        session=session,
+        record_date=expected_record_date,
+        record_date_str=date_str
+    )
+    assert api.parse_lecture_video_filename(filename) == expected_parsed_attrs
 
 
-def test_extract_bad_title():
-    """Assert that a VideoFilenameError is raised for a bad filename"""
-    bad_names = ('MIT-6.046-1510-L01.mp4',  # Missing -lec-mit-0000
-                 'Completely random name.mp4',  # No similarity to expected format
-                 'MIT-6.046-lec-mit-0000-2017apr06-L01')  # no extension
-
-    for name in bad_names:
-        with pytest.raises(VideoFilenameError):
-            api.extract_title(name)
+@pytest.mark.parametrize(
+    'filename', [
+        'MIT-6.046-1510-L01.mp4',  # Missing -lec-mit-0000
+        'Completely random name.mp4',  # No similarity to expected format
+        'MIT-6.046-lec-mit-0000-2017apr06-L01'  # no extension
+    ]
+)
+def test_parse_lecture_video_filename_failure(filename):
+    """
+    Test failure cases for parsing a lecture video filename
+    """
+    with pytest.raises(VideoFilenameError):
+        api.parse_lecture_video_filename(filename)
 
 
 @mock_s3
@@ -230,13 +243,13 @@ def test_watch_nouser():
     """
     s3 = boto3.resource('s3')
     s3c = boto3.client('s3')
-    upload = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
+    filename = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
-    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
     with pytest.raises(User.DoesNotExist):
-        api.process_watch_file(upload)
-    assert not Video.objects.filter(title=upload).exists()
+        api.process_watch_file(filename)
+    assert not Video.objects.filter(title=filename).exists()
 
 
 @mock_s3
@@ -246,14 +259,14 @@ def test_watch_s3_error():
     UserFactory(username='admin')  # pylint: disable=unused-variable
     s3 = boto3.resource('s3')
     s3c = boto3.client('s3')
-    upload = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
+    filename = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
-    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
     with transaction.atomic():
         with pytest.raises(ClientError):
-            api.process_watch_file(upload)
-    assert not Video.objects.filter(title=upload).exists()
+            api.process_watch_file(filename)
+    assert not Video.objects.filter(title=filename).exists()
 
 
 @mock_s3
@@ -263,15 +276,15 @@ def test_watch_filename_error():
     UserFactory(username='admin')  # pylint: disable=unused-variable
     s3 = boto3.resource('s3')
     s3c = boto3.client('s3')
-    upload = 'Bad filename.mp4'
+    filename = 'Bad filename.mp4'
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
     s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
-    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
     with transaction.atomic():
         with pytest.raises(VideoFilenameError):
-            api.process_watch_file(upload)
-    assert not Video.objects.filter(title=upload).exists()
+            api.process_watch_file(filename)
+    assert not Video.objects.filter(title=filename).exists()
 
 
 @mock_s3
@@ -282,18 +295,21 @@ def test_process_watch(mocker):
                           ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
+    mocker.patch('cloudsync.api.create_lecture_collection_title', return_value='COLLECTION TITLE')
+    mocker.patch('cloudsync.api.create_lecture_video_title', return_value='VIDEO TITLE')
     UserFactory(username='admin')  # pylint: disable=unused-variable
     s3 = boto3.resource('s3')
     s3c = boto3.client('s3')
-    upload = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
+    filename = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
     s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
-    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
-    api.process_watch_file(upload)
-    videos = Video.objects.filter(title=upload)
-    assert videos.count() == 1
-    new_video = videos[0]
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
+    api.process_watch_file(filename)
+    new_video = Video.objects.filter(source_url__endswith=filename).first()
+    assert new_video is not None
+    assert new_video.title == 'VIDEO TITLE'
+    assert new_video.collection.title == 'COLLECTION TITLE'
     videofile = new_video.videofile_set.first()
     mock_encoder.assert_called_once_with(
         {
@@ -322,6 +338,42 @@ def test_process_watch(mocker):
                 "transcoded/" + new_video.hexkey + "/video_1351620000001-000020"
             ]
         }])
+
+
+def test_lecture_collection_title():
+    """Tests for create_lecture_collection_title"""
+    video_attrs = api.ParsedVideoAttributes(
+        prefix='Prefix',
+        session='Session',
+        record_date=None,
+        record_date_str='',
+    )
+    assert api.create_lecture_collection_title(video_attrs) == 'Prefix-Session'
+    video_attrs_no_session = api.ParsedVideoAttributes(
+        prefix='Prefix',
+        session=None,
+        record_date=None,
+        record_date_str='',
+    )
+    assert api.create_lecture_collection_title(video_attrs_no_session) == 'Prefix'
+
+
+def test_lecture_video_title():
+    """Tests for create_lecture_video_title"""
+    video_attrs = api.ParsedVideoAttributes(
+        record_date=datetime(2017, 1, 1),
+        record_date_str='2017jan01',
+        prefix='Prefix',
+        session='Session',
+    )
+    assert api.create_lecture_video_title(video_attrs) == 'Lecture - January 01, 2017'
+    video_attrs_no_date = api.ParsedVideoAttributes(
+        record_date=None,
+        record_date_str='2017jan01',
+        prefix='Prefix',
+        session='Session',
+    )
+    assert api.create_lecture_video_title(video_attrs_no_date) == 'Lecture - 2017jan01'
 
 
 def test_transcode_job(mocker, videofile):
