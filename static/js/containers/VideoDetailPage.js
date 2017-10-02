@@ -128,6 +128,7 @@ class VideoDetailPage extends React.Component {
       <div className="mdc-layout-grid mdc-video-detail">
         <div className="mdc-layout-grid__inner">
           <div className="summary mdc-layout-grid__cell--span-7">
+            <div className="card video-summary-card">
             <p className="channelLink mdc-typography--subheading1">
               <a className="collection-link" href={collectionUrl}>
                 {video.collection_title}
@@ -141,10 +142,10 @@ class VideoDetailPage extends React.Component {
                 {video.description}
               </p>
             }
-            <span className="upload-date mdc-typography--subheading1 fontgray">
+            <div className="upload-date mdc-typography--subheading1 fontgray">
               Uploaded {formattedCreation}
-            </span>
-            <span className="actions">
+            </div>
+            <div className="actions">
               {
                 editable &&
                 <Button
@@ -160,7 +161,8 @@ class VideoDetailPage extends React.Component {
               >
                 <span className="material-icons ">share</span> Share
               </Button>
-            </span>
+            </div>
+            </div>
           </div>
           <div className="video-subtitles mdc-layout-grid__cell--span-5">
             <VideoSubtitleCard
