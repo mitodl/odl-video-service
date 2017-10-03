@@ -50,7 +50,7 @@
       right: 0;
       bottom: 0;
 
-      @include breakpoint(mobile) {
+      @include breakpoint(phone) {
         position: relative;
       }
     }
