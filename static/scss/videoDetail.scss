@@ -16,6 +16,14 @@
   @include breakpoint(phone) {
     margin: 30px auto 80px;
   }
+
+  .video-summary-card {
+    padding: 26px 5% 38px;
+
+    p.channelLink {
+      margin: 0px;
+    }
+  }
 }
 
 .actions {
