@@ -1,9 +1,22 @@
 // Define globals we would usually get from Django
 import ReactDOM from 'react-dom';
+import { makeVideo } from './factories/video';
 
-const _createSettings = () => ({});
+const _createSettings = () => ({
+  videoKey: 'a_video_key',
+  video: makeVideo('a_video_key'),
+  editable: false,
+  user: '',
+  dropbox_key: 'dropbox_key',
+  thumbnail_base_url: 'http://fake/',
+  support_email_address: 'support@example.com'
+});
 
 global.SETTINGS = _createSettings();
+
+// workarounds for MDC
+global.cancelAnimationFrame = () => null;
+global.requestAnimationFrame = () => null;
 
 // polyfill for Object.entries
 import entries from 'object.entries';

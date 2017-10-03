@@ -1,0 +1,202 @@
+// @flow
+import React from 'react';
+import { connect } from 'react-redux';
+import moment from 'moment';
+import type { Dispatch } from "redux";
+import R from 'ramda';
+
+import Button from '../components/material/Button';
+import Drawer from '../components/material/Drawer';
+import OVSToolbar from '../components/OVSToolbar';
+import Footer from '../components/Footer';
+import VideoPlayer from '../components/VideoPlayer';
+import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
+import ShareVideoDialog from '../components/dialogs/ShareVideoDialog';
+import { withDialogs } from '../components/dialogs/hoc';
+
+import { actions } from '../actions';
+import * as videoSubtitleActions from '../actions/videoSubtitleUi';
+import { setDrawerOpen } from '../actions/commonUi';
+import { makeCollectionUrl } from '../lib/urls';
+import { videoIsProcessing, videoHasError } from '../lib/video';
+import { DIALOGS, MM_DD_YYYY } from '../constants';
+
+import type { Video } from "../flow/videoTypes";
+import type { CommonUiState } from "../reducers/commonUi";
+import type { SubtitleUiState } from "../reducers/videoSubtitleUi";
+import VideoSubtitleCard from "../components/VideoSubtitleCard";
+
+
+class VideoDetailPage extends React.Component {
+  props: {
+    dispatch: Dispatch,
+    video: ?Video,
+    videoKey: string,
+    needsUpdate: boolean,
+    commonUi: CommonUiState,
+    videoSubtitleUi: SubtitleUiState,
+    showDialog: Function,
+    editable: boolean
+  };
+
+  componentDidMount() {
+    this.updateRequirements();
+  }
+
+  componentDidUpdate() {
+    this.updateRequirements();
+  }
+
+  updateRequirements = () => {
+    const { dispatch, videoKey, needsUpdate } = this.props;
+
+    if (needsUpdate) {
+      dispatch(actions.videos.get(videoKey));
+    }
+  };
+
+  setDrawerOpen = (open: boolean): void => {
+    const { dispatch } = this.props;
+    dispatch(setDrawerOpen(open));
+  };
+
+  deleteSubtitle = async (videoSubtitleId) => {
+    const {
+      dispatch,
+      videoKey
+    } = this.props;
+    await dispatch(actions.videoSubtitles.delete(videoSubtitleId));
+    dispatch(actions.videos.get(videoKey));
+  };
+
+  uploadVideoSubtitle = async () => {
+    const {
+      dispatch,
+      video,
+      videoKey,
+      videoSubtitleUi: {videoSubtitleForm}
+    } = this.props;
+    if (video && videoSubtitleForm.subtitle) {
+      const formData = new FormData();
+      formData.append('file', videoSubtitleForm.subtitle);
+      formData.append('collection', video.collection_key);
+      formData.append('video', video.key);
+      formData.append('language', videoSubtitleForm.language);
+      // $FlowFixMe: A file alwyas has a name
+      formData.append('filename', videoSubtitleForm.subtitle.name);
+      await dispatch(actions.videoSubtitles.post(formData));
+      dispatch(actions.videos.get(videoKey));
+    }
+  };
+
+  setUploadSubtitle = async (event: Object) => {
+    const { dispatch } = this.props;
+    await dispatch(videoSubtitleActions.setUploadSubtitle(event.target.files[0]));
+    this.uploadVideoSubtitle();
+  };
+
+  renderVideoPlayer = (video: Video) => {
+    if (videoIsProcessing(video)) {
+      return <div className="video-message">
+        Video is processing, check back later
+      </div>;
+    }
+
+    if (videoHasError(video)) {
+      return  <div className="video-message">
+        Something went wrong :(
+      </div>;
+    }
+
+    return <VideoPlayer
+      video={video}
+      useIframeForUSwitch={true}
+    />;
+  };
+
+  render() {
+    const { video, commonUi, editable, showDialog } = this.props;
+    if (!video) {
+      return null;
+    }
+    const formattedCreation = moment(video.created_at).format(MM_DD_YYYY);
+    const collectionUrl = makeCollectionUrl(video.collection_key);
+    return <div>
+      <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
+      <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
+      { video ? this.renderVideoPlayer(video) : null }
+      <div className="mdc-layout-grid mdc-video-detail">
+        <div className="mdc-layout-grid__inner">
+          <div className="summary mdc-layout-grid__cell--span-7">
+            <div className="card video-summary-card">
+              <p className="channelLink mdc-typography--subheading1">
+                <a className="collection-link" href={collectionUrl}>
+                  {video.collection_title}
+                </a>
+              </p>
+              <h2 className="video-title mdc-typography--title">
+                {video.title}
+              </h2>
+              { video.description &&
+              <p className="video-description mdc-typography--body1">
+                {video.description}
+              </p>
+              }
+              <div className="upload-date mdc-typography--subheading1 fontgray">
+                Uploaded {formattedCreation}
+              </div>
+              <div className="actions">
+                {
+                  editable &&
+                  <Button
+                    className="edit mdc-button--raised"
+                    onClick={showDialog.bind(this, DIALOGS.EDIT_VIDEO)}
+                  >
+                    <span className="material-icons">edit</span> Edit
+                  </Button>
+                }
+                <Button
+                  className="share mdc-button--raised"
+                  onClick={showDialog.bind(this, DIALOGS.SHARE_VIDEO)}
+                >
+                  <span className="material-icons ">share</span> Share
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div className="video-subtitles mdc-layout-grid__cell--span-5">
+            <VideoSubtitleCard
+              id="subtitleCard"
+              video={video} isAdmin={editable}
+              uploadVideoSubtitle={this.setUploadSubtitle}
+              deleteVideoSubtitle={this.deleteSubtitle}
+            />
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>;
+  }
+}
+
+const mapStateToProps = (state, ownProps) => {
+  const { videoKey } = ownProps;
+  const { videos, commonUi, videoSubtitleUi } = state;
+  const video = videos.data ? videos.data.get(videoKey) : null;
+  const needsUpdate = !videos.processing && !videos.loaded;
+
+  return {
+    video,
+    needsUpdate,
+    commonUi,
+    videoSubtitleUi
+  };
+};
+
+export default R.compose(
+  connect(mapStateToProps),
+  withDialogs([
+    {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog},
+    {name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog}
+  ])
+)(VideoDetailPage);

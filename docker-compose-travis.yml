@@ -36,7 +36,8 @@ services:
     command: >
       /bin/bash -c '
       sleep 3 &&
-      python3 manage.py migrate &&
+      python3 manage.py collectstatic --noinput &&
+      python3 manage.py migrate --noinput &&
       ./with_host.sh python3 manage.py runserver 0.0.0.0:8089'
     ports:
       - "8089:8089"

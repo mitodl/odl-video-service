@@ -21,6 +21,7 @@ module.exports = Object.assign(prodConfig, {
     chunkFilename: "[id]-[chunkhash].js",
     crossOriginLoading: "anonymous",
   },
+
   plugins: [
     new webpack.DefinePlugin({
       'process.env': {

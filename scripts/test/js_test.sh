@@ -7,6 +7,9 @@ then
 elif [[ ! -z "$CODECOV" ]]
 then
     export CMD="node ./node_modules/nyc/bin/nyc.js --reporter=lcovonly -R spec mocha"
+elif [[ ! -z "$WATCH" ]]
+then
+    export CMD="node ./node_modules/mocha/bin/_mocha --watch"
 else
     export CMD="node ./node_modules/mocha/bin/_mocha"
 fi
@@ -49,6 +52,7 @@ if [[ $(
     cat "$TMP_FILE" |
     grep -v 'ignored, nothing could be mapped' |
     grep -v "This browser doesn't support the \`onScroll\` event" |
+    grep -v "Warning: Accessing PropTypes via the main React package is deprecated" |
     wc -l |
     awk '{print $1}'
     ) -ne 0 ]]  # is file empty?

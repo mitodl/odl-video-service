@@ -2,17 +2,20 @@
 {% block title %}OVS | Upload{% endblock %}
 {% block pagetitle %}OVS: Upload{% endblock %}
 {% block content %}
+
+<h2>Collection: {{ collection.title }}</h2>
 <p>To upload a video to OVS, first add it to your Dropbox. Then click
 on the button below to choose the video (or videos) that you want to upload
 to OVS.</p>
 
 <div id="container"></div>
 
-<p id="next">Next, <a href="{% url 'video-list' %}">view your uploaded videos</a>.</p>
+<p id="next">Next, <a href="{% url 'collection-react-view' %}{{ collection.hexkey }}">view your uploaded videos</a>.</p>
 
 <script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js" id="dropboxjs" data-app-key="{{ dropbox_key }}"></script>
 <script>
   let CSRF = "{{ csrf_token }}";
+  let COLLECTION_KEY = "{{ collection.hexkey }}";
   let updateStatus = function(taskId) {
     fetch('/api/v0/tasks/' + taskId).then(function(response) {
       let progress = document.getElementById(taskId);
@@ -58,65 +61,15 @@ to OVS.</p>
         progress.value = 0;
         let progressItem = document.createElement("li");
         let progressText = document.createTextNode(videoFile);
-        let form = document.createElement("form")
-        form.action = "/api/v0/videos/" + videoId + "/";
-        form.method = "PUT";
-        let titleLabel = document.createElement("label");
-        titleLabel.appendChild(document.createTextNode("Title:"));
-        let titleField = document.createElement("input");
-        titleField.name = "title";
-        titleLabel.appendChild(titleField);
-        let descriptionLabel = document.createElement("label");
-        descriptionLabel.appendChild(document.createTextNode("Description:"));
-        descriptionField = document.createElement("textarea");
-        descriptionField.name = "description";
-        descriptionLabel.appendChild(descriptionField);
-        let moiraLabel = document.createElement("label");
-        moiraLabel.appendChild(document.createTextNode("Moira Lists (separated by spaces):"));
-        moiraField = document.createElement("input");
-        moiraField.name = "moira_lists";
-        moiraLabel.appendChild(moiraField);
-        form.appendChild(titleLabel);
-        form.appendChild(descriptionLabel);
-        form.appendChild(moiraLabel);
-        let submitBtn = document.createElement("button")
-        submitBtn.type = "submit";
-        submitBtn.appendChild(document.createTextNode("Update"));
-        form.appendChild(submitBtn);
-        form.addEventListener("submit", formSubmit);
 
         progressItem.appendChild(progressText);
         progressItem.appendChild(progress);
-        progressItem.appendChild(form);
         progressList.appendChild(progressItem);
         updateStatus(video.task);
       }
       let nextParagraph = document.getElementById("next");
       nextParagraph.parentNode.insertBefore(progressList, nextParagraph);
     })
-  }
-
-  let formSubmit = function(event) {
-    event.preventDefault();
-    let form = event.target;
-    let data = {
-      title: form.querySelector("[name=title]").value,
-      description: form.querySelector("[name=description]").value,
-      moira_lists: form.querySelector("[name=moira_lists]").value.split(" ")
-    }
-    let headers = new Headers();
-    headers.append("X-CSRFToken", CSRF);
-    headers.append("Content-Type", "application/json");
-    fetch(form.action, {
-      method: "PUT",
-      headers: headers,
-      credentials: 'same-origin',
-      body: JSON.stringify(data),
-    }).then(function(response) {
-      if (response.ok) {
-        form.appendChild(document.createTextNode("✓"))
-      }
-    });
   }
 
   let options = {
@@ -128,7 +81,7 @@ to OVS.</p>
         method: "POST",
         headers: headers,
         credentials: 'same-origin',
-        body: JSON.stringify(files),
+        body: JSON.stringify({'collection': COLLECTION_KEY, 'files': files}),
       }).then(handleStreamResponse, function(error) {
         console.log('Fetch error: ' + error.message);
       });

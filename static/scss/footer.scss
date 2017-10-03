@@ -1,0 +1,119 @@
+/*---------------------------------------
+   SECTION:  FOOTER
+-----------------------------------------*/
+@import 'breakpoints';
+
+#footer {
+  background: #000;
+  padding: 15px 30px 17px;
+  text-align: left;
+  color: #808080;
+  font-size: .83em;
+  line-height: 1.2em;
+  margin-top: 100px;
+
+  @include breakpoint(phone) {
+    padding: 40px 15px 60px 15px;
+  }
+
+  .container {
+    width: 95%;
+    max-width: 1300px;
+    margin: 0 auto;
+
+    @include breakpoint(phone) {
+      width: 100%;
+    }
+
+  }
+
+  .footer-links {
+    margin: 20px 0;
+
+    a {
+      display: inline-block;
+      margin: 0 24px 0 0;
+      color: #4c8399;
+    }
+  }
+
+  .footer-address {
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .copyright {
+    position: relative;
+
+    .footer-copy {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+
+      @include breakpoint(mobile) {
+        position: relative;
+      }
+    }
+  }
+
+  .footer-cta {
+    display: inline-block;
+    vertical-align: middle;
+    width: 100%;
+    min-width: 150px;
+    padding: 0;
+
+    @include breakpoint(phone) {
+      display: block;
+      margin: 20px 0;
+      width: 100%;
+    }
+
+    &.non-marketing-pages {
+      min-width: 300px;
+      margin-bottom: 50px;
+
+      @include breakpoint(phone) {
+        min-width: 0;
+      }
+    }
+
+    a {
+      width: 100%;
+      float: right;
+
+      &.no-float {
+        float: none;
+      }
+
+      @include breakpoint(phone) {
+        float: none;
+        width: 100%;
+      }
+    }
+  }
+
+  .footer-cta-left {
+    padding: 0;
+    width: 60%;
+    display: inline-block;
+    vertical-align: middle;
+
+    @include breakpoint(phone) {
+      display: block;
+      margin: 20px 0;
+      width: 100%;
+    }
+
+    a {
+      width: 60%;
+      margin: 0 0 0 60px;
+
+      @include breakpoint(phone) {
+        float: none;
+        width: 100%;
+        margin: 0;
+      }
+    }
+  }
+}

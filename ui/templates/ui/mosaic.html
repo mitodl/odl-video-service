@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block prebundle %}
+    <link rel="stylesheet" href="{{ uswitchPlayerURL }}/style/style.css">
+{% endblock %}
+{% block content %}
+    <script type="text/javascript" src="{{ uswitchPlayerURL }}/lib/omni-external-libs.js"></script>
+
+    <div id='MosaicParent' style="position:absolute;">
+        <canvas id='MosaicCanvas'></canvas>
+    </div>
+    <script type="text/javascript" src="{{ uswitchPlayerURL }}/lib/mosaic.js"></script>
+{% endblock %}
+
+

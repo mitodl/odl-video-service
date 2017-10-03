@@ -4,34 +4,20 @@
 {% block title %}OVS{% endblock %}
 {% block pagetitle %}OVS{% endblock %}
 {% block content %}
-{% if user.is_authenticated %}
-  <ul>
-    <li><a href="{% url 'video-list' %}">View videos</a></li>
-    {% if user.is_staff %}
-      <li><a href="{% url 'upload' %}">Upload videos</a></li>
-    {% else %}
-      <li><i>You do not have permission to upload videos.</i></li>
-    {% endif %}
-  </ul>
-{% else %}
-  <p>Welcome to OVS. Please log in.</p>
-  <form method="post" action="{% url 'login' %}">
-    {% csrf_token %}
-    <table>
-      {{ login_form }}
-    </table>
-    <input type="submit" value="Login" />
-  </form>
-  <p>Or you can create a new account.</p>
-  <form method="post" action="{% url 'register' %}">
-    {% csrf_token %}
-    <table>
-      {{ register_form }}
-    </table>
-    <input type="submit" value="Register" />
-  </form>
-{% endif %}
- <div id="container"></div>
-{% load render_bundle %}
-{% render_bundle 'root' %}
+<p>Welcome to OVS. Please log in.</p>
+<form method="post" action="{% url 'login' %}">
+  {% csrf_token %}
+  <table>
+    {{ login_form }}
+  </table>
+  <input type="submit" value="Login" />
+</form>
+<p>Or you can create a new account.</p>
+<form method="post" action="{% url 'register' %}">
+  {% csrf_token %}
+  <table>
+    {{ register_form }}
+  </table>
+  <input type="submit" value="Register" />
+</form>
 {% endblock %}

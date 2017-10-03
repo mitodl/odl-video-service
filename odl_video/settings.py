@@ -17,7 +17,7 @@ from odl_video.envs import (
     get_string,
 )
 
-VERSION = "0.1.0"
+VERSION = "0.2.1"
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -62,6 +62,7 @@ WEBPACK_DEV_SERVER_PORT = get_int('WEBPACK_DEV_SERVER_PORT', 8082)
 INSTALLED_APPS = [
     'ui.apps.UIConfig',
     'cloudsync.apps.CloudSyncConfig',
+    'mail.apps.MailConfig',
     'dj_elastictranscoder',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -151,11 +152,14 @@ DATABASES = {
 }
 
 
+# the full URL of the current application is mandatory
+ODL_VIDEO_BASE_URL = get_string('ODL_VIDEO_BASE_URL', None)
+
 # Celery
 # http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
+REDIS_URL = get_string("REDIS_URL", None)
 USE_CELERY = True
-CELERY_BROKER_URL = get_string("REDIS_URL", None)
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL = REDIS_URL
 
 CELERY_TASK_ALWAYS_EAGER = get_bool("CELERY_TASK_ALWAYS_EAGER", False)
 CELERY_TASK_EAGER_PROPAGATES = get_bool("CELERY_TASK_EAGER_PROPAGATES", True)
@@ -168,6 +172,10 @@ CELERY_BEAT_SCHEDULE = {
     'update-statuses': {
         'task': 'cloudsync.tasks.update_video_statuses',
         'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
+    },
+    'watch-bucket': {
+        'task': 'cloudsync.tasks.monitor_watch_bucket',
+        'schedule': get_int('VIDEO_WATCH_BUCKET_FREQUENCY', 900)
     }
 }
 
@@ -281,7 +289,7 @@ EMAIL_USE_TLS = get_bool('ODL_VIDEO_EMAIL_TLS', False)
 EMAIL_SUPPORT = get_string('ODL_VIDEO_SUPPORT_EMAIL', 'support@example.com')
 DEFAULT_FROM_EMAIL = get_string('ODL_VIDEO_FROM_EMAIL', 'webmaster@localhost')
 
-MAILGUN_URL = get_string('MAILGUN_URL', 'https://api.mailgun.net/v3/micromasters.mit.edu')
+MAILGUN_URL = get_string('MAILGUN_URL', 'https://api.mailgun.net/v3/video.odl.mit.edu')
 MAILGUN_KEY = get_string('MAILGUN_KEY', None)
 MAILGUN_BATCH_CHUNK_SIZE = get_int('MAILGUN_BATCH_CHUNK_SIZE', 1000)
 MAILGUN_RECIPIENT_OVERRIDE = get_string('MAILGUN_RECIPIENT_OVERRIDE', None)
@@ -397,6 +405,10 @@ RAVEN_CONFIG = {
 MIT_WS_CERTIFICATE = get_key('MIT_WS_CERTIFICATE', '')
 MIT_WS_PRIVATE_KEY = get_key('MIT_WS_PRIVATE_KEY', '')
 
+# x509 filenames
+MIT_WS_CERTIFICATE_FILE = os.path.join(BASE_DIR, STATIC_ROOT, 'mit_x509.cert')
+MIT_WS_PRIVATE_KEY_FILE = os.path.join(BASE_DIR, STATIC_ROOT, 'mit_x509.key')
+
 # Dropbox key
 DROPBOX_KEY = get_string('DROPBOX_KEY', '')
 
@@ -410,6 +422,10 @@ MB = KB * KB
 CLOUDFRONT_PRIVATE_KEY = get_key('CLOUDFRONT_PRIVATE_KEY', '')
 CLOUDFRONT_KEY_ID = get_string('CLOUDFRONT_KEY_ID', '')
 VIDEO_CLOUDFRONT_DIST = get_string('VIDEO_CLOUDFRONT_DIST', '')
+VIDEO_CLOUDFRONT_BASE_URL = get_string(
+    'VIDEO_CLOUDFRONT_BASE_URL',
+    'https://{}.cloudfront.net/'.format(VIDEO_CLOUDFRONT_DIST)
+)
 
 CLOUDFRONT_DIST = get_string('STATIC_CLOUDFRONT_DIST', None)
 if CLOUDFRONT_DIST:
@@ -450,10 +466,11 @@ if ET_PRESET_IDS == ['']:  # This may happen if `ET_PRESET_IDS=` is in .env file
     raise ImproperlyConfigured('ET_PRESET_IDS cannot be blank, please check your settings & environment')
 
 VIDEO_CLOUDFRONT_DIST = get_string('VIDEO_CLOUDFRONT_DIST', '')
-VIDEO_S3_BUCKET = get_string('VIDEO_S3_BUCKET', 'odl-video-service')
-VIDEO_S3_TRANSCODE_BUCKET = get_string('VIDEO_S3_TRANSCODE_BUCKET', '{}-transcoded'.format(VIDEO_S3_BUCKET))
-VIDEO_S3_THUMBNAIL_BUCKET = get_string('VIDEO_S3_THUMBNAIL_BUCKET', '{}-thumbnails'.format(VIDEO_S3_BUCKET))
-
+VIDEO_S3_BUCKET = get_string('VIDEO_S3_BUCKET', '')
+VIDEO_S3_TRANSCODE_BUCKET = get_string('VIDEO_S3_TRANSCODE_BUCKET', '')
+VIDEO_S3_THUMBNAIL_BUCKET = get_string('VIDEO_S3_THUMBNAIL_BUCKET', '')
+VIDEO_S3_SUBTITLE_BUCKET = get_string('VIDEO_S3_SUBTITLE_BUCKET', '')
+VIDEO_S3_WATCH_BUCKET = get_string('VIDEO_S3_WATCH_BUCKET', '')
 
 # server-status
 STATUS_TOKEN = get_string("STATUS_TOKEN", "")
@@ -462,3 +479,44 @@ HEALTH_CHECK = ['CELERY', 'REDIS', 'POSTGRES']
 ADWORDS_CONVERSION_ID = get_string("ADWORDS_CONVERSION_ID", "")
 GA_TRACKING_ID = get_string("GA_TRACKING_ID", "")
 REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
+
+# This is necessary for loading USwitch video player code from an external source
+USWITCH_URL = get_string('USWITCH_URL', '')
+LECTURE_CAPTURE_USER = get_string('LECTURE_CAPTURE_USER', '')
+
+
+# List of mandatory settings. If any of these is not set, the app will not start
+# and will raise an ImproperlyConfigured exception
+MANDATORY_SETTINGS = [
+    'AWS_ACCESS_KEY_ID',
+    'AWS_REGION',
+    'AWS_S3_DOMAIN',
+    'AWS_SECRET_ACCESS_KEY',
+    'CLOUDFRONT_KEY_ID',
+    'CLOUDFRONT_PRIVATE_KEY',
+    'DROPBOX_KEY',
+    'ET_PIPELINE_ID',
+    'LECTURE_CAPTURE_USER',
+    'MAILGUN_KEY',
+    'MAILGUN_URL',
+    'ODL_VIDEO_BASE_URL',
+    'REDIS_URL',
+    'SECRET_KEY',
+    'USWITCH_URL',
+    'VIDEO_CLOUDFRONT_DIST',
+    'LECTURE_CAPTURE_USER',
+    'MIT_WS_CERTIFICATE',
+    'MIT_WS_PRIVATE_KEY',
+    'VIDEO_S3_BUCKET',
+    'VIDEO_S3_TRANSCODE_BUCKET',
+    'VIDEO_S3_THUMBNAIL_BUCKET',
+    'VIDEO_S3_SUBTITLE_BUCKET',
+    'VIDEO_S3_WATCH_BUCKET'
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    )
+}

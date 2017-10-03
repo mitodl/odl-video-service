@@ -13,18 +13,17 @@ from celery import shared_task, states, Task
 from celery.utils.log import get_task_logger
 from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
-
-from cloudsync.utils import VideoTranscoder
-from ui.api import refresh_status
-from ui.models import VideoFile, Video
+from cloudsync.api import refresh_status, process_watch_file, transcode_video
+from ui.models import Video
 from ui.constants import VideoStatus
+from ui.utils import get_bucket
 
 log = get_task_logger(__name__)
+
+
 CONTENT_DISPOSITION_RE = re.compile(
     r"filename\*=UTF-8''(?P<filename>[^ ]+)"
 )
-
-THUMBNAIL_PATTERN = "thumbnails/{}_thumbnail_{{count}}"
 
 
 class VideoTask(Task):
@@ -123,46 +122,13 @@ def transcode_from_s3(self, video_id):  # pylint: disable=unused-argument
     task_id = self.get_task_id()
     self.update_state(task_id=task_id, state=VideoStatus.TRANSCODING)
 
-    video_file = VideoFile.objects.get(video__id=video_id, encoding='original')
+    video_file = video.videofile_set.get(encoding='original')
 
-    video_input = {
-        'Key': video_file.s3_object_key,
-    }
-
-    # Generate an output video file for each encoding (assumed to be HLS)
-    outputs = [{
-        'Key': video.transcode_key(preset),
-        'PresetId': preset,
-        'SegmentDuration': '10.0'
-    } for preset in settings.ET_PRESET_IDS]
-
-    playlists = [{
-        'Format': 'HLSv3',
-        'Name': video.transcode_key('_index'),
-        'OutputKeys': [output['Key'] for output in outputs]
-    }]
-
-    # Generate thumbnails for the 1st encoding (no point in doing so for each).
-    outputs[0]['ThumbnailPattern'] = THUMBNAIL_PATTERN.format(video_file.s3_basename)
-    transcoder = VideoTranscoder(
-        settings.ET_PIPELINE_ID,
-        settings.AWS_REGION,
-        settings.AWS_ACCESS_KEY_ID,
-        settings.AWS_SECRET_ACCESS_KEY
-    )
     try:
-        transcoder.encode(video_input, outputs, Playlists=playlists)
-    except ClientError as exc:
-        log.error('Transcode job creation failed for video %s', video_id)
-        video.update_status(VideoStatus.TRANSCODE_FAILED)
+        transcode_video(video, video_file)
+    except ClientError:
         self.update_state(task_id=task_id, state=states.FAILURE)
-        if hasattr(exc, 'response'):
-            transcoder.message = exc.response
         raise
-    finally:
-        transcoder.create_job_for_object(video)
-        if video.status != VideoStatus.TRANSCODE_FAILED:
-            video.update_status(VideoStatus.TRANSCODING)
 
 
 @shared_task(bind=True)
@@ -177,11 +143,29 @@ def update_video_statuses(self):  # pylint: disable=unused-argument
         except EncodeJob.DoesNotExist:
             # Log the exception but don't raise it so other videos can be checked.
             log.exception("No EncodeJob object exists for video id %d", video.id)
-            video.update_status(VideoStatus.TRANSCODE_FAILED)
+            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
         except ClientError as exc:
             # Log the exception but don't raise it so other videos can be checked.
             log.exception("AWS error when refreshing job status for video %d: %s", video.id, exc.response)
-            video.update_status(VideoStatus.TRANSCODE_FAILED)
+            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
+
+
+@shared_task(bind=True)
+def monitor_watch_bucket(self):  # pylint: disable=unused-argument
+    """
+    Check the watch bucket for any files and import them if found. All files found in the
+    S3 bucket indicated by 'VIDEO_S3_WATCH_BUCKET' is assumed to be a lecture capture video.
+    """
+    watch_bucket = get_bucket(settings.VIDEO_S3_WATCH_BUCKET)
+    for key in watch_bucket.objects.all():
+        try:
+            process_watch_file(key.key)
+        except ClientError as exc:
+            # Log ClientError, raise later so other files can be processed.
+            log.exception("AWS error when ingesting file from watch bucket %s: %s", key.key, exc.response)
+        except Exception as exc:  # pylint: disable=broad-except
+            # Log any other exception, raise later so other files can be processed.
+            log.exception("AWS error when ingesting file from watch bucket %s: %s", key.key, str(exc))
 
 
 def parse_content_metadata(response):

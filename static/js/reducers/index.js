@@ -1,29 +1,22 @@
 // @flow
 import { combineReducers } from 'redux';
-import type { Action } from '../flow/reduxTypes';
-import {
-    UPDATE_CHECKBOX
-} from '../actions';
+import { deriveReducers } from "redux-hammock";
 
-export type CheckboxType = {
-  checked: boolean,
-};
+import { actions } from "../actions";
+import { endpoints } from "../lib/redux_rest";
+import commonUi from './commonUi';
+import collectionUi from './collectionUi';
+import videoSubtitleUi from "./videoSubtitleUi";
 
-const INITIAL_CHECKBOX_STATE: CheckboxType = {
-  checked: false
+const reducers: Object = {
+  commonUi,
+  collectionUi,
+  videoSubtitleUi
 };
-
-export const checkbox = (state: CheckboxType = INITIAL_CHECKBOX_STATE, action: Action<any, any>): CheckboxType => {
-  switch (action.type) {
-  case UPDATE_CHECKBOX:
-    return Object.assign({}, state, {
-      checked: action.payload.checked
-    });
-  default:
-    return state;
-  }
-};
+endpoints.forEach(endpoint => {
+  reducers[endpoint.name] = deriveReducers(endpoint, actions[endpoint.name]);
+});
 
 export default combineReducers({
-  checkbox
+  ...reducers,
 });

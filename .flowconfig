@@ -4,6 +4,7 @@
 .*/node_modules/draftjs-utils/.*
 .*/node_modules/react-event-listener/src/index.js
 .*.git/.*
+.*/staticfiles/*
 
 [include]
 ./static/js
@@ -11,7 +12,6 @@
 [libs]
 ./static/js/flow/declarations.js
 node_modules/iflow-lodash/index.js.flow
-node_modules/iflow-react-router/index.js.flow
 ./flow-typed/npm/
 
 [options]

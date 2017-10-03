@@ -4,17 +4,49 @@ Tests for tasks
 import io
 import os
 
+import boto3
 import pytest
 from botocore.exceptions import ClientError
 import celery
 from dj_elastictranscoder.models import EncodeJob
+from django.conf import settings
+from django.test import override_settings
 from mock import PropertyMock
+from moto import mock_s3
 
 from cloudsync.conftest import MockBoto
-from cloudsync.tasks import stream_to_s3, transcode_from_s3, VideoTask, update_video_statuses
-from ui.conftest import user, video, videofile  # pylint: disable=unused-import
+from cloudsync.tasks import stream_to_s3, transcode_from_s3, VideoTask, update_video_statuses, monitor_watch_bucket
+from ui.factories import (
+    VideoFactory,
+    VideoFileFactory,
+    UserFactory,
+)
+from ui.encodings import EncodingNames
 from ui.models import Video
 from ui.constants import VideoStatus
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture()
+def video():
+    """Fixture to create a video"""
+    return VideoFactory()
+
+
+@pytest.fixture()
+def videofile():
+    """Fixture to create a videofile"""
+    return VideoFileFactory()
+
+
+@pytest.fixture(scope="module")
+def user():
+    """Fixture to create a user"""
+    return UserFactory()
+
+
+# pylint: disable=redefined-outer-name
 
 
 def test_empty_video_id():
@@ -25,8 +57,7 @@ def test_empty_video_id():
     assert not result
 
 
-@pytest.mark.django_db
-def test_happy_path(mocker, reqmocker, mock_video_headers, video):  # pylint: disable=redefined-outer-name
+def test_happy_path(mocker, reqmocker, mock_video_headers, video):
     """
     Test that a file can be uploaded to a mocked S3 bucket.
     """
@@ -56,7 +87,7 @@ def test_happy_path(mocker, reqmocker, mock_video_headers, video):  # pylint: di
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOADING
 
 
-def test_upload_failure(mocker, reqmocker, mock_video_headers, video):  # pylint: disable=redefined-outer-name
+def test_upload_failure(mocker, reqmocker, mock_video_headers, video):
     """
     Test that video status is updated properly after an upload failure
     """
@@ -73,45 +104,47 @@ def test_upload_failure(mocker, reqmocker, mock_video_headers, video):  # pylint
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
 
 
-def test_transcode_failure(mocker, user, video, videofile):  # pylint: disable=unused-argument,redefined-outer-name
+def test_transcode_failure(mocker, videofile):
     """
     Test transcode task, verify there is an EncodeJob associated with the video to encode
     """
+    video = videofile.video
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
-    mocker.patch('cloudsync.tasks.VideoTranscoder.encode',
+    mocker.patch('cloudsync.api.VideoTranscoder.encode',
                  side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
     mocker.patch('dj_elastictranscoder.transcoder.Session')
     mocker.patch('celery.app.task.Task.update_state')
     mocker.patch('ui.utils.boto3', MockBoto)
-    mocker.patch('ui.api.get_et_job',
+    mocker.patch('cloudsync.api.get_et_job',
                  return_value=job_result['Job'])
     # Transcode the video
     with pytest.raises(ClientError):
         transcode_from_s3(video.id)  # pylint: disable=no-value-for-parameter
-    assert len(video.encode_jobs.all()) == 1
-    assert Video.objects.get(id=video.id).status == VideoStatus.TRANSCODE_FAILED
+    assert video.encode_jobs.count() == 1
+    assert Video.objects.get(id=video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL
 
 
-def test_transcode_starting(mocker, user, video, videofile):  # pylint: disable=unused-argument,redefined-outer-name
+def test_transcode_starting(mocker, videofile):
     """
     Test that video status is updated properly after a transcode failure
     """
+    video = videofile.video
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
-    mocker.patch('cloudsync.tasks.VideoTranscoder.encode')
+    mocker.patch('cloudsync.api.VideoTranscoder.encode')
     mocker.patch('dj_elastictranscoder.transcoder.Session')
     mocker.patch('celery.app.task.Task.update_state')
-    mocker.patch('ui.api.process_transcode_results')
+    mocker.patch('cloudsync.api.process_transcode_results')
     mocker.patch('ui.utils.boto3', MockBoto)
-    mocker.patch('ui.api.get_et_job',
+    mocker.patch('cloudsync.api.get_et_job',
                  return_value={'Id': '1498220566931-qtmtcu', 'Status': 'Complete'})
     transcode_from_s3(video.id)  # pylint: disable=no-value-for-parameter
-    assert len(video.encode_jobs.all()) == 1
-    assert Video.objects.get(id=video.id).status == VideoStatus.TRANSCODING
+    assert video.encode_jobs.count() == 1
+    assert Video.objects.filter(id=video.id, status=VideoStatus.TRANSCODING).count() == 1
 
 
 def test_video_task_chain(mocker):
@@ -176,27 +209,94 @@ def test_video_task_no_chain(mocker):
     assert task.get_task_id() == task.request.id
 
 
-def test_update_video_statuses_nojob(mocker, video):  # pylint: disable=unused-argument,redefined-outer-name
+def test_update_video_statuses_nojob(mocker, video):  # pylint: disable=unused-argument
     """Test NoEncodeJob error handling"""
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=EncodeJob.DoesNotExist())
     video.update_status(VideoStatus.TRANSCODING)
     update_video_statuses()  # pylint: disable=no-value-for-parameter
-    assert VideoStatus.TRANSCODE_FAILED == Video.objects.get(id=video.id).status
+    assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
 
 
-def test_update_video_statuses_clienterror(mocker, video):  # pylint: disable=unused-argument,redefined-outer-name
+def test_update_video_statuses_clienterror(mocker, video):  # pylint: disable=unused-argument
     """Test NoEncodeJob error handling"""
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
     video.update_status(VideoStatus.TRANSCODING)
     update_video_statuses()  # pylint: disable=no-value-for-parameter
-    assert VideoStatus.TRANSCODE_FAILED == Video.objects.get(id=video.id).status
+    assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
 
 
-@pytest.mark.django_db
 def test_stream_to_s3_no_video():
     """Test DoesNotExistError"""
     with pytest.raises(Video.DoesNotExist):
         stream_to_s3(999999)  # pylint: disable=no-value-for-parameter
+
+
+@mock_s3
+@override_settings(LECTURE_CAPTURE_USER='admin')
+def test_monitor_watch(mocker, user):  # pylint: disable=unused-argument,redefined-outer-name
+    """Test the Watch bucket monitor task"""
+    UserFactory(username='admin')  # pylint: disable=unused-variable
+    mocker.patch.multiple('cloudsync.tasks.settings',
+                          ET_PRESET_IDS=('1351620000001-000061',),
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+    mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
+    s3 = boto3.resource('s3')
+    s3c = boto3.client('s3')
+    filename = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
+    bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
+    assert s3c.get_object(Bucket=bucket.name, Key=filename) is not None
+    monitor_watch_bucket.delay()
+    new_video = Video.objects.get(source_url__endswith=filename)
+    new_videofile = new_video.videofile_set.get(encoding=EncodingNames.ORIGINAL)
+    mock_encoder.assert_called_once_with(
+        {
+            "Key": new_videofile.s3_object_key
+        }, [{
+            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000061",
+            "PresetId": "1351620000001-000061",
+            "SegmentDuration": "10.0",
+            "ThumbnailPattern": "thumbnails/" + new_video.hexkey + "/video_thumbnail_{count}"
+        }], Playlists=[{
+            "Format": "HLSv3",
+            "Name": "transcoded/" + new_video.hexkey + "/video__index",
+            "OutputKeys": ["transcoded/" + new_video.hexkey + "/video_1351620000001-000061"]
+        }])
+    assert new_videofile.bucket_name == settings.VIDEO_S3_BUCKET
+    with pytest.raises(ClientError):
+        s3c.get_object(Bucket=bucket.name, Key=filename)
+
+
+@mock_s3
+@override_settings(LECTURE_CAPTURE_USER='admin')
+def test_monitor_watch_badname(mocker):  # pylint: disable=unused-argument,redefined-outer-name
+    """
+    Test no video is created for a file with a bad name, but other filenames are processed
+    """
+    UserFactory(username='admin')  # pylint: disable=unused-variable
+    mocker.patch.multiple('cloudsync.tasks.settings',
+                          ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+    mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
+    s3 = boto3.resource('s3')
+    s3c = boto3.client('s3')
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
+    s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
+    filenames = (
+        'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4',
+        'Bad Name.mp4',
+        'MIT-6.046-lec-mit-0000-2017apr06-0404.mp4'
+    )
+    bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
+    for filename in filenames:
+        bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
+    monitor_watch_bucket.delay()
+    assert mock_encoder.call_count == 2
+    assert not Video.objects.filter(source_url__endswith=filenames[1])
+    assert Video.objects.get(source_url__endswith=filenames[0])
+    assert Video.objects.get(source_url__endswith=filenames[2])

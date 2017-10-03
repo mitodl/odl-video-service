@@ -1,0 +1,139 @@
+body {
+  margin: 0;
+  padding: 0;
+  color: rgba(0,0,0,.87);
+  font-family: Roboto, sans-serif;
+  background: $body-bg-color;
+}
+
+.mdc-typography--title {
+  line-height: 1.5rem;
+  font-size: 1.4rem;
+}
+
+.mdc-typography--body1 {
+  font-size: 1rem;
+  line-height: 1.4rem;
+}
+
+a, a:link, a:visited, a:active {
+  color: $linkcolor;
+  text-decoration: none;
+}
+
+.material-icons {
+  color: $icon-color;
+
+  &:hover {
+    color: $icon-hover;
+    cursor: pointer;
+  }
+}
+
+.fontgray {
+  color: $fontgray;
+}
+
+button {
+  .material-icons {
+    position: relative;
+    top: 5px;
+    font-size: 21px;
+    margin-right: 5px;
+  }
+}
+
+.mdc-button--raised {
+  background: $lightgray-bg;
+}
+
+.hidden {
+  display: none;
+}
+
+.card {
+  background-color: $card-bg-color;
+  box-shadow: 1px 1px 8px $card-shadow;
+  border-radius: 3px;
+
+  .title {
+    font-size: 18px;
+    font-weight: 400;
+    margin: 10px 0 7px 10px;
+  }
+}
+
+/*---------------------------------------
+   SECTION:  DIALOG STYLES
+-----------------------------------------*/
+
+.mdc-dialog {
+  .mdc-dialog__surface {
+    max-height: 90%;
+    overflow: hidden;
+  }
+
+  .mdc-dialog__body {
+    font-size: 1rem;
+    overflow-y: scroll;
+  }
+
+  .mdc-dialog__footer {
+    box-shadow: 1px 0px 18px #e4e4e4;
+    z-index: 100;
+  }
+}
+
+.mdc-dialog--open .mdc-dialog__backdrop {
+  opacity: .75;
+}
+
+/*---------------------------------------
+   SECTION:  FORM STYLES
+-----------------------------------------*/
+
+label {
+  display: block;
+  padding: 0 0 8px 2px;
+  color: #444;
+  font-size: 15px;
+  width: 100%;
+}
+
+.mdc-textfield {
+  width: 100%;
+}
+
+input[type=text], input[type=password], input[type=email], textarea, .mdc-textfield__input, input[type=text].mdc-textfield__input {
+  display: block;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+  padding: 10px;
+  background: #fff;
+  font-size: 15px;
+}
+
+.mdc-textfield-container, .mdc-textarea-container {
+  margin: 0 0 14px 0;
+}
+
+textarea {
+  height: 110px;
+}
+
+a.button-link {
+  background: $blue-button;
+  font-size: 14px;
+  color: rgba(255,255,255,.95);
+  padding: 8px 16px;
+  border-radius: 3px;
+  font-weight: 400;
+  cursor: pointer;
+
+  i, i.material-icons {
+    margin-right: 8px;
+    position: relative;
+    bottom: 2px;
+    color: #fff;
+  }
+}

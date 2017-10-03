@@ -1,0 +1,49 @@
+// Video.JS styles
+.video-odl-medium, .video-message {
+  width: 100%;
+}
+
+.video-message {
+  background-color: black;
+  color: white;
+  text-align: center;
+  line-height: 460px;
+  font-size: 26px;
+}
+
+.embedded-video > .video-odl-medium {
+  height: 100% !important;
+}
+
+.video-js {
+  &:not(.vjs-fullscreen) {
+    position: relative !important;
+    width: inherit !important;
+    height: inherit !important;
+
+    .vjs-tech {
+      position: relative !important;
+      width: inherit !important;
+      height: inherit !important;
+      max-height: calc(100vh - 200px);
+
+      @include breakpoint(mobile) {
+        max-height: calc(100vh - 60px);
+      }
+    }
+  }
+}
+
+.vjs-poster {
+  position: absolute !important;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+//Uswitch styles
+.uswitch-odl-medium {
+  width: 100%;
+  height: calc(100vh - 200px);
+}

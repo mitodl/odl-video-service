@@ -7,9 +7,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
     {% load raven %}
     <link rel="icon" href="{% static 'images/favicon.ico' %}" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <script type="text/javascript">
       var SETTINGS = {{ js_settings_json|safe }};
     </script>
+    {% block prebundle %}
+    {% endblock %}
     {% load render_bundle %}
     {% render_bundle "common" %}
     {% render_bundle 'style' %}
@@ -22,18 +25,12 @@
     {% endspaceless %}
 </head>
 <body class="{% block bodyclass %}{% endblock %}">
-  <h1>{% block pagetitle %}{% endblock %}</h1>
   {% if messages %}
     <ul class="messages">
       {% for message in messages %}
       <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
       {% endfor %}
     </ul>
-  {% endif %}
-  {% if user.is_authenticated %}
-    <p>You are logged in as {{ user.username }}. <a href="{% url 'logout' %}">Logout</a></p>
-  {% else %}
-    <p><a href="{% url 'index' %}">Login</a></p>
   {% endif %}
   {% block content %}{% endblock %}
 </body>

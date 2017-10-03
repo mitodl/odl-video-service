@@ -6,8 +6,10 @@
 #
 -e git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
 -e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
+-e git+https://github.com/mitodl/mit-moira.git#egg=mit-moira
 amqp==2.2.1               # via kombu
 appdirs==1.4.3            # via zeep
+appnope==0.1.0            # via ipython
 asn1crypto==0.22.0        # via cryptography
 billiard==3.5.0.3         # via celery
 boto3==1.4.4
@@ -26,7 +28,7 @@ dj-static==0.0.6
 django-redis==4.7.0
 django-server-status==0.4.0
 django-webpack-loader==0.4.1
-django==1.10.5            # via django-server-status
+django==1.10.5
 djangorestframework==3.6.3
 docutils==0.13.1          # via botocore
 elasticsearch==5.4.0      # via django-server-status
@@ -41,7 +43,6 @@ jedi==0.10.2              # via ipython
 jmespath==0.9.3           # via boto3, botocore
 kombu==4.0.2              # via celery, django-server-status
 lxml==3.8.0               # via zeep
-mit-moira==0.0.3
 newrelic==2.88.1.73
 packaging==16.8           # via cryptography
 pexpect==4.2.1            # via ipython
@@ -49,6 +50,7 @@ pickleshare==0.7.4        # via ipython
 prompt-toolkit==1.0.14    # via ipython
 psycopg2==2.6
 ptyprocess==0.5.2         # via pexpect
+pycountry==17.5.14
 pycparser==2.18           # via cffi
 pygments==2.2.0           # via ipython
 pyparsing==2.2.0          # via packaging
@@ -68,4 +70,4 @@ uwsgi==2.0.15
 vine==1.1.4               # via amqp
 wcwidth==0.1.7            # via prompt-toolkit
 webencodings==0.5.1       # via html5lib
-zeep==2.2.0               # via mit-moira
+zeep==2.2.0

@@ -2,17 +2,19 @@
 Models for UI app
 """
 import os
-import datetime
 from uuid import uuid4
 
-import pytz
 import boto3
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.conf import settings
 from dj_elastictranscoder.models import EncodeJob
+from pycountry import languages
 
+
+from mail import tasks
 from ui import utils
+from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
 from ui.tasks import delete_s3_objects
 
@@ -23,12 +25,17 @@ class MoiraList(models.Model):
     """
     Model for Moira
     """
-    name = models.CharField(max_length=250)
+    name = models.CharField(max_length=250, unique=True)
 
     def members(self):
-        """Members"""
+        """
+        Retrieve the members of a moira list
+
+        Returns: (set) a unique set of moira list members.
+
+        """
         moira = utils.get_moira_client()
-        return moira.list_members(self.name)
+        return set(moira.list_members(self.name, type=''))
 
     def __str__(self):
         return self.name
@@ -37,23 +44,115 @@ class MoiraList(models.Model):
         return '<MoiraList: {self.name!r}>'.format(self=self)
 
 
+class CollectionManager(models.Manager):
+    """
+    Custom manager for the Collection model
+    """
+
+    def all_viewable(self, user):
+        """
+        Return all collections that a user has view permissions for.  Currently not used. Only
+        users who are admins can see a list of collections (via `get_collections_editable`).
+
+        Args:
+            user (django.contrib.auth.User): the Django user.
+
+        Returns:
+            A list of collections the user has view access to.
+        """
+        if user.is_superuser:
+            return self.all()
+        moira_list_qset = MoiraList.objects.filter(name__in=utils.user_moira_lists(user))
+        return self.filter(
+            models.Q(view_lists__in=moira_list_qset) |
+            models.Q(admin_lists__in=moira_list_qset) |
+            models.Q(owner=user)).distinct()
+
+    def all_admin(self, user):
+        """
+        Return all collections that a user has admin permissions for.
+
+        Args:
+            user (django.contrib.auth.User): the Django user.
+
+        Returns:
+            A list of collections the user has admin access to.
+
+        """
+        if user.is_superuser:
+            return self.all()
+        return self.filter(
+            models.Q(admin_lists__in=MoiraList.objects.filter(name__in=utils.user_moira_lists(user))) |
+            models.Q(owner=user)).distinct()
+
+
+class Collection(models.Model):
+    """
+    Model for Video Collections
+    """
+    key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
+    title = models.TextField()
+    description = models.TextField(null=True, blank=True)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL)
+    view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
+    admin_lists = models.ManyToManyField(MoiraList, blank=True, related_name='admin_lists')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = CollectionManager()
+
+    class Meta:
+        ordering = ['-created_at', ]
+
+    def __str__(self):
+        return self.title
+
+    def __repr__(self):
+        return '<Collection: title="{self.title!r}", owner={self.owner.username!r}>'.format(self=self)
+
+    @property
+    def hexkey(self):
+        """
+        Return the hex representation of the key
+        """
+        return self.key.hex
+
+    @classmethod
+    def for_owner(cls, owner):
+        """
+        Returns a queryset of all the objects filtered by owner
+        """
+        return cls.objects.filter(owner=owner)
+
+
 class Video(models.Model):
     """
     Represents an uploaded video, primarily in terms of metadata (source url, title, etc).
     The actual video files (original and encoded) are represented by the VideoFile model.
     """
-    creator = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-    )
+    key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
+    collection = models.ForeignKey(Collection, related_name='videos')
     created_at = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=250, blank=True)
     description = models.TextField(blank=True)
     source_url = models.URLField()
-    moira_lists = models.ManyToManyField(MoiraList)
-    status = models.TextField(max_length=24, blank=True)
-    s3_subkey = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
+    status = models.CharField(
+        null=False,
+        default=VideoStatus.CREATED,
+        choices=[(status, status) for status in VideoStatus.ALL_STATUSES],
+        max_length=50,
+    )
     encode_jobs = GenericRelation(EncodeJob)
+    multiangle = models.BooleanField(null=False, default=False)
+
+    class Meta:
+        ordering = ['-created_at', ]
+
+    @property
+    def hexkey(self):
+        """
+        Return the hex representation of the key
+        """
+        return self.key.hex
 
     def get_s3_key(self):
         """
@@ -67,8 +166,7 @@ class Video(models.Model):
             str: A unique S3 key including the user id as a virtual subfolder
         """
         _, extension = os.path.splitext(self.source_url.split('/')[-1])
-        newkey = '{user}/{uuid}/video{ext}'.format(
-            user=self.creator.id, uuid=str(self.s3_subkey), ext=extension)
+        newkey = '{uuid}/video{ext}'.format(uuid=str(self.hexkey), ext=extension)
         return newkey
 
     def transcode_key(self, preset=None):
@@ -88,6 +186,17 @@ class Video(models.Model):
         basename, _ = os.path.splitext(original_s3_key)
         return output_template.format(prefix=TRANSCODE_PREFIX, s3key=basename, preset=preset)
 
+    def subtitle_key(self, language='en'):
+        """
+        Returns an S3 object key to be used for a subtitle file
+        Args:
+            language(str): 2-letter language code
+
+        Returns:
+            str: S3 object key
+        """
+        return 'subtitles/{}/subtitle_{}.vtt'.format(self.hexkey, language)
+
     def update_status(self, status):
         """
         Assign and save the status of a Video
@@ -97,12 +206,21 @@ class Video(models.Model):
         """
         self.status = status
         self.save()
+        if status in tasks.STATUS_TO_NOTIFICATION.keys():
+            tasks.async_send_notification_email.delay(self.id)
+
+    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+        """
+        Overridden method to run a preventive validation before saving the object.
+        """
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title or "<untitled video>"
 
     def __repr__(self):
-        return '<Video: {self.title!r} {self.s3_subkey!r}>'.format(self=self)
+        return '<Video: {self.title!r} {self.key!r}>'.format(self=self)
 
 
 class VideoS3(models.Model):
@@ -167,18 +285,6 @@ class VideoS3(models.Model):
             key=self.s3_object_key
         )
 
-    @property
-    def cloudfront_signed_url(self):
-        """
-        Get a signed Cloudfront URL with a default expiration date of 2 hours from
-        when this property is called.
-        """
-        expires = datetime.datetime.now(tz=pytz.UTC) + datetime.timedelta(hours=2)
-        return utils.get_cloudfront_signed_url(
-            s3_key=self.s3_object_key,
-            expires=expires,
-        )
-
     def delete_from_s3(self):
         """
         Delete the S3 object for this this thumbnail
@@ -225,3 +331,23 @@ class VideoThumbnail(VideoS3):
 
     def __repr__(self):
         return '<VideoThumbnail: {self.s3_object_key!r} {self.max_width!r} {self.max_height!r}>'.format(self=self)
+
+
+class VideoSubtitle(VideoS3):
+    """A VTT file that provides captions for a Video"""
+    filename = models.CharField(max_length=1024, null=False, blank=True)
+    language = models.CharField(max_length=2, null=False, blank=True, default=languages.get(name='English').alpha_2)
+    unique_together = (("video", "language"),)
+
+    @property
+    def language_name(self):
+        """
+        Gets the name associated with the language code
+        """
+        return languages.get(alpha_2=self.language).name
+
+    def __str__(self):
+        return '{}: {}: {}'.format(self.video.title, self.s3_object_key, self.language)
+
+    def __repr__(self):
+        return '<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >'.format(self=self)

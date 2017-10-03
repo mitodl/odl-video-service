@@ -6,7 +6,7 @@ from rest_framework import serializers
 from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
 
-from ui.models import MoiraList, Video, VideoFile, VideoThumbnail
+from ui import models, permissions as ui_permissions
 
 
 class SingleAttrRelatedField(RelatedField):
@@ -31,7 +31,7 @@ class SingleAttrRelatedField(RelatedField):
             self.html_cutoff_text or ugettext_lazy(api_settings.HTML_SELECT_CUTOFF_TEXT)
         )
         kwargs.pop('many', None)
-        kwargs.pop('allow_empty', None)
+        self.allow_empty = kwargs.pop('allow_empty', False)
         super(RelatedField, self).__init__(**kwargs)  # pylint: disable=bad-super-call
 
     def to_internal_value(self, data):
@@ -43,30 +43,177 @@ class SingleAttrRelatedField(RelatedField):
         return getattr(value, self.attribute)
 
 
-class VideoSerializer(serializers.ModelSerializer):
-    """Video Serializer"""
-    moira_lists = SingleAttrRelatedField(model=MoiraList, attribute="name", many=True)
-
-    class Meta:
-        model = Video
-        fields = ('id', 'created_at', 'title', 'description', 'moira_lists', 'videofile_set',)
-        read_only_fields = ('id', 'created_at', 'videofile_set')
-
-
 class VideoFileSerializer(serializers.ModelSerializer):
     """Video File Serializer"""
     class Meta:
-        model = VideoFile
-        fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name')
-        read_only_fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name')
+        model = models.VideoFile
+        fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name', 'cloudfront_url')
+        read_only_fields = ('id', 'created_at', 's3_object_key', 'encoding', 'bucket_name', 'cloudfront_url')
 
 
 class VideoThumbnailSerializer(serializers.ModelSerializer):
     """VideoThumbnail serializer"""
     class Meta:
-        model = VideoThumbnail
+        model = models.VideoThumbnail
         fields = ('id', 'created_at', 's3_object_key', 'bucket_name')
         read_only_fields = ('id', 'created_at', 's3_object_key', 'bucket_name')
+
+
+class VideoSubtitleSerializer(serializers.ModelSerializer):
+    """VideoSubtitle serializer"""
+    language_name = serializers.SerializerMethodField()
+
+    def get_language_name(self, obj):
+        """Get the language name"""
+        return obj.language_name
+
+    class Meta:
+        model = models.VideoSubtitle
+        fields = ('id', 'created_at', 'filename', 's3_object_key', 'bucket_name', 'language', 'language_name')
+        read_only_fields = ('id', 'created_at', 's3_object_key', 'bucket_name', 'language_name')
+
+
+class VideoSerializer(serializers.ModelSerializer):
+    """Video Serializer"""
+    key = serializers.SerializerMethodField()
+    collection_key = serializers.SerializerMethodField()
+    collection_title = serializers.SerializerMethodField()
+    videofile_set = VideoFileSerializer(many=True, read_only=True)
+    videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
+    videosubtitle_set = VideoSubtitleSerializer(many=True)
+
+    def get_key(self, obj):
+        """Custom getter for the key"""
+        return obj.hexkey
+
+    def get_collection_key(self, obj):
+        """Get collection key"""
+        return obj.collection.hexkey
+
+    def get_collection_title(self, obj):
+        """Get collection title"""
+        return obj.collection.title
+
+    class Meta:
+        model = models.Video
+        fields = (
+            'key',
+            'created_at',
+            'title',
+            'description',
+            'collection_key',
+            'collection_title',
+            'multiangle',
+            'status',
+            'videofile_set',
+            'videothumbnail_set',
+            'videosubtitle_set'
+        )
+        read_only_fields = (
+            'key',
+            'created_at',
+            'multiangle',
+            'status',
+            'videofile_set',
+            'videothumbnail_set',
+            'videosubtitle_set'
+        )
+
+
+class CollectionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Collection Model
+    """
+    key = serializers.SerializerMethodField()
+    video_count = serializers.SerializerMethodField()
+    videos = VideoSerializer(many=True, read_only=True)
+    view_lists = SingleAttrRelatedField(
+        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+    )
+    admin_lists = SingleAttrRelatedField(
+        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+    )
+    is_admin = serializers.SerializerMethodField()
+
+    def get_key(self, obj):
+        """Custom getter for the key"""
+        return obj.hexkey
+
+    def get_video_count(self, obj):
+        """Custom getter for video count"""
+        return obj.videos.count()
+
+    def get_is_admin(self, obj):
+        """Custom field to indicate whether or not the requesting user is an admin"""
+        if self.context.get('request'):
+            return ui_permissions.has_admin_permission(obj, self.context['request'])
+        return None
+
+    class Meta:
+        model = models.Collection
+        fields = (
+            'key',
+            'created_at',
+            'title',
+            'description',
+            'videos',
+            'video_count',
+            'view_lists',
+            'admin_lists',
+            'is_admin',
+        )
+        read_only_fields = (
+            'key',
+            'created_at',
+            'videos',
+            'video_count',
+            'is_admin',
+        )
+
+
+class CollectionListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Collection Model
+    """
+    key = serializers.SerializerMethodField()
+    video_count = serializers.SerializerMethodField()
+    view_lists = SingleAttrRelatedField(
+        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+    )
+    admin_lists = SingleAttrRelatedField(
+        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+    )
+
+    def create(self, validated_data):
+        return super().create({
+            **validated_data,
+            "owner": self.context["request"].user
+        })
+
+    def get_key(self, obj):
+        """Custom getter for the key"""
+        return obj.hexkey
+
+    def get_video_count(self, obj):
+        """Custom getter for video count"""
+        return obj.videos.count()
+
+    class Meta:
+        model = models.Collection
+        fields = (
+            'key',
+            'created_at',
+            'title',
+            'description',
+            'view_lists',
+            'admin_lists',
+            'video_count',
+        )
+        read_only_fields = (
+            'key',
+            'created_at',
+            'video_count',
+        )
 
 
 class DropboxFileSerializer(serializers.Serializer):
@@ -77,3 +224,16 @@ class DropboxFileSerializer(serializers.Serializer):
     icon = serializers.URLField()
     thumbnailLink = serializers.URLField()
     isDir = serializers.BooleanField()
+
+
+class DropboxUploadSerializer(serializers.Serializer):
+    """Dropbox Upload Serializer"""
+    collection = serializers.UUIDField()
+    files = DropboxFileSerializer(many=True)
+
+
+class VideoSubtitleUploadSerializer(serializers.Serializer):
+    """Caption File Serializer"""
+    video = serializers.UUIDField()
+    language = serializers.CharField()
+    filename = serializers.CharField()

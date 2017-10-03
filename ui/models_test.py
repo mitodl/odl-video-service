@@ -1,14 +1,24 @@
 """
 Tests for the UI models
 """
+import os
 import uuid
 
 import boto3
 import pytest
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 
-from django.conf import settings
-from ui.models import Video, VideoFile
+from mail import tasks
+from ui.factories import (
+    VideoFactory,
+    VideoFileFactory,
+    CollectionFactory,
+    UserFactory,
+    MoiraListFactory, VideoSubtitleFactory)
+from ui.constants import VideoStatus
+from ui.models import Collection
 
 pytestmark = pytest.mark.django_db
 
@@ -22,28 +32,52 @@ FAKE_RSA = b'''O\xd3\x91\x01\xf0\x14\xfe\xbf\x12\xb7\xde\xfe\xd83\xf2\x08\xf5x\x
 \xff3\xbe\x8f\xbf\x91\xdc\xcb\x1c'''
 
 
+# pylint: disable=redefined-outer-name
+
+@pytest.fixture
+def video():
+    """Fixture to create a video"""
+    return VideoFactory()
+
+
+@pytest.fixture
+def videofile():
+    """Fixture to create a video file"""
+    return VideoFileFactory()
+
+
+@pytest.fixture
+def videosubtitle():
+    """Fixture to create a video subtitle"""
+    return VideoSubtitleFactory()
+
+
+@pytest.fixture
+def moiralist():
+    """Fixture to create a moira list"""
+    return MoiraListFactory()
+
+
 def test_s3_object_uniqueness(videofile):
     """
     Test that a videoFile with duplicate s3_object_key value should raise an IntegrityError on save
     """
-    video2 = VideoFile(
-        video=videofile.video,
-        s3_object_key=videofile.s3_object_key,
-        bucket_name=settings.VIDEO_S3_BUCKET
-    )
     with pytest.raises(IntegrityError):
-        video2.save()
+        VideoFileFactory(
+            video=videofile.video,
+            s3_object_key=videofile.s3_object_key,
+        )
 
 
-def test_video_model_s3keys(user):
+def test_video_model_s3keys(video):
     """
     Test that the Video.s3_subkey and get_s3_key properties return expected values
     """
-    new_video = Video(source_url="http://fake.com/fake.mp4", creator=user)
-    assert isinstance(new_video.s3_subkey, uuid.UUID)
-    s3key = new_video.get_s3_key()
+    assert isinstance(video.key, uuid.UUID)
+    s3key = video.get_s3_key()
     assert s3key is not None
-    assert s3key == '{user}/{uuid}/video.mp4'.format(user=user.id, uuid=new_video.s3_subkey)
+    _, extension = os.path.splitext(video.source_url.split('/')[-1])
+    assert s3key == '{uuid}/video{extension}'.format(uuid=video.hexkey, extension=extension)
 
 
 def test_video_aws_integration(videofile):
@@ -61,27 +95,85 @@ def test_video_aws_integration(videofile):
     assert cf_url.startswith("https://video-cf.cloudfront.net/")
 
 
-def test_signed_url_spaces(video, mocker):
-    """
-    Test that filename spaces are represented as '%20's in cloudfront link
-    """
-    mocker.patch(
-        'ui.utils.rsa_signer',
-        return_value=FAKE_RSA
-    )
-    videofile = VideoFile(
-        video=video,
-        s3_object_key="video with spaces.mp4",
-        bucket_name=settings.VIDEO_S3_BUCKET
-    )
-    signed_url = videofile.cloudfront_signed_url
-    assert 'video%20with%20spaces.mp4' in signed_url
-
-
-def test_video_transcode_key(user, video, videofile):  # pylint: disable=unused-argument,redefined-outer-name
+def test_video_transcode_key(videofile):
     """
     Test that the Video.transcode_key method returns expected results
     """
     preset = 'pre01'
-    assert video.transcode_key(preset) == 'transcoded/{user}/{uuid}/video_{preset}'.format(
-        user=user.id, uuid=str(video.s3_subkey), preset=preset)
+    assert videofile.video.transcode_key(preset) == 'transcoded/{uuid}/video_{preset}'.format(
+        uuid=str(videofile.video.hexkey), preset=preset)
+
+
+def test_video_status(video):
+    """
+    Tests that a video cannnot have a status different from he allowed
+    """
+    for status in VideoStatus.ALL_STATUSES:
+        video.status = status
+        video.save()
+    with pytest.raises(ValidationError):
+        video.status = 'foostatus'
+        video.save()
+
+
+def test_video_update_status_email(video, mocker):
+    """
+    Tests the Video.update_status method to sends emails with some statuses
+    """
+    mocked_send_email = mocker.patch(
+        'mail.tasks.async_send_notification_email',
+        return_value=FAKE_RSA,
+        autospec=True
+    )
+    for video_status in tasks.STATUS_TO_NOTIFICATION:
+        video.update_status(video_status)
+        mocked_send_email.delay.assert_called_once_with(video.id)
+        mocked_send_email.reset_mock()
+
+    # email is not sent for other statuses
+    video.update_status(VideoStatus.TRANSCODING)
+    assert mocked_send_email.delay.call_count == 0
+
+
+def test_video_hexkey(video):
+    """
+    Tests the collection hexkey property method
+    """
+    assert video.hexkey == video.key.hex
+
+
+def test_collection_hexkey():
+    """
+    Tests the collection hexkey property method
+    """
+    collection = CollectionFactory()
+    assert collection.hexkey == collection.key.hex
+
+
+def test_collection_for_for_owner():
+    """
+    Tests the for_owner Collection method
+    """
+    owner = UserFactory()
+    collections = [CollectionFactory(owner=owner) for _ in range(5)]
+    extra_collection = CollectionFactory()
+    qset = Collection.for_owner(owner)
+    assert qset.count() == 5
+    assert list(qset) == sorted(collections, key=lambda x: x.created_at, reverse=True)
+    assert extra_collection not in qset
+
+
+def test_moira_members(mocker, moiralist):
+    """
+    Tests the MoiraList.members method
+    """
+    member_list = ['joe', 'nancy', 'nancy', 'foo', 'bar', 'bar@mit.edu']
+    mock_client = mocker.patch('ui.models.utils.get_moira_client')
+    mock_client().list_members.return_value = member_list
+    assert mock_client().list_members.called_once_with(moiralist.name)
+    assert moiralist.members() == set(member_list)
+
+
+def test_video_subtitle_language():
+    """ Tests that the correct language name for a code is returned"""
+    assert VideoSubtitleFactory(language='en').language_name == 'English'

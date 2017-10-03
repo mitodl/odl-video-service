@@ -1,0 +1,31 @@
+.mdc-toolbar__icon--menu {
+  color: #444 !important;
+}
+
+.mdc-toolbar {
+  background-color: white !important;
+  color: #585858 !important;
+  box-shadow: 0px 4px 6px -3px rgba(0, 0, 0, 0.2);
+}
+
+.mdc-toolbar__title {
+  display: flex;
+  align-items: center;
+
+  @include breakpoint(phone) {
+    margin-left: 8px !important;
+  }
+}
+
+a.title {
+  padding-left: 30px;
+  color: rgba(0,0,0,.7);
+
+  @include breakpoint(phone) {
+    padding-left: 15px;
+  }
+}
+
+.logo {
+  width: 50px;
+}

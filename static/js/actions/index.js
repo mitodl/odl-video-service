@@ -1,7 +1,11 @@
 // @flow
-export const UPDATE_CHECKBOX = 'UPDATE_CHECKBOX';
+import { deriveActions } from "redux-hammock";
 
-export const updateCheckbox = (checked: boolean) => ({
-  type: UPDATE_CHECKBOX,
-  payload: { checked }
+import { endpoints } from "../lib/redux_rest";
+
+const actions: Object = { };
+endpoints.forEach(endpoint => {
+  actions[endpoint.name] = deriveActions(endpoint);
 });
+
+export { actions };
