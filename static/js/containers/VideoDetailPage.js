@@ -152,7 +152,7 @@ class VideoDetailPage extends React.Component {
                     className="edit mdc-button--raised"
                     onClick={showDialog.bind(this, DIALOGS.EDIT_VIDEO)}
                   >
-                  <span className="material-icons">edit</span> Edit
+                    <span className="material-icons">edit</span> Edit
                   </Button>
                 }
                 <Button
