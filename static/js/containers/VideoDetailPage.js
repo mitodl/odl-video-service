@@ -129,39 +129,39 @@ class VideoDetailPage extends React.Component {
         <div className="mdc-layout-grid__inner">
           <div className="summary mdc-layout-grid__cell--span-7">
             <div className="card video-summary-card">
-            <p className="channelLink mdc-typography--subheading1">
-              <a className="collection-link" href={collectionUrl}>
-                {video.collection_title}
-              </a>
-            </p>
-            <h2 className="video-title mdc-typography--title">
-              {video.title}
-            </h2>
-            { video.description &&
+              <p className="channelLink mdc-typography--subheading1">
+                <a className="collection-link" href={collectionUrl}>
+                  {video.collection_title}
+                </a>
+              </p>
+              <h2 className="video-title mdc-typography--title">
+                {video.title}
+              </h2>
+              { video.description &&
               <p className="video-description mdc-typography--body1">
                 {video.description}
               </p>
-            }
-            <div className="upload-date mdc-typography--subheading1 fontgray">
-              Uploaded {formattedCreation}
-            </div>
-            <div className="actions">
-              {
-                editable &&
-                <Button
-                  className="edit mdc-button--raised"
-                  onClick={showDialog.bind(this, DIALOGS.EDIT_VIDEO)}
-                >
-                  <span className="material-icons">edit</span> Edit
-                </Button>
               }
-              <Button
-                className="share mdc-button--raised"
-                onClick={showDialog.bind(this, DIALOGS.SHARE_VIDEO)}
-              >
-                <span className="material-icons ">share</span> Share
-              </Button>
-            </div>
+              <div className="upload-date mdc-typography--subheading1 fontgray">
+                Uploaded {formattedCreation}
+              </div>
+              <div className="actions">
+                {
+                  editable &&
+                  <Button
+                    className="edit mdc-button--raised"
+                    onClick={showDialog.bind(this, DIALOGS.EDIT_VIDEO)}
+                  >
+                  <span className="material-icons">edit</span> Edit
+                  </Button>
+                }
+                <Button
+                  className="share mdc-button--raised"
+                  onClick={showDialog.bind(this, DIALOGS.SHARE_VIDEO)}
+                >
+                  <span className="material-icons ">share</span> Share
+                </Button>
+              </div>
             </div>
           </div>
           <div className="video-subtitles mdc-layout-grid__cell--span-5">
