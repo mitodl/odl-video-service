@@ -245,14 +245,14 @@ def test_monitor_watch(mocker, user):  # pylint: disable=unused-argument,redefin
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
     s3 = boto3.resource('s3')
     s3c = boto3.client('s3')
-    upload = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
+    filename = 'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4'
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
     s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
-    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), upload)
-    assert s3c.get_object(Bucket=bucket.name, Key=upload) is not None
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
+    assert s3c.get_object(Bucket=bucket.name, Key=filename) is not None
     monitor_watch_bucket.delay()
-    new_video = Video.objects.get(title=upload)
+    new_video = Video.objects.get(source_url__endswith=filename)
     new_videofile = new_video.videofile_set.get(encoding=EncodingNames.ORIGINAL)
     mock_encoder.assert_called_once_with(
         {
@@ -269,7 +269,7 @@ def test_monitor_watch(mocker, user):  # pylint: disable=unused-argument,redefin
         }])
     assert new_videofile.bucket_name == settings.VIDEO_S3_BUCKET
     with pytest.raises(ClientError):
-        s3c.get_object(Bucket=bucket.name, Key=upload)
+        s3c.get_object(Bucket=bucket.name, Key=filename)
 
 
 @mock_s3
@@ -287,14 +287,16 @@ def test_monitor_watch_badname(mocker):  # pylint: disable=unused-argument,redef
     s3c = boto3.client('s3')
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
     s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
-    uploads = ('MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4',
-               'Bad Name.mp4',
-               'MIT-6.046-lec-mit-0000-2017apr06-0404.mp4')
+    filenames = (
+        'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4',
+        'Bad Name.mp4',
+        'MIT-6.046-lec-mit-0000-2017apr06-0404.mp4'
+    )
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
-    for filename in uploads:
+    for filename in filenames:
         bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
     monitor_watch_bucket.delay()
     assert mock_encoder.call_count == 2
-    assert not Video.objects.filter(title=uploads[1])
-    assert Video.objects.get(title=uploads[0])
-    assert Video.objects.get(title=uploads[2])
+    assert not Video.objects.filter(source_url__endswith=filenames[1])
+    assert Video.objects.get(source_url__endswith=filenames[0])
+    assert Video.objects.get(source_url__endswith=filenames[2])
