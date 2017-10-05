@@ -67,7 +67,7 @@ describe('EditVideoFormDialog', () => {
     ], () => {
       wrapper = renderComponent();
     });
-    if (!wrapper) throw "Render failed";
+    if (!wrapper) throw new Error("Render failed");
 
     assert.notEqual(previousFormState.key, store.getState().commonUi.editVideoForm.key);
     assert.equal(wrapper.find(selectors.TITLE_INPUT).prop('value'), video.title);
@@ -89,7 +89,7 @@ describe('EditVideoFormDialog', () => {
     ], () => {
       wrapper = renderComponent();
     });
-    if (!wrapper) throw "Render failed";
+    if (!wrapper) throw new Error("Render failed");
 
     let newValues = {
       title: "New Title",
