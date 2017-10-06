@@ -75,7 +75,7 @@ class CollectionDetailPage extends React.Component {
 
   handleUpload = async (chosenFiles: Array<Object>) => {
     const { dispatch, collection } = this.props;
-    if (!collection) throw "Collection does not exist";
+    if (!collection) throw new Error("Collection does not exist");
     await dispatch(actions.uploadVideo.post(collection.key, chosenFiles));
     // Reload the collection after the video upload request succeeds
     dispatch(actions.collections.get(collection.key));

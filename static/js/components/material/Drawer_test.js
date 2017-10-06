@@ -47,7 +47,7 @@ describe("Drawer", () => {
       );
     });
     if (!wrapper) {
-      throw "Never will happen, make flow happy";
+      throw new Error("Never will happen, make flow happy");
     }
     return wrapper;
   };

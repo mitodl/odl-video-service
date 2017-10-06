@@ -67,7 +67,7 @@ describe('CollectionDetailPage', () => {
         </Provider>
       );
     });
-    if (!wrapper) throw "Never will happen, make flow happy";
+    if (!wrapper) throw new Error("Never will happen, make flow happy");
     return wrapper;
   };
 
