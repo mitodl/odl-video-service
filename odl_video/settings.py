@@ -475,10 +475,7 @@ ADWORDS_CONVERSION_ID = get_string("ADWORDS_CONVERSION_ID", "")
 GA_TRACKING_ID = get_string("GA_TRACKING_ID", "")
 REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
 
-# This is necessary for loading USwitch video player code from an external source
-USWITCH_URL = get_string('USWITCH_URL', '')
 LECTURE_CAPTURE_USER = get_string('LECTURE_CAPTURE_USER', '')
-
 
 # List of mandatory settings. If any of these is not set, the app will not start
 # and will raise an ImproperlyConfigured exception
@@ -497,7 +494,6 @@ MANDATORY_SETTINGS = [
     'ODL_VIDEO_BASE_URL',
     'REDIS_URL',
     'SECRET_KEY',
-    'USWITCH_URL',
     'VIDEO_CLOUDFRONT_DIST',
     'LECTURE_CAPTURE_USER',
     'MIT_WS_CERTIFICATE',

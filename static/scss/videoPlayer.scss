@@ -1,6 +1,22 @@
 // Video.JS styles
+.video-odl-center {
+  margin: auto;
+  width: 80%;
+  background-color: transparent;
+}
+
 .video-odl-medium, .video-message {
   width: 100%;
+  margin: auto;
+  overflow: hidden;
+}
+
+.video-odl-multiangle {
+  float: left;
+}
+
+.video-odl-thumb {
+  width: 100px;
 }
 
 .video-message {
@@ -20,6 +36,7 @@
     position: relative !important;
     width: inherit !important;
     height: inherit !important;
+    overflow: hidden;
 
     .vjs-tech {
       position: relative !important;
@@ -44,6 +61,6 @@
 
 //Uswitch styles
 .uswitch-odl-medium {
-  width: 100%;
+  width: 80%;
   height: calc(100vh - 200px);
 }

@@ -117,18 +117,6 @@ class VideoEmbed(TemplateView):
             **default_js_settings(self.request),
             'video': VideoSerializer(video).data,
         })
-        context['uswitchPlayerURL'] = settings.USWITCH_URL
-        return context
-
-
-@method_decorator(login_required, name='dispatch')
-class MosaicView(TemplateView):
-    """Display USwitch cameras in separate window"""
-    template_name = "ui/mosaic.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['uswitchPlayerURL'] = settings.USWITCH_URL
         return context
 
 

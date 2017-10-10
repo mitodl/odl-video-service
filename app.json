@@ -118,10 +118,6 @@
       "description": "Owner of LectureCapture collections",
       "required": true
     },
-    "USWITCH_URL": {
-      "description": "Base URL of USwitch JS files",
-      "required": true
-    },
     "MIT_WS_CERTIFICATE": {
       "description": "X509 certificate as a string",
       "required": true
