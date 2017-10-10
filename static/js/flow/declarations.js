@@ -29,4 +29,4 @@ declare var module: {
 }
 
 declare var videojs: Function;
-declare var OmniPlayer: Function;
+

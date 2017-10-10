@@ -50,6 +50,21 @@
   }
 }
 
+.camera-bar {
+  overflow: hidden;
+}
+
+.camera-box {
+  padding-left: 0px;
+  margin-left: 0px;
+  outline: 3px solid #d3d3d3;
+  outline-offset: -5px;
+}
+
+.camera-box-selected {
+  outline: 3px solid #ff0000;
+}
+
 .video-subtitles {
   flex-direction: row;
   flex-wrap: wrap;

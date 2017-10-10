@@ -23,7 +23,8 @@ const makeObjectKey = (videoKey: string, encoding: string): string => (
     : `transcoded/${videoKey}/video__index.m3u8`
 );
 
-const makeSubtitleObjectKey = (videoKey: string): string => (`subtitles/${videoKey}/subtitle.vtt`);
+const makeSubtitleObjectKey = (videoKey: string, lang: string): string => (
+  `subtitles/${videoKey}/subtitle_${lang}.vtt`);
 
 export const makeVideoFile = (videoKey: string = casual.uuid, encoding: string = ENCODING_ORIGINAL) => ({
   id: videoFileId(),
@@ -41,14 +42,14 @@ export const makeVideoThumbnail = (videoKey: string = casual.uuid, encoding: str
   bucket_name: casual.text,
 });
 
-export const makeVideoSubtitle = (videoKey: string = casual.uuid) => ({
+export const makeVideoSubtitle = (videoKey: string = casual.uuid, lang: string = 'en') => ({
   id: videoSubtitleId(),
   filename: casual.text,
   created_at: casual.moment.format(),
-  s3_object_key: makeSubtitleObjectKey(videoKey),
+  s3_object_key: makeSubtitleObjectKey(videoKey, lang),
   bucket_name: casual.text,
   cloudfront_url: casual.text,
-  language: 'en',
+  language: lang,
   language_name: 'English'
 });
 

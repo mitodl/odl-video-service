@@ -6,12 +6,12 @@ import { actions } from "../actions";
 import { endpoints } from "../lib/redux_rest";
 import commonUi from './commonUi';
 import collectionUi from './collectionUi';
-import videoSubtitleUi from "./videoSubtitleUi";
+import videoUi from "./videoUi";
 
 const reducers: Object = {
   commonUi,
   collectionUi,
-  videoSubtitleUi
+  videoUi
 };
 endpoints.forEach(endpoint => {
   reducers[endpoint.name] = deriveReducers(endpoint, actions[endpoint.name]);

@@ -69,10 +69,9 @@ describe('VideoDetailPage', () => {
 
   it('renders the video player', async () => {
     let wrapper = await renderPage();
-    assert.deepEqual(wrapper.find("VideoPlayer").props(), {
-      video: video,
-      useIframeForUSwitch: true,
-    });
+    const videoPlayerProps = wrapper.find("VideoPlayer").props();
+    assert.equal(videoPlayerProps.video, video);
+    assert.equal(videoPlayerProps.selectedCorner, 'upperLeft');
   });
 
   it('shows the video title, description and upload date, and link to collection', async () => {
@@ -134,9 +133,9 @@ describe('VideoDetailPage', () => {
     let wrapper = await renderPage({editable: true});
     let uploadBtn = wrapper.find('.upload-input');
     let file = new File(['foo'], 'filename.vtt');
-    store.getState().videoSubtitleUi.videoSubtitleForm.video = video.key;
+    store.getState().videoUi.videoSubtitleForm.video = video.key;
     uploadBtn.prop('onChange')({target: {files: [file]}});
-    assert.equal(store.getState().videoSubtitleUi.videoSubtitleForm.subtitle, file);
+    assert.equal(store.getState().videoUi.videoSubtitleForm.subtitle, file);
   });
 
   it('deletes a subtitle when delete button is clicked', async () => {

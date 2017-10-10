@@ -15,7 +15,7 @@ import ShareVideoDialog from '../components/dialogs/ShareVideoDialog';
 import { withDialogs } from '../components/dialogs/hoc';
 
 import { actions } from '../actions';
-import * as videoSubtitleActions from '../actions/videoSubtitleUi';
+import * as videoSubtitleActions from '../actions/videoUi';
 import { setDrawerOpen } from '../actions/commonUi';
 import { makeCollectionUrl } from '../lib/urls';
 import { videoIsProcessing, videoHasError } from '../lib/video';
@@ -23,8 +23,9 @@ import { DIALOGS, MM_DD_YYYY } from '../constants';
 
 import type { Video } from "../flow/videoTypes";
 import type { CommonUiState } from "../reducers/commonUi";
-import type { SubtitleUiState } from "../reducers/videoSubtitleUi";
+import type { VideoUiState } from "../reducers/videoUi";
 import VideoSubtitleCard from "../components/VideoSubtitleCard";
+import { updateVideoJsSync } from "../actions/videoUi";
 
 
 class VideoDetailPage extends React.Component {
@@ -34,7 +35,7 @@ class VideoDetailPage extends React.Component {
     videoKey: string,
     needsUpdate: boolean,
     commonUi: CommonUiState,
-    videoSubtitleUi: SubtitleUiState,
+    videoUi: VideoUiState,
     showDialog: Function,
     editable: boolean
   };
@@ -74,7 +75,7 @@ class VideoDetailPage extends React.Component {
       dispatch,
       video,
       videoKey,
-      videoSubtitleUi: {videoSubtitleForm}
+      videoUi: {videoSubtitleForm}
     } = this.props;
     if (video && videoSubtitleForm.subtitle) {
       const formData = new FormData();
@@ -95,7 +96,13 @@ class VideoDetailPage extends React.Component {
     this.uploadVideoSubtitle();
   };
 
+  updateCorner = (corner: string) => {
+    const { dispatch } = this.props;
+    dispatch(updateVideoJsSync(corner));
+  };
+
   renderVideoPlayer = (video: Video) => {
+    const { videoUi } = this.props;
     if (videoIsProcessing(video)) {
       return <div className="video-message">
         Video is processing, check back later
@@ -110,7 +117,8 @@ class VideoDetailPage extends React.Component {
 
     return <VideoPlayer
       video={video}
-      useIframeForUSwitch={true}
+      cornerFunc={this.updateCorner}
+      selectedCorner={videoUi.corner}
     />;
   };
 
@@ -181,7 +189,7 @@ class VideoDetailPage extends React.Component {
 
 const mapStateToProps = (state, ownProps) => {
   const { videoKey } = ownProps;
-  const { videos, commonUi, videoSubtitleUi } = state;
+  const { videos, commonUi, videoUi } = state;
   const video = videos.data ? videos.data.get(videoKey) : null;
   const needsUpdate = !videos.processing && !videos.loaded;
 
@@ -189,7 +197,7 @@ const mapStateToProps = (state, ownProps) => {
     video,
     needsUpdate,
     commonUi,
-    videoSubtitleUi
+    videoUi
   };
 };
 

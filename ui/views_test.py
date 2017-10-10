@@ -117,7 +117,6 @@ def test_video_detail(logged_in_client, mocker):
 
 def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=redefined-outer-name
     """Test video embed page"""
-    settings.USWITCH_URL = 'https://testing_odl.mit.edu'
     client, user = logged_in_client
     videofileHLS = VideoFileFactory(
         hls=True,
@@ -128,7 +127,6 @@ def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=red
     video = videofileHLS.video
     url = reverse('video-embed', kwargs={'video_key': video.hexkey})
     response = client.get(url)
-    assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert js_settings_json == {
         "video": VideoSerializer(video).data,
@@ -138,17 +136,6 @@ def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=red
         "user": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
     }
-
-
-def test_mosaic_view(logged_in_client, settings):  # pylint: disable=redefined-outer-name
-    """Test the MosaicView"""
-    client, _ = logged_in_client
-    video = VideoFactory(multiangle=True)
-    settings.USWITCH_URL = 'https://testing_odl.mit.edu'
-    url = reverse('video-mosaic', kwargs={'video_key': video.hexkey})
-    response = client.get(url)
-    assert response.status_code == status.HTTP_200_OK
-    assert response.context_data['uswitchPlayerURL'] == 'https://testing_odl.mit.edu'
 
 
 def test_upload_dropbox_videos_authentication(mock_moira_client, logged_in_apiclient):

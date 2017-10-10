@@ -30,3 +30,10 @@ export const DIALOGS = {
   EDIT_VIDEO: 'EDIT_VIDEO',
   SHARE_VIDEO: 'SHARE_VIDEO'
 };
+
+export const CANVASES = {
+  upperLeft: {shiftX: false, shiftY: false},
+  upperRight: {shiftX: true, shiftY: false},
+  lowerLeft: {shiftX: false, shiftY: true},
+  lowerRight: {shiftX: true, shiftY: true}
+};
