@@ -67,13 +67,14 @@ describe('VideoPlayer', (props = {}) => {
     let args = videojsStub.firstCall.args;
     assert.equal(args[0].tagName, "VIDEO");
     assert.deepEqual(args[1], {
-      autoplay: true,
+      autoplay: false,
       controls: true,
       fluid: false,
       playsinline: true,
       html5: {
         nativeTextTracks: false
       },
+      playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
       sources: [
         {
           type: 'application/x-mpegURL',
@@ -161,5 +162,10 @@ describe('VideoPlayer', (props = {}) => {
     assert.equal(wrapper.instance().player.tracks.length, 2);
     assert.equal(wrapper.instance().player.tracks[0].src,  makeVideoSubtitleUrl(captionToKeep));
     assert.equal(wrapper.instance().player.tracks[1].src,  makeVideoSubtitleUrl(captionToAdd));
+  });
+
+  it('has a playback speed button on the control bar', () => {
+    let wrapper = renderPlayer();
+    assert.isDefined(wrapper.find('.vjs-playback-rate-value'));
   });
 });

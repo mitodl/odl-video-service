@@ -9,13 +9,14 @@ import { FULLSCREEN_API } from "../util/fullscreen_api";
 import { CANVASES } from "../constants";
 
 const makeConfigForVideo = (video: Video): Object => ({
-  autoplay: true,
+  autoplay: false,
   controls: true,
   fluid: false,
   playsinline: true,
   html5: {
     nativeTextTracks: false
   },
+  playbackRates: [0.50, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
   sources: [{
     src: getHLSEncodedUrl(video),
     type: 'application/x-mpegURL',
