@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 0.3.0
+-------------
+
+- Playback rate control, disable autoplay
+- Multi-angle VideoJS
+- Fix config of root logger (#300)
+- Add no-throw-literal eslint rule (#299)
+- Remove default MAILGUN_URL, this should be set in .env instead (#298)
+- Add missing return (#296)
+- responsive layout fix (#294)
+- Fix logging configuration (#293)
+
 Version 0.2.1
 -------------
 
