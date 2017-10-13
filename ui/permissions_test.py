@@ -188,13 +188,15 @@ def test_is_collection_admin_anonymous_users(collection_permission, collection, 
                                                        collection) is False
 
 
-def test_is_collection_admin_user_different_from_collecton_owner(collection_permission,
+def test_is_collection_admin_user_different_from_collecton_owner(mocker,
+                                                                 collection_permission,
                                                                  collection,
                                                                  request_data):
     """
     Test for HasCollectionPermissions.has_object_permission to verify
     that user who does not own the collection does not have permission
     """
+    mocker.patch('ui.utils.user_moira_lists', return_value=[])
     assert collection_permission.has_object_permission(request_data.request,
                                                        request_data.view,
                                                        collection) is False
@@ -324,12 +326,13 @@ def test_can_upload_to_collection_other_key(can_upload_to_collection_permission,
     assert can_upload_to_collection_permission.has_permission(request_data.request, request_data.view) is False
 
 
-def test_can_upload_to_collection_other_owner(can_upload_to_collection_permission, collection, request_data):
+def test_can_upload_to_collection_other_owner(mocker, can_upload_to_collection_permission, collection, request_data):
     """
     Test for CanUploadToCollection with a collection having another owner
     """
     request_data.request.method = 'POST'
     request_data.request.data = {'collection': collection.hexkey}
+    mocker.patch('ui.utils.user_moira_lists')
     assert can_upload_to_collection_permission.has_permission(request_data.request, request_data.view) is False
 
 
@@ -352,11 +355,12 @@ def test_video_view_permission_anonymous_users(video_permission, video, request_
     assert video_permission.has_object_permission(request_data_anon.request, request_data_anon.view, video) is False
 
 
-def test_video_view_permission_other_user(video_permission, video, request_data):
+def test_video_view_permission_other_user(mocker, video_permission, video, request_data):
     """
     Test for HasVideoPermissions.has_object_permission to verify
     that user who does not own the video's collection does not have permission
     """
+    mocker.patch('ui.utils.user_moira_lists')
     assert video_permission.has_object_permission(request_data.request, request_data.view, video) is False
 
 
@@ -438,11 +442,12 @@ def test_video_admin_permission_anonymous_users(video_permission, video, request
     assert video_permission.has_object_permission(request_data_anon.request, request_data_anon.view, video) is False
 
 
-def test_video_admin_permission_other_user(video_permission, video, request_data):
+def test_video_admin_permission_other_user(mocker, video_permission, video, request_data):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify
     that user who does not own the video's collection does not have permission
     """
+    mocker.patch('ui.utils.user_moira_lists', return_value=[])
     request_data.request.method = 'POST'
     assert video_permission.has_object_permission(request_data.request, request_data.view, video) is False
 

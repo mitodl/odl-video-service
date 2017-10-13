@@ -1,10 +1,9 @@
 """Tests for utils methods"""
 from tempfile import NamedTemporaryFile
-from urllib3.exceptions import SSLError
-
 import pytest
 
 from ui import factories
+from ui.exceptions import MoiraException
 from ui.utils import write_to_file, get_moira_client, user_moira_lists
 
 
@@ -62,9 +61,9 @@ def test_user_moira_lists(mock_moira_client):
 
 def test_user_moira_lists_error(mock_moira_client):
     """
-    Test that an empty list is returned if the Moira client can't connect
+    Test that a Moira exception is raised if moira client call fails
     """
-    mock_moira_client.side_effect = SSLError()
+    mock_moira_client.side_effect = MoiraException()
     other_user = factories.UserFactory()
-    lists = user_moira_lists(other_user)
-    assert lists == []
+    with pytest.raises(MoiraException):
+        user_moira_lists(other_user)
