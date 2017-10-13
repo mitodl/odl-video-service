@@ -89,6 +89,7 @@ def test_refresh_status_video_job_status_error(mocker):
         }
     }
     mocker.patch('ui.utils.boto3', MockBoto)
+    mocker.patch('ui.models.tasks')
     api.refresh_status(video, encodejob)
     assert video.status == VideoStatus.TRANSCODE_FAILED_VIDEO
 
@@ -102,6 +103,7 @@ def test_refresh_status_video_job_status_complete(mocker):
     MockClientET.job = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Complete'}}
     mocker.patch('ui.utils.boto3', MockBoto)
     mocker.patch('cloudsync.api.process_transcode_results')
+    mocker.patch('ui.models.tasks')
     api.refresh_status(video, encodejob)
     assert video.status == VideoStatus.COMPLETE
 
@@ -421,6 +423,7 @@ def test_transcode_job_failure(mocker, videofile):
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000020',),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+    mocker.patch('ui.models.tasks')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode',
                                 side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
     with pytest.raises(ClientError):

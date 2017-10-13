@@ -118,6 +118,7 @@ def test_transcode_failure(mocker, videofile):
     mocker.patch('dj_elastictranscoder.transcoder.Session')
     mocker.patch('celery.app.task.Task.update_state')
     mocker.patch('ui.utils.boto3', MockBoto)
+    mocker.patch('ui.models.tasks')
     mocker.patch('cloudsync.api.get_et_job',
                  return_value=job_result['Job'])
     # Transcode the video
@@ -213,6 +214,7 @@ def test_update_video_statuses_nojob(mocker, video):  # pylint: disable=unused-a
     """Test NoEncodeJob error handling"""
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=EncodeJob.DoesNotExist())
+    mocker.patch('ui.models.tasks')
     video.update_status(VideoStatus.TRANSCODING)
     update_video_statuses()  # pylint: disable=no-value-for-parameter
     assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
@@ -223,6 +225,7 @@ def test_update_video_statuses_clienterror(mocker, video):  # pylint: disable=un
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
+    mocker.patch('ui.models.tasks')
     video.update_status(VideoStatus.TRANSCODING)
     update_video_statuses()  # pylint: disable=no-value-for-parameter
     assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status

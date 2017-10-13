@@ -16,6 +16,7 @@ from mail import tasks
 from ui import utils
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
+from ui.exceptions import MoiraException
 from ui.tasks import delete_s3_objects
 
 TRANSCODE_PREFIX = 'transcoded'
@@ -35,7 +36,10 @@ class MoiraList(models.Model):
 
         """
         moira = utils.get_moira_client()
-        return set(moira.list_members(self.name, type=''))
+        try:
+            return set(moira.list_members(self.name, type=''))
+        except Exception as exc:
+            raise MoiraException('Something went wrong with getting moira-list members') from exc
 
     def __str__(self):
         return self.name

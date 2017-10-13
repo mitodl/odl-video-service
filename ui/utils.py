@@ -10,6 +10,8 @@ from django.conf import settings
 
 from mit_moira import Moira
 
+from ui.exceptions import MoiraException
+
 log = logging.getLogger(__name__)
 
 MoiraUser = namedtuple('MoiraUser', 'username type')
@@ -31,7 +33,10 @@ def get_moira_client():
             )
     if errors:
         raise RuntimeError('\n'.join(errors))
-    return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
+    try:
+        return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
+    except Exception as exc:  # pylint: disable=broad-except
+        raise MoiraException('Something went wrong with creating a moira client') from exc
 
 
 def get_moira_user(user):
@@ -62,12 +67,11 @@ def user_moira_lists(user):
         list: A list of moira lists the user has access to.
     """
     moira_user = get_moira_user(user)
+    moira = get_moira_client()
     try:
-        moira = get_moira_client()
         return moira.user_lists(moira_user.username, moira_user.type)
     except Exception as exc:  # pylint: disable=broad-except
-        log.exception('Something went wrong with the moira client for user %s: %s', user.email, str(exc))
-        return []
+        raise MoiraException('Something went wrong with getting moira-lists for %s' % user.username) from exc
 
 
 def has_common_lists(user, list_names):
