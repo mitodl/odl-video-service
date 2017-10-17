@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}OVS{% endblock %}
+{% block pagetitle %}OVS{% endblock %}
+{% block content %}
+{% load render_bundle %}
+
+<div id="container"></div>
+
+{% render_bundle 'error' %}
+{% endblock %}

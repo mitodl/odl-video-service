@@ -8,11 +8,8 @@ import type { Dispatch } from "redux";
 import { Link } from "react-router-dom";
 
 import { DIALOGS } from "../constants";
-import * as commonUiActions from '../actions/commonUi';
 import * as collectionUiActions from '../actions/collectionUi';
-import OVSToolbar from '../components/OVSToolbar';
-import Drawer from '../components/material/Drawer';
-import Footer from '../components/Footer';
+import WithDrawer from "./WithDrawer";
 import CollectionFormDialog from "../components/dialogs/CollectionFormDialog";
 import { withDialogs } from "../components/dialogs/hoc";
 import { makeCollectionUrl } from "../lib/urls";
@@ -26,11 +23,6 @@ class CollectionListPage extends React.Component {
     editable: boolean,
     needsUpdate: boolean,
     commonUi: CommonUiState
-  };
-
-  setDrawerOpen = (open: boolean): void => {
-    const { dispatch } = this.props;
-    dispatch(commonUiActions.setDrawerOpen(open));
   };
 
   renderCollectionLinks() {
@@ -64,7 +56,6 @@ class CollectionListPage extends React.Component {
   };
 
   render() {
-    const { commonUi } = this.props;
     const formLink = SETTINGS.editable
       ? (
         <a className="button-link create-collection-button" onClick={this.openNewCollectionDialog}>
@@ -74,9 +65,7 @@ class CollectionListPage extends React.Component {
       )
       : null;
 
-    return <div>
-      <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
-      <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
+    return <WithDrawer>
       <div className="collection-list-content">
         <div className="card centered-content">
           <h2 className="mdc-typography--title">My Collections</h2>
@@ -84,8 +73,7 @@ class CollectionListPage extends React.Component {
           { formLink }
         </div>
       </div>
-      <Footer />
-    </div>;
+    </WithDrawer>;
   }
 }
 

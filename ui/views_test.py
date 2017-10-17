@@ -108,7 +108,8 @@ def test_video_detail(logged_in_client, mocker):
         "public_path": '/static/bundles/',
         "videoKey": videofileHLS.video.hexkey,
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
-        "user": user.email,
+        "user": user.username,
+        "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
     }
 
@@ -131,7 +132,8 @@ def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=red
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": "/static/bundles/",
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
-        "user": user.email,
+        "user": user.username,
+        "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
     }
 

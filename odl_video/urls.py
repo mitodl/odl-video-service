@@ -24,3 +24,7 @@ urlpatterns = [
     url(r'^', include('cloudsync.urls')),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]
+
+handler403 = 'ui.views.permission_denied_403_view'
+handler404 = 'ui.views.page_not_found_404_view'
+handler500 = 'ui.views.error_500_view'

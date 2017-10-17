@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import (
     get_object_or_404,
     redirect,
+    render,
 )
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
@@ -32,7 +33,8 @@ from ui import (
 from ui.models import (
     Collection,
     Video,
-    VideoSubtitle)
+    VideoSubtitle,
+)
 
 
 def default_js_settings(request):
@@ -41,7 +43,8 @@ def default_js_settings(request):
         "gaTrackingID": settings.GA_TRACKING_ID,
         "public_path": public_path(request),
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
-        "user": (request.user.email or request.user.username) if request.user.is_authenticated else "Not logged in",
+        "user": request.user.username if request.user.is_authenticated else None,
+        "email": request.user.email if request.user.is_authenticated else None,
         "support_email_address": settings.EMAIL_SUPPORT,
     }
 
@@ -242,3 +245,36 @@ class VideoSubtitleViewSet(ModelDetailViewset):
         permissions.IsAuthenticated,
         ui_permissions.HasVideoSubtitlePermissions
     )
+
+
+def _handle_error_view(request, status_code):
+    """
+    Handles a 403, 404 or 500 response
+    """
+    return render(request, "error.html", status=status_code, context={
+        "js_settings_json": json.dumps({
+            **default_js_settings(request),
+            "status_code": status_code,
+        }),
+    })
+
+
+def permission_denied_403_view(request):
+    """
+    Handles a 403 response
+    """
+    return _handle_error_view(request, status.HTTP_403_FORBIDDEN)
+
+
+def page_not_found_404_view(request):
+    """
+    Handles a 404 response
+    """
+    return _handle_error_view(request, status.HTTP_404_NOT_FOUND)
+
+
+def error_500_view(request):
+    """
+    Handles a 500 response
+    """
+    return _handle_error_view(request, status.HTTP_500_INTERNAL_SERVER_ERROR)
