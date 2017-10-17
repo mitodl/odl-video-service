@@ -46,7 +46,7 @@ def default_js_settings(request):
     }
 
 
-def index(request):
+def index(request):  # pylint: disable=unused-argument
     """Index"""
     return redirect('collection-react-view')
 

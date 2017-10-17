@@ -91,7 +91,7 @@ def test_index(client):
     """Test index anonymous"""
     response = client.get(reverse('index'))
     assert response.status_code == status.HTTP_302_FOUND
-    assert response.redirect_chain == []
+    assert response.url == reverse('collection-react-view')
 
 
 def test_video_detail(logged_in_client, mocker):
