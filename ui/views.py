@@ -2,16 +2,13 @@
 import json
 
 from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth import login
-from django.contrib.auth.views import login as login_view
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponseRedirect
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import (
+    get_object_or_404,
+    redirect,
+)
 from django.utils.decorators import method_decorator
-from django.urls import reverse
 from django.views.generic import TemplateView
 from rest_framework import (
     authentication,
@@ -30,7 +27,6 @@ from ui.templatetags.render_bundle import public_path
 from ui import (
     api,
     serializers,
-    forms,
     permissions as ui_permissions
 )
 from ui.models import (
@@ -50,21 +46,9 @@ def default_js_settings(request):
     }
 
 
-class Index(TemplateView):
+def index(request):
     """Index"""
-    template_name = "ui/index.html"
-
-    def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated():
-            return HttpResponseRedirect(reverse('collection-react-view'))
-        return super(Index, self).dispatch(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["login_form"] = AuthenticationForm()
-        context["register_form"] = forms.UserCreationForm()
-        context["js_settings_json"] = json.dumps(default_js_settings(self.request))
-        return context
+    return redirect('collection-react-view')
 
 
 @method_decorator(login_required, name='dispatch')
@@ -258,29 +242,3 @@ class VideoSubtitleViewSet(ModelDetailViewset):
         permissions.IsAuthenticated,
         ui_permissions.HasVideoSubtitlePermissions
     )
-
-
-def register(request):
-    """register"""
-    if request.method == "POST":
-        form = forms.UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, "Account created.")
-            return HttpResponseRedirect(settings.LOGIN_REDIRECT_URL)
-    else:
-        form = forms.UserCreationForm
-    context = {
-        "form": form,
-    }
-    context["js_settings_json"] = json.dumps(default_js_settings(request))
-    return render(request, "registration/register.html", context)
-
-
-def ui_login(request, *args, **kwargs):
-    """login"""
-    extra_context = {
-        "js_settings_json": json.dumps(default_js_settings(request))
-    }
-    return login_view(request, *args, extra_context=extra_context, **kwargs)

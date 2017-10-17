@@ -11,9 +11,7 @@ router.register(r'collections', views.CollectionViewSet, base_name='collection')
 router.register(r'subtitles', views.VideoSubtitleViewSet, base_name='subtitle')
 
 urlpatterns = [
-    url(r'^$', views.Index.as_view(), name='index'),
-    url(r'^register/$', views.register, name='register'),
-    url(r'^login/$', views.ui_login, name='login'),
+    url(r'^$', views.index, name='index'),
     url(r'^logout/$', django_logout_view, {'next_page': settings.LOGIN_URL}),
 
     url(r'^collections/', views.CollectionReactView.as_view(), name='collection-react-view'),

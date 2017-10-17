@@ -106,7 +106,7 @@ if get_bool('USE_SHIBBOLETH', False):
     ]
     LOGIN_URL = "/Shibboleth.sso/Login"
 else:
-    LOGIN_URL = "/login/"
+    LOGIN_URL = "/admin/login/"
 
 ROOT_URLCONF = 'odl_video.urls'
 
