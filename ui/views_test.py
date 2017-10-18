@@ -87,13 +87,11 @@ def post_data(logged_in_apiclient):
     return input_data
 
 
-def test_index_anonymous(client):
+def test_index(client):
     """Test index anonymous"""
     response = client.get(reverse('index'))
-    assert response.status_code == status.HTTP_200_OK
-    assert 'login_form' in response.context_data
-    assert 'register_form' in response.context_data
-    assert response.template_name == ['ui/index.html']
+    assert response.status_code == status.HTTP_302_FOUND
+    assert response.url == reverse('collection-react-view')
 
 
 def test_video_detail(logged_in_client, mocker):
