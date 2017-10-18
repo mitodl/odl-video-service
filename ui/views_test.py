@@ -472,3 +472,28 @@ def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     # call with user on admin list
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
     assert client.post(url, input_data, format='multipart').status_code == status.HTTP_202_ACCEPTED
+
+
+@pytest.mark.parametrize("logged_in", [True, False])
+def test_page_not_found(logged_in, logged_in_apiclient, settings):
+    """
+    We should show the React container for our 404 page
+    """
+    settings.VIDEO_CLOUDFRONT_BASE_URL = 'cloudfront_base_url'
+    settings.GA_TRACKING_ID = 'tracking_id'
+    settings.EMAIL_SUPPORT = 'support'
+
+    client, user = logged_in_apiclient
+    if not logged_in:
+        client.logout()
+    resp = client.get("/definitely_not_a_real_page/")
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
+    assert json.loads(resp.context[0]['js_settings_json']) == {
+        'cloudfront_base_url': settings.VIDEO_CLOUDFRONT_BASE_URL,
+        'gaTrackingID': settings.GA_TRACKING_ID,
+        'public_path': '/static/bundles/',
+        'status_code': status.HTTP_404_NOT_FOUND,
+        'support_email_address': settings.EMAIL_SUPPORT,
+        'email': user.email if logged_in else None,
+        'user': user.username if logged_in else None,
+    }
