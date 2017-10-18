@@ -10,9 +10,11 @@ declare var SETTINGS: {
   video: Video,
   videoKey: string,
   editable: boolean,
-  user: string,
+  user: ?string,
+  email: ?string,
   dropbox_key: string,
-  support_email_address: string
+  support_email_address: string,
+  status_code?: number
 };
 
 // mocha

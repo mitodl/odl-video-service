@@ -6,10 +6,8 @@ import type { Dispatch } from 'redux';
 import R from 'ramda';
 import _ from 'lodash';
 
-import OVSToolbar from '../components/OVSToolbar';
-import Footer from '../components/Footer';
+import WithDrawer from './WithDrawer';
 import VideoCard from '../components/VideoCard';
-import Drawer from '../components/material/Drawer';
 import Button from "../components/material/Button";
 import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
 import ShareVideoDialog from '../components/dialogs/ShareVideoDialog';
@@ -18,7 +16,6 @@ import { withDialogs } from '../components/dialogs/hoc';
 import DropboxChooser from 'react-dropbox-chooser';
 
 import { actions } from '../actions';
-import * as commonUiActions from '../actions/commonUi';
 import * as collectionUiActions from '../actions/collectionUi';
 import { getActiveCollectionDetail } from '../lib/collection';
 import { DIALOGS } from '../constants';
@@ -66,11 +63,6 @@ class CollectionDetailPage extends React.Component {
     const { dispatch, showDialog } = this.props;
     dispatch(collectionUiActions.setSelectedVideoKey(videoKey));
     showDialog(DIALOGS.SHARE_VIDEO);
-  };
-
-  setDrawerOpen = (open: boolean): void => {
-    const { dispatch } = this.props;
-    dispatch(commonUiActions.setDrawerOpen(open));
   };
 
   handleUpload = async (chosenFiles: Array<Object>) => {
@@ -172,7 +164,7 @@ class CollectionDetailPage extends React.Component {
   };
 
   render() {
-    const { collection, collectionError, commonUi } = this.props;
+    const { collection, collectionError } = this.props;
 
     if (!collection) return null;
 
@@ -180,14 +172,11 @@ class CollectionDetailPage extends React.Component {
       ? this.renderError(collectionError)
       : this.renderBody(collection);
 
-    return <div>
-      <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
-      <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
+    return <WithDrawer>
       <div className="collection-detail-content">
         { detailBody }
       </div>
-      <Footer />
-    </div>;
+    </WithDrawer>;
   }
 }
 

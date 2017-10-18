@@ -1,0 +1,21 @@
+.error-page {
+  background-color: #f0f0f0;
+  margin: 50px;
+  padding: 100px 50px;
+
+  .content {
+    margin: 0 auto;
+    text-align: center;
+    max-width: 500px;
+
+    .title {
+      font-weight: 600;
+      font-size: 24px;
+      color: #444444;
+    }
+
+    .message {
+      font-size: 16px;
+    }
+  }
+}

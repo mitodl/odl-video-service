@@ -22,7 +22,8 @@ describe("Drawer", () => {
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     store = configureTestStore(rootReducer);
-    SETTINGS.user = 'foo@mit.edu';
+    SETTINGS.email = 'foo@mit.edu';
+    SETTINGS.user = 'foo_user';
     collections = [makeCollection(), makeCollection()];
     listenForActions = store.createListenForActions();
     getCollectionsStub = sandbox.stub(api, 'getCollections').returns(Promise.resolve(collections));
@@ -56,6 +57,21 @@ describe("Drawer", () => {
     let wrapper = await renderDrawer();
     let drawerNode = wrapper.find('.mdc-list-item .mdc-link').at(0);
     assert.isTrue(drawerNode.text().startsWith('foo@mit.edu'));
+  });
+
+  it('shows the username if the email is not present', async() => {
+    SETTINGS.email = null;
+    let wrapper = await renderDrawer();
+    let drawerNode = wrapper.find('.mdc-list-item .mdc-link').at(0);
+    assert.isTrue(drawerNode.text().startsWith('foo_user'));
+  });
+
+  it('shows a message if the user is not logged in', async() => {
+    SETTINGS.email = null;
+    SETTINGS.user = null;
+    let wrapper = await renderDrawer();
+    let drawerNode = wrapper.find('.mdc-list-item .mdc-link').at(0);
+    assert.isTrue(drawerNode.text().startsWith('Not logged in'));
   });
 
   it('drawer element is rendered with collections', async () => {

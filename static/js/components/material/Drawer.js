@@ -79,7 +79,7 @@ class Drawer extends React.Component {
           <a id="collapse_item" className="mdc-list-item mdc-link" href="#" ref={
             node => this.collapseItemButton = node
           }>
-            {SETTINGS.user}
+            {SETTINGS.email ? SETTINGS.email : (SETTINGS.user ? SETTINGS.user : "Not logged in")}
           </a>
         </nav>
         <header className="mdc-temporary-drawer__header">
