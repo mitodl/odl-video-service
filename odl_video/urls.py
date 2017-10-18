@@ -20,9 +20,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^status/', include('server_status.urls')),
     url(r'^', include('ui.urls')),
-    url(r'^', include('django.contrib.auth.urls')),
     url(r'^', include('cloudsync.urls')),
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]
 
 handler403 = 'ui.views.permission_denied_403_view'
