@@ -17,47 +17,6 @@ module.exports = {
           test: /\.(png|svg|ttf|woff|woff2|eot|gif)$/,
           use: 'url-loader'
         },
-        {
-          test: /\.scss$/,
-          use: [
-            {
-              loader: 'style-loader',
-              options: {
-                sourceMap: true
-              }
-            },
-            {
-              loader: 'css-loader',
-              options: {
-                sourceMap: true
-              }
-            },
-            {
-              loader: 'postcss-loader',
-              options: {
-                sourceMap: true
-              }
-            },
-            {
-              loader: 'sass-loader',
-              options: {
-                sourceMap: true,
-                includePaths: ['node_modules', 'node_modules/@material/*']
-                  .map(dir => path.join(__dirname, dir))
-                  .map(fullPath => glob.sync(fullPath))
-                  .reduce((acc, matches) => acc.concat(matches), []),
-              }
-            },
-          ]
-        },
-        {
-          test: /\.css$/,
-          exclude: /node_modules/,
-          use: [
-            { loader: 'style-loader' },
-            { loader: 'css-loader' }
-          ]
-        },
       ]
     },
     resolve: {

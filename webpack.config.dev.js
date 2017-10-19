@@ -2,6 +2,7 @@ var webpack = require('webpack');
 var path = require("path");
 var R = require('ramda');
 var BundleTracker = require('webpack-bundle-tracker');
+const glob = require('glob');
 const { config, babelSharedLoader } = require(path.resolve("./webpack.config.shared.js"));
 
 const hotEntry = (host, port) => (
@@ -37,7 +38,26 @@ const devConfig = Object.assign({}, config, {
 });
 
 devConfig.module.rules = [
-  babelSharedLoader, ...config.module.rules
+  babelSharedLoader,
+  ...config.module.rules,
+  {
+    test: /\.css$|\.scss$/,
+    use: [
+      {loader: 'style-loader'},
+      {loader: 'css-loader'},
+      {loader: 'postcss-loader'},
+      {
+        loader: 'sass-loader',
+        options: {
+          sourceMap: true,
+          includePaths: ['node_modules', 'node_modules/@material/*']
+            .map(dir => path.join(__dirname, dir))
+            .map(fullPath => glob.sync(fullPath))
+            .reduce((acc, matches) => acc.concat(matches), []),
+        }
+      },
+    ]
+  },
 ];
 
 const makeDevConfig = (host, port) => (
