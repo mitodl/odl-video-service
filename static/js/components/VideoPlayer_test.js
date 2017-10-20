@@ -6,12 +6,14 @@ import { mount } from 'enzyme';
 
 import VideoPlayer from './VideoPlayer';
 import {makeVideo, makeVideoSubtitle} from '../factories/video';
-import * as libVideo from "../lib/video";
-import { CANVASES } from "../constants";
-import {makeVideoSubtitleUrl} from "../lib/urls";
+import * as libVideo from '../lib/video';
+import ga from 'react-ga';
+import { FULLSCREEN_API } from '../util/fullscreen_api';
+import { CANVASES } from '../constants';
+import {makeVideoSubtitleUrl} from '../lib/urls';
 
 describe('VideoPlayer', () => {
-  let video, videojsStub, sandbox, cornerFunction, playerStub, containerStub, nodeStub;
+  let video, videojsStub, sandbox, cornerFunction, playerStub, containerStub, nodeStub, gaStub;
 
   const renderPlayer = (props = {}) => mount(
     <VideoPlayer
@@ -26,18 +28,23 @@ describe('VideoPlayer', () => {
     video = makeVideo();
     sandbox = sinon.sandbox.create();
     cornerFunction = sandbox.stub();
+    gaStub = sandbox.stub(ga, 'event');
     playerStub = {
       el_: {
-        style: {}
+        style: {},
+        dispatchEvent: sandbox.stub()
       },
       tracks: [],
+      on: sandbox.stub(),
+      currentTime: () => 30.5,
+      duration: () => 61.0,
       videoWidth: () => 640,
       videoHeight: () => 360,
       currentWidth: () => 1280,
       currentHeight: () => 720,
       textTracks: function() {return this.tracks;},
       removeRemoteTextTrack: function(track) {this.tracks.splice(this.tracks.indexOf(track),1);},
-      addRemoteTextTrack: function(track) {this.tracks.push({src: track.src});}
+      addRemoteTextTrack: function(track) {this.tracks.push({src: track.src, addEventListener: function() {}});}
     };
     containerStub = {style: {}, parentElement: {style: {}}};
     nodeStub = {style: {}};
@@ -71,10 +78,13 @@ describe('VideoPlayer', () => {
       ]
     });
     let enableTouchActivityStub = sandbox.stub();
+    let onStub = sandbox.stub();
     args[2].call({
-      enableTouchActivity: enableTouchActivityStub
+      enableTouchActivity: enableTouchActivityStub,
+      on: onStub
     });
     sinon.assert.calledWith(enableTouchActivityStub);
+    sinon.assert.calledWith(onStub);
   });
 
   it('video element is rendered with the correct attributes', () => {
@@ -102,9 +112,11 @@ describe('VideoPlayer', () => {
   it('selected video screen changes on click', () => {
     video.multiangle = true;
     let wrapper = renderPlayer();
+
     let canvases = wrapper.find('.camera-box');
     canvases.at(3).prop('onClick')();
     sinon.assert.calledWith(cornerFunction, 'lowerRight');
+    sinon.assert.calledWith(gaStub, {category: "video", action: 'changeCameraView', label: 'lowerRight', value: 31});
   });
 
   it('cropVideo modifies style and configureCameras function called', () => {
@@ -155,5 +167,59 @@ describe('VideoPlayer', () => {
   it('has a playback speed button on the control bar', () => {
     let wrapper = renderPlayer();
     assert.isDefined(wrapper.find('.vjs-playback-rate-value'));
+  });
+
+  it('toggleFullScreen causes player to dispatchEvent', () => {
+    let wrapper = renderPlayer();
+    wrapper.instance().player = playerStub;
+    // $FlowFixMe
+    containerStub.parentElement[FULLSCREEN_API.requestFullscreen] = () => {};
+    wrapper.instance().videoContainer = containerStub;
+
+    wrapper.instance().toggleFullscreen();
+    sinon.assert.calledWith(wrapper.instance().player.el_.dispatchEvent);
+  });
+
+  it('toggleFullScreen on causes player to dispatchEvent', () => {
+    let wrapper = renderPlayer();
+    wrapper.instance().player = playerStub;
+    // $FlowFixMe
+    containerStub.parentElement[FULLSCREEN_API.requestFullscreen] = () => {};
+    wrapper.instance().videoContainer = containerStub;
+
+    wrapper.instance().toggleFullscreen();
+    sinon.assert.calledWith(wrapper.instance().player.el_.dispatchEvent, new Event('fullscreen on'));
+  });
+
+  it('toggleFullScreen off causes player to dispatchEvent', () => {
+    let wrapper = renderPlayer();
+    wrapper.instance().player = playerStub;
+    // $FlowFixMe
+    document[FULLSCREEN_API.fullscreenElement] = () => {return true;};
+    wrapper.instance().videoContainer = containerStub;
+
+    wrapper.instance().toggleFullscreen();
+    sinon.assert.calledWith(wrapper.instance().player.el_.dispatchEvent, new Event('fullscreen off'));
+  });
+
+  ["play", "pause", "seeked", "timeupdate", "fullscreen off", "fullscreen on", "ended"].forEach(event => {
+    it(`sets up GA trigger for player event ${event}`, () => {
+      let wrapper = renderPlayer();
+      wrapper.instance().player = playerStub;
+      wrapper.instance().createEventHandler(event, event);
+      assert.isTrue(wrapper.instance().player.on.calledWith(event));
+    });
+
+    it(`sends the correct event to google analytics for ${event}`, () => {
+      let wrapper = renderPlayer();
+      wrapper.instance().player = playerStub;
+      wrapper.instance().percentTracked = [];
+      wrapper.instance().sendEvent(event, event);
+      if (event !== 'timeupdate') {
+        sinon.assert.calledWith(gaStub, {category: "video", action: event, label: event, value: 31});
+      } else {
+        sinon.assert.calledWith(gaStub, {category: "video", action: event, label: "percentPlayed", value: 50});
+      }
+    });
   });
 });

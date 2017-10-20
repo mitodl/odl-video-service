@@ -26,7 +26,7 @@ import type { CommonUiState } from "../reducers/commonUi";
 import type { VideoUiState } from "../reducers/videoUi";
 import VideoSubtitleCard from "../components/VideoSubtitleCard";
 import { updateVideoJsSync } from "../actions/videoUi";
-
+import { initGA, sendGAPageView } from "../util/google_analytics";
 
 class VideoDetailPage extends React.Component {
   props: {
@@ -42,6 +42,8 @@ class VideoDetailPage extends React.Component {
 
   componentDidMount() {
     this.updateRequirements();
+    initGA();
+    sendGAPageView(window.location.pathname);
   }
 
   componentDidUpdate() {
