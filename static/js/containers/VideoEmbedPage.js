@@ -7,6 +7,7 @@ import { updateVideoJsSync } from "../actions/videoUi";
 import VideoPlayer from '../components/VideoPlayer';
 import type { Video } from "../flow/videoTypes";
 import type { VideoUiState } from "../reducers/videoUi";
+import { initGA, sendGAPageView } from "../util/google_analytics";
 
 class VideoEmbedPage extends React.Component {
 
@@ -17,6 +18,8 @@ class VideoEmbedPage extends React.Component {
   };
 
   componentDidMount() {
+    initGA();
+    sendGAPageView(window.location.pathname);
   }
 
   updateCorner = (corner: string) => {
