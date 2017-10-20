@@ -14,7 +14,8 @@ type DialogProps = {
   cancelText: string,
   submitText: string,
   noSubmit: boolean,
-  id: string
+  id: string,
+  validateOnClick?: boolean
 };
 
 export default class Dialog extends React.Component {
@@ -53,12 +54,14 @@ export default class Dialog extends React.Component {
 
   // This function only exists because of false Flow errors
   attachDialogListeners = (dialog: Object) => {
-    const { onAccept, onCancel, hideDialog } = this.props;
+    const { onAccept, onCancel, hideDialog, validateOnClick } = this.props;
 
     if (onAccept) {
       dialog.listen('MDCDialog:accept', onAccept);
     }
-    dialog.listen('MDCDialog:accept', hideDialog);
+    if (!validateOnClick) {
+      dialog.listen('MDCDialog:accept', hideDialog);
+    }
     if (onCancel) {
       dialog.listen('MDCDialog:cancel', onCancel);
     }
@@ -78,7 +81,8 @@ export default class Dialog extends React.Component {
   }
 
   render() {
-    const { title, children, cancelText, submitText, noSubmit, id, open } = this.props;
+    const { title, children, cancelText, submitText, noSubmit, id, open,
+      onCancel, onAccept, validateOnClick } = this.props;
 
     // Hack to avoid showing unstyled dialog contents before the stylesheets are ready
     let styleProp = open ? {} : {display: 'none'};
@@ -102,13 +106,19 @@ export default class Dialog extends React.Component {
           {children}
         </section>
         <footer className="mdc-dialog__footer">
-          <Button type="button" className="mdc-dialog__footer__button mdc-dialog__footer__button--cancel cancel-button">
+          <Button
+            type="button"
+            onClick={onCancel}
+            className={`mdc-dialog__footer__button cancel-button
+              ${!validateOnClick ? 'mdc-dialog__footer__button--cancel' : ''}`}>
             {cancelText || 'Cancel'}
           </Button>
           {noSubmit ? null : (
             <Button
               type="button"
-              className="mdc-dialog__footer__button mdc-dialog__footer__button--accept edit-button">
+              onClick={onAccept}
+              className={`mdc-dialog__footer__button edit-button
+                ${!validateOnClick ? 'mdc-dialog__footer__button--accept' : ''}`}>
               {submitText || 'Save'}
             </Button>)}
         </footer>

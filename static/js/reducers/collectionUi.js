@@ -12,6 +12,7 @@ import {
   SET_SELECTED_VIDEO_KEY,
   SET_IS_NEW,
   CLEAR_COLLECTION_FORM,
+  VALIDATE_FORM
 } from '../actions/collectionUi';
 import { PERM_CHOICE_NONE } from '../lib/dialog';
 import { getFormKey } from '../lib/collection';
@@ -71,6 +72,11 @@ const reducer = (state: CollectionUiState = INITIAL_UI_STATE, action: Action<any
     return { ...state, isNew: action.payload };
   case CLEAR_COLLECTION_FORM:
     return INITIAL_UI_STATE;
+  case VALIDATE_FORM:
+    return {
+      ...state,
+      errors: action.payload.errors
+    };
   default:
     return state;
   }

@@ -5,7 +5,6 @@ import type { Dispatch } from 'redux';
 import R from 'ramda';
 
 import Radio from "../material/Radio";
-import Dialog from "../material/Dialog";
 import Textfield from "../material/Textfield";
 import Textarea from "../material/Textarea";
 
@@ -20,6 +19,8 @@ import type {
   Collection,
 } from '../../flow/collectionTypes';
 import {makeCollectionUrl} from "../../lib/urls";
+import { validateForm } from "../../actions/collectionUi";
+import Dialog from "../material/Dialog";
 
 type DialogProps = {
   dispatch: Dispatch,
@@ -81,7 +82,7 @@ class CollectionFormDialog extends React.Component {
       dispatch,
       history,
       collectionUi: { isNew },
-      collectionForm,
+      collectionForm
     } = this.props;
 
     const payload = {
@@ -92,12 +93,37 @@ class CollectionFormDialog extends React.Component {
     };
 
     if (isNew) {
-      let collection = await dispatch(actions.collectionsList.post(payload));
-      history.push(makeCollectionUrl(collection.key));
+      try {
+        let collection = await dispatch(actions.collectionsList.post(payload));
+        history.push(makeCollectionUrl(collection.key));
+        this.onClose();
+      } catch (e) {
+        this.handleError(e);
+      }
     } else {
-      await dispatch(actions.collections.patch(collectionForm.key, payload));
+      try {
+        await dispatch(actions.collections.patch(collectionForm.key, payload));
+        this.onClose();
+      } catch (e) {
+        this.handleError(e);
+      }
     }
+  };
+
+  onClose = ()=> {
+    const { dispatch, hideDialog } = this.props;
     dispatch(uiActions.clearCollectionForm());
+    hideDialog();
+  };
+
+  handleError = (error: Error) => {
+    const { dispatch, collectionForm } = this.props;
+    dispatch(
+      validateForm({
+        ...collectionForm,
+        errors: error
+      })
+    );
   };
 
   calculateListPermissionValue = (choice: string, listsInput: ?string): Array<string> => (
@@ -111,7 +137,7 @@ class CollectionFormDialog extends React.Component {
       open,
       hideDialog,
       collectionForm,
-      collectionUi: { isNew },
+      collectionUi: { isNew, errors }
     } = this.props;
 
     const title = isNew ? "Create a New Collection" : "Edit Collection";
@@ -125,7 +151,9 @@ class CollectionFormDialog extends React.Component {
         submitText={submitText}
         hideDialog={hideDialog}
         onAccept={this.submitForm}
+        onCancel={this.onClose}
         open={open}
+        validateOnClick={true}
       >
         <div className="collection-form-dialog">
           <Textfield
@@ -133,6 +161,9 @@ class CollectionFormDialog extends React.Component {
             id="collection-title"
             onChange={this.setCollectionTitle}
             value={collectionForm.title || ''}
+            required={true}
+            minLength={1}
+            validationMessage={errors ? errors.title : ''}
           />
           <Textarea
             label="Description (optional)"
@@ -166,6 +197,7 @@ class CollectionFormDialog extends React.Component {
                 onChange={this.setCollectionViewPermLists}
                 onFocus={this.setCollectionViewPermChoice.bind(this, PERM_CHOICE_LISTS)}
                 value={collectionForm.viewLists || ''}
+                validationMessage={errors ? errors.view_lists : ''}
               />
             </Radio>
           </section>
@@ -194,6 +226,7 @@ class CollectionFormDialog extends React.Component {
                 onChange={this.setCollectionAdminPermLists}
                 onFocus={this.setCollectionAdminPermChoice.bind(this, PERM_CHOICE_LISTS)}
                 value={collectionForm.adminLists || ''}
+                validationMessage={errors ? errors.admin_lists : ''}
               />
             </Radio>
           </section>

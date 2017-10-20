@@ -137,3 +137,14 @@ a.button-link {
     color: #fff;
   }
 }
+
+.validation-message {
+  background-color: $validation-bg;
+  color: $validation-text;
+  font-size: 14px;
+  padding: 5px;
+}
+
+.mdc-textfield__input__invalid {
+  border: 1px solid #d50000 !important;
+}
