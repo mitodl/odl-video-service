@@ -1,15 +1,16 @@
 // @flow
 import React from 'react';
+import R from 'ramda';
 
 export default class Textfield extends React.Component {
   props: {
     id: string,
     label?: string,
-    placeholder?: string
+    validationMessage?: string
   };
 
   render() {
-    const { label, id, ...otherProps } = this.props;
+    const { label, id, validationMessage, ...otherProps } = this.props;
 
     let renderedLabel = label
       ? <label htmlFor={id}>{label}</label>
@@ -18,7 +19,16 @@ export default class Textfield extends React.Component {
     return <div className="mdc-textfield-container">
       { renderedLabel }
       <div className="mdc-textfield">
-        <input type="text" className="mdc-textfield__input" id={id} {...otherProps} />
+        <input type="text"
+          className={`${validationMessage ? 'mdc-textfield__input__invalid' : ''} mdc-textfield__input `}
+          id={id}
+          {...otherProps}
+        />
+        {  R.isEmpty(validationMessage) || R.isNil(validationMessage)
+          ? null
+          : <div className="validation-message">
+            {validationMessage}
+          </div>}
       </div>
     </div>;
   }

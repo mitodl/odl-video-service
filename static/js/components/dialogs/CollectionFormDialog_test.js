@@ -26,7 +26,7 @@ import {
   SET_VIEW_LISTS,
   showNewCollectionDialog,
   showEditCollectionDialog,
-  CLEAR_COLLECTION_FORM,
+  CLEAR_COLLECTION_FORM, VALIDATE_FORM,
 } from '../../actions/collectionUi';
 import {
   INITIAL_UI_STATE,
@@ -102,6 +102,31 @@ describe('CollectionFormDialog', () => {
           assert.equal(getCollectionForm(state.collectionUi)[prop], newValue);
         });
       }
+
+      it('stores form submission errors in state', async () => {
+        let wrapper = await renderComponent();
+        let expectedActionTypes;
+        const expectedError = 'Error: only absolute urls are supported';
+        if (isNew) {
+          expectedActionTypes = [
+            actions.collectionsList.post.requestType,
+            'RECEIVE_POST_COLLECTIONS_LIST_FAILURE',
+            VALIDATE_FORM
+          ];
+        } else {
+          expectedActionTypes = [
+            actions.collections.patch.requestType,
+            'RECEIVE_PATCH_COLLECTIONS_FAILURE',
+            VALIDATE_FORM
+          ];
+        }
+        await listenForActions(expectedActionTypes, () => {
+          // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
+          wrapper.find('Dialog').prop('onAccept')();
+        });
+
+        assert.equal(store.getState().collectionUi.errors, expectedError);
+      });
 
       it('sends a request to the right endpoint when the form is submitted', async () => {
         let listInput = "list1,list2,list3";

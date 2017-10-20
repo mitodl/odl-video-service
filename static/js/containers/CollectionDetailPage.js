@@ -157,20 +157,12 @@ class CollectionDetailPage extends React.Component {
     </div>;
   }
 
-  renderError = (collectionError: Object) => {
-    return <h2 className="mdc-typography--title error">
-      { collectionError.detail }
-    </h2>;
-  };
-
   render() {
-    const { collection, collectionError } = this.props;
+    const { collection } = this.props;
 
     if (!collection) return null;
 
-    const detailBody = collectionError
-      ? this.renderError(collectionError)
-      : this.renderBody(collection);
+    const detailBody = this.renderBody(collection);
 
     return <WithDrawer>
       <div className="collection-detail-content">

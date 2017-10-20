@@ -28,9 +28,16 @@ export type CollectionFormState = {
   adminLists: ?string,
 };
 
+export type CollectionValidation = {
+  title?:  string,
+  view_lists?: string,
+  admin_lists?: string
+}
+
 export type CollectionUiState = {
   newCollectionForm: CollectionFormState,
   editCollectionForm: CollectionFormState,
   isNew: boolean,
-  selectedVideoKey: ?string
+  selectedVideoKey: ?string,
+  errors?: CollectionValidation
 };

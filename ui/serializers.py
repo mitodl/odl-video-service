@@ -7,6 +7,31 @@ from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
 
 from ui import models, permissions as ui_permissions
+from ui.utils import get_moira_client
+
+
+def validate_moira_lists(lists):
+    """
+    Raise a validation error if any of the moira lists in a list does not exist or is not a mailing list
+
+    Args:
+        lists(list of MoiraList): List of moira lists
+
+    Returns:
+        (list of MoiraList) List of moira lists
+    """
+    bad_lists = []
+    moira_client = get_moira_client()
+    for mlist in lists:
+        if not moira_client.list_exists(mlist.name):
+            bad_lists.append(mlist.name)
+        else:
+            attributes = moira_client.client.service.getListAttributes(mlist.name, moira_client.proxy_id)
+            if not (attributes and attributes[0]['mailList']):
+                bad_lists.append(mlist.name)
+    if bad_lists:
+        raise serializers.ValidationError("Not found or not mailing list: {}".format(','.join(bad_lists)))
+    return lists
 
 
 class SingleAttrRelatedField(RelatedField):
@@ -122,7 +147,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
 class CollectionSerializer(serializers.ModelSerializer):
     """
-    Serializer for Collection Model
+    Serializer for Collection Model, used on collection detail page
     """
     key = serializers.SerializerMethodField()
     video_count = serializers.SerializerMethodField()
@@ -149,6 +174,30 @@ class CollectionSerializer(serializers.ModelSerializer):
             return ui_permissions.has_admin_permission(obj, self.context['request'])
         return None
 
+    def validate_view_lists(self, value):
+        """
+        Validation for view-only moira lists
+
+        Args:
+            value(list of MoiraList): list of moira lists
+
+        Returns:
+            (list of MoiraList) List of moira lists
+        """
+        return validate_moira_lists(value)
+
+    def validate_admin_lists(self, value):
+        """
+        Validation for admin moira lists
+
+        Args:
+            value(list of MoiraList): list of moira lists
+
+        Returns:
+            (list of MoiraList) List of moira lists
+        """
+        return validate_moira_lists(value)
+
     class Meta:
         model = models.Collection
         fields = (
@@ -173,7 +222,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
 class CollectionListSerializer(serializers.ModelSerializer):
     """
-    Serializer for Collection Model
+    Serializer for Collection Model, used on collection lists page
     """
     key = serializers.SerializerMethodField()
     video_count = serializers.SerializerMethodField()
@@ -197,6 +246,14 @@ class CollectionListSerializer(serializers.ModelSerializer):
     def get_video_count(self, obj):
         """Custom getter for video count"""
         return obj.videos.count()
+
+    def validate_view_lists(self, value):
+        """Validation for view-only moira lists"""
+        return validate_moira_lists(value)
+
+    def validate_admin_lists(self, value):
+        """Validation for admin moira lists"""
+        return validate_moira_lists(value)
 
     class Meta:
         model = models.Collection
