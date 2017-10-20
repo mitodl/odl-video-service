@@ -12,6 +12,7 @@ import VideoDetailPage from './VideoDetailPage';
 import * as api from '../lib/api';
 import { actions } from '../actions';
 import rootReducer from '../reducers';
+import { wait } from '../util/util';
 import * as libVideo from '../lib/video';
 import { makeVideo } from '../factories/video';
 import { makeCollectionUrl } from "../lib/urls";
@@ -32,6 +33,7 @@ describe('VideoDetailPage', () => {
     video = makeVideo();
 
     getVideoStub = sandbox.stub(api, 'getVideo').returns(Promise.resolve(video));
+    sandbox.stub(api, 'getCollections').returns(Promise.resolve([]));
 
     // silence videojs warnings
     sandbox.stub(libVideo, 'videojs');
@@ -130,12 +132,26 @@ describe('VideoDetailPage', () => {
   });
 
   it('updates videoSubtitleForm when upload button selects file', async () => {
+    let createSubtitleStub = sandbox.stub(api, 'createSubtitle').returns(Promise.resolve());
+
     let wrapper = await renderPage({editable: true});
     let uploadBtn = wrapper.find('.upload-input');
     let file = new File(['foo'], 'filename.vtt');
     store.getState().videoUi.videoSubtitleForm.video = video.key;
     uploadBtn.prop('onChange')({target: {files: [file]}});
     assert.equal(store.getState().videoUi.videoSubtitleForm.subtitle, file);
+
+    // iterate on event loop so that createSubtitle is called
+    await wait(0);
+
+    sinon.assert.called(createSubtitleStub);
+    const formData = createSubtitleStub.args[0][0];
+
+    assert(formData.get('file'), 'Missing file');
+    assert.equal(formData.get('filename'), 'filename.vtt');
+    assert.equal(formData.get('collection'), video.collection_key);
+    assert.equal(formData.get('video'), video.key);
+    assert.equal(formData.get('language'), 'en');
   });
 
   it('deletes a subtitle when delete button is clicked', async () => {

@@ -83,7 +83,7 @@ class VideoDetailPage extends React.Component {
       formData.append('collection', video.collection_key);
       formData.append('video', video.key);
       formData.append('language', videoSubtitleForm.language);
-      // $FlowFixMe: A file alwyas has a name
+      // $FlowFixMe: A file always has a name
       formData.append('filename', videoSubtitleForm.subtitle.name);
       await dispatch(actions.videoSubtitles.post(formData));
       dispatch(actions.videos.get(videoKey));

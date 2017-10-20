@@ -1,5 +1,6 @@
 // Define globals we would usually get from Django
 import ReactDOM from 'react-dom';
+import sinon from 'sinon';
 import { makeVideo } from './factories/video';
 
 const _createSettings = () => ({
@@ -23,6 +24,18 @@ import entries from 'object.entries';
 if (!Object.entries) {
   entries.shim();
 }
+
+let sandbox;
+before(() => { // eslint-disable-line mocha/no-top-level-hooks
+  sandbox = sinon.sandbox.create();
+  sandbox.stub(HTMLCanvasElement.prototype, 'getContext').returns({
+    drawImage: sandbox.stub(),
+  });
+});
+
+after(() => { // eslint-disable-line mocha/no-top-level-hooks
+  sandbox.restore();
+});
 
 // cleanup after each test run
 afterEach(function () { // eslint-disable-line mocha/no-top-level-hooks

@@ -1,6 +1,6 @@
 # Uncomment after we upload docker images
 # FROM mitodl/odl_video_service_watch_travis
-FROM node:6.2
+FROM node:8.5
 LABEL maintainer "ODL DevOps <mitx-devops@mit.edu>"
 
 RUN apt-get update && apt-get install libelf1
@@ -8,8 +8,6 @@ RUN apt-get update && apt-get install libelf1
 RUN mkdir /src
 
 WORKDIR /src
-
-RUN adduser --disabled-password --gecos "" mitodl
 
 COPY package.json yarn.lock ./webpack_if_prod.sh /src/
 COPY scripts /src/scripts
@@ -21,6 +19,6 @@ COPY . /src
 
 USER root
 
-RUN chown -R mitodl:mitodl /src
+RUN chown -R node:node /src
 
-USER mitodl
+USER node

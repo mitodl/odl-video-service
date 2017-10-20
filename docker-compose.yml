@@ -75,7 +75,7 @@ services:
       - "8082:8082"
     volumes:
       - .:/src
-      - yarn-cache:/home/mitodl/.cache/yarn
+      - yarn-cache:/home/node/.cache/yarn
     environment:
       NODE_ENV: 'development'
       DOCKER_HOST: ${DOCKER_HOST:-missing}

@@ -2,7 +2,7 @@
 import React from 'react';
 import { assert } from 'chai';
 import sinon from 'sinon';
-import { mount, shallow } from 'enzyme';
+import { mount } from 'enzyme';
 
 import VideoPlayer from './VideoPlayer';
 import {makeVideo, makeVideoSubtitle} from '../factories/video';
@@ -10,11 +10,10 @@ import * as libVideo from "../lib/video";
 import { CANVASES } from "../constants";
 import {makeVideoSubtitleUrl} from "../lib/urls";
 
-describe('VideoPlayer', (props = {}) => {
+describe('VideoPlayer', () => {
   let video, videojsStub, sandbox, cornerFunction, playerStub, containerStub, nodeStub;
 
-
-  const renderPlayer = (props = {}) => shallow(
+  const renderPlayer = (props = {}) => mount(
     <VideoPlayer
       video={video}
       cornerFunc={cornerFunction}
@@ -23,38 +22,26 @@ describe('VideoPlayer', (props = {}) => {
     />
   );
 
-  const mountPlayer = () => {
-    video.multiangle = false;
-    return mount(
-      <VideoPlayer
-        video={video}
-        cornerFunc={cornerFunction}
-        selectedCorner={Object.keys(CANVASES)[0]}
-        {...props}
-      />
-    );
-  };
-
   beforeEach(() => {
     video = makeVideo();
     sandbox = sinon.sandbox.create();
-    videojsStub = sandbox.stub(libVideo, 'videojs');
     cornerFunction = sandbox.stub();
     playerStub = {
       el_: {
         style: {}
       },
       tracks: [],
-      videoWidth: function() {return 640;},
-      videoHeight: function() {return 360;},
-      currentWidth: function() {return 1280;},
-      currentHeight: function() {return 720;},
+      videoWidth: () => 640,
+      videoHeight: () => 360,
+      currentWidth: () => 1280,
+      currentHeight: () => 720,
       textTracks: function() {return this.tracks;},
       removeRemoteTextTrack: function(track) {this.tracks.splice(this.tracks.indexOf(track),1);},
       addRemoteTextTrack: function(track) {this.tracks.push({src: track.src});}
     };
     containerStub = {style: {}, parentElement: {style: {}}};
     nodeStub = {style: {}};
+    videojsStub = sandbox.stub(libVideo, 'videojs').returns(playerStub);
   });
 
   afterEach(() => {
@@ -62,7 +49,8 @@ describe('VideoPlayer', (props = {}) => {
   });
 
   it('uses videojs on mount with the right arguments', () => {
-    mountPlayer();
+    video.multiangle = false;
+    renderPlayer();
     sinon.assert.called(videojsStub);
     let args = videojsStub.firstCall.args;
     assert.equal(args[0].tagName, "VIDEO");
