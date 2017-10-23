@@ -7,9 +7,6 @@ This is a video hosting platform, designed for MIT's
 `Office of Digital Learning`_ (ODL). It is tightly integrated with MIT's
 Touchstone_ authentication system and Moira_ permission system.
 
-This project is still under heavy development, and is not yet ready for
-production.
-
 Installation
 ------------
 
