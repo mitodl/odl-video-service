@@ -111,6 +111,7 @@ def test_video_detail(logged_in_client, mocker):
         "user": user.username,
         "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "dropbox_key": "foo_dropbox_key",
     }
 
 

@@ -11,16 +11,20 @@ import { expect } from "../util/test_utils";
 import { makeVideo } from "../factories/video";
 
 describe('VideoCard', () => {
-  let sandbox, video, showEditDialogStub, showShareDialogStub,
+  let sandbox, video,
+    showEditDialogStub, showShareDialogStub, showVideoMenuStub, closeVideoMenuStub, downloadMenuStub,
     videoIsProcessingStub, videoHasErrorStub;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     showEditDialogStub = sandbox.stub();
     showShareDialogStub = sandbox.stub();
+    showVideoMenuStub = sandbox.stub();
+    closeVideoMenuStub = sandbox.stub();
     video = makeVideo();
     videoIsProcessingStub = sandbox.stub(libVideo, 'videoIsProcessing').returns(false);
     videoHasErrorStub = sandbox.stub(libVideo, 'videoHasError').returns(false);
+    downloadMenuStub = sandbox.stub(libVideo, 'saveToDropbox');
   });
 
   afterEach(() => {
@@ -32,8 +36,11 @@ describe('VideoCard', () => {
       <VideoCard
         video={video}
         isAdmin={true}
+        isMenuOpen={false}
         showEditDialog={showEditDialogStub}
         showShareDialog={showShareDialogStub}
+        showVideoMenu={showVideoMenuStub}
+        closeVideoMenu={closeVideoMenuStub}
         { ...props }
       />
     )
@@ -46,16 +53,34 @@ describe('VideoCard', () => {
     it(`video controls ${expect(shouldShow)} be shown for ${testDescriptor}`, () => {
       let isAdmin = adminPermissionSetting;
       let wrapper = renderComponent({isAdmin: isAdmin});
-      assert.equal(wrapper.find(".actions a.edit-link").exists(), shouldShow);
+      //wrapper.find(".actions").children().at(0).children.at(0).children.at(0).children()
+      let menuItems = wrapper.find("Menu").props().menuItems;
+      assert.equal(menuItems.length, (shouldShow ? 3 : 1));
+      if (menuItems.length === 3) {
+        assert.equal(menuItems[1].label, 'Edit');
+        assert.equal(menuItems[2].label, 'Save To Dropbox');
+      }
     });
   });
 
-  it('handles an edit button and share button click', () => {
+  it('handles an edit button, download button, and share button click', () => {
     let wrapper = renderComponent({isAdmin: true});
-    wrapper.find(".actions a.edit-link").prop('onClick')();
+    let menuItems = wrapper.find("Menu").props().menuItems;
+    menuItems[1].action();
     sinon.assert.called(showEditDialogStub);
-    wrapper.find(".actions a.share-link").prop('onClick')();
+    menuItems[0].action();
     sinon.assert.called(showShareDialogStub);
+    menuItems[2].action();
+    sinon.assert.called(downloadMenuStub);
+  });
+
+  it('Menu has correct show and hide functions', () => {
+    let wrapper = renderComponent({isAdmin: true});
+    let menu = wrapper.find('Menu');
+    menu.props().showMenu();
+    sinon.assert.calledOnce(showVideoMenuStub);
+    menu.props().closeMenu();
+    sinon.assert.calledOnce(closeVideoMenuStub);
   });
 
   [
@@ -105,7 +130,8 @@ describe('VideoCard', () => {
       videoIsProcessingStub.returns(stubValues.processing);
       videoHasErrorStub.returns(stubValues.error);
       let wrapper = renderComponent();
-      assert.equal(wrapper.find(".share-link").exists(), shouldHaveLink);
+      let menuItems = wrapper.find("Menu").props().menuItems;
+      assert.equal(menuItems[0].label, 'Share');
     });
   });
 });

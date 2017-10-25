@@ -1,10 +1,11 @@
 // @flow
 import { assert } from 'chai';
-
+import sinon from 'sinon';
 import {
   getHLSEncodedUrl,
   videoIsProcessing,
   videoHasError,
+  saveToDropbox,
 } from './video';
 import { makeVideo } from '../factories/video';
 import {
@@ -77,6 +78,16 @@ describe('video library functions', () => {
         video.status = status;
         assert.equal(videoHasError(video), bool);
       });
+    });
+  });
+
+  describe('uploadToDropbox', () => {
+    it('calls the Dropbox API with correct arguments', () => {
+      const sandbox = sinon.sandbox.create();
+      window.Dropbox = {save: () => {}};
+      const dropboxStub = sandbox.stub(window.Dropbox, 'save');
+      saveToDropbox(video);
+      sinon.assert.calledWith(dropboxStub, `undefined${video.key}/video.mp4`);
     });
   });
 });

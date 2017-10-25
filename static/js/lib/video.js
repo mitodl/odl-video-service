@@ -1,5 +1,7 @@
 // @flow
+/* global SETTINGS: false */
 import R from 'ramda';
+import sanitize from "sanitize-filename";
 
 import {
   VIDEO_STATUS_CREATED,
@@ -11,8 +13,7 @@ import {
   VIDEO_STATUS_ERROR,
   ENCODING_HLS,
 } from '../constants';
-
-import type { Video } from "../flow/videoTypes";
+import type { Video, VideoFile } from "../flow/videoTypes";
 
 import _videojs from 'video.js';
 // For this to work properly videojs must be available as a global
@@ -55,3 +56,16 @@ export const videoHasError = R.compose(
   ),
   R.prop('status')
 );
+
+export const saveToDropbox = (video: Video) => {
+  const sourceVideos = video.videofile_set.filter((videofile:VideoFile) => (videofile.encoding === 'original'));
+  if (sourceVideos && sourceVideos.length > 0) {
+    const extension = sourceVideos[0].s3_object_key.split('.').pop();
+    if (window.Dropbox) {
+      window.Dropbox.save(
+        `${SETTINGS.cloudfront_base_url}${encodeURI(sourceVideos[0].s3_object_key)}`,
+        sanitize(video.title + (video.title.endsWith(extension) ? '' : `.${extension}`))
+      );
+    }
+  }
+};

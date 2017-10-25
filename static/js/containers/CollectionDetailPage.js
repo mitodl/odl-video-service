@@ -5,7 +5,6 @@ import { connect } from 'react-redux';
 import type { Dispatch } from 'redux';
 import R from 'ramda';
 import _ from 'lodash';
-
 import WithDrawer from './WithDrawer';
 import VideoCard from '../components/VideoCard';
 import Button from "../components/material/Button";
@@ -23,6 +22,8 @@ import { DIALOGS } from '../constants';
 import type { Collection } from '../flow/collectionTypes';
 import type { Video } from '../flow/videoTypes';
 import type { CommonUiState } from "../reducers/commonUi";
+import * as commonUiActions from "../actions/commonUi";
+import VideoSaverScript from "../components/VideoSaverScript";
 
 class CollectionDetailPage extends React.Component {
   props: {
@@ -51,6 +52,18 @@ class CollectionDetailPage extends React.Component {
     if (needsUpdate) {
       dispatch(actions.collections.get(collectionKey));
     }
+  };
+
+  showVideoMenu = (videoKey: string) => {
+    const { dispatch } = this.props;
+    dispatch(collectionUiActions.setSelectedVideoKey(videoKey));
+    dispatch(commonUiActions.showMenu(videoKey));
+  };
+
+  closeVideoMenu = (videoKey: string) => {
+    const { dispatch } = this.props;
+    dispatch(collectionUiActions.setSelectedVideoKey(videoKey));
+    dispatch(commonUiActions.hideMenu(videoKey));
   };
 
   showEditVideoDialog = (videoKey: string) => {
@@ -95,6 +108,9 @@ class CollectionDetailPage extends React.Component {
           isAdmin={isAdmin}
           showEditDialog={this.showEditVideoDialog.bind(this, video.key)}
           showShareDialog={this.showShareVideoDialog.bind(this, video.key)}
+          showVideoMenu={this.showVideoMenu.bind(this, video.key)}
+          closeVideoMenu={this.closeVideoMenu.bind(this, video.key)}
+          isMenuOpen={this.props.commonUi.menuVisibility[video.key]}
         />
       ), this)}
     </div>
@@ -165,6 +181,7 @@ class CollectionDetailPage extends React.Component {
     const detailBody = this.renderBody(collection);
 
     return <WithDrawer>
+      <VideoSaverScript />
       <div className="collection-detail-content">
         { detailBody }
       </div>

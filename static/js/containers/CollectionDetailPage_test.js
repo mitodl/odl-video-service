@@ -16,7 +16,12 @@ import {
   SET_IS_NEW,
   SET_SELECTED_VIDEO_KEY,
 } from "../actions/collectionUi";
-import { INIT_EDIT_VIDEO_FORM, SHOW_DIALOG } from "../actions/commonUi";
+import {
+  HIDE_MENU,
+  INIT_EDIT_VIDEO_FORM,
+  SHOW_DIALOG,
+  SHOW_MENU
+} from "../actions/commonUi";
 import rootReducer from '../reducers';
 import { makeCollection } from "../factories/collection";
 import { makeVideos } from "../factories/video";
@@ -215,4 +220,29 @@ describe('CollectionDetailPage', () => {
     assert.deepEqual(state.collectionUi.editCollectionForm, makeInitializedForm(collection));
     assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.COLLECTION_FORM]);
   });
+
+  it('showVideoMenu sets menu visibility to true', async () => {
+    let wrapper = await renderPage();
+    const state = await listenForActions([
+      SET_SELECTED_VIDEO_KEY,
+      SHOW_MENU,
+    ], () => {
+      wrapper.find("VideoCard").first().prop('showVideoMenu')();
+    });
+    const video = collection.videos[0];
+    assert.isTrue(state.commonUi.menuVisibility[video.key]);
+  });
+
+  it('closeVideoMenu sets menu visibility to false', async () => {
+    let wrapper = await renderPage();
+    const state = await listenForActions([
+      SET_SELECTED_VIDEO_KEY,
+      HIDE_MENU,
+    ], () => {
+      wrapper.find("VideoCard").first().prop('closeVideoMenu')();
+    });
+    const video = collection.videos[0];
+    assert.isFalse(state.commonUi.menuVisibility[video.key]);
+  });
+
 });

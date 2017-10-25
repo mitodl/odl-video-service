@@ -11,7 +11,7 @@ import {
   setEditVideoDesc,
   initEditVideoForm,
   showDialog,
-  hideDialog
+  hideDialog, showMenu, hideMenu
 } from '../actions/commonUi';
 import { INITIAL_UI_STATE, INITIAL_EDIT_VIDEO_FORM_STATE } from "./commonUi";
 import { createAssertReducerResultState } from "../util/test_utils";
@@ -65,5 +65,13 @@ describe('CommonUi', () => {
       store.dispatch(hideDialog(dialogKey));
       assert.deepEqual(store.getState().commonUi.dialogVisibility[dialogKey], false);
     });
+  });
+
+  it('has actions that open and close menus', () => {
+    let formObj = {key: 'key', title: 'title', description: 'description'};
+    store.dispatch(showMenu(formObj));
+    assert.deepEqual(store.getState().commonUi.menuVisibility[formObj], true);
+    store.dispatch(hideMenu(formObj));
+    assert.deepEqual(store.getState().commonUi.menuVisibility[formObj], false);
   });
 });

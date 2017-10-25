@@ -25,7 +25,7 @@ import {
 import type { Video } from "../flow/videoTypes";
 
 describe('VideoDetailPage', () => {
-  let sandbox, store, getVideoStub, video: Video, listenForActions;
+  let sandbox, store, getVideoStub, dropboxStub, video: Video, listenForActions;
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     store = configureTestStore(rootReducer);
@@ -33,6 +33,7 @@ describe('VideoDetailPage', () => {
     video = makeVideo();
 
     getVideoStub = sandbox.stub(api, 'getVideo').returns(Promise.resolve(video));
+    dropboxStub = sandbox.stub(libVideo, 'saveToDropbox');
     sandbox.stub(api, 'getCollections').returns(Promise.resolve([]));
 
     // silence videojs warnings
@@ -118,6 +119,18 @@ describe('VideoDetailPage', () => {
   it("edit button doesn't appear if video is not editable", async () => {
     let wrapper = await renderPage();
     assert.isFalse(wrapper.find(".edit").exists());
+  });
+
+  it('includes the download button that triggers dialog when the user has correct permissions', async () => {
+    let wrapper = await renderPage({editable: true});
+    assert.isTrue(wrapper.find(".download").exists());
+    wrapper.find(".download").simulate("click");
+    sinon.assert.called(dropboxStub);
+  });
+
+  it("download button doesn't appear if video is not editable", async () => {
+    let wrapper = await renderPage();
+    assert.isFalse(wrapper.find(".download").exists());
   });
 
   it('has a toolbar whose handler will dispatch an action to open the drawer', async () => {

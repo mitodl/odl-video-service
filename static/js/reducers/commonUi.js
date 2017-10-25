@@ -6,7 +6,9 @@ import {
   SET_DRAWER_OPEN,
   INIT_EDIT_VIDEO_FORM,
   SET_EDIT_VIDEO_TITLE,
-  SET_EDIT_VIDEO_DESC
+  SET_EDIT_VIDEO_DESC,
+  SHOW_MENU,
+  HIDE_MENU
 } from '../actions/commonUi';
 import { DIALOGS } from '../constants';
 import { showDialog, hideDialog } from '../lib/dialog';
@@ -19,6 +21,9 @@ export type CommonUiState = DialogVisibilityState & {
     key: ?string,
     title: string,
     description: string
+  },
+  menuVisibility: {
+    [string]: boolean
   }
 };
 
@@ -35,6 +40,7 @@ export const INITIAL_UI_STATE = {
     [DIALOGS.EDIT_VIDEO]: false
   },
   drawerOpen: false,
+  menuVisibility: {},
   editVideoForm: INITIAL_EDIT_VIDEO_FORM_STATE
 };
 
@@ -58,6 +64,22 @@ const reducer = (state: CommonUiState = INITIAL_UI_STATE, action: Action<any, nu
     return {...state, editVideoForm: { ...state.editVideoForm, title: action.payload }};
   case SET_EDIT_VIDEO_DESC:
     return {...state, editVideoForm: { ...state.editVideoForm, description: action.payload }};
+  case SHOW_MENU:
+    return {
+      ...state,
+      menuVisibility: {
+        ...state.menuVisibility,
+        [action.payload]: true
+      }
+    };
+  case HIDE_MENU:
+    return {
+      ...state,
+      menuVisibility: {
+        ...state.menuVisibility,
+        [action.payload]: false
+      }
+    };
   default:
     return state;
   }

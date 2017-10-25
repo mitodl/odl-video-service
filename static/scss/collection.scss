@@ -174,7 +174,6 @@ $video-card-width: 15.6%;
     .video-card {
       margin: 0 .5% 24px;
       width: $video-card-width;
-      overflow: hidden;
       position: relative;
       box-sizing: border-box;
 
@@ -262,7 +261,7 @@ $video-card-width: 15.6%;
       }
 
       .video-card-body {
-        padding: 15px 16px 16px;
+        padding: 15px 45px 16px 16px;
         margin: 0;
 
         h4 {
@@ -284,11 +283,6 @@ $video-card-width: 15.6%;
         position: absolute;
         bottom: 11px;
         right: 15px;
-        display: none;
-
-        * {
-          margin-left: 10px;
-        }
       }
     }
   }
