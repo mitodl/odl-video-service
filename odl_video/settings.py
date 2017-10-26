@@ -17,7 +17,7 @@ from odl_video.envs import (
     get_string,
 )
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

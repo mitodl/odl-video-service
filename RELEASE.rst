@@ -1,6 +1,20 @@
 Release Notes
 =============
 
+Version 0.4.0
+-------------
+
+- Update README.rst
+- Use yarn install --frozen-lockfile (#321)
+- Google analytics for page views and player events
+- Moira list validation
+- Upgrade node.js and yarn (#318)
+- Split CSS into separate file (#317)
+- Remove auth endpoints (#315)
+- Add templates for 403, 404, 500 views (#310)
+- Remove login and registration (#312)
+- Custom MoiraException
+
 Version 0.3.0
 -------------
 
