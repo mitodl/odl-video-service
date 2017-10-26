@@ -1,4 +1,5 @@
 // @flow
+/* global SETTINGS: false */
 import React from 'react';
 import { connect } from 'react-redux';
 import moment from 'moment';
@@ -18,6 +19,7 @@ import { actions } from '../actions';
 import * as videoSubtitleActions from '../actions/videoUi';
 import { setDrawerOpen } from '../actions/commonUi';
 import { makeCollectionUrl } from '../lib/urls';
+import { saveToDropbox } from '../lib/video';
 import { videoIsProcessing, videoHasError } from '../lib/video';
 import { DIALOGS, MM_DD_YYYY } from '../constants';
 
@@ -27,6 +29,7 @@ import type { VideoUiState } from "../reducers/videoUi";
 import VideoSubtitleCard from "../components/VideoSubtitleCard";
 import { updateVideoJsSync } from "../actions/videoUi";
 import { initGA, sendGAPageView } from "../util/google_analytics";
+import VideoSaverScript from "../components/VideoSaverScript";
 
 class VideoDetailPage extends React.Component {
   props: {
@@ -132,6 +135,7 @@ class VideoDetailPage extends React.Component {
     const formattedCreation = moment(video.created_at).format(MM_DD_YYYY);
     const collectionUrl = makeCollectionUrl(video.collection_key);
     return <div>
+      <VideoSaverScript />
       <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
       <Drawer open={commonUi.drawerOpen} onDrawerClose={this.setDrawerOpen.bind(this, false)} />
       { video ? this.renderVideoPlayer(video) : null }
@@ -147,30 +151,41 @@ class VideoDetailPage extends React.Component {
               <h2 className="video-title mdc-typography--title">
                 {video.title}
               </h2>
-              { video.description &&
-              <p className="video-description mdc-typography--body1">
-                {video.description}
-              </p>
-              }
-              <div className="upload-date mdc-typography--subheading1 fontgray">
-                Uploaded {formattedCreation}
-              </div>
               <div className="actions">
-                {
-                  editable &&
-                  <Button
-                    className="edit mdc-button--raised"
-                    onClick={showDialog.bind(this, DIALOGS.EDIT_VIDEO)}
-                  >
-                    <span className="material-icons">edit</span> Edit
-                  </Button>
-                }
                 <Button
                   className="share mdc-button--raised"
                   onClick={showDialog.bind(this, DIALOGS.SHARE_VIDEO)}
                 >
                   <span className="material-icons ">share</span> Share
                 </Button>
+                {
+                  editable &&
+                  <span>
+                    <Button
+                      className="edit mdc-button--raised"
+                      onClick={showDialog.bind(this, DIALOGS.EDIT_VIDEO)}
+                    >
+                      <span className="material-icons">edit</span> Edit
+                    </Button>
+                    <Button
+                      className="dropbox mdc-button--raised"
+                      onClick={saveToDropbox.bind(this, video)}
+                    >
+                      <span className="material-icons ">file_download</span> Save To Dropbox
+                    </Button>
+                  </span>
+                }
+              </div>
+              {
+                video.description &&
+                <p
+                  className="video-description mdc-typography--body1"
+                >
+                  {video.description}
+                </p>
+              }
+              <div className="upload-date mdc-typography--subheading1 fontgray">
+                Uploaded {formattedCreation}
               </div>
             </div>
           </div>

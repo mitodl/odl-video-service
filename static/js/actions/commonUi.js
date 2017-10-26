@@ -21,3 +21,8 @@ export const setEditVideoTitle = createAction(SET_EDIT_VIDEO_TITLE);
 export const SET_EDIT_VIDEO_DESC = qualifiedName('SET_EDIT_VIDEO_DESC');
 export const setEditVideoDesc = createAction(SET_EDIT_VIDEO_DESC);
 
+export const SHOW_MENU = qualifiedName('SHOW_MENU');
+export const showMenu = createAction(SHOW_MENU);
+
+export const HIDE_MENU = qualifiedName('HIDE_MENU');
+export const hideMenu = createAction(HIDE_MENU);

@@ -11,16 +11,20 @@ import { expect } from "../util/test_utils";
 import { makeVideo } from "../factories/video";
 
 describe('VideoCard', () => {
-  let sandbox, video, showEditDialogStub, showShareDialogStub,
+  let sandbox, video,
+    showEditDialogStub, showShareDialogStub, showVideoMenuStub, closeVideoMenuStub, dropboxSaveMenuStub,
     videoIsProcessingStub, videoHasErrorStub;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     showEditDialogStub = sandbox.stub();
     showShareDialogStub = sandbox.stub();
+    showVideoMenuStub = sandbox.stub();
+    closeVideoMenuStub = sandbox.stub();
     video = makeVideo();
     videoIsProcessingStub = sandbox.stub(libVideo, 'videoIsProcessing').returns(false);
     videoHasErrorStub = sandbox.stub(libVideo, 'videoHasError').returns(false);
+    dropboxSaveMenuStub = sandbox.stub(libVideo, 'saveToDropbox');
   });
 
   afterEach(() => {
@@ -32,30 +36,49 @@ describe('VideoCard', () => {
       <VideoCard
         video={video}
         isAdmin={true}
+        isMenuOpen={false}
         showEditDialog={showEditDialogStub}
         showShareDialog={showShareDialogStub}
+        showVideoMenu={showVideoMenuStub}
+        closeVideoMenu={closeVideoMenuStub}
         { ...props }
       />
     )
   );
 
   [
-    [false, false, 'user without admin permissions'],
-    [true, true, 'user with admin permissions']
-  ].forEach(([adminPermissionSetting, shouldShow, testDescriptor]) => {
-    it(`video controls ${expect(shouldShow)} be shown for ${testDescriptor}`, () => {
+    [false, ['Share'], 'user without admin permissions'],
+    [true, ['Share', 'Edit', 'Save To Dropbox'], 'user with admin permissions']
+  ].forEach(([adminPermissionSetting, expectedControlLabels, testDescriptor]) => {
+    it(`${testDescriptor} should be shown ${expectedControlLabels.length} option(s) for video controls`, () => {
       let isAdmin = adminPermissionSetting;
       let wrapper = renderComponent({isAdmin: isAdmin});
-      assert.equal(wrapper.find(".actions a.edit-link").exists(), shouldShow);
+      let menuItems = wrapper.find("Menu").props().menuItems;
+      assert.equal(menuItems.length, expectedControlLabels.length);
+      for (let item = 0; item ++; item < menuItems.length) {
+        assert.equal(menuItems[item].label, expectedControlLabels[item]);
+      }
     });
   });
 
-  it('handles an edit button and share button click', () => {
+  it('handles an edit button, save to dropbox button, and share button click', () => {
     let wrapper = renderComponent({isAdmin: true});
-    wrapper.find(".actions a.edit-link").prop('onClick')();
+    let menuItems = wrapper.find("Menu").props().menuItems;
+    menuItems[1].action();
     sinon.assert.called(showEditDialogStub);
-    wrapper.find(".actions a.share-link").prop('onClick')();
+    menuItems[0].action();
     sinon.assert.called(showShareDialogStub);
+    menuItems[2].action();
+    sinon.assert.called(dropboxSaveMenuStub);
+  });
+
+  it('Menu has correct show and hide functions', () => {
+    let wrapper = renderComponent({isAdmin: true});
+    let menu = wrapper.find('Menu');
+    menu.props().showMenu();
+    sinon.assert.calledOnce(showVideoMenuStub);
+    menu.props().closeMenu();
+    sinon.assert.calledOnce(closeVideoMenuStub);
   });
 
   [
@@ -105,7 +128,8 @@ describe('VideoCard', () => {
       videoIsProcessingStub.returns(stubValues.processing);
       videoHasErrorStub.returns(stubValues.error);
       let wrapper = renderComponent();
-      assert.equal(wrapper.find(".share-link").exists(), shouldHaveLink);
+      let menuItems = wrapper.find("Menu").props().menuItems;
+      assert.equal(menuItems[0].label, 'Share');
     });
   });
 });

@@ -1,18 +1,23 @@
 // @flow
 /* global SETTINGS: false */
 import React from 'react';
+import _ from 'lodash';
 
+import Menu from "./material/Menu";
 import Card from "./material/Card";
 import { makeVideoThumbnailUrl, makeVideoUrl } from "../lib/urls";
-import { videoIsProcessing, videoHasError } from "../lib/video";
+import { videoIsProcessing, videoHasError, saveToDropbox } from "../lib/video";
 
 import type { Video } from "../flow/videoTypes";
 
 type VideoCardProps = {
   video: Video,
   isAdmin: boolean,
+  isMenuOpen: boolean,
   showEditDialog: Function,
-  showShareDialog: Function
+  showShareDialog: Function,
+  showVideoMenu: Function,
+  closeVideoMenu: Function
 }
 
 const VideoCard = (props: VideoCardProps) => {
@@ -45,6 +50,17 @@ const VideoCard = (props: VideoCardProps) => {
     </a>;
   }
 
+  let menuItems = [
+    {label: 'Share', action: props.showShareDialog.bind(this)}
+  ];
+
+  if (props.isAdmin) {
+    menuItems = _.concat(menuItems,
+      {label: 'Edit', action: props.showEditDialog.bind(this)},
+      {label: 'Save To Dropbox', action: saveToDropbox.bind(this, props.video)}
+    );
+  }
+
   return <Card className="video-card">
     <div className={headerClass}>
       { videoDisplay }
@@ -55,14 +71,13 @@ const VideoCard = (props: VideoCardProps) => {
       </h4>
     </div>
     <div className="actions">
-      {
-        props.isAdmin &&
-        <a className="material-icons edit-link" onClick={props.showEditDialog}>mode_edit</a>
-      }
-      {
-        !hasError &&
-        <a className="material-icons share-link" onClick={props.showShareDialog}>share</a>
-      }
+      <Menu
+        key={props.video.key}
+        showMenu={props.showVideoMenu}
+        closeMenu={props.closeVideoMenu}
+        open={props.isMenuOpen}
+        menuItems={menuItems}
+      />
     </div>
   </Card>;
 };

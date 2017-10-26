@@ -84,7 +84,8 @@ class VideoDetail(TemplateView):
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
             'videoKey': video.key.hex,
-            'editable': ui_permissions.has_admin_permission(video.collection, self.request)
+            'editable': ui_permissions.has_admin_permission(video.collection, self.request),
+            'dropbox_key': settings.DROPBOX_KEY
         })
         return context
 
