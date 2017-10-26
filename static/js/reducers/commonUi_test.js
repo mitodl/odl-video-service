@@ -11,7 +11,9 @@ import {
   setEditVideoDesc,
   initEditVideoForm,
   showDialog,
-  hideDialog, showMenu, hideMenu
+  hideDialog,
+  showMenu,
+  hideMenu
 } from '../actions/commonUi';
 import { INITIAL_UI_STATE, INITIAL_EDIT_VIDEO_FORM_STATE } from "./commonUi";
 import { createAssertReducerResultState } from "../util/test_utils";

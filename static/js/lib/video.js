@@ -1,7 +1,6 @@
 // @flow
 /* global SETTINGS: false */
 import R from 'ramda';
-import sanitize from "sanitize-filename";
 
 import {
   VIDEO_STATUS_CREATED,
@@ -16,6 +15,7 @@ import {
 import type { Video, VideoFile } from "../flow/videoTypes";
 
 import _videojs from 'video.js';
+import {makeVideoFileName, makeVideoFileUrl} from "./urls";
 // For this to work properly videojs must be available as a global
 global.videojs = _videojs;
 require('videojs-contrib-hls');
@@ -58,14 +58,19 @@ export const videoHasError = R.compose(
 );
 
 export const saveToDropbox = (video: Video) => {
+  const options = {
+    //Simple error alert if something goes wrong with the dropbox transfer
+    error: function (errorMessage: string) {
+      alert(`Failed to transfer '${video.title}' to Dropbox: ${errorMessage}`);
+    }
+  };
   const sourceVideos = video.videofile_set.filter((videofile:VideoFile) => (videofile.encoding === 'original'));
   if (sourceVideos && sourceVideos.length > 0) {
     const extension = sourceVideos[0].s3_object_key.split('.').pop();
+    const videoFileUrl = makeVideoFileUrl(sourceVideos[0]);
+    const videoFileName = makeVideoFileName(video, extension);
     if (window.Dropbox) {
-      window.Dropbox.save(
-        `${SETTINGS.cloudfront_base_url}${encodeURI(sourceVideos[0].s3_object_key)}`,
-        sanitize(video.title + (video.title.endsWith(extension) ? '' : `.${extension}`))
-      );
+      window.Dropbox.save(videoFileUrl, videoFileName, options);
     }
   }
 };

@@ -168,7 +168,7 @@ class VideoDetailPage extends React.Component {
                       <span className="material-icons">edit</span> Edit
                     </Button>
                     <Button
-                      className="download mdc-button--raised"
+                      className="dropbox mdc-button--raised"
                       onClick={saveToDropbox.bind(this, video)}
                     >
                       <span className="material-icons ">file_download</span> Save To Dropbox
@@ -177,7 +177,9 @@ class VideoDetailPage extends React.Component {
                 }
               </div>
               { video.description &&
-              <p className="video-description mdc-typography--body1">
+              <p
+                className="video-description mdc-typography--body1"
+              >
                 {video.description}
               </p>
               }

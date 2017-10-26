@@ -1,4 +1,5 @@
 // @flow
+/* global SETTINGS */
 import { assert } from 'chai';
 import sinon from 'sinon';
 import {
@@ -8,6 +9,7 @@ import {
   saveToDropbox,
 } from './video';
 import { makeVideo } from '../factories/video';
+import { makeVideoFileName } from "./urls";
 import {
   VIDEO_STATUS_CREATED,
   VIDEO_STATUS_UPLOADING,
@@ -83,11 +85,16 @@ describe('video library functions', () => {
 
   describe('uploadToDropbox', () => {
     it('calls the Dropbox API with correct arguments', () => {
+      SETTINGS.cloudfront_base_url = 'http://asdasldk.cloudfront.net/';
       const sandbox = sinon.sandbox.create();
       window.Dropbox = {save: () => {}};
       const dropboxStub = sandbox.stub(window.Dropbox, 'save');
       saveToDropbox(video);
-      sinon.assert.calledWith(dropboxStub, `undefined${video.key}/video.mp4`);
+      sinon.assert.calledWith(
+        dropboxStub,
+        `${SETTINGS.cloudfront_base_url}${video.key}/video.mp4`,
+        makeVideoFileName(video, 'mp4')
+      );
     });
   });
 });

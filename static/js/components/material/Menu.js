@@ -3,12 +3,13 @@ import React from 'react';
 
 import { MDCSimpleMenu } from '@material/menu/dist/mdc.menu';
 
+import type { MenuItem } from '../../flow/uiTypes';
+
 type MenuProps = {
-  key: string,
   open: boolean,
   showMenu: Function,
   closeMenu: Function,
-  menuItems: Array<Object>
+  menuItems: Array<MenuItem>
 };
 
 export default class Menu extends React.Component {

@@ -121,16 +121,16 @@ describe('VideoDetailPage', () => {
     assert.isFalse(wrapper.find(".edit").exists());
   });
 
-  it('includes the download button that triggers dialog when the user has correct permissions', async () => {
+  it('includes the dropbox button that triggers dialog when the user has correct permissions', async () => {
     let wrapper = await renderPage({editable: true});
-    assert.isTrue(wrapper.find(".download").exists());
-    wrapper.find(".download").simulate("click");
+    assert.isTrue(wrapper.find(".dropbox").exists());
+    wrapper.find(".dropbox").simulate("click");
     sinon.assert.called(dropboxStub);
   });
 
-  it("download button doesn't appear if video is not editable", async () => {
+  it("dropbox button doesn't appear if video is not editable", async () => {
     let wrapper = await renderPage();
-    assert.isFalse(wrapper.find(".download").exists());
+    assert.isFalse(wrapper.find(".dropbox").exists());
   });
 
   it('has a toolbar whose handler will dispatch an action to open the drawer', async () => {

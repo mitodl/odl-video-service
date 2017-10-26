@@ -1,6 +1,7 @@
 // @flow
 /* global SETTINGS: false */
 import React from 'react';
+import _ from 'lodash';
 
 import Menu from "./material/Menu";
 import Card from "./material/Card";
@@ -54,10 +55,10 @@ const VideoCard = (props: VideoCardProps) => {
   ];
 
   if (props.isAdmin) {
-    Array.prototype.push.apply(menuItems, [
+    menuItems = _.concat(menuItems,
       {label: 'Edit', action: props.showEditDialog.bind(this)},
       {label: 'Save To Dropbox', action: saveToDropbox.bind(this, props.video)}
-    ]);
+    );
   }
 
   return <Card className="video-card">
