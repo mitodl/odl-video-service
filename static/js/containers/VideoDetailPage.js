@@ -176,12 +176,13 @@ class VideoDetailPage extends React.Component {
                   </span>
                 }
               </div>
-              { video.description &&
-              <p
-                className="video-description mdc-typography--body1"
-              >
-                {video.description}
-              </p>
+              {
+                video.description &&
+                <p
+                  className="video-description mdc-typography--body1"
+                >
+                  {video.description}
+                </p>
               }
               <div className="upload-date mdc-typography--subheading1 fontgray">
                 Uploaded {formattedCreation}
