@@ -9,7 +9,6 @@
 -e git+https://github.com/mitodl/mit-moira.git#egg=mit-moira
 amqp==2.2.1               # via kombu
 appdirs==1.4.3            # via zeep
-appnope==0.1.0            # via ipython
 asn1crypto==0.22.0        # via cryptography
 billiard==3.5.0.3         # via celery
 boto3==1.4.4
@@ -48,7 +47,7 @@ packaging==16.8           # via cryptography
 pexpect==4.2.1            # via ipython
 pickleshare==0.7.4        # via ipython
 prompt-toolkit==1.0.14    # via ipython
-psycopg2==2.6
+psycopg2==2.7
 ptyprocess==0.5.2         # via pexpect
 pycountry==17.5.14
 pycparser==2.18           # via cffi
