@@ -9,6 +9,7 @@ module.exports = {
       'error': ['babel-polyfill', './static/js/entry/error'],
       'video_detail': ['babel-polyfill', './static/js/entry/video_detail'],
       'video_embed': ['babel-polyfill', './static/js/entry/video_embed'],
+      'help_page': ['babel-polyfill', './static/js/entry/help_page'],
       'style': './static/js/entry/style',
     },
     module: {

@@ -1,10 +1,10 @@
 // @flow
-import sinon from 'sinon';
+import sinon from "sinon";
 import configureTestStore from "redux-asserts";
-import { assert } from 'chai';
-import _ from 'lodash';
+import { assert } from "chai";
+import _ from "lodash";
 
-import rootReducer from '../reducers';
+import rootReducer from "../reducers";
 import {
   setDrawerOpen,
   setEditVideoTitle,
@@ -13,13 +13,14 @@ import {
   showDialog,
   hideDialog,
   showMenu,
-  hideMenu
-} from '../actions/commonUi';
+  hideMenu,
+  toggleFAQVisibility
+} from "../actions/commonUi";
 import { INITIAL_UI_STATE, INITIAL_EDIT_VIDEO_FORM_STATE } from "./commonUi";
 import { createAssertReducerResultState } from "../util/test_utils";
 import { DIALOGS } from "../constants";
 
-describe('CommonUi', () => {
+describe("CommonUi", () => {
   let sandbox, assertReducerResultState, store;
 
   beforeEach(() => {
@@ -32,36 +33,36 @@ describe('CommonUi', () => {
     sandbox.restore();
   });
 
-  it('should open the drawer in the UI', () => {
+  it("should open the drawer in the UI", () => {
     store.dispatch(setDrawerOpen(true));
-    assert.include(store.getState().commonUi, {drawerOpen: true});
+    assert.include(store.getState().commonUi, { drawerOpen: true });
   });
 
-  it('should close the drawer in the UI', () => {
+  it("should close the drawer in the UI", () => {
     store.dispatch(setDrawerOpen(false));
     assert.deepEqual(store.getState().commonUi, INITIAL_UI_STATE);
   });
 
-  it('setting the drawer visibility changes state', () => {
+  it("setting the drawer visibility changes state", () => {
     assertReducerResultState(setDrawerOpen, ui => ui.drawerOpen, false);
   });
 
-  it('has actions that set video title and description', () => {
+  it("has actions that set video title and description", () => {
     assert.deepEqual(store.getState().commonUi.editVideoForm, INITIAL_EDIT_VIDEO_FORM_STATE);
-    store.dispatch(setEditVideoTitle('title'));
-    store.dispatch(setEditVideoDesc('description'));
-    assert.equal(store.getState().commonUi.editVideoForm.title, 'title');
-    assert.equal(store.getState().commonUi.editVideoForm.description, 'description');
+    store.dispatch(setEditVideoTitle("title"));
+    store.dispatch(setEditVideoDesc("description"));
+    assert.equal(store.getState().commonUi.editVideoForm.title, "title");
+    assert.equal(store.getState().commonUi.editVideoForm.description, "description");
   });
 
-  it('has an action that initializes the edit video form,', () => {
-    let formObj = {key: 'key', title: 'title', description: 'description'};
+  it("has an action that initializes the edit video form,", () => {
+    let formObj = { key: "key", title: "title", description: "description" };
     store.dispatch(initEditVideoForm(formObj));
     assert.deepEqual(store.getState().commonUi.editVideoForm, formObj);
   });
 
-  it('has actions that open and close dialogs', () => {
-    _.mapKeys(DIALOGS, (dialogKey) => {
+  it("has actions that open and close dialogs", () => {
+    _.mapKeys(DIALOGS, dialogKey => {
       store.dispatch(showDialog(dialogKey));
       assert.deepEqual(store.getState().commonUi.dialogVisibility[dialogKey], true);
       store.dispatch(hideDialog(dialogKey));
@@ -69,11 +70,23 @@ describe('CommonUi', () => {
     });
   });
 
-  it('has actions that open and close menus', () => {
-    let formObj = {key: 'key', title: 'title', description: 'description'};
+  it("has actions that open and close menus", () => {
+    let formObj = { key: "key", title: "title", description: "description" };
     store.dispatch(showMenu(formObj));
     assert.deepEqual(store.getState().commonUi.menuVisibility[formObj], true);
     store.dispatch(hideMenu(formObj));
     assert.deepEqual(store.getState().commonUi.menuVisibility[formObj], false);
+  });
+
+  it("should have initial state for FAQ visibility", () => {
+    assert.deepEqual(store.getState().commonUi.FAQVisibility, new Map());
+  });
+
+  it("should let you toggle whether an FAQ is shown or not", () => {
+    assert.equal(store.getState().commonUi.FAQVisibility.get("my faq"), undefined);
+    store.dispatch(toggleFAQVisibility("my faq"));
+    assert.equal(store.getState().commonUi.FAQVisibility.get("my faq"), true);
+    store.dispatch(toggleFAQVisibility("my faq"));
+    assert.equal(store.getState().commonUi.FAQVisibility.get("my faq"), false);
   });
 });

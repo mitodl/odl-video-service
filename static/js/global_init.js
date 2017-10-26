@@ -10,7 +10,8 @@ const _createSettings = () => ({
   user: '',
   dropbox_key: 'dropbox_key',
   thumbnail_base_url: 'http://fake/',
-  support_email_address: 'support@example.com'
+  support_email_address: 'support@example.com',
+  is_admin: false,
 });
 
 global.SETTINGS = _createSettings();

@@ -108,6 +108,10 @@ class Drawer extends React.Component {
           }
         </nav>
         <nav id="icon-with-text-demo" className="mdc-temporary-drawer__content mdc-list">
+          <a className="mdc-list-item mdc-link" href="/help/">
+            <i className="material-icons mdc-list-item__start-detail" aria-hidden="true">help_outline</i>
+            Help
+          </a>
           <a className="mdc-list-item mdc-link" href="/logout/">
             <i className="material-icons mdc-list-item__start-detail" aria-hidden="true">input</i>
             Log out

@@ -14,7 +14,8 @@ declare var SETTINGS: {
   email: ?string,
   dropbox_key: string,
   support_email_address: string,
-  status_code?: number
+  status_code?: number,
+  is_admin: boolean
 };
 
 // mocha

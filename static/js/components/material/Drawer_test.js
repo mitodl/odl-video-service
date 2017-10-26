@@ -76,7 +76,7 @@ describe("Drawer", () => {
 
   it('drawer element is rendered with collections', async () => {
     let wrapper = await renderDrawer();
-    let drawerNode = wrapper.find('.mdc-list-item .mdc-link').at(1);
+    let drawerNode = wrapper.find('.mdc-list-item .mdc-link').at(2);
     assert.equal(drawerNode.props().href, '/logout/');
     assert.isTrue(drawerNode.text().endsWith('Log out'));
   });
@@ -90,9 +90,16 @@ describe("Drawer", () => {
     });
   });
 
-  it('drawer element is rendered with a logout link', async () => {
+  it('drawer element is rendered with a help link', async () => {
     let wrapper = await renderDrawer();
     let drawerNode = wrapper.find('.mdc-list-item .mdc-link').at(1);
+    assert.equal(drawerNode.props().href, '/help/');
+    assert.isTrue(drawerNode.text().endsWith('Help'));
+  });
+
+  it('drawer element is rendered with a logout link', async () => {
+    let wrapper = await renderDrawer();
+    let drawerNode = wrapper.find('.mdc-list-item .mdc-link').at(2);
     assert.equal(drawerNode.props().href, '/logout/');
     assert.isTrue(drawerNode.text().endsWith('Log out'));
   });

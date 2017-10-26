@@ -16,6 +16,8 @@ import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
 import ShareVideoDialog from '../components/dialogs/ShareVideoDialog';
 import DeleteVideoDialog from '../components/dialogs/DeleteVideoDialog';
 import { withDialogs } from '../components/dialogs/hoc';
+import VideoSubtitleCard from "../components/VideoSubtitleCard";
+import VideoSaverScript from "../components/VideoSaverScript";
 
 import { actions } from '../actions';
 import * as videoSubtitleActions from '../actions/videoUi';
@@ -24,14 +26,12 @@ import { makeCollectionUrl } from '../lib/urls';
 import { saveToDropbox } from '../lib/video';
 import { videoIsProcessing, videoHasError } from '../lib/video';
 import { DIALOGS, MM_DD_YYYY } from '../constants';
+import { updateVideoJsSync } from "../actions/videoUi";
+import { initGA, sendGAPageView } from "../util/google_analytics";
 
 import type { Video } from "../flow/videoTypes";
 import type { CommonUiState } from "../reducers/commonUi";
 import type { VideoUiState } from "../reducers/videoUi";
-import VideoSubtitleCard from "../components/VideoSubtitleCard";
-import { updateVideoJsSync } from "../actions/videoUi";
-import { initGA, sendGAPageView } from "../util/google_analytics";
-import VideoSaverScript from "../components/VideoSaverScript";
 
 class VideoDetailPage extends React.Component {
   props: {
