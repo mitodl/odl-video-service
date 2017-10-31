@@ -39,6 +39,12 @@ export function updateVideo(videoKey: string, payload: VideoUpdatePayload) {
   });
 }
 
+export function deleteVideo(videoKey: string) {
+  return fetchJSONWithCSRF(`/api/v0/videos/${videoKey}/`, {
+    method: 'DELETE'
+  });
+}
+
 export function uploadVideo(collectionKey: string, files: Array<Object>) {
   return fetchJSONWithCSRF(`/api/v0/upload_videos/`, {
     method: 'POST',

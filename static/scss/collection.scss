@@ -359,3 +359,10 @@ $video-card-width: 15.6%;
     }
   }
 }
+
+.delete-video-dialog {
+  h5 {
+    padding: 25px;
+    background-color: $lightgray-bg;
+  }
+}

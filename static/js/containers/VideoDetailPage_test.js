@@ -110,15 +110,23 @@ describe('VideoDetailPage', () => {
     assert.isTrue(wrapper.find("ShareVideoDialog").exists());
   });
 
+  it('does not include buttons for privileged functionality when lacking permission', async () => {
+    let wrapper = await renderPage({editable: false});
+    assert.isFalse(wrapper.find(".edit").exists());
+    assert.isFalse(wrapper.find(".dropbox").exists());
+    assert.isFalse(wrapper.find(".delete").exists());
+  });
+
   it('includes the edit button and dialog when the user has correct permissions', async () => {
     let wrapper = await renderPage({editable: true});
     assert.isTrue(wrapper.find(".edit").exists());
     assert.isTrue(wrapper.find("EditVideoFormDialog").exists());
   });
 
-  it("edit button doesn't appear if video is not editable", async () => {
-    let wrapper = await renderPage();
-    assert.isFalse(wrapper.find(".edit").exists());
+  it('includes the delete button and dialog when the user has correct permissions', async () => {
+    let wrapper = await renderPage({editable: true});
+    assert.isTrue(wrapper.find(".delete").exists());
+    assert.isTrue(wrapper.find("DeleteVideoDialog").exists());
   });
 
   it('includes the dropbox button that triggers dialog when the user has correct permissions', async () => {
@@ -126,11 +134,6 @@ describe('VideoDetailPage', () => {
     assert.isTrue(wrapper.find(".dropbox").exists());
     wrapper.find(".dropbox").simulate("click");
     sinon.assert.called(dropboxStub);
-  });
-
-  it("dropbox button doesn't appear if video is not editable", async () => {
-    let wrapper = await renderPage();
-    assert.isFalse(wrapper.find(".dropbox").exists());
   });
 
   it('has a toolbar whose handler will dispatch an action to open the drawer', async () => {

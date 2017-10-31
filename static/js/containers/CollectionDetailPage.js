@@ -10,6 +10,7 @@ import VideoCard from '../components/VideoCard';
 import Button from "../components/material/Button";
 import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
 import ShareVideoDialog from '../components/dialogs/ShareVideoDialog';
+import DeleteVideoDialog from '../components/dialogs/DeleteVideoDialog';
 import CollectionFormDialog from '../components/dialogs/CollectionFormDialog';
 import { withDialogs } from '../components/dialogs/hoc';
 import DropboxChooser from 'react-dropbox-chooser';
@@ -54,6 +55,13 @@ class CollectionDetailPage extends React.Component {
     }
   };
 
+  showEditCollectionDialog = (e: MouseEvent) => {
+    const { dispatch, collection } = this.props;
+    e.preventDefault();
+    if (!collection) throw new Error("Collection does not exist");
+    dispatch(collectionUiActions.showEditCollectionDialog(collection));
+  };
+
   showVideoMenu = (videoKey: string) => {
     const { dispatch } = this.props;
     dispatch(collectionUiActions.setSelectedVideoKey(videoKey));
@@ -66,17 +74,17 @@ class CollectionDetailPage extends React.Component {
     dispatch(commonUiActions.hideMenu(videoKey));
   };
 
-  showEditVideoDialog = (videoKey: string) => {
+  showVideoDialog = R.curry((dialogName: string, videoKey: string) => {
     const { dispatch, showDialog } = this.props;
     dispatch(collectionUiActions.setSelectedVideoKey(videoKey));
-    showDialog(DIALOGS.EDIT_VIDEO);
-  };
+    showDialog(dialogName);
+  });
 
-  showShareVideoDialog = (videoKey: string) => {
-    const { dispatch, showDialog } = this.props;
-    dispatch(collectionUiActions.setSelectedVideoKey(videoKey));
-    showDialog(DIALOGS.SHARE_VIDEO);
-  };
+  showEditVideoDialog = this.showVideoDialog(DIALOGS.EDIT_VIDEO);
+
+  showShareVideoDialog = this.showVideoDialog(DIALOGS.SHARE_VIDEO);
+
+  showDeleteVideoDialog = this.showVideoDialog(DIALOGS.DELETE_VIDEO);
 
   handleUpload = async (chosenFiles: Array<Object>) => {
     const { dispatch, collection } = this.props;
@@ -106,6 +114,7 @@ class CollectionDetailPage extends React.Component {
           video={video}
           key={video.key}
           isAdmin={isAdmin}
+          showDeleteDialog={this.showDeleteVideoDialog.bind(this, video.key)}
           showEditDialog={this.showEditVideoDialog.bind(this, video.key)}
           showShareDialog={this.showShareVideoDialog.bind(this, video.key)}
           showVideoMenu={this.showVideoMenu.bind(this, video.key)}
@@ -115,18 +124,6 @@ class CollectionDetailPage extends React.Component {
       ), this)}
     </div>
   );
-
-  showEditCollectionDialog = (e: MouseEvent) => {
-    const { dispatch, collection } = this.props;
-
-    e.preventDefault();
-    if (!collection) {
-      // make flow happy
-      throw new Error("Expected collection to exist");
-    }
-
-    dispatch(collectionUiActions.showEditCollectionDialog(collection));
-  };
 
   renderBody(collection: Collection) {
     const videos = collection.videos || [];
@@ -214,6 +211,7 @@ export default R.compose(
   withDialogs([
     {name: DIALOGS.COLLECTION_FORM, component: CollectionFormDialog},
     {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog},
-    {name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog}
+    {name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog},
+    {name: DIALOGS.DELETE_VIDEO, component: DeleteVideoDialog}
   ])
 )(CollectionDetailPage);
