@@ -45,6 +45,8 @@ button {
 
 .mdc-button--raised {
   background: $lightgray-bg;
+  box-shadow: none;
+  font-size: 13px;
 }
 
 .hidden {

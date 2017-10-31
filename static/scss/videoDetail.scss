@@ -42,7 +42,9 @@
   margin-top: 20px;
 
   button.mdc-button {
-    margin-right: 12px;
+    margin-right: 9px;
+    margin-bottom: 10px;
+    min-width: 0;
 
     .material-icons {
       color: #555;

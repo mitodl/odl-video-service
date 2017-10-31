@@ -158,7 +158,7 @@ class VideoDetailPage extends React.Component {
                   className="share mdc-button--raised"
                   onClick={showDialog.bind(this, DIALOGS.SHARE_VIDEO)}
                 >
-                  <span className="material-icons ">share</span> Share
+                  Share
                 </Button>
                 {
                   editable &&
@@ -167,13 +167,13 @@ class VideoDetailPage extends React.Component {
                       className="edit mdc-button--raised"
                       onClick={showDialog.bind(this, DIALOGS.EDIT_VIDEO)}
                     >
-                      <span className="material-icons">edit</span> Edit
+                      Edit
                     </Button>
                     <Button
                       className="dropbox mdc-button--raised"
                       onClick={saveToDropbox.bind(this, video)}
                     >
-                      <span className="material-icons ">file_download</span> Save To Dropbox
+                      Save To Dropbox
                     </Button>
                     <Button
                       className="delete mdc-button--raised"
