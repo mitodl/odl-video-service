@@ -179,7 +179,7 @@ class VideoDetailPage extends React.Component {
                       className="delete mdc-button--raised"
                       onClick={showDialog.bind(this, DIALOGS.DELETE_VIDEO)}
                     >
-                      <span className="material-icons">delete</span> Delete
+                      Delete
                     </Button>
                   </span>
                 }
