@@ -5,6 +5,7 @@ import { connect } from 'react-redux';
 import moment from 'moment';
 import type { Dispatch } from "redux";
 import R from 'ramda';
+import _ from 'lodash';
 
 import Button from '../components/material/Button';
 import Drawer from '../components/material/Drawer';
@@ -13,6 +14,7 @@ import Footer from '../components/Footer';
 import VideoPlayer from '../components/VideoPlayer';
 import EditVideoFormDialog from '../components/dialogs/EditVideoFormDialog';
 import ShareVideoDialog from '../components/dialogs/ShareVideoDialog';
+import DeleteVideoDialog from '../components/dialogs/DeleteVideoDialog';
 import { withDialogs } from '../components/dialogs/hoc';
 
 import { actions } from '../actions';
@@ -173,14 +175,18 @@ class VideoDetailPage extends React.Component {
                     >
                       <span className="material-icons ">file_download</span> Save To Dropbox
                     </Button>
+                    <Button
+                      className="delete mdc-button--raised"
+                      onClick={showDialog.bind(this, DIALOGS.DELETE_VIDEO)}
+                    >
+                      <span className="material-icons">delete</span> Delete
+                    </Button>
                   </span>
                 }
               </div>
               {
                 video.description &&
-                <p
-                  className="video-description mdc-typography--body1"
-                >
+                <p className="video-description mdc-typography--body1">
                   {video.description}
                 </p>
               }
@@ -207,7 +213,7 @@ class VideoDetailPage extends React.Component {
 const mapStateToProps = (state, ownProps) => {
   const { videoKey } = ownProps;
   const { videos, commonUi, videoUi } = state;
-  const video = videos.data ? videos.data.get(videoKey) : null;
+  const video = videos.data && _.isFunction(videos.data.get) ? videos.data.get(videoKey) : null;
   const needsUpdate = !videos.processing && !videos.loaded;
 
   return {
@@ -222,6 +228,7 @@ export default R.compose(
   connect(mapStateToProps),
   withDialogs([
     {name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog},
-    {name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog}
+    {name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog},
+    {name: DIALOGS.DELETE_VIDEO, component: DeleteVideoDialog}
   ])
 )(VideoDetailPage);

@@ -14,6 +14,7 @@ type VideoCardProps = {
   video: Video,
   isAdmin: boolean,
   isMenuOpen: boolean,
+  showDeleteDialog: Function,
   showEditDialog: Function,
   showShareDialog: Function,
   showVideoMenu: Function,
@@ -23,13 +24,11 @@ type VideoCardProps = {
 const VideoCard = (props: VideoCardProps) => {
   let videoDisplay,
     headerClass,
-    title,
+    videoUrl,
     isProcessing = videoIsProcessing(props.video),
     hasError = videoHasError(props.video);
   headerClass = (isProcessing || hasError) ? 'message' : 'thumbnail';
-  title = hasError
-    ? props.video.title
-    : <a href={makeVideoUrl(props.video.key)}>{props.video.title}</a>;
+  videoUrl = makeVideoUrl(props.video.key);
 
   if (isProcessing) {
     videoDisplay = <div>
@@ -45,7 +44,7 @@ const VideoCard = (props: VideoCardProps) => {
       </p>
     </div>;
   } else {
-    videoDisplay = <a href={makeVideoUrl(props.video.key)}>
+    videoDisplay = <a href={videoUrl}>
       <img src={makeVideoThumbnailUrl(props.video)} />
     </a>;
   }
@@ -57,7 +56,8 @@ const VideoCard = (props: VideoCardProps) => {
   if (props.isAdmin) {
     menuItems = _.concat(menuItems,
       {label: 'Edit', action: props.showEditDialog.bind(this)},
-      {label: 'Save To Dropbox', action: saveToDropbox.bind(this, props.video)}
+      {label: 'Save To Dropbox', action: saveToDropbox.bind(this, props.video)},
+      {label: 'Delete', action: props.showDeleteDialog.bind(this)}
     );
   }
 
@@ -67,7 +67,7 @@ const VideoCard = (props: VideoCardProps) => {
     </div>
     <div className="video-card-body">
       <h4 className="mdc-typography--subheading2">
-        { title }
+        <a href={videoUrl}>{props.video.title}</a>
       </h4>
     </div>
     <div className="actions">

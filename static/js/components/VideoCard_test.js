@@ -5,20 +5,21 @@ import { shallow } from 'enzyme';
 import { assert } from 'chai';
 
 import VideoCard from './VideoCard';
-import { makeVideoThumbnailUrl } from "../lib/urls";
+import { makeVideoThumbnailUrl, makeVideoUrl } from "../lib/urls";
 import * as libVideo from "../lib/video";
 import { expect } from "../util/test_utils";
 import { makeVideo } from "../factories/video";
 
 describe('VideoCard', () => {
-  let sandbox, video,
-    showEditDialogStub, showShareDialogStub, showVideoMenuStub, closeVideoMenuStub, dropboxSaveMenuStub,
+  let sandbox, video, showEditDialogStub, showShareDialogStub, showDeleteDialogStub,
+    showVideoMenuStub, closeVideoMenuStub, dropboxSaveMenuStub,
     videoIsProcessingStub, videoHasErrorStub;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
     showEditDialogStub = sandbox.stub();
     showShareDialogStub = sandbox.stub();
+    showDeleteDialogStub = sandbox.stub();
     showVideoMenuStub = sandbox.stub();
     closeVideoMenuStub = sandbox.stub();
     video = makeVideo();
@@ -39,6 +40,7 @@ describe('VideoCard', () => {
         isMenuOpen={false}
         showEditDialog={showEditDialogStub}
         showShareDialog={showShareDialogStub}
+        showDeleteDialog={showDeleteDialogStub}
         showVideoMenu={showVideoMenuStub}
         closeVideoMenu={closeVideoMenuStub}
         { ...props }
@@ -48,7 +50,7 @@ describe('VideoCard', () => {
 
   [
     [false, ['Share'], 'user without admin permissions'],
-    [true, ['Share', 'Edit', 'Save To Dropbox'], 'user with admin permissions']
+    [true, ['Share', 'Edit', 'Save To Dropbox', 'Delete'], 'user with admin permissions']
   ].forEach(([adminPermissionSetting, expectedControlLabels, testDescriptor]) => {
     it(`${testDescriptor} should be shown ${expectedControlLabels.length} option(s) for video controls`, () => {
       let isAdmin = adminPermissionSetting;
@@ -61,15 +63,17 @@ describe('VideoCard', () => {
     });
   });
 
-  it('handles an edit button, save to dropbox button, and share button click', () => {
+  it('executes the right handlers for video actions (edit/share/etc.)', () => {
     let wrapper = renderComponent({isAdmin: true});
     let menuItems = wrapper.find("Menu").props().menuItems;
-    menuItems[1].action();
-    sinon.assert.called(showEditDialogStub);
     menuItems[0].action();
     sinon.assert.called(showShareDialogStub);
+    menuItems[1].action();
+    sinon.assert.called(showEditDialogStub);
     menuItems[2].action();
     sinon.assert.called(dropboxSaveMenuStub);
+    menuItems[3].action();
+    sinon.assert.called(showDeleteDialogStub);
   });
 
   it('Menu has correct show and hide functions', () => {
@@ -79,6 +83,16 @@ describe('VideoCard', () => {
     sinon.assert.calledOnce(showVideoMenuStub);
     menu.props().closeMenu();
     sinon.assert.calledOnce(closeVideoMenuStub);
+  });
+
+  it(`should have a title that links to the video detail page`, () => {
+    let wrapper = renderComponent();
+    let title = wrapper.find(".video-card-body h4");
+    assert.isTrue(title.exists());
+    assert.equal(title.text(), video.title);
+    let titleLink = title.find('a');
+    assert.isTrue(titleLink.exists());
+    assert.include(titleLink.html(), `href="${makeVideoUrl(video.key)}`);
   });
 
   [
@@ -101,22 +115,6 @@ describe('VideoCard', () => {
     let thumbnailImg = wrapper.find(".thumbnail img");
     assert.isTrue(thumbnailImg.exists());
     assert.equal(thumbnailImg.prop('src'), makeVideoThumbnailUrl(video));
-  });
-
-  [
-    [{processing: true, error: false}, 'processing', true],
-    [{processing: false, error: false}, 'complete', true],
-    [{processing: false, error: true}, 'error', false],
-  ].forEach(([stubValues, description, shouldHaveLink]) => {
-    it(`video with ${description} status ${expect(shouldHaveLink)} link to the video page in the title`, () => {
-      videoIsProcessingStub.returns(stubValues.processing);
-      videoHasErrorStub.returns(stubValues.error);
-      let wrapper = renderComponent();
-      let title = wrapper.find(".video-card-body h4");
-      assert.isTrue(title.exists());
-      assert.equal(title.text(), video.title);
-      assert.equal(title.find('a').exists(), shouldHaveLink);
-    });
   });
 
   [

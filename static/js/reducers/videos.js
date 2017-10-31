@@ -8,7 +8,7 @@ import type { Video } from "../flow/videoTypes";
 
 export const videosEndpoint = {
   name: "videos",
-  verbs: [GET, PATCH],
+  verbs: [GET, PATCH, "DELETE"],
   initialState: { ...INITIAL_STATE, data: new Map() },
   getFunc: (videoKey: string): Promise<Video> => api.getVideo(videoKey),
   getSuccessHandler: (payload: Video, data: Map<string, Video>) => {
@@ -21,5 +21,6 @@ export const videosEndpoint = {
     let update = new Map(data);
     update.set(payload.key, payload);
     return update;
-  }
+  },
+  deleteFunc: (videoKey: string): Promise<Video> => api.deleteVideo(videoKey)
 };
