@@ -87,6 +87,7 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    'odl_video.middleware.DebuggingMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -105,8 +106,10 @@ if get_bool('USE_SHIBBOLETH', False):
         'shibboleth.backends.ShibbolethRemoteUserBackend',
     ]
     LOGIN_URL = "/Shibboleth.sso/Login"
+    REDIRECT_FIELD_NAME = 'target'
 else:
     LOGIN_URL = "/admin/login/"
+    REDIRECT_FIELD_NAME = 'next'
 
 ROOT_URLCONF = 'odl_video.urls'
 
