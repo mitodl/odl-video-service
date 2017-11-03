@@ -76,6 +76,11 @@
       "description": "Application base URL",
       "required": true
     },
+    "ODL_VIDEO_LOG_LEVEL": {
+      "description": "Logging level for the application",
+      "required": true,
+      "value": "INFO"
+    },
     "ODL_VIDEO_SECURE_SSL_REDIRECT": {
       "description": "Application-level SSL redirect setting.",
       "required": false,

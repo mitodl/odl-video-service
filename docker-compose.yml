@@ -89,7 +89,7 @@ services:
     command: >
       /bin/bash -c '
       sleep 3;
-      celery -A odl_video worker -B -l debug'
+      celery -A odl_video worker -B -l ${ODL_VIDEO_LOG_LEVEL:-INFO}'
     links:
       - db
       - redis
