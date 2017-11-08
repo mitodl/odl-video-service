@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 0.5.0
+-------------
+
+- Add FAQ page at /help
+- Use application log level for Celery (#340)
+- This fixes button style and layout bug (#338)
+- Added video delete functionality
+- More code review improvements
+- Upgrade psycopg to fix error prevent build of web container
+- Core review improvements
+- Download original video source to Dropbox
+
 Version 0.4.0
 -------------
 
