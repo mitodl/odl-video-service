@@ -14,12 +14,13 @@ urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^logout/$', django_logout_view, {'next_page': settings.LOGIN_URL}),
 
-    url(r'^collections/', views.CollectionReactView.as_view(), name='collection-react-view'),
+    url(r'^collections/(?P<collection_key>[0-9a-f]{32})?/?$', views.CollectionReactView.as_view(),
+        name='collection-react-view'),
 
     url(r'^help/', views.HelpPageView.as_view(), name='help-react-view'),
 
-    url(r'^videos/(?P<video_key>[0-9a-f]+)/$', views.VideoDetail.as_view(), name='video-detail'),
-    url(r'^videos/(?P<video_key>[0-9a-f]+)/embed/$', views.VideoEmbed.as_view(), name='video-embed'),
+    url(r'^videos/(?P<video_key>[0-9a-f]{32})/$', views.VideoDetail.as_view(), name='video-detail'),
+    url(r'^videos/(?P<video_key>[0-9a-f]{32})/embed/$', views.VideoEmbed.as_view(), name='video-embed'),
 
     url(r'^transcode/', include('dj_elastictranscoder.urls')),
     url(r'^api/v0/upload_videos/$', views.UploadVideosFromDropbox.as_view(), name='upload-videos'),

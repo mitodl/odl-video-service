@@ -59,8 +59,10 @@ class CollectionReactView(TemplateView):
     """List of collections"""
     template_name = "ui/collections.html"
 
-    def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
+    def get_context_data(self, collection_key=None, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
+        if collection_key:
+            get_object_or_404(Collection, key=collection_key)
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
             'editable': ui_permissions.is_staff_or_superuser(self.request.user),
