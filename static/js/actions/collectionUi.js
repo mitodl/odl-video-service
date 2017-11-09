@@ -52,5 +52,5 @@ export const showEditCollectionDialog = (collection: Collection) =>
     dispatch(showDialog(DIALOGS.COLLECTION_FORM));
   };
 
-export const VALIDATE_FORM = qualifiedName('VALIDATE_COLLECTION_FORM');
-export const validateForm = createAction(VALIDATE_FORM);
+export const SET_COLLECTION_FORM_ERRORS = qualifiedName('SET_COLLECTION_FORM_ERRORS');
+export const setCollectionFormErrors = createAction(SET_COLLECTION_FORM_ERRORS);

@@ -11,7 +11,9 @@ const _createSettings = () => ({
   dropbox_key: 'dropbox_key',
   thumbnail_base_url: 'http://fake/',
   support_email_address: 'support@example.com',
-  is_admin: false,
+  FEATURES: {
+    ENABLE_VIDEO_PERMISSIONS: false
+  }
 });
 
 global.SETTINGS = _createSettings();

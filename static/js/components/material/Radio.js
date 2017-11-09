@@ -8,7 +8,9 @@ type RadioProps = {
   value: string,
   selectedValue?: string,
   onChange: Function,
-  children?: React$Element<*>[]
+  children?: React$Element<*>[],
+  className?: string,
+  disabled?: boolean
 };
 
 export default class Radio extends React.Component {
@@ -22,12 +24,14 @@ export default class Radio extends React.Component {
       id,
       label,
       onChange,
-      children
+      children,
+      className,
+      disabled
     } = this.props;
 
     let htmlId = `${radioGroupName}-${id}`;
 
-    return <div className="mdc-form-field" key={htmlId}>
+    return <div className={`mdc-form-field ${className || ''}`} key={htmlId}>
       <div className="mdc-radio">
         <input
           type="radio"
@@ -37,6 +41,7 @@ export default class Radio extends React.Component {
           value={value}
           onChange={onChange}
           checked={value === selectedValue}
+          disabled={disabled || false}
         />
         <div className="mdc-radio__background">
           <div className="mdc-radio__outer-circle" />

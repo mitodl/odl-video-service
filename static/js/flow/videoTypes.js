@@ -28,23 +28,46 @@ export type VideoThumbnail = {
 };
 
 export type Video = {
-  key:                string,
-  created_at:         string,
-  title:              string,
-  description:        string,
-  collection_key:     string,
-  collection_title:   string,
-  multiangle:         boolean,
-  videofile_set:      Array<VideoFile>,
-  videothumbnail_set: Array<VideoThumbnail>,
-  videosubtitle_set:  Array<VideoSubtitle>,
-  status:             string,
+  key:                    string,
+  created_at:             string,
+  title:                  string,
+  description:            string,
+  collection_key:         string,
+  collection_title:       string,
+  multiangle:             boolean,
+  videofile_set:          Array<VideoFile>,
+  videothumbnail_set:     Array<VideoThumbnail>,
+  videosubtitle_set:      Array<VideoSubtitle>,
+  status:                 string,
+  view_lists:             Array<string>,
+  collection_view_lists:   Array<string>,
+  is_public:              boolean,
+  is_private:             boolean
 };
 
-export type VideoUploadResult = {
-  [string]: {
-    s3key: string,
-    title: string,
-    task: string
-  }
+export type VideoFormState = {
+  key: ?string,
+  title: ?string,
+  description: ?string,
+  overrideChoice: string,
+  viewChoice: string,
+  viewLists: ?string
+};
+
+export type VideoSubtitleState = {
+  key: ?string,
+  language: string,
+  subtitle: ?File
+};
+
+export type VideoValidation = {
+  title?:  string,
+  view_lists?: string,
+}
+
+export type VideoUiState = {
+  editVideoForm: VideoFormState,
+  videoSubtitleForm: VideoSubtitleState,
+  corner: string,
+  errors?: VideoValidation
 };

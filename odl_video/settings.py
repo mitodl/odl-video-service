@@ -477,6 +477,8 @@ REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
 
 LECTURE_CAPTURE_USER = get_string('LECTURE_CAPTURE_USER', '')
 
+ENABLE_VIDEO_PERMISSIONS = get_bool('ENABLE_VIDEO_PERMISSIONS', False)
+
 # List of mandatory settings. If any of these is not set, the app will not start
 # and will raise an ImproperlyConfigured exception
 MANDATORY_SETTINGS = [
@@ -502,7 +504,8 @@ MANDATORY_SETTINGS = [
     'VIDEO_S3_TRANSCODE_BUCKET',
     'VIDEO_S3_THUMBNAIL_BUCKET',
     'VIDEO_S3_SUBTITLE_BUCKET',
-    'VIDEO_S3_WATCH_BUCKET'
+    'VIDEO_S3_WATCH_BUCKET',
+    'ENABLE_VIDEO_PERMISSIONS'
 ]
 
 REST_FRAMEWORK = {

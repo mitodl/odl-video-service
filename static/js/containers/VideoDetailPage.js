@@ -29,9 +29,8 @@ import { DIALOGS, MM_DD_YYYY } from '../constants';
 import { updateVideoJsSync } from "../actions/videoUi";
 import { initGA, sendGAPageView } from "../util/google_analytics";
 
-import type { Video } from "../flow/videoTypes";
+import type { Video, VideoUiState } from "../flow/videoTypes";
 import type { CommonUiState } from "../reducers/commonUi";
-import type { VideoUiState } from "../reducers/videoUi";
 
 class VideoDetailPage extends React.Component {
   props: {

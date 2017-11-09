@@ -5,13 +5,14 @@ import logging
 import uuid
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
+
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (
     BasePermission,
     IsAuthenticated,
     SAFE_METHODS
 )
-
 from ui.models import Collection
 from ui.utils import has_common_lists
 
@@ -33,7 +34,32 @@ def is_staff_or_superuser(user):
     return user.is_superuser or user.is_staff
 
 
-def has_view_permission(obj, request):
+def has_video_view_permission(obj, request):
+    """
+    Determine if a user can view a video
+
+    Args:
+        obj (ui.models.Video): The video to check permission for
+        request (HTTPRequest): The request object
+
+    Returns:
+        bool: True if the user can view the video, False otherwise
+
+    """
+    if settings.ENABLE_VIDEO_PERMISSIONS:
+        if obj.is_public or request.user.is_superuser or request.user == obj.collection.owner:
+            return True
+        if obj.is_private:
+            return has_admin_permission(obj.collection, request)
+        if request.method in SAFE_METHODS:
+            view_list = list(obj.view_lists.values_list('name', flat=True))
+            if view_list:
+                all_lists = view_list + list(obj.admin_lists.values_list('name', flat=True))
+                return has_common_lists(request.user, all_lists)
+    return has_collection_view_permission(obj.collection, request)
+
+
+def has_collection_view_permission(obj, request):
     """
     Determine if a user can view a collection or its videos based
     on moira lists and superuser status
@@ -89,23 +115,23 @@ class HasCollectionPermissions(IsAuthenticated):
 
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
-            return has_view_permission(obj, request)
+            return has_collection_view_permission(obj, request)
         return has_admin_permission(obj, request)
 
 
-class HasVideoPermissions(IsAuthenticated):
+class HasVideoPermissions(BasePermission):
     """Permission to view a video, based on its collection"""
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
-            return has_view_permission(obj.collection, request)
+            return has_video_view_permission(obj, request)
         return has_admin_permission(obj.collection, request)
 
 
-class HasVideoSubtitlePermissions(IsAuthenticated):
+class HasVideoSubtitlePermissions(BasePermission):
     """Permission to view/edit a video videoSubtitle"""
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
-            return has_view_permission(obj.video.collection, request)
+            return has_video_view_permission(obj.video, request)
         return has_admin_permission(obj.video.collection, request)
 
 

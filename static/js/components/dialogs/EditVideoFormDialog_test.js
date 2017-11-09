@@ -1,10 +1,12 @@
 // @flow
+/* global SETTINGS: false */
 import React from 'react';
 import sinon from 'sinon';
 import { mount } from 'enzyme';
 import { assert } from 'chai';
 import { Provider } from 'react-redux';
 import configureTestStore from 'redux-asserts';
+import _ from 'lodash';
 
 import EditVideoFormDialog from './EditVideoFormDialog';
 
@@ -15,12 +17,26 @@ import {
   initEditVideoForm,
   setEditVideoTitle,
   setEditVideoDesc,
-} from '../../actions/commonUi';
+  setViewLists,
+  setViewChoice,
+  setPermOverrideChoice,
+  SET_EDIT_VIDEO_TITLE,
+  SET_EDIT_VIDEO_DESC,
+  SET_VIEW_CHOICE,
+  SET_VIEW_LISTS,
+  SET_PERM_OVERRIDE_CHOICE, SET_VIDEO_FORM_ERRORS,
+} from '../../actions/videoUi';
 import { setSelectedVideoKey } from '../../actions/collectionUi';
-import { INITIAL_UI_STATE } from '../../reducers/commonUi';
+import { INITIAL_UI_STATE } from '../../reducers/videoUi';
 import * as api from '../../lib/api';
 import { makeVideo } from "../../factories/video";
 import { makeCollection } from "../../factories/collection";
+import {
+  PERM_CHOICE_LISTS,
+  PERM_CHOICE_NONE,
+  PERM_CHOICE_OVERRIDE,
+  PERM_CHOICE_PUBLIC
+} from "../../lib/dialog";
 
 describe('EditVideoFormDialog', () => {
   let sandbox, store, listenForActions, hideDialogStub, video;
@@ -50,7 +66,7 @@ describe('EditVideoFormDialog', () => {
             open={true}
             hideDialog={hideDialogStub}
             video={video}
-            commonUi={INITIAL_UI_STATE}
+            videoUi={INITIAL_UI_STATE}
             { ...props }
           />
         </div>
@@ -61,7 +77,7 @@ describe('EditVideoFormDialog', () => {
   it("initializes the form when given a video that doesn't match the current form key", async () => {
     let wrapper, previousFormState;
     store.dispatch(initEditVideoForm({key: 'mismatching-key'}));
-    previousFormState = store.getState().commonUi.editVideoForm;
+    previousFormState = store.getState().videoUi.editVideoForm;
     await listenForActions([
       INIT_EDIT_VIDEO_FORM
     ], () => {
@@ -69,19 +85,59 @@ describe('EditVideoFormDialog', () => {
     });
     if (!wrapper) throw new Error("Render failed");
 
-    assert.notEqual(previousFormState.key, store.getState().commonUi.editVideoForm.key);
+    assert.notEqual(previousFormState.key, store.getState().videoUi.editVideoForm.key);
     assert.equal(wrapper.find(selectors.TITLE_INPUT).prop('value'), video.title);
     assert.equal(wrapper.find(selectors.DESC_INPUT).prop('value'), video.description);
   });
 
   it("doesn't re-initialize the form when given a video that matches the current form key", () => {
     store.dispatch(initEditVideoForm({key: video.key}));
-    let previousFormState = store.getState().commonUi.editVideoForm;
+    let previousFormState = store.getState().videoUi.editVideoForm;
     renderComponent();
-    assert.deepEqual(previousFormState, store.getState().commonUi.editVideoForm);
+    assert.deepEqual(previousFormState, store.getState().videoUi.editVideoForm);
   });
 
-  it('updates the video when the form is submitted', async () => {
+  for (const [selector, prop, actionType, newValue] of [
+    ["#video-title", "title", SET_EDIT_VIDEO_TITLE, "new title"],
+    ["#video-description", "description", SET_EDIT_VIDEO_DESC, "new description"],
+    ["#view-moira-input", "viewLists", SET_VIEW_LISTS, "a,b,c"],
+    ["#video-view-perms-override-view-collection-override", "overrideChoice",
+      SET_PERM_OVERRIDE_CHOICE, PERM_CHOICE_OVERRIDE],
+    ["#video-view-perms-view-public", "viewChoice",
+      SET_VIEW_CHOICE, PERM_CHOICE_PUBLIC],
+    ["#video-view-perms-view-only-me", "viewChoice",
+      SET_VIEW_CHOICE, PERM_CHOICE_NONE],
+  ]) {
+    it(`sets ${prop}`, async () => {
+      SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = true;
+      let wrapper = await renderComponent();
+      let state = await listenForActions([actionType], () => {
+        wrapper.find(selector).simulate("change", {
+          target: {
+            value: newValue
+          }
+        });
+      });
+      assert.equal(state.videoUi.editVideoForm[prop], newValue);
+    });
+  }
+
+  for (const selector of [
+    "#view-moira-input",
+    "#video-view-perms-override-view-collection-override",
+    "#video-view-perms-view-public",
+    "#video-view-perms-view-only-me",
+  ]) {
+    it(`permissions field ${selector} not present if feature is disabled`, async () => {
+      SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false;
+      let wrapper = await renderComponent();
+      assert.equal(wrapper.find(selector).length, 0);
+    });
+  }
+
+
+  it(`updates the video when form is submitted and video permissions are disabled`, async () => {
+    SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false;
     let wrapper;
     let updateVideoStub = sandbox.stub(api, 'updateVideo').returns(Promise.resolve(video));
     await listenForActions([
@@ -90,8 +146,8 @@ describe('EditVideoFormDialog', () => {
       wrapper = renderComponent();
     });
     if (!wrapper) throw new Error("Render failed");
-
-    let newValues = {
+    // set title and description, check the values that updateVideoStub is called with
+    const newValues = {
       title: "New Title",
       description: "New Description"
     };
@@ -106,6 +162,58 @@ describe('EditVideoFormDialog', () => {
     });
 
     sinon.assert.calledWith(updateVideoStub, video.key, newValues);
+  });
+
+
+  it(`updates the video when form is submitted and video permissions are enabled`, async () => {
+    SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = true;
+    let wrapper;
+    let updateVideoStub = sandbox.stub(api, 'updateVideo').returns(Promise.resolve(video));
+    await listenForActions([
+      INIT_EDIT_VIDEO_FORM
+    ], () => {
+      wrapper = renderComponent();
+    });
+    if (!wrapper) throw new Error("Render failed");
+    // set permission override & view choices, check the values that updateVideoStub is called with
+    const newValues = {
+      title: "New Title",
+      description: "New Description",
+      is_private: false,
+      is_public: false,
+      view_lists: ["my-moira-list1", "my-moira-list2"]
+    };
+    store.dispatch(setEditVideoTitle(newValues.title));
+    store.dispatch(setEditVideoDesc(newValues.description));
+    store.dispatch(setPermOverrideChoice(PERM_CHOICE_OVERRIDE));
+    store.dispatch(setViewChoice(PERM_CHOICE_LISTS));
+    store.dispatch(setViewLists(_.map(newValues.view_lists).join(',')));
+
+    await listenForActions([
+      actions.videos.patch.requestType
+    ], () => {
+      // Calling onAccept directly b/c click doesn't work in JS tests due to MDC
+      // $FlowFixMe: Flow... come on. 'wrapper' cannot be undefined at this point.
+      wrapper.find('EditVideoFormDialog').find('Dialog').prop('onAccept')();
+    });
+
+    sinon.assert.calledWith(updateVideoStub, video.key, newValues);
+  });
+
+
+  it('stores form submission errors in state', async () => {
+    let wrapper = await renderComponent();
+    const expectedError = 'Error: only absolute urls are supported';
+    const expectedActionTypes = [
+      actions.videos.patch.requestType,
+      'RECEIVE_PATCH_VIDEOS_FAILURE',
+      SET_VIDEO_FORM_ERRORS
+    ];
+    await listenForActions(expectedActionTypes, () => {
+      // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
+      wrapper.find('Dialog').prop('onAccept')();
+    });
+    assert.equal(store.getState().videoUi.errors, expectedError);
   });
 
   it('can get a video from the collection state when no video is provided to the component directly', () => {

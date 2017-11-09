@@ -5,8 +5,7 @@ import type { Dispatch } from "redux";
 
 import { updateVideoJsSync } from "../actions/videoUi";
 import VideoPlayer from '../components/VideoPlayer';
-import type { Video } from "../flow/videoTypes";
-import type { VideoUiState } from "../reducers/videoUi";
+import type { Video, VideoUiState } from "../flow/videoTypes";
 import { initGA, sendGAPageView } from "../util/google_analytics";
 
 class VideoEmbedPage extends React.Component {

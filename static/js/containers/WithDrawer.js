@@ -4,13 +4,10 @@ import React from 'react';
 import R from 'ramda';
 import { connect } from 'react-redux';
 
-import { DIALOGS } from "../constants";
 import * as commonUiActions from '../actions/commonUi';
 import OVSToolbar from '../components/OVSToolbar';
 import Drawer from '../components/material/Drawer';
 import Footer from '../components/Footer';
-import CollectionFormDialog from "../components/dialogs/CollectionFormDialog";
-import { withDialogs } from "../components/dialogs/hoc";
 
 class WithDrawer extends React.Component {
   setDrawerOpen = (open: boolean): void => {
@@ -43,8 +40,5 @@ const mapStateToProps = (state) => {
 };
 
 export default R.compose(
-  connect(mapStateToProps),
-  withDialogs([
-    {name: DIALOGS.COLLECTION_FORM, component: CollectionFormDialog},
-  ])
+  connect(mapStateToProps)
 )(WithDrawer);

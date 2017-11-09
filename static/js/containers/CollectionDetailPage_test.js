@@ -18,7 +18,6 @@ import {
 } from "../actions/collectionUi";
 import {
   HIDE_MENU,
-  INIT_EDIT_VIDEO_FORM,
   SHOW_DIALOG,
   SHOW_MENU
 } from "../actions/commonUi";
@@ -28,6 +27,8 @@ import { makeVideos } from "../factories/video";
 import { expect } from "../util/test_utils";
 import { DIALOGS } from "../constants";
 import { makeInitializedForm } from "../lib/collection";
+import { INIT_EDIT_VIDEO_FORM } from "../actions/videoUi";
+import {PERM_CHOICE_COLLECTION} from "../lib/dialog";
 
 describe('CollectionDetailPage', () => {
   let sandbox, store, getCollectionStub, collection, listenForActions;
@@ -184,10 +185,13 @@ describe('CollectionDetailPage', () => {
     const video = collection.videos[0];
     assert.equal(state.collectionUi.selectedVideoKey, video.key);
     assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.EDIT_VIDEO]);
-    assert.deepEqual(state.commonUi.editVideoForm, {
+    assert.deepEqual(state.videoUi.editVideoForm, {
       description: video.description,
       key: video.key,
       title: video.title,
+      overrideChoice: PERM_CHOICE_COLLECTION,
+      viewChoice: PERM_CHOICE_COLLECTION,
+      viewLists: ""
     });
   });
 

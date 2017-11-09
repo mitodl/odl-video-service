@@ -2,7 +2,10 @@
 import R from 'ramda';
 
 export const PERM_CHOICE_NONE: string = 'none';
+export const PERM_CHOICE_PUBLIC: string = 'public';
 export const PERM_CHOICE_LISTS: string = 'lists';
+export const PERM_CHOICE_COLLECTION: string = 'collection';
+export const PERM_CHOICE_OVERRIDE: string = 'override';
 
 export type DialogVisibilityState = {
   dialogVisibility: {
