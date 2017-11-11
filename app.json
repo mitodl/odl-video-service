@@ -70,7 +70,7 @@
       "description": "The execution environment that the app is in (e.g. dev, staging, prod)"
     },
     "ODL_VIDEO_FROM_EMAIL": {
-      "description": "default return address for email sent from the application"
+      "description": "default return address for email sent from the application",
       "value": "MIT ODL Video Service <webmaster@localhost>"
     },
     "ODL_VIDEO_BASE_URL": {
