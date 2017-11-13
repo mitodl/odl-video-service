@@ -2,7 +2,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import type { Dispatch } from 'redux';
-import R from 'ramda';
 
 import Radio from "../material/Radio";
 import Textfield from "../material/Textfield";
@@ -19,7 +18,8 @@ import type {
   Collection,
 } from '../../flow/collectionTypes';
 import {makeCollectionUrl} from "../../lib/urls";
-import { validateForm } from "../../actions/collectionUi";
+import { calculateListPermissionValue } from "../../util/util";
+import { setCollectionFormErrors } from "../../actions/collectionUi";
 import Dialog from "../material/Dialog";
 
 type DialogProps = {
@@ -88,8 +88,8 @@ class CollectionFormDialog extends React.Component {
     const payload = {
       title: collectionForm.title,
       description: collectionForm.description,
-      view_lists: this.calculateListPermissionValue(collectionForm.viewChoice, collectionForm.viewLists),
-      admin_lists: this.calculateListPermissionValue(collectionForm.adminChoice, collectionForm.adminLists)
+      view_lists: calculateListPermissionValue(collectionForm.viewChoice, collectionForm.viewLists),
+      admin_lists: calculateListPermissionValue(collectionForm.adminChoice, collectionForm.adminLists)
     };
 
     if (isNew) {
@@ -119,18 +119,12 @@ class CollectionFormDialog extends React.Component {
   handleError = (error: Error) => {
     const { dispatch, collectionForm } = this.props;
     dispatch(
-      validateForm({
+      setCollectionFormErrors({
         ...collectionForm,
         errors: error
       })
     );
   };
-
-  calculateListPermissionValue = (choice: string, listsInput: ?string): Array<string> => (
-    choice === PERM_CHOICE_NONE || !listsInput || listsInput.trim().length === 0
-      ? []
-      : R.map(R.trim, R.split(',', listsInput))
-  );
 
   render() {
     const {
@@ -145,7 +139,7 @@ class CollectionFormDialog extends React.Component {
 
     return (
       <Dialog
-        id="collection-form-dialog"
+        id="ovs-form-dialog"
         title={title}
         cancelText="Cancel"
         submitText={submitText}
@@ -155,7 +149,7 @@ class CollectionFormDialog extends React.Component {
         open={open}
         validateOnClick={true}
       >
-        <div className="collection-form-dialog">
+        <div className="ovs-form-dialog">
           <Textfield
             label="Collection Title"
             id="collection-title"

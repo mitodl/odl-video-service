@@ -144,6 +144,10 @@ def test_video_serializer():
         'videothumbnail_set': serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data,
         'videosubtitle_set': [],
         'status': video.status,
+        'collection_view_lists': [],
+        'view_lists': [],
+        'is_private': False,
+        'is_public': False
     }
     assert serializers.VideoSerializer(video).data == expected
 

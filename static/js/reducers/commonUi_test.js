@@ -7,16 +7,13 @@ import _ from "lodash";
 import rootReducer from "../reducers";
 import {
   setDrawerOpen,
-  setEditVideoTitle,
-  setEditVideoDesc,
-  initEditVideoForm,
   showDialog,
   hideDialog,
   showMenu,
   hideMenu,
   toggleFAQVisibility
 } from "../actions/commonUi";
-import { INITIAL_UI_STATE, INITIAL_EDIT_VIDEO_FORM_STATE } from "./commonUi";
+import { INITIAL_UI_STATE } from "./commonUi";
 import { createAssertReducerResultState } from "../util/test_utils";
 import { DIALOGS } from "../constants";
 
@@ -45,20 +42,6 @@ describe("CommonUi", () => {
 
   it("setting the drawer visibility changes state", () => {
     assertReducerResultState(setDrawerOpen, ui => ui.drawerOpen, false);
-  });
-
-  it("has actions that set video title and description", () => {
-    assert.deepEqual(store.getState().commonUi.editVideoForm, INITIAL_EDIT_VIDEO_FORM_STATE);
-    store.dispatch(setEditVideoTitle("title"));
-    store.dispatch(setEditVideoDesc("description"));
-    assert.equal(store.getState().commonUi.editVideoForm.title, "title");
-    assert.equal(store.getState().commonUi.editVideoForm.description, "description");
-  });
-
-  it("has an action that initializes the edit video form,", () => {
-    let formObj = { key: "key", title: "title", description: "description" };
-    store.dispatch(initEditVideoForm(formObj));
-    assert.deepEqual(store.getState().commonUi.editVideoForm, formObj);
   });
 
   it("has actions that open and close dialogs", () => {

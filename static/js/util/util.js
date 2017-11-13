@@ -1,5 +1,10 @@
 // @flow
 
+import {
+  PERM_CHOICE_LISTS
+} from "../lib/dialog";
+import R from "ramda";
+
 export function getDisplayName(WrappedComponent: ReactClass<*>) {
   return WrappedComponent.displayName || WrappedComponent.name || 'Component';
 }
@@ -9,3 +14,9 @@ export function getDisplayName(WrappedComponent: ReactClass<*>) {
  */
 export const wait = (millis: number): Promise<void> =>
   new Promise(resolve => setTimeout(resolve, millis));
+
+export const calculateListPermissionValue = (choice: string, listsInput: ?string): Array<string> => (
+  choice !== PERM_CHOICE_LISTS || !listsInput || listsInput.trim().length === 0
+    ? []
+    : R.map(R.trim, R.split(',', listsInput))
+);

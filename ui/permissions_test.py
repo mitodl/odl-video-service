@@ -16,7 +16,7 @@ from ui.models import Collection
 pytestmark = pytest.mark.django_db
 
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-many-arguments
 
 
 @pytest.fixture(scope='module')
@@ -531,6 +531,124 @@ def test_video_admin_permission_matching_lists_post(mock_moira_client,
     request_data.request.method = 'POST'
     assert mock_moira_client.return_value.user_lists.called_once_with(request_data.user.email, 'STRING')
     assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
+
+
+@pytest.mark.parametrize("video_permissons_setting", [True, False])
+def test_override_video_public_collection_private(video_permissons_setting,
+                                                  settings,
+                                                  video_permission,
+                                                  request_data_anon,
+                                                  video):
+    """
+    A public video in a private collection should be viewable by anonymous users if video permissions enabled
+    """
+    settings.ENABLE_VIDEO_PERMISSIONS = video_permissons_setting
+    video.is_public = True
+    assert video_permission.has_object_permission(
+        request_data_anon.request, request_data_anon.view, video) is video_permissons_setting
+
+
+@pytest.mark.parametrize("video_permissons_setting", [True, False])
+def test_override_video_public_collection_view_lists(video_permissons_setting,
+                                                     settings,
+                                                     video_permission,
+                                                     mock_moira_client,
+                                                     moira_list,
+                                                     request_data_anon,
+                                                     video):
+    """
+    A public video in a collection with view lists should be viewable by anonymous users if video permissions enabled
+    """
+    settings.ENABLE_VIDEO_PERMISSIONS = video_permissons_setting
+    video.is_public = True
+    video.collection.view_lists = [moira_list]
+    mock_moira_client.return_value.user_lists.return_value = []
+    assert video_permission.has_object_permission(
+        request_data_anon.request, request_data_anon.view, video) is video_permissons_setting
+
+
+@pytest.mark.parametrize("video_permissons_setting", [True, False])
+def test_override_video_private_collection_view_lists(video_permissons_setting,
+                                                      settings,
+                                                      mock_moira_client,
+                                                      request_data,
+                                                      video_permission,
+                                                      video,
+                                                      moira_list):
+    """
+    A private video should not be viewable by users in the collection view lists if video permissions enabled
+    """
+    settings.ENABLE_VIDEO_PERMISSIONS = video_permissons_setting
+    video.is_private = True
+    video.collection.view_lists = [moira_list]
+    video.save()
+    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    assert video_permission.has_object_permission(
+        request_data.request, request_data.view, video) is not video_permissons_setting
+
+
+@pytest.mark.parametrize("video_permissons_setting", [True, False])
+def test_override_video_private_collection_admin_lists(video_permissons_setting,
+                                                       settings,
+                                                       mock_moira_client,
+                                                       moira_list,
+                                                       request_data,
+                                                       video_permission,
+                                                       video):
+    """
+    A private video should be viewable by users in the collection admin lists even if view lists enabled
+    """
+    settings.ENABLE_VIDEO_PERMISSIONS = video_permissons_setting
+    video.is_private = True
+    video.collection.admin_lists = [moira_list]
+    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
+
+
+@pytest.mark.parametrize("video_permissons_setting", [True, False])
+def test_override_video_view_lists_collection_view_lists(video_permissons_setting,
+                                                         settings,
+                                                         mock_moira_client,
+                                                         request_data,
+                                                         video_permission,
+                                                         video):
+    """
+    A video with view lists should by viewable by users in those lists but not users in collection view lists,
+    if video permissions are enabled
+    """
+    settings.ENABLE_VIDEO_PERMISSIONS = video_permissons_setting
+    video_list = MoiraListFactory()
+    collection_list = MoiraListFactory()
+    video.view_lists = [video_list]
+    video.collection.view_lists = [collection_list]
+    mock_moira_client.return_value.user_lists.return_value = [collection_list.name]
+    assert video_permission.has_object_permission(
+        request_data.request, request_data.view, video) is not video_permissons_setting
+    mock_moira_client.return_value.user_lists.return_value = [video_list.name]
+    assert video_permission.has_object_permission(
+        request_data.request, request_data.view, video) is video_permissons_setting
+
+
+@pytest.mark.parametrize("video_permissons_setting", [True, False])
+def test_override_video_view_lists_collection_admin_lists(video_permissons_setting,
+                                                          settings,
+                                                          mock_moira_client,
+                                                          request_data,
+                                                          video_permission,
+                                                          video):
+    """
+    A video with view lists should by viewable by users in collection admin lists even if view lists enabled
+    """
+    settings.ENABLE_VIDEO_PERMISSIONS = video_permissons_setting
+    video_list = MoiraListFactory()
+    collection_list = MoiraListFactory()
+    video.view_lists = [video_list]
+    video.collection.admin_lists = [collection_list]
+    mock_moira_client.return_value.user_lists.return_value = [collection_list.name]
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
+    mock_moira_client.return_value.user_lists.return_value = [video_list.name]
+    assert video_permission.has_object_permission(
+        request_data.request, request_data.view, video) is video_permissons_setting
 
 
 def test_collections_view(mock_moira_client, moira_list, collection, alt_moira_data):

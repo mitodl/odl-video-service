@@ -106,6 +106,10 @@ class VideoSerializer(serializers.ModelSerializer):
     videofile_set = VideoFileSerializer(many=True, read_only=True)
     videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
     videosubtitle_set = VideoSubtitleSerializer(many=True)
+    view_lists = SingleAttrRelatedField(
+        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+    )
+    collection_view_lists = serializers.SerializerMethodField()
 
     def get_key(self, obj):
         """Custom getter for the key"""
@@ -118,6 +122,22 @@ class VideoSerializer(serializers.ModelSerializer):
     def get_collection_title(self, obj):
         """Get collection title"""
         return obj.collection.title
+
+    def get_collection_view_lists(self, obj):
+        """Get collection view lists"""
+        return list(obj.collection.view_lists.values_list('name', flat=True))
+
+    def validate_view_lists(self, value):
+        """
+        Validation for view-only moira lists
+
+        Args:
+            value(list of MoiraList): list of moira lists
+
+        Returns:
+            (list of MoiraList) List of moira lists
+        """
+        return validate_moira_lists(value)
 
     class Meta:
         model = models.Video
@@ -132,7 +152,11 @@ class VideoSerializer(serializers.ModelSerializer):
             'status',
             'videofile_set',
             'videothumbnail_set',
-            'videosubtitle_set'
+            'videosubtitle_set',
+            'view_lists',
+            'collection_view_lists',
+            'is_public',
+            'is_private'
         )
         read_only_fields = (
             'key',
@@ -141,7 +165,8 @@ class VideoSerializer(serializers.ModelSerializer):
             'status',
             'videofile_set',
             'videothumbnail_set',
-            'videosubtitle_set'
+            'videosubtitle_set',
+            'collection_view_lists',
         )
 
 

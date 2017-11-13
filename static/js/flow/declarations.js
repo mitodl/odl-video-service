@@ -1,5 +1,7 @@
 // @flow
 /* eslint-disable no-unused-vars */
+import type {Video} from "./videoTypes";
+
 declare var SETTINGS: {
   public_path: string,
   FEATURES: {

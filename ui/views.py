@@ -46,6 +46,9 @@ def default_js_settings(request):
         "user": request.user.username if request.user.is_authenticated else None,
         "email": request.user.email if request.user.is_authenticated else None,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "FEATURES": {
+            "ENABLE_VIDEO_PERMISSIONS": settings.ENABLE_VIDEO_PERMISSIONS
+        }
     }
 
 
@@ -71,7 +74,6 @@ class CollectionReactView(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
 class VideoDetail(TemplateView):
     """
     Details of a video
@@ -81,7 +83,7 @@ class VideoDetail(TemplateView):
     def get_context_data(self, video_key, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
         video = get_object_or_404(Video, key=video_key)
-        if not ui_permissions.has_view_permission(video.collection, self.request):
+        if not ui_permissions.has_video_view_permission(video, self.request):
             raise PermissionDenied
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
@@ -92,7 +94,6 @@ class VideoDetail(TemplateView):
         return context
 
 
-@method_decorator(login_required, name='dispatch')
 class VideoEmbed(TemplateView):
     """Display embedded video"""
     template_name = 'ui/video_embed.html'
@@ -100,7 +101,7 @@ class VideoEmbed(TemplateView):
     def get_context_data(self, video_key, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
         video = get_object_or_404(Video, key=video_key)
-        if not ui_permissions.has_view_permission(video.collection, self.request):
+        if not ui_permissions.has_video_view_permission(video, self.request):
             raise PermissionDenied
         context['video'] = video
         context["js_settings_json"] = json.dumps({
@@ -243,8 +244,7 @@ class VideoViewSet(ModelDetailViewset):
         authentication.SessionAuthentication,
     )
     permission_classes = (
-        permissions.IsAuthenticated,
-        ui_permissions.HasVideoPermissions
+        ui_permissions.HasVideoPermissions,
     )
 
 
@@ -262,7 +262,7 @@ class VideoSubtitleViewSet(ModelDetailViewset):
     )
     permission_classes = (
         permissions.IsAuthenticated,
-        ui_permissions.HasVideoSubtitlePermissions
+        ui_permissions.HasVideoPermissions
     )
 
 

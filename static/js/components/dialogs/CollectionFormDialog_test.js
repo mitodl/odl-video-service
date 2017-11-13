@@ -26,7 +26,7 @@ import {
   SET_VIEW_LISTS,
   showNewCollectionDialog,
   showEditCollectionDialog,
-  CLEAR_COLLECTION_FORM, VALIDATE_FORM,
+  CLEAR_COLLECTION_FORM, SET_COLLECTION_FORM_ERRORS,
 } from '../../actions/collectionUi';
 import {
   INITIAL_UI_STATE,
@@ -111,13 +111,13 @@ describe('CollectionFormDialog', () => {
           expectedActionTypes = [
             actions.collectionsList.post.requestType,
             'RECEIVE_POST_COLLECTIONS_LIST_FAILURE',
-            VALIDATE_FORM
+            SET_COLLECTION_FORM_ERRORS
           ];
         } else {
           expectedActionTypes = [
             actions.collections.patch.requestType,
             'RECEIVE_PATCH_COLLECTIONS_FAILURE',
-            VALIDATE_FORM
+            SET_COLLECTION_FORM_ERRORS
           ];
         }
         await listenForActions(expectedActionTypes, () => {

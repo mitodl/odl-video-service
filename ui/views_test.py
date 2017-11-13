@@ -112,6 +112,9 @@ def test_video_detail(logged_in_client, mocker):
         "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
         "dropbox_key": "foo_dropbox_key",
+        "FEATURES": {
+            "ENABLE_VIDEO_PERMISSIONS": False
+        }
     }
 
 
@@ -136,6 +139,9 @@ def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=red
         "user": user.username,
         "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "FEATURES": {
+            "ENABLE_VIDEO_PERMISSIONS": False
+        }
     }
 
 
@@ -507,4 +513,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
         'support_email_address': settings.EMAIL_SUPPORT,
         'email': user.email,
         'user': user.username,
+        "FEATURES": {
+            "ENABLE_VIDEO_PERMISSIONS": False
+        }
     }

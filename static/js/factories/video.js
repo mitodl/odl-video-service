@@ -60,6 +60,7 @@ export const makeVideo = (videoKey: string = casual.uuid, collectionKey: string 
   description: casual.text,
   collection_key: collectionKey,
   collection_title: casual.text,
+  collection_view_lists: [],
   multiangle: casual.coin_flip,
   videofile_set: [
     makeVideoFile(videoKey, ENCODING_HLS),
@@ -72,6 +73,9 @@ export const makeVideo = (videoKey: string = casual.uuid, collectionKey: string 
     makeVideoSubtitle(videoKey),
   ],
   status: VIDEO_STATUS_COMPLETE,
+  is_private: false,
+  is_public: false,
+  view_lists: []
 });
 
 export const makeVideos = (n: number, collectionKey: string = casual.uuid): Array<Video> => (

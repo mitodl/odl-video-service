@@ -147,6 +147,9 @@ class Video(models.Model):
     )
     encode_jobs = GenericRelation(EncodeJob)
     multiangle = models.BooleanField(null=False, default=False)
+    view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='video_view_lists')
+    is_public = models.BooleanField(null=False, default=False)
+    is_private = models.BooleanField(null=False, default=False)
 
     class Meta:
         ordering = ['-created_at', ]
@@ -157,6 +160,13 @@ class Video(models.Model):
         Return the hex representation of the key
         """
         return self.key.hex
+
+    @property
+    def admin_lists(self):
+        """
+        Return the video collection's admin lists
+        """
+        return self.collection.admin_lists
 
     def get_s3_key(self):
         """
