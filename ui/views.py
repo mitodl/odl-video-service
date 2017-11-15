@@ -261,8 +261,7 @@ class VideoSubtitleViewSet(ModelDetailViewset):
         authentication.SessionAuthentication,
     )
     permission_classes = (
-        permissions.IsAuthenticated,
-        ui_permissions.HasVideoPermissions
+        ui_permissions.HasVideoSubtitlePermissions,
     )
 
 
