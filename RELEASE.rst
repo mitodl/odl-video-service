@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.6.0
+-------------
+
+- Remove default mit email address (#355)
+- Video-specific permission overrides
+- 404 for invalid collection/video keys
+
 Version 0.5.0
 -------------
 
