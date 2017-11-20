@@ -18,7 +18,7 @@ from ui.factories import (
     VideoFileFactory,
     VideoFactory,
     MoiraListFactory,
-)
+    VideoSubtitleFactory)
 from ui.models import VideoSubtitle
 from ui.serializers import (
     DropboxUploadSerializer,
@@ -479,6 +479,29 @@ def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     # call with user on admin list
     mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
     assert client.post(url, input_data, format='multipart').status_code == status.HTTP_202_ACCEPTED
+
+
+def test_delete_subtitles_authentication(mock_moira_client, logged_in_apiclient, mocker):
+    """
+    Tests that only authenticated users with collection admin permissions can delete VideoSubtitles
+    """
+    mocker.patch('ui.views.VideoSubtitle.delete_from_s3')
+    client, _ = logged_in_apiclient
+    client.logout()
+    moira_list = factories.MoiraListFactory()
+    video = VideoFactory(collection=CollectionFactory(admin_lists=[moira_list]))
+    subtitle = VideoSubtitleFactory(video=video)
+    url = reverse('models-api:subtitle-detail', kwargs={'id': subtitle.id})
+
+    # call with anonymous user
+    assert client.delete(url).status_code == status.HTTP_403_FORBIDDEN
+    # call with another user not on admin list
+    client.force_login(UserFactory())
+    mock_moira_client.return_value.user_lists.return_value = []
+    assert client.delete(url).status_code == status.HTTP_403_FORBIDDEN
+    # call with user on admin list
+    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    assert client.delete(url).status_code == status.HTTP_204_NO_CONTENT
 
 
 @pytest.mark.parametrize("url", [
