@@ -54,7 +54,8 @@ more information.)
 <http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html>`_
 Set the S3 upload bucket name as the ``VIDEO_S3_BUCKET`` environment variable, the
 transcode bucket name as the ``VIDEO_S3_TRANSCODE_BUCKET`` environment variable, the
-thumbnail bucket name as the ``VIDEO_S3_THUMBNAIL_BUCKET`` environment variable, and
+thumbnail bucket name as the ``VIDEO_S3_THUMBNAIL_BUCKET`` environment variable, the 
+subtitle bucket name as the ``VIDEO_S3_SUBTITLE_BUCKET`` environment variable, and 
 set the CloudFront distribution ID as the ``VIDEO_CLOUDFRONT_DIST`` environment
 variable, using the ``.env`` file.
 
@@ -79,7 +80,29 @@ You also must have a proper Elastic Transcoder pipeline configured to use the sp
     </CORSRule>
     </CORSConfiguration>
 
-The Cloudfront distribution's behaviors should also forward and whitelist the 'Origin' headers.
+Each of the Cloudfront origins should be configured as follows:
+  - Restrict Bucket Access
+  - Origin Access Identity: Use an Existing Identity
+  - Your Identities: select an existing CloudFront user (create if necessary)
+
+You also need to create cloudfront behaviors for each bucket:
+  - Allowed HTTP methods: `GET, HEAD, OPTIONS`
+  - Whitelist Headers: `Access-Control-Request-Headers`,`Access-Control-Request-Method`, `Origin`
+  - Restrict Viewer Access: No
+
+  - `VIDEO_S3_TRANSCODE_BUCKET` bucket:
+      - Precedence: 0
+      - Path pattern: `transcoded/*`
+  - `VIDEO_S3_SUBTITLE_BUCKET` bucket:
+      - Precedence: 1
+      - Path pattern: `subtitles/*`
+  - `VIDEO_S3_THUMBNAIL_BUCKET`
+      - Precedence 2:
+      - Path pattern: `thumbnails/*`
+  - `VIDEO_S3_BUCKET`
+      - Precedence 3:
+      - Path pattern: `Default(*)`
+
 
 You can also optionally create a public CloudFront distribution for
 serving static files for the web application. If you want to do this, set the
