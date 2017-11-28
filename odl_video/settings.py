@@ -1,5 +1,5 @@
 """
-Django settings for odl_video project.
+Django settings for odl_video.
 """
 import logging
 import os
@@ -19,22 +19,20 @@ from odl_video.envs import (
 
 VERSION = "0.7.0"
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
-SECRET_KEY = get_string(
-    'DJANGO_SECRET_KEY',
-    'ls8t)o32h@bqp1s8e0&6+mepk#t4@^68yx43kjm_#tvdv=m&ke',
-)
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = get_string('SECRET_KEY', None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = get_bool('DEBUG', False)
 
 ALLOWED_HOSTS = ['*']
+
+SECURE_SSL_REDIRECT = get_bool('ODL_VIDEO_SECURE_SSL_REDIRECT', True)
 
 
 WEBPACK_LOADER = {
@@ -50,11 +48,6 @@ WEBPACK_LOADER = {
         ]
     }
 }
-
-# Request files from the webpack dev server
-USE_WEBPACK_DEV_SERVER = get_bool('ODL_VIDEO_SERVICE_USE_WEBPACK_DEV_SERVER', False)
-WEBPACK_DEV_SERVER_HOST = get_string('WEBPACK_DEV_SERVER_HOST', '')
-WEBPACK_DEV_SERVER_PORT = get_int('WEBPACK_DEV_SERVER_PORT', 8082)
 
 
 # Application definition
@@ -75,8 +68,6 @@ INSTALLED_APPS = [
     'raven.contrib.django.raven_compat',
 ]
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
-
 DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
 if not DISABLE_WEBPACK_LOADER_STATS:
     INSTALLED_APPS += ('webpack_loader',)
@@ -92,6 +83,18 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# enable the nplusone profiler only in debug mode
+if DEBUG:
+    INSTALLED_APPS += (
+        'nplusone.ext.django',
+    )
+    MIDDLEWARE_CLASSES += (
+        'nplusone.ext.django.NPlusOneMiddleware',
+    )
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
+
+LOGIN_REDIRECT_URL = "/"
 if get_bool('USE_SHIBBOLETH', False):
     # TOUCHSTONE
     MIDDLEWARE_CLASSES.append('shibboleth.middleware.ShibbolethRemoteUserMiddleware')
@@ -108,12 +111,15 @@ if get_bool('USE_SHIBBOLETH', False):
 else:
     LOGIN_URL = "/admin/login/"
 
+
 ROOT_URLCONF = 'odl_video.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR + '/templates/'
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -151,106 +157,8 @@ DATABASES = {
     'default': DEFAULT_DATABASE_CONFIG
 }
 
-
 # the full URL of the current application is mandatory
 ODL_VIDEO_BASE_URL = get_string('ODL_VIDEO_BASE_URL', None)
-
-# Celery
-# http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
-REDIS_URL = get_string("REDIS_URL", None)
-USE_CELERY = True
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL = REDIS_URL
-
-CELERY_TASK_ALWAYS_EAGER = get_bool("CELERY_TASK_ALWAYS_EAGER", False)
-CELERY_TASK_EAGER_PROPAGATES = get_bool("CELERY_TASK_EAGER_PROPAGATES", True)
-
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TIMEZONE = 'UTC'
-CELERY_BEAT_SCHEDULE = {
-    'update-statuses': {
-        'task': 'cloudsync.tasks.update_video_statuses',
-        'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
-    },
-    'update-youtube-statuses': {
-        'task': 'cloudsync.tasks.update_youtube_statuses',
-        'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
-    },
-    'watch-bucket': {
-        'task': 'cloudsync.tasks.monitor_watch_bucket',
-        'schedule': get_int('VIDEO_WATCH_BUCKET_FREQUENCY', 900)
-    }
-}
-
-# django cache back-ends
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'local-in-memory-cache',
-    },
-    'redis': {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": CELERY_BROKER_URL,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient"
-        },
-    },
-}
-
-
-# features flags
-def get_all_config_keys():
-    """Returns all the configuration keys from both environment and configuration files"""
-    return list(os.environ.keys())
-
-
-ODL_VIDEO_FEATURES_PREFIX = get_string('ODL_VIDEO_FEATURES_PREFIX', 'FEATURE_')
-FEATURES = {
-    key[len(ODL_VIDEO_FEATURES_PREFIX):]: get_any(key, None) for key
-    in get_all_config_keys() if key.startswith(ODL_VIDEO_FEATURES_PREFIX)
-}
-
-MIDDLEWARE_FEATURE_FLAG_QS_PREFIX = get_string("MIDDLEWARE_FEATURE_FLAG_QS_PREFIX", None)
-MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME = get_string(
-    'MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME', 'ODL_VIDEO_FEATURE_FLAGS')
-MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS = get_int(
-    'MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS', 60 * 60)
-
-if MIDDLEWARE_FEATURE_FLAG_QS_PREFIX:
-    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
-        'odl_video.middleware.QueryStringFeatureFlagMiddleware',
-        'odl_video.middleware.CookieFeatureFlagMiddleware',
-    )
-
-
-# enable the nplusone profiler only in debug mode
-if DEBUG:
-    INSTALLED_APPS += (
-        'nplusone.ext.django',
-    )
-    MIDDLEWARE_CLASSES += (
-        'nplusone.ext.django.NPlusOneMiddleware',
-    )
-
-
-# Password validation
-# https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
 
 
 # Internationalization
@@ -271,14 +179,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-
 STATIC_ROOT = 'staticfiles'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
 
-# OTHER
-LOGIN_REDIRECT_URL = "/"
+# Request files from the webpack dev server
+USE_WEBPACK_DEV_SERVER = get_bool('ODL_VIDEO_USE_WEBPACK_DEV_SERVER', False)
+WEBPACK_DEV_SERVER_HOST = get_string('WEBPACK_DEV_SERVER_HOST', '')
+WEBPACK_DEV_SERVER_PORT = get_int('WEBPACK_DEV_SERVER_PORT', 8082)
 
 # Important to define this so DEBUG works properly
 INTERNAL_IPS = (get_string('HOST_IP', '127.0.0.1'), )
@@ -390,6 +299,13 @@ LOGGING = {
         'level': LOG_LEVEL,
     },
 }
+
+# to run the app locally on mac you need to bypass syslog
+if get_bool('ODL_VIDEO_BYPASS_SYSLOG', False):
+    LOGGING['handlers'].pop('syslog')
+    LOGGING['loggers']['root']['handlers'] = ['console']
+    LOGGING['loggers']['ui']['handlers'] = ['console']
+    LOGGING['loggers']['django']['handlers'] = ['console']
 
 # Sentry
 ENVIRONMENT = get_string('ODL_VIDEO_ENVIRONMENT', 'dev')
@@ -533,3 +449,67 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',
     )
 }
+
+# Celery
+# http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
+REDIS_URL = get_string("REDIS_URL", None)
+USE_CELERY = True
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL = REDIS_URL
+
+CELERY_TASK_ALWAYS_EAGER = get_bool("CELERY_TASK_ALWAYS_EAGER", False)
+CELERY_TASK_EAGER_PROPAGATES = get_bool("CELERY_TASK_EAGER_PROPAGATES", True)
+
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULE = {
+    'update-statuses': {
+        'task': 'cloudsync.tasks.update_video_statuses',
+        'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
+    },
+    'watch-bucket': {
+        'task': 'cloudsync.tasks.monitor_watch_bucket',
+        'schedule': get_int('VIDEO_WATCH_BUCKET_FREQUENCY', 900)
+    }
+}
+
+# django cache back-ends
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'local-in-memory-cache',
+    },
+    'redis': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": CELERY_BROKER_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+    },
+}
+
+
+# features flags
+def get_all_config_keys():
+    """Returns all the configuration keys from both environment and configuration files"""
+    return list(os.environ.keys())
+
+
+ODL_VIDEO_FEATURES_PREFIX = get_string('ODL_VIDEO_FEATURES_PREFIX', 'FEATURE_')
+FEATURES = {
+    key[len(ODL_VIDEO_FEATURES_PREFIX):]: get_any(key, None) for key
+    in get_all_config_keys() if key.startswith(ODL_VIDEO_FEATURES_PREFIX)
+}
+
+MIDDLEWARE_FEATURE_FLAG_QS_PREFIX = get_string("MIDDLEWARE_FEATURE_FLAG_QS_PREFIX", None)
+MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME = get_string(
+    'MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME', 'ODL_VIDEO_FEATURE_FLAGS')
+MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS = get_int(
+    'MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS', 60 * 60)
+
+if MIDDLEWARE_FEATURE_FLAG_QS_PREFIX:
+    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
+        'odl_video.middleware.QueryStringFeatureFlagMiddleware',
+        'odl_video.middleware.CookieFeatureFlagMiddleware',
+    )
