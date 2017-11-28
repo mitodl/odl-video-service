@@ -234,31 +234,33 @@ export default class VideoPlayer extends React.Component {
   render() {
     const { video, selectedCorner } = this.props;
     return (
-      <div className="video-odl-center">
-        <div
-          className={`video-odl-medium ${video.multiangle ? "video-odl-multiangle" : ""}`}
-          ref={node => this.videoContainer = node}>
-          <div data-vjs-player>
-            <video
-              ref={node => this.videoNode = node}
-              className="video-js vjs-default-skin"
-              crossOrigin="anonymous"
-              controls
-            />
-          </div>
-        </div>
-        {video.multiangle &&
-        <div ref={node => this.cameras = node} className="camera-bar">
-          {Object.keys(CANVASES).map(corner => (
-            <div key={corner}>
-              <canvas id={corner} key={corner}
-                onClick={this.clickCamera.bind(this, corner)}
-                className={`camera-box ${corner === selectedCorner ? "camera-box-selected" : ""}`}
+      <div className="fullwidth-band">
+        <div className="video-odl-center">
+          <div
+            className={`video-odl-medium ${video.multiangle ? "video-odl-multiangle" : ""}`}
+            ref={node => this.videoContainer = node}>
+            <div data-vjs-player>
+              <video
+                ref={node => this.videoNode = node}
+                className="video-js vjs-default-skin"
+                crossOrigin="anonymous"
+                controls
               />
-            </div>)
-          )}
+            </div>
+          </div>
+          {video.multiangle &&
+          <div ref={node => this.cameras = node} className="camera-bar">
+            {Object.keys(CANVASES).map(corner => (
+              <div key={corner}>
+                <canvas id={corner} key={corner}
+                  onClick={this.clickCamera.bind(this, corner)}
+                  className={`camera-box ${corner === selectedCorner ? "camera-box-selected" : ""}`}
+                />
+              </div>)
+            )}
+          </div>
+          }
         </div>
-        }
       </div>
     );
   }
