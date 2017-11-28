@@ -21,6 +21,14 @@ requests
 uwsgi
 pycountry
 
+# Google/Youtube API access
+httplib2
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+oauth2client==3.0.0
+google-api-python-client
+
 # Touchstone
 -e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
 

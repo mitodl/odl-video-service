@@ -13,9 +13,12 @@ from celery import shared_task, states, Task
 from celery.utils.log import get_task_logger
 from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
+from googleapiclient.errors import HttpError
+
 from cloudsync.api import refresh_status, process_watch_file, transcode_video
-from ui.models import Video
-from ui.constants import VideoStatus
+from cloudsync.youtube import YouTubeApi
+from ui.models import Video, YouTubeVideo, VideoSubtitle
+from ui.constants import VideoStatus, YouTubeStatus
 from ui.utils import get_bucket
 
 log = get_task_logger(__name__)
@@ -24,6 +27,8 @@ log = get_task_logger(__name__)
 CONTENT_DISPOSITION_RE = re.compile(
     r"filename\*=UTF-8''(?P<filename>[^ ]+)"
 )
+
+# pylint: disable=unused-argument
 
 
 class VideoTask(Task):
@@ -71,7 +76,7 @@ def stream_to_s3(self, video_id):
     try:
         response = requests.get(video.source_url, stream=True, timeout=60)
         response.raise_for_status()
-    except Exception:
+    except requests.HTTPError:
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise
@@ -111,7 +116,7 @@ def stream_to_s3(self, video_id):
 
 
 @shared_task(bind=True, base=VideoTask)
-def transcode_from_s3(self, video_id):  # pylint: disable=unused-argument
+def transcode_from_s3(self, video_id):
     """
     Given an S3 object key, transcode that object using a video pipeline, overwrite the original when done.
 
@@ -132,7 +137,7 @@ def transcode_from_s3(self, video_id):  # pylint: disable=unused-argument
 
 
 @shared_task(bind=True)
-def update_video_statuses(self):  # pylint: disable=unused-argument
+def update_video_statuses(self):
     """
     Check on statuses of all transcoding videos and update their status if appropriate
     """
@@ -151,7 +156,81 @@ def update_video_statuses(self):  # pylint: disable=unused-argument
 
 
 @shared_task(bind=True)
-def monitor_watch_bucket(self):  # pylint: disable=unused-argument
+def upload_youtube_video(self, video_id):
+    """
+    Upload a video's original source file to YouTube
+    """
+    video = Video.objects.get(id=video_id)
+    youtube_video, created = YouTubeVideo.objects.get_or_create(video=video)
+    # Another upload for this video is likely already running if not created here
+    if created:
+        try:
+            youtube = YouTubeApi()
+            response = youtube.upload_video(video)
+            youtube_video.id = response['id']
+            youtube_video.status = response['status']['uploadStatus']
+            youtube_video.save()
+        except:
+            # If anything goes wrong, delete the YouTubeVideo object.
+            # Another upload attempt will be made the next time the video is saved.
+            youtube_video.delete()
+            raise
+
+
+@shared_task(bind=True)
+def remove_youtube_video(self, video_id):
+    """
+    Delete a video from Youtube
+    """
+    try:
+        YouTubeApi().delete_video(video_id)
+    except HttpError as error:
+        if error.resp.status == 404:
+            log.info('Not found on Youtube, already deleted? %s', video_id)
+        else:
+            raise
+
+
+@shared_task(bind=True)
+def upload_youtube_caption(self, caption_id):
+    """
+    Upload a video caption file to YouTube
+    """
+    caption = VideoSubtitle.objects.get(id=caption_id)
+    yt_video = YouTubeVideo.objects.get(video=caption.video)
+    youtube = YouTubeApi()
+    youtube.upload_caption(caption, yt_video.id)
+
+
+@shared_task(bind=True)
+def remove_youtube_caption(self, video_id, language):
+    """
+    Remove Youtube captions not matching a video's subtitle language)
+    """
+    video = Video.objects.get(id=video_id)
+    captions = YouTubeApi().list_captions(video.youtube_id)
+    if language in captions.keys():
+        YouTubeApi().delete_caption(captions[language])
+
+
+@shared_task(bind=True)
+def update_youtube_statuses(self):
+    """
+    Update the status of recently uploaded YouTube videos and upload captions if complete
+    """
+    if settings.ENABLE_VIDEO_PERMISSIONS:
+        youtube = YouTubeApi()
+        videos_processing = YouTubeVideo.objects.filter(status=YouTubeStatus.UPLOADED)
+        for yt_video in videos_processing:
+            yt_video.status = youtube.video_status(yt_video.id)
+            yt_video.save()
+            if yt_video.status == YouTubeStatus.PROCESSED:
+                for subtitle in yt_video.video.videosubtitle_set.all():
+                    youtube.upload_caption(subtitle, yt_video.id)
+
+
+@shared_task(bind=True)
+def monitor_watch_bucket(self):
     """
     Check the watch bucket for any files and import them if found. All files found in the
     S3 bucket indicated by 'VIDEO_S3_WATCH_BUCKET' is assumed to be a lecture capture video.

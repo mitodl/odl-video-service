@@ -29,8 +29,9 @@ import {
 import { setSelectedVideoKey } from '../../actions/collectionUi';
 import { INITIAL_UI_STATE } from '../../reducers/videoUi';
 import * as api from '../../lib/api';
-import { makeVideo } from "../../factories/video";
+import {makeVideo, makeVideoSubtitle} from "../../factories/video";
 import { makeCollection } from "../../factories/collection";
+import { expect } from "../../util/test_utils";
 import {
   PERM_CHOICE_LISTS,
   PERM_CHOICE_NONE,
@@ -135,6 +136,21 @@ describe('EditVideoFormDialog', () => {
     });
   }
 
+  for (const [disabled, count] of [
+    [true, 0],
+    [false, 1]]) {
+    it(`public option ${expect(disabled)} be disabled because subtitle count is ${count}`, async () => {
+      SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = true;
+      video.is_private = true;
+      video.videosubtitle_set = [];
+      if (count === 1) {
+        video.videosubtitle_set.push(makeVideoSubtitle(video.key, 'fr'));
+      }
+      let wrapper = await renderComponent();
+      let publicOption = wrapper.find("#video-view-perms-view-public").props();
+      assert.equal(publicOption.disabled, disabled);
+    });
+  }
 
   it(`updates the video when form is submitted and video permissions are disabled`, async () => {
     SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false;

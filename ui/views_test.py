@@ -6,7 +6,6 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -18,7 +17,8 @@ from ui.factories import (
     VideoFileFactory,
     VideoFactory,
     MoiraListFactory,
-    VideoSubtitleFactory)
+    VideoSubtitleFactory,
+    YouTubeVideoFactory)
 from ui.models import VideoSubtitle
 from ui.serializers import (
     DropboxUploadSerializer,
@@ -94,7 +94,7 @@ def test_index(client):
     assert response.url == reverse('collection-react-view')
 
 
-def test_video_detail(logged_in_client, mocker):
+def test_video_detail(logged_in_client, settings):
     """Test video detail page"""
     client, user = logged_in_client
     videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
@@ -118,7 +118,7 @@ def test_video_detail(logged_in_client, mocker):
     }
 
 
-def test_video_embed(logged_in_client, mocker, settings):  # pylint: disable=redefined-outer-name
+def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-outer-name
     """Test video embed page"""
     client, user = logged_in_client
     videofileHLS = VideoFileFactory(
@@ -425,29 +425,38 @@ def test_video_detail_no_permission(mock_moira_client, logged_in_apiclient, user
     assert result.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_upload_subtitles(logged_in_apiclient, mocker):
+@pytest.mark.parametrize("enable_video_permissions", [False, True])
+def test_upload_subtitles(logged_in_apiclient, mocker, enable_video_permissions, settings):
     """
     Tests for UploadVideoSubtitle
     """
+    mocker.patch('ui.views.cloudapi.boto3')
+    settings.ENABLE_VIDEO_PERMISSIONS = enable_video_permissions
     client, user = logged_in_apiclient
-    collection = CollectionFactory(owner=user)
-    video = VideoFactory(collection=collection)
-    url = reverse('upload-subtitles')
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    yt_video = YouTubeVideoFactory(video=video)
     filename = 'subtitles.vtt'
-    mocked_api = mocker.patch('ui.views.cloudapi.upload_subtitle_to_s3',
-                              return_value=VideoSubtitle(video=video, filename=filename))
+    youtube_task = mocker.patch('ui.views.upload_youtube_caption.delay')
     input_data = {
-        "collection": collection.hexkey,
+        "collection": video.collection.hexkey,
         "video": video.hexkey,
         "language": "en",
         "filename": filename,
         "file": SimpleUploadedFile(filename, bytes(1024))
     }
-    response = client.post(url, input_data, format='multipart')
+    response = client.post(reverse('upload-subtitles'), input_data, format='multipart')
     assert response.status_code == status.HTTP_202_ACCEPTED
-    assert response.data == {'language': 'en', 'created_at': None, 'bucket_name': '',
-                             'filename': filename, 's3_object_key': '', 'id': None, 'language_name': 'English'}
-    mocked_api.assert_called_once()
+    expected_data = {
+        'language': 'en',
+        'filename': filename,
+        's3_object_key': 'subtitles/{}/subtitle_en.vtt'.format(video.hexkey),
+        'language_name': 'English'
+    }
+    for key in expected_data:
+        assert expected_data[key] == response.data[key]
+    if enable_video_permissions:
+        assert VideoSubtitle.objects.get(id=response.data['id']).video.youtube_id == yt_video.id
+        youtube_task.assert_called_once_with(response.data['id'])
 
 
 def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient, mocker):

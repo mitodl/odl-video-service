@@ -14,7 +14,7 @@ from pycountry import languages
 
 from mail import tasks
 from ui import utils
-from ui.constants import VideoStatus
+from ui.constants import VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.exceptions import MoiraException
 from ui.tasks import delete_s3_objects
@@ -167,6 +167,16 @@ class Video(models.Model):
         Return the video collection's admin lists
         """
         return self.collection.admin_lists
+
+    @property
+    def youtube_id(self):
+        """
+        Return YouTube video id if any
+        """
+        try:
+            return self.youtubevideo.id
+        except YouTubeVideo.DoesNotExist:
+            return None
 
     def get_s3_key(self):
         """
@@ -365,3 +375,16 @@ class VideoSubtitle(VideoS3):
 
     def __repr__(self):
         return '<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >'.format(self=self)
+
+
+class YouTubeVideo(models.Model):
+    """A YouTube version of the video"""
+    video = models.OneToOneField(Video, on_delete=models.CASCADE, primary_key=True)
+    id = models.CharField(max_length=11, null=True)
+    status = models.CharField(null=False, default=YouTubeStatus.UPLOADING, max_length=24)
+
+    def __repr__(self):
+        return '<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >'.format(self=self)
+
+    def __str__(self):
+        return '{}: {}: {}'.format(self.id, self.video.title, self.video.hexkey)

@@ -173,6 +173,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'cloudsync.tasks.update_video_statuses',
         'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
     },
+    'update-youtube-statuses': {
+        'task': 'cloudsync.tasks.update_youtube_statuses',
+        'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
+    },
     'watch-bucket': {
         'task': 'cloudsync.tasks.monitor_watch_bucket',
         'schedule': get_int('VIDEO_WATCH_BUCKET_FREQUENCY', 900)
@@ -475,6 +479,12 @@ ADWORDS_CONVERSION_ID = get_string("ADWORDS_CONVERSION_ID", "")
 GA_TRACKING_ID = get_string("GA_TRACKING_ID", "")
 REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
 
+YT_CLIENT_ID = get_string('YT_CLIENT_ID', '')
+YT_PROJECT_ID = get_string('YT_PROJECT_ID', '')
+YT_CLIENT_SECRET = get_string('YT_CLIENT_SECRET', '')
+YT_ACCESS_TOKEN = get_string('YT_ACCESS_TOKEN', '')
+YT_REFRESH_TOKEN = get_string('YT_REFRESH_TOKEN', '')
+
 LECTURE_CAPTURE_USER = get_string('LECTURE_CAPTURE_USER', '')
 
 ENABLE_VIDEO_PERMISSIONS = get_bool('ENABLE_VIDEO_PERMISSIONS', False)
@@ -505,8 +515,17 @@ MANDATORY_SETTINGS = [
     'VIDEO_S3_THUMBNAIL_BUCKET',
     'VIDEO_S3_SUBTITLE_BUCKET',
     'VIDEO_S3_WATCH_BUCKET',
-    'ENABLE_VIDEO_PERMISSIONS'
+    'ENABLE_VIDEO_PERMISSIONS',
 ]
+
+if ENABLE_VIDEO_PERMISSIONS:
+    MANDATORY_SETTINGS += [
+        'YT_ACCESS_TOKEN',
+        'YT_REFRESH_TOKEN',
+        'YT_CLIENT_ID',
+        'YT_CLIENT_SECRET',
+        'YT_PROJECT_ID',
+    ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

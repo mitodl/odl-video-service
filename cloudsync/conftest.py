@@ -54,6 +54,17 @@ def stub_aws_upload():
     stubber.deactivate()
 
 
+@pytest.fixture(autouse=True)
+def youtube_mock(mocker):
+    """
+    Mocks calls for youtube api tests
+    """
+    mocker.patch('cloudsync.youtube.boto3')
+    mocker.patch('cloudsync.youtube.oauth2client')
+    mocker.patch('cloudsync.youtube.build')
+    mocker.patch('cloudsync.youtube.MediaFileUpload', return_value=b'')
+
+
 class MockClientET:
     """
     Mock boto3 ElasticTranscoder client, because ElasticTranscode isn't supported by moto yet
@@ -88,3 +99,12 @@ class MockBoto:
         """Return a mock client"""
         if args[0] == 'elastictranscoder':
             return MockClientET()
+
+
+class MockHttpErrorResponse:
+    """
+    Mock googleapiclient.HttpError response
+    """
+    def __init__(self, status, reason='mock reason'):
+        self.status = status
+        self.reason = reason
