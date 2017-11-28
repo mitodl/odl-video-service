@@ -121,6 +121,25 @@ Touchstone
 Touchstone hasn't been configured yet, but here are some instructions for
 `Touchstone integration`_.
 
+
+YouTube Integration
+~~~~~~~~~~~~~~~~~~~
+
+- Create a new project at https://console.cloud.google.com/apis/dashboard
+  - Save the project ID in your ``.env`` file as ``YT_PROJECT_ID``
+- Create an OAuth client ID for the project (type: ``Other``)
+  - Save your client ID and client secret in your ``.env`` file (as ``YT_CLIENT_ID`` and ``YT_CLIENT_SECRET``)
+- Enable the YouTube Data API v3 for your project
+- Run the following Django command to generate values for ``YT_ACCESS_TOKEN`` and ``YT_REFRESH_TOKEN``:
+
+.. code-block:: bash
+
+    docker-compose run web python manage.py oauthtokens
+
+- Click on the provided link, follow the prompts, and enter the verification code back in the shell.
+- Save the ``YT_ACCESS_TOKEN`` and ``YT_REFRESH_TOKEN`` values to your ``.env`` file
+
+
 Running
 -------
 To run the application, install Docker and `Docker Compose`_, then run:

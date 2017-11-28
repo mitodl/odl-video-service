@@ -10,20 +10,34 @@ from botocore.exceptions import ClientError
 import celery
 from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
+from django.db import transaction
 from django.test import override_settings
-from mock import PropertyMock
+from googleapiclient.errors import HttpError
+from mock import PropertyMock, call
 from moto import mock_s3
+from requests import HTTPError
 
-from cloudsync.conftest import MockBoto
-from cloudsync.tasks import stream_to_s3, transcode_from_s3, VideoTask, update_video_statuses, monitor_watch_bucket
+from cloudsync.conftest import MockBoto, MockHttpErrorResponse
+from cloudsync.tasks import (
+    VideoTask,
+    stream_to_s3,
+    transcode_from_s3,
+    update_video_statuses,
+    monitor_watch_bucket,
+    upload_youtube_video,
+    upload_youtube_caption,
+    update_youtube_statuses,
+    remove_youtube_video, remove_youtube_caption)
 from ui.factories import (
     VideoFactory,
     VideoFileFactory,
     UserFactory,
+    VideoSubtitleFactory,
+    YouTubeVideoFactory
 )
 from ui.encodings import EncodingNames
-from ui.models import Video
-from ui.constants import VideoStatus
+from ui.models import Video, YouTubeVideo
+from ui.constants import VideoStatus, YouTubeStatus
 
 pytestmark = pytest.mark.django_db
 
@@ -46,14 +60,14 @@ def user():
     return UserFactory()
 
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,unused-argument,no-value-for-parameter,unused-variable
 
 
 def test_empty_video_id():
     """
     Tests that an empty video id does not give a result
     """
-    result = stream_to_s3("")  # pylint: disable=no-value-for-parameter
+    result = stream_to_s3("")
     assert not result
 
 
@@ -69,7 +83,7 @@ def test_happy_path(mocker, reqmocker, mock_video_headers, video):
     )
     mock_boto3 = mocker.patch('cloudsync.tasks.boto3')
     mock_bucket = mock_boto3.resource.return_value.Bucket.return_value
-    stream_to_s3(video.id)  # pylint: disable=no-value-for-parameter
+    stream_to_s3(video.id)
 
     mock_bucket.upload_fileobj.assert_called_with(
         Fileobj=mocker.ANY,
@@ -91,17 +105,22 @@ def test_upload_failure(mocker, reqmocker, mock_video_headers, video):
     """
     Test that video status is updated properly after an upload failure
     """
+    mocker.patch('ui.models.tasks.async_send_notification_email')
+    mock_update = mocker.patch('cloudsync.tasks.stream_to_s3.update_state')
     mock_video_file = io.BytesIO(os.urandom(6250000))
     reqmocker.get(
         video.source_url,
         headers=mock_video_headers,
         body=mock_video_file,
+        status_code=500,
+        reason='access denied'
     )
     mocker.patch('cloudsync.tasks.boto3')
-    mocker.patch('cloudsync.tasks.requests.models.Response.raise_for_status', side_effect=Exception())
-    with pytest.raises(Exception):
-        stream_to_s3(video.id)  # pylint: disable=no-value-for-parameter
+    with pytest.raises(HTTPError):
+        stream_to_s3(video.id)
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    mock_update.assert_called_once()
+    assert mock_update.call_args == call(state='FAILURE', task_id=None)
 
 
 def test_transcode_failure(mocker, videofile):
@@ -123,7 +142,7 @@ def test_transcode_failure(mocker, videofile):
                  return_value=job_result['Job'])
     # Transcode the video
     with pytest.raises(ClientError):
-        transcode_from_s3(video.id)  # pylint: disable=no-value-for-parameter
+        transcode_from_s3(video.id)
     assert video.encode_jobs.count() == 1
     assert Video.objects.get(id=video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL
 
@@ -143,7 +162,7 @@ def test_transcode_starting(mocker, videofile):
     mocker.patch('ui.utils.boto3', MockBoto)
     mocker.patch('cloudsync.api.get_et_job',
                  return_value={'Id': '1498220566931-qtmtcu', 'Status': 'Complete'})
-    transcode_from_s3(video.id)  # pylint: disable=no-value-for-parameter
+    transcode_from_s3(video.id)
     assert video.encode_jobs.count() == 1
     assert Video.objects.filter(id=video.id, status=VideoStatus.TRANSCODING).count() == 1
 
@@ -210,38 +229,38 @@ def test_video_task_no_chain(mocker):
     assert task.get_task_id() == task.request.id
 
 
-def test_update_video_statuses_nojob(mocker, video):  # pylint: disable=unused-argument
+def test_update_video_statuses_nojob(mocker, video):
     """Test NoEncodeJob error handling"""
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=EncodeJob.DoesNotExist())
     mocker.patch('ui.models.tasks')
     video.update_status(VideoStatus.TRANSCODING)
-    update_video_statuses()  # pylint: disable=no-value-for-parameter
+    update_video_statuses()
     assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
 
 
-def test_update_video_statuses_clienterror(mocker, video):  # pylint: disable=unused-argument
+def test_update_video_statuses_clienterror(mocker, video):
     """Test NoEncodeJob error handling"""
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
     mocker.patch('ui.models.tasks')
     video.update_status(VideoStatus.TRANSCODING)
-    update_video_statuses()  # pylint: disable=no-value-for-parameter
+    update_video_statuses()
     assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
 
 
 def test_stream_to_s3_no_video():
     """Test DoesNotExistError"""
     with pytest.raises(Video.DoesNotExist):
-        stream_to_s3(999999)  # pylint: disable=no-value-for-parameter
+        stream_to_s3(999999)
 
 
 @mock_s3
 @override_settings(LECTURE_CAPTURE_USER='admin')
-def test_monitor_watch(mocker, user):  # pylint: disable=unused-argument,redefined-outer-name
+def test_monitor_watch(mocker, user):
     """Test the Watch bucket monitor task"""
-    UserFactory(username='admin')  # pylint: disable=unused-variable
+    UserFactory(username='admin')
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000061',),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
@@ -277,11 +296,11 @@ def test_monitor_watch(mocker, user):  # pylint: disable=unused-argument,redefin
 
 @mock_s3
 @override_settings(LECTURE_CAPTURE_USER='admin')
-def test_monitor_watch_badname(mocker):  # pylint: disable=unused-argument,redefined-outer-name
+def test_monitor_watch_badname(mocker):
     """
     Test no video is created for a file with a bad name, but other filenames are processed
     """
-    UserFactory(username='admin')  # pylint: disable=unused-variable
+    UserFactory(username='admin')
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
@@ -303,3 +322,137 @@ def test_monitor_watch_badname(mocker):  # pylint: disable=unused-argument,redef
     assert not Video.objects.filter(source_url__endswith=filenames[1])
     assert Video.objects.get(source_url__endswith=filenames[0])
     assert Video.objects.get(source_url__endswith=filenames[2])
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_upload_youtube_video(mocker, video):
+    """
+    Test that the upload_youtube_video task calls YouTubeApi.upload_video
+    & creates a YoutubeVideo object, but only once
+    """
+    youtube_id = 'abdDEFghi01'
+    mock_uploader = mocker.patch('cloudsync.tasks.YouTubeApi.upload_video', return_value={
+        'id': youtube_id,
+        'status': {
+            'uploadStatus': 'uploaded'
+        }
+    })
+    upload_youtube_video(video.id)
+    yt_video = YouTubeVideo.objects.get(id=youtube_id)
+    assert yt_video.video == video
+    upload_youtube_video(video.id)
+    mock_uploader.assert_called_once_with(video)
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_upload_youtube_video_error(mocker, video):
+    """
+    Test that the YoutubeVideo object is deleted if an error occurs during upload
+    """
+    mocker.patch('cloudsync.tasks.YouTubeApi.upload_video',
+                 side_effect=HttpError(MockHttpErrorResponse(403), b''))
+    with pytest.raises(Exception):
+        # Avoid transaction management error
+        with transaction.atomic():
+            upload_youtube_video(video.id)
+    assert YouTubeVideo.objects.filter(video=video).first() is None
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_remove_youtube_video(mocker, video):
+    """
+    Test that the remove_youtube_video task calls YouTubeApi.delete_video
+    """
+    mock_delete = mocker.patch('cloudsync.tasks.YouTubeApi.delete_video')
+    yt_video = YouTubeVideoFactory(video=video)
+    remove_youtube_video(yt_video.id)
+    mock_delete.assert_called_once_with(yt_video.id)
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_remove_youtube_video_404(mocker, video):
+    """
+    Test that the remove_youtube_video task does not raise an exception if a 404 error occurs
+    """
+    mock_delete = mocker.patch('cloudsync.tasks.YouTubeApi.delete_video',
+                               side_effect=HttpError(MockHttpErrorResponse(404), b''))
+    yt_video = YouTubeVideoFactory(video=video)
+    remove_youtube_video(yt_video.id)
+    mock_delete.assert_called_once_with(yt_video.id)
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_remove_youtube_video_500(mocker, video):
+    """
+    Test that the remove_youtube_video task raises an exception if a 500 error occurs
+    """
+    mocker.patch('cloudsync.tasks.YouTubeApi.delete_video',
+                 side_effect=HttpError(MockHttpErrorResponse(500), b''))
+    yt_video = YouTubeVideoFactory(video=video)
+    with pytest.raises(HttpError):
+        remove_youtube_video(yt_video.id)
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_upload_youtube_caption(mocker, video):
+    """
+    Test that the upload_youtube_caption task calls YouTubeApi.upload_caption with correct arguments
+    """
+    mocker.patch('cloudsync.tasks.YouTubeApi.upload_video')
+    mock_uploader = mocker.patch('cloudsync.tasks.YouTubeApi.upload_caption')
+    subtitle = VideoSubtitleFactory(video=video)
+    yt_video = YouTubeVideoFactory(video=video)
+    upload_youtube_caption(subtitle.id)
+    mock_uploader.assert_called_once_with(subtitle, yt_video.id)
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_remove_youtube_caption(mocker, video):
+    """
+    Test that the upload_youtube_caption task calls YouTubeApi.upload_caption with correct arguments,
+    and only for language captions that actually exist on Youtube
+    """
+    mock_delete = mocker.patch('cloudsync.tasks.YouTubeApi.delete_caption')
+    mocker.patch('cloudsync.tasks.YouTubeApi.list_captions', return_value={
+        'fr': 'foo',
+        'en': 'bar'
+    })
+    YouTubeVideoFactory(video=video)
+    VideoSubtitleFactory(video=video, language='en')
+    VideoSubtitleFactory(video=video, language='fr')
+    remove_youtube_caption(video.id, 'fr')
+    remove_youtube_caption(video.id, 'zh')
+    mock_delete.assert_called_once_with('foo')
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_update_youtube_statuses(mocker):
+    """
+    Test that the correct number of YouTubeVideo objects have their statuses updated to the correct value
+    and captions are uploaded for them.
+    """
+    mock_uploader = mocker.patch('cloudsync.tasks.YouTubeApi.upload_caption')
+    mocker.patch('cloudsync.tasks.YouTubeApi.video_status', return_value=YouTubeStatus.PROCESSED)
+    processing_videos = YouTubeVideoFactory.create_batch(2, status=YouTubeStatus.UPLOADED)
+    completed_videos = YouTubeVideoFactory.create_batch(3, status=YouTubeStatus.PROCESSED)
+    for yt_video in processing_videos + completed_videos:
+        VideoSubtitleFactory(video=yt_video.video)
+    update_youtube_statuses()
+    assert mock_uploader.call_count == 2
+    assert YouTubeVideo.objects.filter(status=YouTubeStatus.PROCESSED).count() == 5
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_update_youtube_statuses_failed(mocker):
+    """
+    Test that the correct number of YouTubeVideo objects have their statuses updated to FAILED
+    and no captions are uploaded.
+    """
+    mock_uploader = mocker.patch('cloudsync.tasks.YouTubeApi.upload_caption')
+    mocker.patch('cloudsync.tasks.YouTubeApi.video_status', return_value=YouTubeStatus.FAILED)
+    processing_videos = YouTubeVideoFactory.create_batch(2, status=YouTubeStatus.UPLOADED)
+    for yt_video in processing_videos:
+        VideoSubtitleFactory(video=yt_video.video)
+    update_youtube_statuses()
+    assert mock_uploader.call_count == 0
+    assert YouTubeVideo.objects.filter(status=YouTubeStatus.FAILED).count() == 2

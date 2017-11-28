@@ -46,7 +46,7 @@ def test_collection_serializer_validation_fake_admin_lists(mocker):
     serialized_data = serializers.CollectionSerializer(collection).data
     with pytest.raises(ValidationError) as exc:
         serializers.CollectionSerializer(data=serialized_data).is_valid(raise_exception=True)
-        assert exc.match('Not found or not mailing list: {}'.format(collection.admin_lists.first().name))
+    assert exc.match('Not found or not mailing list: {}'.format(collection.admin_lists.first().name))
 
 
 def test_collection_serializer_validation_nonmail_admin_lists(mocker):

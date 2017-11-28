@@ -23,6 +23,7 @@ import {
 import type { Video, VideoUiState } from '../../flow/videoTypes';
 import { calculateListPermissionValue } from "../../util/util";
 import {setVideoFormErrors} from "../../actions/videoUi";
+import {videoHasError, videoIsProcessing} from "../../lib/video";
 
 type DialogProps = {
   dispatch: Dispatch,
@@ -208,21 +209,13 @@ class EditVideoFormDialog extends React.Component {
       <section className="permission-group nested-once">
         <Radio
           id="view-only-me"
-          label="Only me"
+          label="Only you and other admins"
           radioGroupName="video-view-perms"
           value={PERM_CHOICE_NONE}
           selectedValue={editVideoForm.viewChoice}
           onChange={this.handleVideoViewPermClick}
           disabled={defaultPerms}
-        />
-        <Radio
-          id="view-public"
-          label="Everyone"
-          radioGroupName="video-view-perms"
-          value={PERM_CHOICE_PUBLIC}
-          selectedValue={editVideoForm.viewChoice}
-          onChange={this.handleVideoViewPermClick}
-          disabled={defaultPerms}
+          className="wideLabel"
         />
         <Radio
           id="view-moira"
@@ -242,6 +235,17 @@ class EditVideoFormDialog extends React.Component {
             validationMessage={errors ? errors.view_lists : ''}
           />
         </Radio>
+        <Radio
+          id="view-public"
+          label="Public - Subtitles are required for this option"
+          radioGroupName="video-view-perms"
+          value={PERM_CHOICE_PUBLIC}
+          selectedValue={editVideoForm.viewChoice}
+          onChange={this.handleVideoViewPermClick}
+          className="wideLabel"
+          // $FlowFixMe
+          disabled={defaultPerms || video && video.videosubtitle_set.length === 0}
+        />
       </section>
     </section>;
   }
@@ -250,10 +254,9 @@ class EditVideoFormDialog extends React.Component {
     const {
       open,
       hideDialog,
+      video,
       videoUi: { editVideoForm, errors },
     } = this.props;
-
-
 
     return <Dialog
       id="edit-video-form-dialog"
@@ -281,7 +284,11 @@ class EditVideoFormDialog extends React.Component {
           onChange={this.setEditVideoDesc}
           value={editVideoForm.description}
         />
-        { SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS && this.renderPermissions()}
+        { (SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS && video &&
+           !(videoIsProcessing(video)) &&
+           !(videoHasError(video)) &&
+           this.renderPermissions())
+        }
       </div>
     </Dialog>;
   }

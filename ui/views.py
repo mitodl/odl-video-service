@@ -23,6 +23,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cloudsync import api as cloudapi
+from cloudsync.tasks import upload_youtube_caption
 from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
 from ui import (
@@ -193,6 +194,13 @@ class UploadVideoSubtitle(APIView):
         serializer.is_valid(raise_exception=True)
 
         subtitle = cloudapi.upload_subtitle_to_s3(serializer.validated_data, file_obj)
+
+        # Upload to YouTube if necessary
+        if settings.ENABLE_VIDEO_PERMISSIONS:
+            youtube_id = subtitle.video.youtube_id
+            if youtube_id:
+                upload_youtube_caption.delay(subtitle.id)
+
         return Response(
             data=serializers.VideoSubtitleSerializer(subtitle).data,
             status=status.HTTP_202_ACCEPTED

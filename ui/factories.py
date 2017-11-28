@@ -1,5 +1,4 @@
 """Factories for UI app"""
-
 from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -16,6 +15,7 @@ from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyText, FuzzyInteger
 import faker
 
+from ui.constants import YouTubeStatus
 from ui.encodings import EncodingNames
 from ui import models
 
@@ -120,13 +120,25 @@ class VideoSubtitleFactory(DjangoModelFactory):
     Factory for a VideoSubtitle
     """
     video = SubFactory(VideoFactory)
-    s3_object_key = LazyAttribute(lambda obj: obj.video.subtitle_key())
+    language = 'en'
+    s3_object_key = LazyAttribute(lambda obj: obj.video.subtitle_key(language=obj.language))
     bucket_name = settings.VIDEO_S3_SUBTITLE_BUCKET
     filename = FuzzyText()
-    language = 'en'
 
     class Meta:
         model = models.VideoSubtitle
+
+
+class YouTubeVideoFactory(DjangoModelFactory):
+    """
+    Factory for a YouTubeVideo
+    """
+    video = SubFactory(VideoFactory)
+    status = YouTubeStatus.SUCCEEDED
+    id = FuzzyText(length=11)
+
+    class Meta:
+        model = models.YouTubeVideo
 
 
 class EncodeJobFactory(DjangoModelFactory):
