@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.7.0
+-------------
+
+- Youtube integration
+- Fix subtitle deletion
+
 Version 0.6.0
 -------------
 
