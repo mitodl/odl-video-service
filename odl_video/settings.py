@@ -468,6 +468,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'cloudsync.tasks.update_video_statuses',
         'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
     },
+    'update-youtube-statuses': {
+        'task': 'cloudsync.tasks.update_youtube_statuses',
+        'schedule': get_int('VIDEO_STATUS_UPDATE_FREQUENCY', 60)
+    },
     'watch-bucket': {
         'task': 'cloudsync.tasks.monitor_watch_bucket',
         'schedule': get_int('VIDEO_WATCH_BUCKET_FREQUENCY', 900)
