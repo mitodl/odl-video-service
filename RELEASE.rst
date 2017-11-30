@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.7.1
+-------------
+
+- Sync settings with cookiecutter (#376)
+
 Version 0.7.0
 -------------
 
