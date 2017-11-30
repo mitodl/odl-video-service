@@ -27,6 +27,7 @@ services:
       BOOTCAMP_DB_DISABLE_SSL: 'True'
       REDIS_URL: redis://redis:6379/0
       XDG_CACHE_HOME: /src/.cache
+      SECRET_KEY: travis_secret
     env_file: .env
 
   web:

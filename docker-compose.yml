@@ -34,7 +34,7 @@ services:
       PORT: 8087
       COVERAGE_DIR: htmlcov
       DATABASE_URL: postgres://postgres@db:5432/postgres
-      ODL_VIDEO_SERVICE_USE_WEBPACK_DEV_SERVER: 'True'
+      ODL_VIDEO_USE_WEBPACK_DEV_SERVER: 'True'
       ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
       ODL_VIDEO_DB_DISABLE_SSL: 'True'
       CELERY_TASK_ALWAYS_EAGER: 'False'
