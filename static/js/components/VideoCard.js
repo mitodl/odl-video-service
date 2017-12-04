@@ -45,7 +45,7 @@ const VideoCard = (props: VideoCardProps) => {
     </div>;
   } else {
     videoDisplay = <a href={videoUrl}>
-      <img src={makeVideoThumbnailUrl(props.video)} />
+      <img src={makeVideoThumbnailUrl(props.video)} alt="" />
     </a>;
   }
 
@@ -66,9 +66,9 @@ const VideoCard = (props: VideoCardProps) => {
       { videoDisplay }
     </div>
     <div className="video-card-body">
-      <h4 className="mdc-typography--subheading2">
-        <a href={videoUrl}>{props.video.title}</a>
-      </h4>
+      <h2 className="mdc-typography--subheading2">
+        <a href={videoUrl} title={props.video.title}>{props.video.title}</a>
+      </h2>
     </div>
     <div className="actions">
       <Menu

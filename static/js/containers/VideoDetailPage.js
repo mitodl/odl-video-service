@@ -149,9 +149,9 @@ class VideoDetailPage extends React.Component {
                   {video.collection_title}
                 </a>
               </p>
-              <h2 className="video-title mdc-typography--title">
+              <h1 className="video-title mdc-typography--title">
                 {video.title}
-              </h2>
+              </h1>
               <div className="actions">
                 <Button
                   className="share mdc-button--raised"
