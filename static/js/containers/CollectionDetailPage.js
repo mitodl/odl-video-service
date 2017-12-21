@@ -134,9 +134,9 @@ class CollectionDetailPage extends React.Component {
     return <div className="centered-content">
       <header>
         <div className="text">
-          <h2 className="mdc-typography--title">
+          <h1 className="mdc-typography--title">
             { collectionTitle }
-          </h2>
+          </h1>
         </div>
         <div className="tools">
           {

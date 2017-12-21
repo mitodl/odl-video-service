@@ -33,7 +33,7 @@ import {PERM_CHOICE_COLLECTION} from "../lib/dialog";
 describe('CollectionDetailPage', () => {
   let sandbox, store, getCollectionStub, collection, listenForActions;
   let selectors = {
-    TITLE: '.collection-detail-content h2',
+    TITLE: '.collection-detail-content h1',
     DESCRIPTION: 'p.description',
     MENU_BTN: '.menu-button',
     SETTINGS_BTN: '#edit-collection-button',

@@ -87,7 +87,7 @@ describe('VideoCard', () => {
 
   it(`should have a title that links to the video detail page`, () => {
     let wrapper = renderComponent();
-    let title = wrapper.find(".video-card-body h4");
+    let title = wrapper.find(".video-card-body h2");
     assert.isTrue(title.exists());
     assert.equal(title.text(), video.title);
     let titleLink = title.find('a');

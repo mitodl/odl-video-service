@@ -6,7 +6,7 @@ $video-card-width: 15.6%;
   min-height: calc(100vh - 379px);
   box-sizing: border-box;
 
-  h2 {
+  h1 {
     font-weight: 400;
     font-size: 1.4em;
     margin: 0;
@@ -110,7 +110,7 @@ $video-card-width: 15.6%;
         width: 100%;
       }
 
-      h2, p.description {
+      h1, p.description {
         margin: 0;
         padding: 0 0 20px 0;
       }
@@ -264,7 +264,7 @@ $video-card-width: 15.6%;
         padding: 15px 45px 16px 16px;
         margin: 0;
 
-        h4 {
+        h2 {
           margin: 0;
           padding: 0;
           line-height: 1.3;

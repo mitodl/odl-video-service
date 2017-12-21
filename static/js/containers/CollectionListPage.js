@@ -68,7 +68,7 @@ class CollectionListPage extends React.Component {
     return <WithDrawer>
       <div className="collection-list-content">
         <div className="card centered-content">
-          <h2 className="mdc-typography--title">My Collections</h2>
+          <h1 className="mdc-typography--title">My Collections</h1>
           { this.renderCollectionLinks() }
           { formLink }
         </div>
