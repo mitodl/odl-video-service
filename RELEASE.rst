@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.8.0
+-------------
+
+- Add cloudfront configuration steps
+
 Version 0.7.1
 -------------
 
