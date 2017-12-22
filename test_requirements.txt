@@ -19,3 +19,5 @@ requests-mock
 semantic-version
 tox
 moto
+# Fixes problem with pytest on travis
+astroid==1.5.3

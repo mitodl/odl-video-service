@@ -1,6 +1,7 @@
 """Tests for utils methods"""
 from tempfile import NamedTemporaryFile
 import pytest
+from zeep.exceptions import Fault
 
 from ui import factories
 from ui.exceptions import MoiraException
@@ -52,18 +53,26 @@ def test_user_moira_lists(mock_moira_client):
     """
     Test that the correct list is returned by user_moira_lists
     """
-    moira_list = factories.MoiraListFactory()
-    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    list_names = ['test_moira_list01', 'test_moira_list02']
+    mock_moira_client.return_value.user_lists.return_value = list_names
     other_user = factories.UserFactory(email='someone@mit.edu')
-    lists = user_moira_lists(other_user)
-    assert lists == [moira_list.name]
+    assert user_moira_lists(other_user) == list_names
+
+
+def test_user_no_moira_lists(mock_moira_client):
+    """
+    Test that an empty list is returned by user_moira_lists if Moira throws a java NPE
+    """
+    mock_moira_client.return_value.user_lists.side_effect = Fault('java.lang.NullPointerException')
+    other_user = factories.UserFactory(email='someone@mit.edu')
+    assert user_moira_lists(other_user) == []
 
 
 def test_user_moira_lists_error(mock_moira_client):
     """
-    Test that a Moira exception is raised if moira client call fails
+    Test that a Moira exception is raised if moira client call fails with anything other than a java NPE
     """
-    mock_moira_client.side_effect = MoiraException()
+    mock_moira_client.return_value.user_lists.side_effect = Fault("Not a java NPE")
     other_user = factories.UserFactory()
     with pytest.raises(MoiraException):
         user_moira_lists(other_user)
