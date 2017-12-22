@@ -1,7 +1,7 @@
 // @flow
 import { assert } from 'chai';
 
-import { wait } from './util';
+import {calculateListPermissionValue, wait} from './util';
 
 describe('util functions', () => {
   it("waits some milliseconds", done => {
@@ -19,5 +19,10 @@ describe('util functions', () => {
         done();
       }, 20);
     }, 20);
+  });
+  it('test moira list values', () => {
+    let moiraString = ',foo,,,bar,rab,oof,';
+    let expectedLists = ['foo', 'bar', 'rab', 'oof'];
+    assert.deepEqual(expectedLists, calculateListPermissionValue('lists', moiraString));
   });
 });

@@ -18,5 +18,5 @@ export const wait = (millis: number): Promise<void> =>
 export const calculateListPermissionValue = (choice: string, listsInput: ?string): Array<string> => (
   choice !== PERM_CHOICE_LISTS || !listsInput || listsInput.trim().length === 0
     ? []
-    : R.map(R.trim, R.split(',', listsInput))
+    : R.reject(R.isEmpty, R.map(R.trim, R.split(',', listsInput)))
 );

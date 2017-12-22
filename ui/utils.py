@@ -71,6 +71,9 @@ def user_moira_lists(user):
     try:
         return moira.user_lists(moira_user.username, moira_user.type)
     except Exception as exc:  # pylint: disable=broad-except
+        if 'java.lang.NullPointerException' in str(exc):
+            # User is not a member of any moira lists, so ignore exception and return empty list
+            return []
         raise MoiraException('Something went wrong with getting moira-lists for %s' % user.username) from exc
 
 
