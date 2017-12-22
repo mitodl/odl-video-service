@@ -10,6 +10,7 @@ from django.shortcuts import (
     render,
 )
 from django.utils.decorators import method_decorator
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
 from rest_framework import (
     authentication,
@@ -95,6 +96,7 @@ class VideoDetail(TemplateView):
         return context
 
 
+@method_decorator(xframe_options_exempt, name='dispatch')
 class VideoEmbed(TemplateView):
     """Display embedded video"""
     template_name = 'ui/video_embed.html'
