@@ -56,7 +56,7 @@ packaging==16.8           # via cryptography
 pexpect==4.2.1            # via ipython
 pickleshare==0.7.4        # via ipython
 prompt-toolkit==1.0.14    # via ipython
-psycopg2==2.7
+psycopg2==2.7.3.2
 ptyprocess==0.5.2         # via pexpect
 pyasn1-modules==0.1.5     # via google-auth, google-auth-httplib2, oauth2client
 pyasn1==0.3.7             # via google-auth, google-auth-httplib2, oauth2client, pyasn1-modules, rsa
