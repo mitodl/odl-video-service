@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.8.1
+-------------
+
+- bump psycopg to 2.7.3.2 (#389)
+- Fix embedded videos
+- Fix moira-related issues
+- some accessibility changes (#387)
+
 Version 0.8.0
 -------------
 
