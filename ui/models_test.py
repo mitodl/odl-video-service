@@ -2,10 +2,14 @@
 Tests for the UI models
 """
 import os
+import re
 import uuid
+from datetime import datetime
 
 import boto3
 import pytest
+
+import pytz
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
@@ -177,3 +181,15 @@ def test_moira_members(mocker, moiralist):
 def test_video_subtitle_language():
     """ Tests that the correct language name for a code is returned"""
     assert VideoSubtitleFactory(language='en').language_name == 'English'
+
+
+def test_video_subtitle_key():
+    """ Tests that the correct subtitle key is returned for a language"""
+    video = VideoFactory(key='8494dafc-3665-4960-8e00-9790574ec93a')
+    now = datetime.now(tz=pytz.UTC)
+    assert re.fullmatch(
+        'subtitles/8494dafc366549608e009790574ec93a/subtitles_8494dafc366549608e009790574ec93a_{}_en.vtt'.format(
+            now.strftime('%Y%m%d%H%M%S')
+        ),
+        video.subtitle_key(now, 'en')
+    ) is not None
