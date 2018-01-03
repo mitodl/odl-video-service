@@ -1,26 +1,30 @@
 // @flow
-import React from "react";
-import { Route } from "react-router-dom";
+import React from "react"
+import { Route } from "react-router-dom"
 
-import CollectionListPage from '../containers/CollectionListPage';
-import CollectionDetailPage from '../containers/CollectionDetailPage';
+import CollectionListPage from "../containers/CollectionListPage"
+import CollectionDetailPage from "../containers/CollectionDetailPage"
 
-import type { Match } from 'react-router';
+import type { Match } from "react-router"
 
 class CollectionsApp extends React.Component {
   props: {
     match: Match
-  };
+  }
 
   render() {
-    const { match } = this.props;
+    const { match } = this.props
     return (
       <div className="app">
         <Route exact path={match.url} component={CollectionListPage} />
-        <Route exact path={`${match.url}/:collectionKey`} component={CollectionDetailPage} />
+        <Route
+          exact
+          path={`${match.url}/:collectionKey`}
+          component={CollectionDetailPage}
+        />
       </div>
-    );
+    )
   }
 }
 
-export default CollectionsApp;
+export default CollectionsApp

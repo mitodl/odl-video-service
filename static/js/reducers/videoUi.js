@@ -1,5 +1,5 @@
 // @flow
-import type { Action } from "../flow/reduxTypes";
+import type { Action } from "../flow/reduxTypes"
 import {
   INIT_EDIT_VIDEO_FORM,
   SET_EDIT_VIDEO_TITLE,
@@ -12,43 +12,48 @@ import {
   SET_VIDEO_FORM_ERRORS,
   SET_PERM_OVERRIDE_CHOICE,
   CLEAR_VIDEO_FORM
-} from "../actions/videoUi";
-import { CANVASES } from '../constants';
-import type { VideoUiState } from "../flow/videoTypes";
-import { PERM_CHOICE_COLLECTION, PERM_CHOICE_NONE } from "../lib/dialog";
+} from "../actions/videoUi"
+import { CANVASES } from "../constants"
+import type { VideoUiState } from "../flow/videoTypes"
+import { PERM_CHOICE_COLLECTION, PERM_CHOICE_NONE } from "../lib/dialog"
 
 export const INITIAL_EDIT_VIDEO_FORM_STATE = {
-  key: null,
-  title: '',
-  description: '',
+  key:            null,
+  title:          "",
+  description:    "",
   overrideChoice: PERM_CHOICE_COLLECTION,
-  viewChoice: PERM_CHOICE_NONE,
-  viewLists: null,
-};
+  viewChoice:     PERM_CHOICE_NONE,
+  viewLists:      null
+}
 
 export const INITIAL_UPLOAD_SUBTITLE_FORM_STATE = {
-  key: null,
+  key:      null,
   language: "en",
   subtitle: null
-};
+}
 
 export const INITIAL_UI_STATE = {
-  editVideoForm: INITIAL_EDIT_VIDEO_FORM_STATE,
+  editVideoForm:     INITIAL_EDIT_VIDEO_FORM_STATE,
   videoSubtitleForm: INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
-  corner: Object.keys(CANVASES)[0],
-};
+  corner:            Object.keys(CANVASES)[0]
+}
 
-
-const updateVideoForm = (state: VideoUiState, key: string, newValue: ?string) => ({
+const updateVideoForm = (
+  state: VideoUiState,
+  key: string,
+  newValue: ?string
+) => ({
   ...state,
   editVideoForm: {
-    ...state['editVideoForm'],
+    ...state["editVideoForm"],
     [key]: newValue
   }
-});
+})
 
-
-const reducer = (state: VideoUiState = INITIAL_UI_STATE, action: Action<any, null>) => {
+const reducer = (
+  state: VideoUiState = INITIAL_UI_STATE,
+  action: Action<any, null>
+) => {
   switch (action.type) {
   case INIT_EDIT_VIDEO_FORM:
     return {
@@ -57,17 +62,17 @@ const reducer = (state: VideoUiState = INITIAL_UI_STATE, action: Action<any, nul
         ...state.editVideoForm,
         ...action.payload
       }
-    };
+    }
   case SET_EDIT_VIDEO_TITLE:
-    return updateVideoForm(state, 'title', action.payload);
+    return updateVideoForm(state, "title", action.payload)
   case SET_EDIT_VIDEO_DESC:
-    return updateVideoForm(state, 'description', action.payload);
+    return updateVideoForm(state, "description", action.payload)
   case SET_PERM_OVERRIDE_CHOICE:
-    return updateVideoForm(state, 'overrideChoice', action.payload);
+    return updateVideoForm(state, "overrideChoice", action.payload)
   case SET_VIEW_CHOICE:
-    return updateVideoForm(state, 'viewChoice', action.payload);
+    return updateVideoForm(state, "viewChoice", action.payload)
   case SET_VIEW_LISTS:
-    return updateVideoForm(state, 'viewLists', action.payload);
+    return updateVideoForm(state, "viewLists", action.payload)
   case INIT_UPLOAD_SUBTITLE_FORM:
     return {
       ...state,
@@ -75,21 +80,27 @@ const reducer = (state: VideoUiState = INITIAL_UI_STATE, action: Action<any, nul
         ...INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
         ...action.payload
       }
-    };
+    }
   case SET_UPLOAD_SUBTITLE:
-    return {...state, videoSubtitleForm: { ...state.videoSubtitleForm, subtitle: action.payload }};
+    return {
+      ...state,
+      videoSubtitleForm: {
+        ...state.videoSubtitleForm,
+        subtitle: action.payload
+      }
+    }
   case SET_VIDEOJS_SYNC:
-    return {...state, corner: action.payload };
+    return { ...state, corner: action.payload }
   case SET_VIDEO_FORM_ERRORS:
     return {
       ...state,
       errors: action.payload.errors
-    };
+    }
   case CLEAR_VIDEO_FORM:
-    return INITIAL_UI_STATE;
+    return INITIAL_UI_STATE
   default:
-    return state;
+    return state
   }
-};
+}
 
-export default reducer;
+export default reducer

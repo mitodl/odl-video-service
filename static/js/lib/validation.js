@@ -1,7 +1,7 @@
 // @flow
-import R from "ramda";
+import R from "ramda"
 
-import { S } from "./sanctuary";
+import { S } from "./sanctuary"
 
 // this function checks that a given object passes or fails validation.
 // if it fails, it returns a setter (R.set) which which set the appropirate
@@ -15,7 +15,7 @@ export const validation = R.curry(
     validator(R.view(lens, toValidate))
       ? S.Just(R.set(lens, message))
       : S.Nothing
-);
+)
 
 // validate takes an array of validations and an object to validate.  A
 // validation is a validation function, e.g. as defined above with its first
@@ -28,6 +28,6 @@ export const validate = R.curry((validations, toValidate) =>
     R.compose(R.reduce((acc, setter) => setter(acc), {}), S.justs, Array),
     validations
   )(toValidate)
-);
+)
 
-export const emptyOrNil = R.either(R.isEmpty, R.isNil);
+export const emptyOrNil = R.either(R.isEmpty, R.isNil)
