@@ -16,7 +16,7 @@ import { makeCollectionUrl } from "../lib/urls"
 import type { CommonUiState } from "../reducers/commonUi"
 import type { Collection } from "../flow/collectionTypes"
 
-class CollectionListPage extends React.Component {
+class CollectionListPage extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
     collections: Array<Collection>,

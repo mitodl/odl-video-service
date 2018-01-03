@@ -23,10 +23,10 @@ type VideoCardProps = {
 
 const VideoCard = (props: VideoCardProps) => {
   let videoDisplay
+  const hasError = videoHasError(props.video),
+    isProcessing = videoIsProcessing(props.video)
   const headerClass = isProcessing || hasError ? "message" : "thumbnail",
-    videoUrl = makeVideoUrl(props.video.key),
-    isProcessing = videoIsProcessing(props.video),
-    hasError = videoHasError(props.video)
+    videoUrl = makeVideoUrl(props.video.key)
 
   if (isProcessing) {
     videoDisplay = (

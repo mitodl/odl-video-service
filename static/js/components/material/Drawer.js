@@ -18,11 +18,11 @@ type DrawerProps = {
   collections: Array<Collection>
 }
 
-class Drawer extends React.Component {
+class Drawer extends React.Component<*, void> {
   drawer: null
-  drawerRoot: null
-  collapseItemButton: null
-  createCollectionButton: null
+  drawerRoot: ?HTMLElement
+  collapseItemButton: ?HTMLElement
+  createCollectionButton: ?HTMLElement
   props: DrawerProps
 
   componentDidMount() {

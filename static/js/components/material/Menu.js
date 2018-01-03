@@ -12,9 +12,9 @@ type MenuProps = {
   menuItems: Array<MenuItem>
 }
 
-export default class Menu extends React.Component {
+export default class Menu extends React.Component<*, void> {
   menu: null
-  menuRoot: null
+  menuRoot: ?HTMLElement
 
   componentDidMount() {
     const { closeMenu } = this.props

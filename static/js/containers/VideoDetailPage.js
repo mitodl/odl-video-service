@@ -32,7 +32,7 @@ import { initGA, sendGAPageView } from "../util/google_analytics"
 import type { Video, VideoUiState } from "../flow/videoTypes"
 import type { CommonUiState } from "../reducers/commonUi"
 
-class VideoDetailPage extends React.Component {
+class VideoDetailPage extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
     video: ?Video,

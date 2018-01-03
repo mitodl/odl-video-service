@@ -4,7 +4,7 @@ import moment from "moment"
 
 const currentYear = () => moment().format("YYYY")
 
-export default class Footer extends React.Component {
+export default class Footer extends React.Component<*, void> {
   render() {
     return (
       <footer id="footer">

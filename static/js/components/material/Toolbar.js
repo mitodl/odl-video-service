@@ -1,14 +1,15 @@
 // @flow
 import React from "react"
+import type { ChildrenArray } from "react"
 import { MDCToolbar } from "@material/toolbar/dist/mdc.toolbar"
 
-export default class Toolbar extends React.Component {
+export default class Toolbar extends React.Component<*, void> {
   toolbar: null
-  toolbarRoot: null
+  toolbarRoot: ?HTMLElement
 
   props: {
     onClickMenu: () => void,
-    children: React.Children
+    children: ChildrenArray<*>
   }
 
   componentDidMount() {

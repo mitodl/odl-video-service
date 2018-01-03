@@ -4,7 +4,7 @@ import React from "react"
 
 import WithDrawer from "./WithDrawer"
 
-export default class ErrorPage extends React.Component {
+export default class ErrorPage extends React.Component<*, void> {
   errorTitle = () => {
     switch (SETTINGS.status_code) {
     case 403:

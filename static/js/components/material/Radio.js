@@ -13,7 +13,7 @@ type RadioProps = {
   disabled?: boolean
 }
 
-export default class Radio extends React.Component {
+export default class Radio extends React.Component<*, void> {
   props: RadioProps
 
   render() {

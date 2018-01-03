@@ -19,7 +19,7 @@ type DialogProps = {
   video: Video
 }
 
-class DeleteVideoDialog extends React.Component {
+class DeleteVideoDialog extends React.Component<*, void> {
   props: DialogProps
 
   confirmDeletion = async () => {

@@ -16,7 +16,7 @@ type DialogProps = {
   videoKey: string
 }
 
-class ShareVideoDialog extends React.Component {
+class ShareVideoDialog extends React.Component<*, void> {
   props: DialogProps
 
   render() {

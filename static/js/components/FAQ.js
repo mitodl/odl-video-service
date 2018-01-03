@@ -4,7 +4,7 @@ import React from "react"
 
 import { adminFAQs, viewerFAQs } from "../data/faqs"
 
-export default class FAQ extends React.Component {
+export default class FAQ extends React.Component<*, void> {
   props: {
     FAQVisibility: Map<string, boolean>,
     toggleFAQVisibility: Function

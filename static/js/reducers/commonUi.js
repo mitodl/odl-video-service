@@ -60,7 +60,7 @@ const reducer = (
       }
     }
   case TOGGLE_FAQ_VISIBILITY: // eslint-disable-line no-case-declarations
-    const update = new Map(state.FAQVisibility)
+    const update: Map<string, boolean> = new Map(state.FAQVisibility)
     update.set(action.payload, !update.get(action.payload))
     return {
       ...state,

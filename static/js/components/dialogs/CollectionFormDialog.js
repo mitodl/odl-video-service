@@ -32,7 +32,7 @@ type DialogProps = {
   hideDialog: Function
 }
 
-class CollectionFormDialog extends React.Component {
+class CollectionFormDialog extends React.Component<*, void> {
   props: DialogProps
 
   setCollectionTitle = (event: Object) => {

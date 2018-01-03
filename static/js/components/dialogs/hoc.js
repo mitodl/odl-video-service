@@ -10,7 +10,7 @@ import type { CommonUiState } from "../../reducers/commonUi"
 
 export const withDialogs = R.curry(
   (dialogs: Array<Object>, WrappedComponent) => {
-    class WithDialog extends React.Component {
+    class WithDialog extends React.Component<*, void> {
       props: {
         dispatch: Dispatch,
         commonUi: CommonUiState

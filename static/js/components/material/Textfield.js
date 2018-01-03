@@ -2,7 +2,7 @@
 import React from "react"
 import R from "ramda"
 
-export default class Textfield extends React.Component {
+export default class Textfield extends React.Component<*, void> {
   props: {
     id: string,
     label?: string,

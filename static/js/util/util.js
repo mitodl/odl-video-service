@@ -1,9 +1,8 @@
 // @flow
-
 import { PERM_CHOICE_LISTS } from "../lib/dialog"
 import R from "ramda"
 
-export function getDisplayName(WrappedComponent: ReactClass<*>) {
+export function getDisplayName(WrappedComponent: any) {
   return WrappedComponent.displayName || WrappedComponent.name || "Component"
 }
 

@@ -20,6 +20,10 @@ const store = configureStore()
 
 const rootEl = document.getElementById("container")
 
+if (!rootEl) {
+  throw new Error("Unable to find element 'container'")
+}
+
 const history = createBrowserHistory()
 const renderApp = Component => {
   ReactDOM.render(

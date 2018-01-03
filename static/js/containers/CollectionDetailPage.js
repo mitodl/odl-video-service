@@ -26,7 +26,7 @@ import type { CommonUiState } from "../reducers/commonUi"
 import * as commonUiActions from "../actions/commonUi"
 import VideoSaverScript from "../components/VideoSaverScript"
 
-class CollectionDetailPage extends React.Component {
+class CollectionDetailPage extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
     collection: ?Collection,

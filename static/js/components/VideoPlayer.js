@@ -59,7 +59,7 @@ const isFullscreen = function() {
   return document[FULLSCREEN_API.fullscreenElement]
 }
 
-export default class VideoPlayer extends React.Component {
+export default class VideoPlayer extends React.Component<*, void> {
   props: {
     video: Video,
     selectedCorner: string,
@@ -67,9 +67,9 @@ export default class VideoPlayer extends React.Component {
   }
 
   player: Object
-  videoNode: HTMLVideoElement
-  videoContainer: HTMLDivElement
-  cameras: HTMLDivElement
+  videoNode: ?HTMLVideoElement
+  videoContainer: ?HTMLDivElement
+  cameras: ?HTMLDivElement
   percentTracked: Array<number>
 
   updateSubtitles() {
@@ -121,8 +121,13 @@ export default class VideoPlayer extends React.Component {
   }
 
   drawCanvas(canvas: HTMLCanvasElement, shiftX: boolean, shiftY: boolean) {
-    canvas.width = Math.floor(this.videoNode.offsetWidth / 4) - 2
-    canvas.height = Math.floor(this.videoNode.offsetHeight / 4) - 2
+    if (!this.videoNode) {
+      // make flow happy
+      throw new Error("Missing videoNode")
+    }
+    const { offsetWidth, offsetHeight } = this.videoNode
+    canvas.width = Math.floor(offsetWidth / 4) - 2
+    canvas.height = Math.floor(offsetHeight / 4) - 2
     if (canvas && this.videoNode) {
       drawCanvasImage(canvas, this.videoNode, shiftX, shiftY)
     }
@@ -171,12 +176,23 @@ export default class VideoPlayer extends React.Component {
     videoWidth = Math.floor(
       videoWidth - (canvasWidth - canvasWidth / aspectRatio / 3)
     )
+
+    if (!this.videoContainer) {
+      // Make flow happy
+      throw new Error("Missing videoContainer")
+    }
     this.videoContainer.style.maxWidth = `${videoWidth}px`
     // $FlowFixMe videoContainer.parentElement is not going to be null
     this.videoContainer.parentElement.style.width = `${videoWidth +
       canvasWidth}px`
     const left = Math.round(this.player.currentWidth() / (shiftX ? -2 : 2))
     const top = Math.round(this.player.currentHeight() / (shiftY ? -2 : 2))
+
+    if (!this.videoNode) {
+      // Make flow happy
+      throw new Error("Missing videoNode")
+    }
+
     this.videoNode.style.left = `${left}px`
     this.videoNode.style.top = `${top}px`
     // $FlowFixMe prop does not have to be a number

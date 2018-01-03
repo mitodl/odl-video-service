@@ -1,7 +1,7 @@
 // @flow
 import React from "react"
 
-export default class Button extends React.Component {
+export default class Button extends React.Component<*, void> {
   render() {
     const { children, className, ...otherProps } = this.props
 

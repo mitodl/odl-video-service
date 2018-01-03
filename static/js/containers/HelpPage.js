@@ -7,7 +7,7 @@ import WithDrawer from "./WithDrawer"
 import FAQ from "../components/FAQ"
 import { toggleFAQVisibility } from "../actions/commonUi"
 
-class HelpPage extends React.Component {
+class HelpPage extends React.Component<*, void> {
   toggleShowFAQ = R.curry((questionName, e) => {
     const { dispatch } = this.props
 

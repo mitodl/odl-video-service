@@ -1,8 +1,8 @@
 // @flow
 import React from "react"
 
-export default class Filefield extends React.Component {
-  fileInput: null
+export default class Filefield extends React.Component<*, void> {
+  fileInput: ?HTMLElement
   props: {
     label?: string,
     accept?: string,
@@ -12,6 +12,7 @@ export default class Filefield extends React.Component {
   handleClick = () => {
     if (this.fileInput) {
       const uploadBtn = this.fileInput
+      // $FlowFixMe: I'm not sure if null is a valid value for this (maybe '' is better) but I don't want to change it
       uploadBtn.value = null
       uploadBtn.click()
     }

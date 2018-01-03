@@ -2,6 +2,8 @@
 import React from "react"
 import { MDCDialog } from "@material/dialog/dist/mdc.dialog"
 
+import type { ChildrenArray } from "react"
+
 import Button from "./Button"
 
 type DialogProps = {
@@ -9,7 +11,7 @@ type DialogProps = {
   onAccept?: () => void,
   onCancel?: () => void,
   hideDialog: () => void,
-  children: React.Children,
+  children: ChildrenArray<*>,
   title: string,
   cancelText: string,
   submitText: string,
@@ -18,9 +20,9 @@ type DialogProps = {
   validateOnClick?: boolean
 }
 
-export default class Dialog extends React.Component {
+export default class Dialog extends React.Component<*, void> {
   dialog: null
-  dialogRoot: null
+  dialogRoot: ?HTMLElement
   // $FlowFixMe: Flow doesn't like the extra props that aren't part of mdc.dialog class
   props: DialogProps
 

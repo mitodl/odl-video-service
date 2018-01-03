@@ -7,7 +7,7 @@ import { makeVideoSubtitleUrl } from "../lib/urls"
 import type { Video, VideoSubtitle } from "../flow/videoTypes"
 import Filefield from "./material/Filefield"
 
-export default class VideoSubtitleCard extends React.Component {
+export default class VideoSubtitleCard extends React.Component<*, void> {
   props: {
     video: Video,
     isAdmin: boolean,

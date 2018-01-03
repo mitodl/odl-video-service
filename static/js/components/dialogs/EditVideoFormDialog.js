@@ -35,7 +35,7 @@ type DialogProps = {
   shouldUpdateCollection: boolean
 }
 
-class EditVideoFormDialog extends React.Component {
+class EditVideoFormDialog extends React.Component<*, void> {
   props: DialogProps
 
   componentDidMount() {

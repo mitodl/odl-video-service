@@ -9,7 +9,7 @@ import OVSToolbar from "../components/OVSToolbar"
 import Drawer from "../components/material/Drawer"
 import Footer from "../components/Footer"
 
-class WithDrawer extends React.Component {
+class WithDrawer extends React.Component<*, void> {
   setDrawerOpen = (open: boolean): void => {
     const { dispatch } = this.props
     dispatch(commonUiActions.setDrawerOpen(open))

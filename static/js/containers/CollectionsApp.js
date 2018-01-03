@@ -7,7 +7,7 @@ import CollectionDetailPage from "../containers/CollectionDetailPage"
 
 import type { Match } from "react-router"
 
-class CollectionsApp extends React.Component {
+class CollectionsApp extends React.Component<*, void> {
   props: {
     match: Match
   }

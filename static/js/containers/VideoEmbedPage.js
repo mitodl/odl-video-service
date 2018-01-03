@@ -8,7 +8,7 @@ import VideoPlayer from "../components/VideoPlayer"
 import type { Video, VideoUiState } from "../flow/videoTypes"
 import { initGA, sendGAPageView } from "../util/google_analytics"
 
-class VideoEmbedPage extends React.Component {
+class VideoEmbedPage extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
     video: Video,

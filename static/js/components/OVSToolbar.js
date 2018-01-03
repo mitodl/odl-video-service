@@ -3,7 +3,7 @@ import React from "react"
 
 import Toolbar from "../components/material/Toolbar"
 
-export default class OVSToolbar extends React.Component {
+export default class OVSToolbar extends React.Component<*, void> {
   props: {
     setDrawerOpen: Function
   }
