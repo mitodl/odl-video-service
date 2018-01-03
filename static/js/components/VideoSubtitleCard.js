@@ -27,7 +27,7 @@ export default class VideoSubtitleCard extends React.Component {
             {video.videosubtitle_set.map((subtitle: VideoSubtitle, key) => (
               <div className="mdc-list-item" key={key}>
                 <span className="video-subtitle-filename">
-                  { subtitle.s3_object_key.split('/').slice(-1)}
+                  {subtitle.s3_object_key.split('/').slice(-1)[0].slice(0,10)}..._{subtitle.language}.vtt
                 </span>
                 <span className="video-subtitle-language">({subtitle.language_name})</span>
                 <span className="video-subtitle-button">

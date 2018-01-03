@@ -25,7 +25,7 @@ from ui.factories import (
     VideoFactory,
     EncodeJobFactory,
     VideoFileFactory,
-    UserFactory)
+    UserFactory, VideoSubtitleFactory)
 from ui.models import Video
 
 pytestmark = pytest.mark.django_db
@@ -447,13 +447,30 @@ def test_transcode_job_failure(mocker, videofile):
     assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL
 
 
-def test_upload_subtitle_to_s3(mocker, video, file_object):
+@pytest.mark.parametrize('replace', [True, False])
+@pytest.mark.parametrize('s3error', [True, False])
+def test_upload_subtitle_to_s3(mocker, video, file_object, replace, s3error):
     """
     Test that a VideoSubtitle object is returned after a .vtt upload to S3
     """
     mocker.patch('cloudsync.api.boto3')
+    mock_s3delete = mocker.patch(
+        'ui.models.VideoS3.delete_from_s3',
+        side_effect=(
+            None if not s3error else ClientError(
+                error_response={
+                    'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'},
+                    'Error': {'Code': 200, 'Message': 'FAIL'}
+                },
+                operation_name='DeleteObject'
+            )
+        )
+    )
+    if replace:
+        VideoSubtitleFactory.create(video=video)
     subtitle_data = {"video": video.hexkey, "language": "en", "filename": file_object.name}
     subtitle = upload_subtitle_to_s3(subtitle_data, file_object.data)
+    assert mock_s3delete.call_count == (1 if replace else 0)
     assert subtitle.filename == file_object.name
     assert subtitle.video == video
     assert subtitle.language == "en"

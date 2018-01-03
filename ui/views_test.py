@@ -431,6 +431,8 @@ def test_upload_subtitles(logged_in_apiclient, mocker, enable_video_permissions,
     Tests for UploadVideoSubtitle
     """
     mocker.patch('ui.views.cloudapi.boto3')
+    expected_subtitle_key = 'subtitles/test/20171227121212_en.vtt'
+    mocker.patch('ui.models.Video.subtitle_key', return_value=expected_subtitle_key)
     settings.ENABLE_VIDEO_PERMISSIONS = enable_video_permissions
     client, user = logged_in_apiclient
     video = VideoFactory(collection=CollectionFactory(owner=user))
@@ -449,7 +451,7 @@ def test_upload_subtitles(logged_in_apiclient, mocker, enable_video_permissions,
     expected_data = {
         'language': 'en',
         'filename': filename,
-        's3_object_key': 'subtitles/{}/subtitle_en.vtt'.format(video.hexkey),
+        's3_object_key': expected_subtitle_key,
         'language_name': 'English'
     }
     for key in expected_data:

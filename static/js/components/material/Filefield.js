@@ -22,7 +22,7 @@ export default class Filefield extends React.Component {
 
     let acceptedTypes = accept ? accept : "*";
 
-    return <a onClick={this.handleClick} href="#"
+    return <button onClick={this.handleClick} href="#"
       className={className ? `${className} button-link upload-link` : "button-link upload-link"}>
       <input
         type="file"
@@ -31,6 +31,6 @@ export default class Filefield extends React.Component {
         accept={acceptedTypes}
         {...otherProps} />
       {label}
-    </a>;
+    </button>;
   }
 }

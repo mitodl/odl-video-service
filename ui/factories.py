@@ -1,4 +1,7 @@
 """Factories for UI app"""
+from datetime import datetime
+
+import pytz
 from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -121,7 +124,7 @@ class VideoSubtitleFactory(DjangoModelFactory):
     """
     video = SubFactory(VideoFactory)
     language = 'en'
-    s3_object_key = LazyAttribute(lambda obj: obj.video.subtitle_key(language=obj.language))
+    s3_object_key = LazyAttribute(lambda obj: obj.video.subtitle_key(datetime.now(tz=pytz.UTC), language=obj.language))
     bucket_name = settings.VIDEO_S3_SUBTITLE_BUCKET
     filename = FuzzyText()
 

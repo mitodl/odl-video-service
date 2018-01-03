@@ -4,6 +4,7 @@ import re
 from collections import namedtuple
 from datetime import datetime
 
+import pytz
 import boto3
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
@@ -305,7 +306,7 @@ def upload_subtitle_to_s3(caption_data, file_data):
     bucket_name = settings.VIDEO_S3_SUBTITLE_BUCKET
     bucket = s3.Bucket(bucket_name)
     config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
-    s3_key = video.subtitle_key(language)
+    s3_key = video.subtitle_key(datetime.now(tz=pytz.UTC), language)
 
     try:
         bucket.upload_fileobj(
@@ -318,10 +319,20 @@ def upload_subtitle_to_s3(caption_data, file_data):
         log.error('An error occurred uploading caption file to video %s', video_key)
         raise
 
-    vt, _ = VideoSubtitle.objects.get_or_create(
-        video=video, language=language,
+    vt, created = VideoSubtitle.objects.get_or_create(
+        video=video,
+        language=language,
         bucket_name=bucket_name,
-        s3_object_key=s3_key)
+        defaults={
+            "s3_object_key": s3_key
+        })
+    if not created:
+        try:
+            vt.delete_from_s3()
+        except ClientError:
+            log.exception('Could not delete old subtitle from S3: %s', vt.s3_object_key)
+    vt.s3_object_key = s3
     vt.filename = filename
+    vt.s3_object_key = s3_key
     vt.save()
     return vt
