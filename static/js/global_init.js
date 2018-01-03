@@ -29,6 +29,7 @@ if (!Object.entries) {
 }
 
 let sandbox
+// eslint-disable-next-line mocha/no-top-level-hooks
 before(() => {
   // eslint-disable-line mocha/no-top-level-hooks
   sandbox = sinon.sandbox.create()
@@ -37,14 +38,14 @@ before(() => {
   })
 })
 
+// eslint-disable-next-line mocha/no-top-level-hooks
 after(() => {
-  // eslint-disable-line mocha/no-top-level-hooks
   sandbox.restore()
 })
 
 // cleanup after each test run
+// eslint-disable-next-line mocha/no-top-level-hooks
 afterEach(function() {
-  // eslint-disable-line mocha/no-top-level-hooks
   const node = document.querySelector("#integration_test_div")
   if (node) {
     ReactDOM.unmountComponentAtNode(node)

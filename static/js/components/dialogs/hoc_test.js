@@ -15,9 +15,9 @@ import { INITIAL_UI_STATE } from "../../reducers/commonUi"
 import { SHOW_DIALOG, HIDE_DIALOG } from "../../actions/commonUi"
 
 describe("Dialog higher-order component", () => {
-  let sandbox, store, listenForActions, dialogName, selectors
-  dialogName = DIALOGS.SHARE_VIDEO
-  selectors = {
+  let sandbox, store, listenForActions
+  const dialogName = DIALOGS.SHARE_VIDEO
+  const selectors = {
     OPEN_BTN:  "#open-btn",
     CLOSE_BTN: ".cancel-button"
   }

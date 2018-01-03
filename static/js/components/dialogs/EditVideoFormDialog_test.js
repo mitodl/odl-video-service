@@ -77,9 +77,9 @@ describe("EditVideoFormDialog", () => {
   }
 
   it("initializes the form when given a video that doesn't match the current form key", async () => {
-    let wrapper, previousFormState
+    let wrapper
     store.dispatch(initEditVideoForm({ key: "mismatching-key" }))
-    previousFormState = store.getState().videoUi.editVideoForm
+    const previousFormState = store.getState().videoUi.editVideoForm
     await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
       wrapper = renderComponent()
     })

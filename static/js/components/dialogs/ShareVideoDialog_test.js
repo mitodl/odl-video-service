@@ -57,17 +57,15 @@ describe("ShareVideoDialog", () => {
   })
 
   it("gets the video key from a video object provided as a prop", () => {
-    let wrapper, video
-    video = makeVideo()
-    wrapper = renderComponent({ video: video })
+    const video = makeVideo()
+    const wrapper = renderComponent({ video: video })
     assert.equal(wrapper.find("ShareVideoDialog").prop("videoKey"), video.key)
   })
 
   it("gets the video key from the collection UI state if a video object isn't passed in", () => {
-    let wrapper, videoKey
-    videoKey = "video-key"
+    const videoKey = "video-key"
     store.dispatch(setSelectedVideoKey(videoKey))
-    wrapper = renderComponent({ video: null })
+    const wrapper = renderComponent({ video: null })
     assert.equal(wrapper.find("ShareVideoDialog").prop("videoKey"), videoKey)
   })
 })
