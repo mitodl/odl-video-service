@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.9.0
+-------------
+
+- Use unique s3 keys for each subtitle upload
+
 Version 0.8.1
 -------------
 
