@@ -1,26 +1,26 @@
 // @flow
-import React from 'react';
-import { connect } from 'react-redux';
-import type { Dispatch } from 'redux';
+import React from "react"
+import { connect } from "react-redux"
+import type { Dispatch } from "redux"
 
-import Radio from "../material/Radio";
-import Textfield from "../material/Textfield";
-import Textarea from "../material/Textarea";
+import Radio from "../material/Radio"
+import Textfield from "../material/Textfield"
+import Textarea from "../material/Textarea"
 
-import * as uiActions from '../../actions/collectionUi';
-import { actions } from '../../actions';
-import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from '../../lib/dialog';
-import { getCollectionForm } from '../../lib/collection';
+import * as uiActions from "../../actions/collectionUi"
+import { actions } from "../../actions"
+import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from "../../lib/dialog"
+import { getCollectionForm } from "../../lib/collection"
 
 import type {
   CollectionFormState,
   CollectionUiState,
-  Collection,
-} from '../../flow/collectionTypes';
-import {makeCollectionUrl} from "../../lib/urls";
-import { calculateListPermissionValue } from "../../util/util";
-import { setCollectionFormErrors } from "../../actions/collectionUi";
-import Dialog from "../material/Dialog";
+  Collection
+} from "../../flow/collectionTypes"
+import { makeCollectionUrl } from "../../lib/urls"
+import { calculateListPermissionValue } from "../../util/util"
+import { setCollectionFormErrors } from "../../actions/collectionUi"
+import Dialog from "../material/Dialog"
 
 type DialogProps = {
   dispatch: Dispatch,
@@ -29,53 +29,53 @@ type DialogProps = {
   collection: ?Collection,
   collectionForm: CollectionFormState,
   open: boolean,
-  hideDialog: Function,
+  hideDialog: Function
 }
 
-class CollectionFormDialog extends React.Component {
-  props: DialogProps;
+class CollectionFormDialog extends React.Component<*, void> {
+  props: DialogProps
 
   setCollectionTitle = (event: Object) => {
-    const { dispatch } = this.props;
-    dispatch(uiActions.setCollectionTitle(event.target.value));
-  };
+    const { dispatch } = this.props
+    dispatch(uiActions.setCollectionTitle(event.target.value))
+  }
 
   setCollectionDesc = (event: Object) => {
-    const { dispatch } = this.props;
-    dispatch(uiActions.setCollectionDesc(event.target.value));
-  };
+    const { dispatch } = this.props
+    dispatch(uiActions.setCollectionDesc(event.target.value))
+  }
 
   setCollectionViewPermChoice = (choice: string) => {
-    const { dispatch, collectionForm } = this.props;
+    const { dispatch, collectionForm } = this.props
     if (choice !== collectionForm.viewChoice) {
-      dispatch(uiActions.setViewChoice(choice));
+      dispatch(uiActions.setViewChoice(choice))
     }
-  };
+  }
 
   setCollectionAdminPermChoice = (choice: string) => {
-    const { dispatch, collectionForm } = this.props;
+    const { dispatch, collectionForm } = this.props
     if (choice !== collectionForm.adminChoice) {
-      dispatch(uiActions.setAdminChoice(choice));
+      dispatch(uiActions.setAdminChoice(choice))
     }
-  };
+  }
 
   handleCollectionViewPermClick = (event: Object) => {
-    this.setCollectionViewPermChoice(event.target.value);
-  };
+    this.setCollectionViewPermChoice(event.target.value)
+  }
 
   handleCollectionAdminPermClick = (event: Object) => {
-    this.setCollectionAdminPermChoice(event.target.value);
-  };
+    this.setCollectionAdminPermChoice(event.target.value)
+  }
 
   setCollectionViewPermLists = (event: Object) => {
-    const { dispatch } = this.props;
-    dispatch(uiActions.setViewLists(event.target.value));
-  };
+    const { dispatch } = this.props
+    dispatch(uiActions.setViewLists(event.target.value))
+  }
 
   setCollectionAdminPermLists = (event: Object) => {
-    const { dispatch } = this.props;
-    dispatch(uiActions.setAdminLists(event.target.value));
-  };
+    const { dispatch } = this.props
+    dispatch(uiActions.setAdminLists(event.target.value))
+  }
 
   submitForm = async () => {
     const {
@@ -83,48 +83,54 @@ class CollectionFormDialog extends React.Component {
       history,
       collectionUi: { isNew },
       collectionForm
-    } = this.props;
+    } = this.props
 
     const payload = {
-      title: collectionForm.title,
+      title:       collectionForm.title,
       description: collectionForm.description,
-      view_lists: calculateListPermissionValue(collectionForm.viewChoice, collectionForm.viewLists),
-      admin_lists: calculateListPermissionValue(collectionForm.adminChoice, collectionForm.adminLists)
-    };
+      view_lists:  calculateListPermissionValue(
+        collectionForm.viewChoice,
+        collectionForm.viewLists
+      ),
+      admin_lists: calculateListPermissionValue(
+        collectionForm.adminChoice,
+        collectionForm.adminLists
+      )
+    }
 
     if (isNew) {
       try {
-        let collection = await dispatch(actions.collectionsList.post(payload));
-        history.push(makeCollectionUrl(collection.key));
-        this.onClose();
+        const collection = await dispatch(actions.collectionsList.post(payload))
+        history.push(makeCollectionUrl(collection.key))
+        this.onClose()
       } catch (e) {
-        this.handleError(e);
+        this.handleError(e)
       }
     } else {
       try {
-        await dispatch(actions.collections.patch(collectionForm.key, payload));
-        this.onClose();
+        await dispatch(actions.collections.patch(collectionForm.key, payload))
+        this.onClose()
       } catch (e) {
-        this.handleError(e);
+        this.handleError(e)
       }
     }
-  };
+  }
 
-  onClose = ()=> {
-    const { dispatch, hideDialog } = this.props;
-    dispatch(uiActions.clearCollectionForm());
-    hideDialog();
-  };
+  onClose = () => {
+    const { dispatch, hideDialog } = this.props
+    dispatch(uiActions.clearCollectionForm())
+    hideDialog()
+  }
 
   handleError = (error: Error) => {
-    const { dispatch, collectionForm } = this.props;
+    const { dispatch, collectionForm } = this.props
     dispatch(
       setCollectionFormErrors({
         ...collectionForm,
         errors: error
       })
-    );
-  };
+    )
+  }
 
   render() {
     const {
@@ -132,10 +138,10 @@ class CollectionFormDialog extends React.Component {
       hideDialog,
       collectionForm,
       collectionUi: { isNew, errors }
-    } = this.props;
+    } = this.props
 
-    const title = isNew ? "Create a New Collection" : "Edit Collection";
-    const submitText = isNew ? "Create Collection" : "Save";
+    const title = isNew ? "Create a New Collection" : "Edit Collection"
+    const submitText = isNew ? "Create Collection" : "Save"
 
     return (
       <Dialog
@@ -154,17 +160,17 @@ class CollectionFormDialog extends React.Component {
             label="Collection Title"
             id="collection-title"
             onChange={this.setCollectionTitle}
-            value={collectionForm.title || ''}
+            value={collectionForm.title || ""}
             required={true}
             minLength={1}
-            validationMessage={errors ? errors.title : ''}
+            validationMessage={errors ? errors.title : ""}
           />
           <Textarea
             label="Description (optional)"
             id="collection-desc"
             rows="4"
             onChange={this.setCollectionDesc}
-            value={collectionForm.description || ''}
+            value={collectionForm.description || ""}
           />
 
           <section className="permission-group">
@@ -189,9 +195,12 @@ class CollectionFormDialog extends React.Component {
                 id="view-moira-input"
                 placeholder="Add Moira list(s), separated by commas"
                 onChange={this.setCollectionViewPermLists}
-                onFocus={this.setCollectionViewPermChoice.bind(this, PERM_CHOICE_LISTS)}
-                value={collectionForm.viewLists || ''}
-                validationMessage={errors ? errors.view_lists : ''}
+                onFocus={this.setCollectionViewPermChoice.bind(
+                  this,
+                  PERM_CHOICE_LISTS
+                )}
+                value={collectionForm.viewLists || ""}
+                validationMessage={errors ? errors.view_lists : ""}
               />
             </Radio>
           </section>
@@ -218,26 +227,29 @@ class CollectionFormDialog extends React.Component {
                 id="admin-moira-input"
                 placeholder="Add Moira list(s), separated by commas"
                 onChange={this.setCollectionAdminPermLists}
-                onFocus={this.setCollectionAdminPermChoice.bind(this, PERM_CHOICE_LISTS)}
-                value={collectionForm.adminLists || ''}
-                validationMessage={errors ? errors.admin_lists : ''}
+                onFocus={this.setCollectionAdminPermChoice.bind(
+                  this,
+                  PERM_CHOICE_LISTS
+                )}
+                value={collectionForm.adminLists || ""}
+                validationMessage={errors ? errors.admin_lists : ""}
               />
             </Radio>
           </section>
         </div>
       </Dialog>
-    );
+    )
   }
 }
 
-const mapStateToProps = (state) => {
-  const { collectionUi } = state;
+const mapStateToProps = state => {
+  const { collectionUi } = state
 
-  const collectionForm = getCollectionForm(collectionUi);
+  const collectionForm = getCollectionForm(collectionUi)
   return {
     collectionUi,
-    collectionForm,
-  };
-};
+    collectionForm
+  }
+}
 
-export default connect(mapStateToProps)(CollectionFormDialog);
+export default connect(mapStateToProps)(CollectionFormDialog)

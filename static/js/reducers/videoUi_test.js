@@ -1,61 +1,72 @@
 // @flow
-import { assert } from "chai";
-import configureTestStore from "redux-asserts";
+import { assert } from "chai"
+import configureTestStore from "redux-asserts"
 
-import rootReducer from "../reducers";
+import rootReducer from "../reducers"
 import {
   INITIAL_EDIT_VIDEO_FORM_STATE,
   INITIAL_UPLOAD_SUBTITLE_FORM_STATE
-} from "./videoUi";
+} from "./videoUi"
 import {
   initEditVideoForm,
   setEditVideoDesc,
   setEditVideoTitle,
   setUploadSubtitle
-} from "../actions/videoUi";
-import { PERM_CHOICE_NONE } from "../lib/dialog";
+} from "../actions/videoUi"
+import { PERM_CHOICE_NONE } from "../lib/dialog"
 
 describe("videoUi", () => {
-  let store;
+  let store
 
   beforeEach(() => {
-    store = configureTestStore(rootReducer);
-  });
+    store = configureTestStore(rootReducer)
+  })
 
   it("has some initial state", () => {
     assert.deepEqual(store.getState().videoUi, {
       videoSubtitleForm: INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
-      editVideoForm: INITIAL_EDIT_VIDEO_FORM_STATE,
-      corner: "upperLeft"
-    });
-  });
+      editVideoForm:     INITIAL_EDIT_VIDEO_FORM_STATE,
+      corner:            "upperLeft"
+    })
+  })
 
   it("has action that sets the file to upload", () => {
-    assert.deepEqual(store.getState().videoUi.videoSubtitleForm, INITIAL_UPLOAD_SUBTITLE_FORM_STATE);
-    let fileUpload = {"name": "foo.vtt", "data": "ddd"};
-    store.dispatch(setUploadSubtitle(fileUpload));
-    assert.equal(store.getState().videoUi.videoSubtitleForm.subtitle, fileUpload);
-  });
+    assert.deepEqual(
+      store.getState().videoUi.videoSubtitleForm,
+      INITIAL_UPLOAD_SUBTITLE_FORM_STATE
+    )
+    const fileUpload = { name: "foo.vtt", data: "ddd" }
+    store.dispatch(setUploadSubtitle(fileUpload))
+    assert.equal(
+      store.getState().videoUi.videoSubtitleForm.subtitle,
+      fileUpload
+    )
+  })
 
-  it('has actions that set video title and description', () => {
-    assert.deepEqual(store.getState().videoUi.editVideoForm, INITIAL_EDIT_VIDEO_FORM_STATE);
-    store.dispatch(setEditVideoTitle('title'));
-    store.dispatch(setEditVideoDesc('description'));
-    assert.equal(store.getState().videoUi.editVideoForm.title, 'title');
-    assert.equal(store.getState().videoUi.editVideoForm.description, 'description');
-  });
+  it("has actions that set video title and description", () => {
+    assert.deepEqual(
+      store.getState().videoUi.editVideoForm,
+      INITIAL_EDIT_VIDEO_FORM_STATE
+    )
+    store.dispatch(setEditVideoTitle("title"))
+    store.dispatch(setEditVideoDesc("description"))
+    assert.equal(store.getState().videoUi.editVideoForm.title, "title")
+    assert.equal(
+      store.getState().videoUi.editVideoForm.description,
+      "description"
+    )
+  })
 
-  it('has an action that initializes the edit video form,', () => {
-    let formObj = {
-      key: 'key',
-      title: 'title',
-      description: 'description',
-      viewChoice: PERM_CHOICE_NONE,
-      viewLists: [],
+  it("has an action that initializes the edit video form,", () => {
+    const formObj = {
+      key:            "key",
+      title:          "title",
+      description:    "description",
+      viewChoice:     PERM_CHOICE_NONE,
+      viewLists:      [],
       overrideChoice: "collection"
-    };
-    store.dispatch(initEditVideoForm(formObj));
-    assert.deepEqual(store.getState().videoUi.editVideoForm, formObj);
-  });
-
-});
+    }
+    store.dispatch(initEditVideoForm(formObj))
+    assert.deepEqual(store.getState().videoUi.editVideoForm, formObj)
+  })
+})

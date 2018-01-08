@@ -1,6 +1,6 @@
 // @flow
 
-import type { Video } from './videoTypes';
+import type { Video } from './videoTypes'
 
 export type CollectionListItem = {
   key:                string,

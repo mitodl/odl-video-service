@@ -25,10 +25,11 @@ export const adminFAQs = {
     "Check your browser settings to make sure that you can access popup windows from video.odl.mit.edu",
   "How do I get to my collections?":
     "You can select the sandwich button on the upper left hand side of the screen to navigate you any of your collections.  You can also click the ODL Video Services title at the top of the page to get back to your list of collecitons that you have access for viewing.",
-  "I have a question that isn't on the FAQ": "Please contact odl-video-support@mit.edu",
+  "I have a question that isn't on the FAQ":
+    "Please contact odl-video-support@mit.edu",
   "How do I log out of my collection?":
     "Click the sandwich button on the upper left hand side of your screen and go to Logout at the bottom, or go to video.odl.mit.edu/logout"
-};
+}
 
 export const viewerFAQs = {
   "How can I access my course video?":
@@ -41,4 +42,4 @@ export const viewerFAQs = {
     "On the lecture capture videos, click the gear icon on the toolbar. Select Speed, and then pick the speed you would like to use.",
   "Multi camera lecture viewing.  How do I switch between cameras?":
     "Once you have pressed the play button, you can select which source you would like to view using the four choices on the right hand side of your screen.  You cna also click the icon with the 4 images on the toolbar which will create a popup of the four sources that you can move off to the side and switch between sources.  If you have two monitors, this will allow you to watch the main video full screen and use the pop up window to control the camera source you would like to view."
-};
+}

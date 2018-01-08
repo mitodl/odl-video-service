@@ -1,25 +1,19 @@
 // @flow
-import React from "react";
+import React from "react"
 
 type CardProps = {
-  children: React$Element<*>,
+  children: any,
   className?: string,
   title?: string
-};
+}
 
 const Card = ({ children, className, title }: CardProps) => (
   <div className={className ? `card ${className}` : "card"}>
     <div className="card-contents">
-      {title
-        ? (
-          <div className="title">
-            {title}
-          </div>
-        )
-        : null}
+      {title ? <div className="title">{title}</div> : null}
       {children}
     </div>
   </div>
-);
+)
 
-export default Card;
+export default Card

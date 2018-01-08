@@ -3,7 +3,7 @@ import type {
   Dispatch,
   Reducer,
   State,
-} from 'redux';
+} from 'redux'
 
 export type ActionType = string;
 

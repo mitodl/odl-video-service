@@ -1,5 +1,5 @@
 // @flow
-import React from 'react';
+import React from "react"
 
 type RadioProps = {
   id: string,
@@ -11,10 +11,10 @@ type RadioProps = {
   children?: React$Element<*>[],
   className?: string,
   disabled?: boolean
-};
+}
 
-export default class Radio extends React.Component {
-  props: RadioProps;
+export default class Radio extends React.Component<*, void> {
+  props: RadioProps
 
   render() {
     const {
@@ -27,29 +27,31 @@ export default class Radio extends React.Component {
       children,
       className,
       disabled
-    } = this.props;
+    } = this.props
 
-    let htmlId = `${radioGroupName}-${id}`;
+    const htmlId = `${radioGroupName}-${id}`
 
-    return <div className={`mdc-form-field ${className || ''}`} key={htmlId}>
-      <div className="mdc-radio">
-        <input
-          type="radio"
-          className="mdc-radio__native-control"
-          id={htmlId}
-          name={radioGroupName}
-          value={value}
-          onChange={onChange}
-          checked={value === selectedValue}
-          disabled={disabled || false}
-        />
-        <div className="mdc-radio__background">
-          <div className="mdc-radio__outer-circle" />
-          <div className="mdc-radio__inner-circle" />
+    return (
+      <div className={`mdc-form-field ${className || ""}`} key={htmlId}>
+        <div className="mdc-radio">
+          <input
+            type="radio"
+            className="mdc-radio__native-control"
+            id={htmlId}
+            name={radioGroupName}
+            value={value}
+            onChange={onChange}
+            checked={value === selectedValue}
+            disabled={disabled || false}
+          />
+          <div className="mdc-radio__background">
+            <div className="mdc-radio__outer-circle" />
+            <div className="mdc-radio__inner-circle" />
+          </div>
         </div>
+        <label htmlFor={htmlId}>{label}</label>
+        {children}
       </div>
-      <label htmlFor={htmlId}>{ label }</label>
-      { children }
-    </div>;
+    )
   }
 }
