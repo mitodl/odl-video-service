@@ -17,7 +17,7 @@ from odl_video.envs import (
     get_string,
 )
 
-VERSION = "0.9.0"
+VERSION = "0.10.0"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.10.0
+--------------
+
+- fixed issue with long video titles that do not break (#400)
+- Reformat using eslint-config-mitodl (#398)
+
 Version 0.9.0
 -------------
 
