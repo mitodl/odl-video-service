@@ -40,6 +40,16 @@ export default class FAQ extends React.Component<*, void> {
             {Object.entries(SETTINGS.is_admin ? adminFAQs : viewerFAQs).map(
               this.renderFAQ
             )}
+            <div className="question">
+              <div className="show-hide-question">
+                <i className="material-icons" />
+                <div>
+                  <a className="mdc-list-item mdc-link" href="/terms/">
+                    Terms of Service
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

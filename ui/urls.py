@@ -18,6 +18,7 @@ urlpatterns = [
         name='collection-react-view'),
 
     url(r'^help/', views.HelpPageView.as_view(), name='help-react-view'),
+    url(r'^terms/', views.TermsOfServicePageView.as_view(), name='terms-react-view'),
 
     url(r'^videos/(?P<video_key>[0-9a-f]{32})/$', views.VideoDetail.as_view(), name='video-detail'),
     url(r'^videos/(?P<video_key>[0-9a-f]{32})/embed/$', views.VideoEmbed.as_view(), name='video-embed'),
