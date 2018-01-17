@@ -32,6 +32,9 @@ export default class Footer extends React.Component<*, void> {
                   >
                     Office of Digital Learning
                   </a>
+                  <a href="/terms/" rel="noopener noreferrer">
+                    ODL Video Services Terms of Service
+                  </a>
                 </div>
                 <address className="footer-address">
                   Massachusetts Institute of Technology<br /> Cambridge, MA

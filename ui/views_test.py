@@ -551,3 +551,11 @@ def test_page_not_found(url, logged_in_apiclient, settings):
             "ENABLE_VIDEO_PERMISSIONS": False
         }
     }
+
+
+def test_terms_page(mock_moira_client, logged_in_client):
+    """Test terms page"""
+    client, _ = logged_in_client
+    response = client.get(reverse('terms-react-view'))
+    assert response.status_code == status.HTTP_200_OK
+    assert b'Terms of Service' in response.content

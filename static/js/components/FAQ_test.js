@@ -34,7 +34,11 @@ describe("FAQ Component", () => {
           .at(1)
           .text()
       )
-      assert.deepEqual(questions, Object.keys(isAdmin ? adminFAQs : viewerFAQs))
+      assert.deepEqual(
+        questions.slice(0, -1),
+        Object.keys(isAdmin ? adminFAQs : viewerFAQs)
+      )
+      assert.equal(questions.pop(), "Terms of Service")
     })
   })
 
