@@ -97,6 +97,8 @@ def test_index(client):
 def test_video_detail(logged_in_client, settings):
     """Test video detail page"""
     client, user = logged_in_client
+    settings.GA_DIMENSION_CAMERA = 'camera1'
+    settings.GA_TRACKING_ID = 'UA-xyz-1'
     videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
     videofileHLS.video.status = 'Complete'
     url = reverse('video-detail', kwargs={'video_key': videofileHLS.video.hexkey})
@@ -105,6 +107,7 @@ def test_video_detail(logged_in_client, settings):
     assert js_settings_json == {
         'editable': True,
         "gaTrackingID": settings.GA_TRACKING_ID,
+        "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "public_path": '/static/bundles/',
         "videoKey": videofileHLS.video.hexkey,
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
@@ -121,6 +124,8 @@ def test_video_detail(logged_in_client, settings):
 def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-outer-name
     """Test video embed page"""
     client, user = logged_in_client
+    settings.GA_DIMENSION_CAMERA = 'camera1'
+    settings.GA_TRACKING_ID = 'UA-xyz-1'
     videofileHLS = VideoFileFactory(
         hls=True,
         video__collection__owner=user,
@@ -134,6 +139,7 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
     assert js_settings_json == {
         "video": VideoSerializer(video).data,
         "gaTrackingID": settings.GA_TRACKING_ID,
+        "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "public_path": "/static/bundles/",
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
         "user": user.username,
@@ -534,6 +540,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     """
     settings.VIDEO_CLOUDFRONT_BASE_URL = 'cloudfront_base_url'
     settings.GA_TRACKING_ID = 'tracking_id'
+    settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.EMAIL_SUPPORT = 'support'
 
     client, user = logged_in_apiclient
@@ -542,6 +549,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     assert json.loads(resp.context[0]['js_settings_json']) == {
         'cloudfront_base_url': settings.VIDEO_CLOUDFRONT_BASE_URL,
         'gaTrackingID': settings.GA_TRACKING_ID,
+        "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         'public_path': '/static/bundles/',
         'status_code': status.HTTP_404_NOT_FOUND,
         'support_email_address': settings.EMAIL_SUPPORT,

@@ -37,3 +37,10 @@ export const initGA = () => {
     ga.initialize(SETTINGS.gaTrackingID, { debug: debug })
   }
 }
+
+export const setCustomDimension = (dimension: string, value: string) => {
+  if (dimension) {
+    const dimensionObject = { [dimension]: value }
+    ga.set(dimensionObject)
+  }
+}

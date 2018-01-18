@@ -11,6 +11,7 @@ const _createSettings = () => ({
   dropbox_key:           "dropbox_key",
   thumbnail_base_url:    "http://fake/",
   support_email_address: "support@example.com",
+  ga_dimension_camera:   "dimension1",
   FEATURES:              {
     ENABLE_VIDEO_PERMISSIONS: false
   }

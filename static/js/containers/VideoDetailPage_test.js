@@ -71,7 +71,7 @@ describe("VideoDetailPage", () => {
     const wrapper = await renderPage()
     const videoPlayerProps = wrapper.find("VideoPlayer").props()
     assert.equal(videoPlayerProps.video, video)
-    assert.equal(videoPlayerProps.selectedCorner, "upperLeft")
+    assert.equal(videoPlayerProps.selectedCorner, "camera1")
   })
 
   it("shows the video title, description and upload date, and link to collection", async () => {

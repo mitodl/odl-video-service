@@ -17,7 +17,8 @@ declare var SETTINGS: {
   dropbox_key: string,
   support_email_address: string,
   status_code?: number,
-  is_admin: boolean
+  is_admin: boolean,
+  ga_dimension_camera: string
 };
 
 // mocha

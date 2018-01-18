@@ -1,5 +1,6 @@
 // @flow
 /* global videojs: true */
+/* global SETTINGS: false */
 import React from "react"
 
 import { makeVideoSubtitleUrl } from "../lib/urls"
@@ -7,7 +8,7 @@ import { getHLSEncodedUrl, videojs } from "../lib/video"
 import type { Video, VideoSubtitle } from "../flow/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
-import { sendGAEvent } from "../util/google_analytics"
+import { sendGAEvent, setCustomDimension } from "../util/google_analytics"
 
 const gaEvents = [
   "play",
@@ -70,7 +71,7 @@ export default class VideoPlayer extends React.Component<*, void> {
   videoNode: ?HTMLVideoElement
   videoContainer: ?HTMLDivElement
   cameras: ?HTMLDivElement
-  percentTracked: Array<number>
+  lastMinuteTracked: ?number
 
   updateSubtitles() {
     const { video } = this.props
@@ -109,8 +110,8 @@ export default class VideoPlayer extends React.Component<*, void> {
             tracks[idx].addEventListener("modechange", function() {
               sendGAEvent(
                 "video",
-                "modechange",
-                `Subtitles for ${this.label} ${this.mode}`,
+                `Subtitles ${this.label} ${this.mode}`,
+                video.key,
                 player.currentTime()
               )
             })
@@ -216,14 +217,17 @@ export default class VideoPlayer extends React.Component<*, void> {
 
   sendEvent = (action: string, label: string) => {
     if (action === "timeupdate") {
-      // Track percentage played in increments of 10
+      // Track amount played in increments of 60 seconds
       const currentTime = this.player.currentTime()
-      const duration = this.player.duration()
-      const percentPlayed = currentTime / duration * 100
-      const percentRoundTen = percentPlayed - percentPlayed % 10
-      if (!this.percentTracked.includes(percentRoundTen)) {
-        sendGAEvent("video", action, "percentPlayed", percentRoundTen)
-        this.percentTracked.push(percentRoundTen)
+      const nearestMinute = parseInt((currentTime - currentTime % 60) / 60)
+      if (this.lastMinuteTracked !== nearestMinute) {
+        sendGAEvent(
+          "video",
+          "T".concat(nearestMinute.toString().padStart(4, "0")),
+          label,
+          1
+        )
+        this.lastMinuteTracked = nearestMinute
       }
     } else {
       sendGAEvent("video", action, label, this.player.currentTime())
@@ -238,7 +242,7 @@ export default class VideoPlayer extends React.Component<*, void> {
   }
 
   componentDidMount() {
-    const { video } = this.props
+    const { video, selectedCorner } = this.props
     const cropVideo = this.cropVideo
     const createEventHandler = this.createEventHandler
     const toggleFullscreen = this.toggleFullscreen
@@ -247,20 +251,21 @@ export default class VideoPlayer extends React.Component<*, void> {
         "FullscreenToggle"
       ).prototype.handleClick = toggleFullscreen
     }
-    this.percentTracked = []
+    this.lastMinuteTracked = null
     this.player = videojs(
       this.videoNode,
       makeConfigForVideo(video),
       function onPlayerReady() {
         this.enableTouchActivity()
         if (video.multiangle) {
+          setCustomDimension(SETTINGS.ga_dimension_camera, selectedCorner)
           this.on("loadeddata", cropVideo)
           this.on(FULLSCREEN_API.fullscreenchange, cropVideo)
           window.addEventListener("resize", cropVideo)
         }
         this.on("loadeddata", function() {
           gaEvents.forEach((event: string) => {
-            createEventHandler(event, event)
+            createEventHandler(event, video.key)
           })
         })
       }
@@ -280,12 +285,13 @@ export default class VideoPlayer extends React.Component<*, void> {
   }
 
   clickCamera = async (corner: string) => {
-    const { cornerFunc } = this.props
+    const { cornerFunc, video } = this.props
     if (cornerFunc) {
+      setCustomDimension(SETTINGS.ga_dimension_camera, corner)
       sendGAEvent(
         "video",
         "changeCameraView",
-        corner,
+        video.key,
         this.player.currentTime()
       )
       await cornerFunc(corner)

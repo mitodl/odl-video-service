@@ -39,6 +39,6 @@ describe("VideoEmbedPage", () => {
     const wrapper = await renderPage()
     const videoPlayerProps = wrapper.find("VideoPlayer").props()
     assert.equal(videoPlayerProps.video, video)
-    assert.equal(videoPlayerProps.selectedCorner, "upperLeft")
+    assert.equal(videoPlayerProps.selectedCorner, "camera1")
   })
 })
