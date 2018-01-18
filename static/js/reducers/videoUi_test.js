@@ -26,7 +26,7 @@ describe("videoUi", () => {
     assert.deepEqual(store.getState().videoUi, {
       videoSubtitleForm: INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
       editVideoForm:     INITIAL_EDIT_VIDEO_FORM_STATE,
-      corner:            "upperLeft"
+      corner:            "camera1"
     })
   })
 

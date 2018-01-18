@@ -24,6 +24,16 @@
       "default": "['*']",
       "description": "Array of allowed hostnames"
     },
+    "GA_TRACKING_ID": {
+      "default": "",
+      "description": "Google Analytics Tracking ID",
+      "required": false
+    },
+    "GA_DIMENSION_CAMERA": {
+      "default": "",
+      "description": "Google Analytics custom dimension number for tracking camera angle",
+      "required": false
+    },
     "MAILGUN_KEY": {
       "description": "The token for authenticating against the Mailgun API",
       "required": true

@@ -48,6 +48,7 @@ def default_js_settings(request):
         "user": request.user.username if request.user.is_authenticated else None,
         "email": request.user.email if request.user.is_authenticated else None,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": settings.ENABLE_VIDEO_PERMISSIONS
         }

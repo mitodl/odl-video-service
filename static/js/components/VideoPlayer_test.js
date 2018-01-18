@@ -1,4 +1,5 @@
 // @flow
+/* global SETTINGS */
 import React from "react"
 import { assert } from "chai"
 import sinon from "sinon"
@@ -20,7 +21,8 @@ describe("VideoPlayer", () => {
     playerStub,
     containerStub,
     nodeStub,
-    gaStub
+    gaEventStub,
+    gaSetStub
 
   const renderPlayer = (props = {}) =>
     mount(
@@ -36,7 +38,8 @@ describe("VideoPlayer", () => {
     video = makeVideo()
     sandbox = sinon.sandbox.create()
     cornerFunction = sandbox.stub()
-    gaStub = sandbox.stub(ga, "event")
+    gaEventStub = sandbox.stub(ga, "event")
+    gaSetStub = sandbox.stub(ga, "set")
     playerStub = {
       el_: {
         style:         {},
@@ -44,8 +47,8 @@ describe("VideoPlayer", () => {
       },
       tracks:        [],
       on:            sandbox.stub(),
-      currentTime:   () => 30.5,
-      duration:      () => 61.0,
+      currentTime:   () => 630.5,
+      duration:      () => 2400.0,
       videoWidth:    () => 640,
       videoHeight:   () => 360,
       currentWidth:  () => 1280,
@@ -68,37 +71,46 @@ describe("VideoPlayer", () => {
   afterEach(() => {
     sandbox.restore()
   })
-
-  it("uses videojs on mount with the right arguments", () => {
-    video.multiangle = false
-    renderPlayer()
-    sinon.assert.called(videojsStub)
-    const args = videojsStub.firstCall.args
-    assert.equal(args[0].tagName, "VIDEO")
-    assert.deepEqual(args[1], {
-      autoplay:    false,
-      controls:    true,
-      fluid:       false,
-      playsinline: true,
-      html5:       {
-        nativeTextTracks: false
-      },
-      playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
-      sources:       [
-        {
-          type: "application/x-mpegURL",
-          src:  libVideo.getHLSEncodedUrl(video)
-        }
-      ]
+  ;[true, false].forEach(function(multiangle) {
+    it("uses videojs on mount with the right arguments", () => {
+      SETTINGS.ga_dimension_camera = "dimension1"
+      video.multiangle = multiangle
+      renderPlayer()
+      sinon.assert.called(videojsStub)
+      const args = videojsStub.firstCall.args
+      assert.equal(args[0].tagName, "VIDEO")
+      assert.deepEqual(args[1], {
+        autoplay:    false,
+        controls:    true,
+        fluid:       false,
+        playsinline: true,
+        html5:       {
+          nativeTextTracks: false
+        },
+        playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
+        sources:       [
+          {
+            type: "application/x-mpegURL",
+            src:  libVideo.getHLSEncodedUrl(video)
+          }
+        ]
+      })
+      const enableTouchActivityStub = sandbox.stub()
+      const onStub = sandbox.stub()
+      args[2].call({
+        enableTouchActivity: enableTouchActivityStub,
+        on:                  onStub
+      })
+      sinon.assert.calledWith(enableTouchActivityStub)
+      sinon.assert.calledWith(onStub)
+      if (video.multiangle) {
+        sinon.assert.calledWith(gaSetStub, {
+          dimension1: "camera1"
+        })
+      } else {
+        sinon.assert.notCalled(gaSetStub)
+      }
     })
-    const enableTouchActivityStub = sandbox.stub()
-    const onStub = sandbox.stub()
-    args[2].call({
-      enableTouchActivity: enableTouchActivityStub,
-      on:                  onStub
-    })
-    sinon.assert.calledWith(enableTouchActivityStub)
-    sinon.assert.calledWith(onStub)
   })
 
   it("video element is rendered with the correct attributes", () => {
@@ -120,21 +132,25 @@ describe("VideoPlayer", () => {
     video.multiangle = true
     const wrapper = renderPlayer()
     const canvas = wrapper.find(".camera-box-selected").at(0)
-    assert.equal(canvas.props().id, "upperLeft")
+    assert.equal(canvas.props().id, "camera1")
   })
 
   it("selected video screen changes on click", () => {
+    SETTINGS.ga_dimension_camera = "dimension1"
     video.multiangle = true
     const wrapper = renderPlayer()
 
     const canvases = wrapper.find(".camera-box")
     canvases.at(3).prop("onClick")()
-    sinon.assert.calledWith(cornerFunction, "lowerRight")
-    sinon.assert.calledWith(gaStub, {
+    sinon.assert.calledWith(cornerFunction, "camera4")
+    sinon.assert.calledWith(gaSetStub, {
+      dimension1: "camera4"
+    })
+    sinon.assert.calledWith(gaEventStub, {
       category: "video",
       action:   "changeCameraView",
-      label:    "lowerRight",
-      value:    31
+      label:    video.key,
+      value:    631
     })
   })
 
@@ -247,6 +263,7 @@ describe("VideoPlayer", () => {
     "pause",
     "seeked",
     "timeupdate",
+    "changeCameraView",
     "fullscreen off",
     "fullscreen on",
     "ended"
@@ -261,21 +278,21 @@ describe("VideoPlayer", () => {
     it(`sends the correct event to google analytics for ${event}`, () => {
       const wrapper = renderPlayer()
       wrapper.instance().player = playerStub
-      wrapper.instance().percentTracked = []
-      wrapper.instance().sendEvent(event, event)
+      wrapper.instance().lastMinuteTracked = -1
+      wrapper.instance().sendEvent(event, video.key)
       if (event !== "timeupdate") {
-        sinon.assert.calledWith(gaStub, {
+        sinon.assert.calledWith(gaEventStub, {
           category: "video",
           action:   event,
-          label:    event,
-          value:    31
+          label:    video.key,
+          value:    631
         })
       } else {
-        sinon.assert.calledWith(gaStub, {
+        sinon.assert.calledWith(gaEventStub, {
           category: "video",
-          action:   event,
-          label:    "percentPlayed",
-          value:    50
+          action:   "T0010",
+          label:    video.key,
+          value:    1
         })
       }
     })

@@ -35,8 +35,8 @@ export const DIALOGS = {
 }
 
 export const CANVASES = {
-  upperLeft:  { shiftX: false, shiftY: false },
-  upperRight: { shiftX: true, shiftY: false },
-  lowerLeft:  { shiftX: false, shiftY: true },
-  lowerRight: { shiftX: true, shiftY: true }
+  camera1: { shiftX: false, shiftY: false },
+  camera2: { shiftX: true, shiftY: false },
+  camera3: { shiftX: false, shiftY: true },
+  camera4: { shiftX: true, shiftY: true }
 }
