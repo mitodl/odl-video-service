@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.10.1
+--------------
+
+- Refactor video analytics event collection
+- Terms of Service page
+
 Version 0.10.0
 --------------
 
