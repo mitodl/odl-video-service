@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.11.0
+--------------
+
+- Update the FAQ
+
 Version 0.10.1
 --------------
 
