@@ -1,6 +1,11 @@
+.faq-section {
+  margin-top: 25px;
+}
+
 .frequently-asked-questions {
   .question {
     margin-bottom: 20px;
+    color: #2568be;
 
     .show-hide-question {
       cursor: pointer;
@@ -15,10 +20,20 @@
 
     .answer {
       margin: 20px 22px;
+      color: #000000;
 
       @include breakpoint(phone) {
         margin: 20px 0px;
       }
+
+      div {
+        margin-bottom: 10px;
+      }
+
+      li {
+        margin: 10px 0px 10px 0px;
+      }
     }
   }
 }
+

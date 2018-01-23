@@ -2,12 +2,23 @@
 /* global SETTINGS:false */
 import React from "react"
 
-import { adminFAQs, viewerFAQs } from "../data/faqs"
+import { sectionFAQs } from "../data/faqs"
 
 export default class FAQ extends React.Component<*, void> {
   props: {
     FAQVisibility: Map<string, boolean>,
     toggleFAQVisibility: Function
+  }
+
+  renderSectionFAQ = ([section, faqs]: [string, any]) => {
+    return (
+      <div className="faq-section" key={section}>
+        <h3 className="mdc-typography--subheading">{section}</h3>
+        <div className="frequently-asked-questions">
+          {Object.entries(faqs).map(this.renderFAQ)}
+        </div>
+      </div>
+    )
   }
 
   renderFAQ = ([question, answer]: [string, any]) => {
@@ -36,10 +47,8 @@ export default class FAQ extends React.Component<*, void> {
       <div className="collection-list-content">
         <div className="card centered-content">
           <h2 className="mdc-typography--title">Frequently Asked Questions</h2>
+          {Object.entries(sectionFAQs).map(this.renderSectionFAQ)}
           <div className="frequently-asked-questions">
-            {Object.entries(SETTINGS.is_admin ? adminFAQs : viewerFAQs).map(
-              this.renderFAQ
-            )}
             <div className="question">
               <div className="show-hide-question">
                 <i className="material-icons" />

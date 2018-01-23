@@ -1,45 +1,256 @@
 // @flow
 /* eslint-disable max-len */
-export const adminFAQs = {
-  "I only see My Collections, but don't see any collections.":
-    "Once logged into the site, you should see your course collection on the list under My Collections.  Click the course folder to access the videos.",
-  "Where is my video?": `Videos recorded by the lecture capture systems in the classroom are automatically uploaded to the course collection overnight.  If a video has been uploaded, you should receive an email with a link to the video.  You can also go to your collection and view the videos.
-	If you uploaded from Dropbox, you video will be made available as soon as it has finished processing.  If you do not see your video after a reasonable amount of time, please contact odl-video-support@mit.edu for assistance.`,
-  "How do I share a video?":
-    "In your collection, click on the Share icon in the bottom right hand of your video.  You will have the option to copy the Video URL or embed the video into a webpage using HTML embed code.  Select which option you would like to use and paste it on your course website.",
-  "Sharing a collection":
-    "Once you are at the collection level, you can copy the URL and use it in your course website by pasting the link in Stellar. Please remember that any videos added to this collection will be available to anyone you have given access to the videos.",
-  "Delay posting a video link for your course.":
-    "If you wish to delay a video for viewing, you can post the embed code into your course site.  Students viewings the video will only be able to see the links that you share in this fashion.  Do not share the collection if you wish to delay viewing of videos for your course.",
-  "I see 0 videos in my collection. Where is my video?": `Your video might not be finished uploading.  Once it has uploaded, you should see a message in your collection that your vidoe is processing.  The video should be viewable once the transcoding process has finished.
-	If you still do not see a video in the collection, clear your cache and log in again (or try another browser).`,
-  "How do I rename my video?":
-    "Use the pencil icon to change the title name.  You can also add a description of your video as well. Click Save Changes when finished.",
-  "How do I add captions?":
-    "Click on the video icon that you wish to add captions or subtitles.  You will be redirected to the video page and will have the option to upload a WebVTT file for your captions.  Once uploaded, you should see the captions when you play your video and turn on the CC on the toolbar.",
-  "How do I create a new collection?":
-    "Log into video.odl.mit.edu and click the +Create New Collection icon.  You will then be able to name your collection, add in a description and add Moira access lists for viewing.",
-  "How do I edit my collection name and description?":
-    "Click on the gear icon in the top right hand side of the collection page.  A window will pop up that will allow you to change the title and add a description.  You will also be able to control access to the collection via Moira lists (see web.mit.edu/Moira for more information about creating a list.)  You can add lists for viewing, or for administrative access.  Once you have added the lists, click Save.",
-  "I don't see a popup window":
-    "Check your browser settings to make sure that you can access popup windows from video.odl.mit.edu",
-  "How do I get to my collections?":
-    "You can select the sandwich button on the upper left hand side of the screen to navigate you any of your collections.  You can also click the ODL Video Services title at the top of the page to get back to your list of collecitons that you have access for viewing.",
-  "I have a question that isn't on the FAQ":
-    "Please contact odl-video-support@mit.edu",
-  "How do I log out of my collection?":
-    "Click the sandwich button on the upper left hand side of your screen and go to Logout at the bottom, or go to video.odl.mit.edu/logout"
-}
+import React from "react"
 
-export const viewerFAQs = {
-  "How can I access my course video?":
-    "Make sure you are logged into video.odl.mit.edu.  Once logged in, you can click on the link on your course site to play a video.",
-  "I only see My Collections, but don't see any collections.":
-    "Check with you faculty member as to whether you are on the video access list for your course.  OVS uses the Stellar course lists, so make sure you are registered for the course so you can access the videos.",
-  "I see 0 videos in my collection. Where is my video?":
-    "Check with your professor to make sure you have access to the course collection so you cna se ethe videos.",
-  "How can I play back the video at a faster speed?":
-    "On the lecture capture videos, click the gear icon on the toolbar. Select Speed, and then pick the speed you would like to use.",
-  "Multi camera lecture viewing.  How do I switch between cameras?":
-    "Once you have pressed the play button, you can select which source you would like to view using the four choices on the right hand side of your screen.  You cna also click the icon with the 4 images on the toolbar which will create a popup of the four sources that you can move off to the side and switch between sources.  If you have two monitors, this will allow you to watch the main video full screen and use the pop up window to control the camera source you would like to view."
+export const sectionFAQs = {
+  "General Questions": {
+    "What is OVS?": (
+      <div>
+        OVS is a web site for video hosting and distribution. It was built to
+        host MIT videos that cannot be hosted on other platforms (like YouTube
+        or Vimeo).
+      </div>
+    ),
+    "What kinds of videos does OVS host?": (
+      <ul>
+        <li>Video lecture capture, using a custom multi-angle player</li>
+        <li>
+          Videos used for residential teaching at MIT. Usually the permission to
+          view these videos is limited to the students in a specific class.
+        </li>
+        <li>
+          Videos uses for worldwide teaching that need to be viewed in regions
+          where YouTube is blocked
+        </li>
+        <li>Videos that used to be hosted on techtv.mit.edu</li>
+      </ul>
+    )
+  },
+  "Automated Video Lecture Capture": {
+    "What is Automated Video Lecture Capture?": (
+      <div>
+        <div>
+          Some rooms on campus at MIT have been configured to automatically
+          record lectures using multiple cameras. Currently these rooms include
+          2-131, 2-190, 6-120 and 34-101. Recording requests should be sent to{" "}
+          <a
+            href="https://mvp.mit.edu/schedule/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            https://mvp.mit.edu/schedule/
+          </a>
+        </div>
+        <div>
+          When viewing the videos recording in these rooms, viewers can select
+          which camera or presentation source they prefer. This avoids the need
+          for a an active camera operator who pans or switches between the
+          instructor, chalkboard, computer display, etc.
+        </div>
+      </div>
+    ),
+    "How can I have my lectures recorded?": (
+      <div>
+        Automated lecture capture is currently available in rooms 2-131, 2-190,
+        6-120 and 34-101. You can request that your lectures be recorded by
+        filling out the form at{" "}
+        <a
+          href="https://mvp.mit.edu/schedule/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          https://mvp.mit.edu/schedule/
+        </a>
+      </div>
+    ),
+    "How long does it take for the lecture capture videos to become available?": (
+      <div>
+        Videos recorded by the lecture capture systems in the classroom are
+        automatically uploaded to the course collection overnight. Collection
+        owners will receive an email notification with a link to each lecture
+        when it is done being processed.
+      </div>
+    )
+  },
+  "Uploading Video and Managing Collections": {
+    "Who can host videos on OVS?": (
+      <ul>
+        <li>Anyone in the MIT community can host videos on OVS.</li>
+        <li>
+          For automated lecture capture, fill out this request form from MIT
+          Video Productions:{" "}
+          <a
+            href="https://mvp.mit.edu/schedule/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            https://mvp.mit.edu/schedule/
+          </a>
+        </li>
+        <li>
+          To request permission to upload your own videos, contact{" "}
+          <a href="mailto:odl-video-support@mit.edu">
+            odl-video-support@mit.edu
+          </a>
+        </li>
+      </ul>
+    ),
+    "Why should I use Dropbox to upload videos on OVS?": (
+      <div>
+        <div>
+          Dropbox can act as a repository for your video, giving you a safe
+          place for storage so that your content does not get lost in the event
+          of a failure of the OVS system. We strongly recommend that you keep
+          your content on Dropbox as a backup in case you need to upload your
+          videos elsewhere.
+        </div>
+        <div>
+          You can request a free MIT Dropbox account from IS&T at{" "}
+          <a
+            href="https://dropbox.mit.edu/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            https://dropbox.mit.edu/
+          </a>
+        </div>
+      </div>
+    ),
+    "Can I move all my YouTube videos to OVS?": (
+      <div>
+        <div>
+          For public videos, Youtube is still the best location for people to
+          view your content.
+        </div>
+        <div>
+          If you have content that needs to be accessed by people in countries
+          where Youtube is blocked, please contact{" "}
+          <a href="mailto:odl-video-support@mit.edu">
+            odl-video-support@mit.edu
+          </a>{" "}
+          for assistance.
+        </div>
+      </div>
+    ),
+    "Who has permission to view my videos?": (
+      <div>
+        <div>
+          Course content is restricted to Stellar course access lists, or
+          department email lists. In order to view the videos in a secured
+          collection, the viewer must be on one of the access lists. In
+          addition, collection administrators can add custom Moira lists for
+          group access to videos.
+        </div>
+        <div>
+          You can find out more about creating and managing Moira lists at{" "}
+          <a
+            href="https://ist.mit.edu/email-lists"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            https://ist.mit.edu/email-lists
+          </a>.
+        </div>
+      </div>
+    ),
+    "What if I want to give access to partner universities?": (
+      <div>
+        Non-MIT individuals can access content if they have a{" "}
+        <a
+          href="http://kb.mit.edu/confluence/display/istcontrib/Creating+a+Touchstone+Collaboration+Account"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Touchstone Collaboration
+        </a>{" "}
+        account and are on a Moira list.
+      </div>
+    ),
+    "I would like my videos to be public.  How can I set my recordings to public?": (
+      <div>
+        If you would like your videos to be public, you can change the settings
+        under the settings controls. Please note that a public setting will also
+        post the videos to Youtube and that captions will be required to post
+        public videos to conform would accessibility guidelines for public
+        content.
+      </div>
+    ),
+    "How long will it take for my video to be ready?": (
+      <div>
+        <div>
+          If you uploaded from Dropbox, your video will be made available as
+          soon as it has finished processing. The website will send you an email
+          when your video is ready.
+        </div>
+        <div>
+          If you do not see your video after 2 hours check your junk folder for
+          the email notification. If you are sure you didn’t receive the email,
+          please contact{" "}
+          <a href="mailto:odl-video-support@mit.edu">
+            odl-video-support@mit.edu
+          </a>{" "}
+          for assistance.
+        </div>
+      </div>
+    )
+  },
+  Accessibility: {
+    "Does OVS support captions and subtitles?": (
+      <div>
+        <div>
+          Yes. Collection admins can upload WebVTT (.vtt) files format for
+          subtitles) for their videos. You can find out more about WebVTT at{" "}
+          <a
+            href="https://w3c.github.io/webvtt/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            https://w3c.github.io/webvtt/
+          </a>.
+        </div>
+        <div>
+          Once uploaded, you should see the captions when you play your video
+          and turn on the CC on the video toolbar.
+        </div>
+      </div>
+    ),
+    "How do I create captions?": (
+      <div>
+        There are several services online that you can use to upload your videos
+        and create captions. You can use a service such as{" "}
+        <a
+          href="http://www.3playmedia.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          PlayMedia
+        </a>,{" "}
+        <a href="http://www.rev.com" target="_blank" rel="noopener noreferrer">
+          Rev
+        </a>, or you can try some free services:{" "}
+        <a
+          href="http://www.amara.org"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Amara.org
+        </a>{" "}
+        and{" "}
+        <a
+          href="http://www.dotsub.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          DotSub.com
+        </a>. Make sure you request a WebVTT file, which you can then upload on
+        your video page.
+      </div>
+    ),
+    "I have a question that isn't on the FAQ": (
+      <div>
+        Please contact{" "}
+        <a href="mailto:odl-video-support@mit.edu">odl-video-support@mit.edu</a>
+      </div>
+    )
+  }
 }
