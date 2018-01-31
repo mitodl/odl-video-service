@@ -156,7 +156,8 @@ class VideoSerializer(serializers.ModelSerializer):
             'view_lists',
             'collection_view_lists',
             'is_public',
-            'is_private'
+            'is_private',
+            'sources'
         )
         read_only_fields = (
             'key',
@@ -167,6 +168,7 @@ class VideoSerializer(serializers.ModelSerializer):
             'videothumbnail_set',
             'videosubtitle_set',
             'collection_view_lists',
+            'sources'
         )
 
 

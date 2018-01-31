@@ -4,7 +4,7 @@
 import React from "react"
 
 import { makeVideoSubtitleUrl } from "../lib/urls"
-import { getHLSEncodedUrl, videojs } from "../lib/video"
+import { videojs } from "../lib/video"
 import type { Video, VideoSubtitle } from "../flow/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
@@ -29,12 +29,13 @@ const makeConfigForVideo = (video: Video): Object => ({
     nativeTextTracks: false
   },
   playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
-  sources:       [
-    {
-      src:  getHLSEncodedUrl(video),
-      type: "application/x-mpegURL"
+  sources:       video.sources,
+  plugins:       {
+    videoJsResolutionSwitcher: {
+      default:      "high",
+      dynamicLabel: true
     }
-  ]
+  }
 })
 
 const drawCanvasImage = function(canvas, videoNode, shiftX, shiftY) {

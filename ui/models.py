@@ -178,6 +178,24 @@ class Video(models.Model):
         except YouTubeVideo.DoesNotExist:
             return None
 
+    @property
+    def sources(self):
+        """
+        Generate a sources dict for VideoJS
+
+        Returns:
+            dict: Dict of video sources for VideoJS
+        """
+        sources = [
+            {
+                "src": file.cloudfront_url,
+                "label": file.encoding,
+                "type":  "application/x-mpegURL" if file.encoding == EncodingNames.HLS else "video/mp4"
+            } for file in self.videofile_set.exclude(encoding__exact=EncodingNames.ORIGINAL)
+        ]
+        sources.sort(key=lambda x: EncodingNames.MP4.index(x['label']) if x['label'] in EncodingNames.MP4 else 0)
+        return sources
+
     def get_s3_key(self):
         """
         Avoid duplicate S3 keys/filenames when transferring videos from Dropbox

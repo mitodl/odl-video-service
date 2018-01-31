@@ -27,6 +27,12 @@ export type VideoThumbnail = {
   bucket_name:   string,
 };
 
+export type VideoSource = {
+  src:           string,
+  label:         string,
+  type:          string,
+};
+
 export type Video = {
   key:                    string,
   created_at:             string,
@@ -42,7 +48,8 @@ export type Video = {
   view_lists:             Array<string>,
   collection_view_lists:   Array<string>,
   is_public:              boolean,
-  is_private:             boolean
+  is_private:             boolean,
+  sources:                Array<VideoSource>
 };
 
 export type VideoFormState = {
