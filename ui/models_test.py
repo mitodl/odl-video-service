@@ -15,6 +15,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 
 from mail import tasks
+from ui.encodings import EncodingNames
 from ui.factories import (
     VideoFactory,
     VideoFileFactory,
@@ -193,3 +194,55 @@ def test_video_subtitle_key():
         ),
         video.subtitle_key(now, 'en')
     ) is not None
+
+
+def test_video_sources_hls():
+    """ Tests that the video sources property returns the expected result for HLS """
+    video = VideoFactory(key='8494dafc-3665-4960-8e00-9790574ec93a')
+    videofile = VideoFileFactory(video=video, encoding=EncodingNames.HLS)
+    assert video.sources == [
+        {
+            'src': videofile.cloudfront_url,
+            'label': EncodingNames.HLS,
+            'type': 'application/x-mpegURL'
+        }
+    ]
+
+
+def test_video_sources_mp4():
+    """ Tests that the video sources property returns the expected sorted results for MP4 """
+    video = VideoFactory(key='8494dafc-3665-4960-8e00-9790574ec93a')
+    videofiles = [
+        VideoFileFactory(video=video, s3_object_key='medium.mp4', encoding=EncodingNames.MEDIUM),
+        VideoFileFactory(video=video, s3_object_key='small.mp4', encoding=EncodingNames.SMALL),
+        VideoFileFactory(video=video, s3_object_key='large.mp4', encoding=EncodingNames.LARGE),
+        VideoFileFactory(video=video, s3_object_key='basic.mp4', encoding=EncodingNames.BASIC),
+        VideoFileFactory(video=video, s3_object_key='hd.mp4', encoding=EncodingNames.HD),
+        ]
+    assert video.sources == [
+        {
+            'src': videofiles[4].cloudfront_url,
+            'label': EncodingNames.HD,
+            'type': 'video/mp4'
+        },
+        {
+            'src': videofiles[2].cloudfront_url,
+            'label': EncodingNames.LARGE,
+            'type': 'video/mp4'
+        },
+        {
+            'src': videofiles[0].cloudfront_url,
+            'label': EncodingNames.MEDIUM,
+            'type': 'video/mp4'
+        },
+        {
+            'src': videofiles[3].cloudfront_url,
+            'label': EncodingNames.BASIC,
+            'type': 'video/mp4'
+        },
+        {
+            'src': videofiles[1].cloudfront_url,
+            'label': EncodingNames.SMALL,
+            'type': 'video/mp4'
+        }
+    ]

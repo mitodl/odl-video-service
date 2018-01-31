@@ -88,10 +88,17 @@ describe("VideoPlayer", () => {
           nativeTextTracks: false
         },
         playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
-        sources:       [
+        plugins:       {
+          videoJsResolutionSwitcher: {
+            default:      "high",
+            dynamicLabel: true
+          }
+        },
+        sources: [
           {
-            type: "application/x-mpegURL",
-            src:  libVideo.getHLSEncodedUrl(video)
+            src:   libVideo.getHLSEncodedUrl(video),
+            type:  "application/x-mpegURL",
+            label: "HLS"
           }
         ]
       })

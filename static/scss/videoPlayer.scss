@@ -59,8 +59,13 @@
   bottom: 0;
 }
 
-//Uswitch styles
-.uswitch-odl-medium {
-  width: 80%;
-  height: calc(100vh - 200px);
+.vjs-resolution-button {
+  line-height: 3.0em;
+  position: absolute;
+  margin-top: 0.5em;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  text-align: center;
 }

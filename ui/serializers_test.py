@@ -146,6 +146,7 @@ def test_video_serializer():
         'status': video.status,
         'collection_view_lists': [],
         'view_lists': [],
+        'sources': [],
         'is_private': False,
         'is_public': False
     }

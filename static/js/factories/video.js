@@ -64,6 +64,15 @@ export const makeVideoSubtitle = (
   language_name:  "English"
 })
 
+export const makeVideoSource = (
+  videoKey: string = casual.uuid,
+  encoding: string = ENCODING_HLS
+) => ({
+  src:   `https://fake.cloudfront.fake/${makeObjectKey(videoKey, encoding)}`,
+  type:  "application/x-mpegURL",
+  label: "HLS"
+})
+
 export const makeVideo = (
   videoKey: string = casual.uuid,
   collectionKey: string = casual.uuid
@@ -85,7 +94,8 @@ export const makeVideo = (
   status:             VIDEO_STATUS_COMPLETE,
   is_private:         false,
   is_public:          false,
-  view_lists:         []
+  view_lists:         [],
+  sources:            [makeVideoSource(videoKey, ENCODING_HLS)]
 })
 
 export const makeVideos = (
