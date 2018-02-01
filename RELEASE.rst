@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.12.0
+--------------
+
+- Support for playing MP4 videos in multiple resolutions
+- Fix scrolling issues in OVS sidebar (#425)
+
 Version 0.11.0
 --------------
 
