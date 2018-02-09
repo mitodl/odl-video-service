@@ -23,6 +23,10 @@ urlpatterns = [
     url(r'^videos/(?P<video_key>[0-9a-f]{32})/$', views.VideoDetail.as_view(), name='video-detail'),
     url(r'^videos/(?P<video_key>[0-9a-f]{32})/embed/$', views.VideoEmbed.as_view(), name='video-embed'),
 
+    url(r'^videos/(?P<video_key>\d+)-.+/?$', views.TechTVDetail.as_view(), name='techtv-detail'),
+    url(r'^videos/(?P<video_key>.+)/private/?$', views.TechTVPrivateDetail.as_view(), name='techtv-private'),
+    url(r'^embeds/(?P<video_key>\d+)/?$', views.TechTVEmbed.as_view(), name='techtv-embed'),
+
     url(r'^transcode/', include('dj_elastictranscoder.urls')),
     url(r'^api/v0/upload_videos/$', views.UploadVideosFromDropbox.as_view(), name='upload-videos'),
     url(r'^api/v0/upload_subtitles/$', views.UploadVideoSubtitle.as_view(),
