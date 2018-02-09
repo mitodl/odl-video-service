@@ -8,7 +8,7 @@ from django.shortcuts import (
     get_object_or_404,
     redirect,
     render,
-)
+    get_list_or_404)
 from django.utils.decorators import method_decorator
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
@@ -25,6 +25,7 @@ from rest_framework.views import APIView
 
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
+from techtv2ovs.models import TechTVVideo
 from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
 from ui import (
@@ -113,6 +114,39 @@ class VideoEmbed(TemplateView):
             'video': VideoSerializer(video).data,
         })
         return context
+
+
+class TechTVDetail(VideoDetail):
+    """
+    Video detail page for a TechTV-based URL
+    """
+    def get_context_data(self, video_key, **kwargs):
+        # There might be more than one imported TechTV video with this id
+        ttv_videos = get_list_or_404(TechTVVideo.objects.filter(ttv_id=video_key))
+        video = ttv_videos[0].video
+        return super().get_context_data(video.hexkey, **kwargs)
+
+
+class TechTVPrivateDetail(VideoDetail):
+    """
+    Video detail page for a TechTV-based private URL
+    """
+    def get_context_data(self, video_key, **kwargs):
+        # There might be more than one imported TechTV video with this private token
+        ttv_videos = get_list_or_404(TechTVVideo.objects.filter(private_token=video_key))
+        video = ttv_videos[0].video
+        return super().get_context_data(video.hexkey, **kwargs)
+
+
+class TechTVEmbed(VideoEmbed):
+    """
+    Video embed page for a TechTV-based URL
+    """
+    def get_context_data(self, video_key, **kwargs):
+        # There might be more than one imported TechTV video with this id
+        ttv_videos = get_list_or_404(TechTVVideo.objects.filter(ttv_id=video_key))
+        video = ttv_videos[0].video
+        return super().get_context_data(video.hexkey, **kwargs)
 
 
 @method_decorator(login_required, name='dispatch')

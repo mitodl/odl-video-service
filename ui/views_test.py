@@ -10,6 +10,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.reverse import reverse
 
+from techtv2ovs.factories import TechTVVideoFactory
 from ui import factories
 from ui.factories import (
     UserFactory,
@@ -429,6 +430,45 @@ def test_video_detail_no_permission(mock_moira_client, logged_in_apiclient, user
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_techtv_detail_standard_url(mock_moira_client, user_view_list_data, logged_in_apiclient):
+    """
+    Tests that a URL based on a TechTV id returns the correct Video detail page
+    """
+    client, _ = logged_in_apiclient
+    ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
+    mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
+    url = reverse('techtv-detail', kwargs={'video_key': ttv_video.ttv_id})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert json.loads(result.context_data['js_settings_json'])['videoKey'] == user_view_list_data.video.hexkey
+
+
+def test_techtv_detail_private_url(mock_moira_client, user_view_list_data, logged_in_apiclient):
+    """
+    Tests that a URL based on a TechTV private token returns the correct Video detail page
+    """
+    client, _ = logged_in_apiclient
+    ttv_video = TechTVVideoFactory(video=user_view_list_data.video, private=True, private_token=uuid4().hex)
+    mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
+    url = reverse('techtv-private', kwargs={'video_key': ttv_video.private_token})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert json.loads(result.context_data['js_settings_json'])['videoKey'] == user_view_list_data.video.hexkey
+
+
+def test_techtv_detail_embed_url(mock_moira_client, user_view_list_data, logged_in_apiclient):
+    """
+    Tests that an embed URL based on a TechTV id returns the correct Video embed page
+    """
+    client, _ = logged_in_apiclient
+    ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
+    mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
+    url = reverse('techtv-embed', kwargs={'video_key': ttv_video.ttv_id})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert json.loads(result.context_data['js_settings_json'])['video']['key'] == user_view_list_data.video.hexkey
 
 
 @pytest.mark.parametrize("enable_video_permissions", [False, True])
