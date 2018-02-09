@@ -55,6 +55,7 @@ WEBPACK_LOADER = {
 INSTALLED_APPS = [
     'ui.apps.UIConfig',
     'cloudsync.apps.CloudSyncConfig',
+    'techtv2ovs',
     'mail.apps.MailConfig',
     'dj_elastictranscoder',
     'django.contrib.admin',
