@@ -37,3 +37,8 @@ google-api-python-client
 
 # Django-Elastic-Transcoder
 -e git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
+
+# TechTV Migration
+mysqlclient
+dropbox
+bonobo
