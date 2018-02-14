@@ -1,7 +1,7 @@
 Django==1.10.5
 boto3==1.4.4
 celery==4.0.2
-cryptography==1.8.1
+cryptography
 dj-database-url==0.3.0
 dj-static==0.0.6
 django-redis==4.7.0
