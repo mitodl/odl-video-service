@@ -46,21 +46,7 @@ def test_collection_serializer_validation_fake_admin_lists(mocker):
     serialized_data = serializers.CollectionSerializer(collection).data
     with pytest.raises(ValidationError) as exc:
         serializers.CollectionSerializer(data=serialized_data).is_valid(raise_exception=True)
-    assert exc.match('Not found or not mailing list: {}'.format(collection.admin_lists.first().name))
-
-
-def test_collection_serializer_validation_nonmail_admin_lists(mocker):
-    """
-    Test for CollectionSerializer's admin moira lists validation, for lists that aren't mailing lists
-    """
-    mock_client = mocker.patch('ui.serializers.get_moira_client')
-    mock_client().list_exists.return_value = True
-    mock_client().client.service.getListAttributes.return_value = [{'mailList': False}]
-    collection = factories.CollectionFactory(admin_lists=[factories.MoiraListFactory()])
-    serialized_data = serializers.CollectionSerializer(collection).data
-    with pytest.raises(ValidationError) as exc:
-        serializers.CollectionSerializer(data=serialized_data).is_valid(raise_exception=True)
-    assert exc.match('Not found or not mailing list: {}'.format(collection.admin_lists.first().name))
+    assert exc.match('Moira list does not exist: {}'.format(collection.admin_lists.first().name))
 
 
 def test_collection_serializer_validation_fake_view_lists(mocker):
@@ -73,21 +59,7 @@ def test_collection_serializer_validation_fake_view_lists(mocker):
     serialized_data = serializers.CollectionSerializer(collection).data
     with pytest.raises(ValidationError) as exc:
         serializers.CollectionSerializer(data=serialized_data).is_valid(raise_exception=True)
-    assert exc.match('Not found or not mailing list: {}'.format(collection.view_lists.first().name))
-
-
-def test_collection_serializer_validation_nonmail_view_lists(mocker):
-    """
-    Test for CollectionSerializer's viewable moira lists validation, for lists that aren't mailing lists
-    """
-    mock_client = mocker.patch('ui.serializers.get_moira_client')
-    mock_client().list_exists.return_value = True
-    mock_client().client.service.getListAttributes.return_value = [{'mailList': False}]
-    collection = factories.CollectionFactory(view_lists=[factories.MoiraListFactory()])
-    serialized_data = serializers.CollectionSerializer(collection).data
-    with pytest.raises(ValidationError) as exc:
-        serializers.CollectionSerializer(data=serialized_data).is_valid(raise_exception=True)
-    assert exc.match('Not found or not mailing list: {}'.format(collection.view_lists.first().name))
+    assert exc.match('Moira list does not exist: {}'.format(collection.view_lists.first().name))
 
 
 @pytest.mark.parametrize("has_permission", [True, False])

@@ -24,18 +24,23 @@ def mocker_defaults(mocker):
     Sets default settings to safe defaults
     """
     mocker.patch('mail.tasks.has_common_lists', return_value=False)
+    mocker.patch('mail.tasks.get_moira_client')
 
 
 def test_get_recipients_for_video(mocker):
     """
     Tests the _get_recipients_for_video api
     """
-    lists = MoiraListFactory.create_batch(2)
+    mock_client = mocker.patch('mail.tasks.get_moira_client')
+    lists = MoiraListFactory.create_batch(3)
     video = VideoFactory(collection__admin_lists=lists)
-    list_emails = ['{}@mit.edu'.format(mlist.name) for mlist in video.collection.admin_lists.all()]
+    list_attributes = [[{'mailList': False}], [{'mailList': True}], None]
+    list_emails = ['{}@mit.edu'.format(lists[1].name)]
     mocker.patch('mail.tasks.has_common_lists', return_value=False)
+    mock_client().client.service.getListAttributes.side_effect = list_attributes
     assert tasks._get_recipients_for_video(video) == list_emails + [video.collection.owner.email]
     mocker.patch('mail.tasks.has_common_lists', return_value=True)
+    mock_client().client.service.getListAttributes.side_effect = list_attributes
     assert tasks._get_recipients_for_video(video) == list_emails
 
 
