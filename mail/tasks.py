@@ -9,7 +9,7 @@ from celery import shared_task
 from mail import api
 from mail.models import NotificationEmail
 from ui.constants import VideoStatus
-from ui.utils import has_common_lists
+from ui.utils import has_common_lists, get_moira_client
 
 log = logging.getLogger(__name__)
 
@@ -24,8 +24,13 @@ def _get_recipients_for_video(video):
     Returns:
         list: a list of strings representing emails
     """
-    admin_lists = video.collection.admin_lists.values_list('name', flat=True)
-    recipients_list = ['{}@mit.edu'.format(mlist) for mlist in admin_lists]
+    admin_lists = []
+    moira_client = get_moira_client()
+    for mlist in video.collection.admin_lists.values_list('name', flat=True):
+        attributes = moira_client.client.service.getListAttributes(mlist, moira_client.proxy_id)
+        if attributes and attributes[0]['mailList']:
+            admin_lists.append(mlist)
+    recipients_list = ['{}@mit.edu'.format(alist) for alist in admin_lists]
     owner = video.collection.owner
     if owner.email and not has_common_lists(owner, admin_lists):
         recipients_list.append(owner.email)

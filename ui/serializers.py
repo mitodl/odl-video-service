@@ -25,12 +25,8 @@ def validate_moira_lists(lists):
     for mlist in lists:
         if not moira_client.list_exists(mlist.name):
             bad_lists.append(mlist.name)
-        else:
-            attributes = moira_client.client.service.getListAttributes(mlist.name, moira_client.proxy_id)
-            if not (attributes and attributes[0]['mailList']):
-                bad_lists.append(mlist.name)
     if bad_lists:
-        raise serializers.ValidationError("Not found or not mailing list: {}".format(','.join(bad_lists)))
+        raise serializers.ValidationError("Moira list does not exist: {}".format(','.join(bad_lists)))
     return lists
 
 
