@@ -79,14 +79,23 @@ def user_moira_lists(user):
 
 def has_common_lists(user, list_names):
     """
-    Return true if the user's moira lists overlap with the collection's
+    Return true if the user is a member of any of the supplied moira list names
 
     Returns:
         bool: True if there is any name in list_names which is in the user's moira lists
     """
     if user.is_anonymous():
         return False
-    return len(set(user_moira_lists(user)).intersection(list_names)) > 0
+    moira_user = get_moira_user(user)
+    client = get_moira_client()
+    for moiralist in list_names:
+        try:
+            members = set(client.list_members(moiralist, type=''))
+            if moira_user.username in members:
+                return True
+        except Exception as exc:
+            raise MoiraException('Something went wrong with getting moira-list members: %s', moiralist) from exc
+    return False
 
 
 def get_et_job(job_id):
