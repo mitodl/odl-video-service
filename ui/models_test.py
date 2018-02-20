@@ -168,17 +168,6 @@ def test_collection_for_for_owner():
     assert extra_collection not in qset
 
 
-def test_moira_members(mocker, moiralist):
-    """
-    Tests the MoiraList.members method
-    """
-    member_list = ['joe', 'nancy', 'nancy', 'foo', 'bar', 'bar@mit.edu']
-    mock_client = mocker.patch('ui.models.utils.get_moira_client')
-    mock_client().list_members.return_value = member_list
-    assert mock_client().list_members.called_once_with(moiralist.name)
-    assert moiralist.members() == set(member_list)
-
-
 def test_video_subtitle_language():
     """ Tests that the correct language name for a code is returned"""
     assert VideoSubtitleFactory(language='en').language_name == 'English'

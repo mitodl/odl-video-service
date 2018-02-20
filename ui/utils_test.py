@@ -5,8 +5,7 @@ from zeep.exceptions import Fault
 
 from ui import factories
 from ui.exceptions import MoiraException
-from ui.utils import write_to_file, get_moira_client, user_moira_lists
-
+from ui.utils import write_to_file, get_moira_client, user_moira_lists, has_common_lists
 
 # pylint: disable=unused-argument
 
@@ -76,3 +75,29 @@ def test_user_moira_lists_error(mock_moira_client):
     other_user = factories.UserFactory()
     with pytest.raises(MoiraException):
         user_moira_lists(other_user)
+
+
+@pytest.mark.parametrize(['member', 'members', 'is_member'], [
+    ['person1@mit.edu', ['person2', 'person3'], False],
+    ['person1@mit.edu', ['person2', 'person1'], True],
+    ['person1@gmail.com', ['person1@gmail.com', 'person3'], True],
+    ['person1@gmail.com', ['person1', 'person3'], False],
+    ['person1@mit.edu', [], False]
+])
+def test_has_common_lists(mock_moira_client, member, members, is_member):
+    """
+    Test that has_common_lists returns the correct boolean value
+    """
+    mock_moira_client.return_value.list_members.return_value = members
+    user = factories.UserFactory(username=member, email=member)
+    assert has_common_lists(user, ['mock_list1', 'mock_list2']) is is_member
+
+
+def test_has_common_lists_error(mock_moira_client):
+    """
+    Test that a Moira exception is raised if moira client list_members call fails
+    """
+    mock_moira_client.return_value.list_members.side_effect = OSError
+    with pytest.raises(MoiraException) as exc:
+        has_common_lists(factories.UserFactory(), ['mock_list1', 'mock_list2'])
+    assert exc.match('Something went wrong with getting moira-list members')

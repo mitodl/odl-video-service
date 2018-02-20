@@ -95,10 +95,7 @@ def has_admin_permission(obj, request):
     """
     if request.user == obj.owner or request.user.is_superuser:
         return True
-    lists = list(obj.admin_lists.values_list('name', flat=True))
-    if has_common_lists(request.user, lists):
-        return True
-    return False
+    return has_common_lists(request.user, list(obj.admin_lists.values_list('name', flat=True)))
 
 
 class HasCollectionPermissions(IsAuthenticated):

@@ -24,6 +24,7 @@ from ui.models import VideoSubtitle
 from ui.serializers import (
     DropboxUploadSerializer,
     VideoSerializer)
+from ui.utils import get_moira_user
 
 pytestmark = pytest.mark.django_db
 
@@ -304,10 +305,11 @@ def test_collection_viewset_create_as_normal_user(post_data, logged_in_apiclient
     assert result.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_collection_viewset_create_as_staff(post_data, logged_in_apiclient):
+def test_collection_viewset_create_as_staff(mocker, post_data, logged_in_apiclient):
     """
     Tests that a staff user can create a collection with self as owner but nobody else
     """
+    mocker.patch('ui.serializers.get_moira_client')
     client, user = logged_in_apiclient
     user.is_staff = True
     user.save()
@@ -322,10 +324,11 @@ def test_collection_viewset_create_as_staff(post_data, logged_in_apiclient):
     assert 'videos' not in result.data
 
 
-def test_collection_viewset_create_as_superuser(post_data, logged_in_apiclient):
+def test_collection_viewset_create_as_superuser(mocker, post_data, logged_in_apiclient):
     """
     Tests that a superuser can create a collection for anyone as owner (but owner can't be None).
     """
+    mocker.patch('ui.serializers.get_moira_client')
     client, user = logged_in_apiclient
     user.is_superuser = True
     user.save()
@@ -335,10 +338,12 @@ def test_collection_viewset_create_as_superuser(post_data, logged_in_apiclient):
     assert 'videos' not in result.data
 
 
-def test_collection_viewset_detail(mock_moira_client, logged_in_apiclient):
+def test_collection_viewset_detail(mocker, logged_in_apiclient):
     """
     Tests to retrieve a collection details for a user
     """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
     videos = [VideoFactory(collection=collection).hexkey for _ in range(5)]
@@ -370,10 +375,11 @@ def test_collection_viewset_detail(mock_moira_client, logged_in_apiclient):
     assert result.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_collection_viewset_detail_as_superuser(logged_in_apiclient):
+def test_collection_viewset_detail_as_superuser(mocker, logged_in_apiclient):
     """
     Tests to retrieve a collection details for a superuser
     """
+    mocker.patch('ui.serializers.get_moira_client')
     client, user = logged_in_apiclient
     user.is_superuser = True
     user.save()
@@ -401,8 +407,8 @@ def test_video_detail_view_permission(mock_moira_client, logged_in_apiclient, us
     """
     Tests that a user can view a video if user is a member of collection's view_lists
     """
-    client, _ = logged_in_apiclient
-    mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
+    client, user = logged_in_apiclient
+    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
     url = reverse('video-detail', kwargs={'video_key': user_view_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
@@ -413,8 +419,8 @@ def test_video_detail_admin_permission(logged_in_apiclient, mock_moira_client, u
     """
     Tests that a user can view a video if user is a member of collection's admin_lists
     """
-    client, _ = logged_in_apiclient
-    mock_moira_client.return_value.user_lists.return_value = [user_admin_list_data.moira_list.name]
+    client, user = logged_in_apiclient
+    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
@@ -426,7 +432,7 @@ def test_video_detail_no_permission(mock_moira_client, logged_in_apiclient, user
     Tests that a user cannot view a video if user is not a member of collection's lists
     """
     client, _ = logged_in_apiclient
-    mock_moira_client.return_value.user_lists.return_value = ['other_list']
+    mock_moira_client.return_value.list_members.return_value = ['someone_else']
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_403_FORBIDDEN
@@ -436,9 +442,9 @@ def test_techtv_detail_standard_url(mock_moira_client, user_view_list_data, logg
     """
     Tests that a URL based on a TechTV id returns the correct Video detail page
     """
-    client, _ = logged_in_apiclient
+    client, user = logged_in_apiclient
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
-    mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
+    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
     url = reverse('techtv-detail', kwargs={'video_key': ttv_video.ttv_id})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
@@ -449,9 +455,9 @@ def test_techtv_detail_private_url(mock_moira_client, user_view_list_data, logge
     """
     Tests that a URL based on a TechTV private token returns the correct Video detail page
     """
-    client, _ = logged_in_apiclient
+    client, user = logged_in_apiclient
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video, private=True, private_token=uuid4().hex)
-    mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
+    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
     url = reverse('techtv-private', kwargs={'video_key': ttv_video.private_token})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
@@ -462,9 +468,9 @@ def test_techtv_detail_embed_url(mock_moira_client, user_view_list_data, logged_
     """
     Tests that an embed URL based on a TechTV id returns the correct Video embed page
     """
-    client, _ = logged_in_apiclient
+    client, user = logged_in_apiclient
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
-    mock_moira_client.return_value.user_lists.return_value = [user_view_list_data.moira_list.name]
+    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
     url = reverse('techtv-embed', kwargs={'video_key': ttv_video.ttv_id})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
@@ -511,7 +517,7 @@ def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     """
     Tests that only authenticated users with collection admin permissions can call UploadVideoSubtitle
     """
-    client, _ = logged_in_apiclient
+    client, user = logged_in_apiclient
     client.logout()
     url = reverse('upload-subtitles')
     moira_list = factories.MoiraListFactory()
@@ -530,11 +536,10 @@ def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     # call with anonymous user
     assert client.post(url, input_data, format='multipart').status_code == status.HTTP_403_FORBIDDEN
     # call with another user not on admin list
-    client.force_login(UserFactory())
-    mock_moira_client.return_value.user_lists.return_value = []
+    client.force_login(user)
     assert client.post(url, input_data, format='multipart').status_code == status.HTTP_403_FORBIDDEN
     # call with user on admin list
-    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
     assert client.post(url, input_data, format='multipart').status_code == status.HTTP_202_ACCEPTED
 
 
@@ -543,7 +548,7 @@ def test_delete_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     Tests that only authenticated users with collection admin permissions can delete VideoSubtitles
     """
     mocker.patch('ui.views.VideoSubtitle.delete_from_s3')
-    client, _ = logged_in_apiclient
+    client, user = logged_in_apiclient
     client.logout()
     moira_list = factories.MoiraListFactory()
     video = VideoFactory(collection=CollectionFactory(admin_lists=[moira_list]))
@@ -553,11 +558,10 @@ def test_delete_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     # call with anonymous user
     assert client.delete(url).status_code == status.HTTP_403_FORBIDDEN
     # call with another user not on admin list
-    client.force_login(UserFactory())
-    mock_moira_client.return_value.user_lists.return_value = []
+    client.force_login(user)
     assert client.delete(url).status_code == status.HTTP_403_FORBIDDEN
     # call with user on admin list
-    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
     assert client.delete(url).status_code == status.HTTP_204_NO_CONTENT
 
 
@@ -601,8 +605,9 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     }
 
 
-def test_terms_page(mock_moira_client, logged_in_client):
+def test_terms_page(mocker, logged_in_client):
     """Test terms page"""
+    mocker.patch('ui.utils.get_moira_client')
     client, _ = logged_in_client
     response = client.get(reverse('terms-react-view'))
     assert response.status_code == status.HTTP_200_OK
