@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.13.0
+--------------
+
+- Handle nested moira permissions on individual video/collection pages
+- Remove validation that moira list is a mailing list but send email notifications only if it is an email list
+- TechTV URL&#39;s
+- Updated cryptography requirement to fix incompatibility with OpenSSL
+- Migration script for TechTV
+
 Version 0.12.0
 --------------
 
