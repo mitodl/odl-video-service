@@ -15,11 +15,13 @@ from odl_video.envs import (
     get_int,
     get_key,
     get_string,
+    parse_env
 )
 
 VERSION = "0.12.0"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+parse_env(f'{BASE_DIR}/.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -108,7 +110,7 @@ if get_bool('USE_SHIBBOLETH', False):
     AUTHENTICATION_BACKENDS = [
         'shibboleth.backends.ShibbolethRemoteUserBackend',
     ]
-    LOGIN_URL = "/Shibboleth.sso/Login"
+    LOGIN_URL = "/collections"
 else:
     LOGIN_URL = "/admin/login/"
 
@@ -456,7 +458,8 @@ REST_FRAMEWORK = {
 # http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
 REDIS_URL = get_string("REDIS_URL", None)
 USE_CELERY = True
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL = REDIS_URL
+CELERY_BROKER_URL = get_string("CELERY_BROKER_URL", REDIS_URL)
+CELERY_RESULT_BACKEND = REDIS_URL
 
 CELERY_TASK_ALWAYS_EAGER = get_bool("CELERY_TASK_ALWAYS_EAGER", False)
 CELERY_TASK_EAGER_PROPAGATES = get_bool("CELERY_TASK_EAGER_PROPAGATES", True)
@@ -488,7 +491,7 @@ CACHES = {
     },
     'redis': {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": CELERY_BROKER_URL,
+        "LOCATION": REDIS_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
