@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.14.0
+--------------
+
+- Updated settings and requirements to fix deployment issues
+
 Version 0.13.0
 --------------
 
