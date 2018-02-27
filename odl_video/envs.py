@@ -153,3 +153,26 @@ def get_key(name, default):
     if not isinstance(value, str):
         return value
     return value.encode().decode('unicode_escape').encode()
+
+
+def parse_env(env_file):
+    """
+    Parse the env file and set the values in the runtime environment.
+    Simplifies deployment by ensuring env values are present without
+    duplicating across multiple locations and not requiring explicit
+    sourcing.
+
+    Args:
+      env_file (str): path to a file consisting of key=value pairs
+
+    Returns:
+      None: No return value
+
+    """
+    try:
+        with open(env_file) as envsettings:
+            for line in envsettings:
+                k, v = line.rstrip('\n').lstrip('export ').split('=', maxsplit=1)
+                os.environ.setdefault(k, v)
+    except FileNotFoundError:
+        pass
