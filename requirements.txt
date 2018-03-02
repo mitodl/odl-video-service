@@ -4,6 +4,8 @@
 #
 #    pip-compile --output-file requirements.txt requirements.in
 #
+--no-binary psycopg2
+
 git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
 git+https://github.com/mitodl/mit-moira.git#egg=mit-moira
@@ -28,7 +30,7 @@ defusedxml==0.5.0         # via zeep
 dj-database-url==0.3.0
 dj-static==0.0.6
 django-redis==4.7.0
-django-server-status==0.4.0
+django-server-status==0.5.0
 django-webpack-loader==0.4.1
 django==1.10.5
 djangorestframework==3.6.3
@@ -66,7 +68,7 @@ pexpect==4.2.1            # via ipython
 pickleshare==0.7.4        # via ipython
 prompt-toolkit==1.0.14    # via ipython
 psutil==5.4.3             # via bonobo
-psycopg2==2.7.3.2 --no-binary=psycopg2
+psycopg2==2.7.3.2
 ptyprocess==0.5.2         # via pexpect
 pyasn1-modules==0.1.5     # via google-auth, google-auth-httplib2, oauth2client
 pyasn1==0.3.7             # via google-auth, google-auth-httplib2, oauth2client, pyasn1-modules, rsa
