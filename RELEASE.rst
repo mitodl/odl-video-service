@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.14.1
+--------------
+
+- Update django-server-status to version 0.5.0
+
 Version 0.14.0
 --------------
 
