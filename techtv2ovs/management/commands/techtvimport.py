@@ -1,6 +1,7 @@
 """ techtv2ovs command """
 import os
 from bonobo.contrib.django import ETLCommand
+from django.core.management import CommandError
 
 from techtv2ovs.utils import TechTVImporter
 
@@ -60,7 +61,9 @@ class Command(ETLCommand):
         """
         Run the command
         """
-
+        for env in ('DROPBOX_FOLDER', 'DROPBOX_TOKEN'):
+            if os.getenv(env) is None:
+                raise CommandError('`{}` environment variable must be set'.format(env))
         importer = TechTVImporter(
             db_user=options['user'],
             db_pw=os.getenv('MYSQL_PASSWORD', default=''),

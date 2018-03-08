@@ -2,24 +2,32 @@
 import logging
 import re
 import sys
+import traceback
+import os
 from html import unescape
+from io import BytesIO
 from unicodedata import normalize
 
 import MySQLdb
 import boto3
 import bonobo
 
+
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.utils.html import strip_tags
+from dropbox import dropbox
+from dropbox.exceptions import ApiError
+from pycaption import CaptionConverter, SRTReader, WebVTTWriter
 
 from techtv2ovs.constants import TTV_THUMB_BUCKET, TTV_VIDEO_BUCKET, ImportStatus
 from techtv2ovs.models import TechTVCollection, TechTVVideo
 from techtv2ovs.tasks import process_videofiles
 
-from ui.models import Collection, MoiraList, Video, VideoThumbnail
+from ui.models import Collection, MoiraList, Video, VideoThumbnail, VideoSubtitle
 
 # pylint: disable=attribute-defined-outside-init,broad-except,too-many-instance-attributes,too-many-arguments
+from ui.utils import get_bucket
 
 
 def mysql_query(query, params, connection):
@@ -184,10 +192,61 @@ class TechTVImporter:
                 self.output.write("Error: thumbnail {} for ttv video {}".format(src['Key'], ttv_video.ttv_id))
                 ttv_video.status = ImportStatus.ERROR
                 ttv_video.thumbnail_status = ImportStatus.ERROR
-                ttv_video.errors += '{}\n\n'.format(str(exc))
+                ttv_video.errors += '{}:{}\n\n'.format(str(exc), traceback.format_exc())
 
         if ttv_video.thumbnail_status != ImportStatus.ERROR:
             ttv_video.thumbnail_status = ImportStatus.COMPLETE
+        ttv_video.save()
+
+    def process_captions(self, ttv_video):
+        """
+        Copy over any caption files for a TechTVVideo from Dropbox to S3.
+        Create a VideoSubtitle object for each.
+
+        Args:
+            ttv_video (TechTVVideo): The TechTVVideo object to process
+        """
+        ttv_video.subtitle_status = ImportStatus.CREATED
+        captions = [caption[0] for caption in mysql_query(
+            'SELECT srt_file_file_name from closed_caption_files where video_id = %s', [ttv_video.ttv_id],
+            self.connection
+        )]
+        for caption in captions:
+            try:
+                basename, _ = os.path.splitext(caption)
+                dbx = dropbox.Dropbox(os.getenv('DROPBOX_TOKEN'))
+                dbx_folder = os.getenv('DROPBOX_FOLDER')
+                try:
+                    _, response = dbx.files_download(os.path.join(dbx_folder, caption))
+                except ApiError:
+                    _, response = dbx.files_download(
+                        os.path.join(dbx_folder, caption.replace('_', ' '))
+                    )
+                srt_bytes = BytesIO(response.content)
+                bucket = get_bucket(settings.VIDEO_S3_SUBTITLE_BUCKET)
+                bucket.upload_fileobj(
+                    Fileobj=srt_bytes,
+                    Key='subtitles/techtv/{}/{}'.format(ttv_video.video.hexkey, caption)
+                )
+                vtt_key = 'subtitles/techtv/{}/{}.vtt'.format(ttv_video.video.hexkey, basename)
+                converter = CaptionConverter()
+                converter.read(response.content.decode('utf-8').replace("\ufeff1", "1"), SRTReader())
+                vtt_content = converter.write(WebVTTWriter())
+
+                bucket.upload_fileobj(
+                    Fileobj=BytesIO(vtt_content.encode('utf-8')),
+                    Key=vtt_key
+                )
+                VideoSubtitle.objects.get_or_create(s3_object_key=vtt_key, defaults={
+                    'video': ttv_video.video
+                })
+            except Exception as exc:
+                self.output.write("Error: caption file {} for ttv video {}".format(caption, ttv_video.ttv_id))
+                ttv_video.status = ImportStatus.ERROR
+                ttv_video.subtitle_status = ImportStatus.ERROR
+                ttv_video.errors += '{}:{}\n\n'.format(str(exc), traceback.format_exc())
+        if ttv_video.subtitle_status != ImportStatus.ERROR:
+            ttv_video.subtitle_status = ImportStatus.COMPLETE
         ttv_video.save()
 
     def process_files(self, ttv_video, s3videos):
@@ -198,8 +257,14 @@ class TechTVImporter:
             ttv_video (TechTVVideo): The TechTVVideo object to process
             s3videos (list): List of video file S3 objects
         """
-        self.process_thumbs(ttv_video)
-        process_videofiles.delay(ttv_video.id, s3videos, self.aws)
+        try:
+            self.process_thumbs(ttv_video)
+            self.process_captions(ttv_video)
+            process_videofiles.delay(ttv_video.id, s3videos, self.aws)
+        except Exception as exc:
+            ttv_video.status = ImportStatus.ERROR
+            ttv_video.errors += '{}:{}\n\n'.format(str(exc), traceback.format_exc())
+            ttv_video.save()
 
     def process_videos(self, ttvcollection):
         """

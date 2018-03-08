@@ -42,3 +42,5 @@ google-api-python-client
 mysqlclient
 dropbox
 bonobo
+-e git+https://github.com/mitodl/pycaption.git#egg=pycaption
+
