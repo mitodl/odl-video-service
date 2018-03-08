@@ -24,6 +24,16 @@
       "default": "['*']",
       "description": "Array of allowed hostnames"
     },
+    "DROPBOX_KEY": {
+      "default": "",
+      "description": "Dropbox app key for uploads/downloads",
+      "required": true
+    },
+    "GA_TRACKING_ID": {
+      "default": "",
+      "description": "Google Analytics Tracking ID",
+      "required": false
+    },
     "GA_TRACKING_ID": {
       "default": "",
       "description": "Google Analytics Tracking ID",

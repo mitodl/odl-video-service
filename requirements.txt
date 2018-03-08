@@ -9,9 +9,12 @@
 git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
 git+https://github.com/mitodl/mit-moira.git#egg=mit-moira
+git+https://github.com/mitodl/pycaption.git#egg=pycaption
 amqp==2.2.1               # via kombu
 appdirs==1.4.3            # via fs, zeep
+appnope==0.1.0            # via ipython
 asn1crypto==0.22.0        # via cryptography
+beautifulsoup4==4.6.0
 billiard==3.5.0.3         # via celery
 bonobo==0.6.1
 boto3==1.4.4
@@ -25,6 +28,7 @@ chardet==3.0.4            # via requests
 colorama==0.3.9           # via mondrian
 contextlib2==0.5.5        # via raven
 cryptography==2.1.4
+cssutils==1.0.2
 decorator==4.1.1          # via ipython, traitlets
 defusedxml==0.5.0         # via zeep
 dj-database-url==0.3.0
@@ -37,9 +41,11 @@ djangorestframework==3.6.3
 docutils==0.13.1          # via botocore
 dropbox==8.6.0
 elasticsearch==5.4.0      # via django-server-status
+enum34==1.1.6
 factory-boy==2.8.1
 faker==0.7.17
 fs==2.0.18                # via bonobo
+future==0.16.0
 google-api-python-client==1.6.4
 google-auth-httplib2==0.0.2
 google-auth-oauthlib==0.1.1

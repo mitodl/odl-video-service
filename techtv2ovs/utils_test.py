@@ -1,6 +1,9 @@
 """ Tests for techtv2ovs.utils """
+import os
 import pytest
 from bonobo.structs import Graph
+from dropbox.exceptions import ApiError
+from requests import Response
 
 from techtv2ovs.constants import ImportStatus
 from techtv2ovs.factories import TechTVCollectionFactory, TechTVVideoFactory
@@ -146,10 +149,10 @@ def test_process_thumbnails(mocker, settings, importer, s3files, aws):
 
 
 def test_process_thumbnails_error(mocker, settings, importer):
-    """ Test that TTVVideo thumbnail statuses are correclty set on error """
+    """ Test that TTVVideo thumbnail statuses are correctly set on error """
     settings.VIDEO_S3_THUMBNAIL_BUCKET = 'odl-video-service-thumbnails'
-    ttv_video = TechTVVideoFactory()
     importer.aws = True
+    ttv_video = TechTVVideoFactory()
     mock_boto = mocker.patch('techtv2ovs.utils.boto3')
     mock_s3_objects = mock_boto.client('s3').list_objects_v2
     mock_s3_objects.return_value = {'Contents': [{'Bucket': 'testBucket', 'Key': 'thumbnails/jumbo.jpg'}]}
@@ -157,6 +160,39 @@ def test_process_thumbnails_error(mocker, settings, importer):
     importer.process_thumbs(ttv_video)
     assert VideoThumbnail.objects.filter(video=ttv_video.video).first() is None
     assert ttv_video.thumbnail_status == ImportStatus.ERROR
+
+
+@pytest.mark.parametrize('contents', [
+    b'\xef\xbb\xbf1\n00:00:13,333 --> 00:00:19,267\nHI.',
+    b'1\n00:00:13,333 --> 00:00:19,267\nBYE.',
+])
+def test_process_captions(mocker, importer, contents):
+    """ Test that a VideoSubtitle object is created from a Dropbox SRT file"""
+    os.environ['DROPBOX_FOLDER'] = '/folder'
+    ttv_video = TechTVVideoFactory()
+    mock_response = Response()
+    mock_response._content = contents  # pylint:disable=protected-access
+    mocker.patch('techtv2ovs.utils.mysql_query', return_value=(('fake1.srt',),))
+    mocker.patch('techtv2ovs.utils.get_bucket')
+    mocker.patch('techtv2ovs.utils.dropbox.Dropbox')
+    mocker.patch('techtv2ovs.utils.dropbox.Dropbox.return_value.files_download',
+                 return_value=(None, mock_response))
+    importer.process_captions(ttv_video)
+    assert ttv_video.errors == ''
+    assert ttv_video.video.videosubtitle_set.first().s3_object_key == \
+        'subtitles/techtv/{}/fake1.vtt'.format(ttv_video.video.hexkey)
+
+
+def test_process_captions_error(mocker, importer):
+    """ Test that TTVVideo caption statuses are correctly set on errors """
+    ttv_video = TechTVVideoFactory()
+    mocker.patch('techtv2ovs.utils.mysql_query', return_value=(('fake1.srt',),))
+    mocker.patch('techtv2ovs.utils.dropbox.Dropbox')
+    mocker.patch('techtv2ovs.utils.dropbox.Dropbox.return_value.files_download',
+                 side_effect=ApiError)
+    importer.process_captions(ttv_video)
+    assert ttv_video.video.videosubtitle_set.first() is None
+    assert ttv_video.subtitle_status == ImportStatus.ERROR
 
 
 @pytest.mark.parametrize('contents', [
@@ -174,11 +210,21 @@ def test_get_s3_videos(mocker, contents):
 def test_process_files(mocker, importer):
     """ Test that process_files calls self.process_thumbs and tasks.process_videofiles """
     mock_process_thumbs = mocker.patch('techtv2ovs.utils.TechTVImporter.process_thumbs')
+    mock_process_captions = mocker.patch('techtv2ovs.utils.TechTVImporter.process_captions')
     mock_process_videofiles = mocker.patch('techtv2ovs.tasks.process_videofiles.delay')
     ttv_video = TechTVVideoFactory()
     importer.process_files(ttv_video, [])
     mock_process_thumbs.assert_called_once_with(ttv_video)
+    mock_process_captions.assert_called_once_with(ttv_video)
     mock_process_videofiles.assert_called_once_with(ttv_video.id, [], importer.aws)
+
+
+def test_process_files_error(mocker, importer):
+    """ Test that the status is updated appropriately if an error occurs """
+    mocker.patch('techtv2ovs.utils.TechTVImporter.process_thumbs', side_effect=OSError)
+    ttv_video = TechTVVideoFactory()
+    importer.process_files(ttv_video, [])
+    assert ttv_video.status == VideoStatus.ERROR
 
 
 def test_run(mocker, importer):
