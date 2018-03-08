@@ -182,7 +182,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = 'staticfiles'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'static'),
 )
@@ -324,8 +324,8 @@ MIT_WS_CERTIFICATE = get_key('MIT_WS_CERTIFICATE', '')
 MIT_WS_PRIVATE_KEY = get_key('MIT_WS_PRIVATE_KEY', '')
 
 # x509 filenames
-MIT_WS_CERTIFICATE_FILE = os.path.join(BASE_DIR, STATIC_ROOT, 'mit_x509.cert')
-MIT_WS_PRIVATE_KEY_FILE = os.path.join(BASE_DIR, STATIC_ROOT, 'mit_x509.key')
+MIT_WS_CERTIFICATE_FILE = os.path.join(STATIC_ROOT, 'mit_x509.cert')
+MIT_WS_PRIVATE_KEY_FILE = os.path.join(STATIC_ROOT, 'mit_x509.key')
 
 # Dropbox key
 DROPBOX_KEY = get_string('DROPBOX_KEY', '')
