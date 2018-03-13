@@ -6,13 +6,12 @@
 #
 --no-binary psycopg2
 
-git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
-git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
-git+https://github.com/mitodl/mit-moira.git#egg=mit-moira
-git+https://github.com/mitodl/pycaption.git#egg=pycaption
+-e git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
+-e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
+-e git+https://github.com/mitodl/mit-moira.git#egg=mit-moira
+-e git+https://github.com/mitodl/pycaption.git#egg=pycaption
 amqp==2.2.1               # via kombu
 appdirs==1.4.3            # via fs, zeep
-appnope==0.1.0            # via ipython
 asn1crypto==0.22.0        # via cryptography
 beautifulsoup4==4.6.0
 billiard==3.5.0.3         # via celery
@@ -35,9 +34,9 @@ dj-database-url==0.3.0
 dj-static==0.0.6
 django-redis==4.7.0
 django-server-status==0.5.0
-django-webpack-loader==0.4.1
-django==1.10.5
-djangorestframework==3.6.3
+django-webpack-loader==0.5.0
+django==1.11.10
+djangorestframework==3.7.7
 docutils==0.13.1          # via botocore
 dropbox==8.6.0
 elasticsearch==5.4.0      # via django-server-status

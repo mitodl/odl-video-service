@@ -59,7 +59,7 @@ def user_view_list_data():
     video = VideoFactory()
     collection = video.collection
     moira_list = factories.MoiraListFactory()
-    collection.view_lists = [moira_list]
+    collection.view_lists.set([moira_list])
     return SimpleNamespace(video=video, moira_list=moira_list, collection=collection)
 
 
@@ -71,7 +71,7 @@ def user_admin_list_data():
     video = VideoFactory()
     collection = video.collection
     moira_list = factories.MoiraListFactory()
-    collection.admin_lists = [moira_list]
+    collection.admin_lists.set([moira_list])
     return SimpleNamespace(video=video, moira_list=moira_list, collection=collection)
 
 
@@ -162,7 +162,7 @@ def test_upload_dropbox_videos_authentication(mock_moira_client, logged_in_apicl
     url = reverse('upload-videos')
     collection = CollectionFactory(owner=user)
     moira_list = factories.MoiraListFactory()
-    collection.admin_lists = [moira_list]
+    collection.admin_lists.set([moira_list])
     collection.save()
     other_user = UserFactory()
     input_data = {

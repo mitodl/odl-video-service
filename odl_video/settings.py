@@ -75,7 +75,7 @@ DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
 if not DISABLE_WEBPACK_LOADER_STATS:
     INSTALLED_APPS += ('webpack_loader',)
 
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     'raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -91,7 +91,7 @@ if DEBUG:
     INSTALLED_APPS += (
         'nplusone.ext.django',
     )
-    MIDDLEWARE_CLASSES += (
+    MIDDLEWARE += (
         'nplusone.ext.django.NPlusOneMiddleware',
     )
 
@@ -100,7 +100,7 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'
 LOGIN_REDIRECT_URL = "/"
 if get_bool('USE_SHIBBOLETH', False):
     # TOUCHSTONE
-    MIDDLEWARE_CLASSES.append('shibboleth.middleware.ShibbolethRemoteUserMiddleware')
+    MIDDLEWARE.append('shibboleth.middleware.ShibbolethRemoteUserMiddleware')
     SHIBBOLETH_ATTRIBUTE_MAP = {
         "EPPN": (True, "username"),
         "MAIL": (True, "email"),
@@ -518,7 +518,7 @@ MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS = get_int(
     'MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS', 60 * 60)
 
 if MIDDLEWARE_FEATURE_FLAG_QS_PREFIX:
-    MIDDLEWARE_CLASSES = MIDDLEWARE_CLASSES + (
+    MIDDLEWARE = MIDDLEWARE + (
         'odl_video.middleware.QueryStringFeatureFlagMiddleware',
         'odl_video.middleware.CookieFeatureFlagMiddleware',
     )

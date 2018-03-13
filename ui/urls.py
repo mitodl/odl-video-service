@@ -31,5 +31,5 @@ urlpatterns = [
     url(r'^api/v0/upload_videos/$', views.UploadVideosFromDropbox.as_view(), name='upload-videos'),
     url(r'^api/v0/upload_subtitles/$', views.UploadVideoSubtitle.as_view(),
         name='upload-subtitles'),
-    url(r'^api/v0/', include(router.urls, namespace='models-api')),
+    url(r'^api/v0/', include((router.urls, 'models-api'))),
 ]

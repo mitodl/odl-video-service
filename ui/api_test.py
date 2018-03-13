@@ -3,6 +3,7 @@ Tests for ui/api.py
 """
 from uuid import uuid4
 
+from django.core.exceptions import ValidationError
 from django.http import Http404
 import pytest
 
@@ -74,9 +75,9 @@ def test_process_dropbox_data_empty_link_list(mocker):
 
 def test_process_dropbox_data_wrong_collection():
     """
-    Tests that the process_dropbox_data in case the collection does not exist
+    Tests that process_dropbox_data errors in case the collection does not exist
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         api.process_dropbox_data(
             {
                 'collection': 'fooooooooo',

@@ -84,7 +84,7 @@ def has_common_lists(user, list_names):
     Returns:
         bool: True if there is any name in list_names which is in the user's moira lists
     """
-    if user.is_anonymous():
+    if user.is_anonymous:
         return False
     moira_user = get_moira_user(user)
     client = get_moira_client()
