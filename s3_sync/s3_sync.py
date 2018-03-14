@@ -58,20 +58,17 @@ def set_environment_variables():
     os.environ['slack_webhook_url'] = config['Slack']['webhook_url']
 
 
-def verify_local_folder_exists(local_video_records_done_folder):
+def verify_local_folders_exist():
     """
-    Check whether the local video records done folder exists
-
-    Args:
-      local_video_records_done_folder (str): The path of the local video
-        records done folder.
+    Check whether the required folders exist
 
     Returns:
-      If folder exists return None, and if not, logs error and exit.
+      If folders exist return None, and if not, logs error and exit.
     """
-    if not os.path.exists(local_video_records_done_folder):
-        logger.error("Local Video Records Done folder not found")
-        sys.exit("[-] Local Video Records Done folder not found")
+    for folder in config['Paths'].values():
+        if not os.path.exists(folder):
+            logger.error("Missing folder: ", folder)
+            sys.exit("[-] Missing folder: ", folder)
 
 
 def verify_aws_cli_installed(aws_cli_binary):
@@ -111,6 +108,33 @@ def verify_s3_bucket_exists(s3_bucket_name):
         sys.exit("[-] Failed to list specified s3 bucket")
 
 
+def check_if_file_already_synced(local_video_records_done_folder,
+                                 local_video_records_synced_folder,
+                                 local_video_records_conflict_folder):
+    """
+    Get a list of file names in local_video_records_done_folder and
+    check if they exist in local_video_records_synced_folder. If file
+    exists, that means it has already been synced and will be moved to
+    a local conflict folder
+
+    Args:
+      local_video_records_done_folder (str): local folder containing video
+        files ready to be copied to S3.
+      local_video_records_synced_folder (str): local folder containing video
+        files that have been copied to S3.
+      local_video_records_conflict_folder (str): local folder containing
+        video files that appeared in both done and synced folders
+        simultaneously.
+    """
+    for file in os.listdir(local_video_records_done_folder):
+        if os.path.isfile(local_video_records_synced_folder + '/' + file):
+            os.replace(f"{local_video_records_done_folder}/{file}",
+                       f"{local_video_records_conflict_folder}/{file}")
+            notify_slack_channel(f"*Failed* to copy file from `{local_video_records_done_folder}`"
+                                 f"to `{local_video_records_synced_folder}`."
+                                 f"Moved following file(s) to conflict folder: {file}")
+
+
 def notify_slack_channel(slack_message):
     """
     Send notification to Slack Channel
@@ -140,6 +164,10 @@ def sync_local_to_s3(local_video_records_done_folder,
         files ready to be copied to S3.
       s3_bucket_name (str): s3 bucket name
     """
+    if not os.listdir(local_video_records_done_folder):
+        logger.info("Nothing to sync. {} folder empty", local_video_records_done_folder)
+        notify_slack_channel(f"Nothing to sync on: *{computer_name}*")
+        sys.exit("[-] Nothing to sync. Folder empty")
     s3_sync_cmd = 'aws s3 sync {} s3://{} > "{}"'.format(local_video_records_done_folder,
                                                          s3_bucket_name,
                                                          s3_sync_result_file)
@@ -154,8 +182,6 @@ def sync_local_to_s3(local_video_records_done_folder,
         notify_slack_channel(f"Sync failed: *{computer_name}* \n `{err}`")
         sys.exit("[-] Failed to sync local files to s3 bucket")
     logger.info("S3 sync successfully ran: {}", cmd_output)
-    notify_slack_channel(f"Sync succeeded on: *{computer_name}* \n `str({cmd_output})`")
-    logger.info("Syncing complete")
 
 
 def move_files_to_synced_folder(local_video_records_done_folder,
@@ -163,14 +189,15 @@ def move_files_to_synced_folder(local_video_records_done_folder,
                                 s3_sync_result_file):
     """
     Move local files in the done folder that have already been synced to S3,
-    to the local synced folder.
+    to the local synced folder and notify slack on completion.
 
     Args:
       local_video_records_done_folder (str): local folder containing video
         files that should have been copied to S3.
       local_video_records_synced_folder (str): local folder containing video
         files that have already been copied to S3.
-      s3_sync_result_file (str): local file containing result of s3 sync operation.
+      s3_sync_result_file (str): local file containing result of s3 sync
+        operation.
     """
     if not os.path.exists(s3_sync_result_file):
         logger.warning("Could not find S3 sync results file",
@@ -182,9 +209,9 @@ def move_files_to_synced_folder(local_video_records_done_folder,
         try:
             os.rename(f"{local_video_records_done_folder}/{file}",
                       f"{local_video_records_synced_folder}/{file}")
+            notify_slack_channel(f"Sync succeeded on: *{computer_name}* \n `{file}`")
         except OSError as err:
             logger.exception("Failed to copy or remove local file", err)
-            sys.exit("[-] Failed to copy or remove local file ")
 
 
 def main():
@@ -194,9 +221,12 @@ def main():
     files to specified s3 bucket.
     """
     set_environment_variables()
-    verify_local_folder_exists(config['Paths']['local_video_records_done_folder'])
+    verify_local_folders_exist()
     verify_aws_cli_installed(config.get('Paths', 'aws_cli_binary', fallback='C:/Program Files/Amazon/AWSCLI/aws.exe'))
     verify_s3_bucket_exists(config['AWS']['s3_bucket_name'])
+    check_if_file_already_synced(config['Paths']['local_video_records_done_folder'],
+                                 config['Paths']['local_video_records_synced_folder'],
+                                 config['Paths']['local_video_records_conflict_folder'])
     sync_local_to_s3(config['Paths']['local_video_records_done_folder'],
                      config['AWS']['s3_bucket_name'],
                      config['Logs']['sync_results'])
