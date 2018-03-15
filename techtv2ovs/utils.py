@@ -358,8 +358,8 @@ class TechTVImporter:
                 owner=get_owner(email),
                 stream_source=stream_source
             )
-            ovs_collection.admin_lists = [admin_list]
-            ovs_collection.view_lists = [view_list]
+            ovs_collection.admin_lists.set([admin_list])
+            ovs_collection.view_lists.set([view_list])
             ovs_collection.save()
             ttvcollection.collection = ovs_collection
             ttvcollection.save()

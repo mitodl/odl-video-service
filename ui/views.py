@@ -365,21 +365,21 @@ def _handle_error_view(request, status_code):
     })
 
 
-def permission_denied_403_view(request):
+def permission_denied_403_view(request, *args, **kwargs):  # pylint: disable=unused-argument
     """
     Handles a 403 response
     """
     return _handle_error_view(request, status.HTTP_403_FORBIDDEN)
 
 
-def page_not_found_404_view(request):
+def page_not_found_404_view(request, *args, **kwargs):  # pylint: disable=unused-argument
     """
     Handles a 404 response
     """
     return _handle_error_view(request, status.HTTP_404_NOT_FOUND)
 
 
-def error_500_view(request):
+def error_500_view(request, *args, **kwargs):  # pylint: disable=unused-argument
     """
     Handles a 500 response
     """

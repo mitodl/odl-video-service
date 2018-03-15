@@ -1,13 +1,13 @@
-Django==1.10.5
+Django==1.11.10
 boto3==1.4.4
 celery==4.0.2
 cryptography
 dj-database-url==0.3.0
 dj-static==0.0.6
 django-redis==4.7.0
-djangorestframework==3.6.3
+djangorestframework==3.7.7
 django-server-status==0.5.0
-django-webpack-loader==0.4.1
+django-webpack-loader==0.5.0
 factory_boy
 faker
 html5lib==0.999999999
