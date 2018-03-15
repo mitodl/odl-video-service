@@ -34,3 +34,14 @@ class YouTubeStatus:
     FAILED = 'failed'
     SUCCEEDED = 'succeeded'
     RETRY = 'retry'
+
+
+class StreamSource:
+    """ Simple class for public collection streaming sources """
+    YOUTUBE = 'Youtube'
+    CLOUDFRONT = 'Cloudfront'
+
+    ALL_SOURCES = [
+        YOUTUBE,
+        CLOUDFRONT,
+    ]

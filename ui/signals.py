@@ -6,7 +6,9 @@ from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 
 from cloudsync.tasks import upload_youtube_video, remove_youtube_video, remove_youtube_caption
-from ui.models import VideoFile, VideoThumbnail, VideoSubtitle, Video, YouTubeVideo
+from ui.constants import StreamSource, YouTubeStatus
+from ui.models import VideoFile, VideoThumbnail, VideoSubtitle, Video, YouTubeVideo, Collection
+
 
 # pylint: disable=unused-argument
 
@@ -42,22 +44,45 @@ def delete_youtube_video(sender, **kwargs):
     """
     Call the YouTube API to delete a video
     """
+    youtube_id = kwargs['instance'].id
+    if settings.ENABLE_VIDEO_PERMISSIONS and youtube_id is not None:
+        remove_youtube_video.delay(youtube_id)
+
+
+@receiver(post_save, sender=Collection)
+def update_collection_youtube(sender, **kwargs):
+    """
+    If a collection's stream source is changed, sync YoutubeVideo objects for public Videos
+    """
     if settings.ENABLE_VIDEO_PERMISSIONS:
-        remove_youtube_video.delay(kwargs['instance'].id)
+        for video in kwargs['instance'].videos.filter(is_public=True):
+            sync_youtube(video)
 
 
 @receiver(post_save, sender=Video)
-def sync_youtube(sender, **kwargs):
+def update_video_youtube(sender, **kwargs):
     """
-
-    Upload a video to youtube if it is public and not already on YouTube.
-    Delete from youtube if it is there and permissions are not public.
+    If a video's is_public field is changed, sync associated YoutubeVideo object
     """
     if settings.ENABLE_VIDEO_PERMISSIONS:
-        video = kwargs['instance']
-        yt_video_id = video.youtube_id
-        if video.is_public:
-            if not yt_video_id:
+        sync_youtube(kwargs['instance'])
+
+
+def sync_youtube(video):
+    """
+    Upload a video to youtube if it is public, not already on YouTube, and collection stream_source != cloudfront.
+    Delete from youtube if it exists and permissions are not public or collection stream_source == cloudfront.
+
+    Args:
+        video(ui.models.Video): The video that should be uploaded or deleted from Youtube.
+    """
+    yt_video = video.youtubevideo if hasattr(video, 'youtubevideo') else None
+    if video.is_public and video.collection.stream_source != StreamSource.CLOUDFRONT:
+        if video.original_video is not None:
+            if yt_video is None:
                 upload_youtube_video.delay(video.id)
-        elif yt_video_id:
-            YouTubeVideo.objects.get(id=yt_video_id).delete()
+            elif yt_video.status in (YouTubeStatus.FAILED, YouTubeStatus.REJECTED):
+                YouTubeVideo.objects.get(id=yt_video.id).delete()
+                upload_youtube_video.delay(video.id)
+    elif yt_video is not None:
+        YouTubeVideo.objects.get(id=yt_video.id).delete()

@@ -101,6 +101,7 @@ def test_video_detail(logged_in_client, settings):
     client, user = logged_in_client
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.GA_TRACKING_ID = 'UA-xyz-1'
+    settings.ENABLE_VIDEO_PERMISSIONS = False
     videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
     videofileHLS.video.status = 'Complete'
     url = reverse('video-detail', kwargs={'video_key': videofileHLS.video.hexkey})
@@ -128,6 +129,7 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
     client, user = logged_in_client
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.GA_TRACKING_ID = 'UA-xyz-1'
+    settings.ENABLE_VIDEO_PERMISSIONS = False
     videofileHLS = VideoFileFactory(
         hls=True,
         video__collection__owner=user,
@@ -586,6 +588,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     settings.GA_TRACKING_ID = 'tracking_id'
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.EMAIL_SUPPORT = 'support'
+    settings.ENABLE_VIDEO_PERMISSIONS = False
 
     client, user = logged_in_apiclient
     resp = client.get(url)

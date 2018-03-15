@@ -13,8 +13,6 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 
-from ui.encodings import EncodingNames
-
 log = logging.getLogger(__name__)
 
 
@@ -222,7 +220,7 @@ class YouTubeApi:
             dict: YouTube API response
 
         """
-        videofile = video.videofile_set.get(encoding=EncodingNames.ORIGINAL)
+        videofile = video.original_video
 
         request_body = dict(
             snippet=dict(
@@ -257,4 +255,5 @@ class YouTubeApi:
         Returns:
             int: 204 status code if successful
         """
+        log.exception("Deleting YT video id %s", video_id)
         return self.client.videos().delete(id=video_id).execute()
