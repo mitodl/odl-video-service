@@ -9,7 +9,7 @@ from techtv2ovs.constants import ImportStatus
 from techtv2ovs.factories import TechTVCollectionFactory, TechTVVideoFactory
 from techtv2ovs.models import TechTVCollection, TechTVVideo
 from techtv2ovs.utils import moiralist_name, get_owner, remove_tags, TechTVImporter, get_s3_videos
-from ui.constants import VideoStatus
+from ui.constants import VideoStatus, StreamSource
 from ui.factories import UserFactory
 from ui.models import VideoThumbnail
 
@@ -73,10 +73,10 @@ def test_remove_tags(html, text):
     assert remove_tags(html) == text
 
 
-@pytest.mark.parametrize('collection', [None, 123])
-def test_extract_collections(mocker, importer, collection):
+@pytest.mark.parametrize('collections', [None, [], [123]])
+def test_extract_collections(mocker, importer, collections):
     """ Assert that TechTVImporter.extract_collections returns MySQL query results  """
-    importer.collection = collection
+    importer.collections = collections
     collection_data = (('123', 'My Collection', 'My Description', 'foo@mit.edu'),)
     mocker.patch('techtv2ovs.utils.mysql_query', return_value=collection_data)
     assert list(importer.extract_collections()) == list(collection_data)
@@ -98,6 +98,20 @@ def test_process_collection(mocker, importer):
     assert list(
         ttvcollection.collection.admin_lists.values_list('name', flat=True)
     ) == ['techtv-123-my-collection-owner']
+
+
+def test_process_collection_again(mocker, importer):
+    """ Assert that the collection stream_source is updated"""
+    mocker.patch('techtv2ovs.utils.TechTVImporter.process_videos')
+    collection_data = (123, 'My Collection', 'My Description', 'foo@mit.edu')
+    importer.protected = 0
+    importer.process_collection(*collection_data)
+    ttvcollection = TechTVCollection.objects.get(id=collection_data[0])
+    assert ttvcollection.collection.stream_source == StreamSource.YOUTUBE
+    importer.noyoutube = [ttvcollection.id]
+    importer.process_collection(*collection_data)
+    collection = TechTVCollection.objects.get(id=collection_data[0]).collection
+    assert collection.stream_source == StreamSource.CLOUDFRONT
 
 
 @pytest.mark.parametrize('s3files', [
@@ -238,3 +252,19 @@ def test_run(mocker, importer):
 def test_etl_graph(importer):
     """ Test that a graph is returned by etl_graph() """
     assert isinstance(importer.etl_graph(), Graph)
+
+
+@pytest.mark.parametrize('protected', [0, 1])
+@pytest.mark.parametrize(['noyoutube', 'cloudfront', 'expected'], [
+    [[100, 200], [], StreamSource.CLOUDFRONT],
+    [[], [100, 200], None],
+    [[], [], StreamSource.YOUTUBE],
+    [[100, 200], [100, 200], StreamSource.CLOUDFRONT],
+])
+def test_destination(importer, noyoutube, cloudfront, expected, protected):
+    """ Test that the correct stream source is returned """
+    importer.protected = protected
+    importer.noyoutube = noyoutube
+    importer.cloudfront = cloudfront
+    source = importer.get_stream_source(100)
+    assert source == (None if protected == 1 else expected)

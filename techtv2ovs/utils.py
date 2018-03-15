@@ -23,6 +23,7 @@ from pycaption import CaptionConverter, SRTReader, WebVTTWriter
 from techtv2ovs.constants import TTV_THUMB_BUCKET, TTV_VIDEO_BUCKET, ImportStatus
 from techtv2ovs.models import TechTVCollection, TechTVVideo
 from techtv2ovs.tasks import process_videofiles
+from ui.constants import StreamSource
 
 from ui.models import Collection, MoiraList, Video, VideoThumbnail, VideoSubtitle
 
@@ -120,7 +121,7 @@ class TechTVImporter:
     """
 
     def __init__(self, db_user=None, db_pw=None, db_name='techtv', db_host='127.0.0.1',
-                 collection=None, aws=False, protected=1, output=sys.stdout):
+                 collections=None, aws=False, protected=1, output=sys.stdout, noyoutube=None, cloudfront=None):
         """
         Assign class properties based on kwargs
 
@@ -133,15 +134,18 @@ class TechTVImporter:
             aws (bool): Copy S3 files from TechTV to OVS
             protected (int): Process protected (1) or unprotected (0) collections
             output (object): Where to direct output to
+
         """
         self.db_user = db_user
         self.db_pw = db_pw
         self.db_name = db_name
         self.db_host = db_host
-        self.collection = collection
+        self.collections = collections
         self.aws = aws
         self.protected = protected
         self.output = output
+        self.noyoutube = noyoutube or []
+        self.cloudfront = cloudfront or []
 
     def run(self):
         """
@@ -154,6 +158,23 @@ class TechTVImporter:
             bonobo.run(
                 self.etl_graph()
             )
+
+    def get_stream_source(self, collection_id):
+        """
+        Return the appropriate stream_source for transcoded videos
+        Args:
+            collection_id (int): The collection id
+
+        Returns:
+            str: where the video should be streamed from - Youtube, Cloudfront, or either one (None)
+        """
+        if self.protected == 1:
+            return None
+        if collection_id in self.noyoutube:
+            return StreamSource.CLOUDFRONT
+        if collection_id in self.cloudfront:
+            return None
+        return StreamSource.YOUTUBE
 
     def process_thumbs(self, ttv_video):
         """
@@ -305,6 +326,7 @@ class TechTVImporter:
                     description=remove_tags(v_description),
                     source_url="http://techtv.mit.edu/videos/",
                     is_private=ttvvideo.private,
+                    is_public=(self.protected == 0)
                 )
             ttvvideo.status = ImportStatus.CREATED
             ttvvideo.save()
@@ -320,12 +342,13 @@ class TechTVImporter:
             description (str): TechTV collection description
             email (str): TechTV collection owner's email address
         """
-        ttvcollection, _ = TechTVCollection.objects.get_or_create(id=cid, defaults={
+        ttvcollection, _ = TechTVCollection.objects.update_or_create(id=cid, defaults={
             'name': name,
             'description': description,
-            'owner_email': email
+            'owner_email': email,
         })
         self.output.write('Processing collection: {}'.format(name))
+        stream_source = self.get_stream_source(cid)
         if not ttvcollection.collection:
             view_list, _ = MoiraList.objects.get_or_create(name=moiralist_name(cid, name))
             admin_list, _ = MoiraList.objects.get_or_create(name='{}-owner'.format(view_list.name))
@@ -333,14 +356,17 @@ class TechTVImporter:
                 title=name,
                 description=remove_tags(description),
                 owner=get_owner(email),
+                stream_source=stream_source
             )
             ovs_collection.admin_lists = [admin_list]
             ovs_collection.view_lists = [view_list]
             ovs_collection.save()
             ttvcollection.collection = ovs_collection
             ttvcollection.save()
+        elif ttvcollection.collection.stream_source != stream_source:
+            ttvcollection.collection.stream_source = stream_source
+            ttvcollection.collection.save()
         self.process_videos(ttvcollection)
-        ttvcollection.status = ImportStatus.COMPLETE
 
     def extract_collections(self):
         """
@@ -357,15 +383,14 @@ class TechTVImporter:
             'LEFT JOIN users u ON c.user_id = u.id '
             'WHERE v.status = \'approved\' and v.file_restored = 1 AND v.locked = 0 AND c.protected = %s'
         )
-        if self.collection:
-            collection_query += " and c.id = %s"
-            params = (self.protected, self.collection)
-        else:
-            params = (self.protected,)
+        params = [self.protected]
+        if self.collections:
+            collection_query += " and c.id in ({})".format(','.join('%s' for _ in self.collections))
+            params.extend(self.collections)
 
         collections = mysql_query(
             collection_query,
-            params,
+            tuple(params),
             self.connection
         )
         yield from collections

@@ -44,10 +44,29 @@ class Command(ETLCommand):
         )
 
         parser.add_argument(
-            '--collection',
-            dest='collection',
-            help='Process only this collection id',
-            type=int
+            '--collections',
+            dest='collections',
+            help='Process only these collection ids',
+            type=int,
+            nargs='+'
+        )
+
+        parser.add_argument(
+            '--noyoutube',
+            dest='noyoutube',
+            help='list of public collections that should not be uploaded to YouTube',
+            type=int,
+            nargs='+',
+            default=[]
+        )
+
+        parser.add_argument(
+            '--cloudfront',
+            dest='cloudfront',
+            help='list of public collections that should be streamable from both Cloudfront and Youtube',
+            type=int,
+            nargs='+',
+            default=[]
         )
 
         parser.add_argument(
@@ -69,9 +88,11 @@ class Command(ETLCommand):
             db_pw=os.getenv('MYSQL_PASSWORD', default=''),
             db_name=options['db'],
             db_host=options['host'],
-            collection=options['collection'],
+            collections=options['collections'],
             protected=options['protected'],
             aws=options['aws'],
-            output=self.stdout
+            output=self.stdout,
+            cloudfront=options['cloudfront'],
+            noyoutube=options['noyoutube']
         )
         importer.run()

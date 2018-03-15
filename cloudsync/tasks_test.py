@@ -35,7 +35,6 @@ from ui.factories import (
     VideoSubtitleFactory,
     YouTubeVideoFactory
 )
-from ui.encodings import EncodingNames
 from ui.models import Video, YouTubeVideo
 from ui.constants import VideoStatus, YouTubeStatus
 
@@ -275,7 +274,7 @@ def test_monitor_watch(mocker, user):
     assert s3c.get_object(Bucket=bucket.name, Key=filename) is not None
     monitor_watch_bucket.delay()
     new_video = Video.objects.get(source_url__endswith=filename)
-    new_videofile = new_video.videofile_set.get(encoding=EncodingNames.ORIGINAL)
+    new_videofile = new_video.original_video
     mock_encoder.assert_called_once_with(
         {
             "Key": new_videofile.s3_object_key

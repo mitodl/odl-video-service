@@ -14,7 +14,7 @@ from pycountry import languages
 
 from mail import tasks
 from ui import utils
-from ui.constants import VideoStatus, YouTubeStatus
+from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.encodings import EncodingNames
 from ui.tasks import delete_s3_objects
 
@@ -87,6 +87,12 @@ class Collection(models.Model):
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
     admin_lists = models.ManyToManyField(MoiraList, blank=True, related_name='admin_lists')
     created_at = models.DateTimeField(auto_now_add=True)
+    stream_source = models.CharField(
+        null=True,
+        blank=True,
+        choices=[(status, status) for status in StreamSource.ALL_SOURCES],
+        max_length=10
+    )
 
     objects = CollectionManager()
 
@@ -163,6 +169,13 @@ class Video(models.Model):
             return self.youtubevideo.id
         except YouTubeVideo.DoesNotExist:
             return None
+
+    @property
+    def original_video(self):
+        """
+        Return the original VideoFile if it exists
+        """
+        return self.videofile_set.filter(encoding=EncodingNames.ORIGINAL).first()
 
     @property
     def sources(self):
