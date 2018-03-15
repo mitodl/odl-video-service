@@ -126,13 +126,13 @@ def check_if_file_already_synced(local_video_records_done_folder,
         video files that appeared in both done and synced folders
         simultaneously.
     """
-    for file in os.listdir(local_video_records_done_folder):
-        if os.path.isfile(local_video_records_synced_folder + '/' + file):
-            os.replace(f"{local_video_records_done_folder}/{file}",
-                       f"{local_video_records_conflict_folder}/{file}")
+    for file_name in os.listdir(local_video_records_done_folder):
+        if os.path.isfile(local_video_records_synced_folder + '/' + file_name):
+            os.replace(f"{local_video_records_done_folder}/{file_name}",
+                       f"{local_video_records_conflict_folder}/{file_name}")
             notify_slack_channel(f"*Failed* to copy file from `{local_video_records_done_folder}`"
                                  f"to `{local_video_records_synced_folder}`."
-                                 f"Moved following file(s) to conflict folder: {file}")
+                                 f"Moved following file(s) to conflict folder: {file_name}")
 
 
 def notify_slack_channel(slack_message):
@@ -203,13 +203,13 @@ def move_files_to_synced_folder(local_video_records_done_folder,
         logger.warning("Could not find S3 sync results file",
                        s3_sync_result_file)
         sys.exit("[-] Could not find S3 sync results file")
-    with open(s3_sync_result_file) as file:
-        s3_sync_result_data = file.read()
-    for file in re.findall(r"upload:\s(?:.*\\)(.*)to", s3_sync_result_data):
+    with open(s3_sync_result_file) as file_name:
+        s3_sync_result_data = file_name.read()
+    for file_name in re.findall(r"upload:\s(?:.*\\)(.*)to", s3_sync_result_data):
         try:
-            os.rename(f"{local_video_records_done_folder}/{file}",
-                      f"{local_video_records_synced_folder}/{file}")
-            notify_slack_channel(f"Sync succeeded on: *{computer_name}* \n `{file}`")
+            os.rename(f"{local_video_records_done_folder}/{file_name}",
+                      f"{local_video_records_synced_folder}/{file_name}")
+            notify_slack_channel(f"Sync succeeded on: *{computer_name}* \n `{file_name}`")
         except OSError as err:
             logger.exception("Failed to copy or remove local file", err)
 
