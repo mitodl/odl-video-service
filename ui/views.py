@@ -3,6 +3,7 @@ import json
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import (
     get_object_or_404,
@@ -56,6 +57,28 @@ def default_js_settings(request):
     }
 
 
+def conditional_response(view, video=None, **kwargs):
+    """
+    Redirect to login page if user is anonymous and video is private.
+    Raise a permission denied error if user is logged in but doesn't have permission.
+    Otherwise, return standard template response.
+
+    Args:
+        view(TemplateView): a video-specific View object (ViewDetail, ViewEmbed, etc).
+        video(ui.models.Video): a video to display with the view
+
+    Returns:
+        TemplateResponse: the template response to render
+    """
+    if not ui_permissions.has_video_view_permission(video, view.request):
+        if view.request.user.is_authenticated:
+            raise PermissionDenied
+        else:
+            return redirect_to_login(view.request.path)
+    context = view.get_context_data(video, **kwargs)
+    return view.render_to_response(context)
+
+
 def index(request):  # pylint: disable=unused-argument
     """Index"""
     return redirect('collection-react-view')
@@ -77,6 +100,13 @@ class CollectionReactView(TemplateView):
         })
         return context
 
+    def get(self, request, *args, **kwargs):
+        """ This is the Touchstone `login` page, so redirect if `next` is a URL parameter """
+        next_redirect = request.GET.get('next')
+        if next_redirect:
+            return redirect(next_redirect)
+        return super().get(request, *args, **kwargs)
+
 
 class VideoDetail(TemplateView):
     """
@@ -84,11 +114,13 @@ class VideoDetail(TemplateView):
     """
     template_name = "ui/video_detail.html"
 
-    def get_context_data(self, video_key, **kwargs):  # pylint: disable=arguments-differ
+    def get(self, request, *args, **kwargs):
+        video = get_object_or_404(Video, key=kwargs['video_key'])
+        self.get_context_data(video, **kwargs)
+        return conditional_response(self, video, *args, **kwargs)
+
+    def get_context_data(self, video, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
-        video = get_object_or_404(Video, key=video_key)
-        if not ui_permissions.has_video_view_permission(video, self.request):
-            raise PermissionDenied
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
             'videoKey': video.key.hex,
@@ -103,11 +135,12 @@ class VideoEmbed(TemplateView):
     """Display embedded video"""
     template_name = 'ui/video_embed.html'
 
-    def get_context_data(self, video_key, **kwargs):  # pylint: disable=arguments-differ
+    def get(self, request, *args, **kwargs):
+        video = get_object_or_404(Video, key=kwargs['video_key'])
+        return conditional_response(self, video, *args, **kwargs)
+
+    def get_context_data(self, video, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
-        video = get_object_or_404(Video, key=video_key)
-        if not ui_permissions.has_video_view_permission(video, self.request):
-            raise PermissionDenied
         context['video'] = video
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
@@ -120,33 +153,27 @@ class TechTVDetail(VideoDetail):
     """
     Video detail page for a TechTV-based URL
     """
-    def get_context_data(self, video_key, **kwargs):
-        # There might be more than one imported TechTV video with this id
-        ttv_videos = get_list_or_404(TechTVVideo.objects.filter(ttv_id=video_key))
-        video = ttv_videos[0].video
-        return super().get_context_data(video.hexkey, **kwargs)
+    def get(self, request, *args, **kwargs):
+        ttv_videos = get_list_or_404(TechTVVideo.objects.filter(ttv_id=kwargs['video_key']))
+        return conditional_response(self, ttv_videos[0].video, *args, **kwargs)
 
 
 class TechTVPrivateDetail(VideoDetail):
     """
     Video detail page for a TechTV-based private URL
     """
-    def get_context_data(self, video_key, **kwargs):
-        # There might be more than one imported TechTV video with this private token
-        ttv_videos = get_list_or_404(TechTVVideo.objects.filter(private_token=video_key))
-        video = ttv_videos[0].video
-        return super().get_context_data(video.hexkey, **kwargs)
+    def get(self, request, *args, **kwargs):
+        ttv_videos = get_list_or_404(TechTVVideo.objects.filter(private_token=kwargs['video_key']))
+        return conditional_response(self, ttv_videos[0].video, *args, **kwargs)
 
 
 class TechTVEmbed(VideoEmbed):
     """
     Video embed page for a TechTV-based URL
     """
-    def get_context_data(self, video_key, **kwargs):
-        # There might be more than one imported TechTV video with this id
-        ttv_videos = get_list_or_404(TechTVVideo.objects.filter(ttv_id=video_key))
-        video = ttv_videos[0].video
-        return super().get_context_data(video.hexkey, **kwargs)
+    def get(self, request, *args, **kwargs):
+        ttv_videos = get_list_or_404(TechTVVideo.objects.filter(ttv_id=kwargs['video_key']))
+        return conditional_response(self, ttv_videos[0].video, *args, **kwargs)
 
 
 @method_decorator(login_required, name='dispatch')

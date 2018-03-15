@@ -110,7 +110,7 @@ if get_bool('USE_SHIBBOLETH', False):
     AUTHENTICATION_BACKENDS = [
         'shibboleth.backends.ShibbolethRemoteUserBackend',
     ]
-    LOGIN_URL = "/collections"
+    LOGIN_URL = "/collections/"
 else:
     LOGIN_URL = "/admin/login/"
 

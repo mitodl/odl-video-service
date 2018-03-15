@@ -25,6 +25,7 @@ from ui.serializers import (
     DropboxUploadSerializer,
     VideoSerializer)
 from ui.utils import get_moira_user
+from ui.views import CollectionReactView
 
 pytestmark = pytest.mark.django_db
 
@@ -89,11 +90,12 @@ def post_data(logged_in_apiclient):
     return input_data
 
 
-def test_index(client):
+def test_index(logged_in_client):
     """Test index anonymous"""
-    response = client.get(reverse('index'))
-    assert response.status_code == status.HTTP_302_FOUND
-    assert response.url == reverse('collection-react-view')
+    client, _ = logged_in_client
+    response = client.get(reverse('index'), follow=True)
+    assert response.status_code == status.HTTP_200_OK
+    assert isinstance(response.context_data['view'], CollectionReactView)
 
 
 def test_video_detail(logged_in_client, settings):
@@ -403,6 +405,19 @@ def test_collection_viewset_detail_as_superuser(mocker, logged_in_apiclient):
     assert result.status_code == status.HTTP_204_NO_CONTENT
 
 
+def test_collections_next(mock_moira_client, logged_in_apiclient, user_admin_list_data):
+    """
+    Tests that the collections page redirects to the URL in the `next` parameter if present
+    """
+    client, user = logged_in_apiclient
+    mock_moira_client.return_value.list_members.return_value = [user.username]
+    video_url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
+    response = client.get('/collections/?next={}'.format(video_url), follow=True)
+    final_url, status_code = response.redirect_chain[-1]
+    assert video_url == final_url
+    assert status_code == 302
+
+
 def test_video_detail_view_permission(mock_moira_client, logged_in_apiclient, user_view_list_data):
     """
     Tests that a user can view a video if user is a member of collection's view_lists
@@ -436,6 +451,20 @@ def test_video_detail_no_permission(mock_moira_client, logged_in_apiclient, user
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_data):
+    """
+    Tests that an anonymous user is redirected to the login page, with a next parameter
+    """
+    client, _ = logged_in_apiclient
+    client.logout()
+    url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
+    response = client.get(url, follow=True)
+    last_url, status_code = response.redirect_chain[-1]
+    assert settings.LOGIN_URL in last_url
+    assert status_code == 302
+    assert '?next=/videos/{}'.format(user_admin_list_data.video.hexkey) in last_url
 
 
 def test_techtv_detail_standard_url(mock_moira_client, user_view_list_data, logged_in_apiclient):
