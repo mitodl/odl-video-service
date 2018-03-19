@@ -166,7 +166,9 @@ def sync_local_to_s3(local_video_records_done_folder,
     """
     if not os.listdir(local_video_records_done_folder):
         logger.info("Nothing to sync. {} folder empty", local_video_records_done_folder)
-        notify_slack_channel(f"Nothing to sync on: *{computer_name}*")
+        notify_slack_channel(f"No videos in done folder to to sync "
+                             f"to S3 on the following lecture capture "
+                             f"computer: *{computer_name}*")
         sys.exit("[-] Nothing to sync. Folder empty")
     s3_sync_cmd = 'aws s3 sync {} s3://{} > "{}"'.format(local_video_records_done_folder,
                                                          s3_bucket_name,
@@ -179,7 +181,9 @@ def sync_local_to_s3(local_video_records_done_folder,
                                     stderr=subprocess.PIPE)
     except subprocess.SubprocessError as err:
         logger.exception("Failed to sync local files to s3 bucket")
-        notify_slack_channel(f"Sync failed: *{computer_name}* \n `{err}`")
+        notify_slack_channel(f"*Failed* to sync video(s) from done folder "
+                             f"to S3 on the following lecture capture "
+                             f"computer: *{computer_name}* \n `{err}`")
         sys.exit("[-] Failed to sync local files to s3 bucket")
     logger.info("S3 sync successfully ran: {}", cmd_output)
 
@@ -209,7 +213,9 @@ def move_files_to_synced_folder(local_video_records_done_folder,
         try:
             os.rename(f"{local_video_records_done_folder}/{file_name}",
                       f"{local_video_records_synced_folder}/{file_name}")
-            notify_slack_channel(f"Sync succeeded on: *{computer_name}* \n `{file_name}`")
+            notify_slack_channel(f"Successfully synced the following file from "
+                                 f"lecutre capture computer *{computer_name}* to S3: \n"
+                                 f"`{file_name}`")
         except OSError as err:
             logger.exception("Failed to copy or remove local file", err)
 
