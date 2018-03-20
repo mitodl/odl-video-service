@@ -3,14 +3,18 @@ import logging
 import os
 from collections import namedtuple
 from functools import lru_cache
-
+import json
+import random
 import re
+
 import boto3
 from django.conf import settings
 
 from mit_moira import Moira
+from googleapiclient.discovery import build
+from oauth2client.service_account import ServiceAccountCredentials
 
-from ui.exceptions import MoiraException
+from ui.exceptions import MoiraException, GoogleAnalyticsException
 
 log = logging.getLogger(__name__)
 
@@ -25,18 +29,23 @@ def get_moira_client():
     Returns:
         Moira: A moira client
     """
-    errors = []
-    for required_secret_file in [settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE]:
-        if not os.path.isfile(required_secret_file):
-            errors.append(
-                "Missing required secret: {}".format(required_secret_file)
-            )
-    if errors:
-        raise RuntimeError('\n'.join(errors))
+
+    _check_files_exist([settings.MIT_WS_CERTIFICATE_FILE,
+                        settings.MIT_WS_PRIVATE_KEY_FILE])
     try:
         return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
     except Exception as exc:  # pylint: disable=broad-except
         raise MoiraException('Something went wrong with creating a moira client') from exc
+
+
+def _check_files_exist(paths):
+    """Checks that files exist at given paths."""
+    errors = []
+    for path in paths:
+        if not os.path.isfile(path):
+            errors.append("File missing: expected path '{}'".format(path))
+    if errors:
+        raise RuntimeError('\n'.join(errors))
 
 
 def get_moira_user(user):
@@ -170,3 +179,142 @@ def write_x509_files():
     """Write the x509 certificate and key to files"""
     write_to_file(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_CERTIFICATE)
     write_to_file(settings.MIT_WS_PRIVATE_KEY_FILE, settings.MIT_WS_PRIVATE_KEY)
+
+
+def get_video_analytics(video_key):
+    """Get video analytics data from Google Analytics."""
+    ga_client = get_google_analytics_client()
+    ga_response = ga_client.reports().batchGet(
+        body=generate_google_analytics_query(video_key)).execute()
+    try:
+        return parse_google_analytics_response(ga_response)
+    except Exception as exc:
+        raise GoogleAnalyticsException(
+            'Could not parse analytics response') from exc
+
+
+def get_google_analytics_client():
+    """Gets a Google Analytics client.
+
+    Returns:
+        analytics_client: An analytics client
+    """
+    try:
+        credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+            json.loads(settings.GA_KEYFILE_JSON))
+        analytics_client = build('analyticsreporting', 'v4',
+                                 credentials=credentials)
+        return analytics_client
+    except Exception as exc:  # pylint: disable=broad-except
+        raise GoogleAnalyticsException('Something went wrong with creating a'
+                                       'GoogleAnaltics client') from exc
+
+
+def generate_google_analytics_query(video_key):
+    """Generates a Google Analytics query.
+
+    Returns:
+        analytics_query: a query dict suitable to use as the body of an
+        analytics 'batchGet' request.
+    """
+    # https://developers.google.com/analytics/devguides/reporting/core/v3/reference
+    START_DATE = '2005-01-01'
+    END_DATE = '9999-01-01'
+    query = {
+        'reportRequests': [
+            {
+                'viewId': settings.GA_VIEW_ID,
+                'dateRanges': [{'startDate': START_DATE, 'endDate': END_DATE}],
+                'metrics': [{'expression': 'ga:totalEvents'}],
+                'dimensions': [
+                    # [adorsk, 2018-03]
+                    # Achtung! a high degree of implicit coupling to
+                    # dimension names that have been manually set in GA.
+                    # Hard-coding for now.
+                    {'name': 'ga:eventAction'},
+                    {'name': 'ga:' + settings.GA_DIMENSION_CAMERA}
+                ],
+                'dimensionFilterClauses': [
+                    {
+                        'filters': [
+                            {
+                                'dimensionName': 'ga:eventLabel',
+                                'operator': 'EXACT',
+                                # 2018-03, dorsk
+                                # Achtung! We do video_key.capitalize()
+                                # because GA has capitalized event data,
+                                # due to an unexpected side-effect of the
+                                # react-ga library.
+                                # See: https://github.com/mitodl/odl-video-service/pull/472
+                                'expressions': [video_key.capitalize()]
+                            },
+                        ],
+                    }
+                ],
+            },
+        ],
+    }
+    return query
+
+
+def parse_google_analytics_response(ga_response):
+    """Parse a Google Analytics response.
+
+    Returns:
+        data: a dict of parsed response data, in this shape:
+            {
+                'times': [0, ..., N], # list of all times
+                'channels': ['camera0', ..., 'cameraN'], # list of all channels
+                'views_at_times': {
+                    0: {
+                        'camera0': 23,
+                        'camera1': 3,
+                        ...
+                        <cameraN>: <X>
+                    },
+                    ...
+                    <timeN>: <views_per_channel_at_timeN>
+                },
+            }
+    """
+    times = set()
+    channels = set()
+    views_at_times = {}
+    rows = ga_response['reports'][0]['data'].get('rows', [])
+    for row in rows:
+        m = re.match(r'T(\d{4})', row['dimensions'][0])
+        if not m:
+            continue
+        time_ = int(m.group(1))
+        channel = row['dimensions'][1]
+        viewers = int(row['metrics'][0]['values'][0])
+        views_at_times.setdefault(time_, {}).update({channel: viewers})
+        times.add(time_)
+        channels.add(channel)
+    return {
+        'times': sorted(list(times)),
+        'channels': sorted(list(channels)),
+        'views_at_times': views_at_times,
+    }
+
+
+def generate_mock_video_analytics_data(n=24, seed=42):
+    """Generate a mock analytics response.
+
+    This can be useful for doing integration tests with the frontend.
+    """
+    local_random = random.Random(seed)
+    times = [i for i in range(int(n))]
+    channels = ['camera%s' % i for i in range(4)]
+    views_at_times = {
+        t: {
+            channel: local_random.randint(0, 100)
+            for channel in channels
+        }
+        for t in times
+    }
+    return {
+        'times': sorted(list(times)),
+        'channels': sorted(list(channels)),
+        'views_at_times': views_at_times,
+    }

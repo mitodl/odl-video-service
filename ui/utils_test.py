@@ -1,11 +1,23 @@
 """Tests for utils methods"""
 from tempfile import NamedTemporaryFile
+import json
+
 import pytest
 from zeep.exceptions import Fault
 
 from ui import factories
-from ui.exceptions import MoiraException
-from ui.utils import write_to_file, get_moira_client, user_moira_lists, has_common_lists
+from ui.exceptions import MoiraException, GoogleAnalyticsException
+from ui.utils import (
+    write_to_file,
+    get_moira_client,
+    user_moira_lists,
+    has_common_lists,
+    get_video_analytics,
+    get_google_analytics_client,
+    generate_google_analytics_query,
+    parse_google_analytics_response,
+    generate_mock_video_analytics_data,
+)
 
 # pylint: disable=unused-argument
 
@@ -101,3 +113,177 @@ def test_has_common_lists_error(mock_moira_client):
     with pytest.raises(MoiraException) as exc:
         has_common_lists(factories.UserFactory(), ['mock_list1', 'mock_list2'])
     assert exc.match('Something went wrong with getting moira-list members')
+
+
+def test_get_video_analytics(mocker):
+    """Test that video analytics data is returned"""
+    mock_get_ga_client = mocker.patch('ui.utils.get_google_analytics_client')
+    mock_generate_ga_query = mocker.patch(
+        'ui.utils.generate_google_analytics_query')
+    mock_parse_ga_response = mocker.patch(
+        'ui.utils.parse_google_analytics_response')
+    video_key = 'some_video_key'
+    result = get_video_analytics(video_key)
+    expected_ga_client = mock_get_ga_client.return_value
+    expected_batchGet_call = expected_ga_client.reports.return_value.batchGet
+    expected_ga_query = mock_generate_ga_query.return_value
+    assert expected_batchGet_call.called_once_with(body=expected_ga_query)
+    assert mock_parse_ga_response.called_once_with(
+        expected_batchGet_call.return_value)
+    assert result is mock_parse_ga_response.return_value
+
+
+def test_get_video_analytics_parse_failure(mocker):
+    """Test that video analytics data is returned"""
+    mocker.patch('ui.utils.get_google_analytics_client')
+    mocker.patch('ui.utils.generate_google_analytics_query')
+    mock_parse_ga_response = mocker.patch(
+        'ui.utils.parse_google_analytics_response')
+    mock_parse_ga_response.side_effect = Exception('badness')
+    video_key = 'some_video_key'
+    with pytest.raises(GoogleAnalyticsException):
+        get_video_analytics(video_key)
+
+
+def test_get_google_analytics_client_success(ga_client_mocks, settings):
+    """Test that a client is returned from get_ga_client"""
+    settings.GA_KEYFILE_JSON = '{"some": "json"}'
+    result = get_google_analytics_client()
+    assert (
+        ga_client_mocks['ServiceAccountCredentials'].from_json_keyfile_dict
+    ).called_once_with(json.loads(settings.GA_KEYFILE_JSON))
+    assert ga_client_mocks['build'].called_once_with(
+        ga_client_mocks['ServiceAccountCredentials'].from_json_keyfile_dict
+        .return_value
+    )
+    assert result is ga_client_mocks['build'].return_value
+
+
+def test_generate_google_analytics_query_success(settings):
+    """Test that expected query is generated."""
+    video_key = 'some_video_key'
+    ga_view_id = 'some_view_id'
+    settings.GA_VIEW_ID = ga_view_id
+    ga_dimension_camera = 'some_camera_dimension'
+    settings.GA_DIMENSION_CAMERA = ga_dimension_camera
+    actual_query = generate_google_analytics_query(video_key)
+    expected_query = {
+        'reportRequests': [
+            {
+                'viewId': ga_view_id,
+                'dateRanges': [{
+                    'startDate': '2005-01-01',
+                    'endDate': '9999-01-01',
+                }],
+                'metrics': [{'expression': 'ga:totalEvents'}],
+                'dimensions': [
+                    {'name': 'ga:eventAction'},
+                    {'name': 'ga:' + ga_dimension_camera}
+                ],
+                'dimensionFilterClauses': [
+                    {
+                        'filters': [
+                            {
+                                'dimensionName': 'ga:eventLabel',
+                                'operator': 'EXACT',
+                                'expressions': [video_key.capitalize()]
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+    }
+    assert actual_query == expected_query
+
+
+def test_parse_google_analytics_response():
+    """Test that parse result matches expected result."""
+    mock_response = {
+        "reports": [{
+            "columnHeader": {
+                "dimensions": ["ga:eventAction", "ga:eventLabel"],
+                "metricHeader": {
+                    "metricHeaderEntries": [
+                        {
+                            "name": "ga:totalEvents",
+                            "type": "INTEGER"
+                        },
+                    ]
+                },
+            },
+            "data": {
+                "maximums": [{"values": ["2"]}],
+                "minimums": [{"values": ["1"]}],
+                "rowCount": 5,
+                "rows": [
+                    {
+                        "dimensions": ["changeCameraView", "camera2"],
+                        "metrics": [{"values": ["16"]}]
+                    },
+                    {
+                        "dimensions": ["Pause", "camera1"],
+                        "metrics": [{"values": ["4"]}]
+                    },
+                    {
+                        "dimensions": ["T0000", "camera1"],
+                        "metrics": [{"values": ["102"]}]
+                    },
+                    {
+                        "dimensions": ["T0002", "camera1"],
+                        "metrics": [{"values": ["98"]}]
+                    },
+                    {
+                        "dimensions": ["T0002", "camera2"],
+                        "metrics": [{"values": ["3"]}]
+                    },
+                ],
+                "totals": [{"values": ["30"]}]
+            }
+        }]
+    }
+    expected_result = {
+        'times': [0, 2],
+        'channels': ['camera1', 'camera2'],
+        'views_at_times': {
+            0: {
+                'camera1': 102,
+            },
+            2: {
+                'camera1': 98,
+                'camera2': 3,
+            },
+        }
+    }
+    actual_result = parse_google_analytics_response(mock_response)
+    assert actual_result == expected_result
+
+
+@pytest.mark.parametrize('n, seed, expected', [
+    (
+        1, 'some seed',
+        {'channels': ['camera0', 'camera1', 'camera2', 'camera3'],
+         'times': [0],
+         'views_at_times': {0: {'camera0': 86,
+                                'camera1': 83,
+                                'camera2': 0,
+                                'camera3': 82}}}
+    ),
+    (
+        2, 'some other seed',
+        {'channels': ['camera0', 'camera1', 'camera2', 'camera3'],
+         'times': [0, 1],
+         'views_at_times': {0: {'camera0': 35,
+                                'camera1': 63,
+                                'camera2': 0,
+                                'camera3': 64},
+                            1: {'camera0': 97,
+                                'camera1': 98,
+                                'camera2': 7,
+                                'camera3': 33}}}
+    )
+])
+def test_generate_mock_video_analytics_data(n, seed, expected):
+    """Test that returns expected result."""
+    actual = generate_mock_video_analytics_data(n=n, seed=seed)
+    assert actual == expected

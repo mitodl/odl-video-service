@@ -34,6 +34,11 @@ export const sendGAPageView = (page: string) => {
 export const initGA = () => {
   const debug = SETTINGS.reactGaDebug === "true"
   if (SETTINGS.gaTrackingID) {
+    // 2018-03, dorska
+    // Achtung! With these settings, ga will capitalize event data strings.
+    // To disable this, add a 'titleCase' option to ga.initialize, like this:
+    // ga.initialize(SETTINGS.gaTrackingID, { debug: debug, titleCase: false })
+    // see: https://github.com/react-ga/react-ga/issues/24
     ga.initialize(SETTINGS.gaTrackingID, { debug: debug })
   }
 }

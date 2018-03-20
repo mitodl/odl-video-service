@@ -29,20 +29,23 @@
       "description": "Dropbox app key for uploads/downloads",
       "required": true
     },
-    "GA_TRACKING_ID": {
-      "default": "",
-      "description": "Google Analytics Tracking ID",
-      "required": false
-    },
-    "GA_TRACKING_ID": {
-      "default": "",
-      "description": "Google Analytics Tracking ID",
-      "required": false
-    },
     "GA_DIMENSION_CAMERA": {
       "default": "",
       "description": "Google Analytics custom dimension number for tracking camera angle",
       "required": false
+    },
+    "GA_KEYFILE_JSON": {
+      "description": "Google Analytics service account keyfile as JSON string",
+      "required": true
+    },
+    "GA_TRACKING_ID": {
+      "default": "",
+      "description": "Google Analytics Tracking ID",
+      "required": false
+    },
+    "GA_VIEW_ID": {
+      "description": "Google Analytics id for view containing video analytics",
+      "required": true
     },
     "MAILGUN_KEY": {
       "description": "The token for authenticating against the Mailgun API",
@@ -179,7 +182,7 @@
     "YT_DAILY_UPLOAD_HOUR": {
       "description": "Hour at which upload_youtube_videos task should start",
       "required": false
-    },
+    }
   },
   "keywords": [
     "Django",

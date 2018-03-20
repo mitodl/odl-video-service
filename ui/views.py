@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponse
 from django.shortcuts import (
     get_object_or_404,
     redirect,
@@ -20,6 +21,7 @@ from rest_framework import (
     viewsets,
     mixins,
 )
+from rest_framework.decorators import detail_route
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -39,6 +41,8 @@ from ui.models import (
     Video,
     VideoSubtitle,
 )
+
+from ui.utils import get_video_analytics, generate_mock_video_analytics_data
 
 
 def default_js_settings(request):
@@ -333,6 +337,25 @@ class VideoViewSet(ModelDetailViewset):
     permission_classes = (
         ui_permissions.HasVideoPermissions,
     )
+
+    @detail_route()
+    def analytics(self, request, key=None):
+        """get video analytics data"""
+        # pylint: disable=unused-argument
+        if 'throw' in request.GET:
+            return HttpResponse(status=500)
+        if 'mock' in request.GET:
+            # This is not for unit testing.
+            # Instead it is for integration testing w/ front-end code.
+            # (test the full analytics system, but w/out querying google analytics)
+            data = generate_mock_video_analytics_data(**{
+                param: request.GET[param]
+                for param in ['n', 'seed']
+                if param in request.GET
+            })
+        else:
+            data = get_video_analytics(key)
+        return Response({'data': data})
 
 
 class VideoSubtitleViewSet(ModelDetailViewset):

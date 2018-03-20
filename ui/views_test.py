@@ -643,3 +643,59 @@ def test_terms_page(mocker, logged_in_client):
     response = client.get(reverse('terms-react-view'))
     assert response.status_code == status.HTTP_200_OK
     assert b'Terms of Service' in response.content
+
+
+def test_video_viewset_analytics(mocker, logged_in_apiclient):
+    """
+    Tests to retrieve video analytics
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    mock_get_video_analytics = mocker.patch('ui.views.get_video_analytics')
+    mock_get_video_analytics.return_value = {'mock-analytics-data': 'foo'}
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    video = VideoFactory(collection=collection)
+    url = reverse('models-api:video-analytics', kwargs={'key': video.hexkey})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert mock_get_video_analytics.called_once_with(video.hexkey)
+    assert result.data['data'] == mock_get_video_analytics.return_value
+
+
+def test_video_viewset_analytics_mock_data(mocker, logged_in_apiclient):
+    """
+    Tests to retrieve mock video analytics data.
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    mock_generate_mock_video_analytics_data = mocker.patch(
+        'ui.views.generate_mock_video_analytics_data')
+    mock_generate_mock_video_analytics_data.return_value = \
+        {'mock-analytics-data': 'foo'}
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    video = VideoFactory(collection=collection)
+    url = reverse('models-api:video-analytics', kwargs={'key': video.hexkey})
+    seed = 'some_seed'
+    n = 2
+    result = client.get(url, {'mock': 1, 'seed': seed, 'n': n})
+    assert result.status_code == status.HTTP_200_OK
+    assert mock_generate_mock_video_analytics_data.called_once_with(
+        seed=seed, n=n)
+    assert result.data['data'] == \
+        mock_generate_mock_video_analytics_data.return_value
+
+
+def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
+    """
+    Tests to retrieve video analytics w/ error.
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    video = VideoFactory(collection=collection)
+    url = reverse('models-api:video-analytics', kwargs={'key': video.hexkey})
+    result = client.get(url, {'throw': 1})
+    assert result.status_code == 500
