@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.15.1
+--------------
+
+- Made the message posted in slack a bit more verbose for clarity
+
 Version 0.15.0
 --------------
 
