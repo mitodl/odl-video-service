@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+Version 0.15.0
+--------------
+
+- Upgrade to Django 1.11 (#465)
+- Import public TechTV collections and set video stream source
+- Force login on protected video URL&#39;s but not public video URL&#39;s
+- Join BASE_DIR for STATIC_ROOT
+- Renamed file to file_name based on feedback
+- Added a check to verify that file has not already been synced and if it has to moved it to a &#34;conflict&#34; folder and notify slack
+- Import TechTV captions
+
 Version 0.14.1
 --------------
 
