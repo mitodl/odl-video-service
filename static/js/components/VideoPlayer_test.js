@@ -47,6 +47,7 @@ describe("VideoPlayer", () => {
       },
       tracks:        [],
       on:            sandbox.stub(),
+      tech_:         {},
       currentTime:   () => 630.5,
       duration:      () => 2400.0,
       videoWidth:    () => 640,
@@ -106,7 +107,8 @@ describe("VideoPlayer", () => {
       const onStub = sandbox.stub()
       args[2].call({
         enableTouchActivity: enableTouchActivityStub,
-        on:                  onStub
+        on:                  onStub,
+        tech_:               { hls: {} }
       })
       sinon.assert.calledWith(enableTouchActivityStub)
       sinon.assert.calledWith(onStub)
@@ -302,6 +304,36 @@ describe("VideoPlayer", () => {
           value:    1
         })
       }
+    })
+  })
+  ;[5, 15].forEach(videoTime => {
+    [1000, 2000, 3000, 4000].forEach(bandwidth => {
+      it(`Returns correct playlist if elapsed time is ${videoTime} secs, bandwidth is ${bandwidth}`, () => {
+        playerStub.tech_ = {
+          currentTime: sandbox.stub().returns(videoTime),
+          hls:         {
+            selectPlaylist: sandbox.stub(),
+            playlists:      {
+              master: {
+                playlists: [
+                  { attributes: { BANDWIDTH: 900 } },
+                  { attributes: { BANDWIDTH: 1900 } },
+                  { attributes: { BANDWIDTH: 2900 } },
+                  { attributes: { BANDWIDTH: 3900 } }
+                ]
+              }
+            },
+            systemBandwidth: bandwidth
+          }
+        }
+        const wrapper = renderPlayer()
+        wrapper.instance().player = playerStub
+        const bestPlayList = wrapper.instance().selectPlaylist()
+        assert.equal(
+          bestPlayList.attributes.BANDWIDTH,
+          videoTime < 10 ? 3900 : bandwidth - 100
+        )
+      })
     })
   })
 })
