@@ -258,5 +258,4 @@ class YouTubeApi:
         Returns:
             int: 204 status code if successful
         """
-        log.exception("Deleting YT video id %s", video_id)
         return self.client.videos().delete(id=video_id).execute()

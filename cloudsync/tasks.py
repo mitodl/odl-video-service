@@ -1,6 +1,7 @@
 """
 Tasks for cloudsync app
 """
+import logging
 import os
 import re
 from urllib.parse import unquote
@@ -10,7 +11,6 @@ import boto3
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from celery import shared_task, states, Task
-from celery.utils.log import get_task_logger
 from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from googleapiclient.errors import HttpError
@@ -21,7 +21,7 @@ from ui.models import Video, YouTubeVideo, VideoSubtitle
 from ui.constants import VideoStatus, YouTubeStatus
 from ui.utils import get_bucket
 
-log = get_task_logger(__name__)
+log = logging.getLogger(__name__)
 
 
 CONTENT_DISPOSITION_RE = re.compile(
