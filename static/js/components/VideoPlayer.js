@@ -2,7 +2,8 @@
 /* global videojs: true */
 /* global SETTINGS: false */
 import React from "react"
-
+import R from "ramda"
+import _ from "lodash"
 import { makeVideoSubtitleUrl } from "../lib/urls"
 import { videojs } from "../lib/video"
 import type { Video, VideoSubtitle } from "../flow/videoTypes"
@@ -242,11 +243,35 @@ export default class VideoPlayer extends React.Component<*, void> {
     })
   }
 
+  selectPlaylist = () => {
+    const sortByBandwidth = R.sortBy(R.path(["attributes", "BANDWIDTH"]))
+    const playlists = sortByBandwidth(
+      this.player.tech_.hls.playlists.master.playlists
+    )
+    // Always start with highest bandwidth for first 10 seconds
+    if (this.player.tech_.currentTime() < 10) {
+      return _.last(playlists)
+    }
+    // Return playlist with highest bandwidth <= system bandwidth
+    return _.last(
+      R.filter(
+        rep =>
+          rep.attributes.BANDWIDTH <=
+          _.max([
+            this.player.tech_.hls.systemBandwidth,
+            playlists[0].attributes.BANDWIDTH
+          ]),
+        playlists
+      )
+    )
+  }
+
   componentDidMount() {
     const { video, selectedCorner } = this.props
     const cropVideo = this.cropVideo
     const createEventHandler = this.createEventHandler
     const toggleFullscreen = this.toggleFullscreen
+    const selectPlaylist = this.selectPlaylist
     if (video.multiangle) {
       videojs.getComponent(
         "FullscreenToggle"
@@ -269,6 +294,9 @@ export default class VideoPlayer extends React.Component<*, void> {
             createEventHandler(event, video.key)
           })
         })
+        if (this.tech_.hls !== undefined) {
+          this.tech_.hls.selectPlaylist = selectPlaylist
+        }
       }
     )
     this.updateSubtitles()
