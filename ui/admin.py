@@ -2,7 +2,9 @@
 Admin for UI app
 """
 from django.contrib import admin
+from django.contrib.contenttypes.admin import GenericTabularInline
 
+from dj_elastictranscoder.models import EncodeJob
 from ui import models
 
 
@@ -52,10 +54,27 @@ class VideoThumbnailsInline(admin.TabularInline):
     readonly_fields = ['created_at']
 
 
+class VideoEncodeJobsInline(GenericTabularInline):
+    """
+    Inline model for video encode job
+    """
+    model = EncodeJob
+    extra = 0
+    list_display = ('id', 'state', 'message')
+    readonly_fields = ('id', 'state', 'message')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class VideoAdmin(admin.ModelAdmin):
     """Customized Video admin model"""
     model = models.Video
     inlines = [
+        VideoEncodeJobsInline,
         VideoFilesInline,
         VideoSubtitlesInline,
         VideoThumbnailsInline
@@ -64,6 +83,7 @@ class VideoAdmin(admin.ModelAdmin):
         'title',
         'created_at'
     )
+    list_filter = ['status']
     date_hierarchy = 'created_at'
     readonly_fields = ['created_at']
 
