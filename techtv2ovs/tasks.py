@@ -1,17 +1,16 @@
 """ Celery tasks for techtv2ovs """
-
+import logging
 from os.path import splitext
 
 import boto3
 from celery import shared_task
-from celery.utils.log import get_task_logger
 from django.conf import settings
 
 from techtv2ovs.constants import TTV_VIDEO_BUCKET, ImportStatus
 from techtv2ovs.models import TechTVVideo
 from ui.models import VideoFile
 
-log = get_task_logger(__name__)
+log = logging.getLogger(__name__)
 
 # pylint: disable=unused-argument,broad-except
 
