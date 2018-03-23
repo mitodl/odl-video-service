@@ -60,3 +60,6 @@ afterEach(function() {
 import chai from "chai"
 import chaiAsPromised from "chai-as-promised"
 chai.use(chaiAsPromised)
+// create fake script tag to appease videojs-youtube
+const script = document.createElement("script")
+document.body.appendChild(script)

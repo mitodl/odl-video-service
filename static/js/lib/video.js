@@ -20,6 +20,8 @@ import { makeVideoFileName, makeVideoFileUrl } from "./urls"
 global.videojs = _videojs
 require("videojs-contrib-hls")
 require("videojs-resolution-switcher")
+require("videojs-youtube")
+
 // export here to allow mocking of videojs function
 export const videojs = _videojs
 

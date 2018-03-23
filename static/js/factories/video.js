@@ -95,7 +95,8 @@ export const makeVideo = (
   is_private:         false,
   is_public:          false,
   view_lists:         [],
-  sources:            [makeVideoSource(videoKey, ENCODING_HLS)]
+  sources:            [makeVideoSource(videoKey, ENCODING_HLS)],
+  youtube_id:         null
 })
 
 export const makeVideos = (
