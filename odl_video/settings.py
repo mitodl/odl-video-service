@@ -7,6 +7,7 @@ import platform
 from urllib.parse import urljoin
 
 import dj_database_url
+from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 
 from odl_video.envs import (
@@ -404,6 +405,7 @@ YT_PROJECT_ID = get_string('YT_PROJECT_ID', '')
 YT_CLIENT_SECRET = get_string('YT_CLIENT_SECRET', '')
 YT_ACCESS_TOKEN = get_string('YT_ACCESS_TOKEN', '')
 YT_REFRESH_TOKEN = get_string('YT_REFRESH_TOKEN', '')
+YT_DAILY_UPLOAD_LIMIT = get_int('YT_DAILY_UPLOAD_LIMIT', 400)
 
 LECTURE_CAPTURE_USER = get_string('LECTURE_CAPTURE_USER', '')
 
@@ -480,6 +482,10 @@ CELERY_BEAT_SCHEDULE = {
     'watch-bucket': {
         'task': 'cloudsync.tasks.monitor_watch_bucket',
         'schedule': get_int('VIDEO_WATCH_BUCKET_FREQUENCY', 900)
+    },
+    'upload_youtube_videos': {
+        'task': 'cloudsync.tasks.upload_youtube_videos',
+        'schedule': crontab(hour=get_int('YT_DAILY_UPLOAD_HOUR', 0), minute=0)
     }
 }
 

@@ -15,6 +15,9 @@ from googleapiclient.http import MediaFileUpload
 
 log = logging.getLogger(__name__)
 
+# Quota errors may contain either one of the following
+API_QUOTA_ERROR_MSG = 'dailyLimitExceeded'
+
 
 class YouTubeUploadException(Exception):
     """Custom exception for YouTube uploads"""

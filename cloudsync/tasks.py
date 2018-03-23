@@ -16,7 +16,7 @@ from django.conf import settings
 from googleapiclient.errors import HttpError
 
 from cloudsync.api import refresh_status, process_watch_file, transcode_video
-from cloudsync.youtube import YouTubeApi
+from cloudsync.youtube import YouTubeApi, API_QUOTA_ERROR_MSG
 from ui.models import Video, YouTubeVideo, VideoSubtitle
 from ui.constants import VideoStatus, YouTubeStatus
 from ui.utils import get_bucket
@@ -155,26 +155,33 @@ def update_video_statuses(self):
             video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
 
 
-@shared_task(bind=True)
-def upload_youtube_video(self, video_id):
+@shared_task()
+def upload_youtube_videos():
     """
-    Upload a video's original source file to YouTube
+    Upload public videos one at a time to YouTube (if not already there) until the daily maximum is reached.
     """
-    video = Video.objects.get(id=video_id)
-    youtube_video, created = YouTubeVideo.objects.get_or_create(video=video)
-    # Another upload for this video is likely already running if not created here
-    if created:
+    yt_queue = Video.objects.filter(is_public=True).filter(
+        status=VideoStatus.COMPLETE).filter(youtubevideo__id__isnull=True).exclude(
+            collection__stream_source='cloudfront').order_by('-created_at')[:settings.YT_DAILY_UPLOAD_LIMIT]
+    for video in yt_queue.all():
+        youtube_video = YouTubeVideo.objects.create(video=video)
         try:
             youtube = YouTubeApi()
             response = youtube.upload_video(video)
             youtube_video.id = response['id']
             youtube_video.status = response['status']['uploadStatus']
             youtube_video.save()
-        except:
-            # If anything goes wrong, delete the YouTubeVideo object.
-            # Another upload attempt will be made the next time the video is saved.
-            youtube_video.delete()
-            raise
+        except HttpError as error:
+            log.exception("HttpError uploading video %s to Youtube: %s", video.hexkey, youtube_video.status)
+            if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
+                break
+        except:  # pylint: disable=bare-except
+            log.exception("Error uploading video %s to Youtube: %s", video.hexkey, youtube_video.status)
+        finally:
+            # If anything went wrong with the upload, delete the YouTubeVideo object.
+            # Another upload attempt will be made the next time the task is run.
+            if youtube_video.id is None:
+                youtube_video.delete()
 
 
 @shared_task(bind=True)
@@ -221,12 +228,18 @@ def update_youtube_statuses(self):
     if settings.ENABLE_VIDEO_PERMISSIONS:
         youtube = YouTubeApi()
         videos_processing = YouTubeVideo.objects.filter(status=YouTubeStatus.UPLOADED)
-        for yt_video in videos_processing:
-            yt_video.status = youtube.video_status(yt_video.id)
-            yt_video.save()
-            if yt_video.status == YouTubeStatus.PROCESSED:
-                for subtitle in yt_video.video.videosubtitle_set.all():
-                    youtube.upload_caption(subtitle, yt_video.id)
+        try:
+            for yt_video in videos_processing:
+                yt_video.status = youtube.video_status(yt_video.id)
+                yt_video.save()
+                if yt_video.status == YouTubeStatus.PROCESSED:
+                    for subtitle in yt_video.video.videosubtitle_set.all():
+                        youtube.upload_caption(subtitle, yt_video.id)
+        except HttpError as error:
+            if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
+                # Don't raise the error, task will try on next run until daily quota is reset
+                return
+            raise
 
 
 @shared_task(bind=True)

@@ -151,7 +151,15 @@
     "MIT_WS_PRIVATE_KEY": {
       "description": "X509 private key as a string",
       "required": true
-    }
+    },
+    "YT_DAILY_UPLOAD_LIMIT": {
+      "description": "Max YouTube videos to upload per day",
+      "required": false
+    },
+    "YT_DAILY_UPLOAD_HOUR": {
+      "description": "Hour at which upload_youtube_videos task should start",
+      "required": false
+    },
   },
   "keywords": [
     "Django",

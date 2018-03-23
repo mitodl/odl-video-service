@@ -3,6 +3,8 @@ Tests for tasks
 """
 import io
 import os
+import random
+import string
 
 import boto3
 import pytest
@@ -10,9 +12,8 @@ from botocore.exceptions import ClientError
 import celery
 from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
-from django.db import transaction
 from django.test import override_settings
-from googleapiclient.errors import HttpError
+from googleapiclient.errors import HttpError, ResumableUploadError
 from mock import PropertyMock, call
 from moto import mock_s3
 from requests import HTTPError
@@ -24,10 +25,11 @@ from cloudsync.tasks import (
     transcode_from_s3,
     update_video_statuses,
     monitor_watch_bucket,
-    upload_youtube_video,
+    upload_youtube_videos,
     upload_youtube_caption,
     update_youtube_statuses,
     remove_youtube_video, remove_youtube_caption)
+from cloudsync.youtube import API_QUOTA_ERROR_MSG
 from ui.factories import (
     VideoFactory,
     VideoFileFactory,
@@ -45,6 +47,12 @@ pytestmark = pytest.mark.django_db
 def video():
     """Fixture to create a video"""
     return VideoFactory()
+
+
+@pytest.fixture()
+def public_video():
+    """Fixture to create a public video"""
+    return VideoFactory(is_public=True, status=VideoStatus.COMPLETE)
 
 
 @pytest.fixture()
@@ -323,90 +331,111 @@ def test_monitor_watch_badname(mocker):
     assert Video.objects.get(source_url__endswith=filenames[2])
 
 
+@pytest.mark.parametrize('max_uploads', [2, 4])
 @override_settings(ENABLE_VIDEO_PERMISSIONS=True)
-def test_upload_youtube_video(mocker, video):
+def test_upload_youtube_videos(mocker, max_uploads):
     """
-    Test that the upload_youtube_video task calls YouTubeApi.upload_video
-    & creates a YoutubeVideo object, but only once
+    Test that the upload_youtube_videos task calls YouTubeApi.upload_video
+    & creates a YoutubeVideo object for each public video, up to the max daily limit
     """
-    youtube_id = 'abdDEFghi01'
+    settings.YT_DAILY_UPLOAD_LIMIT = max_uploads
+    settings.ENABLE_VIDEO_PERMISSIONS = True
+    private_videos = VideoFactory.create_batch(2, is_public=False, status=VideoStatus.COMPLETE)
+    VideoFactory.create_batch(3, is_public=True, status=VideoStatus.COMPLETE)
     mock_uploader = mocker.patch('cloudsync.tasks.YouTubeApi.upload_video', return_value={
-        'id': youtube_id,
+        'id': ''.join([random.choice(string.ascii_lowercase) for n in range(8)]),
         'status': {
             'uploadStatus': 'uploaded'
         }
     })
-    upload_youtube_video(video.id)
-    yt_video = YouTubeVideo.objects.get(id=youtube_id)
-    assert yt_video.video == video
-    upload_youtube_video(video.id)
-    mock_uploader.assert_called_once_with(video)
+    upload_youtube_videos()
+    assert mock_uploader.call_count == min(3, max_uploads)
+    for video in Video.objects.filter(is_public=True).order_by('-created_at')[:settings.YT_DAILY_UPLOAD_LIMIT]:
+        assert video.youtube_id is not None
+    for video in private_videos:
+        assert video.youtube_id is None
 
 
 @override_settings(ENABLE_VIDEO_PERMISSIONS=True)
-def test_upload_youtube_video_error(mocker, video):
+def test_upload_youtube_videos_error(mocker):
     """
-    Test that the YoutubeVideo object is deleted if an error occurs during upload
+    Test that the YoutubeVideo object is deleted if an error occurs during upload, and all videos are processed
     """
-    mocker.patch('cloudsync.tasks.YouTubeApi.upload_video',
-                 side_effect=HttpError(MockHttpErrorResponse(403), b''))
-    with pytest.raises(Exception):
-        # Avoid transaction management error
-        with transaction.atomic():
-            upload_youtube_video(video.id)
-    assert YouTubeVideo.objects.filter(video=video).first() is None
+    videos = VideoFactory.create_batch(3, is_public=True, status=VideoStatus.COMPLETE)
+    mock_uploader = mocker.patch('cloudsync.tasks.YouTubeApi.upload_video', side_effect=OSError)
+    upload_youtube_videos()
+    assert mock_uploader.call_count == 3
+    for video in videos:
+        assert YouTubeVideo.objects.filter(video=video).first() is None
+
+
+@pytest.mark.parametrize('msg', [API_QUOTA_ERROR_MSG, 'other error'])
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_upload_youtube_quota_exceeded(mocker, msg):
+    """
+    Test that the YoutubeVideo object is deleted if an error occurs during upload,
+    and the loop is halted if the quota is exceeded.
+    """
+    videos = VideoFactory.create_batch(3, is_public=True, status=VideoStatus.COMPLETE)
+    mock_uploader = mocker.patch('cloudsync.tasks.YouTubeApi.upload_video',
+                                 side_effect=ResumableUploadError(
+                                     MockHttpErrorResponse(403), str.encode(msg, 'utf-8')))
+    upload_youtube_videos()
+    assert mock_uploader.call_count == (1 if msg == API_QUOTA_ERROR_MSG else 3)
+    for video in videos:
+        assert YouTubeVideo.objects.filter(video=video).first() is None
 
 
 @override_settings(ENABLE_VIDEO_PERMISSIONS=True)
-def test_remove_youtube_video(mocker, video):
+def test_remove_youtube_video(mocker, public_video):
     """
     Test that the remove_youtube_video task calls YouTubeApi.delete_video
     """
     mock_delete = mocker.patch('cloudsync.tasks.YouTubeApi.delete_video')
-    yt_video = YouTubeVideoFactory(video=video)
+    yt_video = YouTubeVideoFactory(video=public_video)
     remove_youtube_video(yt_video.id)
     mock_delete.assert_called_once_with(yt_video.id)
 
 
 @override_settings(ENABLE_VIDEO_PERMISSIONS=True)
-def test_remove_youtube_video_404(mocker, video):
+def test_remove_youtube_video_404(mocker, public_video):
     """
     Test that the remove_youtube_video task does not raise an exception if a 404 error occurs
     """
     mock_delete = mocker.patch('cloudsync.tasks.YouTubeApi.delete_video',
                                side_effect=HttpError(MockHttpErrorResponse(404), b''))
-    yt_video = YouTubeVideoFactory(video=video)
+    yt_video = YouTubeVideoFactory(video=public_video)
     remove_youtube_video(yt_video.id)
     mock_delete.assert_called_once_with(yt_video.id)
 
 
 @override_settings(ENABLE_VIDEO_PERMISSIONS=True)
-def test_remove_youtube_video_500(mocker, video):
+def test_remove_youtube_video_500(mocker, public_video):
     """
     Test that the remove_youtube_video task raises an exception if a 500 error occurs
     """
     mocker.patch('cloudsync.tasks.YouTubeApi.delete_video',
                  side_effect=HttpError(MockHttpErrorResponse(500), b''))
-    yt_video = YouTubeVideoFactory(video=video)
+    yt_video = YouTubeVideoFactory(video=public_video)
     with pytest.raises(HttpError):
         remove_youtube_video(yt_video.id)
 
 
 @override_settings(ENABLE_VIDEO_PERMISSIONS=True)
-def test_upload_youtube_caption(mocker, video):
+def test_upload_youtube_caption(mocker, public_video):
     """
     Test that the upload_youtube_caption task calls YouTubeApi.upload_caption with correct arguments
     """
     mocker.patch('cloudsync.tasks.YouTubeApi.upload_video')
     mock_uploader = mocker.patch('cloudsync.tasks.YouTubeApi.upload_caption')
-    subtitle = VideoSubtitleFactory(video=video)
-    yt_video = YouTubeVideoFactory(video=video)
+    subtitle = VideoSubtitleFactory(video=public_video)
+    yt_video = YouTubeVideoFactory(video=public_video)
     upload_youtube_caption(subtitle.id)
     mock_uploader.assert_called_once_with(subtitle, yt_video.id)
 
 
 @override_settings(ENABLE_VIDEO_PERMISSIONS=True)
-def test_remove_youtube_caption(mocker, video):
+def test_remove_youtube_caption(mocker, public_video):
     """
     Test that the upload_youtube_caption task calls YouTubeApi.upload_caption with correct arguments,
     and only for language captions that actually exist on Youtube
@@ -416,11 +445,11 @@ def test_remove_youtube_caption(mocker, video):
         'fr': 'foo',
         'en': 'bar'
     })
-    YouTubeVideoFactory(video=video)
-    VideoSubtitleFactory(video=video, language='en')
-    VideoSubtitleFactory(video=video, language='fr')
-    remove_youtube_caption(video.id, 'fr')
-    remove_youtube_caption(video.id, 'zh')
+    YouTubeVideoFactory(video=public_video)
+    VideoSubtitleFactory(video=public_video, language='en')
+    VideoSubtitleFactory(video=public_video, language='fr')
+    remove_youtube_caption(public_video.id, 'fr')
+    remove_youtube_caption(public_video.id, 'zh')
     mock_delete.assert_called_once_with('foo')
 
 
@@ -439,6 +468,32 @@ def test_update_youtube_statuses(mocker):
     update_youtube_statuses()
     assert mock_uploader.call_count == 2
     assert YouTubeVideo.objects.filter(status=YouTubeStatus.PROCESSED).count() == 5
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_update_youtube_statuses_api_quota_exceeded(mocker):
+    """
+    Test that the update_youtube_statuses task stops without raising an error if the API quota is exceeded.
+    """
+    mock_video_status = mocker.patch('cloudsync.tasks.YouTubeApi.video_status',
+                                     side_effect=HttpError(MockHttpErrorResponse(403),
+                                                           str.encode(API_QUOTA_ERROR_MSG, 'utf-8')))
+    YouTubeVideoFactory.create_batch(3, status=YouTubeStatus.UPLOADED)
+    update_youtube_statuses()
+    mock_video_status.assert_called_once()
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_update_youtube_statuses_error(mocker):
+    """
+    Test that an error is raised if any error occurs other than exceeding daily API quota
+    """
+    mock_video_status = mocker.patch('cloudsync.tasks.YouTubeApi.video_status',
+                                     side_effect=HttpError(MockHttpErrorResponse(403), b'other error'))
+    YouTubeVideoFactory.create_batch(3, status=YouTubeStatus.UPLOADED)
+    with pytest.raises(HttpError):
+        update_youtube_statuses()
+    mock_video_status.assert_called_once()
 
 
 @override_settings(ENABLE_VIDEO_PERMISSIONS=True)
