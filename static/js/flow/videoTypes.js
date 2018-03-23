@@ -49,7 +49,8 @@ export type Video = {
   collection_view_lists:   Array<string>,
   is_public:              boolean,
   is_private:             boolean,
-  sources:                Array<VideoSource>
+  sources:                Array<VideoSource>,
+  youtube_id:            ?string
 };
 
 export type VideoFormState = {

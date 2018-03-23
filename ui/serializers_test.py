@@ -96,13 +96,18 @@ def test_collection_list_serializer():
     assert serializers.CollectionListSerializer(collection).data == expected
 
 
-def test_video_serializer():
+@pytest.mark.parametrize('youtube', [True, False])
+@pytest.mark.parametrize('public', [True, False])
+def test_video_serializer(youtube, public):
     """
     Test for VideoSerializer
     """
     video = factories.VideoFactory()
     video_files = [factories.VideoFileFactory(video=video)]
     video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
+    video.is_public = public
+    if youtube and public:
+        factories.YouTubeVideoFactory(video=video)
 
     expected = {
         'key': video.hexkey,
@@ -120,7 +125,8 @@ def test_video_serializer():
         'view_lists': [],
         'sources': [],
         'is_private': False,
-        'is_public': False
+        'is_public': public,
+        'youtube_id': (video.youtube_id if youtube and public else None)
     }
     assert serializers.VideoSerializer(video).data == expected
 

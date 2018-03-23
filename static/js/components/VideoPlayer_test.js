@@ -6,12 +6,17 @@ import sinon from "sinon"
 import { mount } from "enzyme"
 
 import VideoPlayer from "./VideoPlayer"
-import { makeVideo, makeVideoSubtitle } from "../factories/video"
+import {
+  makeVideo,
+  makeVideoSource,
+  makeVideoSubtitle
+} from "../factories/video"
 import * as libVideo from "../lib/video"
 import ga from "react-ga"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
 import { makeVideoSubtitleUrl } from "../lib/urls"
+import { expect } from "../util/test_utils"
 
 describe("VideoPlayer", () => {
   let video,
@@ -48,6 +53,9 @@ describe("VideoPlayer", () => {
       tracks:        [],
       on:            sandbox.stub(),
       tech_:         {},
+      reset:         sandbox.stub().returns(playerStub),
+      src:           sandbox.stub().returns(playerStub),
+      fluid:         sandbox.stub().returns(playerStub),
       currentTime:   () => 630.5,
       duration:      () => 2400.0,
       videoWidth:    () => 640,
@@ -85,6 +93,7 @@ describe("VideoPlayer", () => {
         controls:    true,
         fluid:       false,
         playsinline: true,
+        techOrder:   ["html5"],
         html5:       {
           nativeTextTracks: false
         },
@@ -227,17 +236,6 @@ describe("VideoPlayer", () => {
     assert.isDefined(wrapper.find(".vjs-playback-rate-value"))
   })
 
-  it("toggleFullScreen causes player to dispatchEvent", () => {
-    const wrapper = renderPlayer()
-    wrapper.instance().player = playerStub
-    // $FlowFixMe
-    containerStub.parentElement[FULLSCREEN_API.requestFullscreen] = () => {}
-    wrapper.instance().videoContainer = containerStub
-
-    wrapper.instance().toggleFullscreen()
-    sinon.assert.calledWith(wrapper.instance().player.el_.dispatchEvent)
-  })
-
   it("toggleFullScreen on causes player to dispatchEvent", () => {
     const wrapper = renderPlayer()
     wrapper.instance().player = playerStub
@@ -334,6 +332,37 @@ describe("VideoPlayer", () => {
           videoTime < 10 ? 3900 : bandwidth - 100
         )
       })
+    })
+  })
+  ;[false, true].forEach(function(isPublic) {
+    ["asdJ4y", null].forEach(function(youtubeId) {
+      it(`checkYouTube ${expect(
+        isPublic && youtubeId !== null
+      )} be called if video.is_public=${String(isPublic)} and video.youtube_id=${String(youtubeId)}`, async () => {
+        video.is_public = isPublic
+        video.youtube_id = youtubeId
+        const wrapper = renderPlayer()
+        const checkStub = sandbox.stub(wrapper.instance(), "checkYouTube")
+        wrapper.instance().componentDidMount()
+        sinon.assert.callCount(
+          checkStub,
+          Number(isPublic && youtubeId !== null)
+        )
+      })
+    })
+  })
+  ;[[makeVideoSource()], []].forEach(function(sources) {
+    it(`player.reset() ${expect(
+      sources.length > 0
+    )} be called if video has ${sources.length} sources`, async () => {
+      video.sources = sources
+      sandbox.stub(window, "Image")
+      const wrapper = await renderPlayer()
+      wrapper.instance().switchVideoSource()
+      sinon.assert.callCount(
+        wrapper.instance().player.reset,
+        sources.length > 0 ? 1 : 0
+      )
     })
   })
 })

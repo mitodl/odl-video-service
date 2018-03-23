@@ -21,17 +21,25 @@ const gaEvents = [
   "ended"
 ]
 
-const makeConfigForVideo = (video: Video): Object => ({
+const makeConfigForVideo = (video: Video, useYouTube: boolean): Object => ({
   autoplay:    false,
   controls:    true,
-  fluid:       false,
+  fluid:       useYouTube,
   playsinline: true,
+  techOrder:   useYouTube ? ["youtube", "html5"] : ["html5"],
   html5:       {
     nativeTextTracks: false
   },
   playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
-  sources:       video.sources,
-  plugins:       {
+  sources:       useYouTube
+    ? [
+      {
+        type: "video/youtube",
+        src:  `https://www.youtube.com/watch?v=${video.youtube_id || ""}`
+      }
+    ]
+    : video.sources,
+  plugins: {
     videoJsResolutionSwitcher: {
       default:      "high",
       dynamicLabel: true
@@ -217,6 +225,29 @@ export default class VideoPlayer extends React.Component<*, void> {
     )
   }
 
+  switchVideoSource = () => {
+    const { video } = this.props
+    if (video.sources.length > 0) {
+      this.player
+        .reset()
+        .src(video.sources)
+        .fluid(false)
+    }
+  }
+
+  imageExists(url: string) {
+    const img = new Image()
+    img.onerror = this.switchVideoSource
+    img.src = url
+  }
+
+  checkYouTube = async () => {
+    const { video } = this.props
+    // Try to load the YouTube video thumbnail image.  Assumes video availability == thumbnail availability
+    const imgUrl = `https://img.youtube.com/vi/${video.youtube_id || ""}/0.jpg`
+    this.imageExists(imgUrl)
+  }
+
   sendEvent = (action: string, label: string) => {
     if (action === "timeupdate") {
       // Track amount played in increments of 60 seconds
@@ -268,6 +299,7 @@ export default class VideoPlayer extends React.Component<*, void> {
 
   componentDidMount() {
     const { video, selectedCorner } = this.props
+
     const cropVideo = this.cropVideo
     const createEventHandler = this.createEventHandler
     const toggleFullscreen = this.toggleFullscreen
@@ -277,10 +309,11 @@ export default class VideoPlayer extends React.Component<*, void> {
         "FullscreenToggle"
       ).prototype.handleClick = toggleFullscreen
     }
+    const useYouTube = video.is_public && video.youtube_id !== null
     this.lastMinuteTracked = null
     this.player = videojs(
       this.videoNode,
-      makeConfigForVideo(video),
+      makeConfigForVideo(video, useYouTube),
       function onPlayerReady() {
         this.enableTouchActivity()
         if (video.multiangle) {
@@ -299,6 +332,9 @@ export default class VideoPlayer extends React.Component<*, void> {
         }
       }
     )
+    if (useYouTube) {
+      this.checkYouTube()
+    }
     this.updateSubtitles()
   }
 

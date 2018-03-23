@@ -22,7 +22,7 @@ from ui.factories import (
     CollectionFactory,
     UserFactory,
     MoiraListFactory, VideoSubtitleFactory)
-from ui.constants import VideoStatus
+from ui.constants import VideoStatus, StreamSource
 from ui.models import Collection
 
 pytestmark = pytest.mark.django_db
@@ -198,7 +198,8 @@ def test_video_sources_hls():
     ]
 
 
-def test_video_sources_mp4():
+@pytest.mark.parametrize('youtube', [True, False])
+def test_video_sources_mp4(youtube):
     """ Tests that the video sources property returns the expected sorted results for MP4 """
     video = VideoFactory(key='8494dafc-3665-4960-8e00-9790574ec93a')
     videofiles = [
@@ -208,7 +209,8 @@ def test_video_sources_mp4():
         VideoFileFactory(video=video, s3_object_key='basic.mp4', encoding=EncodingNames.BASIC),
         VideoFileFactory(video=video, s3_object_key='hd.mp4', encoding=EncodingNames.HD),
         ]
-    assert video.sources == [
+    video.collection.stream_source = StreamSource.YOUTUBE if youtube else None
+    assert video.sources == [] if youtube else [
         {
             'src': videofiles[4].cloudfront_url,
             'label': EncodingNames.HD,
@@ -235,3 +237,13 @@ def test_video_sources_mp4():
             'type': 'video/mp4'
         }
     ]
+
+
+def test_original_video():
+    """ Tests that the original_video property returns the VideoFile with 'original' encoding """
+    video = VideoFactory(key='8494dafc-3665-4960-8e00-9790574ec93a')
+    videofiles = [
+        VideoFileFactory(video=video, s3_object_key='original.mp4', encoding=EncodingNames.ORIGINAL),
+        VideoFileFactory(video=video, s3_object_key='transcoded.hls', encoding=EncodingNames.HLS),
+        ]
+    assert video.original_video == videofiles[0]

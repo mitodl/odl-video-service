@@ -33,19 +33,21 @@
 
 .video-js {
   &:not(.vjs-fullscreen) {
-    position: relative !important;
-    width: inherit !important;
-    height: inherit !important;
-    overflow: hidden;
-
-    .vjs-tech {
+    &:not(.vjs-youtube) {
       position: relative !important;
       width: inherit !important;
       height: inherit !important;
-      max-height: calc(100vh - 200px);
+      overflow: hidden;
 
-      @include breakpoint(mobile) {
-        max-height: calc(100vh - 60px);
+      .vjs-tech {
+        position: relative !important;
+        width: inherit !important;
+        height: inherit !important;
+        max-height: calc(100vh - 200px);
+
+        @include breakpoint(mobile) {
+          max-height: calc(100vh - 60px);
+        }
       }
     }
   }

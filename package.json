@@ -93,6 +93,7 @@
     "video.js": "^5.20.1",
     "videojs-contrib-hls": "^5.8.3",
     "videojs-resolution-switcher": "^0.4.2",
+    "videojs-youtube": "^2.4.1",
     "webpack": "^3.2.0",
     "webpack-bundle-tracker": "^0.2.0",
     "webpack-dev-middleware": "^1.11.0",

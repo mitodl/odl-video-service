@@ -53,7 +53,7 @@ def videofile():
     return VideoFileFactory()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def user():
     """Fixture to create a user"""
     return UserFactory()

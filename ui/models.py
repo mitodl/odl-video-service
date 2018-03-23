@@ -185,6 +185,8 @@ class Video(models.Model):
         Returns:
             dict: Dict of video sources for VideoJS
         """
+        if self.collection.stream_source == StreamSource.YOUTUBE:
+            return []
         sources = [
             {
                 "src": file.cloudfront_url,
