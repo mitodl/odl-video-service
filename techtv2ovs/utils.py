@@ -7,12 +7,13 @@ import os
 from html import unescape
 from io import BytesIO
 from unicodedata import normalize
+from datetime import datetime
 
 import MySQLdb
 import boto3
 import bonobo
 
-
+import pytz
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.utils.html import strip_tags
@@ -234,7 +235,6 @@ class TechTVImporter:
         )]
         for caption in captions:
             try:
-                basename, _ = os.path.splitext(caption)
                 dbx = dropbox.Dropbox(os.getenv('DROPBOX_TOKEN'))
                 dbx_folder = os.getenv('DROPBOX_FOLDER')
                 try:
@@ -249,7 +249,7 @@ class TechTVImporter:
                     Fileobj=srt_bytes,
                     Key='subtitles/techtv/{}/{}'.format(ttv_video.video.hexkey, caption)
                 )
-                vtt_key = 'subtitles/techtv/{}/{}.vtt'.format(ttv_video.video.hexkey, basename)
+                vtt_key = ttv_video.video.subtitle_key(datetime.now(tz=pytz.UTC), prefix='subtitles/techtv')
                 converter = CaptionConverter()
                 converter.read(response.content.decode('utf-8').replace("\ufeff1", "1"), SRTReader())
                 vtt_content = converter.write(WebVTTWriter())
@@ -259,7 +259,10 @@ class TechTVImporter:
                     Key=vtt_key
                 )
                 VideoSubtitle.objects.get_or_create(s3_object_key=vtt_key, defaults={
-                    'video': ttv_video.video
+                    'video': ttv_video.video,
+                    'bucket_name': settings.VIDEO_S3_SUBTITLE_BUCKET,
+                    'language': 'en',
+                    'filename': caption
                 })
             except Exception as exc:
                 self.output.write("Error: caption file {} for ttv video {}".format(caption, ttv_video.ttv_id))
