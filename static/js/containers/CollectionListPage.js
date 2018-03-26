@@ -34,7 +34,7 @@ class CollectionListPage extends React.Component<*, void> {
       <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list">
         {collections.map(collection => (
           <li key={collection.key} className="mdc-list-item">
-            <span className="mdc-list-item__start-detail grey-bg">
+            <span className="mdc-list-item__graphic grey-bg">
               <i className="material-icons" aria-hidden="true">
                 folder
               </i>
@@ -43,7 +43,7 @@ class CollectionListPage extends React.Component<*, void> {
               <Link to={makeCollectionUrl(collection.key)}>
                 {collection.title}
               </Link>
-              <span className="mdc-list-item__text__secondary">
+              <span className="mdc-list-item__secondary-text">
                 {collection.video_count} Videos
               </span>
             </span>

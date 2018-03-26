@@ -93,7 +93,7 @@ describe("Drawer", () => {
     const wrapper = await renderDrawer()
     ;[0, 1].forEach(function(col) {
       const drawerNode = wrapper
-        .find(".mdc-list-item .mdc-temporary-drawer--selected")
+        .find(".mdc-list-item .mdc-list-item--activated")
         .at(col)
       assert.equal(drawerNode.text(), collections[col].title)
       assert.equal(

@@ -90,7 +90,7 @@ describe("CollectionListPage", () => {
 
   it("has video counts per collection", async () => {
     const wrapper = await renderPage()
-    const counts = wrapper.find(".mdc-list-item__text__secondary")
+    const counts = wrapper.find(".mdc-list-item__secondary-text")
     assert.equal(counts.at(0).text(), `${collections[2].video_count} Videos`)
   })
 })
