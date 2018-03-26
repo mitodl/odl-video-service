@@ -8,6 +8,7 @@ import _ from "lodash"
 import WithDrawer from "./WithDrawer"
 import VideoCard from "../components/VideoCard"
 import Button from "../components/material/Button"
+import AnalyticsDialog from "../components/dialogs/AnalyticsDialog"
 import EditVideoFormDialog from "../components/dialogs/EditVideoFormDialog"
 import ShareVideoDialog from "../components/dialogs/ShareVideoDialog"
 import DeleteVideoDialog from "../components/dialogs/DeleteVideoDialog"
@@ -26,7 +27,7 @@ import type { CommonUiState } from "../reducers/commonUi"
 import * as commonUiActions from "../actions/commonUi"
 import VideoSaverScript from "../components/VideoSaverScript"
 
-class CollectionDetailPage extends React.Component<*, void> {
+export class CollectionDetailPage extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
     collection: ?Collection,
@@ -86,6 +87,8 @@ class CollectionDetailPage extends React.Component<*, void> {
 
   showDeleteVideoDialog = this.showVideoDialog(DIALOGS.DELETE_VIDEO)
 
+  showAnalyticsVideoDialog = this.showVideoDialog(DIALOGS.ANALYTICS)
+
   handleUpload = async (chosenFiles: Array<Object>) => {
     const { dispatch, collection } = this.props
     if (!collection) throw new Error("Collection does not exist")
@@ -114,6 +117,10 @@ class CollectionDetailPage extends React.Component<*, void> {
             video={video}
             key={video.key}
             isAdmin={isAdmin}
+            showAnalyticsDialog={this.showAnalyticsVideoDialog.bind(
+              this,
+              video.key
+            )}
             showDeleteDialog={this.showDeleteVideoDialog.bind(this, video.key)}
             showEditDialog={this.showEditVideoDialog.bind(this, video.key)}
             showShareDialog={this.showShareVideoDialog.bind(this, video.key)}
@@ -190,6 +197,22 @@ class CollectionDetailPage extends React.Component<*, void> {
       </WithDrawer>
     )
   }
+
+  getDialogComponent(dialogName: string) {
+    switch (dialogName) {
+    case DIALOGS.COLLECTION_FORM:
+      return CollectionFormDialog
+    case DIALOGS.ANALYTICS:
+      return AnalyticsDialog
+    case DIALOGS.EDIT_VIDEO:
+      return EditVideoFormDialog
+    case DIALOGS.SHARE_VIDEO:
+      return ShareVideoDialog
+    case DIALOGS.DELETE_VIDEO:
+      return DeleteVideoDialog
+    }
+    throw Error(`unknown dialog '${dialogName}'`)
+  }
 }
 
 const mapStateToProps = (state, ownProps) => {
@@ -215,12 +238,25 @@ const mapStateToProps = (state, ownProps) => {
   }
 }
 
-export default R.compose(
+const ConnectedCollectionDetailPage = R.compose(
   connect(mapStateToProps),
-  withDialogs([
-    { name: DIALOGS.COLLECTION_FORM, component: CollectionFormDialog },
-    { name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog },
-    { name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog },
-    { name: DIALOGS.DELETE_VIDEO, component: DeleteVideoDialog }
-  ])
+  withDialogs(
+    [
+      DIALOGS.COLLECTION_FORM,
+      DIALOGS.ANALYTICS,
+      DIALOGS.EDIT_VIDEO,
+      DIALOGS.SHARE_VIDEO,
+      DIALOGS.DELETE_VIDEO
+    ].map(dialogName => {
+      const dialogConfig = {
+        name:         dialogName,
+        getComponent: () => {
+          return CollectionDetailPage.prototype.getDialogComponent(dialogName)
+        }
+      }
+      return dialogConfig
+    })
+  )
 )(CollectionDetailPage)
+
+export default ConnectedCollectionDetailPage

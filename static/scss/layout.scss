@@ -15,6 +15,8 @@
 @import "~@material/toolbar/mdc-toolbar";
 @import "~@material/typography/mdc-typography";
 @import "~@material/menu/mdc-menu";
+@import "~@material/tabs/mdc-tabs";
+@import "~@material/linear-progress/mdc-linear-progress";
 
 // our imports
 @import 'generalStyles';
@@ -27,3 +29,4 @@
 @import 'errorPage';
 @import 'help-page';
 @import 'terms-page';
+@import 'mdlDataTable';

@@ -28,14 +28,20 @@ export const withDialogs = R.curry(
 
       render() {
         const { commonUi } = this.props
-
         const renderedDialogs = dialogs.map(dialogConfig =>
-          React.createElement(dialogConfig.component, {
-            key:        dialogConfig.name,
-            open:       commonUi.dialogVisibility[dialogConfig.name],
-            hideDialog: this.hideDialog.bind(this, dialogConfig.name),
-            ...this.props
-          })
+          React.createElement(
+            dialogConfig.getComponent
+              ? dialogConfig.getComponent()
+              : dialogConfig.component,
+            {
+              key:  dialogConfig.name,
+              open:
+                commonUi.dialogVisibility &&
+                !!commonUi.dialogVisibility[dialogConfig.name],
+              hideDialog: this.hideDialog.bind(this, dialogConfig.name),
+              ...this.props
+            }
+          )
         )
 
         return (

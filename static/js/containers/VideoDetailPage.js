@@ -12,6 +12,7 @@ import Drawer from "../components/material/Drawer"
 import OVSToolbar from "../components/OVSToolbar"
 import Footer from "../components/Footer"
 import VideoPlayer from "../components/VideoPlayer"
+import AnalyticsDialog from "../components/dialogs/AnalyticsDialog"
 import EditVideoFormDialog from "../components/dialogs/EditVideoFormDialog"
 import ShareVideoDialog from "../components/dialogs/ShareVideoDialog"
 import DeleteVideoDialog from "../components/dialogs/DeleteVideoDialog"
@@ -184,6 +185,12 @@ class VideoDetailPage extends React.Component<*, void> {
                       >
                         Delete
                       </Button>
+                      <Button
+                        className="analytics mdc-button--raised"
+                        onClick={showDialog.bind(this, DIALOGS.ANALYTICS)}
+                      >
+                        Analytics
+                      </Button>
                     </span>
                   )}
                 </div>
@@ -234,6 +241,7 @@ const mapStateToProps = (state, ownProps) => {
 export default R.compose(
   connect(mapStateToProps),
   withDialogs([
+    { name: DIALOGS.ANALYTICS, component: AnalyticsDialog },
     { name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog },
     { name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog },
     { name: DIALOGS.DELETE_VIDEO, component: DeleteVideoDialog }

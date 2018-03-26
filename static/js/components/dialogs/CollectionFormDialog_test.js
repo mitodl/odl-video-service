@@ -103,11 +103,14 @@ describe("CollectionFormDialog", () => {
         it(`sets ${prop}`, async () => {
           const wrapper = await renderComponent()
           const state = await listenForActions([actionType], () => {
-            wrapper.find(selector).hostNodes().simulate("change", {
-              target: {
-                value: newValue
-              }
-            })
+            wrapper
+              .find(selector)
+              .hostNodes()
+              .simulate("change", {
+                target: {
+                  value: newValue
+                }
+              })
           })
           assert.equal(getCollectionForm(state.collectionUi)[prop], newValue)
         })

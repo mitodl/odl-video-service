@@ -112,9 +112,16 @@ describe("VideoDetailPage", () => {
 
   it("does not include buttons for privileged functionality when lacking permission", async () => {
     const wrapper = await renderPage({ editable: false })
+    assert.isFalse(wrapper.find(".analytics").exists())
     assert.isFalse(wrapper.find(".edit").exists())
     assert.isFalse(wrapper.find(".dropbox").exists())
     assert.isFalse(wrapper.find(".delete").exists())
+  })
+
+  it("includes the analytics button and dialog when the user has correct permissions", async () => {
+    const wrapper = await renderPage({ editable: true })
+    assert.isTrue(wrapper.find(".analytics").exists())
+    assert.isTrue(wrapper.find("AnalyticsDialog").exists())
   })
 
   it("includes the edit button and dialog when the user has correct permissions", async () => {
@@ -131,7 +138,7 @@ describe("VideoDetailPage", () => {
 
   it("includes the dropbox button that triggers dialog when the user has correct permissions", async () => {
     const wrapper = await renderPage({ editable: true })
-    const dropboxButton = wrapper.find('.dropbox').hostNodes()
+    const dropboxButton = wrapper.find(".dropbox").hostNodes()
     assert.isTrue(dropboxButton.exists())
     dropboxButton.simulate("click")
     sinon.assert.called(dropboxStub)

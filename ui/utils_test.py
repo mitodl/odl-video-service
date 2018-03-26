@@ -262,25 +262,25 @@ def test_parse_google_analytics_response():
 @pytest.mark.parametrize('n, seed, expected', [
     (
         1, 'some seed',
-        {'channels': ['camera0', 'camera1', 'camera2', 'camera3'],
+        {'channels': ['camera1', 'camera2', 'camera3', 'camera4'],
          'times': [0],
-         'views_at_times': {0: {'camera0': 86,
-                                'camera1': 83,
-                                'camera2': 0,
-                                'camera3': 82}}}
+         'views_at_times': {0: {'camera1': 86,
+                                'camera2': 83,
+                                'camera3': 0,
+                                'camera4': 82}}}
     ),
     (
         2, 'some other seed',
-        {'channels': ['camera0', 'camera1', 'camera2', 'camera3'],
+        {'channels': ['camera1', 'camera2', 'camera3', 'camera4'],
          'times': [0, 1],
-         'views_at_times': {0: {'camera0': 35,
-                                'camera1': 63,
-                                'camera2': 0,
-                                'camera3': 64},
-                            1: {'camera0': 97,
-                                'camera1': 98,
-                                'camera2': 7,
-                                'camera3': 33}}}
+         'views_at_times': {0: {'camera1': 35,
+                                'camera2': 63,
+                                'camera3': 0,
+                                'camera4': 64},
+                            1: {'camera1': 97,
+                                'camera2': 98,
+                                'camera3': 7,
+                                'camera4': 33}}}
     )
 ])
 def test_generate_mock_video_analytics_data(n, seed, expected):

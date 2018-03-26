@@ -87,10 +87,7 @@ class Drawer extends React.Component<*, void> {
         ref={div => (this.drawerRoot = div)}
       >
         <nav className="mdc-drawer__drawer">
-          <nav
-            id="nav-username"
-            className="mdc-drawer__content mdc-list"
-          >
+          <nav id="nav-username" className="mdc-drawer__content mdc-list">
             <a
               id="collapse_item"
               className="mdc-list-item mdc-link"
@@ -103,14 +100,9 @@ class Drawer extends React.Component<*, void> {
             </a>
           </nav>
           <header className="mdc-drawer__header">
-            <div className="mdc-drawer__header-content">
-              Collections
-            </div>
+            <div className="mdc-drawer__header-content">Collections</div>
           </header>
-          <nav
-            id="nav-collections"
-            className="mdc-drawer__content mdc-list"
-          >
+          <nav id="nav-collections" className="mdc-drawer__content mdc-list">
             {collections.map(col => (
               <a
                 className="mdc-list-item mdc-list-item--activated"
