@@ -180,21 +180,27 @@ def test_process_thumbnails_error(mocker, settings, importer):
     b'\xef\xbb\xbf1\n00:00:13,333 --> 00:00:19,267\nHI.',
     b'1\n00:00:13,333 --> 00:00:19,267\nBYE.',
 ])
-def test_process_captions(mocker, importer, contents):
+def test_process_captions(mocker, importer, contents, settings):
     """ Test that a VideoSubtitle object is created from a Dropbox SRT file"""
     os.environ['DROPBOX_FOLDER'] = '/folder'
+    fake_bucket = 'ovs-subtitle-dev'
+    fake_name = 'fake1.srt'
+    settings.VIDEO_S3_SUBTITLE_BUCKET = fake_bucket
     ttv_video = TechTVVideoFactory()
     mock_response = Response()
     mock_response._content = contents  # pylint:disable=protected-access
-    mocker.patch('techtv2ovs.utils.mysql_query', return_value=(('fake1.srt',),))
+    mocker.patch('techtv2ovs.utils.mysql_query', return_value=((fake_name,),))
     mocker.patch('techtv2ovs.utils.get_bucket')
     mocker.patch('techtv2ovs.utils.dropbox.Dropbox')
     mocker.patch('techtv2ovs.utils.dropbox.Dropbox.return_value.files_download',
                  return_value=(None, mock_response))
     importer.process_captions(ttv_video)
     assert ttv_video.errors == ''
-    assert ttv_video.video.videosubtitle_set.first().s3_object_key == \
-        'subtitles/techtv/{}/fake1.vtt'.format(ttv_video.video.hexkey)
+    subtitle = ttv_video.video.videosubtitle_set.first()
+    assert 'subtitles/techtv/{}'.format(ttv_video.video.hexkey) in subtitle.s3_object_key
+    assert subtitle.bucket_name == fake_bucket
+    assert subtitle.language == 'en'
+    assert subtitle.filename == fake_name
 
 
 def test_process_captions_error(mocker, importer):
