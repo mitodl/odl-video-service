@@ -20,6 +20,10 @@ $video-card-width: 15.6%;
     padding: 20px 0;
   }
 
+  @include breakpoint(phone) {
+    padding: 20px 0;
+  }
+
   .centered-content {
     width: 80%;
     max-width: 1150px;
@@ -30,6 +34,11 @@ $video-card-width: 15.6%;
 
     @include breakpoint(mobile) {
       width: 90%;
+    }
+
+    @include breakpoint(phone) {
+      padding: 20px 20px 35px;
+      width: 92%;
     }
   }
 
@@ -45,8 +54,15 @@ $video-card-width: 15.6%;
     }
   }
 
+  .mdc-list {
+    @include breakpoint(phone) {
+      padding: 8px 10px 0;
+    }
+  }
+
   .mdc-list-item__text a {
     color: $fontblack;
+    line-height: 1.3;
 
     &:hover {
       color: $linkcolor;
@@ -60,6 +76,7 @@ $video-card-width: 15.6%;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     .grey-bg {
