@@ -502,6 +502,20 @@ def test_update_youtube_statuses_error(mocker):
 
 
 @override_settings(ENABLE_VIDEO_PERMISSIONS=True)
+def test_update_youtube_statuses_dupe(mocker):
+    """
+    Test that the status of a potential dupe video is saved as 'failed'
+    """
+    mock_video_status = mocker.patch('cloudsync.tasks.YouTubeApi.video_status',
+                                     side_effect=[IndexError, YouTubeStatus.PROCESSED, YouTubeStatus.UPLOADED])
+    YouTubeVideoFactory.create_batch(3, status=YouTubeStatus.UPLOADED)
+    update_youtube_statuses()
+    assert mock_video_status.call_count == 3
+    for status in [YouTubeStatus.FAILED, YouTubeStatus.PROCESSED, YouTubeStatus.UPLOADED]:
+        assert len(YouTubeVideo.objects.filter(status=status).all()) == 1
+
+
+@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_update_youtube_statuses_failed(mocker):
     """
     Test that the correct number of YouTubeVideo objects have their statuses updated to FAILED
