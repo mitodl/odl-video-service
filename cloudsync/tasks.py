@@ -228,18 +228,23 @@ def update_youtube_statuses(self):
     if settings.ENABLE_VIDEO_PERMISSIONS:
         youtube = YouTubeApi()
         videos_processing = YouTubeVideo.objects.filter(status=YouTubeStatus.UPLOADED)
-        try:
-            for yt_video in videos_processing:
+        for yt_video in videos_processing:
+            try:
                 yt_video.status = youtube.video_status(yt_video.id)
                 yt_video.save()
                 if yt_video.status == YouTubeStatus.PROCESSED:
                     for subtitle in yt_video.video.videosubtitle_set.all():
                         youtube.upload_caption(subtitle, yt_video.id)
-        except HttpError as error:
-            if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
-                # Don't raise the error, task will try on next run until daily quota is reset
-                return
-            raise
+            except IndexError:
+                # Video might be a dupe or deleted, mark it as failed and continue to next one.
+                yt_video.status = YouTubeStatus.FAILED
+                yt_video.save()
+                log.exception('Status of YoutubeVideo %s for Video %s not found.', yt_video.id, yt_video.video_id)
+            except HttpError as error:
+                if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
+                    # Don't raise the error, task will try on next run until daily quota is reset
+                    break
+                raise
 
 
 @shared_task(bind=True)
