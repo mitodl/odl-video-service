@@ -103,7 +103,7 @@ describe("CollectionFormDialog", () => {
         it(`sets ${prop}`, async () => {
           const wrapper = await renderComponent()
           const state = await listenForActions([actionType], () => {
-            wrapper.find(selector).simulate("change", {
+            wrapper.find(selector).hostNodes().simulate("change", {
               target: {
                 value: newValue
               }

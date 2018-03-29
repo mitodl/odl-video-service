@@ -72,6 +72,7 @@ describe("CollectionDetailPage", () => {
       }
     )
     if (!wrapper) throw new Error("Never will happen, make flow happy")
+    wrapper.update()
     return wrapper
   }
 

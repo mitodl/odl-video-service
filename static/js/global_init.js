@@ -3,6 +3,13 @@ import ReactDOM from "react-dom"
 import sinon from "sinon"
 import { makeVideo } from "./factories/video"
 
+// For setting up enzyme with react adapter.
+import { configure as configureEnzyme } from 'enzyme'
+import Adapter from 'enzyme-adapter-react-15'
+
+// Configure enzyme with react adapter.
+configureEnzyme({ adapter: new Adapter() })
+
 const _createSettings = () => ({
   videoKey:              "a_video_key",
   video:                 makeVideo("a_video_key"),
