@@ -152,8 +152,11 @@ def transcode_video(video, video_file):
         settings.AWS_ACCESS_KEY_ID,
         settings.AWS_SECRET_ACCESS_KEY
     )
+
+    user_meta = {'pipeline': 'odl-video-service-{}'.format(settings.ENVIRONMENT).lower()}
+
     try:
-        transcoder.encode(video_input, outputs, Playlists=playlists)
+        transcoder.encode(video_input, outputs, Playlists=playlists, UserMetadata=user_meta)
     except ClientError as exc:
         log.error('Transcode job creation failed for video %s', video.id)
         video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
