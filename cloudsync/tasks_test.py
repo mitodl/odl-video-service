@@ -269,7 +269,7 @@ def test_monitor_watch(mocker, user):
     """Test the Watch bucket monitor task"""
     UserFactory(username='admin')
     mocker.patch.multiple('cloudsync.tasks.settings',
-                          ET_PRESET_IDS=('1351620000001-000061',),
+                          ET_PRESET_IDS=('1351620000001-000061',), ENVIRONMENT='test',
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
     s3 = boto3.resource('s3')
@@ -291,11 +291,16 @@ def test_monitor_watch(mocker, user):
             "PresetId": "1351620000001-000061",
             "SegmentDuration": "10.0",
             "ThumbnailPattern": "thumbnails/" + new_video.hexkey + "/video_thumbnail_{count}"
-        }], Playlists=[{
+        }],
+        Playlists=[{
             "Format": "HLSv3",
             "Name": "transcoded/" + new_video.hexkey + "/video__index",
             "OutputKeys": ["transcoded/" + new_video.hexkey + "/video_1351620000001-000061"]
-        }])
+        }],
+        UserMetadata={
+            'pipeline': 'odl-video-service-test'
+        }
+    )
     assert new_videofile.bucket_name == settings.VIDEO_S3_BUCKET
     with pytest.raises(ClientError):
         s3c.get_object(Bucket=bucket.name, Key=filename)
