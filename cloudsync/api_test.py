@@ -295,7 +295,7 @@ def test_process_watch(mocker):
     """Test that a file with valid filename is processed"""
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
-                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo', ENVIRONMENT='test')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
     mocker.patch('cloudsync.api.create_lecture_collection_title', return_value='COLLECTION TITLE')
     mocker.patch('cloudsync.api.create_lecture_video_title', return_value='VIDEO TITLE')
@@ -339,7 +339,11 @@ def test_process_watch(mocker):
                 "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
                 "transcoded/" + new_video.hexkey + "/video_1351620000001-000020"
             ]
-        }])
+        }],
+        UserMetadata={
+            'pipeline': 'odl-video-service-test'
+        }
+    )
 
 
 def test_lecture_collection_title():
@@ -385,7 +389,7 @@ def test_transcode_job(mocker, videofile):
     new_video = videofile.video
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000040', '1351620000001-000020'),
-                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo', ENVIRONMENT='test')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
     api.transcode_video(new_video, videofile)  # pylint: disable=no-value-for-parameter
     mock_encoder.assert_called_once_with(
@@ -408,7 +412,10 @@ def test_transcode_job(mocker, videofile):
                 "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
                 "transcoded/" + new_video.hexkey + "/video_1351620000001-000020"
             ]
-        }]
+        }],
+        UserMetadata={
+            'pipeline': 'odl-video-service-test'
+        }
     )
     assert len(new_video.encode_jobs.all()) == 1
     assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODING
@@ -422,7 +429,7 @@ def test_transcode_job_failure(mocker, videofile):
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000020',),
-                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo', ENVIRONMENT='test')
     mocker.patch('ui.models.tasks')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode',
                                 side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
@@ -441,7 +448,10 @@ def test_transcode_job_failure(mocker, videofile):
             "Format": "HLSv3",
             "Name": "transcoded/" + new_video.hexkey + "/video__index",
             "OutputKeys": ["transcoded/" + new_video.hexkey + "/video_1351620000001-000020"]
-        }]
+        }],
+        UserMetadata={
+            'pipeline': 'odl-video-service-test'
+        }
     )
     assert len(new_video.encode_jobs.all()) == 1
     assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL

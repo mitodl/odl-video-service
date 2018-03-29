@@ -229,17 +229,19 @@ class Video(models.Model):
         basename, _ = os.path.splitext(original_s3_key)
         return output_template.format(prefix=TRANSCODE_PREFIX, s3key=basename, preset=preset)
 
-    def subtitle_key(self, dttm, language='en'):
+    def subtitle_key(self, dttm, language='en', prefix='subtitles'):
         """
         Returns an S3 object key to be used for a subtitle file
         Args:
             language(str): 2-letter language code
             dttm(DateTime): a DateTime object
+            prefix(str): beginning of S3 key
 
         Returns:
             str: S3 object key
         """
-        return 'subtitles/{key}/subtitles_{key}_{dt}_{lang}.vtt'.format(
+        return '{prefix}/{key}/subtitles_{key}_{dt}_{lang}.vtt'.format(
+            prefix=prefix,
             key=self.hexkey,
             dt=dttm.strftime('%Y%m%d%H%M%S'),
             lang=language
