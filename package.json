@@ -102,7 +102,7 @@
   },
   "engines": {
     "node": "8.5",
-    "yarn": "1.5.1"
+    "yarn": "1.2.1"
   },
   "scripts": {
     "postinstall": "./webpack_if_prod.sh",
