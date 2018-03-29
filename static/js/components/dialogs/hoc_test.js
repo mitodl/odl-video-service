@@ -92,12 +92,15 @@ describe("Dialog higher-order component", () => {
 
   it("should provide a function that lets the wrapped component launch the dialog", async () => {
     const wrapper = renderTestComponentWithDialogs()
-    const testDialog = wrapper.find("TestDialog")
+    let testDialog = wrapper.find("TestDialog")
     assert.isFalse(testDialog.prop("open"))
+    assert.isFalse(testDialog.find("Dialog").prop("open"))
 
     return await listenForActions([SHOW_DIALOG], () => {
       wrapper.find(selectors.OPEN_BTN).prop("onClick")()
     }).then(() => {
+      wrapper.update()
+      testDialog = wrapper.find('TestDialog')
       assert.isTrue(testDialog.prop("open"))
       assert.isTrue(testDialog.find("Dialog").prop("open"))
     })

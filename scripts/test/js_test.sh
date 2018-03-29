@@ -12,6 +12,9 @@ then
     export CMD="node ./node_modules/mocha/bin/_mocha --watch"
 else
     export CMD="node ./node_modules/mocha/bin/_mocha"
+    if [[ ! -z "$BAIL" ]]; then
+      export CMD="$CMD --bail"
+    fi
 fi
 
 export FILE_PATTERN=${1:-'"static/**/*/*_test.js"'}

@@ -89,9 +89,12 @@ describe("EditVideoFormDialog", () => {
       previousFormState.key,
       store.getState().videoUi.editVideoForm.key
     )
-    assert.equal(wrapper.find(selectors.TITLE_INPUT).prop("value"), video.title)
     assert.equal(
-      wrapper.find(selectors.DESC_INPUT).prop("value"),
+      wrapper.find(selectors.TITLE_INPUT).hostNodes().prop("value"),
+      video.title
+    )
+    assert.equal(
+      wrapper.find(selectors.DESC_INPUT).hostNodes().prop("value"),
       video.description
     )
   })
@@ -135,7 +138,7 @@ describe("EditVideoFormDialog", () => {
       SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = true
       const wrapper = await renderComponent()
       const state = await listenForActions([actionType], () => {
-        wrapper.find(selector).simulate("change", {
+        wrapper.find(selector).hostNodes().simulate("change", {
           target: {
             value: newValue
           }
@@ -154,7 +157,7 @@ describe("EditVideoFormDialog", () => {
     it(`permissions field ${selector} not present if feature is disabled`, async () => {
       SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false
       const wrapper = await renderComponent()
-      assert.equal(wrapper.find(selector).length, 0)
+      assert.equal(wrapper.find(selector).hostNodes().length, 0)
     })
   }
 
@@ -169,7 +172,7 @@ describe("EditVideoFormDialog", () => {
         video.videosubtitle_set.push(makeVideoSubtitle(video.key, "fr"))
       }
       const wrapper = await renderComponent()
-      const publicOption = wrapper.find("#video-view-perms-view-public").props()
+      const publicOption = wrapper.find("#video-view-perms-view-public").hostNodes().props()
       assert.equal(publicOption.disabled, disabled)
     })
   }

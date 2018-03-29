@@ -59,6 +59,7 @@ describe("VideoDetailPage", () => {
     if (!wrapper) {
       throw new Error("Never will happen, make flow happy")
     }
+    wrapper.update()
     return wrapper
   }
 
@@ -130,8 +131,9 @@ describe("VideoDetailPage", () => {
 
   it("includes the dropbox button that triggers dialog when the user has correct permissions", async () => {
     const wrapper = await renderPage({ editable: true })
-    assert.isTrue(wrapper.find(".dropbox").exists())
-    wrapper.find(".dropbox").simulate("click")
+    const dropboxButton = wrapper.find('.dropbox').hostNodes()
+    assert.isTrue(dropboxButton.exists())
+    dropboxButton.simulate("click")
     sinon.assert.called(dropboxStub)
   })
 
