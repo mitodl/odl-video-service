@@ -131,7 +131,7 @@ describe("VideoDetailPage", () => {
 
   it("includes the dropbox button that triggers dialog when the user has correct permissions", async () => {
     const wrapper = await renderPage({ editable: true })
-    let dropboxButton = wrapper.find('.dropbox').hostNodes()
+    const dropboxButton = wrapper.find('.dropbox').hostNodes()
     assert.isTrue(dropboxButton.exists())
     dropboxButton.simulate("click")
     sinon.assert.called(dropboxStub)
