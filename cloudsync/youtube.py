@@ -11,7 +11,8 @@ import oauth2client
 from django.conf import settings
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
+from smart_open.s3 import SeekableBufferedInputBase
 
 log = logging.getLogger(__name__)
 
@@ -235,14 +236,11 @@ class YouTubeApi:
             )
         )
 
-        # YouTube API seems to insist on the video contents being available in their entirety before uploading,
-        # so download from S3 into a temporary named file.
-        with NamedTemporaryFile() as uploadfile:
-            self.s3.download_file(settings.VIDEO_S3_BUCKET, videofile.s3_object_key, uploadfile.name)
+        with SeekableBufferedInputBase(videofile.bucket_name, videofile.s3_object_key) as s3_stream:
             request = self.client.videos().insert(
                 part=','.join(request_body.keys()),
                 body=request_body,
-                media_body=MediaFileUpload(uploadfile.name, mimetype='video/*', chunksize=-1, resumable=True)
+                media_body=MediaIoBaseUpload(s3_stream, mimetype='video/*', chunksize=-1, resumable=True)
             )
 
         response = resumable_upload(request)

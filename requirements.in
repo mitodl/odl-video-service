@@ -43,4 +43,4 @@ mysqlclient
 dropbox
 bonobo
 -e git+https://github.com/mitodl/pycaption.git#egg=pycaption
-
+smart_open==1.5.7
