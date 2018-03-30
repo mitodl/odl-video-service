@@ -1,6 +1,8 @@
 """
 conftest for pytest in this module
 """
+from io import BytesIO
+
 import pytest
 import requests_mock
 import botocore.session
@@ -62,7 +64,7 @@ def youtube_mock(mocker):
     mocker.patch('cloudsync.youtube.boto3')
     mocker.patch('cloudsync.youtube.oauth2client')
     mocker.patch('cloudsync.youtube.build')
-    mocker.patch('cloudsync.youtube.MediaFileUpload', return_value=b'')
+    mocker.patch('cloudsync.youtube.SeekableBufferedInputBase', return_value=BytesIO(b'123'))
 
 
 class MockClientET:
