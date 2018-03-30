@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 0.15.2
+--------------
+
+- Don&#39;t try to save EncodeJobs on the video admin page
+- Switch from celery.get_task_logger() to logging.getLogger() for tasks
+- Show the encode job associated with each video in Admin
+- Upload to youtube via daily celery task instead of signal
+- Play YouTube videos through VideoJS
+- Custom selectPlaylist function for videojs
+
 Version 0.15.1
 --------------
 
