@@ -128,7 +128,7 @@ class Video(models.Model):
     key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     collection = models.ForeignKey(Collection, related_name='videos')
     created_at = models.DateTimeField(auto_now_add=True)
-    title = models.CharField(max_length=250, blank=True)
+    title = models.CharField(max_length=250, blank=False)
     description = models.TextField(blank=True)
     source_url = models.URLField()
     status = models.CharField(

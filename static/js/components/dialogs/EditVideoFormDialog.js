@@ -295,6 +295,7 @@ class EditVideoFormDialog extends React.Component<*, void> {
             onChange={this.setEditVideoTitle}
             value={editVideoForm.title}
             validationMessage={errors ? errors.title : ""}
+            required
           />
           <Textarea
             label="Description"

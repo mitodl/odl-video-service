@@ -62,6 +62,18 @@ def test_collection_serializer_validation_fake_view_lists(mocker):
     assert exc.match('Moira list does not exist: {}'.format(collection.view_lists.first().name))
 
 
+def test_collection_serializer_validate_title(mocker):
+    """
+    Test that we can't save a blank title
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    collection = factories.CollectionFactory(title="")
+    serialized_data = serializers.CollectionSerializer(collection).data
+    with pytest.raises(ValidationError) as exc:
+        serializers.CollectionSerializer(data=serialized_data).is_valid(raise_exception=True)
+    assert exc.value.detail == {'title': ['This field may not be blank.']}
+
+
 @pytest.mark.parametrize("has_permission", [True, False])
 def test_collection_serializer_admin_flag(mocker, has_permission):
     """
@@ -129,6 +141,19 @@ def test_video_serializer(youtube, public):
         'youtube_id': (video.youtube_id if youtube and public else None)
     }
     assert serializers.VideoSerializer(video).data == expected
+
+
+def test_video_serializer_validate_title(mocker):
+    """
+    Test that VideoSerializer raises if title is blank
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    video = factories.VideoFactory()
+    video.title = ""
+    serialized_data = serializers.VideoSerializer(video).data
+    with pytest.raises(ValidationError) as exc:
+        serializers.VideoSerializer(data=serialized_data).is_valid(raise_exception=True)
+    assert exc.value.detail == {'title': ['This field may not be blank.']}
 
 
 def test_dropbox_upload_serializer():
