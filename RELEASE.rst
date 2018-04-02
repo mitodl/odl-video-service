@@ -1,6 +1,20 @@
 Release Notes
 =============
 
+Version 0.16.0
+--------------
+
+- add .pytest-cache to .gitignore
+- if YoutubeVideo status not found, mark as failed
+- &#39;let&#39; =&gt; &#39;const&#39;
+- fix &#39;bail&#39; flag conditional
+- fix yarn version
+- enzyme =&gt; enzyme3
+- Add {&#39;pipeline&#39;: &#39;odl-video-service-&lt;environment&gt;&#39;} to &#39;UserMetadata&#39; to ElasticTranscoder job
+- add bail option
+- Corrextly assign attributes to VideoSubtitles imported from TechTV
+- Fixes a layout issue with squeezed icons (#491)
+
 Version 0.15.2
 --------------
 
