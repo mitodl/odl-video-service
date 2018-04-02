@@ -1,5 +1,6 @@
 """ Tests for techtv2ovs.utils """
 import os
+
 import pytest
 from bonobo.structs import Graph
 from dropbox.exceptions import ApiError
@@ -121,7 +122,9 @@ def test_process_collection_again(mocker, importer):
 def test_process_videos(mocker, s3files, importer):
     """ Assert that correct video objects are created by TechTVImporter.process_videos"""
     ttvcollection = TechTVCollectionFactory()
-    video_data = (('456', 'My Video', 'My Description', '123asda23', 0, None),)
+    title = 'My Title'
+    description = 'My Description'
+    video_data = (('456', '<i>{}</i>'.format(title), '<i>{}</i>'.format(description), '123asda23', 0, None),)
     s3_videos = mocker.patch('techtv2ovs.utils.get_s3_videos', return_value=s3files)
     mocker.patch('techtv2ovs.utils.mysql_query', return_value=video_data)
     mocker.patch('techtv2ovs.utils.TechTVImporter.process_files')
@@ -132,8 +135,8 @@ def test_process_videos(mocker, s3files, importer):
     assert ttv_video.status == (ImportStatus.CREATED if s3files else ImportStatus.MISSING)
     if s3files:
         assert ttv_video.video.status == VideoStatus.CREATED
-        assert ttv_video.video.title == video_data[0][1]
-        assert ttv_video.video.description == video_data[0][2]
+        assert ttv_video.video.title == title
+        assert ttv_video.video.description == description
     else:
         assert ttv_video.video is None
     assert s3_videos.call_count == 1

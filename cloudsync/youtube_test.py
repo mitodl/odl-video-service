@@ -1,12 +1,16 @@
 """
 Tests for youtube api
 """
+import random
+import string
+
 import pytest
 from googleapiclient.errors import HttpError
 
 from cloudsync.conftest import MockHttpErrorResponse
 from cloudsync.youtube import YouTubeApi, YouTubeUploadException
-from ui.factories import VideoFileFactory, VideoSubtitleFactory
+from ui.constants import VideoStatus
+from ui.factories import VideoFileFactory, VideoSubtitleFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -85,6 +89,23 @@ def test_upload_errors_retryable(mocker, error, retryable):
     with pytest.raises(Exception) as exc:
         YouTubeApi().upload_video(videofile.video)
     assert str(exc.value).startswith('Retried YouTube upload 10x') == retryable
+
+
+def test_upload_video_long_fields(mocker):
+    """
+    Test that the upload_youtube_video task truncates title and description if too long
+    """
+    title = ''.join(random.choice(string.ascii_lowercase) for c in range(105))
+    desc = ''.join(random.choice(string.ascii_lowercase) for c in range(5005))
+    video = VideoFactory.create(title=title, description=desc, is_public=True, status=VideoStatus.COMPLETE)
+    VideoFileFactory(video=video)
+    mocker.patch('cloudsync.youtube.resumable_upload')
+    youtube_mocker = mocker.patch('cloudsync.youtube.build')
+    mock_upload = youtube_mocker().videos.return_value.insert
+    YouTubeApi().upload_video(video)
+    called_args, called_kwargs = mock_upload.call_args
+    assert called_kwargs['body']['snippet']['title'] == title[:100]
+    assert called_kwargs['body']['snippet']['description'] == desc[:5000]
 
 
 def test_upload_caption_calls_insert(mocker):

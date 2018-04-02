@@ -227,8 +227,8 @@ class YouTubeApi:
 
         request_body = dict(
             snippet=dict(
-                title=video.title,
-                description=video.description
+                title=video.title[:100],
+                description=video.description[:5000]
             ),
             status=dict(
                 privacyStatus=privacy

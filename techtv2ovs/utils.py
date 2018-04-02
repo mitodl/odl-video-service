@@ -325,7 +325,7 @@ class TechTVImporter:
             if not ttvvideo.video:
                 ttvvideo.video = Video.objects.create(
                     collection=ttvcollection.collection,
-                    title=v_title,
+                    title=remove_tags(v_title),
                     description=remove_tags(v_description),
                     source_url="http://techtv.mit.edu/videos/",
                     is_private=ttvvideo.private,
