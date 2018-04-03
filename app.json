@@ -152,6 +152,26 @@
       "description": "X509 private key as a string",
       "required": true
     },
+    "YT_PROJECT_ID": {
+      "description": "YouTube project ID",
+      "required": false
+    },
+    "YT_CLIENT_ID": {
+      "description": "YouTube client ID",
+      "required": true
+    },
+    "YT_CLIENT_SECRET": {
+      "description": "YouTube client secret",
+      "required": true
+    },
+    "YT_ACCESS_TOKEN": {
+      "description": "YouTube access token",
+      "required": true
+    },
+    "YT_REFRESH_TOKEN": {
+      "description": "YouTube refresh token",
+      "required": true
+    },
     "YT_DAILY_UPLOAD_LIMIT": {
       "description": "Max YouTube videos to upload per day",
       "required": false

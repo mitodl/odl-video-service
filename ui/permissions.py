@@ -5,7 +5,6 @@ import logging
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.conf import settings
 
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import (
@@ -46,16 +45,15 @@ def has_video_view_permission(obj, request):
         bool: True if the user can view the video, False otherwise
 
     """
-    if settings.ENABLE_VIDEO_PERMISSIONS:
-        if obj.is_public or request.user.is_superuser or request.user == obj.collection.owner:
-            return True
-        if obj.is_private:
-            return has_admin_permission(obj.collection, request)
-        if request.method in SAFE_METHODS:
-            view_list = list(obj.view_lists.values_list('name', flat=True))
-            if view_list:
-                all_lists = view_list + list(obj.admin_lists.values_list('name', flat=True))
-                return has_common_lists(request.user, all_lists)
+    if obj.is_public or request.user.is_superuser or request.user == obj.collection.owner:
+        return True
+    if obj.is_private:
+        return has_admin_permission(obj.collection, request)
+    if request.method in SAFE_METHODS:
+        view_list = list(obj.view_lists.values_list('name', flat=True))
+        if view_list:
+            all_lists = view_list + list(obj.admin_lists.values_list('name', flat=True))
+            return has_common_lists(request.user, all_lists)
     return has_collection_view_permission(obj.collection, request)
 
 

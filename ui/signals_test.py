@@ -1,6 +1,5 @@
 """ Test model signals"""
 import pytest
-from django.test import override_settings
 
 from ui.constants import StreamSource, YouTubeStatus
 from ui.encodings import EncodingNames
@@ -20,39 +19,33 @@ def video_with_file():
     return video
 
 
-@pytest.mark.parametrize("enable_video_permissions", [True, False])
-def test_youtube_video_delete_signal(mocker, settings, enable_video_permissions):
+def test_youtube_video_delete_signal(mocker):
     """ Tests that a video's YouTubeVideo object is deleted after changing from public to private"""
-    settings.ENABLE_VIDEO_PERMISSIONS = enable_video_permissions
     mock_task = mocker.patch('ui.signals.remove_youtube_video.delay')
     video = VideoFactory(is_public=True)
     yt_video = YouTubeVideoFactory(video=video)
     assert YouTubeVideo.objects.filter(id=yt_video.id).first() == yt_video
     video.is_public = False
     video.save()
-    expected_call_count = 1 if enable_video_permissions else 0
-    assert mock_task.call_count == expected_call_count
+    mock_task.assert_called_once_with(video.youtube_id)
 
 
-@pytest.mark.parametrize("enable_video_permissions", [True, False])
-def test_youtube_video_permissions_signal(mocker, settings, enable_video_permissions):
+def test_youtube_video_permissions_signal(mocker):
     """ Tests that a video's public permissions are removed if it's subtitle is deleted """
-    settings.ENABLE_VIDEO_PERMISSIONS = enable_video_permissions
     mock_delete_video = mocker.patch('ui.signals.remove_youtube_video.delay')
     mock_delete_caption = mocker.patch('ui.signals.remove_youtube_caption.delay')
     mocker.patch('ui.models.VideoSubtitle.delete_from_s3')
-    video = VideoFactory(is_public=enable_video_permissions)
+    video = VideoFactory(is_public=True)
     YouTubeVideoFactory(video=video)
     VideoSubtitleFactory(video=video)
     VideoSubtitleFactory(video=video, language='fr')
     video.videosubtitle_set.get(language='fr').delete()
     # video's public status should not be changed as long as 1 subtitle still exists
-    assert video.is_public == enable_video_permissions
-    expected_call_count = 1 if enable_video_permissions else 0
-    assert mock_delete_caption.call_count == expected_call_count
+    assert video.is_public is True
+    assert mock_delete_caption.call_count == 1
     video.videosubtitle_set.first().delete()
     # If no subtitles exists, video should be made non-public and deleted from youtube
-    assert mock_delete_video.call_count == expected_call_count
+    assert mock_delete_video.call_count == 1
     assert not video.is_public
     caption = VideoSubtitleFactory(video=video)
     mock_video_save = mocker.patch('ui.models.Video.save')
@@ -67,9 +60,8 @@ def test_youtube_video_permissions_signal(mocker, settings, enable_video_permiss
     [False, True, 1],
     [False, False, 0]
 ])
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_youtube_sync_signal(mocker, is_public, on_youtube, delete_count, video_with_file):
-    """Tests tasks for deleting from YouTube are called when appropriate."""
+    """Tests tasks for uploading or deleting from YouTube are called when appropriate."""
     mock_delete = mocker.patch('ui.signals.YouTubeVideo.delete')
     if on_youtube:
         YouTubeVideoFactory(video=video_with_file)
@@ -80,7 +72,6 @@ def test_youtube_sync_signal(mocker, is_public, on_youtube, delete_count, video_
 
 
 @pytest.mark.parametrize('status', [YouTubeStatus.REJECTED, YouTubeStatus.FAILED, YouTubeStatus.UPLOADED])
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_youtube_sync_redo_failed(mocker, video_with_file, status):
     """ Test that an existing youtube video is deleted if it has a bad status"""
     mock_delete = mocker.patch('ui.signals.YouTubeVideo.delete')

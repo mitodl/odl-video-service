@@ -508,15 +508,13 @@ def test_techtv_detail_embed_url(mock_moira_client, user_view_list_data, logged_
     assert json.loads(result.context_data['js_settings_json'])['video']['key'] == user_view_list_data.video.hexkey
 
 
-@pytest.mark.parametrize("enable_video_permissions", [False, True])
-def test_upload_subtitles(logged_in_apiclient, mocker, enable_video_permissions, settings):
+def test_upload_subtitles(logged_in_apiclient, mocker):
     """
     Tests for UploadVideoSubtitle
     """
     mocker.patch('ui.views.cloudapi.boto3')
     expected_subtitle_key = 'subtitles/test/20171227121212_en.vtt'
     mocker.patch('ui.models.Video.subtitle_key', return_value=expected_subtitle_key)
-    settings.ENABLE_VIDEO_PERMISSIONS = enable_video_permissions
     client, user = logged_in_apiclient
     video = VideoFactory(collection=CollectionFactory(owner=user))
     yt_video = YouTubeVideoFactory(video=video)
@@ -539,9 +537,8 @@ def test_upload_subtitles(logged_in_apiclient, mocker, enable_video_permissions,
     }
     for key in expected_data:
         assert expected_data[key] == response.data[key]
-    if enable_video_permissions:
-        assert VideoSubtitle.objects.get(id=response.data['id']).video.youtube_id == yt_video.id
-        youtube_task.assert_called_once_with(response.data['id'])
+    assert VideoSubtitle.objects.get(id=response.data['id']).video.youtube_id == yt_video.id
+    youtube_task.assert_called_once_with(response.data['id'])
 
 
 def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient, mocker):

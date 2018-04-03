@@ -276,10 +276,9 @@ class UploadVideoSubtitle(APIView):
         subtitle = cloudapi.upload_subtitle_to_s3(serializer.validated_data, file_obj)
 
         # Upload to YouTube if necessary
-        if settings.ENABLE_VIDEO_PERMISSIONS:
-            youtube_id = subtitle.video.youtube_id
-            if youtube_id:
-                upload_youtube_caption.delay(subtitle.id)
+        youtube_id = subtitle.video.youtube_id
+        if youtube_id:
+            upload_youtube_caption.delay(subtitle.id)
 
         return Response(
             data=serializers.VideoSubtitleSerializer(subtitle).data,
