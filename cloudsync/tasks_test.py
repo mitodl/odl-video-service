@@ -337,14 +337,12 @@ def test_monitor_watch_badname(mocker):
 
 
 @pytest.mark.parametrize('max_uploads', [2, 4])
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_upload_youtube_videos(mocker, max_uploads):
     """
     Test that the upload_youtube_videos task calls YouTubeApi.upload_video
     & creates a YoutubeVideo object for each public video, up to the max daily limit
     """
     settings.YT_DAILY_UPLOAD_LIMIT = max_uploads
-    settings.ENABLE_VIDEO_PERMISSIONS = True
     private_videos = VideoFactory.create_batch(2, is_public=False, status=VideoStatus.COMPLETE)
     VideoFactory.create_batch(3, is_public=True, status=VideoStatus.COMPLETE)
     mock_uploader = mocker.patch('cloudsync.tasks.YouTubeApi.upload_video', return_value={
@@ -361,7 +359,6 @@ def test_upload_youtube_videos(mocker, max_uploads):
         assert video.youtube_id is None
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_upload_youtube_videos_error(mocker):
     """
     Test that the YoutubeVideo object is deleted if an error occurs during upload, and all videos are processed
@@ -375,7 +372,6 @@ def test_upload_youtube_videos_error(mocker):
 
 
 @pytest.mark.parametrize('msg', [API_QUOTA_ERROR_MSG, 'other error'])
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_upload_youtube_quota_exceeded(mocker, msg):
     """
     Test that the YoutubeVideo object is deleted if an error occurs during upload,
@@ -391,7 +387,6 @@ def test_upload_youtube_quota_exceeded(mocker, msg):
         assert YouTubeVideo.objects.filter(video=video).first() is None
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_remove_youtube_video(mocker, public_video):
     """
     Test that the remove_youtube_video task calls YouTubeApi.delete_video
@@ -402,7 +397,6 @@ def test_remove_youtube_video(mocker, public_video):
     mock_delete.assert_called_once_with(yt_video.id)
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_remove_youtube_video_404(mocker, public_video):
     """
     Test that the remove_youtube_video task does not raise an exception if a 404 error occurs
@@ -414,7 +408,6 @@ def test_remove_youtube_video_404(mocker, public_video):
     mock_delete.assert_called_once_with(yt_video.id)
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_remove_youtube_video_500(mocker, public_video):
     """
     Test that the remove_youtube_video task raises an exception if a 500 error occurs
@@ -426,7 +419,6 @@ def test_remove_youtube_video_500(mocker, public_video):
         remove_youtube_video(yt_video.id)
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_upload_youtube_caption(mocker, public_video):
     """
     Test that the upload_youtube_caption task calls YouTubeApi.upload_caption with correct arguments
@@ -439,7 +431,6 @@ def test_upload_youtube_caption(mocker, public_video):
     mock_uploader.assert_called_once_with(subtitle, yt_video.id)
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_remove_youtube_caption(mocker, public_video):
     """
     Test that the upload_youtube_caption task calls YouTubeApi.upload_caption with correct arguments,
@@ -458,7 +449,6 @@ def test_remove_youtube_caption(mocker, public_video):
     mock_delete.assert_called_once_with('foo')
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_update_youtube_statuses(mocker):
     """
     Test that the correct number of YouTubeVideo objects have their statuses updated to the correct value
@@ -475,7 +465,6 @@ def test_update_youtube_statuses(mocker):
     assert YouTubeVideo.objects.filter(status=YouTubeStatus.PROCESSED).count() == 5
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_update_youtube_statuses_api_quota_exceeded(mocker):
     """
     Test that the update_youtube_statuses task stops without raising an error if the API quota is exceeded.
@@ -488,7 +477,6 @@ def test_update_youtube_statuses_api_quota_exceeded(mocker):
     mock_video_status.assert_called_once()
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_update_youtube_statuses_error(mocker):
     """
     Test that an error is raised if any error occurs other than exceeding daily API quota
@@ -501,7 +489,6 @@ def test_update_youtube_statuses_error(mocker):
     mock_video_status.assert_called_once()
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_update_youtube_statuses_dupe(mocker):
     """
     Test that the status of a potential dupe video is saved as 'failed'
@@ -515,7 +502,6 @@ def test_update_youtube_statuses_dupe(mocker):
         assert len(YouTubeVideo.objects.filter(status=status).all()) == 1
 
 
-@override_settings(ENABLE_VIDEO_PERMISSIONS=True)
 def test_update_youtube_statuses_failed(mocker):
     """
     Test that the correct number of YouTubeVideo objects have their statuses updated to FAILED

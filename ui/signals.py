@@ -1,7 +1,6 @@
 """
 ui model signals
 """
-from django.conf import settings
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 
@@ -29,14 +28,13 @@ def update_video_permissions(sender, **kwargs):
     Remove public video permissions if the subtitle is about to be deleted and no other subtitles exist.
     Otherwise just delete the subtitle from Youtube.
     """
-    if settings.ENABLE_VIDEO_PERMISSIONS:
-        video = kwargs['instance'].video
-        if video.is_public:
-            if len(video.videosubtitle_set.all()) <= 1:
-                video.is_public = False
-                video.save()
-            elif video.youtube_id:
-                remove_youtube_caption.delay(video.id, kwargs['instance'].language)
+    video = kwargs['instance'].video
+    if video.is_public:
+        if video.techtvvideo_set.first() is None and len(video.videosubtitle_set.all()) <= 1:
+            video.is_public = False
+            video.save()
+        elif video.youtube_id:
+            remove_youtube_caption.delay(video.id, kwargs['instance'].language)
 
 
 @receiver(pre_delete, sender=YouTubeVideo)
@@ -45,7 +43,7 @@ def delete_youtube_video(sender, **kwargs):
     Call the YouTube API to delete a video
     """
     youtube_id = kwargs['instance'].id
-    if settings.ENABLE_VIDEO_PERMISSIONS and youtube_id is not None:
+    if youtube_id is not None:
         remove_youtube_video.delay(youtube_id)
 
 
@@ -54,9 +52,8 @@ def update_collection_youtube(sender, **kwargs):
     """
     If a collection's stream source is changed, sync YoutubeVideo objects for public Videos
     """
-    if settings.ENABLE_VIDEO_PERMISSIONS:
-        for video in kwargs['instance'].videos.filter(is_public=True):
-            sync_youtube(video)
+    for video in kwargs['instance'].videos.filter(is_public=True):
+        sync_youtube(video)
 
 
 @receiver(post_save, sender=Video)
@@ -64,8 +61,7 @@ def update_video_youtube(sender, **kwargs):
     """
     If a video's is_public field is changed, sync associated YoutubeVideo object
     """
-    if settings.ENABLE_VIDEO_PERMISSIONS:
-        sync_youtube(kwargs['instance'])
+    sync_youtube(kwargs['instance'])
 
 
 def sync_youtube(video):
