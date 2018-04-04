@@ -25,7 +25,7 @@ from ui.serializers import (
     DropboxUploadSerializer,
     VideoSerializer)
 from ui.utils import get_moira_user
-from ui.views import CollectionReactView
+from ui.views import CollectionReactView, TechTVDetail, TechTVEmbed
 
 pytestmark = pytest.mark.django_db
 
@@ -469,17 +469,18 @@ def test_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_d
     assert '?next=/videos/{}'.format(user_admin_list_data.video.hexkey) in last_url
 
 
-def test_techtv_detail_standard_url(mock_moira_client, user_view_list_data, logged_in_apiclient):
+@pytest.mark.parametrize('url', ['/videos/{}', '/videos/{}-foo'])
+def test_techtv_detail_standard_url(mock_moira_client, user_view_list_data, logged_in_apiclient, url):
     """
     Tests that a URL based on a TechTV id returns the correct Video detail page
     """
     client, user = logged_in_apiclient
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
     mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
-    url = reverse('techtv-detail', kwargs={'video_key': ttv_video.ttv_id})
-    result = client.get(url)
+    result = client.get(url.format(ttv_video.ttv_id))
     assert result.status_code == status.HTTP_200_OK
     assert json.loads(result.context_data['js_settings_json'])['videoKey'] == user_view_list_data.video.hexkey
+    assert isinstance(result.context_data['view'], TechTVDetail)
 
 
 def test_techtv_detail_private_url(mock_moira_client, user_view_list_data, logged_in_apiclient):
@@ -495,17 +496,18 @@ def test_techtv_detail_private_url(mock_moira_client, user_view_list_data, logge
     assert json.loads(result.context_data['js_settings_json'])['videoKey'] == user_view_list_data.video.hexkey
 
 
-def test_techtv_detail_embed_url(mock_moira_client, user_view_list_data, logged_in_apiclient):
+@pytest.mark.parametrize('url', ['/embeds/{}', '/embeds/{}-foo'])
+def test_techtv_detail_embed_url(mock_moira_client, user_view_list_data, logged_in_apiclient, url):
     """
     Tests that an embed URL based on a TechTV id returns the correct Video embed page
     """
     client, user = logged_in_apiclient
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
     mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
-    url = reverse('techtv-embed', kwargs={'video_key': ttv_video.ttv_id})
-    result = client.get(url)
+    result = client.get(url.format(ttv_video.ttv_id))
     assert result.status_code == status.HTTP_200_OK
     assert json.loads(result.context_data['js_settings_json'])['video']['key'] == user_view_list_data.video.hexkey
+    assert isinstance(result.context_data['view'], TechTVEmbed)
 
 
 def test_upload_subtitles(logged_in_apiclient, mocker):
