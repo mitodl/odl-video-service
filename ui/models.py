@@ -166,7 +166,10 @@ class Video(models.Model):
         Return YouTube video id if any
         """
         try:
-            return self.youtubevideo.id
+            youtube_video = self.youtubevideo
+            if youtube_video.status == YouTubeStatus.PROCESSED:
+                return youtube_video.id
+            return None
         except YouTubeVideo.DoesNotExist:
             return None
 
@@ -196,7 +199,7 @@ class Video(models.Model):
         Returns:
             dict: Dict of video sources for VideoJS
         """
-        if self.collection.stream_source == StreamSource.YOUTUBE:
+        if self.is_public and self.collection.stream_source == StreamSource.YOUTUBE and self.youtube_id is not None:
             return []
         sources = [
             {

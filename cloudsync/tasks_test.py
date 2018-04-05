@@ -354,9 +354,9 @@ def test_upload_youtube_videos(mocker, max_uploads):
     upload_youtube_videos()
     assert mock_uploader.call_count == min(3, max_uploads)
     for video in Video.objects.filter(is_public=True).order_by('-created_at')[:settings.YT_DAILY_UPLOAD_LIMIT]:
-        assert video.youtube_id is not None
+        assert YouTubeVideo.objects.filter(video=video).first() is not None
     for video in private_videos:
-        assert video.youtube_id is None
+        assert YouTubeVideo.objects.filter(video=video).first() is None
 
 
 def test_upload_youtube_videos_error(mocker):

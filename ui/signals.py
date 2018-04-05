@@ -33,7 +33,7 @@ def update_video_permissions(sender, **kwargs):
         if video.techtvvideo_set.first() is None and len(video.videosubtitle_set.all()) <= 1:
             video.is_public = False
             video.save()
-        elif video.youtube_id:
+        elif YouTubeVideo.objects.filter(video=video).first() is not None:
             remove_youtube_caption.delay(video.id, kwargs['instance'].language)
 
 
