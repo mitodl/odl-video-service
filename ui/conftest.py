@@ -24,3 +24,14 @@ def mock_moira(mocker):
 def mock_moira_client(mocker):
     """Return a fake moira client"""
     return mocker.patch('ui.utils.get_moira_client', autospec=True)
+
+
+@pytest.fixture
+def ga_client_mocks(mocker):
+    """Return mocker with patches for objects used for google api clients"""
+    mocks = {
+        'build': mocker.patch('ui.utils.build'),
+        'ServiceAccountCredentials': mocker.patch(
+            'ui.utils.ServiceAccountCredentials'),
+    }
+    return mocks
