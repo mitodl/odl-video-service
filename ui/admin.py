@@ -98,10 +98,35 @@ class VideoFileAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at']
 
 
+class YouTubeVideoAdmin(admin.ModelAdmin):
+    """Customized YouTubeVideo admin model"""
+    model = models.YouTubeVideo
+    list_display = ('id', 'created_at', 'status', 'video_title', 'video_key',
+                    'video_collection',)
+    list_filter = ['status', 'video__collection']
+    search_fields = ['id', 'video__key', 'video__title']
+
+    def video_title(self, obj):
+        """video_title"""
+        return obj.video.title
+
+    def video_key(self, obj):
+        """video_key"""
+        return obj.video.key
+
+    def video_collection(self, obj):
+        """video_collection"""
+        return obj.video.collection.title
+
+    def created_at(self, obj):
+        """created_at"""
+        return obj.created_at
+
+
 admin.site.register(models.Collection, CollectionAdmin)
 admin.site.register(models.MoiraList)
 admin.site.register(models.Video, VideoAdmin)
 admin.site.register(models.VideoFile, VideoFileAdmin)
 admin.site.register(models.VideoThumbnail)
 admin.site.register(models.VideoSubtitle)
-admin.site.register(models.YouTubeVideo)
+admin.site.register(models.YouTubeVideo, YouTubeVideoAdmin)
