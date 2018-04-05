@@ -178,6 +178,17 @@ class Video(models.Model):
         return self.videofile_set.filter(encoding=EncodingNames.ORIGINAL).first()
 
     @property
+    def transcoded_videos(self):
+        """
+        Return the transcoded videofiles, in order from highest resolution to lowest, if applicable (ie MP4)
+
+        Returns:
+            list: sorted list of transcoded VideoFile objects, from highest to lowest resolution
+        """
+        return sorted(self.videofile_set.exclude(encoding=EncodingNames.ORIGINAL),
+                      key=lambda x: EncodingNames.MP4.index(x.encoding) if x.encoding in EncodingNames.MP4 else 0)
+
+    @property
     def sources(self):
         """
         Generate a sources dict for VideoJS
@@ -192,9 +203,8 @@ class Video(models.Model):
                 "src": file.cloudfront_url,
                 "label": file.encoding,
                 "type":  "application/x-mpegURL" if file.encoding == EncodingNames.HLS else "video/mp4"
-            } for file in self.videofile_set.exclude(encoding__exact=EncodingNames.ORIGINAL)
+            } for file in self.transcoded_videos
         ]
-        sources.sort(key=lambda x: EncodingNames.MP4.index(x['label']) if x['label'] in EncodingNames.MP4 else 0)
         return sources
 
     def get_s3_key(self):

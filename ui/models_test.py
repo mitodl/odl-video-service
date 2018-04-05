@@ -247,3 +247,29 @@ def test_original_video():
         VideoFileFactory(video=video, s3_object_key='transcoded.hls', encoding=EncodingNames.HLS),
         ]
     assert video.original_video == videofiles[0]
+
+
+def test_transcoded_mp4_video():
+    """ Tests that Video.transcoded_videos returns transcoded MP4 videos in the correct order"""
+    video = VideoFactory()
+    videofiles = [
+        VideoFileFactory(video=video, s3_object_key='original.mp4', encoding=EncodingNames.ORIGINAL),
+        VideoFileFactory(video=video, s3_object_key='small.mp4', encoding=EncodingNames.SMALL),
+        VideoFileFactory(video=video, s3_object_key='basic.mp4', encoding=EncodingNames.BASIC),
+        VideoFileFactory(video=video, s3_object_key='HD.mp4', encoding=EncodingNames.HD),
+        ]
+    assert len(video.transcoded_videos) == 3
+    assert video.transcoded_videos[0] == videofiles[3]
+    assert video.transcoded_videos[1] == videofiles[2]
+    assert video.transcoded_videos[2] == videofiles[1]
+
+
+def test_transcoded_hls_video():
+    """ Tests that Video.transcoded_videos returns transcoded HLS videofile"""
+    video = VideoFactory()
+    videofiles = [
+        VideoFileFactory(video=video, s3_object_key='original.mp4', encoding=EncodingNames.ORIGINAL),
+        VideoFileFactory(video=video, s3_object_key='video.m3u8', encoding=EncodingNames.HLS),
+        ]
+    assert len(video.transcoded_videos) == 1
+    assert video.transcoded_videos[0] == videofiles[1]
