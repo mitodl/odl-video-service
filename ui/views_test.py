@@ -12,6 +12,7 @@ from rest_framework.reverse import reverse
 
 from techtv2ovs.factories import TechTVVideoFactory
 from ui import factories
+from ui.constants import YouTubeStatus
 from ui.factories import (
     UserFactory,
     CollectionFactory,
@@ -519,7 +520,7 @@ def test_upload_subtitles(logged_in_apiclient, mocker):
     mocker.patch('ui.models.Video.subtitle_key', return_value=expected_subtitle_key)
     client, user = logged_in_apiclient
     video = VideoFactory(collection=CollectionFactory(owner=user))
-    yt_video = YouTubeVideoFactory(video=video)
+    yt_video = YouTubeVideoFactory(video=video, status=YouTubeStatus.PROCESSED)
     filename = 'subtitles.vtt'
     youtube_task = mocker.patch('ui.views.upload_youtube_caption.delay')
     input_data = {

@@ -21,8 +21,8 @@ from ui.factories import (
     VideoFileFactory,
     CollectionFactory,
     UserFactory,
-    MoiraListFactory, VideoSubtitleFactory)
-from ui.constants import VideoStatus, StreamSource
+    MoiraListFactory, VideoSubtitleFactory, YouTubeVideoFactory)
+from ui.constants import VideoStatus, StreamSource, YouTubeStatus
 from ui.models import Collection
 
 pytestmark = pytest.mark.django_db
@@ -185,6 +185,33 @@ def test_video_subtitle_key():
     ) is not None
 
 
+@pytest.mark.parametrize('stream_source', [StreamSource.YOUTUBE, StreamSource.CLOUDFRONT, None])
+@pytest.mark.parametrize('is_public', [True, False])
+@pytest.mark.parametrize('youtube_status', [YouTubeStatus.UPLOADED, YouTubeStatus.PROCESSED, None])
+def test_video_sources_youtube(youtube_status, is_public, stream_source):
+    """ Tests that a public video can play from cloudfront if a youtube video does not exist """
+    public_video = VideoFactory.create(
+        key='8494dafc-3665-4960-8e00-9790574ec93a',
+        is_public=is_public,
+        collection=CollectionFactory(stream_source=stream_source)
+    )
+    videofiles = [
+        VideoFileFactory(video=public_video, s3_object_key='hd.mp4', encoding=EncodingNames.HD),
+        ]
+    if youtube_status is not None:
+        YouTubeVideoFactory.create(video=public_video, status=youtube_status)
+    if youtube_status == YouTubeStatus.PROCESSED and is_public and stream_source == StreamSource.YOUTUBE:
+        assert public_video.sources == []
+    else:
+        assert public_video.sources == [
+            {
+                'src': videofiles[0].cloudfront_url,
+                'label': EncodingNames.HD,
+                'type': 'video/mp4'
+            }
+        ]
+
+
 def test_video_sources_hls():
     """ Tests that the video sources property returns the expected result for HLS """
     video = VideoFactory(key='8494dafc-3665-4960-8e00-9790574ec93a')
@@ -198,8 +225,7 @@ def test_video_sources_hls():
     ]
 
 
-@pytest.mark.parametrize('youtube', [True, False])
-def test_video_sources_mp4(youtube):
+def test_video_sources_mp4():
     """ Tests that the video sources property returns the expected sorted results for MP4 """
     video = VideoFactory(key='8494dafc-3665-4960-8e00-9790574ec93a')
     videofiles = [
@@ -209,8 +235,7 @@ def test_video_sources_mp4(youtube):
         VideoFileFactory(video=video, s3_object_key='basic.mp4', encoding=EncodingNames.BASIC),
         VideoFileFactory(video=video, s3_object_key='hd.mp4', encoding=EncodingNames.HD),
         ]
-    video.collection.stream_source = StreamSource.YOUTUBE if youtube else None
-    assert video.sources == [] if youtube else [
+    assert video.sources == [
         {
             'src': videofiles[4].cloudfront_url,
             'label': EncodingNames.HD,
@@ -273,3 +298,14 @@ def test_transcoded_hls_video():
         ]
     assert len(video.transcoded_videos) == 1
     assert video.transcoded_videos[0] == videofiles[1]
+
+
+@pytest.mark.parametrize('status', [YouTubeStatus.UPLOADED, YouTubeStatus.PROCESSED, YouTubeStatus.FAILED, None])
+def test_video_youtube_id(status, video):
+    """
+    Tests that youtube_id is only returned if the status is 'processed'
+    """
+    assert video.youtube_id is None
+    if status is not None:
+        youtube_video = YouTubeVideoFactory.create(video=video, status=status)
+    assert video.youtube_id == (None if status != YouTubeStatus.PROCESSED else youtube_video.id)

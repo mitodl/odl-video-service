@@ -4,7 +4,6 @@ import pytest
 from ui.constants import StreamSource, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import VideoFactory, YouTubeVideoFactory, VideoSubtitleFactory, VideoFileFactory
-from ui.models import YouTubeVideo
 
 pytestmark = pytest.mark.django_db
 
@@ -24,10 +23,10 @@ def test_youtube_video_delete_signal(mocker):
     mock_task = mocker.patch('ui.signals.remove_youtube_video.delay')
     video = VideoFactory(is_public=True)
     yt_video = YouTubeVideoFactory(video=video)
-    assert YouTubeVideo.objects.filter(id=yt_video.id).first() == yt_video
+    youtube_id = yt_video.id
     video.is_public = False
     video.save()
-    mock_task.assert_called_once_with(video.youtube_id)
+    mock_task.assert_called_once_with(youtube_id)
 
 
 def test_youtube_video_permissions_signal(mocker):
