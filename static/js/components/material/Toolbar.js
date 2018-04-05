@@ -38,7 +38,7 @@ export default class Toolbar extends React.Component<*, void> {
           <section className="mdc-toolbar__section mdc-toolbar__section--align-start">
             <a
               href="#"
-              className="material-icons mdc-toolbar__icon--menu menu-button"
+              className="material-icons mdc-toolbar__menu-icon menu-button"
               onClick={this.toggleMenu}
             >
               menu

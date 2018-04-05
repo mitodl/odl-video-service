@@ -1,7 +1,7 @@
 // @flow
 import React from "react"
 
-import { MDCSimpleMenu } from "@material/menu/dist/mdc.menu"
+import { MDCMenu } from "@material/menu/dist/mdc.menu"
 
 import type { MenuItem } from "../../flow/uiTypes"
 
@@ -18,9 +18,10 @@ export default class Menu extends React.Component<*, void> {
 
   componentDidMount() {
     const { closeMenu } = this.props
-    this.menu = new MDCSimpleMenu(this.menuRoot)
+    this.menu = new MDCMenu(this.menuRoot)
     if (closeMenu) {
-      this.menu.listen("MDCSimpleMenu:cancel", closeMenu)
+      this.menu && this.menu.listen("MDCMenu:cancel", closeMenu)
+      this.menu && this.menu.listen("MDCMenu:selected", closeMenu)
     }
   }
 
@@ -47,12 +48,12 @@ export default class Menu extends React.Component<*, void> {
           more_vert
         </a>
         <div
-          className="mdc-simple-menu"
+          className="mdc-menu"
           tabIndex="-1"
           ref={div => (this.menuRoot = div)}
         >
           <ul
-            className="mdc-simple-menu__items mdc-list"
+            className="mdc-menu__items mdc-list"
             role="menu"
             aria-hidden="true"
           >

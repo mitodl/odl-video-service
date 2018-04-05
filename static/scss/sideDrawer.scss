@@ -1,10 +1,10 @@
 $item-color: rgba(255,255,255,.7);
 
-.mdc-temporary-drawer__drawer {
+.mdc-drawer--temporary .mdc-drawer__drawer {
   background: $darkgray-bg;
   color: white;
 
-  .mdc-temporary-drawer__content {
+  .mdc-drawer__content {
     flex-grow: 0;
   }
 
@@ -56,12 +56,12 @@ $item-color: rgba(255,255,255,.7);
     }
   }
 
-  .mdc-temporary-drawer__header::before {
+  .mdc-drawer__header::before {
     padding-top: 0;
   }
 
-  .mdc-temporary-drawer__header {
-    .mdc-temporary-drawer__header-content {
+  .mdc-drawer__header {
+    .mdc-drawer__header-content {
       position: static;
       font-weight: 500;
       font-size: 17px;
@@ -75,8 +75,8 @@ $item-color: rgba(255,255,255,.7);
   }
 }
 
-.mdc-temporary-drawer {
-  .mdc-list-item__start-detail {
+.mdc-drawer--temporary {
+  .mdc-list-item__graphic {
     color: rgba(255,255,255,.5);
   }
 
