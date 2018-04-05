@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 import dj_database_url
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
+from redbeat import RedBeatScheduler
 
 from odl_video.envs import (
     get_any,
@@ -457,6 +458,8 @@ REDIS_URL = get_string("REDIS_URL", None)
 USE_CELERY = True
 CELERY_BROKER_URL = get_string("CELERY_BROKER_URL", REDIS_URL)
 CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_BEAT_SCHEDULER = RedBeatScheduler
+CELERY_REDBEAT_REDIS_URL = REDIS_URL
 
 CELERY_TASK_ALWAYS_EAGER = get_bool("CELERY_TASK_ALWAYS_EAGER", False)
 CELERY_TASK_EAGER_PROPAGATES = get_bool("CELERY_TASK_EAGER_PROPAGATES", True)

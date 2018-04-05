@@ -20,6 +20,7 @@ redis==2.10.5
 requests
 uwsgi
 pycountry
+celery-redbeat==0.11.1
 
 # Google/Youtube API access
 httplib2
