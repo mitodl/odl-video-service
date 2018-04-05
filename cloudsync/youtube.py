@@ -224,7 +224,7 @@ class YouTubeApi:
             dict: YouTube API response
 
         """
-        videofile = video.original_video
+        videofile = video.original_video or video.transcoded_videos[0]
 
         request_body = dict(
             snippet=dict(
