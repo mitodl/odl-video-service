@@ -102,20 +102,20 @@ label {
   width: 100%;
 }
 
-.mdc-textfield {
+.mdc-text-field {
   width: 100%;
 }
 
-input[type=text], input[type=password], input[type=email], textarea, .mdc-textfield__input, input[type=text].mdc-textfield__input {
+input[type=text], input[type=password], input[type=email], textarea, .mdc-text-field__input, input[type=text].mdc-text-field__input {
   display: block;
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
   box-sizing: border-box;
   padding: 10px;
   background: #fff;
   font-size: 15px;
 }
 
-.mdc-textfield-container, .mdc-textarea-container {
+.mdc-text-field-container, .mdc-textarea-container {
   margin: 0 0 14px 0;
 }
 
@@ -147,7 +147,7 @@ textarea {
   padding: 5px;
 }
 
-.mdc-textfield__input__invalid {
+.mdc-text-field__input__invalid {
   border: 1px solid #d50000 !important;
 }
 
@@ -186,11 +186,11 @@ textarea {
         padding: 0;
       }
 
-      .mdc-textfield-container {
+      .mdc-text-field-container {
         flex-grow: 1;
         margin-bottom: 0;
 
-        .mdc-textfield {
+        .mdc-text-field {
           display: inline-block;
           margin: 0 0 0 5px;
         }
