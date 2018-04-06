@@ -15,14 +15,14 @@ export default class Textfield extends React.Component<*, void> {
     const renderedLabel = label ? <label htmlFor={id}>{label}</label> : null
 
     return (
-      <div className="mdc-textfield-container">
+      <div className="mdc-text-field-container">
         {renderedLabel}
-        <div className="mdc-textfield">
+        <div className="mdc-text-field">
           <input
             type="text"
             className={`${
-              validationMessage ? "mdc-textfield__input__invalid" : ""
-            } mdc-textfield__input `}
+              validationMessage ? "mdc-text-field__input__invalid" : ""
+            } mdc-text-field__input `}
             id={id}
             {...otherProps}
           />

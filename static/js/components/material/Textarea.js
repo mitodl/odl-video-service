@@ -12,8 +12,8 @@ export default class Textarea extends React.Component<*, void> {
     return (
       <div className="mdc-textarea-container">
         <label htmlFor={id}>{label}</label>
-        <div className="mdc-textfield">
-          <textarea className="mdc-textfield__input" id={id} {...otherProps} />
+        <div className="mdc-text-field">
+          <textarea className="mdc-text-field__input" id={id} {...otherProps} />
         </div>
       </div>
     )
