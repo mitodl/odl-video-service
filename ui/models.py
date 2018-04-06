@@ -421,6 +421,7 @@ class YouTubeVideo(models.Model):
     video = models.OneToOneField(Video, on_delete=models.CASCADE, primary_key=True)
     id = models.CharField(max_length=11, null=True)
     status = models.CharField(null=False, default=YouTubeStatus.UPLOADING, max_length=24)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __repr__(self):
         return '<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >'.format(self=self)
