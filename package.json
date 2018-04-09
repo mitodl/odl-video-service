@@ -84,6 +84,7 @@
     "redux-asserts": "^0.0.10",
     "redux-hammock": "^0.2.1",
     "redux-logger": "^3.0.6",
+    "redux-paginator": "^1.0.6",
     "redux-thunk": "^2.2.0",
     "rmwc": "^1.4.1",
     "sanitize-filename": "^1.6.1",
