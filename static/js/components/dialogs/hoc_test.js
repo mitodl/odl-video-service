@@ -9,14 +9,12 @@ import { connect } from "react-redux"
 
 import Dialog from "../material/Dialog"
 import { withDialogs } from "./hoc"
-import { DIALOGS } from "../../constants"
 import rootReducer from "../../reducers"
-import { INITIAL_UI_STATE } from "../../reducers/commonUi"
 import { SHOW_DIALOG, HIDE_DIALOG } from "../../actions/commonUi"
 
 describe("Dialog higher-order component", () => {
-  let sandbox, store, listenForActions
-  const dialogName = DIALOGS.SHARE_VIDEO
+  let sandbox, store, listenForActions, dialogConfigs
+  const dialogName = "some_dialog_name"
   const selectors = {
     OPEN_BTN:  "#open-btn",
     CLOSE_BTN: ".cancel-button"
@@ -55,34 +53,41 @@ describe("Dialog higher-order component", () => {
     }
   }
 
-  const WrappedTestContainerPage = R.compose(
-    connect(state => ({
-      commonUi: state.commonUi
-    })),
-    withDialogs([{ name: dialogName, component: TestDialog }])
-  )(TestContainerPage)
-
   beforeEach(() => {
     sandbox = sinon.sandbox.create()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
+    dialogConfigs = [{ name: dialogName, component: TestDialog }]
   })
 
   afterEach(() => {
     sandbox.restore()
   })
 
-  const renderTestComponentWithDialogs = () =>
-    mount(
+  const renderTestComponentWithDialogs = () => {
+    const WrappedTestContainerPage = R.compose(
+      connect(state => ({
+        commonUi: state.commonUi
+      })),
+      withDialogs(dialogConfigs)
+    )(TestContainerPage)
+    return mount(
       <Provider store={store}>
-        <WrappedTestContainerPage
-          dispatch={store.dispatch}
-          commonUi={{ ...INITIAL_UI_STATE }}
-        />
+        <WrappedTestContainerPage dispatch={store.dispatch} />
       </Provider>
     )
+  }
 
   it("should render the specified dialogs with specific props", () => {
+    const wrapper = renderTestComponentWithDialogs()
+    const testDialog = wrapper.find("TestDialog")
+    assert.isTrue(testDialog.exists())
+    assert.isFalse(testDialog.props().open)
+    assert.isFunction(testDialog.props().hideDialog)
+  })
+
+  it("should render dialogs that use lazily evaluated component", () => {
+    dialogConfigs = [{ name: dialogName, getComponent: () => TestDialog }]
     const wrapper = renderTestComponentWithDialogs()
     const testDialog = wrapper.find("TestDialog")
     assert.isTrue(testDialog.exists())
@@ -100,7 +105,7 @@ describe("Dialog higher-order component", () => {
       wrapper.find(selectors.OPEN_BTN).prop("onClick")()
     }).then(() => {
       wrapper.update()
-      testDialog = wrapper.find('TestDialog')
+      testDialog = wrapper.find("TestDialog")
       assert.isTrue(testDialog.prop("open"))
       assert.isTrue(testDialog.find("Dialog").prop("open"))
     })
@@ -108,7 +113,6 @@ describe("Dialog higher-order component", () => {
 
   it("should provide a function that lets the wrapped component hide the dialog", async () => {
     const wrapper = renderTestComponentWithDialogs()
-
     await listenForActions([SHOW_DIALOG, HIDE_DIALOG], () => {
       wrapper.find(selectors.OPEN_BTN).prop("onClick")()
       wrapper.find("Dialog").prop("hideDialog")()

@@ -43,12 +43,16 @@ describe("ShareVideoDialog", () => {
     const video = makeVideo()
     const wrapper = renderComponent({ video: video })
     assert.equal(
-      wrapper.find("#video-url").hostNodes().props().value,
+      wrapper
+        .find("#video-url")
+        .hostNodes()
+        .props().value,
       `http://fake/videos/${video.key}/embed/`
     )
     assert.isTrue(
       wrapper
-        .find("#video-embed-code").hostNodes()
+        .find("#video-embed-code")
+        .hostNodes()
         .props()
         .value.startsWith(
           `<iframe src="http://fake/videos/${video.key}/embed/"`

@@ -127,7 +127,10 @@ describe("Drawer", () => {
     const wrapper = await renderDrawer({
       onDrawerClose: onDrawerCloseStub
     })
-    wrapper.find("#collapse_item").instance().click()
+    wrapper
+      .find("#collapse_item")
+      .instance()
+      .click()
     sinon.assert.calledWith(onDrawerCloseStub)
   })
 
@@ -144,7 +147,10 @@ describe("Drawer", () => {
       onDrawerClose: onDrawerCloseStub
     })
     const state = await listenForActions([SHOW_DIALOG, SET_IS_NEW], () => {
-      wrapper.find(".create-collection-button").instance().click()
+      wrapper
+        .find(".create-collection-button")
+        .instance()
+        .click()
     })
     assert.isFalse(state.commonUi.drawerOpen)
     assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.COLLECTION_FORM])

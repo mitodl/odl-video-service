@@ -402,6 +402,8 @@ GA_KEYFILE_JSON = get_string("GA_KEYFILE_JSON", "")
 GA_TRACKING_ID = get_string("GA_TRACKING_ID", "")
 GA_VIEW_ID = get_string("GA_VIEW_ID", "")
 REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
+GA_KEYFILE_JSON = get_string("GA_KEYFILE_JSON", "")
+GA_VIEW_ID = get_string("GA_VIEW_ID", "")
 
 YT_CLIENT_ID = get_string('YT_CLIENT_ID', '')
 YT_PROJECT_ID = get_string('YT_PROJECT_ID', '')

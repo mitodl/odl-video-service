@@ -45,7 +45,7 @@ devConfig.module.rules = [
     use: [
       {loader: 'style-loader'},
       {loader: 'css-loader'},
-      {loader: 'postcss-loader'},
+      {loader: 'postcss-loader', options: {sourceMap: true}},
       {
         loader: 'sass-loader',
         options: {

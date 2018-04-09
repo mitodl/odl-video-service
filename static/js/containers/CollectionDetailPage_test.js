@@ -7,7 +7,9 @@ import { assert } from "chai"
 import { Provider } from "react-redux"
 import configureTestStore from "redux-asserts"
 
-import CollectionDetailPage from "./CollectionDetailPage"
+import ConnectedCollectionDetailPage, {
+  CollectionDetailPage
+} from "./CollectionDetailPage"
 
 import * as api from "../lib/api"
 import { actions } from "../actions"
@@ -66,7 +68,7 @@ describe("CollectionDetailPage", () => {
       () => {
         wrapper = mount(
           <Provider store={store}>
-            <CollectionDetailPage match={matchObj} {...props} />
+            <ConnectedCollectionDetailPage match={matchObj} {...props} />
           </Provider>
         )
       }
@@ -183,6 +185,29 @@ describe("CollectionDetailPage", () => {
     )
 
     sinon.assert.calledWith(uploadVideoStub, collection.key, mockFiles)
+  })
+
+  it("shows the analytics dialog", async () => {
+    class StubComponent extends React.Component<*, *> {
+      render() {
+        return null
+      }
+    }
+    sandbox
+      .stub(CollectionDetailPage.prototype, "getDialogComponent")
+      .returns(StubComponent)
+    const wrapper = await renderPage()
+    const state = await listenForActions(
+      [SET_SELECTED_VIDEO_KEY, SHOW_DIALOG],
+      () => {
+        wrapper
+          .find("VideoCard")
+          .first()
+          .prop("showAnalyticsDialog")()
+      }
+    )
+    assert.equal(state.collectionUi.selectedVideoKey, collection.videos[0].key)
+    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.ANALYTICS])
   })
 
   it("shows the edit video dialog", async () => {

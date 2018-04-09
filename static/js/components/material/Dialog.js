@@ -12,7 +12,7 @@ type DialogProps = {
   onCancel?: () => void,
   hideDialog: () => void,
   children: ChildrenArray<*>,
-  title: string,
+  title?: string,
   cancelText: string,
   submitText: string,
   noSubmit: boolean,
@@ -110,11 +110,16 @@ export default class Dialog extends React.Component<*, void> {
         ref={node => (this.dialogRoot = node)}
       >
         <div className="mdc-dialog__surface">
-          <header className="mdc-dialog__header">
-            <h2 id="my-mdc-dialog-label" className="mdc-dialog__header__title">
-              {title}
-            </h2>
-          </header>
+          {title ? (
+            <header className="mdc-dialog__header">
+              <h2
+                id="my-mdc-dialog-label"
+                className="mdc-dialog__header__title"
+              >
+                {title}
+              </h2>
+            </header>
+          ) : null}
           <section id="my-mdc-dialog-description" className="mdc-dialog__body">
             {children}
           </section>
