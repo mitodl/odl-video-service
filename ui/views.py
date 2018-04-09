@@ -88,6 +88,7 @@ def index(request):  # pylint: disable=unused-argument
     return redirect('collection-react-view')
 
 
+@method_decorator(xframe_options_exempt, name='dispatch')
 @method_decorator(login_required, name='dispatch')
 class CollectionReactView(TemplateView):
     """List of collections"""
@@ -171,6 +172,7 @@ class TechTVPrivateDetail(VideoDetail):
         return conditional_response(self, ttv_videos[0].video, *args, **kwargs)
 
 
+@method_decorator(xframe_options_exempt, name='dispatch')
 class TechTVEmbed(VideoEmbed):
     """
     Video embed page for a TechTV-based URL
@@ -375,6 +377,7 @@ class VideoSubtitleViewSet(ModelDetailViewset):
     )
 
 
+@method_decorator(xframe_options_exempt, name='dispatch')
 def _handle_error_view(request, status_code):
     """
     Handles a 403, 404 or 500 response

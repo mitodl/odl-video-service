@@ -28,7 +28,7 @@ services:
       - .:/src
       - django_media:/var/media
     environment:
-      DEBUG: 'True'
+      DEBUG: ${DEBUG:-True}
       DEV_ENV: 'True'
       NODE_ENV: 'development'
       PORT: 8087
