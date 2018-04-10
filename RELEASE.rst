@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+Version 0.16.1
+--------------
+
+- fix text field regressions from mdc upgrade
+- Use redbeat to schedule tasks
+- add YouTubeVideo model admin features
+- Make videos full width (#514)
+- Add backend handling for video analytics queries.
+- Return a Youtube ID only if the status is processed
+- Make video title required when editing
+- Upload transcoded video to YouTube if original not available
+- Make sure title and description both have no html tags and are truncated to within Youtube limitations on upload
+- update @material components modules and add rmwc
+- Make TechTV URLs work with or without slugs
+- Stream videofiles from S3 to Youtube
+- Make `ENABLE_VIDEO_PERMISSIONS` affect front-end video edit form only
+
 Version 0.16.0
 --------------
 
