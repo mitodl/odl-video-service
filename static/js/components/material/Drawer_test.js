@@ -32,7 +32,7 @@ describe("Drawer", () => {
     listenForActions = store.createListenForActions()
     getCollectionsStub = sandbox
       .stub(api, "getCollections")
-      .returns(Promise.resolve({results: collections}))
+      .returns(Promise.resolve({ results: collections }))
   })
 
   afterEach(() => {
@@ -89,12 +89,15 @@ describe("Drawer", () => {
     assert.isTrue(drawerNode.text().endsWith("Log out"))
   })
 
-  it("drawer element is rendered with collections list", async () => {
+  it("drawer element is rendered with max of 10 collections", async () => {
+    const numCollections = 20
+    collections = [...Array(numCollections).keys()].map(makeCollection)
+    getCollectionsStub.returns(Promise.resolve({ results: collections }))
     const wrapper = await renderDrawer()
-    ;[0, 1].forEach(function(col) {
-      const drawerNode = wrapper
-        .find(".mdc-list-item .mdc-list-item--activated")
-        .at(col)
+    const items = wrapper.find(".mdc-list-item .mdc-list-item--activated")
+    assert.equal(items.length, 10)
+    ;[0, 1, 3].forEach(function(col) {
+      const drawerNode = items.at(col)
       assert.equal(drawerNode.text(), collections[col].title)
       assert.equal(
         drawerNode.props().href,
