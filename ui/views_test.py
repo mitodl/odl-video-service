@@ -105,6 +105,7 @@ def test_video_detail(logged_in_client, settings):
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.GA_TRACKING_ID = 'UA-xyz-1'
     settings.ENABLE_VIDEO_PERMISSIONS = False
+    settings.ENABLE_FRONTEND_PAGINATION = False
     videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
     videofileHLS.video.status = 'Complete'
     url = reverse('video-detail', kwargs={'video_key': videofileHLS.video.hexkey})
@@ -122,7 +123,8 @@ def test_video_detail(logged_in_client, settings):
         "support_email_address": settings.EMAIL_SUPPORT,
         "dropbox_key": "foo_dropbox_key",
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": False
+            "ENABLE_VIDEO_PERMISSIONS": False,
+            "ENABLE_FRONTEND_PAGINATION": False,
         }
     }
 
@@ -133,6 +135,7 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.GA_TRACKING_ID = 'UA-xyz-1'
     settings.ENABLE_VIDEO_PERMISSIONS = False
+    settings.ENABLE_FRONTEND_PAGINATION = False
     videofileHLS = VideoFileFactory(
         hls=True,
         video__collection__owner=user,
@@ -153,7 +156,8 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
         "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": False
+            "ENABLE_VIDEO_PERMISSIONS": False,
+            "ENABLE_FRONTEND_PAGINATION": False,
         }
     }
 
@@ -618,6 +622,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.EMAIL_SUPPORT = 'support'
     settings.ENABLE_VIDEO_PERMISSIONS = False
+    settings.ENABLE_FRONTEND_PAGINATION = False
 
     client, user = logged_in_apiclient
     resp = client.get(url)
@@ -632,7 +637,8 @@ def test_page_not_found(url, logged_in_apiclient, settings):
         'email': user.email,
         'user': user.username,
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": False
+            "ENABLE_VIDEO_PERMISSIONS": False,
+            "ENABLE_FRONTEND_PAGINATION": False,
         }
     }
 
