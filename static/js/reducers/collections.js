@@ -11,8 +11,7 @@ export const collectionsListEndpoint = {
   getFunc:            (): Promise<CollectionList> => api.getCollections(),
   postFunc:           (collection: Collection) => api.createCollection(collection),
   postSuccessHandler: (payload: Collection, data: Object) => {
-    // this should keep it sorted in reverse creation time order
-    return {results: [payload, ...data.results]}
+    return {results: [payload, ...(data ? data.results || [] : [])]}
   }
 }
 
