@@ -535,3 +535,8 @@ if MIDDLEWARE_FEATURE_FLAG_QS_PREFIX:
         'odl_video.middleware.QueryStringFeatureFlagMiddleware',
         'odl_video.middleware.CookieFeatureFlagMiddleware',
     )
+
+# Paging parameters
+PAGE_SIZE_QUERY_PARAM = get_string('PAGE_SIZE_QUERY_PARAM', 'page_size')
+PAGE_SIZE_MAXIMUM = get_int('PAGE_SIZE_MAXIMUM', 1000)
+PAGE_SIZE_COLLECTIONS = get_int('PAGE_SIZE_COLLECTIONS', 1000)

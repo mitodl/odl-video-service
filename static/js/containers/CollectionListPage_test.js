@@ -27,7 +27,7 @@ describe("CollectionListPage", () => {
     listenForActions = store.createListenForActions()
     collections = [makeCollection(), makeCollection(), makeCollection()]
 
-    sandbox.stub(api, "getCollections").returns(Promise.resolve(collections))
+    sandbox.stub(api, "getCollections").returns(Promise.resolve({results: collections}))
   })
 
   afterEach(() => {
@@ -61,7 +61,7 @@ describe("CollectionListPage", () => {
 
   it("loads the collections on load", async () => {
     await renderPage()
-    assert.deepEqual(store.getState().collectionsList.data, collections)
+    assert.deepEqual(store.getState().collectionsList.data.results, collections)
   })
 
   it("doesn't show the create collection button if SETTINGS.editable is false", async () => {

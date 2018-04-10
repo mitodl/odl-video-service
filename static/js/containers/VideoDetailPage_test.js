@@ -34,7 +34,7 @@ describe("VideoDetailPage", () => {
 
     getVideoStub = sandbox.stub(api, "getVideo").returns(Promise.resolve(video))
     dropboxStub = sandbox.stub(libVideo, "saveToDropbox")
-    sandbox.stub(api, "getCollections").returns(Promise.resolve([]))
+    sandbox.stub(api, "getCollections").returns(Promise.resolve({results: []}))
 
     // silence videojs warnings
     sandbox.stub(libVideo, "videojs")
