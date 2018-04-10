@@ -122,6 +122,18 @@
       "description": "If false, disables the node_modules cache to fix yarn install",
       "value": "false"
     },
+    "PAGE_SIZE_QUERY_PARAM": {
+      "description": "Request parameter to specify paging size",
+      "required": "false"
+    },
+    "PAGE_SIZE_MAXIMUM": {
+      "description": "Maximum page size allowed",
+      "required": "false"
+    },
+    "PAGE_SIZE_COLLECTIONS": {
+      "description": "Default collection page size",
+      "required": "false"
+    },
     "PGBOUNCER_DEFAULT_POOL_SIZE": {
       "value": "50"
     },

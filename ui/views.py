@@ -22,6 +22,7 @@ from rest_framework import (
     mixins,
 )
 from rest_framework.decorators import detail_route
+from rest_framework.filters import OrderingFilter
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -29,6 +30,7 @@ from rest_framework.views import APIView
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
 from techtv2ovs.models import TechTVVideo
+from ui.pagination import CollectionSetPagination
 from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
 from ui import (
@@ -302,6 +304,10 @@ class CollectionViewSet(viewsets.ModelViewSet):
         permissions.IsAuthenticated,
         ui_permissions.HasCollectionPermissions
     )
+
+    pagination_class = CollectionSetPagination
+    filter_backends = (OrderingFilter,)
+    ordering_fields = ('created_at', 'title')
 
     def get_queryset(self):
         """
