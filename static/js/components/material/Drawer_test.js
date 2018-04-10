@@ -32,7 +32,7 @@ describe("Drawer", () => {
     listenForActions = store.createListenForActions()
     getCollectionsStub = sandbox
       .stub(api, "getCollections")
-      .returns(Promise.resolve(collections))
+      .returns(Promise.resolve({results: collections}))
   })
 
   afterEach(() => {

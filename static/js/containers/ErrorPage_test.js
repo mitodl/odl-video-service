@@ -22,7 +22,7 @@ describe("ErrorPage", () => {
     listenForActions = store.createListenForActions()
     collections = [makeCollection(), makeCollection(), makeCollection()]
 
-    sandbox.stub(api, "getCollections").returns(Promise.resolve(collections))
+    sandbox.stub(api, "getCollections").returns(Promise.resolve({results: collections}))
   })
 
   afterEach(() => {

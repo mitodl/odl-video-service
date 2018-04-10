@@ -47,7 +47,7 @@ describe("CollectionDetailPage", () => {
     getCollectionStub = sandbox
       .stub(api, "getCollection")
       .returns(Promise.resolve(collection))
-    sandbox.stub(api, "getCollections").returns(Promise.resolve(collections))
+    sandbox.stub(api, "getCollections").returns(Promise.resolve({results: collections}))
   })
 
   afterEach(() => {
