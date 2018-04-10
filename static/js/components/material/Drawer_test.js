@@ -89,28 +89,46 @@ describe("Drawer", () => {
     assert.isTrue(drawerNode.text().endsWith("Log out"))
   })
 
-  it("drawer element is rendered with max of 10 collections", async () => {
-    const numCollections = 20
-    collections = [...Array(numCollections).keys()].map(() => makeCollection())
-    getCollectionsStub.returns(Promise.resolve({ results: collections }))
-    const wrapper = await renderDrawer()
-    const items = wrapper.find(".mdc-list-item .mdc-list-item--activated")
-    assert.equal(items.length, 10)
-    ;[0, 1, 3].forEach(function(col) {
-      const drawerNode = items.at(col)
-      assert.equal(drawerNode.text(), collections[col].title)
-      assert.equal(
-        drawerNode.props().href,
-        makeCollectionUrl(collections[col].key)
-      )
+  describe("when there are > 10 collections", () => {
+    beforeEach(() => {
+      const numCollections = 20
+      collections = [...Array(numCollections).keys()].map(() => makeCollection())
+      getCollectionsStub.returns(Promise.resolve({ results: collections }))
+    })
+
+    it("drawer element is rendered with max of 10 collections", async () => {
+      const wrapper = await renderDrawer()
+      const items = wrapper.find(".mdc-list-item .mdc-list-item--activated")
+      assert.equal(items.length, 10)
+      ;[0, 1, 3, 9].forEach(function(col) {
+        const drawerNode = items.at(col)
+        assert.equal(drawerNode.text(), collections[col].title)
+        assert.equal(
+          drawerNode.props().href,
+          makeCollectionUrl(collections[col].key)
+        )
+      })
+    })
+
+    it("has 'more...' button that links to collections page", async () => {
+      const wrapper = await renderDrawer()
+      const moreButton = wrapper.find(".more-collections-button")
+      assert.equal(moreButton.length, 1)
+      assert.equal(moreButton.prop('href'), '/collections/')
     })
   })
 
-  it("drawer element is rendered with a help link", async () => {
-    const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item .mdc-link").at(1)
-    assert.equal(drawerNode.props().href, "/help/")
-    assert.isTrue(drawerNode.text().endsWith("Help"))
+  describe("when there are <= 10 collections", () => {
+    beforeEach(() => {
+      const numCollections = 10
+      collections = [...Array(numCollections).keys()].map(() => makeCollection())
+      getCollectionsStub.returns(Promise.resolve({ results: collections }))
+    })
+
+    it("does not have 'more...' button", async () => {
+      const wrapper = await renderDrawer()
+      assert.isFalse(wrapper.find(".more-collections-button").exists())
+    })
   })
 
   it("drawer element is rendered with a logout link", async () => {
