@@ -114,6 +114,14 @@ class Drawer extends React.Component<*, void> {
                 {col.title}
               </a>
             ))}
+            {collections.length > MAX_VISIBLE_COLLECTIONS ? (
+              <a
+                className="mdc-list-item mdc-list-item more-collections-button"
+                href='/collections/'
+              >
+                more collections…
+              </a>
+            ) : null}
             {SETTINGS.editable ? (
               <span>
                 <button
