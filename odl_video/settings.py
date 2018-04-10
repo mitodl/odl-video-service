@@ -415,6 +415,7 @@ YT_DAILY_UPLOAD_LIMIT = get_int('YT_DAILY_UPLOAD_LIMIT', 400)
 LECTURE_CAPTURE_USER = get_string('LECTURE_CAPTURE_USER', '')
 
 ENABLE_VIDEO_PERMISSIONS = get_bool('ENABLE_VIDEO_PERMISSIONS', False)
+ENABLE_FRONTEND_PAGINATION = get_bool('ENABLE_FRONTEND_PAGINATION', False)
 
 # List of mandatory settings. If any of these is not set, the app will not start
 # and will raise an ImproperlyConfigured exception
@@ -446,6 +447,7 @@ MANDATORY_SETTINGS = [
     'VIDEO_S3_SUBTITLE_BUCKET',
     'VIDEO_S3_WATCH_BUCKET',
     'ENABLE_VIDEO_PERMISSIONS',
+    'ENABLE_FRONTEND_PAGINATION',
     'YT_ACCESS_TOKEN',
     'YT_REFRESH_TOKEN',
     'YT_CLIENT_ID',
@@ -533,3 +535,8 @@ if MIDDLEWARE_FEATURE_FLAG_QS_PREFIX:
         'odl_video.middleware.QueryStringFeatureFlagMiddleware',
         'odl_video.middleware.CookieFeatureFlagMiddleware',
     )
+
+# Paging parameters
+PAGE_SIZE_QUERY_PARAM = get_string('PAGE_SIZE_QUERY_PARAM', 'page_size')
+PAGE_SIZE_MAXIMUM = get_int('PAGE_SIZE_MAXIMUM', 1000)
+PAGE_SIZE_COLLECTIONS = get_int('PAGE_SIZE_COLLECTIONS', 1000)

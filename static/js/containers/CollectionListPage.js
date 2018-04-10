@@ -86,7 +86,7 @@ class CollectionListPage extends React.Component<*, void> {
 
 const mapStateToProps = state => {
   const { collectionsList, commonUi } = state
-  const collections = collectionsList.loaded ? collectionsList.data : []
+  const collections = collectionsList.loaded ? (collectionsList.data.results ? collectionsList.data.results : collectionsList.data) : []
   const needsUpdate = !collectionsList.processing && !collectionsList.loaded
 
   return {

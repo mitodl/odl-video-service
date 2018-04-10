@@ -34,11 +34,11 @@ describe("api", () => {
 
   it("gets collection list", async () => {
     const collections = _.times(2, () => makeCollection())
-    fetchStub.returns(Promise.resolve(collections))
+    fetchStub.returns(Promise.resolve({results: collections}))
 
     const result = await getCollections()
     sinon.assert.calledWith(fetchStub, `/api/v0/collections/`)
-    assert.deepEqual(result, collections)
+    assert.deepEqual(result.results, collections)
   })
 
   it("creates a new collection", async () => {

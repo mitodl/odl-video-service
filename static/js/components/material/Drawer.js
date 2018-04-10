@@ -10,6 +10,8 @@ import * as collectionUiActions from "../../actions/collectionUi"
 import { makeCollectionUrl } from "../../lib/urls"
 import type { Collection } from "../../flow/collectionTypes"
 
+const MAX_VISIBLE_COLLECTIONS = 10
+
 type DrawerProps = {
   open: boolean,
   onDrawerClose: () => void,
@@ -103,7 +105,7 @@ class Drawer extends React.Component<*, void> {
             <div className="mdc-drawer__header-content">Collections</div>
           </header>
           <nav id="nav-collections" className="mdc-drawer__content mdc-list">
-            {collections.map(col => (
+            {collections.slice(0, MAX_VISIBLE_COLLECTIONS).map(col => (
               <a
                 className="mdc-list-item mdc-list-item--activated"
                 href={makeCollectionUrl(col.key)}
@@ -154,7 +156,7 @@ class Drawer extends React.Component<*, void> {
 
 const mapStateToProps = state => {
   const { collectionsList, commonUi } = state
-  const collections = collectionsList.loaded ? collectionsList.data : []
+  const collections = collectionsList.loaded ? collectionsList.data.results : []
   const needsUpdate = !collectionsList.processing && !collectionsList.loaded
 
   return {

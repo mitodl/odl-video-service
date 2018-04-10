@@ -22,6 +22,7 @@ from ui.factories import (
     VideoSubtitleFactory,
     YouTubeVideoFactory)
 from ui.models import VideoSubtitle
+from ui.pagination import CollectionSetPagination
 from ui.serializers import (
     DropboxUploadSerializer,
     VideoSerializer)
@@ -105,6 +106,7 @@ def test_video_detail(logged_in_client, settings):
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.GA_TRACKING_ID = 'UA-xyz-1'
     settings.ENABLE_VIDEO_PERMISSIONS = False
+    settings.ENABLE_FRONTEND_PAGINATION = False
     videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
     videofileHLS.video.status = 'Complete'
     url = reverse('video-detail', kwargs={'video_key': videofileHLS.video.hexkey})
@@ -122,7 +124,8 @@ def test_video_detail(logged_in_client, settings):
         "support_email_address": settings.EMAIL_SUPPORT,
         "dropbox_key": "foo_dropbox_key",
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": False
+            "ENABLE_VIDEO_PERMISSIONS": False,
+            "ENABLE_FRONTEND_PAGINATION": False,
         }
     }
 
@@ -133,6 +136,7 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.GA_TRACKING_ID = 'UA-xyz-1'
     settings.ENABLE_VIDEO_PERMISSIONS = False
+    settings.ENABLE_FRONTEND_PAGINATION = False
     videofileHLS = VideoFileFactory(
         hls=True,
         video__collection__owner=user,
@@ -153,7 +157,8 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
         "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": False
+            "ENABLE_VIDEO_PERMISSIONS": False,
+            "ENABLE_FRONTEND_PAGINATION": False,
         }
     }
 
@@ -274,14 +279,14 @@ def test_collection_viewset_list(mock_moira_client, logged_in_apiclient):
 
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
-    assert len(result.data) == len(expected_collection_keys)
-    for coll_data in result.data:
+    assert len(result.data['results']) == len(expected_collection_keys)
+    for coll_data in result.data['results']:
         assert coll_data['key'] in expected_collection_keys
         assert coll_data['key'] not in prohibited_collection_keys
         assert 'videos' not in coll_data
 
 
-def test_collection_viewset_list_superuser(logged_in_apiclient):
+def test_collection_viewset_list_superuser(logged_in_apiclient, settings):
     """
     Tests the list of collections for a superuser
     """
@@ -295,8 +300,8 @@ def test_collection_viewset_list_superuser(logged_in_apiclient):
 
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
-    assert len(result.data) == 6
-    for coll_data in result.data:
+    assert len(result.data['results']) == 6
+    for coll_data in result.data['results']:
         assert coll_data['key'] in collections
 
 
@@ -618,6 +623,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.EMAIL_SUPPORT = 'support'
     settings.ENABLE_VIDEO_PERMISSIONS = False
+    settings.ENABLE_FRONTEND_PAGINATION = False
 
     client, user = logged_in_apiclient
     resp = client.get(url)
@@ -632,7 +638,8 @@ def test_page_not_found(url, logged_in_apiclient, settings):
         'email': user.email,
         'user': user.username,
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": False
+            "ENABLE_VIDEO_PERMISSIONS": False,
+            "ENABLE_FRONTEND_PAGINATION": False,
         }
     }
 
@@ -700,3 +707,41 @@ def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
     url = reverse('models-api:video-analytics', kwargs={'key': video.hexkey})
     result = client.get(url, {'throw': 1})
     assert result.status_code == 500
+
+
+def test_collection_pagination(mocker, logged_in_apiclient):
+    """
+    Verify that the correct number of collections is returned per page
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    page_size = 8
+    CollectionSetPagination.page_size = page_size
+    client, user = logged_in_apiclient
+    collections = CollectionFactory.create_batch(20, owner=user)
+    url = reverse('models-api:collection-list')
+    result = client.get(url)
+    assert len(result.data['results']) == min(page_size, len(collections))
+    for i in range(1, 3):
+        paged_url = url + '?page={}'.format(i)
+        result = client.get(paged_url)
+        assert len(result.data['results']) == min(page_size, max(0, len(collections) - page_size * (i-1)))
+
+
+@pytest.mark.parametrize('field', ['created_at', 'title'])
+def test_collection_ordering(mocker, logged_in_apiclient, field):
+    """ Verify that results are returned in the appropriate order"""
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    CollectionSetPagination.page_size = 5
+    client, user = logged_in_apiclient
+    CollectionFactory.create_batch(10, owner=user)
+    url = reverse('models-api:collection-list')
+    p1_response = client.get('{}?page=1&ordering={}'.format(url, field))
+    assert len(p1_response.data['results']) == 5
+    for i in range(4):
+        assert p1_response.data['results'][i][field].lower() <= p1_response.data['results'][i+1][field].lower()
+    p2_response = client.get('{}?page=2&ordering={}'.format(url, field))
+    assert p1_response.data['results'][-1][field].lower() <= p2_response.data['results'][0][field].lower()
+    for i in range(4):
+        assert p2_response.data['results'][i][field].lower() <= p2_response.data['results'][i+1][field].lower()
