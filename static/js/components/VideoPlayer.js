@@ -21,10 +21,14 @@ const gaEvents = [
   "ended"
 ]
 
-const makeConfigForVideo = (video: Video, useYouTube: boolean): Object => ({
+const makeConfigForVideo = (
+  video: Video,
+  useYouTube: boolean,
+  embedded: ?boolean
+): Object => ({
   autoplay:    false,
   controls:    true,
-  fluid:       useYouTube,
+  fluid:       useYouTube || embedded || false,
   playsinline: true,
   techOrder:   useYouTube ? ["youtube", "html5"] : ["html5"],
   html5:       {
@@ -74,7 +78,8 @@ export default class VideoPlayer extends React.Component<*, void> {
   props: {
     video: Video,
     selectedCorner: string,
-    cornerFunc: (corner: string) => void
+    cornerFunc: (corner: string) => void,
+    embed: ?boolean
   }
 
   player: Object
@@ -298,7 +303,7 @@ export default class VideoPlayer extends React.Component<*, void> {
   }
 
   componentDidMount() {
-    const { video, selectedCorner } = this.props
+    const { video, selectedCorner, embed } = this.props
 
     const cropVideo = this.cropVideo
     const createEventHandler = this.createEventHandler
@@ -313,7 +318,7 @@ export default class VideoPlayer extends React.Component<*, void> {
     this.lastMinuteTracked = null
     this.player = videojs(
       this.videoNode,
-      makeConfigForVideo(video, useYouTube),
+      makeConfigForVideo(video, useYouTube, embed),
       function onPlayerReady() {
         this.enableTouchActivity()
         if (video.multiangle) {
@@ -365,7 +370,7 @@ export default class VideoPlayer extends React.Component<*, void> {
   }
 
   render() {
-    const { video, selectedCorner } = this.props
+    const { video, selectedCorner, embed } = this.props
     return (
       <div className="video-odl-center">
         <div
@@ -377,7 +382,9 @@ export default class VideoPlayer extends React.Component<*, void> {
           <div data-vjs-player>
             <video
               ref={node => (this.videoNode = node)}
-              className="video-js vjs-default-skin"
+              className={`video-js vjs-default-skin ${
+                embed ? "video-odl-embed" : ""
+              }`}
               crossOrigin="anonymous"
               controls
             />
