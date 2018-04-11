@@ -1,8 +1,8 @@
 $item-color: rgba(255,255,255,.7);
 
-    :not(.mdc-list--non-interactive) > .mdc-list-item--activated::before, :not(.mdc-list--non-interactive) > .mdc-list-item--activated::after {
-      background: none;
-    }
+:not(.mdc-list--non-interactive) > .mdc-list-item--activated::before, :not(.mdc-list--non-interactive) > .mdc-list-item--activated::after {
+  background: none;
+}
 
 .mdc-drawer--temporary .mdc-drawer__drawer {
   background: $darkgray-bg;
