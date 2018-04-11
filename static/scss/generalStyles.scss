@@ -131,6 +131,11 @@ textarea {
   border-radius: 3px;
   font-weight: 400;
   cursor: pointer;
+  border: none;
+
+  &:hover {
+    background: $blue-button-hover;
+  }
 
   i, i.material-icons {
     margin-right: 8px;
@@ -138,6 +143,10 @@ textarea {
     bottom: 2px;
     color: #fff;
   }
+}
+
+.mdc-button:not(:disabled), .mdc-button--raised:not(:disabled), .mdc-button--unelevated:not(:disabled) {
+  color: $linkcolor;
 }
 
 .validation-message {
