@@ -34,6 +34,7 @@ class VideoEmbedPage extends React.Component<*, void> {
           video={video}
           cornerFunc={this.updateCorner}
           selectedCorner={videoUi.corner}
+          embed={true}
         />
       </div>
     )

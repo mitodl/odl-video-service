@@ -80,63 +80,68 @@ describe("VideoPlayer", () => {
   afterEach(() => {
     sandbox.restore()
   })
-  ;[true, false].forEach(function(multiangle) {
-    it("uses videojs on mount with the right arguments", () => {
-      SETTINGS.ga_dimension_camera = "dimension1"
-      video.multiangle = multiangle
-      renderPlayer()
-      sinon.assert.called(videojsStub)
-      const args = videojsStub.firstCall.args
-      assert.equal(args[0].tagName, "VIDEO")
-      assert.deepEqual(args[1], {
-        autoplay:    false,
-        controls:    true,
-        fluid:       false,
-        playsinline: true,
-        techOrder:   ["html5"],
-        html5:       {
-          nativeTextTracks: false
-        },
-        playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
-        plugins:       {
-          videoJsResolutionSwitcher: {
-            default:      "high",
-            dynamicLabel: true
-          }
-        },
-        sources: [
-          {
-            src:   libVideo.getHLSEncodedUrl(video),
-            type:  "application/x-mpegURL",
-            label: "HLS"
-          }
-        ]
-      })
-      const enableTouchActivityStub = sandbox.stub()
-      const onStub = sandbox.stub()
-      args[2].call({
-        enableTouchActivity: enableTouchActivityStub,
-        on:                  onStub,
-        tech_:               { hls: {} }
-      })
-      sinon.assert.calledWith(enableTouchActivityStub)
-      sinon.assert.calledWith(onStub)
-      if (video.multiangle) {
-        sinon.assert.calledWith(gaSetStub, {
-          dimension1: "camera1"
+  ;[true, false].forEach(function(embed) {
+    [true, false].forEach(function(multiangle) {
+      it("uses videojs on mount with the right arguments", () => {
+        SETTINGS.ga_dimension_camera = "dimension1"
+        video.multiangle = multiangle
+        renderPlayer({ embed })
+        sinon.assert.called(videojsStub)
+        const args = videojsStub.firstCall.args
+        assert.equal(args[0].tagName, "VIDEO")
+        assert.deepEqual(args[1], {
+          autoplay:    false,
+          controls:    true,
+          fluid:       embed,
+          playsinline: true,
+          techOrder:   ["html5"],
+          html5:       {
+            nativeTextTracks: false
+          },
+          playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
+          plugins:       {
+            videoJsResolutionSwitcher: {
+              default:      "high",
+              dynamicLabel: true
+            }
+          },
+          sources: [
+            {
+              src:   libVideo.getHLSEncodedUrl(video),
+              type:  "application/x-mpegURL",
+              label: "HLS"
+            }
+          ]
         })
-      } else {
-        sinon.assert.notCalled(gaSetStub)
-      }
+        const enableTouchActivityStub = sandbox.stub()
+        const onStub = sandbox.stub()
+        args[2].call({
+          enableTouchActivity: enableTouchActivityStub,
+          on:                  onStub,
+          tech_:               { hls: {} }
+        })
+        sinon.assert.calledWith(enableTouchActivityStub)
+        sinon.assert.calledWith(onStub)
+        if (video.multiangle) {
+          sinon.assert.calledWith(gaSetStub, {
+            dimension1: "camera1"
+          })
+        } else {
+          sinon.assert.notCalled(gaSetStub)
+        }
+      })
     })
   })
-
-  it("video element is rendered with the correct attributes", () => {
-    const wrapper = renderPlayer()
-    const videoProps = wrapper.find("video").props()
-    assert.equal(videoProps.className, "video-js vjs-default-skin")
-    assert(videoProps.fluid === undefined)
-    assert(videoProps.controls !== undefined)
+  ;[false, true].forEach(function(embed) {
+    it("video element is rendered with the correct style attributes", () => {
+      const wrapper = renderPlayer({ embed })
+      const videoProps = wrapper.find("video").props()
+      assert.equal(
+        videoProps.className,
+        `video-js vjs-default-skin ${embed ? "video-odl-embed" : ""}`
+      )
+      assert(videoProps.controls !== undefined)
+    })
   })
 
   it("video element is rendered with 4 canvas elements when multiangle", () => {
