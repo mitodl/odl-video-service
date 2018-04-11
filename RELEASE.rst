@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 0.17.0
+--------------
+
+- add &#39;more collections&#39; button to sidebar
+- limit sidebar collections
+- Collections API pagination
+- Make the following CORS-compatible: error views, collections view, TechTV embed view
+- video analytics frontend
+- update example .env file with new keys
+
 Version 0.16.1
 --------------
 
