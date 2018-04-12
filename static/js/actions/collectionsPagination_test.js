@@ -91,25 +91,14 @@ describe("collectionsPagination actions", () => {
         stubs.getCollections.returns(Promise.resolve(result))
       })
 
-      it("dispatches RECEIVE_COLLECTIONS", async () => {
-        await _getPage()
-        sinon.assert.calledWith(stubs.hmm, result.data.results)
-        sinon.assert.calledWith(
-          dispatch,
-          stubs.hmm.returnValues[0]
-        )
-      })
-
       it("dispatches RECEIVE_GET_PAGE_SUCCESS", async () => {
         await _getPage()
         sinon.assert.calledWith(
           stubs.receiveGetPageSuccess,
           {
-            count:      result.data.count,
-            entityKeys: (
-              result.data.results.map((collection) => collection.key)
-            ),
             page,
+            count:       result.data.count,
+            collections: results.data.results,
           }
         )
         sinon.assert.calledWith(

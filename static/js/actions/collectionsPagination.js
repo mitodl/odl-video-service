@@ -26,15 +26,16 @@ actionCreators.getPage = (page: number) => {
     try {
       const response = await api.getCollections({page})
       const data  = response.data || {}
-      const collections = data.results || []
-      const count = data.count
-      // DISPATCH RECEIVE_COLLECTIONS HERE
+      // @TODO: ideally we would dispatch an action here to save collections to
+      // a single place in state (e.g. state.collections).
+      // However, it take a non-trivial refactor to implement this schema
+      // change. So in the interest of scope, we store collections here.
+      // This will likely be confusing for future developers, and I recommend
+      // refactoring.
       dispatch(actionCreators.receiveGetPageSuccess({
         page,
-        count,
-        entityKeys: (
-          collections.map((collection) => collection.key)
-        ),
+        count:       (data.count || 0),
+        collections: (data.results || []),
       }))
     } catch (error) {
       dispatch(actionCreators.receiveGetPageFailure({
