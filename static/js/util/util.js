@@ -19,3 +19,9 @@ export const calculateListPermissionValue = (
   choice !== PERM_CHOICE_LISTS || !listsInput || listsInput.trim().length === 0
     ? []
     : R.reject(R.isEmpty, R.map(R.trim, R.split(",", listsInput)))
+
+/**
+ * Formats seconds to minutes:seconds string
+ */
+export const formatSecondsToMinutes = (seconds: number) =>
+  (seconds - (seconds %= 60)) / 60 + (9 < seconds ? ":" : ":0") + seconds

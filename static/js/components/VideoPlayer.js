@@ -4,12 +4,15 @@
 import React from "react"
 import R from "ramda"
 import _ from "lodash"
+import type { Dispatch } from "redux"
 import { makeVideoSubtitleUrl } from "../lib/urls"
 import { videojs } from "../lib/video"
 import type { Video, VideoSubtitle } from "../flow/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
 import { sendGAEvent, setCustomDimension } from "../util/google_analytics"
+import * as videoActions from "../actions/videoUi"
+import { connect } from "react-redux"
 
 const gaEvents = [
   "play",
@@ -74,8 +77,9 @@ const isFullscreen = function() {
   return document[FULLSCREEN_API.fullscreenElement]
 }
 
-export default class VideoPlayer extends React.Component<*, void> {
+class VideoPlayer extends React.Component<*, void> {
   props: {
+    dispatch: Dispatch,
     video: Video,
     selectedCorner: string,
     cornerFunc: (corner: string) => void,
@@ -254,6 +258,7 @@ export default class VideoPlayer extends React.Component<*, void> {
   }
 
   sendEvent = (action: string, label: string) => {
+    const { dispatch } = this.props
     if (action === "timeupdate") {
       // Track amount played in increments of 60 seconds
       const currentTime = this.player.currentTime()
@@ -267,6 +272,7 @@ export default class VideoPlayer extends React.Component<*, void> {
         )
         this.lastMinuteTracked = nearestMinute
       }
+      dispatch(videoActions.setShareVideoTime(Math.floor(currentTime)))
     } else {
       sendGAEvent("video", action, label, this.player.currentTime())
     }
@@ -327,7 +333,7 @@ export default class VideoPlayer extends React.Component<*, void> {
           this.on(FULLSCREEN_API.fullscreenchange, cropVideo)
           window.addEventListener("resize", cropVideo)
         }
-        this.on("loadeddata", function() {
+        this.on("loadedmetadata", function() {
           gaEvents.forEach((event: string) => {
             createEventHandler(event, video.key)
           })
@@ -335,6 +341,8 @@ export default class VideoPlayer extends React.Component<*, void> {
         if (this.tech_.hls !== undefined) {
           this.tech_.hls.selectPlaylist = selectPlaylist
         }
+        const params = new URLSearchParams(window.location.search)
+        this.currentTime(parseInt(params.get("start")) || 0)
       }
     )
     if (useYouTube) {
@@ -410,3 +418,5 @@ export default class VideoPlayer extends React.Component<*, void> {
     )
   }
 }
+
+export default connect()(VideoPlayer)

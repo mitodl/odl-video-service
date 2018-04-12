@@ -165,6 +165,17 @@ textarea {
     padding-top: 5px;
   }
 
+  .mdc-form-field {
+    display: flex;
+    flex-direction: row;
+
+    label {
+      align-self: center;
+      width: 88px;
+      padding: 0;
+    }
+  }
+
   .permission-group {
     padding: 20px;
     margin: 0 0 20px;
