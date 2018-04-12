@@ -38,3 +38,13 @@ export const setVideoFormErrors = createAction(SET_VIDEO_FORM_ERRORS)
 
 export const CLEAR_VIDEO_FORM = qualifiedName("CLEAR_VIDEO_FORM")
 export const clearVideoForm = createAction(CLEAR_VIDEO_FORM)
+
+export const SET_SHARE_VIDEO_TIME = qualifiedName("SET_SHARE_VIDEO_TIME")
+export const setShareVideoTime = createAction(SET_SHARE_VIDEO_TIME)
+
+export const SET_SHARE_VIDEO_TIME_ENABLED = qualifiedName(
+  "SET_SHARE_VIDEO_TIME_ENABLED"
+)
+export const setShareVideoTimeEnabled = createAction(
+  SET_SHARE_VIDEO_TIME_ENABLED
+)

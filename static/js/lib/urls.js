@@ -5,9 +5,9 @@ import sanitize from "sanitize-filename"
 import type { Video, VideoFile, VideoSubtitle } from "../flow/videoTypes"
 
 export const makeVideoUrl = (videoKey: string) =>
-  `/videos/${encodeURI(videoKey)}`
+  `/videos/${encodeURI(videoKey)}/`
 export const makeEmbedUrl = (videoKey: string) =>
-  `${makeVideoUrl(videoKey)}/embed/`
+  `${makeVideoUrl(videoKey)}embed/`
 export const makeCollectionUrl = (collectionKey: string) =>
   `/collections/${encodeURI(collectionKey)}/`
 export const makeVideoThumbnailUrl = (video: Video): ?string =>
