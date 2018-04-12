@@ -181,11 +181,11 @@ def write_x509_files():
     write_to_file(settings.MIT_WS_PRIVATE_KEY_FILE, settings.MIT_WS_PRIVATE_KEY)
 
 
-def get_video_analytics(video_key):
+def get_video_analytics(video):
     """Get video analytics data from Google Analytics."""
     ga_client = get_google_analytics_client()
     ga_response = ga_client.reports().batchGet(
-        body=generate_google_analytics_query(video_key)).execute()
+        body=generate_google_analytics_query(video)).execute()
     try:
         return parse_google_analytics_response(ga_response)
     except Exception as exc:
@@ -210,7 +210,7 @@ def get_google_analytics_client():
                                        'GoogleAnaltics client') from exc
 
 
-def generate_google_analytics_query(video_key):
+def generate_google_analytics_query(video):
     """Generates a Google Analytics query.
 
     Returns:
@@ -220,20 +220,20 @@ def generate_google_analytics_query(video_key):
     # https://developers.google.com/analytics/devguides/reporting/core/v3/reference
     START_DATE = '2005-01-01'
     END_DATE = '9999-01-01'
+    dimensions = [{'name': 'ga:eventAction'}]
+    if video.multiangle:
+        # [adorsk, 2018-03]
+        # Achtung! Only use the camera angle dimension for multiangle.
+        # Single-camera videos do not set a custom dimension for events
+        # sent to GoogleAnalytics.
+        dimensions.append({'name': 'ga:' + settings.GA_DIMENSION_CAMERA})
     query = {
         'reportRequests': [
             {
                 'viewId': settings.GA_VIEW_ID,
                 'dateRanges': [{'startDate': START_DATE, 'endDate': END_DATE}],
                 'metrics': [{'expression': 'ga:totalEvents'}],
-                'dimensions': [
-                    # [adorsk, 2018-03]
-                    # Achtung! a high degree of implicit coupling to
-                    # dimension names that have been manually set in GA.
-                    # Hard-coding for now.
-                    {'name': 'ga:eventAction'},
-                    {'name': 'ga:' + settings.GA_DIMENSION_CAMERA}
-                ],
+                'dimensions': dimensions,
                 'dimensionFilterClauses': [
                     {
                         'filters': [
@@ -241,12 +241,12 @@ def generate_google_analytics_query(video_key):
                                 'dimensionName': 'ga:eventLabel',
                                 'operator': 'EXACT',
                                 # 2018-03, dorsk
-                                # Achtung! We do video_key.capitalize()
+                                # Achtung! We do video.hexkey.capitalize()
                                 # because GA has capitalized event data,
                                 # due to an unexpected side-effect of the
                                 # react-ga library.
                                 # See: https://github.com/mitodl/odl-video-service/pull/472
-                                'expressions': [video_key.capitalize()]
+                                'expressions': [video.hexkey.capitalize()]
                             },
                         ],
                     }
@@ -280,13 +280,21 @@ def parse_google_analytics_response(ga_response):
     times = set()
     channels = set()
     views_at_times = {}
-    rows = ga_response['reports'][0]['data'].get('rows', [])
+    report = ga_response['reports'][0]
+    # Check dimensions,
+    # to account for singlecam/multicam query differences.
+    dimensions = report['columnHeader']['dimensions']
+    is_multichannel = len(dimensions) == 2
+    rows = report['data'].get('rows', [])
     for row in rows:
         m = re.match(r'T(\d{4})', row['dimensions'][0])
         if not m:
             continue
         time_ = int(m.group(1))
-        channel = row['dimensions'][1]
+        if is_multichannel:
+            channel = row['dimensions'][1]
+        else:
+            channel = 'views'
         viewers = int(row['metrics'][0]['values'][0])
         views_at_times.setdefault(time_, {}).update({channel: viewers})
         times.add(time_)
@@ -294,6 +302,7 @@ def parse_google_analytics_response(ga_response):
     return {
         'times': sorted(list(times)),
         'channels': sorted(list(channels)),
+        'is_multichannel': is_multichannel,
         'views_at_times': views_at_times,
     }
 

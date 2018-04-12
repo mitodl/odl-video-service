@@ -19,9 +19,12 @@ export default class AnalyticsTable extends React.Component<*, void> {
           <tr>
             <th>Minute</th>
             <th>Total Viewers</th>
-            {analyticsData.channels.map((channel, i) => {
-              return <th key={i}>{channel}</th>
-            })}
+            {analyticsData.is_multichannel
+              ? analyticsData.channels.map((channel, i) => {
+                return <th key={i}>{channel}</th>
+              })
+              : null
+            }
           </tr>
         </thead>
         <tbody>
@@ -39,21 +42,31 @@ export default class AnalyticsTable extends React.Component<*, void> {
   ) {
     const viewsAtTime = analyticsData.views_at_times[minute] || {}
     const totalViews = _.sum(Object.values(viewsAtTime))
-    const channelViews = analyticsData.channels.map(channel => {
-      return viewsAtTime[channel] || 0
-    })
-    const viewsValues = [totalViews, ...channelViews]
+    let viewsValues = [totalViews]
+    if (analyticsData.is_multichannel) {
+      const channelViews = analyticsData.channels.map(channel => {
+        return viewsAtTime[channel] || 0
+      })
+
+      viewsValues = [viewsValues, ...channelViews]
+    }
     return (
       <tr key={minute}>
-        <td>{this.pad(minute, 4)}</td>
+        <td className="time">{this.pad(minute, 4)}</td>
         {viewsValues.map((numViews, i) => {
-          let pct = 0
-          if (totalViews !== 0) {
-            pct = (numViews / totalViews * 100).toFixed(1)
+          let percentEl = null
+          if (analyticsData.is_multichannel) {
+            let percent = 0
+            if (totalViews !== 0) {
+              percent = (parseFloat(numViews) / totalViews * 100).toFixed(1)
+            }
+            percentEl = (
+              <span className="percent">{`(${percent}%)`}</span>
+            )
           }
           return (
-            <td key={i}>
-              {numViews} ({pct}%)
+            <td className="views" key={i}>
+              {numViews} {percentEl}
             </td>
           )
         })}

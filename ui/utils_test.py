@@ -122,8 +122,8 @@ def test_get_video_analytics(mocker):
         'ui.utils.generate_google_analytics_query')
     mock_parse_ga_response = mocker.patch(
         'ui.utils.parse_google_analytics_response')
-    video_key = 'some_video_key'
-    result = get_video_analytics(video_key)
+    video = factories.VideoFactory()
+    result = get_video_analytics(video)
     expected_ga_client = mock_get_ga_client.return_value
     expected_batchGet_call = expected_ga_client.reports.return_value.batchGet
     expected_ga_query = mock_generate_ga_query.return_value
@@ -159,14 +159,18 @@ def test_get_google_analytics_client_success(ga_client_mocks, settings):
     assert result is ga_client_mocks['build'].return_value
 
 
-def test_generate_google_analytics_query_success(settings):
+@pytest.mark.parametrize("multiangle", [True, False])
+def test_generate_google_analytics_query_success(settings, multiangle):
     """Test that expected query is generated."""
-    video_key = 'some_video_key'
+    video = factories.VideoFactory(multiangle=multiangle)
     ga_view_id = 'some_view_id'
     settings.GA_VIEW_ID = ga_view_id
     ga_dimension_camera = 'some_camera_dimension'
     settings.GA_DIMENSION_CAMERA = ga_dimension_camera
-    actual_query = generate_google_analytics_query(video_key)
+    actual_query = generate_google_analytics_query(video)
+    expected_dimensions = [{'name': 'ga:eventAction'}]
+    if multiangle:
+        expected_dimensions.append({'name': 'ga:' + ga_dimension_camera})
     expected_query = {
         'reportRequests': [
             {
@@ -176,17 +180,14 @@ def test_generate_google_analytics_query_success(settings):
                     'endDate': '9999-01-01',
                 }],
                 'metrics': [{'expression': 'ga:totalEvents'}],
-                'dimensions': [
-                    {'name': 'ga:eventAction'},
-                    {'name': 'ga:' + ga_dimension_camera}
-                ],
+                'dimensions': expected_dimensions,
                 'dimensionFilterClauses': [
                     {
                         'filters': [
                             {
                                 'dimensionName': 'ga:eventLabel',
                                 'operator': 'EXACT',
-                                'expressions': [video_key.capitalize()]
+                                'expressions': [video.hexkey.capitalize()]
                             },
                         ],
                     },
@@ -197,12 +198,12 @@ def test_generate_google_analytics_query_success(settings):
     assert actual_query == expected_query
 
 
-def test_parse_google_analytics_response():
+def test_parse_google_analytics_response_multiangle():
     """Test that parse result matches expected result."""
     mock_response = {
         "reports": [{
             "columnHeader": {
-                "dimensions": ["ga:eventAction", "ga:eventLabel"],
+                "dimensions": ["ga:eventAction", "ga:dimension1"],
                 "metricHeader": {
                     "metricHeaderEntries": [
                         {
@@ -245,6 +246,7 @@ def test_parse_google_analytics_response():
     expected_result = {
         'times': [0, 2],
         'channels': ['camera1', 'camera2'],
+        'is_multichannel': True,
         'views_at_times': {
             0: {
                 'camera1': 102,
@@ -252,6 +254,64 @@ def test_parse_google_analytics_response():
             2: {
                 'camera1': 98,
                 'camera2': 3,
+            },
+        }
+    }
+    actual_result = parse_google_analytics_response(mock_response)
+    assert actual_result == expected_result
+
+
+def test_parse_google_analytics_response_singlecam():
+    """Test that parse result matches expected result."""
+    mock_response = {
+        "reports": [{
+            "columnHeader": {
+                "dimensions": ["ga:eventAction"],
+                "metricHeader": {
+                    "metricHeaderEntries": [
+                        {
+                            "name": "ga:totalEvents",
+                            "type": "INTEGER"
+                        },
+                    ]
+                },
+            },
+            "data": {
+                "maximums": [{"values": ["2"]}],
+                "minimums": [{"values": ["1"]}],
+                "rowCount": 5,
+                "rows": [
+                    {
+                        "dimensions": ["changeCameraView"],
+                        "metrics": [{"values": ["16"]}]
+                    },
+                    {
+                        "dimensions": ["Pause"],
+                        "metrics": [{"values": ["4"]}]
+                    },
+                    {
+                        "dimensions": ["T0000"],
+                        "metrics": [{"values": ["102"]}]
+                    },
+                    {
+                        "dimensions": ["T0002"],
+                        "metrics": [{"values": ["98"]}]
+                    },
+                ],
+                "totals": [{"values": ["30"]}]
+            }
+        }]
+    }
+    expected_result = {
+        'times': [0, 2],
+        'channels': ['views'],
+        'is_multichannel': False,
+        'views_at_times': {
+            0: {
+                'views': 102,
+            },
+            2: {
+                'views': 98,
             },
         }
     }
