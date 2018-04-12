@@ -661,7 +661,7 @@ def test_video_viewset_analytics(mocker, logged_in_apiclient):
     url = reverse('models-api:video-analytics', kwargs={'key': video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
-    assert mock_get_video_analytics.called_once_with(video.hexkey)
+    assert mock_get_video_analytics.called_once_with(video)
     assert result.data['data'] == mock_get_video_analytics.return_value
 
 

@@ -362,7 +362,8 @@ class VideoViewSet(ModelDetailViewset):
                 if param in request.GET
             })
         else:
-            data = get_video_analytics(key)
+            video = self.get_object()
+            data = get_video_analytics(video)
         return Response({'data': data})
 
 
