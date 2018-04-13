@@ -17,6 +17,7 @@ import type { CommonUiState } from "../reducers/commonUi"
 import type { Collection } from "../flow/collectionTypes"
 import withPagedCollections from './withPagedCollections'
 import LoadingIndicator from "../components/material/LoadingIndicator"
+import Paginator from "../components/Paginator"
 
 class CollectionListPage extends React.Component<*, void> {
   props: {
@@ -32,12 +33,27 @@ class CollectionListPage extends React.Component<*, void> {
         <div className="collection-list-content">
           <div className="card centered-content">
             <h1 className="mdc-typography--title">My Collections</h1>
+            {this.renderPaginator()}
             {this.renderCollectionLinks()}
             {this.renderFormLink()}
           </div>
         </div>
       </WithDrawer>
     )
+  }
+
+  renderPaginator () {
+    return (
+      <Paginator
+        onClickNext={() => this.incrementCurrentPage(1)}
+        onClickPrev={() => this.incrementCurrentPage(-1)}
+      />
+    )
+  }
+
+  incrementCurrentPage (amount) {
+    const nextCurrentPage = this.props.collectionsPagination.currentPage + amount
+    this.props.setCurrentPage(nextCurrentPage)
   }
 
   renderFormLink() {

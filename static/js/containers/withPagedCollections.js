@@ -13,12 +13,18 @@ export const withPagedCollections = (WrappedComponent) => {
     }
 
     render() {
-      window.sp = (p) => {
-        this.props.dispatch(actions.collectionsPagination.setCurrentPage({currentPage: p}))
-      }
       return (
-        <WrappedComponent {...this.props} />
+        <WrappedComponent
+          {...this.props}
+          setCurrentPage={this.setCurrentPage.bind(this)}
+        />
       )
+    }
+
+    setCurrentPage (nextCurrentPage: number) {
+      this.props.dispatch(actions.collectionsPagination.setCurrentPage({
+        currentPage: nextCurrentPage
+      }))
     }
 
     componentDidMount () {
