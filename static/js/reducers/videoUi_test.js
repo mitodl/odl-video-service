@@ -5,6 +5,7 @@ import configureTestStore from "redux-asserts"
 import rootReducer from "../reducers"
 import {
   INITIAL_EDIT_VIDEO_FORM_STATE,
+  INITIAL_SHARE_VIDEO_FORM_STATE,
   INITIAL_UPLOAD_SUBTITLE_FORM_STATE
 } from "./videoUi"
 import {
@@ -26,6 +27,7 @@ describe("videoUi", () => {
     assert.deepEqual(store.getState().videoUi, {
       videoSubtitleForm: INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
       editVideoForm:     INITIAL_EDIT_VIDEO_FORM_STATE,
+      shareVideoForm:    INITIAL_SHARE_VIDEO_FORM_STATE,
       corner:            "camera1"
     })
   })

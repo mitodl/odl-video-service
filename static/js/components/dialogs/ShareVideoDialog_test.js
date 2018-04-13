@@ -11,13 +11,15 @@ import ShareVideoDialog from "./ShareVideoDialog"
 import rootReducer from "../../reducers"
 import { setSelectedVideoKey } from "../../actions/collectionUi"
 import { makeVideo } from "../../factories/video"
+import { SET_SHARE_VIDEO_TIME_ENABLED } from "../../actions/videoUi"
 
 describe("ShareVideoDialog", () => {
-  let sandbox, store, hideDialogStub
+  let sandbox, store, hideDialogStub, listenForActions
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create()
     store = configureTestStore(rootReducer)
+    listenForActions = store.createListenForActions()
     hideDialogStub = sandbox.stub()
   })
 
@@ -47,7 +49,7 @@ describe("ShareVideoDialog", () => {
         .find("#video-url")
         .hostNodes()
         .props().value,
-      `http://fake/videos/${video.key}/embed/`
+      `http://fake/videos/${video.key}/`
     )
     assert.isTrue(
       wrapper
@@ -58,6 +60,38 @@ describe("ShareVideoDialog", () => {
           `<iframe src="http://fake/videos/${video.key}/embed/"`
         )
     )
+  })
+  ;[false, true].forEach(function(checked) {
+    it("adds time in seconds to the links only if checkbox is checked", async () => {
+      const video = makeVideo()
+      const wrapper = renderComponent({ video: video })
+      await listenForActions([SET_SHARE_VIDEO_TIME_ENABLED], () => {
+        // Calling onAccept directly b/c click doesn't work in JS tests due to MDC
+        wrapper
+          .find("ShareVideoDialog")
+          .find("Dialog")
+          .find('input[type="checkbox"]')
+          .simulate("change", { target: { checked } })
+      })
+      assert.equal(
+        wrapper
+          .find("#video-url")
+          .hostNodes()
+          .props().value,
+        `http://fake/videos/${video.key}/${checked ? "?start=0" : ""}`
+      )
+      assert.isTrue(
+        wrapper
+          .find("#video-embed-code")
+          .hostNodes()
+          .props()
+          .value.startsWith(
+            `<iframe src="http://fake/videos/${video.key}/embed/${
+              checked ? "?start=0" : ""
+            }"`
+          )
+      )
+    })
   })
 
   it("gets the video key from a video object provided as a prop", () => {

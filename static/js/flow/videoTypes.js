@@ -62,6 +62,11 @@ export type VideoFormState = {
   viewLists: ?string
 };
 
+export type VideoShareState = {
+  shareTime: boolean,
+  videoTime: number
+};
+
 export type VideoSubtitleState = {
   key: ?string,
   language: string,
@@ -76,6 +81,7 @@ export type VideoValidation = {
 export type VideoUiState = {
   editVideoForm: VideoFormState,
   videoSubtitleForm: VideoSubtitleState,
+  shareVideoForm: VideoShareState,
   corner: string,
   errors?: VideoValidation
 };

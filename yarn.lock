@@ -106,6 +106,17 @@
     "@material/selection-control" "^0.32.0"
     "@material/theme" "^0.30.0"
 
+"@material/checkbox@^0.33.0":
+  version "0.33.0"
+  resolved "https://registry.yarnpkg.com/@material/checkbox/-/checkbox-0.33.0.tgz#0cdf9d261c0cd493a3daceb31a476cf62b9f23b2"
+  dependencies:
+    "@material/animation" "^0.25.0"
+    "@material/base" "^0.29.0"
+    "@material/ripple" "^0.33.0"
+    "@material/rtl" "^0.33.0"
+    "@material/selection-control" "^0.33.0"
+    "@material/theme" "^0.33.0"
+
 "@material/chips@^0.32.0":
   version "0.32.0"
   resolved "https://registry.yarnpkg.com/@material/chips/-/chips-0.32.0.tgz#276c9ec8cb14b559ef9d201c5813ebaa765e77e7"
@@ -6293,13 +6304,6 @@ rst-selector-parser@^2.2.3:
   dependencies:
     lodash.flattendeep "^4.4.0"
     nearley "^2.7.10"
-
-rmwc@^1.4.1:
-  version "1.4.1"
-  resolved "https://registry.yarnpkg.com/rmwc/-/rmwc-1.4.1.tgz#5c8f5fbf5c1131fdf22374a7089727a169685732"
-  dependencies:
-    classnames "^2.2.5"
-    material-components-web "0.32.0"
 
 run-async@^0.1.0:
   version "0.1.0"

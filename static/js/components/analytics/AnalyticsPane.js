@@ -133,9 +133,8 @@ class AnalyticsPane extends React.Component<*, *> {
 
   formatAnalyticsData(analyticsData: VideoAnalyticsData): VideoAnalyticsData {
     return {
-      channels:       analyticsData.channels,
+      ...analyticsData,
       times:          this.interpolateTimes(analyticsData.times),
-      views_at_times: analyticsData.views_at_times
     }
   }
 
