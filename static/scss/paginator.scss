@@ -1,0 +1,17 @@
+.paginator {
+  .paginator-button {
+    font-weight: bold;
+
+    &.disabled {
+      opacity: .4;
+
+      .material-icons {
+        cursor: inherit;
+        &:hover {
+          color: inherit;
+          opacity: inherit;
+        }
+      }
+    }
+  }
+}
