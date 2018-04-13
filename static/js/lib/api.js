@@ -1,4 +1,5 @@
 // @flow
+import _ from 'lodash'
 import {
   fetchJSONWithCSRF,
   fetchWithCSRF
@@ -9,8 +10,17 @@ export type VideoUpdatePayload = {
   description?: string
 }
 
-export function getCollections() {
-  return fetchJSONWithCSRF(`/api/v0/collections/`)
+export function getCollections(opts = {}) {
+  const { pagination } = opts
+  console.log("pp: ", pagination)
+  let url = "/api/v0/collections/"
+  if (pagination) {
+    const queryParamsStr = _.map(pagination, (v, k) => {
+      return [k, v].map(encodeURIComponent).join('=')
+    }).join('&')
+    url += `?${queryParamsStr}`
+  }
+  return fetchJSONWithCSRF(url)
 }
 
 export function getCollection(collectionKey: string) {
