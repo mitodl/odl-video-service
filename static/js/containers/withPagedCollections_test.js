@@ -22,7 +22,7 @@ describe("withPagedCollections", () => {
   })
 
   describe("mapStateToProps", () => {
-    describe("currentCollectionsPageNeedsUpdate", () => {
+    describe("needsUpdate", () => {
       it("is true when current page state is undefined", () => {
         const state = {
           collectionsPagination: {
@@ -32,7 +32,7 @@ describe("withPagedCollections", () => {
           }
         }
         const props = mapStateToProps(state)
-        assert.equal(props.collectionsCurrentPageNeedsUpdate, true)
+        assert.equal(props.needsUpdate, true)
       })
 
       it("is false when current page status is defined", () => {
@@ -46,47 +46,19 @@ describe("withPagedCollections", () => {
           }
         }
         const props = mapStateToProps(state)
-        assert.equal(props.collectionsCurrentPageNeedsUpdate, false)
+        assert.equal(props.needsUpdate, false)
       })
     })
 
-    it("selects currentPage", () => {
-      const currentPage = 42
-      const state = { collectionsPagination: { currentPage } }
-      const props = mapStateToProps(state)
-      assert.equal(props.collectionsCurrentPage, currentPage)
-    })
-
-    it("selects current page data", () => {
-      const currentPage = 42
+    it("passes collectionsPagination state", () => {
       const state = {
         collectionsPagination: {
-          count: 0,
-          currentPage,
-          pages: {
-            [currentPage]: {
-              collections: [],
-              status:      'some status',
-            }
-          },
+          someKey:      'someValue',
+          someOtherKey: 'someOtherValue',
         }
       }
       const props = mapStateToProps(state)
-      assert.equal(
-        props.collectionsCurrentPageData,
-        state.collectionsPagination.pages[currentPage]
-      )
-    })
-
-    it("selects count", () => {
-      const count = 42
-      const state = {
-        collectionsPagination: {
-          count,
-        }
-      }
-      const props = mapStateToProps(state)
-      assert.equal(props.collectionsCount, count)
+      assert.equal(props.collectionsPagination, state.collectionsPagination)
     })
   })
 
@@ -104,37 +76,29 @@ describe("withPagedCollections", () => {
 
       beforeEach(() => {
         stubs = {
-          updateCollectionsCurrentPage: sandbox.stub(
+          updateCurrentPage: sandbox.stub(
             WrappedComponent.prototype,
-            "updateCollectionsCurrentPage"
+            "updateCurrentPage"
           ),
         }
       })
 
-      describe("when collectionsCurrentPageNeedsUpdate is true", () => {
+      describe("when needsUpdate is true", () => {
         it("calls updateCurrentPage", () => {
-          mount(
-            <WrappedComponent
-              collectionsCurrentPageNeedsUpdate={true}
-            />
-          )
-          sinon.assert.called(stubs.updateCollectionsCurrentPage)
+          mount(<WrappedComponent needsUpdate={true}/>)
+          sinon.assert.called(stubs.updateCurrentPage)
         })
       })
 
       describe("when pageNeedsUpdate is false", () => {
         it("does not dispatch getPage action", () => {
-          mount(
-            <WrappedComponent
-              collectionsCurrentPageNeedsUpdate={false}
-            />
-          )
-          sinon.assert.notCalled(stubs.updateCollectionsCurrentPage)
+          mount(<WrappedComponent needsUpdate={false} />)
+          sinon.assert.notCalled(stubs.updateCurrentPage)
         })
       })
     })
 
-    describe("updateCollectionsCurrentPage", () => {
+    describe("updateCurrentPage", () => {
       let stubs
 
       beforeEach(() => {
@@ -145,19 +109,52 @@ describe("withPagedCollections", () => {
       })
 
       it("dispatches getPage action with currentPage", () => {
-        const collectionsCurrentPage = 42
+        const currentPage = 42
         mount(
           <WrappedComponent
             dispatch={stubs.dispatch}
-            collectionsCurrentPageNeedsUpdate={true}
-            collectionsCurrentPage={collectionsCurrentPage}
+            needsUpdate={true}
+            collectionsPagination={{currentPage}}
           />
         )
         sinon.assert.calledWith(
           stubs.getPage,
-          {page: collectionsCurrentPage}
+          {page: currentPage}
         )
         sinon.assert.calledWith(stubs.dispatch, stubs.getPage.returnValues[0])
+      })
+    })
+
+    describe("generatePropsForWrappedComponent", () => {
+      it("passes on expected props", () => {
+        const extraProps = {someKey: 'someVal', someOtherKey: 'someOtherVal'}
+        const currentPage = 42
+        const collectionsPagination = {
+          currentPage,
+          pages: {
+            [currentPage]: {
+              somePageDataKey: 'somePageDataValue'
+            }
+          }
+        }
+        const wrapper = mount(
+          <WrappedComponent
+            {...extraProps}
+            collectionsPagination={collectionsPagination}
+          />
+        )
+        const wrapped = wrapper.find('DummyComponent')
+        assert.deepEqual(
+          wrapped.props(),
+          {
+            ...extraProps,
+            collectionsPagination: {
+              ...collectionsPagination,
+              setCurrentPage:  wrapper.instance().setCurrentPage,
+              currentPageData: collectionsPagination.pages[currentPage],
+            }
+          }
+        )
       })
     })
   })
