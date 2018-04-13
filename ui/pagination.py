@@ -16,4 +16,5 @@ class CollectionSetPagination(PageNumberPagination):
         response = super().get_paginated_response(data)
         response.data['start_index'] = self.page.start_index()
         response.data['end_index'] = self.page.end_index()
+        response.data['num_pages'] = self.page.paginator.num_pages
         return response
