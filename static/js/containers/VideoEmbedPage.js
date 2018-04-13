@@ -2,6 +2,7 @@
 import React from "react"
 import { connect } from "react-redux"
 import type { Dispatch } from "redux"
+import DocumentTitle from "react-document-title"
 
 import { updateVideoJsSync } from "../actions/videoUi"
 import VideoPlayer from "../components/VideoPlayer"
@@ -29,14 +30,16 @@ class VideoEmbedPage extends React.Component<*, void> {
     const { video, videoUi } = this.props
 
     return (
-      <div className="embedded-video">
-        <VideoPlayer
-          video={video}
-          cornerFunc={this.updateCorner}
-          selectedCorner={videoUi.corner}
-          embed={true}
-        />
-      </div>
+      <DocumentTitle title={`OVS | ${video.title} | Video Embed`}>
+        <div className="embedded-video">
+          <VideoPlayer
+            video={video}
+            cornerFunc={this.updateCorner}
+            selectedCorner={videoUi.corner}
+            embed={true}
+          />
+        </div>
+      </DocumentTitle>
     )
   }
 }
