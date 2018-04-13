@@ -276,6 +276,9 @@ def test_collection_viewset_list(mock_moira_client, logged_in_apiclient):
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
     assert len(result.data['results']) == len(expected_collection_keys)
+    assert result.data['count'] == len(expected_collection_keys)
+    assert result.data['start_index'] == 1
+    assert result.data['end_index'] == len(expected_collection_keys)
     for coll_data in result.data['results']:
         assert coll_data['key'] in expected_collection_keys
         assert coll_data['key'] not in prohibited_collection_keys
