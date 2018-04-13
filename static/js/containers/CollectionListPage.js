@@ -15,90 +15,98 @@ import { withDialogs } from "../components/dialogs/hoc"
 import { makeCollectionUrl } from "../lib/urls"
 import type { CommonUiState } from "../reducers/commonUi"
 import type { Collection } from "../flow/collectionTypes"
+import withPagedCollections from './withPagedCollections'
+import LoadingIndicator from "../components/material/LoadingIndicator"
 
 class CollectionListPage extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
     collections: Array<Collection>,
     editable: boolean,
-    needsUpdate: boolean,
     commonUi: CommonUiState
   }
 
-  renderCollectionLinks() {
-    const { collections } = this.props
-
-    if (collections.length === 0) return null
-
-    return (
-      <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list">
-        {collections.map(collection => (
-          <li key={collection.key} className="mdc-list-item">
-            <span className="mdc-list-item__graphic grey-bg">
-              <i className="material-icons" aria-hidden="true">
-                folder
-              </i>
-            </span>
-            <span className="mdc-list-item__text">
-              <Link to={makeCollectionUrl(collection.key)}>
-                {collection.title}
-              </Link>
-              <span className="mdc-list-item__secondary-text">
-                {collection.video_count} Videos
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    )
-  }
-
-  openNewCollectionDialog = () => {
-    const { dispatch } = this.props
-
-    dispatch(collectionUiActions.showNewCollectionDialog())
-  }
-
   render() {
-    const formLink = SETTINGS.editable ? (
-      <a
-        className="button-link create-collection-button"
-        onClick={this.openNewCollectionDialog}
-      >
-        <i className="material-icons">add</i>
-        Create New Collection
-      </a>
-    ) : null
-
     return (
       <WithDrawer>
         <div className="collection-list-content">
           <div className="card centered-content">
             <h1 className="mdc-typography--title">My Collections</h1>
             {this.renderCollectionLinks()}
-            {formLink}
+            {this.renderFormLink()}
           </div>
         </div>
       </WithDrawer>
     )
   }
+
+  renderFormLink() {
+    return (
+      SETTINGS.editable ? (
+        <a
+        className="button-link create-collection-button"
+        onClick={this.openNewCollectionDialog}
+        >
+        <i className="material-icons">add</i>
+        Create New Collection
+        </a>
+      ) : null
+    )
+  }
+
+  openNewCollectionDialog () {
+    const { dispatch } = this.props
+    dispatch(collectionUiActions.showNewCollectionDialog())
+  }
+
+  renderCollectionLinks() {
+    const { collectionsPagination } = this.props
+    const currentPageData = (
+      collectionsPagination.pages[collectionsPagination.currentPage]
+    )
+    if (! currentPageData) {
+      return null
+    }
+    if (currentPageData.status === 'ERROR') {
+      return (<div>Error!</div>)
+    } else if (currentPageData.status === 'LOADING') {
+      return (<LoadingIndicator/>)
+    }
+    else if (currentPageData.status === 'LOADED') {
+      const { collections } = currentPageData
+      return (
+        <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list">
+          {collections.map(collection => (
+            <li key={collection.key} className="mdc-list-item">
+              <span className="mdc-list-item__graphic grey-bg">
+                <i className="material-icons" aria-hidden="true">
+                  folder
+                </i>
+              </span>
+              <span className="mdc-list-item__text">
+                <Link to={makeCollectionUrl(collection.key)}>
+                  {collection.title}
+                </Link>
+                <span className="mdc-list-item__secondary-text">
+                  {collection.video_count} Videos
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  }
+
 }
 
 const mapStateToProps = state => {
-  const { collectionsList, commonUi } = state
-  const collections = collectionsList.loaded ? (collectionsList.data.results ? collectionsList.data.results : collectionsList.data) : []
-  const needsUpdate = !collectionsList.processing && !collectionsList.loaded
-
   return {
-    collections,
-    commonUi,
-    needsUpdate
+    commonUi: state.commonUi
   }
 }
 
 export default R.compose(
   connect(mapStateToProps),
-  withDialogs([
-    { name: DIALOGS.COLLECTION_FORM, component: CollectionFormDialog }
-  ])
+  withPagedCollections
 )(CollectionListPage)

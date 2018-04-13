@@ -1,11 +1,21 @@
 import React from 'react'
+import R from "ramda"
+import { connect } from "react-redux"
+import type { Dispatch } from "redux"
 
 import { actions } from "../actions"
 
 
 export const withPagedCollections = (WrappedComponent) => {
   return class WithPagedCollections extends React.Component {
+    props: {
+      dispatch: Dispatch,
+    }
+
     render() {
+      window.sp = (p) => {
+        this.props.dispatch(actions.collectionsPagination.setCurrentPage({currentPage: p}))
+      }
       return (
         <WrappedComponent {...this.props} />
       )
@@ -28,7 +38,7 @@ export const withPagedCollections = (WrappedComponent) => {
     updateCollectionsCurrentPage () {
       this.props.dispatch(
         actions.collectionsPagination.getPage({
-          page: this.props.collectionsCurrentPage,
+          page: this.props.collectionsPagination.currentPage,
         })
       )
     }
@@ -37,21 +47,17 @@ export const withPagedCollections = (WrappedComponent) => {
 
 export const mapStateToProps = (state) => {
   const { collectionsPagination } = state
-  const { count, currentPage, pages } =  collectionsPagination
+  const { currentPage, pages } =  collectionsPagination
   const collectionsCurrentPageNeedsUpdate = (
     pages && (pages[currentPage] === undefined)
   )
-  const collectionsCurrentPageData = (
-    (pages && pages[currentPage])
-    ? pages[currentPage]
-    : undefined
-  )
   return {
-    collectionsCount:       count,
-    collectionsCurrentPage: currentPage,
-    collectionsCurrentPageData,
+    collectionsPagination,
     collectionsCurrentPageNeedsUpdate,
   }
 }
 
-export default withPagedCollections
+export default R.compose(
+  connect(mapStateToProps),
+  withPagedCollections
+)
