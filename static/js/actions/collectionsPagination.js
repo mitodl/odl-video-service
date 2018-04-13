@@ -20,12 +20,12 @@ constants.RECEIVE_GET_PAGE_FAILURE = qualifiedName("RECEIVE_GET_PAGE_FAILURE")
 actionCreators.receiveGetPageFailure = createAction(
   constants.RECEIVE_GET_PAGE_FAILURE)
 
-actionCreators.getPage = (page: number) => {
+actionCreators.getPage = (opts: {page: number}) => {
+  const { page } = opts
   const thunk = async (dispatch: Dispatch) => {
     dispatch(actionCreators.requestGetPage({page}))
     try {
-      const response = await api.getCollections({page})
-      const data  = response.data || {}
+      const response = await api.getCollections({pagination: {page}})
       // @TODO: ideally we would dispatch an action here to save collections to
       // a single place in state (e.g. state.collections).
       // However, it take a non-trivial refactor to implement this schema
@@ -34,8 +34,8 @@ actionCreators.getPage = (page: number) => {
       // refactoring.
       dispatch(actionCreators.receiveGetPageSuccess({
         page,
-        count:       (data.count || 0),
-        collections: (data.results || []),
+        count:       (response.count || 0),
+        collections: (response.results || []),
       }))
     } catch (error) {
       dispatch(actionCreators.receiveGetPageFailure({
@@ -46,5 +46,8 @@ actionCreators.getPage = (page: number) => {
   }
   return thunk
 }
+
+constants.SET_CURRENT_PAGE = qualifiedName("SET_CURRENT_PAGE")
+actionCreators.setCurrentPage = createAction(constants.SET_CURRENT_PAGE)
 
 export { actionCreators, constants }
