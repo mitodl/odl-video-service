@@ -4,8 +4,9 @@ import type { Action } from "../flow/reduxTypes"
 import { constants } from "../actions/collectionsPagination"
 
 export const INITIAL_COLLECTIONS_PAGINATION_STATE = {
-  count: 0,
-  pages: {},
+  count:       0,
+  currentPage: 1,
+  pages:       {},
 }
 
 const generateInitialPageState = () => ({
@@ -53,6 +54,11 @@ const reducer = (
           error:  action.payload.error,
         }
       }
+    }
+  case constants.SET_CURRENT_PAGE:
+    return {
+      ...state,
+      currentPage: action.payload.currentPage,
     }
   default:
     return state

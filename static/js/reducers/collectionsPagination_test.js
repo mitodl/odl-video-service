@@ -110,4 +110,13 @@ describe("collectionsPagination reducer", () => {
     })
   })
 
+  describe("SET_CURRENT_PAGE", () => {
+    it("sets currentPage", () => {
+      const currentPage = 42
+      assert.notEqual(getPaginationState().currentPage, currentPage)
+      store.dispatch(actions.collectionsPagination.setCurrentPage({currentPage})
+      assert.equal(getPaginationState().currentPage, currentPage)
+    })
+  })
+
 })
