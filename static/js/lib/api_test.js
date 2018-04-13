@@ -32,13 +32,21 @@ describe("api", () => {
     sandbox.restore()
   })
 
-  it("gets collection list", async () => {
-    const collections = _.times(2, () => makeCollection())
-    fetchStub.returns(Promise.resolve({results: collections}))
+  describe("getCollections", () => {
+    it("gets collection list", async () => {
+      const collections = _.times(2, () => makeCollection())
+      fetchStub.returns(Promise.resolve({results: collections}))
 
-    const result = await getCollections()
-    sinon.assert.calledWith(fetchStub, `/api/v0/collections/`)
-    assert.deepEqual(result.results, collections)
+      const result = await getCollections()
+      sinon.assert.calledWith(fetchStub, `/api/v0/collections/`)
+      assert.deepEqual(result.results, collections)
+    })
+
+    it("sends pagination parameters", async () => {
+      const paginationParams = {page: 2}
+      const result = await getCollections({pagination: paginationParams})
+      sinon.assert.calledWith(fetchStub, `/api/v0/collections/?page=2`)
+    })
   })
 
   it("creates a new collection", async () => {
@@ -145,4 +153,5 @@ describe("api", () => {
     }
     assert.deepEqual(result, expectedResult)
   })
+
 })

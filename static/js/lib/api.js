@@ -12,15 +12,17 @@ export type VideoUpdatePayload = {
 
 export function getCollections(opts = {}) {
   const { pagination } = opts
-  console.log("pp: ", pagination)
   let url = "/api/v0/collections/"
   if (pagination) {
-    const queryParamsStr = _.map(pagination, (v, k) => {
-      return [k, v].map(encodeURIComponent).join('=')
-    }).join('&')
-    url += `?${queryParamsStr}`
+    url += `?${makeQueryParamsStr(pagination)}`
   }
   return fetchJSONWithCSRF(url)
+}
+
+export function makeQueryParamsStr (queryParams: {[string]:(string|number)}): string {
+  return _.map(queryParams, (v, k) => {
+    return [k, v].map(encodeURIComponent).join('=')
+  }).join('&')
 }
 
 export function getCollection(collectionKey: string) {
