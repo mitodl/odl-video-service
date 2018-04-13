@@ -2,8 +2,6 @@
 /* global SETTINGS: false */
 import React from "react"
 
-import Button from "./material/Button"
-
 
 class Paginator extends React.Component<*, void> {
   render () {
@@ -11,14 +9,16 @@ class Paginator extends React.Component<*, void> {
     return (
       <div className="paginator">
         <span className="paginator-current-range">
-          Page {currentPage} of {totalPages}
+          Page <span className="paginator-current-page">{currentPage}</span>
+          &nbsp;of&nbsp;
+          <span className="paginator-total-pages">{totalPages}</span>
         </span>
       
         <span className="paginator-buttons"
           style={{
             marginLeft: '.5em',
-            position: 'relative',
-            top: '-.1em',
+            position:   'relative',
+            top:        '-.1em',
           }}
         >
           { this.renderPrevNextButton("prev") }
@@ -46,31 +46,6 @@ class Paginator extends React.Component<*, void> {
         disabled = false
       }
     }
-    const buttonStyle = {
-      margin: 0,
-      minWidth: 0,
-      padding: 0,
-      height: '24px',
-      lineHeight: '24px',
-    }
-    const mdcClassNames = 'mdc-button mdc-button--dense mdc-button--stroked'
-    /*
-    return (
-      <button
-        className={`${mdcClassNames} paginator-${nextPrevType}-button`}
-        style={buttonStyle}
-        onClick={clickHandler}
-        disabled={disabled}
-      >
-        <i
-          className="material-icons mdc-button__icon"
-          style={{top: 0, verticalAlign: 'top'}}
-        >
-          {iconKey}
-        </i>
-      </button>
-    )
-    */
     let className = `paginator-button paginator-${nextPrevType}-button`
     if (disabled) {
       className += ' disabled'
