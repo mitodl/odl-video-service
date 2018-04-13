@@ -5,6 +5,8 @@ import { connect } from "react-redux"
 import type { Dispatch } from "redux"
 import R from "ramda"
 import _ from "lodash"
+import DocumentTitle from "react-document-title"
+
 import WithDrawer from "./WithDrawer"
 import VideoCard from "../components/VideoCard"
 import Button from "../components/material/Button"
@@ -191,10 +193,12 @@ export class CollectionDetailPage extends React.Component<*, void> {
     const detailBody = this.renderBody(collection)
 
     return (
-      <WithDrawer>
-        <VideoSaverScript />
-        <div className="collection-detail-content">{detailBody}</div>
-      </WithDrawer>
+      <DocumentTitle title={`OVS | ${collection.title}`}>
+        <WithDrawer>
+          <VideoSaverScript />
+          <div className="collection-detail-content">{detailBody}</div>
+        </WithDrawer>
+      </DocumentTitle>
     )
   }
 
