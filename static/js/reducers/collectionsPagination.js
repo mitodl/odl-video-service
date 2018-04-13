@@ -33,12 +33,15 @@ const reducer = (
   case constants.RECEIVE_GET_PAGE_SUCCESS:
     return {
       ...state,
-      count: action.payload.count,
-      pages: {
+      count:     action.payload.count,
+      numPages: action.payload.numPages,
+      pages:     {
         ...state.pages,
         [action.payload.page]: {
           ...state.pages[action.payload.page],
           collections: action.payload.collections,
+          startIndex:  action.payload.startIndex,
+          endIndex:    action.payload.endIndex,
           status:      'LOADED',
         }
       }

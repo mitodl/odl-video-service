@@ -8,11 +8,10 @@ import { actions } from "../actions"
 
 
 describe("collectionsPagination reducer", () => {
-  let store, sandbox, dispatchThen
+  let store, sandbox
 
   beforeEach(() => {
     store = configureTestStore(rootReducer)
-    dispatchThen = store.createDispatchThen()
     sandbox = sinon.sandbox.create()
   })
 
@@ -32,10 +31,11 @@ describe("collectionsPagination reducer", () => {
     store.dispatch(actions.collectionsPagination.requestGetPage({page}))
   }
 
-  it("should have some initial state", () => {
+  it("has initial state", () => {
     const expectedInitialState = {
-      count: 0,
-      pages: {},
+      currentPage: 1,
+      count:       0,
+      pages:       {},
     }
     assert.deepEqual(getPaginationState(), expectedInitialState)
   })
@@ -53,12 +53,22 @@ describe("collectionsPagination reducer", () => {
   describe("RECEIVE_GET_PAGE_SUCCESS", () => {
     const page = 42
     const count = 4242
+    const numPages = 37
     const collections = [...Array(3).keys()].map((i) => {
       return {"title": `collection${i}`}
     })
+    const startIndex = 1
+    const endIndex = 4
 
     const dispatchReceiveGetPageSuccess = () => {
-      store.dispatch(actions.collectionsPagination.receiveGetPageSuccess({count, page, collections}))
+      store.dispatch(actions.collectionsPagination.receiveGetPageSuccess({
+        page,
+        numPages,
+        count,
+        startIndex,
+        endIndex,
+        collections,
+      }))
     }
 
     beforeEach(() => {
@@ -71,16 +81,22 @@ describe("collectionsPagination reducer", () => {
       assert.equal(getPaginationState().count, count)
     })
 
-    it("updates page status", async () => {
-      assert.notEqual(getPageState(page).status, 'LOADED')
+    it("updates numPages", async () => {
+      assert.notEqual(getPaginationState().numPages, numPages)
       dispatchReceiveGetPageSuccess()
-      assert.equal(getPageState(page).status, 'LOADED')
+      assert.equal(getPaginationState().numPages, numPages)
     })
 
-    it("updates page collections", async () => {
-      assert.notDeepEqual(getPageState(page).collections, collections)
+    it("updates page data", async () => {
+      const expectedPageData = {
+        status: 'LOADED',
+        collections,
+        startIndex,
+        endIndex,
+      }
+      assert.notDeepEqual(getPageState(page), expectedPageData)
       dispatchReceiveGetPageSuccess()
-      assert.deepEqual(getPageState(page).collections, collections)
+      assert.deepEqual(getPageState(page), expectedPageData)
     })
   })
 
@@ -114,7 +130,7 @@ describe("collectionsPagination reducer", () => {
     it("sets currentPage", () => {
       const currentPage = 42
       assert.notEqual(getPaginationState().currentPage, currentPage)
-      store.dispatch(actions.collectionsPagination.setCurrentPage({currentPage})
+      store.dispatch(actions.collectionsPagination.setCurrentPage({currentPage}))
       assert.equal(getPaginationState().currentPage, currentPage)
     })
   })
