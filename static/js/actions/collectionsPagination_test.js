@@ -63,7 +63,7 @@ describe("collectionsPagination actions", () => {
     })
 
     const _getPage = async () => {
-      return actionCreators.getPage(page)(dispatch)
+      return actionCreators.getPage({page})(dispatch)
     }
 
     it("dispatches REQUEST_GET_PAGE", async () => {
@@ -76,19 +76,20 @@ describe("collectionsPagination actions", () => {
 
     it("makes api call", async () => {
       await _getPage()
-      sinon.assert.calledWith(stubs.getCollections, { page })
+      sinon.assert.calledWith(stubs.getCollections, {pagination:{page}})
     })
 
     describe("when api call succeeds", () => {
-      const result = {
-        data: {
-          count:   4242,
-          results: [...Array(3).keys()].map((i) => ({key: i})),
-        },
+      const response = {
+        count:       4242,
+        num_pages:   424242,
+        results:     [...Array(3).keys()].map((i) => ({key: i})),
+        start_index: 99,
+        end_index:   999,
       }
 
       beforeEach(() => {
-        stubs.getCollections.returns(Promise.resolve(result))
+        stubs.getCollections.returns(Promise.resolve(response))
       })
 
       it("dispatches RECEIVE_GET_PAGE_SUCCESS", async () => {
@@ -97,8 +98,11 @@ describe("collectionsPagination actions", () => {
           stubs.receiveGetPageSuccess,
           {
             page,
-            count:       result.data.count,
-            collections: results.data.results,
+            count:       response.count,
+            collections: response.results,
+            numPages:    response.num_pages,
+            startIndex:  response.start_index,
+            endIndex:    response.end_index,
           }
         )
         sinon.assert.calledWith(

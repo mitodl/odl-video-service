@@ -34,8 +34,11 @@ actionCreators.getPage = (opts: {page: number}) => {
       // refactoring.
       dispatch(actionCreators.receiveGetPageSuccess({
         page,
-        count:       (response.count || 0),
-        collections: (response.results || []),
+        count:       response.count,
+        collections: response.results,
+        numPages:    response.num_pages,
+        startIndex:  response.start_index,
+        endIndex:    response.end_index,
       }))
     } catch (error) {
       dispatch(actionCreators.receiveGetPageFailure({
