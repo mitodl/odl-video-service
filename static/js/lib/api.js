@@ -10,7 +10,11 @@ export type VideoUpdatePayload = {
   description?: string
 }
 
-export function getCollections(opts = {}) {
+export type PaginationParams = {
+  page: (string|number),
+}
+
+export function getCollections(opts:{pagination?:PaginationParams} = {}) {
   const { pagination } = opts
   let url = "/api/v0/collections/"
   if (pagination) {

@@ -76,7 +76,7 @@ describe("collectionsPagination actions", () => {
 
     it("makes api call", async () => {
       await _getPage()
-      sinon.assert.calledWith(stubs.getCollections, {pagination:{page}})
+      sinon.assert.calledWith(stubs.getCollections, {pagination: {page} })
     })
 
     describe("when api call succeeds", () => {

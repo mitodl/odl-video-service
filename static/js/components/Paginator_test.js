@@ -53,7 +53,7 @@ describe("Paginator", () => {
       props = {
         ...props,
         currentPage: 2,
-        totalPages: 3
+        totalPages:  3
       }
     })
 
@@ -77,7 +77,7 @@ describe("Paginator", () => {
       props = {
         ...props,
         currentPage: 3,
-        totalPages: 3
+        totalPages:  3
       }
     })
 
@@ -96,7 +96,7 @@ describe("Paginator", () => {
       props = {
         ...props,
         currentPage: 1,
-        totalPages: 3
+        totalPages:  3
       }
     })
 

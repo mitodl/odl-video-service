@@ -41,7 +41,7 @@ describe("withPagedCollections", () => {
             count:       0,
             currentPage: 42,
             pages:       {
-              42: {}
+              "42": {}
             },
           }
         }
@@ -63,7 +63,7 @@ describe("withPagedCollections", () => {
   })
 
   describe("WrappedComponent", () => {
-    class DummyComponent extends React.Component {
+    class DummyComponent extends React.Component<*, void> {
       render () {
         return (<div>DummyComponent</div>)
       }

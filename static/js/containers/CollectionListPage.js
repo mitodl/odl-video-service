@@ -14,13 +14,14 @@ import CollectionFormDialog from "../components/dialogs/CollectionFormDialog"
 import { withDialogs } from "../components/dialogs/hoc"
 import { makeCollectionUrl } from "../lib/urls"
 import type { CommonUiState } from "../reducers/commonUi"
-import type { Collection } from "../flow/collectionTypes"
+import type { Collection, CollectionsPagination } from "../flow/collectionTypes"
 import withPagedCollections from './withPagedCollections'
 import LoadingIndicator from "../components/material/LoadingIndicator"
 import Paginator from "../components/Paginator"
 
 export class CollectionListPage extends React.Component<*, void> {
   props: {
+    collectionsPagination: CollectionsPagination,
     dispatch: Dispatch,
     collections: Array<Collection>,
     editable: boolean,
@@ -41,7 +42,8 @@ export class CollectionListPage extends React.Component<*, void> {
   }
 
   renderPaginator () {
-    const { currentPage, numPages, currentPageData } = this.props.collectionsPagination
+    const { collectionsPagination } = this.props
+    const { currentPage, numPages, currentPageData } = collectionsPagination
     if (currentPageData) {
       currentPageData
     }
@@ -55,9 +57,11 @@ export class CollectionListPage extends React.Component<*, void> {
     )
   }
 
-  incrementCurrentPage (amount) {
+  incrementCurrentPage (amount:number) {
     const { currentPage, setCurrentPage } = this.props.collectionsPagination
-    setCurrentPage(currentPage + amount)
+    if (setCurrentPage) {
+      setCurrentPage(currentPage + amount)
+    }
   }
 
   renderFormLink() {

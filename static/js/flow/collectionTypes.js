@@ -41,3 +41,19 @@ export type CollectionUiState = {
   selectedVideoKey: ?string,
   errors?: CollectionValidation
 };
+
+export type CollectionsPage = {
+  collections: Array<Collection>,
+  status: string,
+}
+
+export type CollectionsPagination = {
+  count: number,
+  currentPage: number,
+  currentPageData?: CollectionsPage,
+  numPages?: number,
+  pages: {
+    [string|number]: CollectionsPage,
+  },
+  setCurrentPage?: (nextCurrentPage: number) => void,
+}

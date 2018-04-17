@@ -8,7 +8,7 @@ import { actions } from "../actions"
 
 
 export const withPagedCollections = (WrappedComponent) => {
-  return class WithPagedCollections extends React.Component {
+  return class WithPagedCollections extends React.Component<*, void> {
     props: {
       dispatch: Dispatch,
     }

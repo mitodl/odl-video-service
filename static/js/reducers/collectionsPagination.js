@@ -1,9 +1,10 @@
 // @flow
 import type { Action } from "../flow/reduxTypes"
+import type { CollectionsPagination } from "../flow/collectionTypes"
 
 import { constants } from "../actions/collectionsPagination"
 
-export const INITIAL_COLLECTIONS_PAGINATION_STATE = {
+export const INITIAL_COLLECTIONS_PAGINATION_STATE:CollectionsPagination = {
   count:       0,
   currentPage: 1,
   pages:       {},
@@ -15,7 +16,7 @@ const generateInitialPageState = () => ({
 })
 
 const reducer = (
-  state = INITIAL_COLLECTIONS_PAGINATION_STATE,
+  state:CollectionsPagination = INITIAL_COLLECTIONS_PAGINATION_STATE,
   action: Action<any, null>
 ) => {
   switch (action.type) {

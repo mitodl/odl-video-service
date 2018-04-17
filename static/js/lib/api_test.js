@@ -44,7 +44,7 @@ describe("api", () => {
 
     it("sends pagination parameters", async () => {
       const paginationParams = {page: 2}
-      const result = await getCollections({pagination: paginationParams})
+      await getCollections({pagination: paginationParams})
       sinon.assert.calledWith(fetchStub, `/api/v0/collections/?page=2`)
     })
   })
