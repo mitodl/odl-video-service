@@ -7,7 +7,7 @@ matrix:
     - install:
       - env | grep TRAVIS > .env
       - env | grep CI >> .env
-      - docker-compose -f docker-compose-travis.yml run celery echo
+      - docker-compose -f docker-compose-travis.yml build web celery
       script: (docker-compose -f docker-compose-travis.yml up celery &); sleep 5; docker-compose -f docker-compose-travis.yml run web tox
       services:
         - docker
