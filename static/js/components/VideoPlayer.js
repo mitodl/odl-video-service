@@ -47,6 +47,7 @@ const makeConfigForVideo = (
     ]
     : video.sources,
   plugins: {
+    hlsQualitySelector:        {},
     videoJsResolutionSwitcher: {
       default:      "high",
       dynamicLabel: true
@@ -294,18 +295,16 @@ class VideoPlayer extends React.Component<*, void> {
     if (this.player.tech_.currentTime() < 10) {
       return _.last(playlists)
     }
-    // Return playlist with highest bandwidth <= system bandwidth
-    return _.last(
-      R.filter(
-        rep =>
-          rep.attributes.BANDWIDTH <=
-          _.max([
-            this.player.tech_.hls.systemBandwidth,
-            playlists[0].attributes.BANDWIDTH
-          ]),
-        playlists
-      )
-    )
+    // Otherwise use the original selector, which will take into account
+    // quality settings per the qualityLevels plugin.
+    return this._originalSelectPlaylist()
+  }
+
+  selectInitialQualityLevel () {
+    const sortByBitrate = R.sortBy(R.path(["bitrate"]))
+    this.player.hlsQualitySelector.selectQualityLevel({
+      key: (sortByBitrate(this.player.qualityLevels().levels_).key),
+    })
   }
 
   componentDidMount() {
@@ -314,7 +313,6 @@ class VideoPlayer extends React.Component<*, void> {
     const cropVideo = this.cropVideo
     const createEventHandler = this.createEventHandler
     const toggleFullscreen = this.toggleFullscreen
-    const selectPlaylist = this.selectPlaylist
     if (video.multiangle) {
       videojs.getComponent(
         "FullscreenToggle"
@@ -324,27 +322,29 @@ class VideoPlayer extends React.Component<*, void> {
     this.lastMinuteTracked = null
     this.player = videojs(
       this.videoNode,
-      makeConfigForVideo(video, useYouTube, embed),
-      function onPlayerReady() {
-        this.enableTouchActivity()
-        if (video.multiangle) {
-          setCustomDimension(SETTINGS.ga_dimension_camera, selectedCorner)
-          this.on("loadeddata", cropVideo)
-          this.on(FULLSCREEN_API.fullscreenchange, cropVideo)
-          window.addEventListener("resize", cropVideo)
-        }
-        this.on("loadedmetadata", function() {
-          gaEvents.forEach((event: string) => {
-            createEventHandler(event, video.key)
-          })
-        })
-        if (this.tech_.hls !== undefined) {
-          this.tech_.hls.selectPlaylist = selectPlaylist
-        }
-        const params = new URLSearchParams(window.location.search)
-        this.currentTime(parseInt(params.get("start")) || 0)
-      }
+      makeConfigForVideo(video, useYouTube, embed)
     )
+    this.player.ready(() => {
+      this.player.enableTouchActivity()
+      if (video.multiangle) {
+        setCustomDimension(SETTINGS.ga_dimension_camera, selectedCorner)
+        this.player.on("loadeddata", cropVideo)
+        this.player.on(FULLSCREEN_API.fullscreenchange, cropVideo)
+        window.addEventListener("resize", cropVideo)
+      }
+      this.player.on("loadedmetadata", () => {
+        gaEvents.forEach((event: string) => {
+          createEventHandler(event, video.key)
+        })
+      })
+      if (this.player.tech_.hls !== undefined) {
+        // Save the original default playlist selector for later use.
+        this._originalSelectPlaylist = this.player.tech_.hls.selectPlaylist
+        this.player.tech_.hls.selectPlaylist = this.selectPlaylist
+      }
+      const params = new URLSearchParams(window.location.search)
+      this.player.currentTime(parseInt(params.get("start")) || 0)
+    })
     if (useYouTube) {
       this.checkYouTube()
     }
