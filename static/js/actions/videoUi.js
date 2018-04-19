@@ -2,49 +2,61 @@
 import { createAction } from "redux-actions"
 
 export const qualifiedName = (name: string) => `VIDEO_UI_${name}`
+const constants = {}
+const actionCreators = {}
 
-export const INIT_EDIT_VIDEO_FORM = qualifiedName("INIT_EDIT_VIDEO_FORM")
-export const initEditVideoForm = createAction(INIT_EDIT_VIDEO_FORM)
+constants.INIT_EDIT_VIDEO_FORM = qualifiedName("INIT_EDIT_VIDEO_FORM")
+actionCreators.initEditVideoForm = createAction(constants.INIT_EDIT_VIDEO_FORM)
 
-export const SET_EDIT_VIDEO_TITLE = qualifiedName("SET_EDIT_VIDEO_TITLE")
-export const setEditVideoTitle = createAction(SET_EDIT_VIDEO_TITLE)
+constants.SET_EDIT_VIDEO_TITLE = qualifiedName("SET_EDIT_VIDEO_TITLE")
+actionCreators.setEditVideoTitle = createAction(constants.SET_EDIT_VIDEO_TITLE)
 
-export const SET_EDIT_VIDEO_DESC = qualifiedName("SET_EDIT_VIDEO_DESC")
-export const setEditVideoDesc = createAction(SET_EDIT_VIDEO_DESC)
+constants.SET_EDIT_VIDEO_DESC = qualifiedName("SET_EDIT_VIDEO_DESC")
+actionCreators.setEditVideoDesc = createAction(constants.SET_EDIT_VIDEO_DESC)
 
-export const SET_UPLOAD_SUBTITLE = qualifiedName("SET_UPLOAD_SUBTITLE")
-export const setUploadSubtitle = createAction(SET_UPLOAD_SUBTITLE)
+constants.SET_UPLOAD_SUBTITLE = qualifiedName("SET_UPLOAD_SUBTITLE")
+actionCreators.setUploadSubtitle = createAction(constants.SET_UPLOAD_SUBTITLE)
 
-export const INIT_UPLOAD_SUBTITLE_FORM = qualifiedName(
-  "INIT_UPLOAD_SUBTITLE_FORM"
+constants.INIT_UPLOAD_SUBTITLE_FORM = qualifiedName("INIT_UPLOAD_SUBTITLE_FORM")
+
+constants.SET_VIDEOJS_SYNC = qualifiedName("SET_VIDEOJS_SYNC")
+actionCreators.updateVideoJsSync = createAction(constants.SET_VIDEOJS_SYNC)
+
+constants.SET_PERM_OVERRIDE_CHOICE = qualifiedName("SET_PERM_OVERRIDE_CHOICE")
+actionCreators.setPermOverrideChoice = createAction(
+  constants.SET_PERM_OVERRIDE_CHOICE
 )
 
-export const SET_VIDEOJS_SYNC = qualifiedName("SET_VIDEOJS_SYNC")
-export const updateVideoJsSync = createAction(SET_VIDEOJS_SYNC)
+constants.SET_VIEW_CHOICE = qualifiedName("SET_VIEW_CHOICE")
+actionCreators.setViewChoice = createAction(constants.SET_VIEW_CHOICE)
 
-export const SET_PERM_OVERRIDE_CHOICE = qualifiedName(
-  "SET_PERM_OVERRIDE_CHOICE"
+constants.SET_VIEW_LISTS = qualifiedName("SET_VIEW_LISTS")
+actionCreators.setViewLists = createAction(constants.SET_VIEW_LISTS)
+
+constants.SET_VIDEO_FORM_ERRORS = qualifiedName("SET_VIDEO_FORM_ERRORS")
+actionCreators.setVideoFormErrors = createAction(
+  constants.SET_VIDEO_FORM_ERRORS
 )
-export const setPermOverrideChoice = createAction(SET_PERM_OVERRIDE_CHOICE)
 
-export const SET_VIEW_CHOICE = qualifiedName("SET_VIEW_CHOICE")
-export const setViewChoice = createAction(SET_VIEW_CHOICE)
+constants.CLEAR_VIDEO_FORM = qualifiedName("CLEAR_VIDEO_FORM")
+actionCreators.clearVideoForm = createAction(constants.CLEAR_VIDEO_FORM)
 
-export const SET_VIEW_LISTS = qualifiedName("SET_VIEW_LISTS")
-export const setViewLists = createAction(SET_VIEW_LISTS)
+constants.SET_VIDEO_TIME = qualifiedName("SET_VIDEO_TIME")
+actionCreators.setVideoTime = createAction(constants.SET_VIDEO_TIME)
 
-export const SET_VIDEO_FORM_ERRORS = qualifiedName("SET_VIDEO_FORM_ERRORS")
-export const setVideoFormErrors = createAction(SET_VIDEO_FORM_ERRORS)
+constants.SET_VIDEO_DURATION = qualifiedName("SET_VIDEO_DURATION")
+actionCreators.setVideoDuration = createAction(constants.SET_VIDEO_DURATION)
 
-export const CLEAR_VIDEO_FORM = qualifiedName("CLEAR_VIDEO_FORM")
-export const clearVideoForm = createAction(CLEAR_VIDEO_FORM)
+constants.TOGGLE_ANALYTICS_OVERLAY = qualifiedName("TOGGLE_ANALYTICS_OVERLAY")
+actionCreators.toggleAnalyticsOverlay = createAction(
+  constants.TOGGLE_ANALYTICS_OVERLAY
+)
 
-export const SET_SHARE_VIDEO_TIME = qualifiedName("SET_SHARE_VIDEO_TIME")
-export const setShareVideoTime = createAction(SET_SHARE_VIDEO_TIME)
-
-export const SET_SHARE_VIDEO_TIME_ENABLED = qualifiedName(
+constants.SET_SHARE_VIDEO_TIME_ENABLED = qualifiedName(
   "SET_SHARE_VIDEO_TIME_ENABLED"
 )
-export const setShareVideoTimeEnabled = createAction(
-  SET_SHARE_VIDEO_TIME_ENABLED
+actionCreators.setShareVideoTimeEnabled = createAction(
+  constants.SET_SHARE_VIDEO_TIME_ENABLED
 )
+
+export { actionCreators, constants }

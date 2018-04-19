@@ -1,139 +1,224 @@
 import React from "react"
+import _ from "lodash"
 import { VictoryChart, VictoryBar, VictoryAxis, VictoryStack } from "victory"
-import { VictoryLabel, VictoryTooltip } from "victory"
+import { VictoryLabel, ClipPath } from "victory"
 
 // Helper to selectively show labels in Victory charts
-class ConditionalLabel extends React.Component {
+export class ConditionalLabel extends React.Component {
   render() {
-    if (this.props.testFn(this.props)) {
-      return <VictoryLabel {...this.props} />
+    const { testFn, ...passThroughProps } = this.props
+    if (testFn(this.props)) {
+      return <VictoryLabel {...passThroughProps} />
     }
     return null
   }
 }
 
-class AnalyticsChart extends React.Component {
+export class AnalyticsChart extends React.Component {
+  props: {
+    analyticsData: VideoAnalyticsData,
+    getColorForChannel: Function,
+    currentTime: number,
+    style?: { [string]: mixed }
+  }
+
+  constructor(props) {
+    super(props)
+    this._namespace = Math.floor(1e6 * Math.random()) // used for ids in svg
+    this.state = {
+      dimensions: null
+    }
+  }
+  componentDidMount() {
+    this._setupResizeHandler()
+    setTimeout(() => this._updateDimensions(), 200)
+  }
+
+  _setupResizeHandler() {
+    this._resizeHandler = _.throttle(this.onResize.bind(this), 100)
+    window.addEventListener("resize", this._resizeHandler)
+  }
+
+  onResize() {
+    this._updateDimensions()
+  }
+
+  _tearDownResizeHandler() {
+    window.removeEventListener("resize", this._resizeHandler)
+  }
+
+  _updateDimensions() {
+    if (!this.rootRef) {
+      return
+    }
+    const { width, height } = this.rootRef.getBoundingClientRect()
+    this.setState({ dimensions: { width, height } })
+  }
+
+  componentWillUnmount() {
+    this._tearDownResizeHandler()
+  }
+
   render() {
-    const { analyticsData } = this.props
+    const { dimensions } = this.state
+    const {
+      analyticsData,
+      getColorForChannel,
+      duration,
+      ...remainingProps
+    } = this.props
+    const passThroughProps = _.omit(remainingProps, [
+      "currentTime",
+      "setVideoTime",
+      "padding"
+    ])
+    return (
+      <div
+        ref={ref => {
+          this.rootRef = ref
+        }}
+        {...passThroughProps}
+      >
+        {dimensions
+          ? this.renderChart({
+            analyticsData,
+            getColorForChannel,
+            dimensions,
+            duration
+          })
+          : null}
+      </div>
+    )
+  }
+
+  renderChart(opts) {
+    const { dimensions } = this.state
+    const { analyticsData, getColorForChannel, duration } = opts
     const viewsAtTimesByChannel = this._generateViewsAtTimesByChannel(
       analyticsData
     )
-    const colors = [
-      { name: "lightBlue", hex: "#61befd" },
-      { name: "darkBlue", hex: "#3976c7" },
-      { name: "green", hex: "#6ac360" },
-      { name: "yellow", hex: "#fce63c" }
-    ]
     const baseLabelStyle = {
       fill:       "#666",
       fontFamily: "'Roboto', 'sans-serif'",
       fontSize:   10
     }
+    const chartBodyClipPathId = `${this._namespace}-chart-body-clipPath`
+    const padding = this.props.padding
+    const chartBodyBounds = this._getRelativeChartBodyBounds()
     return (
-      <div style={{ width: "100%" }}>
-        <VictoryChart
-          height={250}
-          domain={{
-            x: [-0.5, analyticsData.times[analyticsData.times.length - 1]]
+      <VictoryChart
+        {...dimensions}
+        domain={{ x: [0, duration / 60 || 1] }}
+        domainPadding={{ x: [0, 0], y: [0, 0] }}
+        padding={padding}
+      >
+        <VictoryAxis
+          tickValues={analyticsData.times}
+          tickFormat={(t) => {
+            return `${t}m`
           }}
-          domainPadding={{ x: [0, 7], y: [0, 0] }}
-          padding={{ top: 55, bottom: 50, left: 60, right: 60 }}
+          style={{
+            axis: {
+              stroke: "black"
+            },
+            ticks: {
+              stroke: "black",
+              size:   2
+            },
+            tickLabels: {
+              ...baseLabelStyle,
+              textAnchor: "middle",
+              padding:    2
+            }
+          }}
+          crossAxis={true}
+          tickLabelComponent={
+            <ConditionalLabel
+              testFn={props => {
+                return props.datum % 5 === 0
+              }}
+            />
+          }
+        />
+        <VictoryAxis
+          dependentAxis
+          label="views"
+          offsetX={padding.left - 2}
+          style={{
+            axis: {
+              padding: 100
+            },
+            axisLabel: {
+              ...baseLabelStyle
+            },
+            grid: {
+              stroke: "#eee"
+            },
+            ticks: {
+              stroke: "black",
+              size:   2
+            },
+            tickLabels: {
+              ...baseLabelStyle,
+              padding: 4
+            }
+          }}
+          tickCount={10}
+          tickLabelComponent={
+            <ConditionalLabel
+              testFn={props => {
+                return props.index % 2 !== 0
+              }}
+            />
+          }
+        />
+
+        <ClipPath clipId={chartBodyClipPathId}>
+          <rect {...chartBodyBounds} />
+        </ClipPath>
+
+        <VictoryStack
+          groupComponent={
+            <g
+              clipPath={`url(#${chartBodyClipPathId})`}
+              className="chart-body"
+            />
+          }
         >
-          <VictoryAxis
-            label="time"
-            tickValues={analyticsData.times}
-            tickFormat={t => {
-              return `${t}m`
-            }}
-            style={{
-              axis: {
-                stroke: "black"
-              },
-              axisLabel: {
-                ...baseLabelStyle
-              },
-              ticks: {
-                stroke: "black",
-                size:   2
-              },
-              tickLabels: {
-                ...baseLabelStyle,
-                textAnchor: "middle",
-                padding:    2
-              }
-            }}
-            tickLabelComponent={
-              <ConditionalLabel
-                testFn={props => {
-                  if (props.datum % 10 === 0) {
-                    return true
+          {analyticsData.channels.map((channel, i) => {
+            return (
+              <VictoryBar
+                key={i}
+                data={viewsAtTimesByChannel[channel]}
+                alignment="start"
+                barRatio={1.0}
+                x="time"
+                y="views"
+                style={{
+                  data: {
+                    fill: getColorForChannel(channel)
                   }
-                  if (props.index + 1 === analyticsData.times.length) {
-                    return true
-                  }
-                  return false
                 }}
               />
-            }
-            crossAxis={true}
-          />
-          <VictoryAxis
-            dependentAxis
-            label="# views"
-            offsetX={50}
-            style={{
-              axis: {
-                padding: 100
-              },
-              axisLabel: {
-                ...baseLabelStyle
-              },
-              grid: {
-                stroke: "#eee"
-              },
-              ticks: {
-                stroke: "black",
-                size:   2
-              },
-              tickLabels: {
-                ...baseLabelStyle,
-                padding: 4
-              }
-            }}
-            tickCount={10}
-            tickLabelComponent={
-              <ConditionalLabel
-                testFn={props => {
-                  return props.index % 2 !== 0
-                }}
-              />
-            }
-          />
-          <VictoryStack>
-            {analyticsData.channels.map((channel, i) => {
-              return (
-                <VictoryBar
-                  key={i}
-                  barRatio={1.0}
-                  data={viewsAtTimesByChannel[channel]}
-                  alignment="middle"
-                  x="time"
-                  y="views"
-                  style={{
-                    data: {
-                      fill: colors[i].hex
-                    }
-                  }}
-                  labels={d => `${channel}, ${d.x}m: ${d.y}`}
-                  labelComponent={<VictoryTooltip />}
-                />
-              )
-            })}
-          </VictoryStack>
-        </VictoryChart>
-        {this.renderLegend({ analyticsData, colors })}
-      </div>
+            )
+          })}
+        </VictoryStack>
+      </VictoryChart>
     )
+  }
+
+  _getRelativeChartBodyBounds() {
+    const padding = this.props.padding
+    const { dimensions } = this.state
+    if (!dimensions) {
+      return null
+    }
+    return {
+      x:      padding.left,
+      y:      padding.top,
+      width:  dimensions.width - (padding.left + padding.right),
+      height: dimensions.height - (padding.top + padding.bottom)
+    }
   }
 
   _generateViewsAtTimesByChannel(analyticsData) {
@@ -151,38 +236,6 @@ class AnalyticsChart extends React.Component {
       }
     }
     return viewsAtTimesByChannel
-  }
-
-  renderLegend(opts) {
-    const { analyticsData, colors } = opts
-    return (
-      <div style={{ textAlign: "center", marginTop: "-1em" }}>
-        <ul
-          style={{
-            display:   "inline-block",
-            border:    "thin solid #ddd",
-            listStyle: "none",
-            margin:    0
-          }}
-        >
-          {analyticsData.channels.map((channel, i) => {
-            const style = {
-              marginLeft:      ".5em",
-              width:           10,
-              height:          10,
-              backgroundColor: colors[i].hex,
-              display:         "inline-block"
-            }
-            return (
-              <li key={i} style={{ display: "inline-block", padding: 10 }}>
-                {channel}
-                <span style={style} />
-              </li>
-            )
-          })}
-        </ul>
-      </div>
-    )
   }
 }
 

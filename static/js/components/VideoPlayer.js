@@ -11,7 +11,7 @@ import type { Video, VideoSubtitle } from "../flow/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
 import { sendGAEvent, setCustomDimension } from "../util/google_analytics"
-import * as videoActions from "../actions/videoUi"
+import { actions } from "../actions"
 import { connect } from "react-redux"
 
 const gaEvents = [
@@ -84,7 +84,8 @@ class VideoPlayer extends React.Component<*, void> {
     video: Video,
     selectedCorner: string,
     cornerFunc: (corner: string) => void,
-    embed: ?boolean
+    embed: ?boolean,
+    videoPlayerRef?: (player: any) => void
   }
 
   player: Object
@@ -273,7 +274,7 @@ class VideoPlayer extends React.Component<*, void> {
         )
         this.lastMinuteTracked = nearestMinute
       }
-      dispatch(videoActions.setShareVideoTime(Math.floor(currentTime)))
+      dispatch(actions.videoUi.setVideoTime(Math.floor(currentTime)))
     } else {
       sendGAEvent("video", action, label, this.player.currentTime())
     }
@@ -297,25 +298,27 @@ class VideoPlayer extends React.Component<*, void> {
     }
     // Return active playlist with highest bandwidth <= system bandwidth,
     // or first active playlist otherwise.
-    const activePlaylists = R.filter((rep) => !rep.disabled, playlists)
+    const activePlaylists = R.filter(rep => !rep.disabled, playlists)
     return (
       _.last(
-        R.filter(
-          ((rep) => {
-            return rep.attributes.BANDWIDTH <= _.max([
+        R.filter(rep => {
+          return (
+            rep.attributes.BANDWIDTH <=
+            _.max([
               this.player.tech_.hls.systemBandwidth,
               playlists[0].attributes.BANDWIDTH
             ])
-          }),
-          activePlaylists
-        )
+          )
+        }, activePlaylists)
       ) || activePlaylists[0]
     )
   }
 
   componentDidMount() {
-    const { video, selectedCorner, embed } = this.props
-
+    const { video, selectedCorner, embed, videoPlayerRef } = this.props
+    if (videoPlayerRef) {
+      videoPlayerRef(this)
+    }
     const cropVideo = this.cropVideo
     const createEventHandler = this.createEventHandler
     const toggleFullscreen = this.toggleFullscreen
@@ -327,6 +330,7 @@ class VideoPlayer extends React.Component<*, void> {
     const useYouTube = video.is_public && video.youtube_id !== null
     this.lastMinuteTracked = null
     const selectPlaylist = this.selectPlaylist.bind(this)
+    const self = this
     this.player = videojs(
       this.videoNode,
       makeConfigForVideo(video, useYouTube, embed),
@@ -339,6 +343,9 @@ class VideoPlayer extends React.Component<*, void> {
           window.addEventListener("resize", cropVideo)
         }
         this.on("loadedmetadata", function() {
+          self.props.dispatch(
+            actions.videoUi.setVideoDuration(self.player.duration())
+          )
           gaEvents.forEach((event: string) => {
             createEventHandler(event, video.key)
           })
@@ -421,6 +428,10 @@ class VideoPlayer extends React.Component<*, void> {
         )}
       </div>
     )
+  }
+
+  setCurrentTime(time) {
+    this.player.currentTime(time)
   }
 }
 

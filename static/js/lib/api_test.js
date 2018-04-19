@@ -35,7 +35,7 @@ describe("api", () => {
   describe("getCollections", () => {
     it("gets collection list", async () => {
       const collections = _.times(2, () => makeCollection())
-      fetchStub.returns(Promise.resolve({results: collections}))
+      fetchStub.returns(Promise.resolve({ results: collections }))
 
       const result = await getCollections()
       sinon.assert.calledWith(fetchStub, `/api/v0/collections/`)
@@ -43,8 +43,8 @@ describe("api", () => {
     })
 
     it("sends pagination parameters", async () => {
-      const paginationParams = {page: 2}
-      await getCollections({pagination: paginationParams})
+      const paginationParams = { page: 2 }
+      await getCollections({ pagination: paginationParams })
       sinon.assert.calledWith(fetchStub, `/api/v0/collections/?page=2`)
     })
   })
@@ -153,5 +153,4 @@ describe("api", () => {
     }
     assert.deepEqual(result, expectedResult)
   })
-
 })

@@ -13,28 +13,26 @@ import Drawer from "../components/material/Drawer"
 import OVSToolbar from "../components/OVSToolbar"
 import Footer from "../components/Footer"
 import VideoPlayer from "../components/VideoPlayer"
-import AnalyticsDialog from "../components/dialogs/AnalyticsDialog"
 import EditVideoFormDialog from "../components/dialogs/EditVideoFormDialog"
 import ShareVideoDialog from "../components/dialogs/ShareVideoDialog"
 import DeleteVideoDialog from "../components/dialogs/DeleteVideoDialog"
 import { withDialogs } from "../components/dialogs/hoc"
 import VideoSubtitleCard from "../components/VideoSubtitleCard"
 import VideoSaverScript from "../components/VideoSaverScript"
+import { ConnectedVideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 
 import { actions } from "../actions"
-import * as videoSubtitleActions from "../actions/videoUi"
 import { setDrawerOpen } from "../actions/commonUi"
 import { makeCollectionUrl } from "../lib/urls"
 import { saveToDropbox } from "../lib/video"
 import { videoIsProcessing, videoHasError } from "../lib/video"
 import { DIALOGS, MM_DD_YYYY } from "../constants"
-import { updateVideoJsSync } from "../actions/videoUi"
 import { initGA, sendGAPageView } from "../util/google_analytics"
 
 import type { Video, VideoUiState } from "../flow/videoTypes"
 import type { CommonUiState } from "../reducers/commonUi"
 
-class VideoDetailPage extends React.Component<*, void> {
+export class VideoDetailPage extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
     video: ?Video,
@@ -43,8 +41,11 @@ class VideoDetailPage extends React.Component<*, void> {
     commonUi: CommonUiState,
     videoUi: VideoUiState,
     showDialog: Function,
-    editable: boolean
+    editable: boolean,
+    VideoAnalyticsOverlayComponent: Function
   }
+
+  videoPlayerRef: Object
 
   componentDidMount() {
     this.updateRequirements()
@@ -69,7 +70,7 @@ class VideoDetailPage extends React.Component<*, void> {
     dispatch(setDrawerOpen(open))
   }
 
-  deleteSubtitle = async videoSubtitleId => {
+  deleteSubtitle = async (videoSubtitleId: string) => {
     const { dispatch, videoKey } = this.props
     await dispatch(actions.videoSubtitles.delete(videoSubtitleId))
     dispatch(actions.videos.get(videoKey))
@@ -97,38 +98,13 @@ class VideoDetailPage extends React.Component<*, void> {
 
   setUploadSubtitle = async (event: Object) => {
     const { dispatch } = this.props
-    await dispatch(
-      videoSubtitleActions.setUploadSubtitle(event.target.files[0])
-    )
+    await dispatch(actions.videoUi.setUploadSubtitle(event.target.files[0]))
     this.uploadVideoSubtitle()
   }
 
   updateCorner = (corner: string) => {
     const { dispatch } = this.props
-    dispatch(updateVideoJsSync(corner))
-  }
-
-  renderVideoPlayer = (video: Video) => {
-    const { videoUi } = this.props
-    if (videoIsProcessing(video)) {
-      return (
-        <div className="video-message">
-          Video is processing, check back later
-        </div>
-      )
-    }
-
-    if (videoHasError(video)) {
-      return <div className="video-message">Something went wrong :(</div>
-    }
-
-    return (
-      <VideoPlayer
-        video={video}
-        cornerFunc={this.updateCorner}
-        selectedCorner={videoUi.corner}
-      />
-    )
+    dispatch(actions.videoUi.updateVideoJsSync(corner))
   }
 
   render() {
@@ -148,7 +124,9 @@ class VideoDetailPage extends React.Component<*, void> {
             open={commonUi.drawerOpen}
             onDrawerClose={this.setDrawerOpen.bind(this, false)}
           />
+
           {video ? this.renderVideoPlayer(video) : null}
+
           <div className="mdc-layout-grid mdc-video-detail">
             <div className="mdc-layout-grid__inner">
               <div className="summary mdc-layout-grid__cell--span-7">
@@ -190,9 +168,11 @@ class VideoDetailPage extends React.Component<*, void> {
                         </Button>
                         <Button
                           className="analytics mdc-button--raised"
-                          onClick={showDialog.bind(this, DIALOGS.ANALYTICS)}
+                          onClick={() => {
+                            this.toggleAnalyticsOverlay()
+                          }}
                         >
-                          Analytics
+                          Show/Hide Analytics
                         </Button>
                       </span>
                     )}
@@ -223,6 +203,87 @@ class VideoDetailPage extends React.Component<*, void> {
       </DocumentTitle>
     )
   }
+
+  toggleAnalyticsOverlay() {
+    this.props.dispatch(actions.videoUi.toggleAnalyticsOverlay())
+  }
+
+  renderVideoPlayer = (video: Video) => {
+    const { videoUi } = this.props
+    if (videoIsProcessing(video)) {
+      return (
+        <div className="video-message">
+          Video is processing, check back later
+        </div>
+      )
+    }
+
+    if (videoHasError(video)) {
+      return <div className="video-message">Something went wrong :(</div>
+    }
+
+    return (
+      <div
+        className="video-player-container"
+        style={{
+          position: "relative"
+        }}
+      >
+        <VideoPlayer
+          videoPlayerRef={ref => {
+            this.videoPlayerRef = ref
+          }}
+          video={video}
+          cornerFunc={this.updateCorner}
+          selectedCorner={videoUi.corner}
+          analyticsOverlayIsVisible={videoUi.analyticsOverlayIsVisible}
+        />
+        {videoUi.analyticsOverlayIsVisible
+          ? this.renderAnalyticsOverlay()
+          : null}
+      </div>
+    )
+  }
+
+  renderAnalyticsOverlay() {
+    const { video } = this.props
+    const { videoTime, duration } = this.props.videoUi
+    const VideoAnalyticsOverlayComponent =
+      this.props.VideoAnalyticsOverlayComponent ||
+      ConnectedVideoAnalyticsOverlay
+    return (
+      <div
+        className="analytics-overlay-container"
+        style={{
+          position:        "absolute",
+          bottom:          "2.5em",
+          left:            "8%",
+          right:           "8%",
+          height:          "45%",
+          minHeight:       "250px",
+          opacity:         ".9",
+          backgroundColor: "hsla(0, 0%, 90%, 1)",
+          borderRadius:    "5px"
+        }}
+      >
+        <VideoAnalyticsOverlayComponent
+          video={video}
+          currentTime={videoTime || 0}
+          duration={duration || 0}
+          setVideoTime={(...args) => {
+            this.setVideoTime(...args)
+          }}
+          style={{ width: "100%", height: "100%" }}
+        />
+      </div>
+    )
+  }
+
+  setVideoTime(time:number) {
+    if (this.videoPlayerRef) {
+      this.videoPlayerRef.setCurrentTime(time)
+    }
+  }
 }
 
 const mapStateToProps = (state, ownProps) => {
@@ -245,7 +306,6 @@ const mapStateToProps = (state, ownProps) => {
 export default R.compose(
   connect(mapStateToProps),
   withDialogs([
-    { name: DIALOGS.ANALYTICS, component: AnalyticsDialog },
     { name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog },
     { name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog },
     { name: DIALOGS.DELETE_VIDEO, component: DeleteVideoDialog }

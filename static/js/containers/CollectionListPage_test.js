@@ -31,11 +31,13 @@ describe("CollectionListPage", () => {
     collectionsPagination = {
       currentPage:     1,
       currentPageData: {
-        status: 'LOADED',
+        status: "LOADED",
         collections
       }
     }
-    sandbox.stub(api, "getCollections").returns(Promise.resolve({results: collections}))
+    sandbox
+      .stub(api, "getCollections")
+      .returns(Promise.resolve({ results: collections }))
   })
 
   afterEach(() => {
@@ -49,7 +51,7 @@ describe("CollectionListPage", () => {
       [
         actions.collectionsList.get.requestType,
         actions.collectionsList.get.successType,
-        collectionsPaginationActions.constants.REQUEST_GET_PAGE,
+        collectionsPaginationActions.constants.REQUEST_GET_PAGE
       ],
       () => {
         wrapper = mount(
@@ -69,10 +71,8 @@ describe("CollectionListPage", () => {
   }
 
   const renderUnconnectedPage = (props = {}) => {
-    props = {collectionsPagination, ...props}
-    const wrapper = mount(
-      <UnconnectedCollectionListPage {...props} />
-    )
+    props = { collectionsPagination, ...props }
+    const wrapper = mount(<UnconnectedCollectionListPage {...props} />)
     if (!wrapper) throw new Error("Never will happen, make flow happy")
     wrapper.update()
     return wrapper
@@ -118,7 +118,7 @@ describe("CollectionListPage", () => {
 
   describe("when page.status is loading", () => {
     it("renders loading indicator", () => {
-      collectionsPagination.currentPageData.status = 'LOADING'
+      collectionsPagination.currentPageData.status = "LOADING"
       const wrapper = renderUnconnectedPage()
       assert.exists(wrapper.find("LoadingIndicator"))
     })
@@ -126,10 +126,9 @@ describe("CollectionListPage", () => {
 
   describe("when page.status is error", () => {
     it("renders error indicator", () => {
-      collectionsPagination.currentPageData.status = 'ERROR'
+      collectionsPagination.currentPageData.status = "ERROR"
       const wrapper = renderUnconnectedPage()
       assert.exists(wrapper.find(".collection-list-page-error"))
     })
   })
-
 })

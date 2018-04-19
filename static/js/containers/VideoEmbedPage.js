@@ -4,7 +4,7 @@ import { connect } from "react-redux"
 import type { Dispatch } from "redux"
 import DocumentTitle from "react-document-title"
 
-import { updateVideoJsSync } from "../actions/videoUi"
+import { actions } from "../actions"
 import VideoPlayer from "../components/VideoPlayer"
 import type { Video, VideoUiState } from "../flow/videoTypes"
 import { initGA, sendGAPageView } from "../util/google_analytics"
@@ -23,7 +23,7 @@ class VideoEmbedPage extends React.Component<*, void> {
 
   updateCorner = (corner: string) => {
     const { dispatch } = this.props
-    dispatch(updateVideoJsSync(corner))
+    dispatch(actions.videoUi.updateVideoJsSync(corner))
   }
 
   render() {

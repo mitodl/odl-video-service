@@ -7,9 +7,7 @@ import { assert } from "chai"
 import { Provider } from "react-redux"
 import configureTestStore from "redux-asserts"
 
-import ConnectedCollectionDetailPage, {
-  CollectionDetailPage
-} from "./CollectionDetailPage"
+import ConnectedCollectionDetailPage from "./CollectionDetailPage"
 
 import * as api from "../lib/api"
 import { actions } from "../actions"
@@ -25,8 +23,10 @@ import { makeVideos } from "../factories/video"
 import { expect } from "../util/test_utils"
 import { DIALOGS } from "../constants"
 import { makeInitializedForm } from "../lib/collection"
-import { INIT_EDIT_VIDEO_FORM } from "../actions/videoUi"
+import * as videoUiActions from "../actions/videoUi"
 import { PERM_CHOICE_COLLECTION } from "../lib/dialog"
+
+const { INIT_EDIT_VIDEO_FORM } = videoUiActions.constants
 
 describe("CollectionDetailPage", () => {
   let sandbox, store, getCollectionStub, collection, listenForActions
@@ -49,7 +49,9 @@ describe("CollectionDetailPage", () => {
     getCollectionStub = sandbox
       .stub(api, "getCollection")
       .returns(Promise.resolve(collection))
-    sandbox.stub(api, "getCollections").returns(Promise.resolve({results: collections}))
+    sandbox
+      .stub(api, "getCollections")
+      .returns(Promise.resolve({ results: collections }))
   })
 
   afterEach(() => {
@@ -185,29 +187,6 @@ describe("CollectionDetailPage", () => {
     )
 
     sinon.assert.calledWith(uploadVideoStub, collection.key, mockFiles)
-  })
-
-  it("shows the analytics dialog", async () => {
-    class StubComponent extends React.Component<*, *> {
-      render() {
-        return null
-      }
-    }
-    sandbox
-      .stub(CollectionDetailPage.prototype, "getDialogComponent")
-      .returns(StubComponent)
-    const wrapper = await renderPage()
-    const state = await listenForActions(
-      [SET_SELECTED_VIDEO_KEY, SHOW_DIALOG],
-      () => {
-        wrapper
-          .find("VideoCard")
-          .first()
-          .prop("showAnalyticsDialog")()
-      }
-    )
-    assert.equal(state.collectionUi.selectedVideoKey, collection.videos[0].key)
-    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.ANALYTICS])
   })
 
   it("shows the edit video dialog", async () => {

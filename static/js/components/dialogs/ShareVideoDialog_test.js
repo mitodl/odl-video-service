@@ -11,7 +11,9 @@ import ShareVideoDialog from "./ShareVideoDialog"
 import rootReducer from "../../reducers"
 import { setSelectedVideoKey } from "../../actions/collectionUi"
 import { makeVideo } from "../../factories/video"
-import { SET_SHARE_VIDEO_TIME_ENABLED } from "../../actions/videoUi"
+import * as videoUiActions from "../../actions/videoUi"
+
+const { SET_SHARE_VIDEO_TIME_ENABLED } = videoUiActions.constants
 
 describe("ShareVideoDialog", () => {
   let sandbox, store, hideDialogStub, listenForActions

@@ -10,7 +10,6 @@ import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
 import Textarea from "../material/Textarea"
 
-import * as videoActions from "../../actions/videoUi"
 import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
 import {
@@ -23,7 +22,6 @@ import {
 
 import type { Video, VideoUiState } from "../../flow/videoTypes"
 import { calculateListPermissionValue } from "../../util/util"
-import { setVideoFormErrors } from "../../actions/videoUi"
 import { videoHasError, videoIsProcessing } from "../../lib/video"
 
 type DialogProps = {
@@ -71,7 +69,7 @@ class EditVideoFormDialog extends React.Component<*, void> {
     const viewChoice = this.determineViewChoice(video)
 
     dispatch(
-      videoActions.initEditVideoForm({
+      actions.videoUi.initEditVideoForm({
         key:            video.key,
         title:          video.title,
         description:    video.description,
@@ -87,18 +85,18 @@ class EditVideoFormDialog extends React.Component<*, void> {
 
   setEditVideoTitle = (event: Object) => {
     const { dispatch } = this.props
-    dispatch(videoActions.setEditVideoTitle(event.target.value))
+    dispatch(actions.videoUi.setEditVideoTitle(event.target.value))
   }
 
   setEditVideoDesc = (event: Object) => {
     const { dispatch } = this.props
-    dispatch(videoActions.setEditVideoDesc(event.target.value))
+    dispatch(actions.videoUi.setEditVideoDesc(event.target.value))
   }
 
   setVideoViewPermChoice = (choice: string) => {
     const { dispatch, videoUi: { editVideoForm } } = this.props
     if (choice !== editVideoForm.viewChoice) {
-      dispatch(videoActions.setViewChoice(choice))
+      dispatch(actions.videoUi.setViewChoice(choice))
     }
   }
 
@@ -109,7 +107,7 @@ class EditVideoFormDialog extends React.Component<*, void> {
   setVideoPermOverrideChoice = (choice: boolean) => {
     const { dispatch, videoUi: { editVideoForm } } = this.props
     if (choice !== editVideoForm.overrideChoice) {
-      dispatch(videoActions.setPermOverrideChoice(choice))
+      dispatch(actions.videoUi.setPermOverrideChoice(choice))
     }
   }
 
@@ -119,19 +117,19 @@ class EditVideoFormDialog extends React.Component<*, void> {
 
   setVideoViewPermLists = (event: Object) => {
     const { dispatch } = this.props
-    dispatch(videoActions.setViewLists(event.target.value))
+    dispatch(actions.videoUi.setViewLists(event.target.value))
   }
 
   onClose = () => {
     const { hideDialog, dispatch } = this.props
-    dispatch(videoActions.clearVideoForm())
+    dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }
 
   handleError = (error: Error) => {
     const { dispatch, videoUi: { editVideoForm } } = this.props
     dispatch(
-      setVideoFormErrors({
+      actions.videoUi.setVideoFormErrors({
         ...editVideoForm,
         errors: error
       })

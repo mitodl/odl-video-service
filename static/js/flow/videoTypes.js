@@ -83,5 +83,8 @@ export type VideoUiState = {
   videoSubtitleForm: VideoSubtitleState,
   shareVideoForm: VideoShareState,
   corner: string,
-  errors?: VideoValidation
+  errors?: VideoValidation,
+  videoTime: number,
+  duration: number,
+  analyticsOverlayIsVisible: boolean,
 };

@@ -2,13 +2,18 @@
 
 import type { VideoAnalyticsData } from "../flow/videoAnalyticsTypes"
 
-export const makeVideoAnalyticsData = (n: number): VideoAnalyticsData => {
+export const makeVideoAnalyticsData = (
+  n?: number,
+  multichannel: boolean = true
+): VideoAnalyticsData => {
   n = n || 24
   const videoAnalyticsData = {
-    is_multichannel: true,
+    is_multichannel: multichannel,
     times:           [...Array(n).keys()],
-    channels:        [...Array(4).keys()].map(i => `channel${i + 1}`),
-    views_at_times:  {}
+    channels:        multichannel
+      ? [...Array(4).keys()].map(i => `channel${i + 1}`)
+      : ["views"],
+    views_at_times: {}
   }
   for (let tIdx = 0; tIdx < videoAnalyticsData.times.length; tIdx++) {
     const t = videoAnalyticsData.times[tIdx]

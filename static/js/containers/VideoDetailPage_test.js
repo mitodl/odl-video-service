@@ -2,12 +2,13 @@
 import React from "react"
 import sinon from "sinon"
 import moment from "moment"
-import { mount } from "enzyme"
+import { mount, shallow } from "enzyme"
 import { assert } from "chai"
 import { Provider } from "react-redux"
 import configureTestStore from "redux-asserts"
 
 import VideoDetailPage from "./VideoDetailPage"
+import { VideoDetailPage as UnwrappedVideoDetailPage } from "./VideoDetailPage"
 
 import * as api from "../lib/api"
 import { actions } from "../actions"
@@ -26,6 +27,7 @@ import type { Video } from "../flow/videoTypes"
 
 describe("VideoDetailPage", () => {
   let sandbox, store, getVideoStub, dropboxStub, video: Video, listenForActions
+
   beforeEach(() => {
     sandbox = sinon.sandbox.create()
     store = configureTestStore(rootReducer)
@@ -34,7 +36,9 @@ describe("VideoDetailPage", () => {
 
     getVideoStub = sandbox.stub(api, "getVideo").returns(Promise.resolve(video))
     dropboxStub = sandbox.stub(libVideo, "saveToDropbox")
-    sandbox.stub(api, "getCollections").returns(Promise.resolve({results: []}))
+    sandbox
+      .stub(api, "getCollections")
+      .returns(Promise.resolve({ results: [] }))
 
     // silence videojs warnings
     sandbox.stub(libVideo, "videojs")
@@ -118,10 +122,25 @@ describe("VideoDetailPage", () => {
     assert.isFalse(wrapper.find(".delete").exists())
   })
 
-  it("includes the analytics button and dialog when the user has correct permissions", async () => {
-    const wrapper = await renderPage({ editable: true })
-    assert.isTrue(wrapper.find(".analytics").exists())
-    assert.isTrue(wrapper.find("AnalyticsDialog").exists())
+  describe("analytics button", async () => {
+    const _findAnalyticsButton = wrapper => {
+      return wrapper.find(".analytics").hostNodes()
+    }
+
+    it("includes the analytics button when the user has correct permissions", async () => {
+      const wrapper = await renderPage({ editable: true })
+      assert.isTrue(_findAnalyticsButton(wrapper).exists())
+    })
+
+    it("onClick calls toggleAnalyticsOverlay", async () => {
+      const wrapper = await renderPage({ editable: true })
+      const pageInstance = wrapper.find("VideoDetailPage").instance()
+      const toggleStub = sandbox.stub(pageInstance, "toggleAnalyticsOverlay")
+      const analyticsButton = _findAnalyticsButton(wrapper)
+      sinon.assert.notCalled(toggleStub)
+      analyticsButton.simulate("click")
+      sinon.assert.called(toggleStub)
+    })
   })
 
   it("includes the edit button and dialog when the user has correct permissions", async () => {
@@ -189,5 +208,46 @@ describe("VideoDetailPage", () => {
     assert.equal(deleteBtns.length, 1)
     deleteBtns.at(0).prop("onClick")()
     sinon.assert.calledWith(deleteStub, video.videosubtitle_set[0].id)
+  })
+
+  describe("renderAnalyticsOverlay", () => {
+    let pageInstance, overlayEl
+    const noop = () => null
+
+    beforeEach(async () => {
+      const pageEl = React.createElement(UnwrappedVideoDetailPage, {
+        commonUi: {},
+        video:    makeVideo(),
+        videoUi:  {
+          videoTime: 42,
+          duration:  42
+        },
+        showDialog:                     noop,
+        VideoAnalyticsOverlayComponent: noop
+      })
+      pageInstance = shallow(pageEl).instance()
+      const overlayWrapper = mount(pageInstance.renderAnalyticsOverlay())
+      overlayEl = overlayWrapper.find(
+        pageInstance.props.VideoAnalyticsOverlayComponent
+      )
+    })
+
+    it("renders analytics overlay with expected props", () => {
+      assert.equal(overlayEl.prop("video"), pageInstance.props.video)
+      assert.equal(
+        overlayEl.prop("currentTime"),
+        pageInstance.props.videoUi.videoTime
+      )
+      assert.equal(
+        overlayEl.prop("duration"),
+        pageInstance.props.videoUi.duration
+      )
+    })
+
+    it("passes setVideoTime", () => {
+      const setVideoTimeStub = sandbox.stub(pageInstance, "setVideoTime")
+      overlayEl.prop("setVideoTime")("argA", "argB")
+      sinon.assert.calledWith(setVideoTimeStub, "argA", "argB")
+    })
   })
 })

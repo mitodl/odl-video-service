@@ -14,7 +14,6 @@ type VideoCardProps = {
   video: Video,
   isAdmin: boolean,
   isMenuOpen: boolean,
-  showAnalyticsDialog: Function,
   showDeleteDialog: Function,
   showEditDialog: Function,
   showShareDialog: Function,
@@ -65,8 +64,7 @@ const VideoCard = (props: VideoCardProps) => {
         label:  "Save To Dropbox",
         action: saveToDropbox.bind(this, props.video)
       },
-      { label: "Delete", action: props.showDeleteDialog.bind(this) },
-      { label: "Analytics", action: props.showAnalyticsDialog.bind(this) }
+      { label: "Delete", action: props.showDeleteDialog.bind(this) }
     )
   }
 

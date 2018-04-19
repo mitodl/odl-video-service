@@ -10,7 +10,7 @@ import Textarea from "../material/Textarea"
 import { makeEmbedUrl, makeVideoUrl } from "../../lib/urls"
 import { formatSecondsToMinutes } from "../../util/util"
 import Checkbox from "../material/Checkbox"
-import * as videoActions from "../../actions/videoUi"
+import { actions } from "../../actions"
 import type { VideoUiState } from "../../flow/videoTypes"
 
 type DialogProps = {
@@ -26,17 +26,13 @@ class ShareVideoDialog extends React.Component<*, void> {
 
   onChange = (event: Object) => {
     const { dispatch } = this.props
-    dispatch(videoActions.setShareVideoTimeEnabled(event.target.checked))
+    dispatch(actions.videoUi.setShareVideoTimeEnabled(event.target.checked))
   }
 
   render() {
-    const {
-      open,
-      hideDialog,
-      videoKey,
-      videoUi: { shareVideoForm }
-    } = this.props
-    const startTime = shareVideoForm.videoTime
+    const { open, hideDialog, videoKey, videoUi } = this.props
+    const { shareVideoForm } = videoUi
+    const startTime = videoUi.videoTime
     const startParam = shareVideoForm.shareTime ? `?start=${startTime}` : ""
     const videoShareUrl = `${window.location.origin}${makeVideoUrl(
       videoKey
