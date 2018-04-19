@@ -286,24 +286,23 @@ class VideoPlayer extends React.Component<*, void> {
     })
   }
 
-  selectPlaylist = () => {
-    const sortByBandwidth = R.sortBy(R.path(["attributes", "BANDWIDTH"]))
-    const playlists = sortByBandwidth(
-      this.player.tech_.hls.playlists.master.playlists
-    )
+  selectPlaylist = (opts: { defaultPlaylistSelector: () => any }) => {
+    const { defaultPlaylistSelector } = opts
     // Always start with highest bandwidth for first 10 seconds
     if (this.player.tech_.currentTime() < 10) {
+      const sortByBandwidth = R.sortBy(R.path(["attributes", "BANDWIDTH"]))
+      const playlists = sortByBandwidth(
+        this.player.tech_.hls.playlists.master.playlists
+      )
       return _.last(playlists)
     }
-    // Otherwise use the original selector, which will take into account
-    // quality settings per the qualityLevels plugin.
-    return this._originalSelectPlaylist()
+    return defaultPlaylistSelector()
   }
 
-  selectInitialQualityLevel () {
+  selectInitialQualityLevel() {
     const sortByBitrate = R.sortBy(R.path(["bitrate"]))
     this.player.hlsQualitySelector.selectQualityLevel({
-      key: (sortByBitrate(this.player.qualityLevels().levels_).key),
+      key: sortByBitrate(this.player.qualityLevels().levels_).key
     })
   }
 
@@ -320,31 +319,35 @@ class VideoPlayer extends React.Component<*, void> {
     }
     const useYouTube = video.is_public && video.youtube_id !== null
     this.lastMinuteTracked = null
+    const self = this
     this.player = videojs(
       this.videoNode,
-      makeConfigForVideo(video, useYouTube, embed)
-    )
-    this.player.ready(() => {
-      this.player.enableTouchActivity()
-      if (video.multiangle) {
-        setCustomDimension(SETTINGS.ga_dimension_camera, selectedCorner)
-        this.player.on("loadeddata", cropVideo)
-        this.player.on(FULLSCREEN_API.fullscreenchange, cropVideo)
-        window.addEventListener("resize", cropVideo)
-      }
-      this.player.on("loadedmetadata", () => {
-        gaEvents.forEach((event: string) => {
-          createEventHandler(event, video.key)
+      makeConfigForVideo(video, useYouTube, embed),
+      function onPlayerReady() {
+        this.enableTouchActivity()
+        if (video.multiangle) {
+          setCustomDimension(SETTINGS.ga_dimension_camera, selectedCorner)
+          this.on("loadeddata", cropVideo)
+          this.on(FULLSCREEN_API.fullscreenchange, cropVideo)
+          window.addEventListener("resize", cropVideo)
+        }
+        this.on("loadedmetadata", function() {
+          gaEvents.forEach((event: string) => {
+            createEventHandler(event, video.key)
+          })
         })
-      })
-      if (this.player.tech_.hls !== undefined) {
-        // Save the original default playlist selector for later use.
-        this._originalSelectPlaylist = this.player.tech_.hls.selectPlaylist
-        this.player.tech_.hls.selectPlaylist = this.selectPlaylist
+        if (this.tech_.hls !== undefined) {
+          const _originalSelectPlaylist = this.tech_.hls.selectPlaylist
+          this.tech_.hls.selectPlaylist = () => {
+            return self.selectPlaylist({
+              defaultPlaylistSelector: _originalSelectPlaylist
+            })
+          }
+        }
+        const params = new URLSearchParams(window.location.search)
+        this.currentTime(parseInt(params.get("start")) || 0)
       }
-      const params = new URLSearchParams(window.location.search)
-      this.player.currentTime(parseInt(params.get("start")) || 0)
-    })
+    )
     if (useYouTube) {
       this.checkYouTube()
     }

@@ -1,13 +1,14 @@
 /* Adapted from https://github.com/chrisboustead/videojs-hls-quality-selector .
- * We use an adapation, rather than the original, because
- * we can not register the original due to the way its dependencies are
- * organized: the original will register it against its own videojs instance,
+ * We use our own version rather than the original because
+ * the original structures its code in a way that makes it difficult to
+ * register the plugin;
+ * the original will register the plugin  against its own videojs instance,
  * from its own node_modules, rather than our videojs instance.
  * This happens regardless of whether we 'require' or 'import' it.
- * So, we adapt it here.
- */ 
-import videojs from "video.js"
+ * So, we use our own version instead.
+ */
 
+import videojs from "video.js"
 
 const hlsQualitySelector = function() {
   const player = this
@@ -15,7 +16,6 @@ const hlsQualitySelector = function() {
     player.hlsQualitySelector = new HlsQualitySelectorPlugin(player)
   })
 }
-
 
 class HlsQualitySelectorPlugin {
   constructor(player) {
@@ -78,7 +78,7 @@ class HlsQualitySelectorPlugin {
         this.key = item.key
       },
       handleClick: () => {
-        this.selectQualityLevel({key: item.key})
+        this.selectQualityLevel({ key: item.key })
         this._qualityMenuButton.unpressButton()
       }
     })
@@ -94,7 +94,7 @@ class HlsQualitySelectorPlugin {
     for (let i = 0; i < levels.length; ++i) {
       const menuItem = this.createQualityMenuItem.call(this, {
         key:   levels[i].id,
-        label: `${levels[i].height  }p`,
+        label: `${levels[i].height}p`,
         value: levels[i].height
       })
       menuItems.push(menuItem)
@@ -119,16 +119,14 @@ class HlsQualitySelectorPlugin {
     }
   }
 
-  selectQualityLevel ({key}) {
+  selectQualityLevel({ key }) {
     for (let i = 0; i < this._qualityMenuButton.items.length; ++i) {
       this._qualityMenuButton.items[i].selected(false)
     }
     const qualityList = this.player.qualityLevels()
     for (let i = 0; i < qualityList.length; ++i) {
       const quality = qualityList[i]
-      quality.enabled = (
-        (quality.id === key) || (key === this.KEY_FOR_AUTO)
-      )
+      quality.enabled = quality.id === key || key === this.KEY_FOR_AUTO
     }
     this.keyedMenuItems[key].selected(true)
   }
