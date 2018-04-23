@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.18.0
+--------------
+
+- Set collection and video titles
+- add num_pages to response
+- add start/end indices to collections pagination output
+
 Version 0.17.1
 --------------
 
