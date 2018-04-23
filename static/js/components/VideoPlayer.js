@@ -313,13 +313,6 @@ class VideoPlayer extends React.Component<*, void> {
     )
   }
 
-  selectInitialQualityLevel() {
-    const sortByBitrate = R.sortBy(R.path(["bitrate"]))
-    this.player.hlsQualitySelector.selectQualityLevel({
-      key: sortByBitrate(this.player.qualityLevels().levels_).key
-    })
-  }
-
   componentDidMount() {
     const { video, selectedCorner, embed } = this.props
 
