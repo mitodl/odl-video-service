@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.17.1
+--------------
+
+- Add option to set start time on video
+- Use different analytics queries for multiangle/singleangle videos
+- Change embed size/styling
+- Removes purple theme colors, and fixes spacing issue in sidenav (#544)
+
 Version 0.17.0
 --------------
 
