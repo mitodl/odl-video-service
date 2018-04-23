@@ -347,9 +347,7 @@ describe("VideoPlayer", () => {
           }
           const wrapper = renderPlayer().find("VideoPlayer")
           wrapper.instance().player = playerStub
-          const bestPlayList = wrapper.instance().selectPlaylist({
-            defaultPlaylistSelector: sandbox.stub()
-          })
+          const bestPlayList = wrapper.instance().selectPlaylist()
           assert.equal(
             bestPlayList.attributes.BANDWIDTH,
             videoTime < 10 ? 3900 : bandwidth - 100
@@ -359,21 +357,58 @@ describe("VideoPlayer", () => {
     })
 
     describe("when elapsed time is > 10 secs", () => {
-      it("proxies to default playlist selector", () => {
-        const videoTime = 11
+      const videoTime = 11
+
+      it("selects highest active playlist <= system bandwidth", () => {
         playerStub.tech_ = {
-          currentTime: sandbox.stub().returns(videoTime)
+          currentTime: sandbox.stub().returns(videoTime),
+          hls:         {
+            selectPlaylist: sandbox.stub(),
+            playlists:      {
+              master: {
+                playlists: [
+                  { attributes: { BANDWIDTH: 900 } },
+                  { attributes: { BANDWIDTH: 1900 }, disabled: true },
+                  { attributes: { BANDWIDTH: 2900 } },
+                  { attributes: { BANDWIDTH: 3900 } }
+                ]
+              }
+            },
+            systemBandwidth: 2000,
+          }
         }
         const wrapper = renderPlayer().find("VideoPlayer")
         wrapper.instance().player = playerStub
-        const defaultPlaylistSelector = sandbox.stub()
-        const selectedPlayList = wrapper.instance().selectPlaylist({
-          defaultPlaylistSelector
-        })
-        assert.equal(selectedPlayList, defaultPlaylistSelector.returnValues[0])
+        const bestPlayList = wrapper.instance().selectPlaylist()
+        assert.equal(bestPlayList.attributes.BANDWIDTH, 900)
+      })
+
+      it("selects lowest playlist if no active playlist <= system bandwidth", () => {
+        playerStub.tech_ = {
+          currentTime: sandbox.stub().returns(videoTime),
+          hls:         {
+            selectPlaylist: sandbox.stub(),
+            playlists:      {
+              master: {
+                playlists: [
+                  { attributes: { BANDWIDTH: 900 }, disabled: true},
+                  { attributes: { BANDWIDTH: 1900 }, disabled: true },
+                  { attributes: { BANDWIDTH: 2900 } },
+                  { attributes: { BANDWIDTH: 3900 } }
+                ]
+              }
+            },
+            systemBandwidth: 2000,
+          }
+        }
+        const wrapper = renderPlayer().find("VideoPlayer")
+        wrapper.instance().player = playerStub
+        const bestPlayList = wrapper.instance().selectPlaylist()
+        assert.equal(bestPlayList.attributes.BANDWIDTH, 2900)
       })
     })
   })
+
   ;[false, true].forEach(function(isPublic) {
     ["asdJ4y", null].forEach(function(youtubeId) {
       it(`checkYouTube ${expect(

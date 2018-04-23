@@ -286,17 +286,31 @@ class VideoPlayer extends React.Component<*, void> {
     })
   }
 
-  selectPlaylist = (opts: { defaultPlaylistSelector: () => any }) => {
-    const { defaultPlaylistSelector } = opts
+  selectPlaylist = () => {
+    const sortByBandwidth = R.sortBy(R.path(["attributes", "BANDWIDTH"]))
+    const playlists = sortByBandwidth(
+      this.player.tech_.hls.playlists.master.playlists
+    )
     // Always start with highest bandwidth for first 10 seconds
     if (this.player.tech_.currentTime() < 10) {
-      const sortByBandwidth = R.sortBy(R.path(["attributes", "BANDWIDTH"]))
-      const playlists = sortByBandwidth(
-        this.player.tech_.hls.playlists.master.playlists
-      )
       return _.last(playlists)
     }
-    return defaultPlaylistSelector()
+    // Return active playlist with highest bandwidth <= system bandwidth,
+    // or first active playlist otherwise.
+    const activePlaylists = R.filter((rep) => !rep.disabled, playlists)
+    return (
+      _.last(
+        R.filter(
+          ((rep) => {
+            return rep.attributes.BANDWIDTH <= _.max([
+              this.player.tech_.hls.systemBandwidth,
+              playlists[0].attributes.BANDWIDTH
+            ])
+          }),
+          activePlaylists
+        )
+      ) || activePlaylists[0]
+    )
   }
 
   selectInitialQualityLevel() {
@@ -319,7 +333,7 @@ class VideoPlayer extends React.Component<*, void> {
     }
     const useYouTube = video.is_public && video.youtube_id !== null
     this.lastMinuteTracked = null
-    const self = this
+    const selectPlaylist = this.selectPlaylist.bind(this)
     this.player = videojs(
       this.videoNode,
       makeConfigForVideo(video, useYouTube, embed),
@@ -337,12 +351,7 @@ class VideoPlayer extends React.Component<*, void> {
           })
         })
         if (this.tech_.hls !== undefined) {
-          const _originalSelectPlaylist = this.tech_.hls.selectPlaylist
-          this.tech_.hls.selectPlaylist = () => {
-            return self.selectPlaylist({
-              defaultPlaylistSelector: _originalSelectPlaylist
-            })
-          }
+          this.tech_.hls.selectPlaylist = selectPlaylist
         }
         const params = new URLSearchParams(window.location.search)
         this.currentTime(parseInt(params.get("start")) || 0)
