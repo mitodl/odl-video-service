@@ -47,6 +47,7 @@ const makeConfigForVideo = (
     ]
     : video.sources,
   plugins: {
+    hlsQualitySelector:        {},
     videoJsResolutionSwitcher: {
       default:      "high",
       dynamicLabel: true
@@ -294,17 +295,21 @@ class VideoPlayer extends React.Component<*, void> {
     if (this.player.tech_.currentTime() < 10) {
       return _.last(playlists)
     }
-    // Return playlist with highest bandwidth <= system bandwidth
-    return _.last(
-      R.filter(
-        rep =>
-          rep.attributes.BANDWIDTH <=
-          _.max([
-            this.player.tech_.hls.systemBandwidth,
-            playlists[0].attributes.BANDWIDTH
-          ]),
-        playlists
-      )
+    // Return active playlist with highest bandwidth <= system bandwidth,
+    // or first active playlist otherwise.
+    const activePlaylists = R.filter((rep) => !rep.disabled, playlists)
+    return (
+      _.last(
+        R.filter(
+          ((rep) => {
+            return rep.attributes.BANDWIDTH <= _.max([
+              this.player.tech_.hls.systemBandwidth,
+              playlists[0].attributes.BANDWIDTH
+            ])
+          }),
+          activePlaylists
+        )
+      ) || activePlaylists[0]
     )
   }
 
@@ -314,7 +319,6 @@ class VideoPlayer extends React.Component<*, void> {
     const cropVideo = this.cropVideo
     const createEventHandler = this.createEventHandler
     const toggleFullscreen = this.toggleFullscreen
-    const selectPlaylist = this.selectPlaylist
     if (video.multiangle) {
       videojs.getComponent(
         "FullscreenToggle"
@@ -322,6 +326,7 @@ class VideoPlayer extends React.Component<*, void> {
     }
     const useYouTube = video.is_public && video.youtube_id !== null
     this.lastMinuteTracked = null
+    const selectPlaylist = this.selectPlaylist.bind(this)
     this.player = videojs(
       this.videoNode,
       makeConfigForVideo(video, useYouTube, embed),
