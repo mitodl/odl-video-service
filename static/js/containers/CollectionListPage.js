@@ -14,91 +14,135 @@ import CollectionFormDialog from "../components/dialogs/CollectionFormDialog"
 import { withDialogs } from "../components/dialogs/hoc"
 import { makeCollectionUrl } from "../lib/urls"
 import type { CommonUiState } from "../reducers/commonUi"
-import type { Collection } from "../flow/collectionTypes"
+import type { Collection, CollectionsPagination } from "../flow/collectionTypes"
+import withPagedCollections from './withPagedCollections'
+import LoadingIndicator from "../components/material/LoadingIndicator"
+import Paginator from "../components/Paginator"
 
-class CollectionListPage extends React.Component<*, void> {
+export class CollectionListPage extends React.Component<*, void> {
   props: {
+    collectionsPagination: CollectionsPagination,
     dispatch: Dispatch,
     collections: Array<Collection>,
     editable: boolean,
-    needsUpdate: boolean,
     commonUi: CommonUiState
   }
 
-  renderCollectionLinks() {
-    const { collections } = this.props
-
-    if (collections.length === 0) return null
-
+  render() {
     return (
-      <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list">
-        {collections.map(collection => (
-          <li key={collection.key} className="mdc-list-item">
-            <span className="mdc-list-item__graphic grey-bg">
-              <i className="material-icons" aria-hidden="true">
-                folder
-              </i>
-            </span>
-            <span className="mdc-list-item__text">
-              <Link to={makeCollectionUrl(collection.key)}>
-                {collection.title}
-              </Link>
-              <span className="mdc-list-item__secondary-text">
-                {collection.video_count} Videos
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="collection-list-content">
+        <div className="card centered-content">
+          <h1 className="mdc-typography--title">My Collections</h1>
+          {this.renderPaginator()}
+          {this.renderCollectionLinks()}
+          {this.renderFormLink()}
+        </div>
+      </div>
     )
   }
 
-  openNewCollectionDialog = () => {
-    const { dispatch } = this.props
+  renderPaginator () {
+    const { collectionsPagination } = this.props
+    const { currentPage, numPages, currentPageData } = collectionsPagination
+    if (currentPageData) {
+      currentPageData
+    }
+    return (
+      <Paginator
+        currentPage={currentPage}
+        totalPages={numPages}
+        onClickNext={() => this.incrementCurrentPage(1)}
+        onClickPrev={() => this.incrementCurrentPage(-1)}
+      />
+    )
+  }
 
+  incrementCurrentPage (amount:number) {
+    const { currentPage, setCurrentPage } = this.props.collectionsPagination
+    if (setCurrentPage) {
+      setCurrentPage(currentPage + amount)
+    }
+  }
+
+  renderFormLink() {
+    return (
+      SETTINGS.editable ? (
+        <a
+          className="button-link create-collection-button"
+          onClick={this.openNewCollectionDialog.bind(this)}
+        >
+          <i className="material-icons">add</i>
+          Create New Collection
+        </a>
+      ) : null
+    )
+  }
+
+  openNewCollectionDialog () {
+    const { dispatch } = this.props
     dispatch(collectionUiActions.showNewCollectionDialog())
   }
 
-  render() {
-    const formLink = SETTINGS.editable ? (
-      <a
-        className="button-link create-collection-button"
-        onClick={this.openNewCollectionDialog}
-      >
-        <i className="material-icons">add</i>
-        Create New Collection
-      </a>
-    ) : null
+  renderCollectionLinks() {
+    const { currentPageData } = this.props.collectionsPagination
+    if (! currentPageData) {
+      return null
+    }
+    if (currentPageData.status === 'ERROR') {
+      return (<div className="collection-list-page-error">Error!</div>)
+    } else if (currentPageData.status === 'LOADING') {
+      return (<LoadingIndicator/>)
+    }
+    else if (currentPageData.status === 'LOADED') {
+      const { collections } = currentPageData
+      return (
+        <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list">
+          {collections.map(collection => (
+            <li key={collection.key} className="mdc-list-item">
+              <span className="mdc-list-item__graphic grey-bg">
+                <i className="material-icons" aria-hidden="true">
+                  folder
+                </i>
+              </span>
+              <span className="mdc-list-item__text">
+                <Link to={makeCollectionUrl(collection.key)}>
+                  {collection.title}
+                </Link>
+                <span className="mdc-list-item__secondary-text">
+                  {collection.video_count} Videos
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  }
 
+}
+
+export class CollectionListPageWithDrawer extends React.Component<*, void> {
+  render () {
     return (
       <WithDrawer>
-        <div className="collection-list-content">
-          <div className="card centered-content">
-            <h1 className="mdc-typography--title">My Collections</h1>
-            {this.renderCollectionLinks()}
-            {formLink}
-          </div>
-        </div>
+        <CollectionListPage {...this.props} />
       </WithDrawer>
     )
   }
 }
 
 const mapStateToProps = state => {
-  const { collectionsList, commonUi } = state
-  const collections = collectionsList.loaded ? (collectionsList.data.results ? collectionsList.data.results : collectionsList.data) : []
-  const needsUpdate = !collectionsList.processing && !collectionsList.loaded
-
   return {
-    collections,
-    commonUi,
-    needsUpdate
+    commonUi: state.commonUi
   }
 }
 
-export default R.compose(
+export const ConnectedCollectionListPage = R.compose(
   connect(mapStateToProps),
   withDialogs([
     { name: DIALOGS.COLLECTION_FORM, component: CollectionFormDialog }
-  ])
-)(CollectionListPage)
+  ]),
+  withPagedCollections
+)(CollectionListPageWithDrawer)
+
+export default ConnectedCollectionListPage
