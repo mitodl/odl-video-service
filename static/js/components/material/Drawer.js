@@ -103,6 +103,16 @@ class Drawer extends React.Component<*, void> {
           </nav>
           <header className="mdc-drawer__header">
             <div className="mdc-drawer__header-content">Collections</div>
+            {SETTINGS.editable ? (
+              <span>
+                <button
+                  className="create-collection-button"
+                  ref={node => (this.createCollectionButton = node)}
+                >
+                  <span className="plus">+</span> Create a Collection
+                </button>
+              </span>
+            ) : null}
           </header>
           <nav id="nav-collections" className="mdc-drawer__content mdc-list">
             {collections.slice(0, MAX_VISIBLE_COLLECTIONS).map(col => (
@@ -121,16 +131,6 @@ class Drawer extends React.Component<*, void> {
               >
                 more collections…
               </a>
-            ) : null}
-            {SETTINGS.editable ? (
-              <span>
-                <button
-                  className="create-collection-button"
-                  ref={node => (this.createCollectionButton = node)}
-                >
-                  <span className="plus">+</span> Create a Collection
-                </button>
-              </span>
             ) : null}
           </nav>
           <nav
