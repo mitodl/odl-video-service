@@ -8,7 +8,7 @@ import pytest
 from googleapiclient.errors import HttpError
 
 from cloudsync.conftest import MockHttpErrorResponse
-from cloudsync.youtube import YouTubeApi, YouTubeUploadException
+from cloudsync.youtube import YouTubeApi, YouTubeUploadException, strip_bad_chars
 from ui.constants import VideoStatus
 from ui.factories import VideoFileFactory, VideoSubtitleFactory, VideoFactory
 
@@ -206,3 +206,10 @@ def test_video_status(mocker):
         'pageInfo': {'resultsPerPage': 1, 'totalResults': 1}}
     assert YouTubeApi().video_status('foo') == expected_status
     youtube_mocker().videos.return_value.list.assert_called_once_with(id='foo', part='status')
+
+
+def test_strip_bad_chars():
+    """
+    Test that `<`,`>` characters are removed from text
+    """
+    assert strip_bad_chars('<OV>S>') == 'OVS'
