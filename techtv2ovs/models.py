@@ -17,6 +17,9 @@ class TechTVCollection(models.Model):
     description = models.TextField(blank=True, null=True)
     owner_email = models.EmailField(null=True)
 
+    def __str__(self):
+        return self.name
+
 
 class TechTVVideo(models.Model):
     """
