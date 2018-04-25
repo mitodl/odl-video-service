@@ -249,5 +249,11 @@ describe("VideoDetailPage", () => {
       overlayEl.prop("setVideoTime")("argA", "argB")
       sinon.assert.calledWith(setVideoTimeStub, "argA", "argB")
     })
+
+  })
+
+  it("has toast message", async () => {
+    const wrapper = await renderPage()
+    assert.isTrue(wrapper.find("Connect(ToastOverlay)").exists())
   })
 })

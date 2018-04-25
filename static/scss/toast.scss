@@ -1,0 +1,43 @@
+.toast-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  color: white;
+  z-index: 1000;
+  text-align: center;
+  font-size: larger;
+
+  .toast-message {
+
+    display: block;
+    margin: auto;
+    background-color: hsla(0, 0%, 10%, .8);
+    padding: 1em 1.5em;
+    border-radius: 2px;
+    box-shadow: 1px 1px 2px hsla(0, 0%, 100%, .3);
+
+    .icon {
+      margin-right: 1em;
+    }
+  }
+}
+
+
+
+.toast-transition-appear, .toast-transition-enter {
+  opacity: 0.01;
+  transform: translateY(-100%);
+}
+
+.toast-transition-appear-active, .toast-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0%);
+  transition: opacity 1s, transform 1s;
+}
+
+.toast-transition-exit-active {
+  transform: translateY(-100%);
+  opacity: 0.01;
+  transition: opacity 1s, transform 1s;
+}
