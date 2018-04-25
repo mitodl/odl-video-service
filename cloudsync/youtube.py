@@ -1,5 +1,6 @@
 """ YouTube API interface"""
 import http
+import re
 import time
 import logging
 from tempfile import NamedTemporaryFile
@@ -67,6 +68,19 @@ def resumable_upload(request, max_retries=10):
             time.sleep(sleep_time)
 
     return response
+
+
+def strip_bad_chars(txt):
+    """
+    Remove any characters forbidden by Youtube (<, >) from text
+
+    Args:
+        txt(str): Text to remove characters from.
+
+    Returns:
+        str: Text without bad characters
+    """
+    return re.sub('<|>', '', txt)
 
 
 class YouTubeApi:
@@ -228,8 +242,8 @@ class YouTubeApi:
 
         request_body = dict(
             snippet=dict(
-                title=video.title[:100],
-                description=video.description[:5000]
+                title=strip_bad_chars(video.title)[:100],
+                description=strip_bad_chars(video.description)[:5000]
             ),
             status=dict(
                 privacyStatus=privacy
