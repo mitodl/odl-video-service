@@ -170,13 +170,37 @@ class VideoSerializer(serializers.ModelSerializer):
         )
 
 
+class SimpleVideoSerializer(VideoSerializer):
+    """
+    Simplified video serializer for Collection view
+    """
+    class Meta:
+        model = models.Video
+        fields = (
+            'key',
+            'created_at',
+            'title',
+            'view_lists',
+            'collection_view_lists',
+            'videothumbnail_set',
+        )
+        read_only_fields = (
+            'key',
+            'created_at',
+            'title',
+            'view_lists',
+            'collection_view_lists',
+            'videothumbnail_set',
+        )
+
+
 class CollectionSerializer(serializers.ModelSerializer):
     """
     Serializer for Collection Model, used on collection detail page
     """
     key = serializers.SerializerMethodField()
     video_count = serializers.SerializerMethodField()
-    videos = VideoSerializer(many=True, read_only=True)
+    videos = SimpleVideoSerializer(many=True, read_only=True)
     view_lists = SingleAttrRelatedField(
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
     )
