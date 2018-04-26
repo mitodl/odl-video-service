@@ -1,6 +1,44 @@
 Release Notes
 =============
 
+Version 0.18.1
+--------------
+
+- Make TTV collection name display on admin page for TTV video
+- Remove forbidden characters from title/description before uploading to Youtube
+- move create collection button (#561)
+- revert &#39;-e&#39; changes for requirements, no need for &#39;-e&#39; w/ bug fix from pip 10.0.1
+- revert &#39;-e&#39; changes for requirements, no need for &#39;-e&#39; w/ bug fix from pip 10.0.1
+- remove defunct fn
+- change playlist selector to select highest available active playlist
+- revert .travis.yml change
+- lower default collections page size to 50
+- fix pip string for pip 10 (which tox force installs &gt;:( )
+- test/format updates
+- initial work on quality selector button
+- scss lint fixup
+- fix pip string for pip 10 (which tox force installs &gt;:( )
+- change travis install to build instead of run
+- Revert &#34;travis bump&#34;
+- travis bump
+- add flow checks
+- fleshing out paginator tests
+- updating withPagedCollections hoc tests
+- adding tests for loading state to collection list page
+- update api to use pagination parameters
+- updating pagination actions
+- updating paginations reducer tests
+- tweak pagination styling
+- adding start of paginator to collectionlistpage
+- adding paginator handlers/styling
+- combining collectionlistpage w/ hoc withPagedCollections
+- add add actioncreator for set current page
+- adding initial state for currentPage, adding handler for set_current_page
+- add paging parameters to api getCollections call
+- fleshing out hoc for paged collections
+- fleshing out actions/reducers for pagination
+- fleshing out collections pagination
+
 Version 0.18.0
 --------------
 
