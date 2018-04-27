@@ -13,7 +13,6 @@ import { makeVideo } from "../factories/video"
 describe("VideoCard", () => {
   let sandbox,
     video,
-    showAnalyticsDialogStub,
     showEditDialogStub,
     showShareDialogStub,
     showDeleteDialogStub,
@@ -25,7 +24,6 @@ describe("VideoCard", () => {
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create()
-    showAnalyticsDialogStub = sandbox.stub()
     showEditDialogStub = sandbox.stub()
     showShareDialogStub = sandbox.stub()
     showDeleteDialogStub = sandbox.stub()
@@ -49,7 +47,6 @@ describe("VideoCard", () => {
         video={video}
         isAdmin={true}
         isMenuOpen={false}
-        showAnalyticsDialog={showAnalyticsDialogStub}
         showEditDialog={showEditDialogStub}
         showShareDialog={showShareDialogStub}
         showDeleteDialog={showDeleteDialogStub}
@@ -62,7 +59,7 @@ describe("VideoCard", () => {
     [false, ["Share"], "user without admin permissions"],
     [
       true,
-      ["Share", "Analytics", "Edit", "Save To Dropbox", "Delete"],
+      ["Share", "Edit", "Save To Dropbox", "Delete"],
       "user with admin permissions"
     ]
   ].forEach(
@@ -92,8 +89,6 @@ describe("VideoCard", () => {
     sinon.assert.called(dropboxSaveMenuStub)
     menuItems[3].action()
     sinon.assert.called(showDeleteDialogStub)
-    menuItems[4].action()
-    sinon.assert.called(showAnalyticsDialogStub)
   })
 
   it("Menu has correct show and hide functions", () => {

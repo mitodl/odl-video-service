@@ -1,5 +1,5 @@
 // @flow
-import _ from 'lodash'
+import _ from "lodash"
 import {
   fetchJSONWithCSRF,
   fetchWithCSRF
@@ -11,10 +11,10 @@ export type VideoUpdatePayload = {
 }
 
 export type PaginationParams = {
-  page: (string|number),
+  page: string | number
 }
 
-export function getCollections(opts:{pagination?:PaginationParams} = {}) {
+export function getCollections(opts: { pagination?: PaginationParams } = {}) {
   const { pagination } = opts
   let url = "/api/v0/collections/"
   if (pagination) {
@@ -23,10 +23,12 @@ export function getCollections(opts:{pagination?:PaginationParams} = {}) {
   return fetchJSONWithCSRF(url)
 }
 
-export function makeQueryParamsStr (queryParams: {[string]:(string|number)}): string {
+export function makeQueryParamsStr(queryParams: {
+  [string]: string | number
+}): string {
   return _.map(queryParams, (v, k) => {
-    return [k, v].map(encodeURIComponent).join('=')
-  }).join('&')
+    return [k, v].map(encodeURIComponent).join("=")
+  }).join("&")
 }
 
 export function getCollection(collectionKey: string) {

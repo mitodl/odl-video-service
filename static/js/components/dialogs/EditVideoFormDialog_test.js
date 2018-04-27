@@ -12,21 +12,7 @@ import EditVideoFormDialog from "./EditVideoFormDialog"
 
 import rootReducer from "../../reducers"
 import { actions } from "../../actions"
-import {
-  INIT_EDIT_VIDEO_FORM,
-  initEditVideoForm,
-  setEditVideoTitle,
-  setEditVideoDesc,
-  setViewLists,
-  setViewChoice,
-  setPermOverrideChoice,
-  SET_EDIT_VIDEO_TITLE,
-  SET_EDIT_VIDEO_DESC,
-  SET_VIEW_CHOICE,
-  SET_VIEW_LISTS,
-  SET_PERM_OVERRIDE_CHOICE,
-  SET_VIDEO_FORM_ERRORS
-} from "../../actions/videoUi"
+import * as videoUiActions from "../../actions/videoUi"
 import { setSelectedVideoKey } from "../../actions/collectionUi"
 import { INITIAL_UI_STATE } from "../../reducers/videoUi"
 import * as api from "../../lib/api"
@@ -39,6 +25,25 @@ import {
   PERM_CHOICE_OVERRIDE,
   PERM_CHOICE_PUBLIC
 } from "../../lib/dialog"
+
+const {
+  INIT_EDIT_VIDEO_FORM,
+  SET_EDIT_VIDEO_TITLE,
+  SET_EDIT_VIDEO_DESC,
+  SET_VIEW_CHOICE,
+  SET_VIEW_LISTS,
+  SET_PERM_OVERRIDE_CHOICE,
+  SET_VIDEO_FORM_ERRORS
+} = videoUiActions.constants
+
+const {
+  initEditVideoForm,
+  setEditVideoTitle,
+  setEditVideoDesc,
+  setViewLists,
+  setViewChoice,
+  setPermOverrideChoice
+} = videoUiActions.actionCreators
 
 describe("EditVideoFormDialog", () => {
   let sandbox, store, listenForActions, hideDialogStub, video

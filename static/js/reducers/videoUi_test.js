@@ -4,16 +4,22 @@ import configureTestStore from "redux-asserts"
 
 import rootReducer from "../reducers"
 import {
+  INITIAL_UI_STATE,
   INITIAL_EDIT_VIDEO_FORM_STATE,
   INITIAL_SHARE_VIDEO_FORM_STATE,
   INITIAL_UPLOAD_SUBTITLE_FORM_STATE
 } from "./videoUi"
-import {
+import { actionCreators } from "../actions/videoUi"
+const {
+  clearVideoForm,
   initEditVideoForm,
   setEditVideoDesc,
   setEditVideoTitle,
-  setUploadSubtitle
-} from "../actions/videoUi"
+  setUploadSubtitle,
+  setVideoTime,
+  setVideoDuration,
+  toggleAnalyticsOverlay
+} = actionCreators
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 
 describe("videoUi", () => {
@@ -25,10 +31,13 @@ describe("videoUi", () => {
 
   it("has some initial state", () => {
     assert.deepEqual(store.getState().videoUi, {
-      videoSubtitleForm: INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
-      editVideoForm:     INITIAL_EDIT_VIDEO_FORM_STATE,
-      shareVideoForm:    INITIAL_SHARE_VIDEO_FORM_STATE,
-      corner:            "camera1"
+      videoSubtitleForm:         INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
+      editVideoForm:             INITIAL_EDIT_VIDEO_FORM_STATE,
+      shareVideoForm:            INITIAL_SHARE_VIDEO_FORM_STATE,
+      corner:                    "camera1",
+      duration:                  0,
+      videoTime:                 0,
+      analyticsOverlayIsVisible: false
     })
   })
 
@@ -70,5 +79,67 @@ describe("videoUi", () => {
     }
     store.dispatch(initEditVideoForm(formObj))
     assert.deepEqual(store.getState().videoUi.editVideoForm, formObj)
+  })
+
+  it("has an action that sets the video time,", () => {
+    const videoTime = 42
+    assert.notEqual(store.getState().videoUi.videoTime, videoTime)
+    store.dispatch(setVideoTime(42))
+    assert.equal(store.getState().videoUi.videoTime, videoTime)
+  })
+
+  it("has an action that sets the duration,", () => {
+    const duration = 42
+    assert.notEqual(store.getState().videoUi.duration, duration)
+    store.dispatch(setVideoDuration(42))
+    assert.equal(store.getState().videoUi.duration, duration)
+  })
+
+  it("has an action that toggles analytics overlay", () => {
+    const _selectValue = () => store.getState().videoUi.analyticsOverlayIsVisible
+    assert.equal(_selectValue(), false)
+    store.dispatch(toggleAnalyticsOverlay())
+    assert.equal(_selectValue(), true)
+    store.dispatch(toggleAnalyticsOverlay())
+    assert.equal(_selectValue(), false)
+  })
+
+  describe("CLEAR_VIDEO_FORM", () => {
+    const initialVideoUiState = {
+      ...INITIAL_UI_STATE,
+      videoTime:                 42,
+      duration:                  42,
+      analyticsOverlayIsVisible: true,
+      corner:                    42,
+      editVideoForm:             {
+        ...INITIAL_EDIT_VIDEO_FORM_STATE,
+        key: 'someKey',
+      },
+      videoSubtitleForm: {
+        ...INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
+        key: 'someOtherKey',
+      },
+      shareVideoForm: {
+        ...INITIAL_SHARE_VIDEO_FORM_STATE,
+        shareTime: 42,
+      },
+    }
+
+    beforeEach(() => {
+      // $FlowFixMe : flow thinks 2nd parameter is not used, but it is.
+      store = configureTestStore(rootReducer, {videoUi: initialVideoUiState})
+    })
+
+    it("clears forms but preserves other state values", () => {
+      const _selectState = () => store.getState().videoUi
+      assert.equal(_selectState(), initialVideoUiState)
+      store.dispatch(clearVideoForm())
+      assert.deepEqual(_selectState(), {
+        ...initialVideoUiState,
+        editVideoForm:     INITIAL_EDIT_VIDEO_FORM_STATE,
+        videoSubtitleForm: INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
+        shareVideoForm:    INITIAL_SHARE_VIDEO_FORM_STATE,
+      })
+    })
   })
 })

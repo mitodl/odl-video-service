@@ -15,7 +15,7 @@ import { withDialogs } from "../components/dialogs/hoc"
 import { makeCollectionUrl } from "../lib/urls"
 import type { CommonUiState } from "../reducers/commonUi"
 import type { Collection, CollectionsPagination } from "../flow/collectionTypes"
-import withPagedCollections from './withPagedCollections'
+import withPagedCollections from "./withPagedCollections"
 import LoadingIndicator from "../components/material/LoadingIndicator"
 import Paginator from "../components/Paginator"
 
@@ -41,7 +41,7 @@ export class CollectionListPage extends React.Component<*, void> {
     )
   }
 
-  renderPaginator () {
+  renderPaginator() {
     const { collectionsPagination } = this.props
     const { currentPage, numPages, currentPageData } = collectionsPagination
     if (currentPageData) {
@@ -57,7 +57,7 @@ export class CollectionListPage extends React.Component<*, void> {
     )
   }
 
-  incrementCurrentPage (amount:number) {
+  incrementCurrentPage(amount: number) {
     const { currentPage, setCurrentPage } = this.props.collectionsPagination
     if (setCurrentPage) {
       setCurrentPage(currentPage + amount)
@@ -65,35 +65,32 @@ export class CollectionListPage extends React.Component<*, void> {
   }
 
   renderFormLink() {
-    return (
-      SETTINGS.editable ? (
-        <a
-          className="button-link create-collection-button"
-          onClick={this.openNewCollectionDialog.bind(this)}
-        >
-          <i className="material-icons">add</i>
-          Create New Collection
-        </a>
-      ) : null
-    )
+    return SETTINGS.editable ? (
+      <a
+        className="button-link create-collection-button"
+        onClick={this.openNewCollectionDialog.bind(this)}
+      >
+        <i className="material-icons">add</i>
+        Create New Collection
+      </a>
+    ) : null
   }
 
-  openNewCollectionDialog () {
+  openNewCollectionDialog() {
     const { dispatch } = this.props
     dispatch(collectionUiActions.showNewCollectionDialog())
   }
 
   renderCollectionLinks() {
     const { currentPageData } = this.props.collectionsPagination
-    if (! currentPageData) {
+    if (!currentPageData) {
       return null
     }
-    if (currentPageData.status === 'ERROR') {
-      return (<div className="collection-list-page-error">Error!</div>)
-    } else if (currentPageData.status === 'LOADING') {
-      return (<LoadingIndicator/>)
-    }
-    else if (currentPageData.status === 'LOADED') {
+    if (currentPageData.status === "ERROR") {
+      return <div className="collection-list-page-error">Error!</div>
+    } else if (currentPageData.status === "LOADING") {
+      return <LoadingIndicator />
+    } else if (currentPageData.status === "LOADED") {
       const { collections } = currentPageData
       return (
         <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list">
@@ -118,11 +115,10 @@ export class CollectionListPage extends React.Component<*, void> {
       )
     }
   }
-
 }
 
 export class CollectionListPageWithDrawer extends React.Component<*, void> {
-  render () {
+  render() {
     return (
       <WithDrawer>
         <CollectionListPage {...this.props} />

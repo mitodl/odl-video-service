@@ -1,174 +1,103 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import _ from "lodash"
 
-import { TabBar, Tab } from "rmwc/Tabs"
-
+import { makeVideoAnalyticsData } from "../../factories/videoAnalytics"
 import AnalyticsChart from "./AnalyticsChart"
-import AnalyticsTable from "./AnalyticsTable"
-import type { Video } from "../../flow/videoTypes"
-import type { VideoAnalyticsData } from "../../flow/videoAnalyticsTypes"
+import AnalyticsInfoTable from "./AnalyticsInfoTable"
+import ProgressSlider from "./ProgressSlider"
 
-import { makeVideoUrl } from "../../lib/urls"
+const COLORS = [
+  { name: "lightBlue", hex: "#61befd" },
+  { name: "darkBlue", hex: "#3976c7" },
+  { name: "green", hex: "#6ac360" },
+  { name: "yellow", hex: "#fce63c" }
+]
 
-const CSS_NS = "analytics-pane"
-
-type Props = {
-  analyticsData: VideoAnalyticsData | null,
-  video: Video,
-  style?: { [string]: mixed }
+const CHART_PADDING = {
+  top:    10,
+  bottom: 20,
+  left:   50,
+  right:  20
 }
 
-class AnalyticsPane extends React.Component<*, *> {
-  _tabDefs: Array<{ title: string, renderFn: Function }>
-
-  state: {
-    activeTabIndex: number
-  }
-
-  constructor(props: Props) {
-    super(props)
-    this._tabDefs = [
-      {
-        title:    "Graph",
-        renderFn: this.renderChart.bind(this)
-      },
-      {
-        title:    "Table",
-        renderFn: this.renderTable.bind(this)
-      }
-    ]
-    this.state = {
-      activeTabIndex: 0
-    }
-  }
-
+export class AnalyticsPane extends React.Component {
   render() {
-    if (!this.props.video) {
-      return null
+    const {
+      currentTime,
+      duration,
+      analyticsData,
+      setVideoTime,
+      ...passThroughProps
+    } = this.props
+    const analyticsData_ =
+      analyticsData || makeVideoAnalyticsData(Math.floor(duration / 60) + 1)
+    const colorsForChannels = {}
+    for (let i = 0; i < analyticsData_.channels.length; i++) {
+      colorsForChannels[analyticsData_.channels[i]] = COLORS[i]
+    }
+    const getColorForChannel = channel => colorsForChannels[channel].hex
+    let className = "analytics-overlay"
+    if (this.props.className) {
+      className += ` ${this.props.className}`
     }
     return (
-      <section style={this.props.style}>
-        {this.renderHeader()}
-        {this.renderBody()}
-      </section>
-    )
-  }
-
-  renderHeader() {
-    const { video } = this.props
-    const videoUrl = `${window.location.origin}${makeVideoUrl(video.key)}`
-    return (
-      <header className={`${CSS_NS}-header`}>
+      <div className={className} {..._.omit(passThroughProps, ["video"])}>
         <div
           style={{
-            display:        "flex",
-            flexDirection:  "row",
-            justifyContent: "space-between"
+            width:         "100%",
+            height:        "80%",
+            display:       "flex",
+            flexDirection: "column"
           }}
         >
-          <h2
-            className={`${CSS_NS}-video-title`}
+          <div
+            className="chart-container"
             style={{
-              margin:     0,
-              fontWeight: "500",
-              fontSize:   "large"
+              flex:     "1 1 auto",
+              width:    "100%",
+              height:   "100%",
+              position: "relative"
             }}
-          >{`Views per minute for video "${video.title}"`}</h2>
+          >
+            <AnalyticsChart
+              analyticsData={analyticsData_}
+              getColorForChannel={getColorForChannel}
+              currentTime={currentTime}
+              duration={duration}
+              padding={CHART_PADDING}
+              style={{
+                width:  "100%",
+                height: "100%"
+              }}
+            />
+            <ProgressSlider
+              value={currentTime / duration}
+              hsl={{ h: 0, s: 0, l: 50 }}
+              style={{
+                fontSize: "10px",
+                position: "absolute",
+                left:     `${CHART_PADDING.left}px`,
+                right:    `${CHART_PADDING.right}px`,
+                bottom:   `${CHART_PADDING.bottom}px`
+              }}
+              onChange={nextValue => {
+                setVideoTime(nextValue * duration)
+              }}
+            />
+          </div>
+
+          <AnalyticsInfoTable
+            analyticsData={analyticsData_}
+            getColorForChannel={getColorForChannel}
+            currentTime={currentTime}
+            style={{
+              width:  "92%",
+              margin: "auto",
+              flex:   "0 0 4em"
+            }}
+          />
         </div>
-        <a
-          className={`${CSS_NS}-video-link`}
-          style={{ fontSize: "small" }}
-          href={videoUrl}
-        >
-          {videoUrl}
-        </a>
-      </header>
-    )
-  }
-
-  renderBody() {
-    const { analyticsData } = this.props
-    const bodyContent = this.analyticsDataIsEmpty(analyticsData)
-      ? this.renderEmptyDataMessage()
-      : this.renderTabs()
-    return (
-      <section className={`${CSS_NS}-body`} style={{ width: "100%" }}>
-        {bodyContent}
-      </section>
-    )
-  }
-
-  analyticsDataIsEmpty(analyticsData: any): boolean {
-    return !!analyticsData && _.isEmpty(analyticsData.times)
-  }
-
-  renderTabs() {
-    const { analyticsData } = this.props
-    const formattedAnalyticsData = this.formatAnalyticsData(analyticsData)
-    return (
-      <section>
-        <TabBar
-          activeTabIndex={this.state.activeTabIndex}
-          onChange={evt => this.setState({ activeTabIndex: evt.target.value })}
-          style={{
-            marginLeft:   0,
-            borderBottom: "thin solid #333",
-            width:        "100%"
-          }}
-        >
-          {this._tabDefs.map(tabDef => {
-            return <Tab key={tabDef.title}>{tabDef.title}</Tab>
-          })}
-        </TabBar>
-        <section>
-          {this._tabDefs[this.state.activeTabIndex].renderFn(
-            formattedAnalyticsData
-          )}
-        </section>
-      </section>
-    )
-  }
-
-  formatAnalyticsData(analyticsData: VideoAnalyticsData): VideoAnalyticsData {
-    return {
-      ...analyticsData,
-      times:          this.interpolateTimes(analyticsData.times),
-    }
-  }
-
-  interpolateTimes(times: Array<string | number>): Array<string | number> {
-    const maxTime = _.maxBy(times, time => parseInt(time, 10))
-    const interpolatedTimes = [...Array(maxTime + 1).keys()]
-    return interpolatedTimes
-  }
-
-  renderEmptyDataMessage() {
-    return (
-      <section
-        className={`${CSS_NS}-empty-data-message`}
-        style={{
-          textAlign:  "center",
-          marginTop:  "1em",
-          paddingTop: "1em",
-          borderTop:  "thin solid grey"
-        }}
-      >
-        <div>No analytics data for this video at this time.</div>
-      </section>
-    )
-  }
-
-  renderChart(analyticsData: VideoAnalyticsData) {
-    return (
-      <AnalyticsChart analyticsData={analyticsData} style={{ width: "100%" }} />
-    )
-  }
-
-  renderTable(analyticsData: VideoAnalyticsData) {
-    return (
-      <AnalyticsTable analyticsData={analyticsData} style={{ width: "100%" }} />
+      </div>
     )
   }
 }

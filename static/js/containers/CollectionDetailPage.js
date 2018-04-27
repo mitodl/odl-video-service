@@ -10,7 +10,6 @@ import DocumentTitle from "react-document-title"
 import WithDrawer from "./WithDrawer"
 import VideoCard from "../components/VideoCard"
 import Button from "../components/material/Button"
-import AnalyticsDialog from "../components/dialogs/AnalyticsDialog"
 import EditVideoFormDialog from "../components/dialogs/EditVideoFormDialog"
 import ShareVideoDialog from "../components/dialogs/ShareVideoDialog"
 import DeleteVideoDialog from "../components/dialogs/DeleteVideoDialog"
@@ -89,8 +88,6 @@ export class CollectionDetailPage extends React.Component<*, void> {
 
   showDeleteVideoDialog = this.showVideoDialog(DIALOGS.DELETE_VIDEO)
 
-  showAnalyticsVideoDialog = this.showVideoDialog(DIALOGS.ANALYTICS)
-
   handleUpload = async (chosenFiles: Array<Object>) => {
     const { dispatch, collection } = this.props
     if (!collection) throw new Error("Collection does not exist")
@@ -119,10 +116,6 @@ export class CollectionDetailPage extends React.Component<*, void> {
             video={video}
             key={video.key}
             isAdmin={isAdmin}
-            showAnalyticsDialog={this.showAnalyticsVideoDialog.bind(
-              this,
-              video.key
-            )}
             showDeleteDialog={this.showDeleteVideoDialog.bind(this, video.key)}
             showEditDialog={this.showEditVideoDialog.bind(this, video.key)}
             showShareDialog={this.showShareVideoDialog.bind(this, video.key)}
@@ -206,8 +199,6 @@ export class CollectionDetailPage extends React.Component<*, void> {
     switch (dialogName) {
     case DIALOGS.COLLECTION_FORM:
       return CollectionFormDialog
-    case DIALOGS.ANALYTICS:
-      return AnalyticsDialog
     case DIALOGS.EDIT_VIDEO:
       return EditVideoFormDialog
     case DIALOGS.SHARE_VIDEO:
@@ -247,7 +238,6 @@ const ConnectedCollectionDetailPage = R.compose(
   withDialogs(
     [
       DIALOGS.COLLECTION_FORM,
-      DIALOGS.ANALYTICS,
       DIALOGS.EDIT_VIDEO,
       DIALOGS.SHARE_VIDEO,
       DIALOGS.DELETE_VIDEO
