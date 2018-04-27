@@ -16,6 +16,8 @@ import DeleteVideoDialog from "../components/dialogs/DeleteVideoDialog"
 import CollectionFormDialog from "../components/dialogs/CollectionFormDialog"
 import { withDialogs } from "../components/dialogs/hoc"
 import DropboxChooser from "react-dropbox-chooser"
+import ErrorMessage from "../components/ErrorMessage"
+import * as ErrorMessages from "../components/errorMessages"
 
 import { actions } from "../actions"
 import * as collectionUiActions from "../actions/collectionUi"
@@ -129,7 +131,17 @@ export class CollectionDetailPage extends React.Component<*, void> {
     </div>
   )
 
-  renderBody(collection: Collection) {
+  renderBody() {
+    const { collection, collectionError } = this.props
+    if (collectionError) {
+      if (collectionError.detail) {
+        return (<ErrorMessage>Error: {collectionError.detail}</ErrorMessage>)
+      }
+      return (<ErrorMessages.UnableToLoadData/>)
+    }
+    if (! collection) {
+      return null
+    }
     const videos = collection.videos || []
     const collectionTitle =
       videos.length === 0
@@ -179,17 +191,15 @@ export class CollectionDetailPage extends React.Component<*, void> {
   }
 
   render() {
-    const { collection } = this.props
-
-    if (!collection) return null
-
-    const detailBody = this.renderBody(collection)
-
+    const { collection, collectionError } = this.props
+    if (! collection && ! collectionError) { return null }
     return (
-      <DocumentTitle title={`OVS | ${collection.title}`}>
+      <DocumentTitle title={collection ? `OVS | ${collection.title}` : 'OVS'}>
         <WithDrawer>
           <VideoSaverScript />
-          <div className="collection-detail-content">{detailBody}</div>
+          <div className="collection-detail-content">
+            {this.renderBody()}
+          </div>
         </WithDrawer>
       </DocumentTitle>
     )
