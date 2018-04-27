@@ -76,14 +76,6 @@ class Command(ETLCommand):
             help='Copy files from S3'
         )
 
-        parser.add_argument(
-            '--videos',
-            dest='videos',
-            help='Process only these video ids',
-            type=int,
-            nargs='+'
-        )
-
     def handle(self, *args, **options):
         """
         Run the command
