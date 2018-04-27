@@ -70,8 +70,12 @@ def send_notification_email(video):
 
     try:
         api.MailgunClient.send_individual_email(
-            email_template.email_subject.format(video_title=video.title),
+            email_template.email_subject.format(
+                collection_title=video.collection.title,
+                video_title=video.title
+            ),
             email_template.email_body.format(
+                collection_title=video.collection.title,
                 video_title=video.title,
                 video_url=urljoin(
                     settings.ODL_VIDEO_BASE_URL,
