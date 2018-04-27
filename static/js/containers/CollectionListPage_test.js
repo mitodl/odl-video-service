@@ -128,7 +128,7 @@ describe("CollectionListPage", () => {
     it("renders error indicator", () => {
       collectionsPagination.currentPageData.status = "ERROR"
       const wrapper = renderUnconnectedPage()
-      assert.exists(wrapper.find(".collection-list-page-error"))
+      assert.isTrue(wrapper.find("ErrorMessage").exists())
     })
   })
 })

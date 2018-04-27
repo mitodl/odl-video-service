@@ -239,3 +239,11 @@ textarea {
     background-color: #f9f9f9;
   }
 }
+
+.odl-error-message {
+  background-color: hsl(0, 80%, 80%);
+  color: hsl(0, 80%, 30%);
+  border: thin solid hsl(0, 80%, 40%);
+  padding: 2em;
+  margin: 1em auto;
+}
