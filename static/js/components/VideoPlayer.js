@@ -31,7 +31,7 @@ const makeConfigForVideo = (
 ): Object => ({
   autoplay:    false,
   controls:    true,
-  fluid:       useYouTube || embedded || false,
+  fluid:       embedded || false,
   playsinline: true,
   techOrder:   useYouTube ? ["youtube", "html5"] : ["html5"],
   html5:       {
@@ -92,6 +92,7 @@ class VideoPlayer extends React.Component<*, void> {
   videoContainer: ?HTMLDivElement
   cameras: ?HTMLDivElement
   lastMinuteTracked: ?number
+  aspectRatio: number
 
   updateSubtitles() {
     const { video } = this.props
@@ -165,6 +166,23 @@ class VideoPlayer extends React.Component<*, void> {
           CANVASES[corner].shiftY
         )
       })
+    }
+  }
+
+  resizeYouTube = () => {
+    const { embed } = this.props
+    if (!isFullscreen() && !embed) {
+      if (!this.aspectRatio) {
+        this.aspectRatio =
+          this.player.currentWidth() / this.player.currentHeight()
+      }
+      // $FlowFixMe videoContainer is not going to be null
+      const maxWidth = this.videoContainer.clientWidth
+      this.player.width(maxWidth)
+      const maxHeight = window
+        .getComputedStyle(this.videoContainer)
+        .maxHeight.replace("px", "")
+      this.player.height(Math.min(maxHeight, maxWidth / this.aspectRatio))
     }
   }
 
@@ -317,6 +335,7 @@ class VideoPlayer extends React.Component<*, void> {
     const { video, selectedCorner, embed } = this.props
 
     const cropVideo = this.cropVideo
+    const resizeYouTube = this.resizeYouTube
     const createEventHandler = this.createEventHandler
     const toggleFullscreen = this.toggleFullscreen
     if (video.multiangle) {
@@ -337,6 +356,9 @@ class VideoPlayer extends React.Component<*, void> {
           this.on("loadeddata", cropVideo)
           this.on(FULLSCREEN_API.fullscreenchange, cropVideo)
           window.addEventListener("resize", cropVideo)
+        } else if (useYouTube) {
+          this.on("loadedmetadata", resizeYouTube)
+          window.addEventListener("resize", resizeYouTube)
         }
         this.on("loadedmetadata", function() {
           gaEvents.forEach((event: string) => {
@@ -389,7 +411,7 @@ class VideoPlayer extends React.Component<*, void> {
         <div
           className={`video-odl-medium ${
             video.multiangle ? "video-odl-multiangle" : ""
-          }`}
+          } ${embed ? "video-odl-embed" : ""}`}
           ref={node => (this.videoContainer = node)}
         >
           <div data-vjs-player>

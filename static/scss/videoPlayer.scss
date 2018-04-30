@@ -8,6 +8,15 @@
   width: 100%;
   margin: auto;
   overflow: hidden;
+  background-color: #000000;
+
+  &:not(.video-odl-embed) {
+    max-height: calc(100vh - 150px);
+
+    @include breakpoint(mobile) {
+      max-height: calc(100vh - 60px);
+    }
+  }
 }
 
 .video-odl-multiangle {
@@ -43,7 +52,7 @@
           position: relative !important;
           width: inherit !important;
           height: inherit !important;
-          max-height: calc(100vh - 200px);
+          max-height: calc(100vh - 150px);
 
           @include breakpoint(mobile) {
             max-height: calc(100vh - 60px);
