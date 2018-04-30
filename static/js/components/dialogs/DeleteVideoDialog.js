@@ -16,22 +16,32 @@ type DialogProps = {
   open: boolean,
   hideDialog: Function,
   shouldUpdateCollection: boolean,
-  video: Video
+  video: Video,
+  window?: any
 }
 
-class DeleteVideoDialog extends React.Component<*, void> {
+export class DeleteVideoDialog extends React.Component<*, void> {
   props: DialogProps
 
   confirmDeletion = async () => {
     const { dispatch, video, shouldUpdateCollection } = this.props
+    const window_ = this.props.window || window
 
     await dispatch(actions.videos.delete(video.key))
+    dispatch(
+      actions.toast.addMessage({
+        message: {
+          key:     "video-delete",
+          content: `Video "${video.title}" was deleted.`,
+          icon:    "check"
+        }
+      })
+    )
     if (shouldUpdateCollection) {
       dispatch(actions.collections.get(video.collection_key))
     } else {
-      window.location = `${window.location.origin}${makeCollectionUrl(
-        video.collection_key
-      )}`
+      const collectionUrl = makeCollectionUrl(video.collection_key)
+      window_.location = `${window_.location.origin}${collectionUrl}`
     }
   }
 
@@ -59,7 +69,7 @@ class DeleteVideoDialog extends React.Component<*, void> {
   }
 }
 
-const mapStateToProps = (state, ownProps) => {
+export const mapStateToProps = (state:Object, ownProps:Object) => {
   const { collectionUi: { selectedVideoKey } } = state
   const { collection, video } = ownProps
 
@@ -80,4 +90,6 @@ const mapStateToProps = (state, ownProps) => {
   }
 }
 
-export default connect(mapStateToProps)(DeleteVideoDialog)
+const ConnectedDeleteVideoDialog = connect(mapStateToProps)(DeleteVideoDialog)
+
+export default ConnectedDeleteVideoDialog

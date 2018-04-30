@@ -61,16 +61,13 @@ export class AnalyticsChart extends React.Component {
 
   render() {
     const { dimensions } = this.state
-    const {
-      analyticsData,
-      getColorForChannel,
-      duration,
-      ...remainingProps
-    } = this.props
-    const passThroughProps = _.omit(remainingProps, [
+    const passThroughProps = _.omit(this.props, [
+      "analyticsData",
       "currentTime",
-      "setVideoTime",
-      "padding"
+      "duration",
+      "getColorForChannel",
+      "padding",
+      "setVideoTime"
     ])
     return (
       <div
@@ -79,31 +76,22 @@ export class AnalyticsChart extends React.Component {
         }}
         {...passThroughProps}
       >
-        {dimensions
-          ? this.renderChart({
-            analyticsData,
-            getColorForChannel,
-            dimensions,
-            duration
-          })
-          : null}
+        {dimensions ? this.renderChart() : null}
       </div>
     )
   }
 
-  renderChart(opts) {
+  renderChart() {
     const { dimensions } = this.state
-    const { analyticsData, getColorForChannel, duration } = opts
+    const { analyticsData, duration, getColorForChannel, padding } = this.props
     const viewsAtTimesByChannel = this._generateViewsAtTimesByChannel(
-      analyticsData
-    )
+      analyticsData)
     const baseLabelStyle = {
       fill:       "#666",
       fontFamily: "'Roboto', 'sans-serif'",
       fontSize:   10
     }
     const chartBodyClipPathId = `${this._namespace}-chart-body-clipPath`
-    const padding = this.props.padding
     const chartBodyBounds = this._getRelativeChartBodyBounds()
     return (
       <VictoryChart

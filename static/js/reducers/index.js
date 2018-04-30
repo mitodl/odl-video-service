@@ -8,12 +8,14 @@ import commonUi from "./commonUi"
 import collectionsPagination from "./collectionsPagination"
 import collectionUi from "./collectionUi"
 import videoUi from "./videoUi"
+import toast from "./toast"
 
 const reducers: Object = {
   collectionsPagination,
   commonUi,
   collectionUi,
-  videoUi
+  videoUi,
+  toast
 }
 endpoints.forEach(endpoint => {
   reducers[endpoint.name] = deriveReducers(endpoint, actions[endpoint.name])

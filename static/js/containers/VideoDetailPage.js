@@ -20,6 +20,7 @@ import { withDialogs } from "../components/dialogs/hoc"
 import VideoSubtitleCard from "../components/VideoSubtitleCard"
 import VideoSaverScript from "../components/VideoSaverScript"
 import { ConnectedVideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
+import ToastOverlay from "./ToastOverlay"
 
 import { actions } from "../actions"
 import { setDrawerOpen } from "../actions/commonUi"
@@ -118,6 +119,7 @@ export class VideoDetailPage extends React.Component<*, void> {
     return (
       <DocumentTitle title={`OVS | ${video.title} | Video Detail`}>
         <div>
+          <ToastOverlay />
           <VideoSaverScript />
           <OVSToolbar setDrawerOpen={this.setDrawerOpen.bind(this, true)} />
           <Drawer
