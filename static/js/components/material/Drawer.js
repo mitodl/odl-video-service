@@ -82,7 +82,7 @@ class Drawer extends React.Component<*, void> {
   }
 
   render() {
-    const { collections } = this.props
+    const collections = this.props.collections || []
     return (
       <aside
         className="mdc-drawer mdc-drawer--temporary mdc-typography"
