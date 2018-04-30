@@ -2,6 +2,8 @@
 Tests for Task module
 """
 from urllib.parse import urljoin
+from collections import defaultdict
+import textwrap
 
 import pytest
 from django.conf import settings
@@ -97,12 +99,12 @@ def test_send_notification_email_happy_path(mocker):
     tasks.send_notification_email(video)
     email_template = NotificationEmail.objects.get(
         notification_type=tasks.STATUS_TO_NOTIFICATION[VideoStatus.COMPLETE])
-    mocked_mailgun.send_individual_email.assert_called_once_with(
-        email_template.email_subject.format(
+    mocked_mailgun.send_individual_email.assert_called_once_with(**{
+        'subject': email_template.email_subject.format(
             collection_title=video.collection.title,
             video_title=video.title
         ),
-        email_template.email_body.format(
+        'body': email_template.email_body.format(
             collection_title=video.collection.title,
             video_title=video.title,
             video_url=urljoin(
@@ -111,9 +113,9 @@ def test_send_notification_email_happy_path(mocker):
             ),
             support_email=settings.EMAIL_SUPPORT
         ),
-        recipient=video.collection.owner.email,
-        raise_for_status=True,
-    )
+        'recipient': video.collection.owner.email,
+        'raise_for_status': True,
+    })
 
 
 def test_async_send_notification_email_no_video(mocker):
@@ -134,3 +136,81 @@ def test_async_send_notification_email_happy_path(mocker):
     video = VideoFactory(status=VideoStatus.COMPLETE)
     tasks.async_send_notification_email.delay(video.id)
     mocked_send_email.assert_called_once_with(video)
+
+
+@pytest.mark.parametrize("status", tasks.STATUSES_THAT_TRIGGER_DEBUG_EMAIL)
+def test_sends_debug_emails(mocker, status):
+    """
+    Tests send_notification_email with statuses that should trigger sending a
+    separate email to support.
+    """
+    mocked_mailgun = mocker.patch('mail.api.MailgunClient', autospec=True)
+    mocked_send_debug_email = mocker.patch('mail.tasks._send_debug_email', autospec=True)
+    video = VideoFactory(status=status)
+    tasks.send_notification_email(video)
+    mocked_send_debug_email.assert_called_once_with(
+        video=video,
+        email_kwargs=mocked_mailgun.send_individual_email.call_args[1]
+    )
+
+
+def test_send_debug_email(mocker):
+    """
+    Tests sends debug email to support.
+    """
+    mocked_mailgun = mocker.patch('mail.api.MailgunClient', autospec=True)
+    mocked_generate_debug_email_body = mocker.patch('mail.tasks._generate_debug_email_body')
+    mock_email_kwargs = defaultdict(mocker.MagicMock)
+    video = VideoFactory()
+    tasks._send_debug_email(video=video, email_kwargs=mock_email_kwargs)
+    mocked_generate_debug_email_body.assert_called_once_with(
+        video=video,
+        email_kwargs=mock_email_kwargs
+    )
+    mocked_mailgun.send_individual_email.assert_called_once_with(**{
+        'subject': 'DEBUG:{}'.format(mock_email_kwargs['subject']),
+        'body': mocked_generate_debug_email_body.return_value,
+        'recipient': settings.EMAIL_SUPPORT,
+    })
+
+
+def test_generate_debug_email_body(mocker):
+    """
+    Tests generation of debug email body.
+    """
+    email_kwargs = defaultdict(mocker.MagicMock)
+    video = VideoFactory()
+    expected_body = textwrap.dedent(
+        """
+        --- DEBUG INFO ---
+        Video: {video}
+        Collection: {collection}
+        Owner: {owner}
+
+        --- DEBUG INFO FOR EMAIL SENT TO USER(S) ---
+
+        <RECIPIENT(S)>:
+        {recipient}
+        </RECIPIENT(S)>:
+
+        <SUBJECT>
+        {subject}
+        </SUBJECT>
+
+        <BODY>
+        {body}
+        </BODY>
+        """
+    ).format(
+        video=video,
+        collection=video.collection,
+        owner=video.collection.owner,
+        recipient=email_kwargs['recipient'],
+        subject=email_kwargs['subject'],
+        body=email_kwargs['body'],
+    )
+    actual_body = tasks._generate_debug_email_body(
+        video=video,
+        email_kwargs=email_kwargs
+    )
+    assert actual_body == expected_body
