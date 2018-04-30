@@ -64,6 +64,8 @@ describe("VideoPlayer", () => {
       reset:         sandbox.stub().returns(playerStub),
       src:           sandbox.stub().returns(playerStub),
       fluid:         sandbox.stub().returns(playerStub),
+      width:         sandbox.stub(),
+      height:        sandbox.stub(),
       currentTime:   () => 630.5,
       duration:      () => 2400.0,
       videoWidth:    () => 640,
@@ -202,6 +204,29 @@ describe("VideoPlayer", () => {
       left:      "640px",
       top:       "360px",
       transform: "scale(2)"
+    })
+  })
+  ;[1000, 4000].forEach(function(videoWidth) {
+    it("resizeYoutube modifies the video width and height", () => {
+      const wrapper = renderPlayer().find("VideoPlayer")
+      sandbox.stub(window, "getComputedStyle").returns({ maxHeight: "700px" })
+      containerStub = {
+        style:         {},
+        parentElement: { style: {} },
+        clientWidth:   videoWidth
+      }
+      wrapper.instance().player = playerStub
+      wrapper.instance().videoNode = nodeStub
+      wrapper.instance().videoContainer = containerStub
+      wrapper.instance().resizeYouTube()
+      sinon.assert.calledWith(
+        wrapper.instance().player.width,
+        wrapper.instance().videoContainer.clientWidth
+      )
+      sinon.assert.calledWith(
+        wrapper.instance().player.height,
+        Math.min(videoWidth / wrapper.instance().aspectRatio, 700)
+      )
     })
   })
 
@@ -374,7 +399,7 @@ describe("VideoPlayer", () => {
                 ]
               }
             },
-            systemBandwidth: 2000,
+            systemBandwidth: 2000
           }
         }
         const wrapper = renderPlayer().find("VideoPlayer")
@@ -391,14 +416,14 @@ describe("VideoPlayer", () => {
             playlists:      {
               master: {
                 playlists: [
-                  { attributes: { BANDWIDTH: 900 }, disabled: true},
+                  { attributes: { BANDWIDTH: 900 }, disabled: true },
                   { attributes: { BANDWIDTH: 1900 }, disabled: true },
                   { attributes: { BANDWIDTH: 2900 } },
                   { attributes: { BANDWIDTH: 3900 } }
                 ]
               }
             },
-            systemBandwidth: 2000,
+            systemBandwidth: 2000
           }
         }
         const wrapper = renderPlayer().find("VideoPlayer")
@@ -408,7 +433,6 @@ describe("VideoPlayer", () => {
       })
     })
   })
-
   ;[false, true].forEach(function(isPublic) {
     ["asdJ4y", null].forEach(function(youtubeId) {
       it(`checkYouTube ${expect(
@@ -416,6 +440,7 @@ describe("VideoPlayer", () => {
       )} be called if video.is_public=${String(isPublic)} and video.youtube_id=${String(youtubeId)}`, async () => {
         video.is_public = isPublic
         video.youtube_id = youtubeId
+        video.multiangle = false
         const wrapper = renderPlayer().find("VideoPlayer")
         const checkStub = sandbox.stub(wrapper.instance(), "checkYouTube")
         wrapper.instance().componentDidMount()
