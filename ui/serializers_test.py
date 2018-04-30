@@ -24,7 +24,7 @@ def test_collection_serializer():
         'created_at': DateTimeField().to_representation(collection.created_at),
         'title': collection.title,
         'description': collection.description,
-        'videos': serializers.VideoSerializer(videos, many=True).data,
+        'videos': serializers.SimpleVideoSerializer(videos, many=True).data,
         'video_count': len(videos),
         'view_lists': [],
         'admin_lists': [],
