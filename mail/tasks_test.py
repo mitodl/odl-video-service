@@ -98,8 +98,12 @@ def test_send_notification_email_happy_path(mocker):
     email_template = NotificationEmail.objects.get(
         notification_type=tasks.STATUS_TO_NOTIFICATION[VideoStatus.COMPLETE])
     mocked_mailgun.send_individual_email.assert_called_once_with(
-        email_template.email_subject.format(video_title=video.title),
+        email_template.email_subject.format(
+            collection_title=video.collection.title,
+            video_title=video.title
+        ),
         email_template.email_body.format(
+            collection_title=video.collection.title,
             video_title=video.title,
             video_url=urljoin(
                 settings.ODL_VIDEO_BASE_URL,
