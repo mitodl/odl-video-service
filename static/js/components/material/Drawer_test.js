@@ -74,12 +74,28 @@ describe("Drawer", () => {
     assert.isTrue(drawerNode.text().startsWith("foo_user"))
   })
 
-  it("shows a message if the user is not logged in", async () => {
-    SETTINGS.email = null
-    SETTINGS.user = null
+  it("shows logout button", async () => {
     const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item .mdc-link").at(0)
-    assert.isTrue(drawerNode.text().startsWith("Not logged in"))
+    assert.isTrue(wrapper.find(".mdc-list-item.logout").exists())
+  })
+
+  describe("when user is not logged", () => {
+    let wrapper
+
+    beforeEach(async () => {
+      SETTINGS.email = null
+      SETTINGS.user = null
+      wrapper = await renderDrawer()
+    })
+
+    it("shows a message if the user is not logged in", async () => {
+      const drawerNode = wrapper.find(".mdc-list-item .mdc-link").at(0)
+      assert.isTrue(drawerNode.text().startsWith("Not logged in"))
+    })
+
+    it("does not show log out button", () => {
+      assert.isFalse(wrapper.find(".mdc-list-item.logout").exists())
+    })
   })
 
   it("drawer element is rendered with collections", async () => {
