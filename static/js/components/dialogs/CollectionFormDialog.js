@@ -102,6 +102,13 @@ class CollectionFormDialog extends React.Component<*, void> {
       try {
         const collection = await dispatch(actions.collectionsList.post(payload))
         history.push(makeCollectionUrl(collection.key))
+        this.addToastMessage({
+          message: {
+            key:     "collection-created",
+            content: "Collection created",
+            icon:    "check",
+          }
+        })
         this.onClose()
       } catch (e) {
         this.handleError(e)
@@ -109,11 +116,22 @@ class CollectionFormDialog extends React.Component<*, void> {
     } else {
       try {
         await dispatch(actions.collections.patch(collectionForm.key, payload))
+        this.addToastMessage({
+          message: {
+            key:     "collection-updated",
+            content: "Changes saved",
+            icon:    "check",
+          }
+        })
         this.onClose()
       } catch (e) {
         this.handleError(e)
       }
     }
+  }
+
+  addToastMessage (...args) {
+    this.props.dispatch(actions.toast.addMessage(...args))
   }
 
   onClose = () => {
