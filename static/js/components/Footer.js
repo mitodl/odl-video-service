@@ -1,4 +1,5 @@
 // @flow
+/* global SETTINGS: false */
 import React from "react"
 import moment from "moment"
 
@@ -34,6 +35,11 @@ export default class Footer extends React.Component<*, void> {
                   </a>
                   <a href="/terms/" rel="noopener noreferrer">
                     ODL Video Services Terms of Service
+                  </a>
+                  <a
+                    className="contact-us"
+                    href={`mailto:${SETTINGS.support_email_address}`}>
+                    Contact Us
                   </a>
                 </div>
                 <address className="footer-address">
