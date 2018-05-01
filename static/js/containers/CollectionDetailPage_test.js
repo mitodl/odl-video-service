@@ -2,12 +2,15 @@
 /* global SETTINGS: false */
 import React from "react"
 import sinon from "sinon"
-import { mount } from "enzyme"
+import { mount, shallow } from "enzyme"
 import { assert } from "chai"
 import { Provider } from "react-redux"
 import configureTestStore from "redux-asserts"
 
 import ConnectedCollectionDetailPage from "./CollectionDetailPage"
+import {
+  CollectionDetailPage as UnconnectedCollectionDetailPage
+} from "./CollectionDetailPage"
 
 import * as api from "../lib/api"
 import { actions } from "../actions"
@@ -30,6 +33,8 @@ const { INIT_EDIT_VIDEO_FORM } = videoUiActions.constants
 
 describe("CollectionDetailPage", () => {
   let sandbox, store, getCollectionStub, collection, listenForActions
+  let actionsToAwait
+
   const selectors = {
     TITLE:         ".collection-detail-content h1",
     DESCRIPTION:   "p.description",
@@ -52,6 +57,11 @@ describe("CollectionDetailPage", () => {
     sandbox
       .stub(api, "getCollections")
       .returns(Promise.resolve({ results: collections }))
+
+    actionsToAwait = [
+      actions.collections.get.requestType,
+      actions.collections.get.successType
+    ]
   })
 
   afterEach(() => {
@@ -63,10 +73,7 @@ describe("CollectionDetailPage", () => {
     // Simulate the react-router match object
     const matchObj = { params: { collectionKey: collection.key } }
     await listenForActions(
-      [
-        actions.collections.get.requestType,
-        actions.collections.get.successType
-      ],
+      actionsToAwait,
       () => {
         wrapper = mount(
           <Provider store={store}>
@@ -101,6 +108,27 @@ describe("CollectionDetailPage", () => {
     assert.isTrue(messageContainer.exists())
     assert.include(messageContainer.text(), "You have not added any videos yet")
   })
+
+  describe("when there is an error", () => {
+    const error = {
+      detail:          "Verboten Badness",
+      errorStatusCode: 403
+    }
+
+    it("shows an error message", async () => {
+      const wrapper = shallow(
+        <UnconnectedCollectionDetailPage
+          collectionError={error}
+        />
+      )
+      const errorMessageEl = wrapper.find("ErrorMessage")
+      assert.deepEqual(
+        errorMessageEl.get(0).props.children,
+        ["Error: ", error.detail]
+      )
+    })
+  })
+
   ;[
     ["Collection description", true, "non-empty description"],
     [null, false, "empty description"]

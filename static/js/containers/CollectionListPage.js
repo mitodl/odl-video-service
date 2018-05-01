@@ -18,7 +18,7 @@ import type { Collection, CollectionsPagination } from "../flow/collectionTypes"
 import withPagedCollections from "./withPagedCollections"
 import LoadingIndicator from "../components/material/LoadingIndicator"
 import Paginator from "../components/Paginator"
-import ErrorMessage from "../components/ErrorMessage"
+import * as ErrorMessages from "../components/errorMessages"
 
 export class CollectionListPage extends React.Component<*, void> {
   props: {
@@ -88,14 +88,7 @@ export class CollectionListPage extends React.Component<*, void> {
       return null
     }
     if (currentPageData.status === "ERROR") {
-      const supportEmail = SETTINGS.support_email_address || ""
-      return (
-        <ErrorMessage>
-          <p>Sorry, we were unable to load the data necessary to process your request. Please reload the page.</p>
-          <p>If this happens again, please contact&nbsp;
-            <a href={`mailto:${supportEmail}`}>{supportEmail}</a>.</p>
-        </ErrorMessage>
-      )
+      return (<ErrorMessages.UnableToLoadData/>)
     } else if (currentPageData.status === "LOADING") {
       return <LoadingIndicator />
     } else if (currentPageData.status === "LOADED") {
