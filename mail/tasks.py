@@ -1,5 +1,6 @@
 """Tasks for mail app"""
 import logging
+import textwrap
 from urllib.parse import urljoin
 
 from django.conf import settings
@@ -44,6 +45,12 @@ STATUS_TO_NOTIFICATION = {
     VideoStatus.UPLOAD_FAILED: NotificationEmail.OTHER_ERROR,
 }
 
+STATUSES_THAT_TRIGGER_DEBUG_EMAIL = set([
+    VideoStatus.TRANSCODE_FAILED_INTERNAL,
+    VideoStatus.TRANSCODE_FAILED_VIDEO,
+    VideoStatus.UPLOAD_FAILED,
+])
+
 
 def send_notification_email(video):
     """
@@ -69,12 +76,12 @@ def send_notification_email(video):
         return
 
     try:
-        api.MailgunClient.send_individual_email(
-            email_template.email_subject.format(
+        email_kwargs = {
+            'subject': email_template.email_subject.format(
                 collection_title=video.collection.title,
                 video_title=video.title
             ),
-            email_template.email_body.format(
+            'body': email_template.email_body.format(
                 collection_title=video.collection.title,
                 video_title=video.title,
                 video_url=urljoin(
@@ -83,9 +90,12 @@ def send_notification_email(video):
                 ),
                 support_email=settings.EMAIL_SUPPORT
             ),
-            recipient=', '.join(recipients),
-            raise_for_status=True,
-        )
+            'recipient': ', '.join(recipients),
+            'raise_for_status': True
+        }
+        api.MailgunClient.send_individual_email(**email_kwargs)
+        if video.status in STATUSES_THAT_TRIGGER_DEBUG_EMAIL:
+            _send_debug_email(video=video, email_kwargs=email_kwargs)
     except:  # pylint: disable=bare-except
         log.exception('Impossible to send notification for video %s with status %s', video.hexkey, video.status)
 
@@ -103,3 +113,50 @@ def async_send_notification_email(self, video_id):  # pylint: disable=unused-arg
         log.error('tried to send notification for non existing video with id=%s', video_id)
         return
     send_notification_email(video)
+
+
+def _send_debug_email(video=None, email_kwargs=None):
+    """
+    Sends a debug email to the support email.
+    """
+    debug_email_kwargs = {
+        'subject': 'DEBUG:{}'.format(email_kwargs['subject']),
+        'body': _generate_debug_email_body(video=video, email_kwargs=email_kwargs),
+        'recipient': settings.EMAIL_SUPPORT,
+    }
+    api.MailgunClient.send_individual_email(**debug_email_kwargs)
+
+
+def _generate_debug_email_body(video=None, email_kwargs=None):
+    """
+    Generates body of debug email.
+    """
+    return textwrap.dedent(
+        """
+        --- DEBUG INFO ---
+        Video: {video}
+        Collection: {collection}
+        Owner: {owner}
+
+        --- DEBUG INFO FOR EMAIL SENT TO USER(S) ---
+
+        <RECIPIENT(S)>:
+        {recipient}
+        </RECIPIENT(S)>:
+
+        <SUBJECT>
+        {subject}
+        </SUBJECT>
+
+        <BODY>
+        {body}
+        </BODY>
+        """
+    ).format(
+        video=video,
+        collection=video.collection,
+        owner=video.collection.owner,
+        recipient=email_kwargs['recipient'],
+        subject=email_kwargs['subject'],
+        body=email_kwargs['body'],
+    )
