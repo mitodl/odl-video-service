@@ -184,19 +184,18 @@ class TechTVEmbed(VideoEmbed):
         return conditional_response(self, ttv_videos[0].video, *args, **kwargs)
 
 
-@method_decorator(login_required, name='dispatch')
 class HelpPageView(TemplateView):
     """View for the help page"""
     template_name = "ui/help.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        has_admin = Collection.objects.all_admin(self.request.user).exists()
-        is_staff_or_superuser = ui_permissions.is_staff_or_superuser(self.request.user)
-        context["js_settings_json"] = json.dumps({
-            **default_js_settings(self.request),
-            'is_admin': has_admin or is_staff_or_superuser
-        })
+        js_settings = default_js_settings(self.request)
+        if not self.request.user.is_anonymous:
+            has_admin = Collection.objects.all_admin(self.request.user).exists()
+            is_staff_or_superuser = ui_permissions.is_staff_or_superuser(self.request.user)
+            js_settings["editable"] = has_admin or is_staff_or_superuser
+        context["js_settings_json"] = json.dumps(js_settings)
         return context
 
 
@@ -211,7 +210,7 @@ class TermsOfServicePageView(TemplateView):
         is_staff_or_superuser = ui_permissions.is_staff_or_superuser(self.request.user)
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
-            'is_admin': has_admin or is_staff_or_superuser
+            'editable': has_admin or is_staff_or_superuser
         })
         return context
 
