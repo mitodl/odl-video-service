@@ -1,6 +1,21 @@
 Release Notes
 =============
 
+Version 0.19.0
+--------------
+
+- one more check for empty dimensions/padding in analytics chart
+- adding toast message to EditVideoFormDialog
+- anonymize help page
+- add error message for collection page
+- add additional empty check when rendering analytics chart
+- Simplified video serializer for collection page (#572)
+- Adjust Youtube video dimensions
+- adding toast message
+- update notification email to include collection title
+- add error message for collections page
+- analytics dialog =&gt; analytics overlay
+
 Version 0.18.1
 --------------
 
