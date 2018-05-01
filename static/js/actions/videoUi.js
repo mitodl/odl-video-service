@@ -59,4 +59,12 @@ actionCreators.setShareVideoTimeEnabled = createAction(
   constants.SET_SHARE_VIDEO_TIME_ENABLED
 )
 
+constants.SET_CURRENT_VIDEO_KEY = qualifiedName("SET_CURRENT_VIDEO_KEY")
+actionCreators.setCurrentVideoKey = createAction(
+  constants.SET_CURRENT_VIDEO_KEY)
+
+constants.SET_CURRENT_SUBTITLES_KEY = qualifiedName("SET_CURRENT_SUBTITLES_KEY")
+actionCreators.setCurrentSubtitlesKey = createAction(
+  constants.SET_CURRENT_SUBTITLES_KEY)
+
 export { actionCreators, constants }

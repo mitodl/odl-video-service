@@ -13,12 +13,14 @@ import { actionCreators } from "../actions/videoUi"
 const {
   clearVideoForm,
   initEditVideoForm,
+  setCurrentSubtitlesKey,
+  setCurrentVideoKey,
   setEditVideoDesc,
   setEditVideoTitle,
   setUploadSubtitle,
   setVideoTime,
   setVideoDuration,
-  toggleAnalyticsOverlay
+  toggleAnalyticsOverlay,
 } = actionCreators
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 
@@ -37,7 +39,9 @@ describe("videoUi", () => {
       corner:                    "camera1",
       duration:                  0,
       videoTime:                 0,
-      analyticsOverlayIsVisible: false
+      analyticsOverlayIsVisible: false,
+      currentVideoKey:           null,
+      currentSubtitlesKey:       null
     })
   })
 
@@ -141,5 +145,23 @@ describe("videoUi", () => {
         shareVideoForm:    INITIAL_SHARE_VIDEO_FORM_STATE,
       })
     })
+  })
+
+  it("has action that sets currentVideoKey", () => {
+    const _selectValue = () => store.getState().videoUi.currentVideoKey
+    assert.equal(_selectValue(), null)
+    store.dispatch(setCurrentVideoKey({videoKey: 'someKey'}))
+    assert.equal(_selectValue(), 'someKey')
+    store.dispatch(setCurrentVideoKey({videoKey: 'someOtherKey'}))
+    assert.equal(_selectValue(), 'someOtherKey')
+  })
+
+  it("has action that sets currentSubtitlesKey", () => {
+    const _selectValue = () => store.getState().videoUi.currentSubtitlesKey
+    assert.equal(_selectValue(), null)
+    store.dispatch(setCurrentSubtitlesKey({subtitlesKey: 'someKey'}))
+    assert.equal(_selectValue(), 'someKey')
+    store.dispatch(setCurrentSubtitlesKey({subtitlesKey: 'someOtherKey'}))
+    assert.equal(_selectValue(), 'someOtherKey')
   })
 })
