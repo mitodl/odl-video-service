@@ -225,15 +225,41 @@ describe("VideoDetailPage", () => {
 
   })
 
-  it("deletes a subtitle when delete button is clicked", async () => {
-    const deleteStub = sandbox
-      .stub(api, "deleteSubtitle")
-      .returns(Promise.resolve({}))
-    const wrapper = await renderPage({ editable: true })
-    const deleteBtns = wrapper.find(".delete-btn")
-    assert.equal(deleteBtns.length, 1)
-    deleteBtns.at(0).prop("onClick")()
-    sinon.assert.calledWith(deleteStub, video.videosubtitle_set[0].id)
+  describe("when subtitle delete button is clicked", () => {
+    let deleteStub
+
+    beforeEach(async () => {
+      deleteStub = sandbox
+        .stub(api, "deleteSubtitle")
+        .returns(Promise.resolve({}))
+      const wrapper = await renderPage({ editable: true })
+      const deleteBtns = wrapper.find(".delete-btn")
+      await listenForActions(
+        [
+          actions.videoSubtitles.delete.requestType,
+          toastActions.constants.ADD_MESSAGE,
+          actions.videoSubtitles.delete.successType,
+        ],
+        () => {
+          deleteBtns.at(0).prop("onClick")()
+        }
+      )
+    })
+
+    it("deletes a subtitle when delete button is clicked", () => {
+      sinon.assert.calledWith(deleteStub, video.videosubtitle_set[0].id)
+    })
+
+    it("adds a toast message", () => {
+      assert.deepEqual(
+        store.getState().toast.messages,
+        [{
+          key:     "subtitles-deleted",
+          content: "Subtitle file deleted",
+          icon:    "check"
+        }]
+      )
+    })
   })
 
   describe("renderAnalyticsOverlay", () => {
