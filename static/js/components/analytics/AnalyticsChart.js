@@ -84,6 +84,9 @@ export class AnalyticsChart extends React.Component {
   renderChart() {
     const { dimensions } = this.state
     const { analyticsData, duration, getColorForChannel, padding } = this.props
+    if (!dimensions || !padding) {
+      return null
+    }
     const viewsAtTimesByChannel = this._generateViewsAtTimesByChannel(
       analyticsData)
     const baseLabelStyle = {
@@ -201,7 +204,7 @@ export class AnalyticsChart extends React.Component {
       return null
     }
     const { dimensions } = this.state
-    if (!dimensions) {
+    if (!dimensions || !padding) {
       return null
     }
     return {
