@@ -13,6 +13,7 @@ import EditVideoFormDialog from "./EditVideoFormDialog"
 import rootReducer from "../../reducers"
 import { actions } from "../../actions"
 import * as videoUiActions from "../../actions/videoUi"
+import * as toastActions from "../../actions/toast"
 import { setSelectedVideoKey } from "../../actions/collectionUi"
 import { INITIAL_UI_STATE } from "../../reducers/videoUi"
 import * as api from "../../lib/api"
@@ -27,6 +28,7 @@ import {
 } from "../../lib/dialog"
 
 const {
+  CLEAR_VIDEO_FORM,
   INIT_EDIT_VIDEO_FORM,
   SET_EDIT_VIDEO_TITLE,
   SET_EDIT_VIDEO_DESC,
@@ -204,6 +206,10 @@ describe("EditVideoFormDialog", () => {
       wrapper = renderComponent()
     })
     if (!wrapper) throw new Error("Render failed")
+    sandbox.stub(
+      wrapper.find('EditVideoFormDialog').instance(),
+      'addToastMessage'
+    )
     // set title and description, check the values that updateVideoStub is called with
     const newValues = {
       title:       "New Title",
@@ -234,6 +240,10 @@ describe("EditVideoFormDialog", () => {
     })
     if (!wrapper) throw new Error("Render failed")
     // set permission override & view choices, check the values that updateVideoStub is called with
+    sandbox.stub(
+      wrapper.find('EditVideoFormDialog').instance(),
+      'addToastMessage'
+    )
     const newValues = {
       title:       "New Title",
       description: "New Description",
@@ -257,6 +267,40 @@ describe("EditVideoFormDialog", () => {
     })
 
     sinon.assert.calledWith(updateVideoStub, video.key, newValues)
+  })
+
+  it(`adds toast message on submit`, async () => {
+    let wrapper
+    sandbox
+      .stub(api, "updateVideo")
+      .returns(Promise.resolve(video))
+    await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+      wrapper = renderComponent()
+    })
+    if (!wrapper) throw new Error("Render failed")
+    await listenForActions([
+      actions.videos.patch.requestType,
+      actions.videos.patch.successType,
+      INIT_EDIT_VIDEO_FORM,
+      toastActions.constants.ADD_MESSAGE,
+      CLEAR_VIDEO_FORM,
+      INIT_EDIT_VIDEO_FORM,
+    ], () => {
+      // Calling onAccept directly b/c click doesn't work in JS tests due to MDC
+      // $FlowFixMe: Flow... come on. 'wrapper' cannot be undefined at this point.
+      wrapper
+        .find("EditVideoFormDialog")
+        .find("Dialog")
+        .prop("onAccept")()
+    })
+    assert.deepEqual(
+      store.getState().toast.messages,
+      [{ 
+        key:     "video-saved",
+        content: "Changes saved",
+        icon:    "check",
+      }]
+    )
   })
 
   it("stores form submission errors in state", async () => {

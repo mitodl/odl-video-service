@@ -173,10 +173,22 @@ class EditVideoFormDialog extends React.Component<*, void> {
       if (shouldUpdateCollection) {
         dispatch(actions.collections.get(video.collection_key))
       }
+      this.addToastMessage({
+        message: {
+          key:     "video-saved",
+          content: "Changes saved",
+          icon:    "check",
+        }
+      })
       this.onClose()
     } catch (e) {
       this.handleError(e)
     }
+  }
+
+  addToastMessage (...args) {
+    const { dispatch } = this.props
+    dispatch(actions.toast.addMessage(...args))
   }
 
   renderPermissions() {
