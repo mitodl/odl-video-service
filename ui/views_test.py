@@ -7,6 +7,8 @@ from uuid import uuid4
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.contrib.auth.models import AnonymousUser
+from django.test import RequestFactory
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -27,7 +29,7 @@ from ui.serializers import (
     DropboxUploadSerializer,
     VideoSerializer)
 from ui.utils import get_moira_user
-from ui.views import CollectionReactView, TechTVDetail, TechTVEmbed
+from ui.views import CollectionReactView, TechTVDetail, TechTVEmbed, HelpPageView
 
 pytestmark = pytest.mark.django_db
 
@@ -743,3 +745,34 @@ def test_collection_ordering(mocker, logged_in_apiclient, field):
     assert p1_response.data['results'][-1][field].lower() <= p2_response.data['results'][0][field].lower()
     for i in range(4):
         assert p2_response.data['results'][i][field].lower() <= p2_response.data['results'][i+1][field].lower()
+
+
+def test_help_for_anonymous_user(mock_moira_client):
+    """Test help page for anonymous user"""
+    request = RequestFactory()
+    request.method = 'GET'
+    request.user = AnonymousUser()
+    response = HelpPageView.as_view()(request)
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.parametrize(
+    'owns_collections,is_staff',
+    [
+        (True, True),
+        (True, False),
+        (False, True),
+        (False, False),
+    ]
+)
+def test_help_for_logged_in_user(mock_moira_client, owns_collections, is_staff):
+    """Test help page for anonymous user"""
+    request = RequestFactory()
+    request.method = 'GET'
+    request.user = UserFactory(is_staff=is_staff)
+    if owns_collections:
+        CollectionFactory(owner=request.user)
+    response = HelpPageView.as_view()(request)
+    assert response.status_code == status.HTTP_200_OK
+    js_settings = json.loads(response.context_data["js_settings_json"])
+    assert js_settings["editable"] == owns_collections or is_staff
