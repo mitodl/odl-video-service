@@ -571,6 +571,7 @@ def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     mocker.patch(
         'ui.views.cloudapi.upload_subtitle_to_s3',
         return_value=VideoSubtitle(video=video, filename=filename))
+    mocker.patch('ui.utils.cache')
     # call with anonymous user
     assert client.post(url, input_data, format='multipart').status_code == status.HTTP_403_FORBIDDEN
     # call with another user not on admin list
@@ -586,6 +587,7 @@ def test_delete_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     Tests that only authenticated users with collection admin permissions can delete VideoSubtitles
     """
     mocker.patch('ui.views.VideoSubtitle.delete_from_s3')
+    mocker.patch('ui.utils.cache')
     client, user = logged_in_apiclient
     client.logout()
     moira_list = factories.MoiraListFactory()
