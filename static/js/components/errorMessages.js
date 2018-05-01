@@ -5,8 +5,7 @@ import ErrorMessage from "./ErrorMessage"
 
 
 export const UnableToLoadData = () => {
-  // $FlowFixMe
-  const supportEmail:string = SETTINGS.supportEmail
+  const supportEmail:string = SETTINGS.support_email_address
   return (
     <ErrorMessage>
       <p>Sorry, we were unable to load the data necessary to process your request. Please reload the page.</p>
