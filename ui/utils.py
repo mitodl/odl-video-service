@@ -84,12 +84,23 @@ def get_moira_user(user):
 
 def set_moira_cache(user, membership):
     """
+    Set the user's moira lists cache
 
     Args:
         user (django.contrib.auth.User): the Django user to return a Moira user for.
         membership (UserMoiraMembership): object specifying which lists a member is or isn't on.
     """
     cache.set(MOIRA_CACHE_KEY.format(user_id=user.id), membership, settings.MOIRA_CACHE_TIMEOUT)
+
+
+def delete_moira_cache(user):
+    """
+    Delete the user's moira list cache
+
+    Args:
+        user (django.contrib.auth.User): the Django user to return a Moira user for.
+    """
+    cache.delete(MOIRA_CACHE_KEY.format(user_id=user.id))
 
 
 def query_moira_lists(user):
