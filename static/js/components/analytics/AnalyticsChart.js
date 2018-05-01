@@ -197,6 +197,9 @@ export class AnalyticsChart extends React.Component {
 
   _getRelativeChartBodyBounds() {
     const padding = this.props.padding
+    if (!padding) {
+      return null
+    }
     const { dimensions } = this.state
     if (!dimensions) {
       return null
