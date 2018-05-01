@@ -28,6 +28,7 @@ import {
   CLEAR_COLLECTION_FORM,
   SET_COLLECTION_FORM_ERRORS
 } from "../../actions/collectionUi"
+import * as toastActions from "../../actions/toast"
 import { INITIAL_UI_STATE } from "../../reducers/collectionUi"
 import { PERM_CHOICE_LISTS, PERM_CHOICE_NONE } from "../../lib/dialog"
 import * as api from "../../lib/api"
@@ -165,6 +166,7 @@ describe("CollectionFormDialog", () => {
           expectedActionTypes = [
             actions.collectionsList.post.requestType,
             actions.collectionsList.post.successType,
+            toastActions.constants.ADD_MESSAGE,
             CLEAR_COLLECTION_FORM
           ]
         } else {
@@ -174,6 +176,7 @@ describe("CollectionFormDialog", () => {
           expectedActionTypes = [
             actions.collections.patch.requestType,
             actions.collections.patch.successType,
+            toastActions.constants.ADD_MESSAGE,
             CLEAR_COLLECTION_FORM
           ]
         }
@@ -205,6 +208,60 @@ describe("CollectionFormDialog", () => {
           sinon.assert.notCalled(historyPushStub)
         }
         assert.isTrue(store.getState().collectionUi.isNew)
+      })
+
+      it("adds toast messages", async () => {
+        const historyPushStub = sandbox.stub()
+        const wrapper = await renderComponent({
+          history: {
+            push: historyPushStub
+          }
+        })
+        let expectedActionTypes
+        if (isNew) {
+          sandbox
+            .stub(api, "createCollection")
+            .returns(Promise.resolve(collection))
+          expectedActionTypes = [
+            actions.collectionsList.post.requestType,
+            actions.collectionsList.post.successType,
+            toastActions.constants.ADD_MESSAGE,
+          ]
+        } else {
+          sandbox
+            .stub(api, "updateCollection")
+            .returns(Promise.resolve(collection))
+          expectedActionTypes = [
+            actions.collections.patch.requestType,
+            actions.collections.patch.successType,
+            toastActions.constants.ADD_MESSAGE,
+          ]
+        }
+
+        const state = await listenForActions(expectedActionTypes, () => {
+          // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
+          wrapper.find("Dialog").prop("onAccept")()
+        })
+
+        if (isNew) {
+          assert.deepEqual(
+            state.toast.messages,
+            [{
+              key:     "collection-created",
+              content: "Collection created",
+              icon:    "check"
+            }]
+          )
+        } else {
+          assert.deepEqual(
+            state.toast.messages,
+            [{
+              key:     "collection-updated",
+              content: "Changes saved",
+              icon:    "check"
+            }]
+          )
+        }
       })
     })
   }
