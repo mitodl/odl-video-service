@@ -260,7 +260,6 @@ class VideoPlayer extends React.Component<*, void> {
       this.player
         .reset()
         .src(video.sources)
-        .fluid(false)
     }
   }
 
