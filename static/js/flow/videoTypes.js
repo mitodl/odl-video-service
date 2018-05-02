@@ -87,4 +87,6 @@ export type VideoUiState = {
   videoTime: number,
   duration: number,
   analyticsOverlayIsVisible: boolean,
+  currentVideoKey: ?string,
+  currentSubtitlesKey: ?(string|number)
 };

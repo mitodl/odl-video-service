@@ -16,6 +16,7 @@ import VideoPlayer from "../components/VideoPlayer"
 import EditVideoFormDialog from "../components/dialogs/EditVideoFormDialog"
 import ShareVideoDialog from "../components/dialogs/ShareVideoDialog"
 import DeleteVideoDialog from "../components/dialogs/DeleteVideoDialog"
+import DeleteSubtitlesDialog from "../components/dialogs/DeleteSubtitlesDialog"
 import { withDialogs } from "../components/dialogs/hoc"
 import VideoSubtitleCard from "../components/VideoSubtitleCard"
 import VideoSaverScript from "../components/VideoSaverScript"
@@ -49,6 +50,7 @@ export class VideoDetailPage extends React.Component<*, void> {
   videoPlayerRef: Object
 
   componentDidMount() {
+    this.setCurrentVideoKey()
     this.updateRequirements()
     initGA()
     sendGAPageView(window.location.pathname)
@@ -56,6 +58,11 @@ export class VideoDetailPage extends React.Component<*, void> {
 
   componentDidUpdate() {
     this.updateRequirements()
+  }
+
+  setCurrentVideoKey = () => {
+    const { dispatch, videoKey } = this.props
+    dispatch(actions.videoUi.setCurrentVideoKey({videoKey}))
   }
 
   updateRequirements = () => {
@@ -69,19 +76,6 @@ export class VideoDetailPage extends React.Component<*, void> {
   setDrawerOpen = (open: boolean): void => {
     const { dispatch } = this.props
     dispatch(setDrawerOpen(open))
-  }
-
-  deleteSubtitle = async (videoSubtitleId: string) => {
-    const { dispatch, videoKey } = this.props
-    await dispatch(actions.videoSubtitles.delete(videoSubtitleId))
-    dispatch(actions.toast.addMessage({
-      message: {
-        key:     "subtitles-deleted",
-        content: "Subtitle file deleted",
-        icon:    "check"
-      }
-    }))
-    dispatch(actions.videos.get(videoKey))
   }
 
   uploadVideoSubtitle = async () => {
@@ -120,6 +114,12 @@ export class VideoDetailPage extends React.Component<*, void> {
   updateCorner = (corner: string) => {
     const { dispatch } = this.props
     dispatch(actions.videoUi.updateVideoJsSync(corner))
+  }
+
+  showDeleteSubtitlesDialog = (subtitlesKey: string|number) => {
+    const { dispatch, showDialog } = this.props
+    dispatch(actions.videoUi.setCurrentSubtitlesKey({subtitlesKey}))
+    showDialog(DIALOGS.DELETE_SUBTITLES)
   }
 
   render() {
@@ -209,7 +209,7 @@ export class VideoDetailPage extends React.Component<*, void> {
                   video={video}
                   isAdmin={editable}
                   uploadVideoSubtitle={this.setUploadSubtitle}
-                  deleteVideoSubtitle={this.deleteSubtitle}
+                  deleteVideoSubtitle={this.showDeleteSubtitlesDialog}
                 />
               </div>
             </div>
@@ -324,6 +324,7 @@ export default R.compose(
   withDialogs([
     { name: DIALOGS.EDIT_VIDEO, component: EditVideoFormDialog },
     { name: DIALOGS.SHARE_VIDEO, component: ShareVideoDialog },
-    { name: DIALOGS.DELETE_VIDEO, component: DeleteVideoDialog }
+    { name: DIALOGS.DELETE_VIDEO, component: DeleteVideoDialog },
+    { name: DIALOGS.DELETE_SUBTITLES, component: DeleteSubtitlesDialog }
   ])
 )(VideoDetailPage)

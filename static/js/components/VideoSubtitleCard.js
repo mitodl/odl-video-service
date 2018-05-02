@@ -53,7 +53,7 @@ export default class VideoSubtitleCard extends React.Component<*, void> {
                       <span className="video-subtitle-button">
                         <a
                           className="mdc-list-item mdc-link delete-btn"
-                          onClick={deleteVideoSubtitle.bind(this, subtitle.id)}
+                          onClick={() => deleteVideoSubtitle(subtitle.id)}
                         >
                           <i className="material-icons">delete</i>
                         </a>

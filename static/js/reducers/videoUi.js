@@ -20,7 +20,9 @@ const {
   SET_VIDEO_TIME,
   SET_VIDEO_DURATION,
   TOGGLE_ANALYTICS_OVERLAY,
-  SET_SHARE_VIDEO_TIME_ENABLED
+  SET_SHARE_VIDEO_TIME_ENABLED,
+  SET_CURRENT_VIDEO_KEY,
+  SET_CURRENT_SUBTITLES_KEY,
 } = constants
 
 export const INITIAL_EDIT_VIDEO_FORM_STATE = {
@@ -50,7 +52,9 @@ export const INITIAL_UI_STATE = {
   videoSubtitleForm:         INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
   shareVideoForm:            INITIAL_SHARE_VIDEO_FORM_STATE,
   corner:                    Object.keys(CANVASES)[0],
-  analyticsOverlayIsVisible: false
+  analyticsOverlayIsVisible: false,
+  currentVideoKey:           null,
+  currentSubtitlesKey:       null,
 }
 
 const updateVideoForm = (
@@ -140,6 +144,16 @@ const reducer = (
     return {
       ...state,
       analyticsOverlayIsVisible: !state.analyticsOverlayIsVisible
+    }
+  case SET_CURRENT_VIDEO_KEY:
+    return {
+      ...state,
+      currentVideoKey: action.payload.videoKey
+    }
+  case SET_CURRENT_SUBTITLES_KEY:
+    return {
+      ...state,
+      currentSubtitlesKey: action.payload.subtitlesKey
     }
   default:
     return state

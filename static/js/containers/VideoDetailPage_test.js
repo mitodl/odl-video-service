@@ -15,11 +15,11 @@ import { actions } from "../actions"
 import * as toastActions from "../actions/toast"
 import * as videoUiActions from "../actions/videoUi"
 import rootReducer from "../reducers"
-import { wait } from "../util/util"
 import * as libVideo from "../lib/video"
 import { makeVideo } from "../factories/video"
 import { makeCollectionUrl } from "../lib/urls"
 import {
+  DIALOGS,
   MM_DD_YYYY,
   VIDEO_STATUS_TRANSCODING,
   VIDEO_STATUS_ERROR
@@ -53,7 +53,11 @@ describe("VideoDetailPage", () => {
   const renderPage = async (props = {}) => {
     let wrapper
     await listenForActions(
-      [actions.videos.get.requestType, actions.videos.get.successType],
+      [
+        actions.videos.get.requestType,
+        actions.videos.get.successType,
+        videoUiActions.constants.SET_CURRENT_VIDEO_KEY,
+      ],
       () => {
         wrapper = mount(
           <Provider store={store}>
@@ -72,6 +76,11 @@ describe("VideoDetailPage", () => {
   it("fetches requirements on load", async () => {
     await renderPage()
     sinon.assert.calledWith(getVideoStub, video.key)
+  })
+
+  it("sets currentVideoKey", async () => {
+    await renderPage()
+    assert.equal(store.getState().videoUi.currentVideoKey, video.key)
   })
 
   it("renders the video player", async () => {
@@ -199,10 +208,8 @@ describe("VideoDetailPage", () => {
       )
     })
 
-    it("updates videoSubtitleForm", async () => {
+    it("updates videoSubtitleForm", () => {
       assert.equal(store.getState().videoUi.videoSubtitleForm.subtitle, file)
-      // iterate on event loop so that createSubtitle is called
-      await wait(0)
       sinon.assert.called(createSubtitleStub)
       const formData = createSubtitleStub.args[0][0]
       assert(formData.get("file"), "Missing file")
@@ -212,7 +219,7 @@ describe("VideoDetailPage", () => {
       assert.equal(formData.get("language"), "en")
     })
 
-    it("adds toast message", async () => {
+    it("adds toast message", () => {
       assert.deepEqual(
         store.getState().toast.messages,
         [{
@@ -226,39 +233,53 @@ describe("VideoDetailPage", () => {
   })
 
   describe("when subtitle delete button is clicked", () => {
-    let deleteStub
+    let showDeleteSubtitlesDialogStub
 
     beforeEach(async () => {
-      deleteStub = sandbox
-        .stub(api, "deleteSubtitle")
-        .returns(Promise.resolve({}))
       const wrapper = await renderPage({ editable: true })
+      const instance = wrapper.find("VideoDetailPage").instance()
+      showDeleteSubtitlesDialogStub = sandbox.stub(
+        instance, "showDeleteSubtitlesDialog")
       const deleteBtns = wrapper.find(".delete-btn")
-      await listenForActions(
-        [
-          actions.videoSubtitles.delete.requestType,
-          toastActions.constants.ADD_MESSAGE,
-          actions.videoSubtitles.delete.successType,
-        ],
-        () => {
-          deleteBtns.at(0).prop("onClick")()
-        }
+      deleteBtns.at(0).prop("onClick")()
+      sinon.assert.calledWith(
+        showDeleteSubtitlesDialogStub,
+        video.videosubtitle_set[0].id
+      )
+    })
+  })
+
+  describe("showDeleteSubtitlesDialog", () => {
+    let stubs, instance
+    const subtitlesKey = "someSubtitleKey"
+    beforeEach(() => {
+      stubs = {
+        dispatch:                sandbox.stub(),
+        showDialog:              sandbox.stub(),
+        setCurrentSubtitlesKey: (
+          sandbox.stub(actions.videoUi, 'setCurrentSubtitlesKey')
+        ),
+      }
+      const props = {
+        dispatch:   stubs.dispatch,
+        showDialog: stubs.showDialog,
+        editable:   true
+      }
+      const wrapper = shallow(<UnwrappedVideoDetailPage {...props} />)
+      instance = wrapper.instance()
+      instance.showDeleteSubtitlesDialog(subtitlesKey)
+    })
+
+    it("sets currentSubtitlesKey", () => {
+      sinon.assert.calledWith(stubs.setCurrentSubtitlesKey, { subtitlesKey })
+      sinon.assert.calledWith(
+        stubs.dispatch,
+        stubs.setCurrentSubtitlesKey.returnValues[0]
       )
     })
 
-    it("deletes a subtitle when delete button is clicked", () => {
-      sinon.assert.calledWith(deleteStub, video.videosubtitle_set[0].id)
-    })
-
-    it("adds a toast message", () => {
-      assert.deepEqual(
-        store.getState().toast.messages,
-        [{
-          key:     "subtitles-deleted",
-          content: "Subtitle file deleted",
-          icon:    "check"
-        }]
-      )
+    it("calls showDialog", () => {
+      sinon.assert.calledWith(stubs.showDialog, DIALOGS.DELETE_SUBTITLES)
     })
   })
 
@@ -269,6 +290,7 @@ describe("VideoDetailPage", () => {
     beforeEach(async () => {
       const pageEl = React.createElement(UnwrappedVideoDetailPage, {
         commonUi: {},
+        dispatch: noop,
         video:    makeVideo(),
         videoUi:  {
           videoTime: 42,
