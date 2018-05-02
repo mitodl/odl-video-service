@@ -130,7 +130,8 @@ def query_moira_lists(user):
 
 def user_moira_lists(user):
     """
-    Get a list of all the moira lists a user has access to, from the cache if it exists, otherwise query Moira service.
+    Get a list of all the moira lists a user has access to, from the cache if it exists,
+    otherwise query Moira service and create the cache.
 
     Args:
         user (django.contrib.auth.User): the Django user.
@@ -143,7 +144,8 @@ def user_moira_lists(user):
 
 def has_common_lists(user, list_names):
     """
-    Return true if the user is a member of any of the supplied moira list names
+    Return true if the user is a member of any of the supplied moira list names, false otherwise.
+    Updates the user's moira cache if necessary.
 
     Returns:
         bool: True if there is any name in list_names which is in the user's moira lists
