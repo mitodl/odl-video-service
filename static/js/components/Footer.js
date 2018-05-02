@@ -27,11 +27,11 @@ export default class Footer extends React.Component<*, void> {
                 </a>
                 <div className="footer-links">
                   <a
-                    href="https://odl.mit.edu/"
+                    href="https://openlearning.mit.edu/"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Office of Digital Learning
+                    MIT Open Learning
                   </a>
                   <a href="/terms/" rel="noopener noreferrer">
                     ODL Video Services Terms of Service
