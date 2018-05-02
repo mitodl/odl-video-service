@@ -187,19 +187,9 @@ class SimpleVideoSerializer(VideoSerializer):
             'view_lists',
             'collection_view_lists',
             'videothumbnail_set',
+            'status'
         )
-        read_only_fields = (
-            'key',
-            'created_at',
-            'title',
-            'description',
-            'videosubtitle_set',
-            'is_public',
-            'is_private',
-            'view_lists',
-            'collection_view_lists',
-            'videothumbnail_set',
-        )
+        read_only_fields = fields
 
 
 class CollectionSerializer(serializers.ModelSerializer):
