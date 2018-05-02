@@ -420,7 +420,7 @@ class VideoPlayer extends React.Component<*, void> {
           } ${embed ? "video-odl-embed" : ""}`}
           ref={node => (this.videoContainer = node)}
         >
-          <div data-vjs-player>
+          <div data-vjs-player className="vjs-big-play-centered">
             <video
               ref={node => (this.videoNode = node)}
               className={`video-js vjs-default-skin ${
