@@ -74,6 +74,13 @@ export class VideoDetailPage extends React.Component<*, void> {
   deleteSubtitle = async (videoSubtitleId: string) => {
     const { dispatch, videoKey } = this.props
     await dispatch(actions.videoSubtitles.delete(videoSubtitleId))
+    dispatch(actions.toast.addMessage({
+      message: {
+        key:     "subtitles-deleted",
+        content: "Subtitle file deleted",
+        icon:    "check"
+      }
+    }))
     dispatch(actions.videos.get(videoKey))
   }
 
@@ -101,6 +108,13 @@ export class VideoDetailPage extends React.Component<*, void> {
     const { dispatch } = this.props
     await dispatch(actions.videoUi.setUploadSubtitle(event.target.files[0]))
     this.uploadVideoSubtitle()
+    dispatch(actions.toast.addMessage({
+      message: {
+        key:     "subtitles-uploaded",
+        content: "Subtitles uploaded",
+        icon:    "check"
+      }
+    }))
   }
 
   updateCorner = (corner: string) => {

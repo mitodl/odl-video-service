@@ -12,6 +12,8 @@ import { VideoDetailPage as UnwrappedVideoDetailPage } from "./VideoDetailPage"
 
 import * as api from "../lib/api"
 import { actions } from "../actions"
+import * as toastActions from "../actions/toast"
+import * as videoUiActions from "../actions/videoUi"
 import rootReducer from "../reducers"
 import { wait } from "../util/util"
 import * as libVideo from "../lib/video"
@@ -174,40 +176,90 @@ describe("VideoDetailPage", () => {
     assert.isTrue(wrapper.find(".video-subtitle-card").exists())
   })
 
-  it("updates videoSubtitleForm when upload button selects file", async () => {
-    const createSubtitleStub = sandbox
-      .stub(api, "createSubtitle")
-      .returns(Promise.resolve())
+  describe("when upload button selects file", () => {
+    let createSubtitleStub, wrapper, file
 
-    const wrapper = await renderPage({ editable: true })
-    const uploadBtn = wrapper.find(".upload-input")
-    const file = new File(["foo"], "filename.vtt")
-    store.getState().videoUi.videoSubtitleForm.video = video.key
-    uploadBtn.prop("onChange")({ target: { files: [file] } })
-    assert.equal(store.getState().videoUi.videoSubtitleForm.subtitle, file)
+    beforeEach(async () => {
+      createSubtitleStub = sandbox
+        .stub(api, "createSubtitle")
+        .returns(Promise.resolve())
+      wrapper = await renderPage({ editable: true })
+      const uploadBtn = wrapper.find(".upload-input")
+      file = new File(["foo"], "filename.vtt")
+      store.getState().videoUi.videoSubtitleForm.video = video.key
+      await listenForActions(
+        [
+          actions.videoSubtitles.post.requestType,
+          toastActions.constants.ADD_MESSAGE,
+          videoUiActions.constants.SET_UPLOAD_SUBTITLE,
+        ],
+        () => {
+          uploadBtn.prop("onChange")({ target: { files: [file] } })
+        }
+      )
+    })
 
-    // iterate on event loop so that createSubtitle is called
-    await wait(0)
+    it("updates videoSubtitleForm", async () => {
+      assert.equal(store.getState().videoUi.videoSubtitleForm.subtitle, file)
+      // iterate on event loop so that createSubtitle is called
+      await wait(0)
+      sinon.assert.called(createSubtitleStub)
+      const formData = createSubtitleStub.args[0][0]
+      assert(formData.get("file"), "Missing file")
+      assert.equal(formData.get("filename"), "filename.vtt")
+      assert.equal(formData.get("collection"), video.collection_key)
+      assert.equal(formData.get("video"), video.key)
+      assert.equal(formData.get("language"), "en")
+    })
 
-    sinon.assert.called(createSubtitleStub)
-    const formData = createSubtitleStub.args[0][0]
+    it("adds toast message", async () => {
+      assert.deepEqual(
+        store.getState().toast.messages,
+        [{
+          key:     "subtitles-uploaded",
+          content: "Subtitles uploaded",
+          icon:    "check"
+        }]
+      )
+    })
 
-    assert(formData.get("file"), "Missing file")
-    assert.equal(formData.get("filename"), "filename.vtt")
-    assert.equal(formData.get("collection"), video.collection_key)
-    assert.equal(formData.get("video"), video.key)
-    assert.equal(formData.get("language"), "en")
   })
 
-  it("deletes a subtitle when delete button is clicked", async () => {
-    const deleteStub = sandbox
-      .stub(api, "deleteSubtitle")
-      .returns(Promise.resolve({}))
-    const wrapper = await renderPage({ editable: true })
-    const deleteBtns = wrapper.find(".delete-btn")
-    assert.equal(deleteBtns.length, 1)
-    deleteBtns.at(0).prop("onClick")()
-    sinon.assert.calledWith(deleteStub, video.videosubtitle_set[0].id)
+  describe("when subtitle delete button is clicked", () => {
+    let deleteStub
+
+    beforeEach(async () => {
+      deleteStub = sandbox
+        .stub(api, "deleteSubtitle")
+        .returns(Promise.resolve({}))
+      const wrapper = await renderPage({ editable: true })
+      const deleteBtns = wrapper.find(".delete-btn")
+      await listenForActions(
+        [
+          actions.videoSubtitles.delete.requestType,
+          toastActions.constants.ADD_MESSAGE,
+          actions.videoSubtitles.delete.successType,
+        ],
+        () => {
+          deleteBtns.at(0).prop("onClick")()
+        }
+      )
+    })
+
+    it("deletes a subtitle when delete button is clicked", () => {
+      sinon.assert.calledWith(deleteStub, video.videosubtitle_set[0].id)
+    })
+
+    it("adds a toast message", () => {
+      assert.deepEqual(
+        store.getState().toast.messages,
+        [{
+          key:     "subtitles-deleted",
+          content: "Subtitle file deleted",
+          icon:    "check"
+        }]
+      )
+    })
   })
 
   describe("renderAnalyticsOverlay", () => {
