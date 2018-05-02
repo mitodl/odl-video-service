@@ -146,15 +146,19 @@ class Drawer extends React.Component<*, void> {
               </i>
               Help
             </a>
-            <a className="mdc-list-item mdc-link" href="/logout/">
-              <i
-                className="material-icons mdc-list-item__graphic"
-                aria-hidden="true"
-              >
-                input
-              </i>
-              Log out
-            </a>
+            {
+              SETTINGS.user ? (
+                <a className="mdc-list-item mdc-link logout" href="/logout/">
+                  <i
+                    className="material-icons mdc-list-item__graphic"
+                    aria-hidden="true"
+                  >
+                    input
+                  </i>
+                  Log out
+                </a>
+              ) : null
+            }
           </nav>
         </nav>
       </aside>
