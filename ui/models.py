@@ -18,6 +18,7 @@ from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.encodings import EncodingNames
 from ui.tasks import delete_s3_objects
 
+
 TRANSCODE_PREFIX = 'transcoded'
 
 
@@ -52,7 +53,7 @@ class CollectionManager(models.Manager):
         """
         if user.is_superuser:
             return self.all()
-        moira_list_qset = MoiraList.objects.filter(name__in=utils.user_moira_lists(user))
+        moira_list_qset = MoiraList.objects.filter(name__in=utils.user_moira_lists(user).member_of)
         return self.filter(
             models.Q(view_lists__in=moira_list_qset) |
             models.Q(admin_lists__in=moira_list_qset) |
@@ -72,7 +73,7 @@ class CollectionManager(models.Manager):
         if user.is_superuser:
             return self.all()
         return self.filter(
-            models.Q(admin_lists__in=MoiraList.objects.filter(name__in=utils.user_moira_lists(user))) |
+            models.Q(admin_lists__in=MoiraList.objects.filter(name__in=utils.user_moira_lists(user).member_of)) |
             models.Q(owner=user)).distinct()
 
 

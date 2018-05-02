@@ -9,6 +9,7 @@ import re
 
 import boto3
 from django.conf import settings
+from django.core.cache import caches
 
 from mit_moira import Moira
 from googleapiclient.discovery import build
@@ -19,6 +20,22 @@ from ui.exceptions import MoiraException, GoogleAnalyticsException
 log = logging.getLogger(__name__)
 
 MoiraUser = namedtuple('MoiraUser', 'username type')
+MOIRA_CACHE_KEY = 'moira_lists_{user_id}'
+cache = caches['redis']
+
+
+class UserMoiraMembership:
+    """
+    Simple class for storing which lists a user is and isn't a member of
+    """
+    member_of = set()
+    not_member_of = set()
+
+    def __init__(self, member_of=None, not_member_of=None):
+        if member_of:
+            self.member_of = set(member_of)
+        if not_member_of:
+            self.not_member_of = set(not_member_of)
 
 
 @lru_cache(1)  # memoize this function
@@ -65,45 +82,94 @@ def get_moira_user(user):
     return MoiraUser(user.email, 'STRING')
 
 
-def user_moira_lists(user):
+def set_moira_cache(user, membership):
     """
-    Get a list of all the moira lists a user has access to.
+    Set the user's moira lists cache
+
+    Args:
+        user (django.contrib.auth.User): the Django user to return a Moira user for.
+        membership (UserMoiraMembership): object specifying which lists a member is or isn't on.
+    """
+    cache.set(MOIRA_CACHE_KEY.format(user_id=user.id), membership, settings.MOIRA_CACHE_TIMEOUT)
+
+
+def delete_moira_cache(user):
+    """
+    Delete the user's moira list cache
+
+    Args:
+        user (django.contrib.auth.User): the Django user to return a Moira user for.
+    """
+    cache.delete(MOIRA_CACHE_KEY.format(user_id=user.id))
+
+
+def query_moira_lists(user):
+    """
+    Get a UserMoiraMembership object with all the moira lists a user has access to, by querying the Moira service.
 
     Args:
         user (django.contrib.auth.User): the Django user.
 
     Returns:
-        list: A list of moira lists the user has access to.
+        UserMoiraMembership: A list of moira lists the user has access to.
     """
     moira_user = get_moira_user(user)
     moira = get_moira_client()
     try:
-        return moira.user_lists(moira_user.username, moira_user.type)
+        membership = UserMoiraMembership(member_of=moira.user_lists(moira_user.username, moira_user.type))
+        set_moira_cache(user, membership)
+        return membership
     except Exception as exc:  # pylint: disable=broad-except
         if 'java.lang.NullPointerException' in str(exc):
             # User is not a member of any moira lists, so ignore exception and return empty list
-            return []
+            membership = UserMoiraMembership()
+            set_moira_cache(user, membership)
+            return membership
         raise MoiraException('Something went wrong with getting moira-lists for %s' % user.username) from exc
+
+
+def user_moira_lists(user):
+    """
+    Get a list of all the moira lists a user has access to, from the cache if it exists,
+    otherwise query Moira service and create the cache.
+
+    Args:
+        user (django.contrib.auth.User): the Django user.
+
+    Returns:
+        UserMoiraMembership: An object containing all known lists the user does & doesn't have access to.
+    """
+    return cache.get(MOIRA_CACHE_KEY.format(user_id=user.id)) or query_moira_lists(user)
 
 
 def has_common_lists(user, list_names):
     """
-    Return true if the user is a member of any of the supplied moira list names
+    Return true if the user is a member of any of the supplied moira list names, false otherwise.
+    Updates the user's moira cache if necessary.
 
     Returns:
         bool: True if there is any name in list_names which is in the user's moira lists
     """
     if user.is_anonymous:
         return False
+    user_lists = user_moira_lists(user)
+    if set(user_lists.member_of.intersection(list_names)):
+        return True
+    unmatched_lists = set([l for l in list_names if l not in user_lists.not_member_of | user_lists.member_of])
     moira_user = get_moira_user(user)
     client = get_moira_client()
-    for moiralist in list_names:
+    for moiralist in unmatched_lists:
         try:
             members = set(client.list_members(moiralist, type=''))
             if moira_user.username in members:
+                user_lists.member_of.add(moiralist)
+                set_moira_cache(user, user_lists)
                 return True
+            else:
+                user_lists.not_member_of.add(moiralist)
         except Exception as exc:
             raise MoiraException('Something went wrong with getting moira-list members: %s', moiralist) from exc
+    set_moira_cache(user, user_lists)
     return False
 
 
