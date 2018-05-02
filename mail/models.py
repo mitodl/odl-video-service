@@ -3,8 +3,10 @@ Models for the mail app
 """
 from django.db import models
 
+from odl_video.models import TimestampedModel
 
-class NotificationEmail(models.Model):
+
+class NotificationEmail(TimestampedModel):
     """
     Stores information for a notification email
     """
