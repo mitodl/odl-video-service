@@ -29,7 +29,12 @@ from ui.serializers import (
     DropboxUploadSerializer,
     VideoSerializer)
 from ui.utils import get_moira_user
-from ui.views import CollectionReactView, TechTVDetail, TechTVEmbed, HelpPageView
+from ui.views import (
+    CollectionReactView,
+    TechTVDetail,
+    TechTVEmbed,
+    HelpPageView,
+    TermsOfServicePageView)
 
 pytestmark = pytest.mark.django_db
 
@@ -773,6 +778,37 @@ def test_help_for_logged_in_user(mock_moira_client, owns_collections, is_staff):
     if owns_collections:
         CollectionFactory(owner=request.user)
     response = HelpPageView.as_view()(request)
+    assert response.status_code == status.HTTP_200_OK
+    js_settings = json.loads(response.context_data["js_settings_json"])
+    assert js_settings["editable"] == owns_collections or is_staff
+
+
+def test_terms_of_service_for_anonymous_user(mock_moira_client):
+    """Test help page for anonymous user"""
+    request = RequestFactory()
+    request.method = 'GET'
+    request.user = AnonymousUser()
+    response = TermsOfServicePageView.as_view()(request)
+    assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.parametrize(
+    'owns_collections,is_staff',
+    [
+        (True, True),
+        (True, False),
+        (False, True),
+        (False, False),
+    ]
+)
+def test_terms_of_service_for_logged_in_user(mock_moira_client, owns_collections, is_staff):
+    """Test help page for anonymous user"""
+    request = RequestFactory()
+    request.method = 'GET'
+    request.user = UserFactory(is_staff=is_staff)
+    if owns_collections:
+        CollectionFactory(owner=request.user)
+    response = TermsOfServicePageView.as_view()(request)
     assert response.status_code == status.HTTP_200_OK
     js_settings = json.loads(response.context_data["js_settings_json"])
     assert js_settings["editable"] == owns_collections or is_staff
