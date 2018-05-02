@@ -121,7 +121,7 @@ class Drawer extends React.Component<*, void> {
                 href={makeCollectionUrl(col.key)}
                 key={col.key}
               >
-                {col.title}
+                {col.title} ({col.video_count})
               </a>
             ))}
             {collections.length > MAX_VISIBLE_COLLECTIONS ? (

@@ -118,7 +118,10 @@ describe("Drawer", () => {
       assert.equal(items.length, 10)
       ;[0, 1, 3, 9].forEach(function(col) {
         const drawerNode = items.at(col)
-        assert.equal(drawerNode.text(), collections[col].title)
+        assert.equal(
+          drawerNode.text(),
+          `${collections[col].title} (${collections[col].video_count})`
+        )
         assert.equal(
           drawerNode.props().href,
           makeCollectionUrl(collections[col].key)
