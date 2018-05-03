@@ -71,6 +71,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'server_status',
     'raven.contrib.django.raven_compat',
+    'compat',
+    'hijack',
+    'hijack_admin'
 ]
 
 DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
@@ -540,3 +543,5 @@ PAGE_SIZE_MAXIMUM = get_int('PAGE_SIZE_MAXIMUM', 1000)
 PAGE_SIZE_COLLECTIONS = get_int('PAGE_SIZE_COLLECTIONS', 50)
 
 MOIRA_CACHE_TIMEOUT = get_int('MOIRA_CACHE_TIMEOUT', 10800)
+HIJACK_ALLOW_GET_REQUESTS = True
+HIJACK_LOGOUT_REDIRECT_URL = '/admin/auth/user'
