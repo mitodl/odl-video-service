@@ -297,7 +297,7 @@ def test_process_watch(mocker):
                           ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo', ENVIRONMENT='test')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
-    mocker.patch('cloudsync.api.create_lecture_collection_title', return_value='COLLECTION TITLE')
+    mocker.patch('cloudsync.api.create_lecture_collection_slug', return_value='COLLECTION TITLE')
     mocker.patch('cloudsync.api.create_lecture_video_title', return_value='VIDEO TITLE')
     UserFactory(username='admin')  # pylint: disable=unused-variable
     s3 = boto3.resource('s3')
@@ -311,6 +311,7 @@ def test_process_watch(mocker):
     new_video = Video.objects.filter(source_url__endswith=filename).first()
     assert new_video is not None
     assert new_video.title == 'VIDEO TITLE'
+    assert new_video.collection.slug == 'COLLECTION TITLE'
     assert new_video.collection.title == 'COLLECTION TITLE'
     videofile = new_video.videofile_set.first()
     mock_encoder.assert_called_once_with(
@@ -346,26 +347,26 @@ def test_process_watch(mocker):
     )
 
 
-def test_lecture_collection_title():
-    """Tests for create_lecture_collection_title"""
+def test_lecture_collection_slug():
+    """Tests for create_lecture_collection_slug"""
     video_attrs = api.ParsedVideoAttributes(
         prefix='Prefix',
         session='Session',
         record_date=None,
         record_date_str='',
     )
-    assert api.create_lecture_collection_title(video_attrs) == 'Prefix-Session'
+    assert api.create_lecture_collection_slug(video_attrs) == 'Prefix-Session'
     video_attrs_no_session = api.ParsedVideoAttributes(
         prefix='Prefix',
         session=None,
         record_date=None,
         record_date_str='',
     )
-    assert api.create_lecture_collection_title(video_attrs_no_session) == 'Prefix'
+    assert api.create_lecture_collection_slug(video_attrs_no_session) == 'Prefix'
 
 
 def test_lecture_video_title():
-    """Tests for create_lecture_video_title"""
+    """Tests for create_lecture_video_slug"""
     video_attrs = api.ParsedVideoAttributes(
         record_date=datetime(2017, 1, 1),
         record_date_str='2017jan01',

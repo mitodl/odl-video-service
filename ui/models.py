@@ -84,6 +84,7 @@ class Collection(TimestampedModel):
     """
     key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     title = models.TextField()
+    slug = models.TextField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL)
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
