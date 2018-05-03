@@ -1,6 +1,26 @@
 Release Notes
 =============
 
+Version 0.19.1
+--------------
+
+- add status messages to embed page
+- add timestamps to models
+- Per-user moira list cache (#587)
+- add delete subtitles modal dialog
+- add video count to collection items in drawer
+- center play button in VideoPlayer
+- Switch `fluid` property of VideoJS to true when switching from Youtube playback to Cloudfront if embedded (#594)
+- &#39;Digital Learning&#39; =&gt; &#39;Open Learning&#39; in footer
+- Add status to SimpleVideoSerializer
+- anonymize terms-of-service page
+- send debug emails to support for certain notification emails
+- add toast messages for collection created/updated
+- add contact us link to footer, fix email address var in error messages
+- add toast message for subtitle deletion
+- add toast message for uploading subtitles
+- hides logout button when there is logged in user
+
 Version 0.19.0
 --------------
 
