@@ -19,7 +19,7 @@ def reverse_func(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0018_youtubevideo_created_at'),
+        ('ui', '0019_add_timestamps'),
     ]
 
     operations = [
