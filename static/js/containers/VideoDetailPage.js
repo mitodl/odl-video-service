@@ -184,9 +184,7 @@ export class VideoDetailPage extends React.Component<*, void> {
                         </Button>
                         <Button
                           className="analytics mdc-button--raised"
-                          onClick={() => {
-                            this.toggleAnalyticsOverlay()
-                          }}
+                          onClick={() => this.toggleAnalyticsOverlay()}
                         >
                           Show/Hide Analytics
                         </Button>
@@ -220,7 +218,7 @@ export class VideoDetailPage extends React.Component<*, void> {
     )
   }
 
-  toggleAnalyticsOverlay() {
+  toggleAnalyticsOverlay = () => {
     this.props.dispatch(actions.videoUi.toggleAnalyticsOverlay())
   }
 
@@ -290,6 +288,8 @@ export class VideoDetailPage extends React.Component<*, void> {
             this.setVideoTime(...args)
           }}
           style={{ width: "100%", height: "100%" }}
+          showCloseButton={true}
+          onClose={this.toggleAnalyticsOverlay}
         />
       </div>
     )
