@@ -1,4 +1,5 @@
 import React from "react"
+import _ from "lodash"
 
 import AnalyticsPane from "../components/analytics/AnalyticsPane"
 import LoadingIndicator from "../components/material/LoadingIndicator"
@@ -20,7 +21,8 @@ export class VideoAnalyticsOverlay extends React.Component {
   }
 
   render () {
-    const { video, videoAnalytics, ...passThroughProps } = this.props
+    const { video, videoAnalytics, ...extraProps } = this.props
+    const passThroughProps = _.omit(extraProps, ['onClose', 'showCloseButton'])
     if (!video || !videoAnalytics) {
       return null
     }

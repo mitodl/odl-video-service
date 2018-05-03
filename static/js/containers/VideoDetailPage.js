@@ -62,7 +62,7 @@ export class VideoDetailPage extends React.Component<*, void> {
 
   setCurrentVideoKey = () => {
     const { dispatch, videoKey } = this.props
-    dispatch(actions.videoUi.setCurrentVideoKey({videoKey}))
+    dispatch(actions.videoUi.setCurrentVideoKey({ videoKey }))
   }
 
   updateRequirements = () => {
@@ -102,13 +102,15 @@ export class VideoDetailPage extends React.Component<*, void> {
     const { dispatch } = this.props
     await dispatch(actions.videoUi.setUploadSubtitle(event.target.files[0]))
     this.uploadVideoSubtitle()
-    dispatch(actions.toast.addMessage({
-      message: {
-        key:     "subtitles-uploaded",
-        content: "Subtitles uploaded",
-        icon:    "check"
-      }
-    }))
+    dispatch(
+      actions.toast.addMessage({
+        message: {
+          key:     "subtitles-uploaded",
+          content: "Subtitles uploaded",
+          icon:    "check"
+        }
+      })
+    )
   }
 
   updateCorner = (corner: string) => {
@@ -116,9 +118,9 @@ export class VideoDetailPage extends React.Component<*, void> {
     dispatch(actions.videoUi.updateVideoJsSync(corner))
   }
 
-  showDeleteSubtitlesDialog = (subtitlesKey: string|number) => {
+  showDeleteSubtitlesDialog = (subtitlesKey: string | number) => {
     const { dispatch, showDialog } = this.props
-    dispatch(actions.videoUi.setCurrentSubtitlesKey({subtitlesKey}))
+    dispatch(actions.videoUi.setCurrentSubtitlesKey({ subtitlesKey }))
     showDialog(DIALOGS.DELETE_SUBTITLES)
   }
 
@@ -265,6 +267,7 @@ export class VideoDetailPage extends React.Component<*, void> {
     const VideoAnalyticsOverlayComponent =
       this.props.VideoAnalyticsOverlayComponent ||
       ConnectedVideoAnalyticsOverlay
+    const overlayPadding = "10px"
     return (
       <div
         className="analytics-overlay-container"
@@ -280,22 +283,32 @@ export class VideoDetailPage extends React.Component<*, void> {
           borderRadius:    "5px"
         }}
       >
-        <VideoAnalyticsOverlayComponent
-          video={video}
-          currentTime={videoTime || 0}
-          duration={duration || 0}
-          setVideoTime={(...args) => {
-            this.setVideoTime(...args)
+        <div
+          style={{
+            position: "absolute",
+            top:      overlayPadding,
+            left:     overlayPadding,
+            right:    overlayPadding,
+            bottom:   overlayPadding
           }}
-          style={{ width: "100%", height: "100%" }}
-          showCloseButton={true}
-          onClose={this.toggleAnalyticsOverlay}
-        />
+        >
+          <VideoAnalyticsOverlayComponent
+            video={video}
+            currentTime={videoTime || 0}
+            duration={duration || 0}
+            setVideoTime={(...args) => {
+              this.setVideoTime(...args)
+            }}
+            style={{ width: "100%", height: "100%" }}
+            showCloseButton={true}
+            onClose={this.toggleAnalyticsOverlay}
+          />
+        </div>
       </div>
     )
   }
 
-  setVideoTime(time:number) {
+  setVideoTime(time: number) {
     if (this.videoPlayerRef) {
       this.videoPlayerRef.setCurrentTime(time)
     }
