@@ -12,6 +12,7 @@ from dj_elastictranscoder.models import EncodeJob
 from pycountry import languages
 
 
+from odl_video.models import TimestampedModel, TimestampedModelManager
 from mail import tasks
 from ui import utils
 from ui.constants import VideoStatus, YouTubeStatus, StreamSource
@@ -22,7 +23,7 @@ from ui.tasks import delete_s3_objects
 TRANSCODE_PREFIX = 'transcoded'
 
 
-class MoiraList(models.Model):
+class MoiraList(TimestampedModel):
     """
     Model for Moira
     """
@@ -35,7 +36,7 @@ class MoiraList(models.Model):
         return '<MoiraList: {self.name!r}>'.format(self=self)
 
 
-class CollectionManager(models.Manager):
+class CollectionManager(TimestampedModelManager):
     """
     Custom manager for the Collection model
     """
@@ -77,7 +78,7 @@ class CollectionManager(models.Manager):
             models.Q(owner=user)).distinct()
 
 
-class Collection(models.Model):
+class Collection(TimestampedModel):
     """
     Model for Video Collections
     """
@@ -87,7 +88,6 @@ class Collection(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL)
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
     admin_lists = models.ManyToManyField(MoiraList, blank=True, related_name='admin_lists')
-    created_at = models.DateTimeField(auto_now_add=True)
     stream_source = models.CharField(
         null=True,
         blank=True,
@@ -121,14 +121,13 @@ class Collection(models.Model):
         return cls.objects.filter(owner=owner)
 
 
-class Video(models.Model):
+class Video(TimestampedModel):
     """
     Represents an uploaded video, primarily in terms of metadata (source url, title, etc).
     The actual video files (original and encoded) are represented by the VideoFile model.
     """
     key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     collection = models.ForeignKey(Collection, related_name='videos')
-    created_at = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=250, blank=False)
     description = models.TextField(blank=True)
     source_url = models.URLField()
@@ -287,12 +286,11 @@ class Video(models.Model):
         return '<Video: {self.title!r} {self.key!r}>'.format(self=self)
 
 
-class VideoS3(models.Model):
+class VideoS3(TimestampedModel):
     """
     Abstract class with methods/properties common to both VideoFile and VideoThumbnail models
     """
 
-    created_at = models.DateTimeField(auto_now_add=True)
     s3_object_key = models.TextField(unique=True, blank=False, null=False)
     bucket_name = models.CharField(max_length=63, blank=False, null=False)
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
@@ -417,12 +415,11 @@ class VideoSubtitle(VideoS3):
         return '<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >'.format(self=self)
 
 
-class YouTubeVideo(models.Model):
+class YouTubeVideo(TimestampedModel):
     """A YouTube version of the video"""
     video = models.OneToOneField(Video, on_delete=models.CASCADE, primary_key=True)
     id = models.CharField(max_length=11, null=True)
     status = models.CharField(null=False, default=YouTubeStatus.UPLOADING, max_length=24)
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __repr__(self):
         return '<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >'.format(self=self)

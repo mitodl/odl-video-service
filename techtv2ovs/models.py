@@ -3,11 +3,12 @@
 from django.db import models
 from django.db.models import IntegerField
 
+from odl_video.models import TimestampedModel
 from techtv2ovs.constants import ImportStatus
 from ui.models import Collection, Video
 
 
-class TechTVCollection(models.Model):
+class TechTVCollection(TimestampedModel):
     """
     A TechTV collection with only the most relevant fields.
     """
@@ -21,7 +22,7 @@ class TechTVCollection(models.Model):
         return self.name
 
 
-class TechTVVideo(models.Model):
+class TechTVVideo(TimestampedModel):
     """
     A TechTV video with only the most relevant fields, and statuses to monitor migration to OVS
     """
