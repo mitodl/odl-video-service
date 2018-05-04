@@ -195,7 +195,7 @@ class CollectionFormDialog extends React.Component<*, void> {
             <h4>Who can view videos?</h4>
             <Radio
               id="view-only-me"
-              label="Only me"
+              label="Only owner"
               radioGroupName="view-perms"
               value={PERM_CHOICE_NONE}
               selectedValue={collectionForm.viewChoice}
@@ -227,7 +227,7 @@ class CollectionFormDialog extends React.Component<*, void> {
             <h4>Who can upload/edit videos?</h4>
             <Radio
               id="admin-only-me"
-              label="Only me"
+              label="Only owner"
               radioGroupName="admin-perms"
               value={PERM_CHOICE_NONE}
               selectedValue={collectionForm.adminChoice}

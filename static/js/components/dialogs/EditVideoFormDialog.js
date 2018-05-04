@@ -212,7 +212,7 @@ class EditVideoFormDialog extends React.Component<*, void> {
           {`${
             video && video.collection_view_lists.length > 0
               ? _.map(video.collection_view_lists).join(",")
-              : "Only me"
+              : "Only owner"
           }`}
         </div>
         <Radio
