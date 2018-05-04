@@ -13,9 +13,6 @@ import Drawer from "./Drawer"
 import { makeCollection } from "../../factories/collection"
 import { makeCollectionUrl } from "../../lib/urls"
 import type { Collection } from "../../flow/collectionTypes"
-import { SHOW_DIALOG } from "../../actions/commonUi"
-import { SET_IS_NEW } from "../../actions/collectionUi"
-import { DIALOGS } from "../../constants"
 
 describe("Drawer", () => {
   let sandbox,
@@ -171,29 +168,6 @@ describe("Drawer", () => {
       .find("#collapse_item")
       .instance()
       .click()
-    sinon.assert.calledWith(onDrawerCloseStub)
-  })
-
-  it("hides the create collection button if SETTINGS.editable is false", async () => {
-    SETTINGS.editable = false
-    const wrapper = await renderDrawer()
-    assert.lengthOf(wrapper.find(".create-collection-button"), 0)
-  })
-
-  it("opens the collection dialog when the create collection button is clicked", async () => {
-    SETTINGS.editable = true
-    const onDrawerCloseStub = sandbox.stub()
-    const wrapper = await renderDrawer({
-      onDrawerClose: onDrawerCloseStub
-    })
-    const state = await listenForActions([SHOW_DIALOG, SET_IS_NEW], () => {
-      wrapper
-        .find(".create-collection-button")
-        .instance()
-        .click()
-    })
-    assert.isFalse(state.commonUi.drawerOpen)
-    assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.COLLECTION_FORM])
     sinon.assert.calledWith(onDrawerCloseStub)
   })
 })
