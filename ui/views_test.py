@@ -392,6 +392,20 @@ def test_collection_viewset_detail(mocker, logged_in_apiclient):
     assert result.status_code == status.HTTP_204_NO_CONTENT
 
 
+@pytest.mark.parametrize('collection_key', [
+    'fake',
+    'fa478a0f71204913bed17bcf4065a2ee'
+])
+def test_collection_viewset_detail_404(logged_in_apiclient, collection_key):
+    """
+    Tests that a non-existent collection key returns a 404 response even if not logged in.
+    """
+    client, _ = logged_in_apiclient
+    client.logout()
+    response = client.get('/collections/{}'.format(collection_key))
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
 def test_collection_viewset_detail_as_superuser(mocker, logged_in_apiclient):
     """
     Tests to retrieve a collection details for a superuser
