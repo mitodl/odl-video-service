@@ -324,6 +324,14 @@ describe("VideoDetailPage", () => {
       sinon.assert.calledWith(setVideoTimeStub, "argA", "argB")
     })
 
+    it("passes closeOverlay", () => {
+      assert.equal(overlayEl.prop("onClose"), pageInstance.toggleAnalyticsOverlay)
+    })
+
+    it("passes showCloseButton", () => {
+      assert.isTrue(overlayEl.prop("showCloseButton"))
+    })
+
   })
 
   it("has toast message", async () => {

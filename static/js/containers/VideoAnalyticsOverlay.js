@@ -8,6 +8,17 @@ import { actions } from "../actions"
 
 
 export class VideoAnalyticsOverlay extends React.Component { 
+  renderCloseButton() {
+    return (
+      <span
+        className="close-button"
+        style={{position: 'absolute', right: 0, top: 0, zIndex: 100}}
+        onClick={this.props.onClose}>
+        <i className="material-icons active" style={{fontSize: '36px'}}>highlight_off</i>
+      </span>
+    )
+  }
+
   render () {
     const { video, videoAnalytics, ...passThroughProps } = this.props
     if (!video || !videoAnalytics) {
@@ -31,11 +42,14 @@ export class VideoAnalyticsOverlay extends React.Component {
     }
     const analyticsData = videoAnalytics.data.get(video.key)
     return (
-      <AnalyticsPane
-        analyticsData={analyticsData}
-        video={video}
-        {...passThroughProps}
-      />
+      <div style={{width: '100%', height: '100%', position: 'relative'}}>
+        {this.props.showCloseButton ? this.renderCloseButton() : null}
+        <AnalyticsPane
+          analyticsData={analyticsData}
+          video={video}
+          {...passThroughProps}
+        />
+      </div>
     )
   }
 }

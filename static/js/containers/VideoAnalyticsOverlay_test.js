@@ -106,4 +106,40 @@ describe("VideoAnalyticsOverlay", () => {
       }
     )
   })
+
+  describe("close button", () => {
+    describe("when showCloseButton is true", () => {
+      let wrapper, onCloseSpy
+
+      beforeEach(() => {
+        onCloseSpy = sandbox.spy()
+        wrapper = renderComponent({
+          showCloseButton: true,
+          onClose:         onCloseSpy
+        })
+      })
+
+      it("renders button", () => {
+        assert.isTrue(wrapper.find('.close-button').exists())
+      })
+
+      it("triggers props.onClose when button is clicked", () => {
+        sinon.assert.notCalled(onCloseSpy)
+        wrapper.find('.close-button').simulate('click')
+        sinon.assert.called(onCloseSpy)
+      })
+    })
+
+    describe("when showCloseButton is not true", () => {
+      let wrapper
+
+      beforeEach(() => {
+        wrapper = renderComponent({ showCloseButton: false })
+      })
+
+      it("does not render button", () => {
+        assert.isFalse(wrapper.find('.close-button').exists())
+      })
+    })
+  })
 })
