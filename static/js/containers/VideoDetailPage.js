@@ -44,7 +44,6 @@ export class VideoDetailPage extends React.Component<*, void> {
     videoUi: VideoUiState,
     showDialog: Function,
     editable: boolean,
-    VideoAnalyticsOverlayComponent: Function
   }
 
   videoPlayerRef: Object
@@ -246,30 +245,34 @@ export class VideoDetailPage extends React.Component<*, void> {
         }}
       >
         <VideoPlayer
+          id="video-player"
           videoPlayerRef={ref => {
             this.videoPlayerRef = ref
           }}
           video={video}
           cornerFunc={this.updateCorner}
           selectedCorner={videoUi.corner}
-          analyticsOverlayIsVisible={videoUi.analyticsOverlayIsVisible}
-        />
-        {videoUi.analyticsOverlayIsVisible
-          ? this.renderAnalyticsOverlay()
-          : null}
+          overlayChildren={this.renderOverlayChildren()}
+        >
+        </VideoPlayer>
       </div>
     )
   }
 
+  renderOverlayChildren() {
+    return [this.renderAnalyticsOverlay()]
+  }
+
   renderAnalyticsOverlay() {
     const { video } = this.props
-    const { videoTime, duration } = this.props.videoUi
-    const VideoAnalyticsOverlayComponent =
-      this.props.VideoAnalyticsOverlayComponent ||
-      ConnectedVideoAnalyticsOverlay
+    const { analyticsOverlayIsVisible, videoTime, duration } = this.props.videoUi
+    if (! analyticsOverlayIsVisible) {
+      return null
+    }
     const overlayPadding = "10px"
     return (
       <div
+        key="analytics-overlay"
         className="analytics-overlay-container"
         style={{
           position:        "absolute",
@@ -292,7 +295,8 @@ export class VideoDetailPage extends React.Component<*, void> {
             bottom:   overlayPadding
           }}
         >
-          <VideoAnalyticsOverlayComponent
+          <ConnectedVideoAnalyticsOverlay
+            id="video-analytics-overlay"
             video={video}
             currentTime={videoTime || 0}
             duration={duration || 0}
