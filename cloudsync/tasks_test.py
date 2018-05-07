@@ -19,6 +19,7 @@ from moto import mock_s3
 from requests import HTTPError
 
 from cloudsync.conftest import MockBoto, MockHttpErrorResponse
+from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.tasks import (
     VideoTask,
     stream_to_s3,
@@ -152,6 +153,15 @@ def test_transcode_failure(mocker, videofile):
         transcode_from_s3(video.id)
     assert video.encode_jobs.count() == 1
     assert Video.objects.get(id=video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL
+
+
+def test_transcode_target_does_not_exist():
+    """
+    Test transcode task, verify exception is thrown when target does not exist.
+    """
+    nonexistent_video_id = 12345
+    with pytest.raises(TranscodeTargetDoesNotExist):
+        transcode_from_s3(nonexistent_video_id)
 
 
 def test_transcode_starting(mocker, videofile):

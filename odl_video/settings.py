@@ -321,7 +321,10 @@ SENTRY_CLIENT = 'raven.contrib.django.raven_compat.DjangoClient'
 RAVEN_CONFIG = {
     'dsn': get_string('SENTRY_DSN', ''),
     'environment': ENVIRONMENT,
-    'release': VERSION
+    'release': VERSION,
+    'ignore_exceptions': [
+        'cloudsync.exceptions.TranscodeTargetDoesNotExist',
+    ]
 }
 
 # MIT keys
