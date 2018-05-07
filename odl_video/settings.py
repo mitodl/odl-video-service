@@ -115,9 +115,7 @@ if get_bool('USE_SHIBBOLETH', False):
     AUTHENTICATION_BACKENDS = [
         'shibboleth.backends.ShibbolethRemoteUserBackend',
     ]
-    LOGIN_URL = "/collections/"
-else:
-    LOGIN_URL = "/admin/login/"
+LOGIN_URL = "/login/"
 
 
 ROOT_URLCONF = 'odl_video.urls'
