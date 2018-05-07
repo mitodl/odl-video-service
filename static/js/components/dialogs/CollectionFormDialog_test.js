@@ -1,12 +1,13 @@
 // @flow
 import React from "react"
 import sinon from "sinon"
-import { mount } from "enzyme"
+import { mount, shallow } from "enzyme"
 import { assert } from "chai"
 import { Provider } from "react-redux"
 import configureTestStore from "redux-asserts"
 
 import CollectionFormDialog from "./CollectionFormDialog"
+import { CollectionFormDialog as UnconnectedCollectionFormDialog } from "./CollectionFormDialog"
 
 import rootReducer from "../../reducers"
 import { actions } from "../../actions"
@@ -158,6 +159,8 @@ describe("CollectionFormDialog", () => {
         store.dispatch(setCollectionDesc("new description"))
         store.dispatch(setCollectionTitle("new title"))
 
+
+        sandbox.stub(api, "getCollections").returns(Promise.resolve({}))
         let apiStub, expectedActionTypes
         if (isNew) {
           apiStub = sandbox
@@ -167,6 +170,7 @@ describe("CollectionFormDialog", () => {
             actions.collectionsList.post.requestType,
             actions.collectionsList.post.successType,
             toastActions.constants.ADD_MESSAGE,
+            actions.collectionsList.get.requestType,
             CLEAR_COLLECTION_FORM
           ]
         } else {
@@ -177,6 +181,7 @@ describe("CollectionFormDialog", () => {
             actions.collections.patch.requestType,
             actions.collections.patch.successType,
             toastActions.constants.ADD_MESSAGE,
+            actions.collectionsList.get.requestType,
             CLEAR_COLLECTION_FORM
           ]
         }
@@ -217,6 +222,7 @@ describe("CollectionFormDialog", () => {
             push: historyPushStub
           }
         })
+        sandbox.stub(api, "getCollections").returns(Promise.resolve({}))
         let expectedActionTypes
         if (isNew) {
           sandbox
@@ -262,6 +268,39 @@ describe("CollectionFormDialog", () => {
             }]
           )
         }
+      })
+
+
+      it("updates collections list for drawer", async () => {
+        const stubs = {
+          // Stub dispatch to return collection, per isNew=true condition.
+          dispatch: sandbox.stub().returns(Promise.resolve(collection)),
+          history:            {
+            push: sandbox.stub(),
+          },
+          collectionsListGet:  sandbox.stub(actions.collectionsList, "get"),
+          collectionsListPost: (
+            sandbox.stub(actions.collectionsList, "post")
+              .returns(Promise.resolve(collection))
+          ),
+          collectionsPatch:    (
+            sandbox.stub(actions.collections, "patch")
+              .returns(Promise.resolve())
+          ),
+        }
+        const wrapper = shallow(
+          <UnconnectedCollectionFormDialog
+            dispatch={stubs.dispatch}
+            history={stubs.history}
+            collectionUi={{isNew}}
+            collectionForm={{}}
+          />
+        )
+        await wrapper.instance().submitForm()
+        sinon.assert.calledWith(
+          stubs.dispatch,
+          stubs.collectionsListGet.returnValues[0]
+        )
       })
     })
   }

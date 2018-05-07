@@ -32,7 +32,7 @@ type DialogProps = {
   hideDialog: Function
 }
 
-class CollectionFormDialog extends React.Component<*, void> {
+export class CollectionFormDialog extends React.Component<*, void> {
   props: DialogProps
 
   setCollectionTitle = (event: Object) => {
@@ -98,8 +98,8 @@ class CollectionFormDialog extends React.Component<*, void> {
       )
     }
 
-    if (isNew) {
-      try {
+    try {
+      if (isNew) {
         const collection = await dispatch(actions.collectionsList.post(payload))
         history.push(makeCollectionUrl(collection.key))
         this.addToastMessage({
@@ -109,12 +109,7 @@ class CollectionFormDialog extends React.Component<*, void> {
             icon:    "check",
           }
         })
-        this.onClose()
-      } catch (e) {
-        this.handleError(e)
-      }
-    } else {
-      try {
+      } else {
         await dispatch(actions.collections.patch(collectionForm.key, payload))
         this.addToastMessage({
           message: {
@@ -123,14 +118,15 @@ class CollectionFormDialog extends React.Component<*, void> {
             icon:    "check",
           }
         })
-        this.onClose()
-      } catch (e) {
-        this.handleError(e)
       }
+      dispatch(actions.collectionsList.get())
+      this.onClose()
+    } catch (e) {
+      this.handleError(e)
     }
   }
 
-  addToastMessage (...args) {
+  addToastMessage (...args:any[]) {
     this.props.dispatch(actions.toast.addMessage(...args))
   }
 
@@ -260,7 +256,7 @@ class CollectionFormDialog extends React.Component<*, void> {
   }
 }
 
-const mapStateToProps = state => {
+export const mapStateToProps = (state:any) => {
   const { collectionUi } = state
 
   const collectionForm = getCollectionForm(collectionUi)
@@ -270,4 +266,5 @@ const mapStateToProps = state => {
   }
 }
 
-export default connect(mapStateToProps)(CollectionFormDialog)
+const ConnectedCollectionFormDialog = connect(mapStateToProps)(CollectionFormDialog)
+export default ConnectedCollectionFormDialog
