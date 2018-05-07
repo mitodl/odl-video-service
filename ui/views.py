@@ -4,6 +4,7 @@ import json
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
+from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.shortcuts import (
@@ -414,3 +415,13 @@ def error_500_view(request, *args, **kwargs):  # pylint: disable=unused-argument
     Handles a 500 response
     """
     return _handle_error_view(request, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LoginView(DjangoLoginView):
+    """Login"""
+    def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
+        context = super().get_context_data(**kwargs)
+        context["js_settings_json"] = json.dumps({
+            **default_js_settings(self.request),
+        })
+        return context
