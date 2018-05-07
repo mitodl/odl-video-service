@@ -1,6 +1,6 @@
 import React from "react"
 
-const DEFAULT_HSL = { h: 0, s: 0, l: 50 }
+const DEFAULT_HSL = { h: 0, s: 0, l: 0 }
 
 class ProgressSlider extends React.Component {
   render() {
@@ -13,6 +13,7 @@ class ProgressSlider extends React.Component {
       hsl,
       cursor: "pointer"
     })
+    const bgPadding = "30%"
     return (
       <div
         ref={ref => {
@@ -27,26 +28,52 @@ class ProgressSlider extends React.Component {
           className="background"
           style={{
             position:        "absolute",
-            top:             0,
+            top:             bgPadding,
             right:           0,
             left:            0,
-            bottom:          0,
-            backgroundColor: this.hslStr(hsl),
-            opacity:         0.4
+            bottom:          bgPadding,
+            backgroundColor: this.hslStr({ ...hsl, l: 25 }),
+            opacity:         0.9
           }}
         />
         <span
           className="progress"
           style={{
-            position:        "absolute",
-            top:             0,
-            left:            0,
-            width:           `${value * 100}%`,
-            bottom:          0,
-            backgroundColor: this.hslStr(hsl),
-            borderRight:     `.4em solid ${this.hslStr({ ...hsl, l: hsl.l / 2 })}`
+            position: "absolute",
+            top:      0,
+            left:     0,
+            width:    `${value * 100}%`,
+            bottom:   0
           }}
-        />
+        >
+          <span
+            className="fill"
+            style={{
+              position:        "absolute",
+              top:             bgPadding,
+              bottom:          bgPadding,
+              width:           "100%",
+              backgroundColor: this.hslStr({ ...hsl, l: 95 }),
+              borderColor:     this.hslStr({ ...hsl, l: 5 }),
+              borderStyle:     "solid",
+              borderWidth:     "1px 0"
+            }}
+          />
+          <span
+            className="cursor"
+            style={{
+              position:        "absolute",
+              right:           "-.5em",
+              height:          "1em",
+              width:           "1em",
+              borderRadius:    "50%",
+              backgroundColor: this.hslStr({ ...hsl, l: 95 }),
+              borderColor:     this.hslStr({ ...hsl, l: 5 }),
+              borderWidth:     "1px",
+              borderStyle:     "solid"
+            }}
+          />
+        </span>
       </div>
     )
   }
