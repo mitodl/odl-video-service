@@ -222,3 +222,26 @@ def test_subtitle_serializer():
         'created_at': DateTimeField().to_representation(subtitle.created_at)
     }
     assert serializers.VideoSubtitleSerializer(subtitle).data == expected
+
+
+def test_simplevideo_serializer():
+    """
+    Test for SimpleVideoSerializer
+    """
+    video = factories.VideoFactory()
+    video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
+    expected = {
+        'key': video.hexkey,
+        'created_at': DateTimeField().to_representation(video.created_at),
+        'title': video.title,
+        'description': video.description,
+        'videosubtitle_set': [],
+        'is_public': video.is_public,
+        'is_private': video.is_private,
+        'view_lists': [],
+        'collection_view_lists': [],
+        'videothumbnail_set': serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data,
+        'status': video.status,
+        'collection_key': video.collection.hexkey
+    }
+    assert serializers.SimpleVideoSerializer(video).data == expected
