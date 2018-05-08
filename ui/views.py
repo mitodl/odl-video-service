@@ -105,10 +105,6 @@ class CollectionReactView(TemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        """ This is the Touchstone `login` page, so redirect if `next` is a URL parameter """
-        next_redirect = request.GET.get('next')
-        if next_redirect:
-            return redirect(next_redirect)
         collection_key = kwargs['collection_key']
         if collection_key:
             get_object_or_404(Collection, key=collection_key)
@@ -426,3 +422,10 @@ class LoginView(DjangoLoginView):
             **default_js_settings(self.request),
         })
         return context
+
+    def get(self, request, *args, **kwargs):
+        """ This is the Touchstone `login` page, so redirect if `next` is a URL parameter """
+        next_redirect = request.GET.get('next')
+        if next_redirect and request.user.is_authenticated:
+            return redirect(next_redirect)
+        return super().get(request, *args, **kwargs)
