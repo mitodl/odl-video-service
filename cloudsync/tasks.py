@@ -16,6 +16,7 @@ from django.conf import settings
 from googleapiclient.errors import HttpError
 
 from cloudsync.api import refresh_status, process_watch_file, transcode_video
+from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.youtube import YouTubeApi, API_QUOTA_ERROR_MSG
 from ui.models import Video, YouTubeVideo, VideoSubtitle
 from ui.constants import VideoStatus, YouTubeStatus
@@ -123,7 +124,12 @@ def transcode_from_s3(self, video_id):
     Args:
         video_id(int): The video primary key
     """
-    video = Video.objects.get(id=video_id)
+    try:
+        video = Video.objects.get(id=video_id)
+    except Video.DoesNotExist as exc:
+        # Note: we ignore this exception in sentry, per
+        # odl_video.settings.RAVEN_CONFIG.ignore_exceptions
+        raise TranscodeTargetDoesNotExist from exc
     task_id = self.get_task_id()
     self.update_state(task_id=task_id, state=VideoStatus.TRANSCODING)
 

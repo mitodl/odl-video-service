@@ -392,6 +392,33 @@ def test_collection_viewset_detail(mocker, logged_in_apiclient):
     assert result.status_code == status.HTTP_204_NO_CONTENT
 
 
+@pytest.mark.parametrize('logged_in', [True, False])
+@pytest.mark.parametrize('collection_key', ['fake', 'fa478a0f71204913bed17bcf4065a2ee'])
+def test_collection_viewset_detail_404(logged_in_apiclient, collection_key, logged_in):
+    """
+    Tests that a non-existent collection key returns a 404 response even if not logged in.
+    """
+    client, _ = logged_in_apiclient
+    if not logged_in:
+        client.logout()
+    response = client.get('/collections/{}'.format(collection_key))
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_collection_detail_anonymous(mocker, logged_in_apiclient, settings):
+    """ Test that anonymous users get redirected to login for a collection detail page """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    client, _ = logged_in_apiclient
+    client.logout()
+    collection = CollectionFactory()
+    url = reverse('collection-react-view', kwargs={'collection_key': collection.hexkey})
+    response = client.get(url, follow=True)
+    final_url, status_code = response.redirect_chain[-1]
+    assert '{}?next=/collections/{}'.format(settings.LOGIN_URL, collection.hexkey) == final_url
+    assert status_code == 302
+
+
 def test_collection_viewset_detail_as_superuser(mocker, logged_in_apiclient):
     """
     Tests to retrieve a collection details for a superuser

@@ -21,6 +21,7 @@ urlpatterns = [
     url(r'^status/', include('server_status.urls')),
     url(r'^', include('ui.urls')),
     url(r'^', include('cloudsync.urls')),
+    url(r'^hijack/', include('hijack.urls', namespace='hijack')),
 ]
 
 handler403 = 'ui.views.permission_denied_403_view'

@@ -6,7 +6,6 @@ import { connect } from "react-redux"
 import { MDCTemporaryDrawer } from "@material/drawer/dist/mdc.drawer"
 
 import { actions } from "../../actions"
-import * as collectionUiActions from "../../actions/collectionUi"
 import { makeCollectionUrl } from "../../lib/urls"
 import type { Collection } from "../../flow/collectionTypes"
 
@@ -24,11 +23,10 @@ class Drawer extends React.Component<*, void> {
   drawer: null
   drawerRoot: ?HTMLElement
   collapseItemButton: ?HTMLElement
-  createCollectionButton: ?HTMLElement
   props: DrawerProps
 
   componentDidMount() {
-    const { onDrawerClose, dispatch } = this.props
+    const { onDrawerClose } = this.props
     this.drawer = new MDCTemporaryDrawer(this.drawerRoot)
     this.drawer.listen("MDCTemporaryDrawer:close", onDrawerClose)
     this.updateRequirements()
@@ -41,19 +39,6 @@ class Drawer extends React.Component<*, void> {
         (event: MouseEvent) => {
           event.preventDefault()
           onDrawerClose()
-        },
-        false
-      )
-    }
-
-    // this will be undefined if SETTINGS.editable is false
-    if (this.createCollectionButton) {
-      this.createCollectionButton.addEventListener(
-        "click",
-        (event: MouseEvent) => {
-          event.preventDefault()
-          onDrawerClose()
-          dispatch(collectionUiActions.showNewCollectionDialog())
         },
         false
       )
@@ -102,17 +87,9 @@ class Drawer extends React.Component<*, void> {
             </a>
           </nav>
           <header className="mdc-drawer__header">
-            <div className="mdc-drawer__header-content">Collections</div>
-            {SETTINGS.editable ? (
-              <span>
-                <button
-                  className="create-collection-button"
-                  ref={node => (this.createCollectionButton = node)}
-                >
-                  <span className="plus">+</span> Create a Collection
-                </button>
-              </span>
-            ) : null}
+            <div className="mdc-drawer__header-content">
+              <a href="/collections/" style={{color: "inherit"}}>My Collections</a>
+            </div>
           </header>
           <nav id="nav-collections" className="mdc-drawer__content mdc-list">
             {collections.slice(0, MAX_VISIBLE_COLLECTIONS).map(col => (

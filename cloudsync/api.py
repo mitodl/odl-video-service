@@ -169,9 +169,9 @@ def transcode_video(video, video_file):
             video.update_status(VideoStatus.TRANSCODING)
 
 
-def create_lecture_collection_title(video_attributes):
+def create_lecture_collection_slug(video_attributes):
     """
-    Create a title for a collection based on some attributes of an uploaded video filename
+    Create a name for a collection based on some attributes of an uploaded video filename
 
     Args:
         video_attributes (ParsedVideoAttributes): Named tuple of lecture video info
@@ -209,9 +209,13 @@ def process_watch_file(s3_filename):
     watch_bucket = get_bucket(settings.VIDEO_S3_WATCH_BUCKET)
     video_attributes = parse_lecture_video_filename(s3_filename)
 
+    collection_slug = create_lecture_collection_slug(video_attributes)
     collection, _ = Collection.objects.get_or_create(
-        title=create_lecture_collection_title(video_attributes),
-        owner=User.objects.get(username=settings.LECTURE_CAPTURE_USER)
+        slug=collection_slug,
+        owner=User.objects.get(username=settings.LECTURE_CAPTURE_USER),
+        defaults={
+            'title': collection_slug
+        }
     )
     with transaction.atomic():
         video = Video.objects.create(

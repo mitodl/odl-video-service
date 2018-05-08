@@ -187,7 +187,8 @@ class SimpleVideoSerializer(VideoSerializer):
             'view_lists',
             'collection_view_lists',
             'videothumbnail_set',
-            'status'
+            'status',
+            'collection_key',
         )
         read_only_fields = fields
 

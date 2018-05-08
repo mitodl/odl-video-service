@@ -73,6 +73,21 @@ describe("VideoDetailPage", () => {
     return wrapper
   }
 
+  const renderPageShallow = (props = {}) => {
+    const propsWithDefaults = {
+      dispatch:    sandbox.spy(),
+      video,
+      videoKey:    video.key,
+      needsUpdate: false,
+      commonUi:    {},
+      videoUi:     {},
+      showDialog:  sandbox.spy(),
+      editable:    false,
+      ...props
+    }
+    return shallow(<UnwrappedVideoDetailPage {...propsWithDefaults} />)
+  }
+
   it("fetches requirements on load", async () => {
     await renderPage()
     sinon.assert.calledWith(getVideoStub, video.key)
@@ -83,11 +98,34 @@ describe("VideoDetailPage", () => {
     assert.equal(store.getState().videoUi.currentVideoKey, video.key)
   })
 
-  it("renders the video player", async () => {
-    const wrapper = await renderPage()
-    const videoPlayerProps = wrapper.find("VideoPlayer").props()
+  it("renders the video player", () => {
+    const videoUi = { corner: 'someCorner' }
+    const pageWrapper = renderPageShallow({videoUi})
+    const pageInstance = pageWrapper.instance()
+    const overlayChildrenStub = sandbox.stub(
+      pageInstance, "renderOverlayChildren")
+    const videoPlayerWrapper = shallow(pageInstance.renderVideoPlayer(video))
+    const videoPlayerProps = videoPlayerWrapper.find("#video-player").props()
     assert.equal(videoPlayerProps.video, video)
-    assert.equal(videoPlayerProps.selectedCorner, "camera1")
+    assert.equal(videoPlayerProps.selectedCorner, videoUi.corner)
+    assert.equal(
+      videoPlayerProps.overlayChildren,
+      overlayChildrenStub.returnValues[0]
+    )
+  })
+
+  describe("renderOverlayChildren", () => {
+    it("includes renderAnalyticsOverlay result", () => {
+      const pageWrapper = renderPageShallow()
+      const pageInstance = pageWrapper.instance()
+      const renderAnalyticsOverlayStub = sandbox.stub(
+        pageInstance, 'renderAnalyticsOverlay')
+      const actualOverlayChildren = pageInstance.renderOverlayChildren()
+      assert.equal(
+        actualOverlayChildren[0],
+        renderAnalyticsOverlayStub.returnValues[0]
+      )
+    })
   })
 
   it("shows the video title, description and upload date, and link to collection", async () => {
@@ -285,25 +323,17 @@ describe("VideoDetailPage", () => {
 
   describe("renderAnalyticsOverlay", () => {
     let pageInstance, overlayEl
-    const noop = () => null
 
     beforeEach(async () => {
-      const pageEl = React.createElement(UnwrappedVideoDetailPage, {
-        commonUi: {},
-        dispatch: noop,
-        video:    makeVideo(),
-        videoUi:  {
-          videoTime: 42,
-          duration:  42
+      pageInstance = renderPageShallow({
+        videoUi: {
+          analyticsOverlayIsVisible: true,
+          videoTime:                 42,
+          duration:                  42,
         },
-        showDialog:                     noop,
-        VideoAnalyticsOverlayComponent: noop
-      })
-      pageInstance = shallow(pageEl).instance()
-      const overlayWrapper = mount(pageInstance.renderAnalyticsOverlay())
-      overlayEl = overlayWrapper.find(
-        pageInstance.props.VideoAnalyticsOverlayComponent
-      )
+      }).instance()
+      const overlayWrapper = shallow(pageInstance.renderAnalyticsOverlay())
+      overlayEl = overlayWrapper.find("#video-analytics-overlay")
     })
 
     it("renders analytics overlay with expected props", () => {
@@ -322,6 +352,14 @@ describe("VideoDetailPage", () => {
       const setVideoTimeStub = sandbox.stub(pageInstance, "setVideoTime")
       overlayEl.prop("setVideoTime")("argA", "argB")
       sinon.assert.calledWith(setVideoTimeStub, "argA", "argB")
+    })
+
+    it("passes closeOverlay", () => {
+      assert.equal(overlayEl.prop("onClose"), pageInstance.toggleAnalyticsOverlay)
+    })
+
+    it("passes showCloseButton", () => {
+      assert.isTrue(overlayEl.prop("showCloseButton"))
     })
 
   })

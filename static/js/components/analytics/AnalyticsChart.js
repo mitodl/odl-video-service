@@ -88,14 +88,23 @@ export class AnalyticsChart extends React.Component {
       return null
     }
     const viewsAtTimesByChannel = this._generateViewsAtTimesByChannel(
-      analyticsData)
-    const baseLabelStyle = {
+      analyticsData
+    )
+    const baseTextStyle = {
       fill:       "#666",
-      fontFamily: "'Roboto', 'sans-serif'",
-      fontSize:   10
+      fontFamily: "'Roboto', 'sans-serif'"
+    }
+    const baseLabelStyle = {
+      ...baseTextStyle,
+      fontSize: 16
+    }
+    const baseAxisLabelStyle = {
+      ...baseTextStyle,
+      fontSize: 20
     }
     const chartBodyClipPathId = `${this._namespace}-chart-body-clipPath`
     const chartBodyBounds = this._getRelativeChartBodyBounds()
+    const yTicks = this._getYTicks({ analyticsData })
     return (
       <VictoryChart
         {...dimensions}
@@ -104,15 +113,17 @@ export class AnalyticsChart extends React.Component {
         padding={padding}
       >
         <VictoryAxis
+          label="time"
           tickValues={analyticsData.times}
-          tickFormat={(t) => {
+          tickFormat={t => {
             return `${t}m`
           }}
           style={{
             axis: {
               stroke: "black"
             },
-            ticks: {
+            axisLabel: baseAxisLabelStyle,
+            ticks:     {
               stroke: "black",
               size:   2
             },
@@ -135,14 +146,12 @@ export class AnalyticsChart extends React.Component {
           dependentAxis
           label="views"
           offsetX={padding.left - 2}
+          axisLabelComponent={
+            <VictoryLabel dy={-1 * (baseAxisLabelStyle.fontSize + 5)} />
+          }
           style={{
-            axis: {
-              padding: 100
-            },
-            axisLabel: {
-              ...baseLabelStyle
-            },
-            grid: {
+            axisLabel: baseAxisLabelStyle,
+            grid:      {
               stroke: "#eee"
             },
             ticks: {
@@ -154,14 +163,7 @@ export class AnalyticsChart extends React.Component {
               padding: 4
             }
           }}
-          tickCount={10}
-          tickLabelComponent={
-            <ConditionalLabel
-              testFn={props => {
-                return props.index % 2 !== 0
-              }}
-            />
-          }
+          tickValues={yTicks}
         />
 
         <ClipPath clipId={chartBodyClipPathId}>
@@ -230,6 +232,31 @@ export class AnalyticsChart extends React.Component {
       }
     }
     return viewsAtTimesByChannel
+  }
+
+  _getYTicks(opts) {
+    const { analyticsData } = opts
+    const sortedTotalViewsValues = analyticsData.times
+      .map(time => {
+        const viewsAtTime = analyticsData.views_at_times[time]
+        return _.sum(
+          analyticsData.channels.map(channel => {
+            return viewsAtTime[channel] || 0
+          })
+        )
+      })
+      .sort()
+    const ticks = [0]
+    if (sortedTotalViewsValues.length > 0) {
+      if (sortedTotalViewsValues.length > 1) {
+        ticks.push(Math.round(_.mean(sortedTotalViewsValues)))
+      }
+      const maxValue = sortedTotalViewsValues[sortedTotalViewsValues.length - 1]
+      if (maxValue !== 0) {
+        ticks.push(maxValue)
+      }
+    }
+    return ticks
   }
 }
 

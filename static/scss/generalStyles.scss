@@ -24,6 +24,14 @@ a, a:link, a:visited, a:active {
 .material-icons {
   color: $icon-color;
 
+  &.activated {
+    color: $icon-hover;
+
+    &:hover {
+      font-weight: bold;
+    }
+  }
+
   &:hover {
     color: $icon-hover;
     cursor: pointer;
@@ -171,7 +179,7 @@ textarea {
 
     label {
       align-self: center;
-      width: 88px;
+      width: auto;
       padding: 0;
     }
   }
@@ -202,7 +210,7 @@ textarea {
 
       label {
         align-self: center;
-        width: 88px;
+        width: auto;
         padding: 0;
       }
 

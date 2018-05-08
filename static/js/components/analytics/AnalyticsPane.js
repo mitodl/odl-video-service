@@ -15,8 +15,8 @@ const COLORS = [
 
 const CHART_PADDING = {
   top:    10,
-  bottom: 20,
-  left:   50,
+  bottom: 60,
+  left:   75,
   right:  20
 }
 
@@ -50,6 +50,16 @@ export class AnalyticsPane extends React.Component {
             flexDirection: "column"
           }}
         >
+          <AnalyticsInfoTable
+            analyticsData={analyticsData_}
+            getColorForChannel={getColorForChannel}
+            currentTime={currentTime}
+            style={{
+              width: "100%",
+              flex:  "0 0 4em"
+            }}
+          />
+          <hr style={{ width: "100%" }} />
           <div
             className="chart-container"
             style={{
@@ -72,30 +82,18 @@ export class AnalyticsPane extends React.Component {
             />
             <ProgressSlider
               value={currentTime / duration}
-              hsl={{ h: 0, s: 0, l: 50 }}
               style={{
                 fontSize: "10px",
                 position: "absolute",
                 left:     `${CHART_PADDING.left}px`,
                 right:    `${CHART_PADDING.right}px`,
-                bottom:   `${CHART_PADDING.bottom}px`
+                bottom:   `${CHART_PADDING.bottom - 5}px` // 5 is alignment fudge
               }}
               onChange={nextValue => {
                 setVideoTime(nextValue * duration)
               }}
             />
           </div>
-
-          <AnalyticsInfoTable
-            analyticsData={analyticsData_}
-            getColorForChannel={getColorForChannel}
-            currentTime={currentTime}
-            style={{
-              width:  "92%",
-              margin: "auto",
-              flex:   "0 0 4em"
-            }}
-          />
         </div>
       </div>
     )

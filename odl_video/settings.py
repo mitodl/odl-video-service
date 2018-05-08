@@ -20,7 +20,7 @@ from odl_video.envs import (
     parse_env
 )
 
-VERSION = "0.19.1"
+VERSION = "0.20.0"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 parse_env(f'{BASE_DIR}/.env')
@@ -71,6 +71,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'server_status',
     'raven.contrib.django.raven_compat',
+    'compat',
+    'hijack',
+    'hijack_admin'
 ]
 
 DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
@@ -112,9 +115,7 @@ if get_bool('USE_SHIBBOLETH', False):
     AUTHENTICATION_BACKENDS = [
         'shibboleth.backends.ShibbolethRemoteUserBackend',
     ]
-    LOGIN_URL = "/collections/"
-else:
-    LOGIN_URL = "/admin/login/"
+LOGIN_URL = "/login/"
 
 
 ROOT_URLCONF = 'odl_video.urls'
@@ -318,7 +319,10 @@ SENTRY_CLIENT = 'raven.contrib.django.raven_compat.DjangoClient'
 RAVEN_CONFIG = {
     'dsn': get_string('SENTRY_DSN', ''),
     'environment': ENVIRONMENT,
-    'release': VERSION
+    'release': VERSION,
+    'ignore_exceptions': [
+        'cloudsync.exceptions.TranscodeTargetDoesNotExist',
+    ]
 }
 
 # MIT keys
@@ -540,3 +544,5 @@ PAGE_SIZE_MAXIMUM = get_int('PAGE_SIZE_MAXIMUM', 1000)
 PAGE_SIZE_COLLECTIONS = get_int('PAGE_SIZE_COLLECTIONS', 50)
 
 MOIRA_CACHE_TIMEOUT = get_int('MOIRA_CACHE_TIMEOUT', 10800)
+HIJACK_ALLOW_GET_REQUESTS = True
+HIJACK_LOGOUT_REDIRECT_URL = '/admin/auth/user'

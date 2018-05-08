@@ -12,6 +12,7 @@ router.register(r'subtitles', views.VideoSubtitleViewSet, base_name='subtitle')
 
 urlpatterns = [
     url(r'^$', views.index, name='index'),
+    url(r'^login/$', views.LoginView.as_view(), name='login'),
     url(r'^logout/$', django_logout_view, {'next_page': settings.LOGIN_URL}),
 
     url(r'^collections/(?P<collection_key>[0-9a-f]{32})?/?$', views.CollectionReactView.as_view(),

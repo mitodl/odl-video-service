@@ -2,8 +2,8 @@
 import json
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
+from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.shortcuts import (
@@ -91,15 +91,12 @@ def index(request):  # pylint: disable=unused-argument
 
 
 @method_decorator(xframe_options_exempt, name='dispatch')
-@method_decorator(login_required, name='dispatch')
 class CollectionReactView(TemplateView):
     """List of collections"""
     template_name = "ui/collections.html"
 
-    def get_context_data(self, collection_key=None, **kwargs):  # pylint: disable=arguments-differ
+    def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
         context = super().get_context_data(**kwargs)
-        if collection_key:
-            get_object_or_404(Collection, key=collection_key)
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
             'editable': ui_permissions.is_staff_or_superuser(self.request.user),
@@ -112,6 +109,11 @@ class CollectionReactView(TemplateView):
         next_redirect = request.GET.get('next')
         if next_redirect:
             return redirect(next_redirect)
+        collection_key = kwargs['collection_key']
+        if collection_key:
+            get_object_or_404(Collection, key=collection_key)
+        if not request.user.is_authenticated:
+            return redirect_to_login(self.request.path)
         return super().get(request, *args, **kwargs)
 
 
@@ -414,3 +416,13 @@ def error_500_view(request, *args, **kwargs):  # pylint: disable=unused-argument
     Handles a 500 response
     """
     return _handle_error_view(request, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LoginView(DjangoLoginView):
+    """Login"""
+    def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
+        context = super().get_context_data(**kwargs)
+        context["js_settings_json"] = json.dumps({
+            **default_js_settings(self.request),
+        })
+        return context
