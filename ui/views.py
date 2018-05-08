@@ -430,5 +430,5 @@ class LoginView(DjangoLoginView):
             if next_redirect:
                 return redirect(next_redirect)
             else:
-                return redirect('/collections/')
+                return redirect('/')
         return super().get(request, *args, **kwargs)
