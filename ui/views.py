@@ -425,8 +425,8 @@ class LoginView(DjangoLoginView):
 
     def get(self, request, *args, **kwargs):
         """ This is the Touchstone `login` page, so redirect if `next` is a URL parameter """
-        next_redirect = request.GET.get('next')
         if request.user.is_authenticated:
+            next_redirect = request.GET.get('next')
             if next_redirect:
                 return redirect(next_redirect)
             else:
