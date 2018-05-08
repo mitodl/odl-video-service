@@ -447,14 +447,14 @@ def test_collection_viewset_detail_as_superuser(mocker, logged_in_apiclient):
     assert result.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_collections_next(mock_moira_client, logged_in_apiclient, user_admin_list_data):
+def test_login_next(mock_moira_client, logged_in_apiclient, user_admin_list_data):
     """
     Tests that the collections page redirects to the URL in the `next` parameter if present
     """
     client, user = logged_in_apiclient
     mock_moira_client.return_value.list_members.return_value = [user.username]
     video_url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
-    response = client.get('/collections/?next={}'.format(video_url), follow=True)
+    response = client.get('/login/?next={}'.format(video_url), follow=True)
     final_url, status_code = response.redirect_chain[-1]
     assert video_url == final_url
     assert status_code == 302
