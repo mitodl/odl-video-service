@@ -9,7 +9,9 @@ from ui import factories
 from ui.exceptions import MoiraException, GoogleAnalyticsException
 from ui.utils import (
     write_to_file,
+    MOIRA_CACHE_KEY,
     get_moira_client,
+    query_moira_lists,
     user_moira_lists,
     has_common_lists,
     get_video_analytics,
@@ -17,7 +19,7 @@ from ui.utils import (
     generate_google_analytics_query,
     parse_google_analytics_response,
     generate_mock_video_analytics_data,
-    UserMoiraMembership)
+)
 
 # pylint: disable=unused-argument, too-many-arguments
 
@@ -60,81 +62,79 @@ def test_write_to_file():
             assert infile.read() == content
 
 
-def test_user_moira_lists(mock_moira_client):
+def test_query_moira_lists(mock_moira_client):
     """
-    Test that the correct list is returned by user_moira_lists
+    Test that expected lists are returned.
     """
     list_names = ['test_moira_list01', 'test_moira_list02']
-    mock_moira_client.return_value.user_lists.return_value = list_names
+    mock_moira_client.return_value.user_list_membership.return_value = [
+        {'listName': list_name} for list_name in list_names
+    ]
     other_user = factories.UserFactory(email='someone@mit.edu')
-    assert user_moira_lists(other_user).member_of == set(list_names)
+    assert query_moira_lists(other_user) == list_names
 
 
-def test_user_no_moira_lists(mock_moira_client):
+def test_query_moira_lists_no_lists(mock_moira_client):
     """
-    Test that an empty list is returned by user_moira_lists if Moira throws a java NPE
+    Test that an empty list is returned if Moira throws a java NPE
     """
-    mock_moira_client.return_value.user_lists.side_effect = Fault('java.lang.NullPointerException')
+    mock_moira_client.return_value.user_list_membership.side_effect = Fault('java.lang.NullPointerException')
     other_user = factories.UserFactory(email='someone@mit.edu')
-    assert user_moira_lists(other_user).member_of == set()
+    assert query_moira_lists(other_user) == []
 
 
-def test_user_moira_lists_error(mock_moira_client):
+def test_query_moira_lists_error(mock_moira_client):
     """
     Test that a Moira exception is raised if moira client call fails with anything other than a java NPE
     """
-    mock_moira_client.return_value.user_lists.side_effect = Fault("Not a java NPE")
-    other_user = factories.UserFactory()
+    mock_moira_client.return_value.user_list_membership.side_effect = Fault("Not a java NPE")
     with pytest.raises(MoiraException):
-        user_moira_lists(other_user)
+        query_moira_lists(factories.UserFactory())
 
 
-@pytest.mark.parametrize(['member', 'members', 'is_member'], [
-    ['person1@mit.edu', ['person2', 'person3'], False],
-    ['person1@mit.edu', ['person2', 'person1'], True],
-    ['person1@gmail.com', ['person1@gmail.com', 'person3'], True],
-    ['person1@gmail.com', ['person1', 'person3'], False],
-    ['person1@mit.edu', [], False]
-])
-def test_has_common_lists(mocker, mock_moira_client, member, members, is_member):
+def test_user_moira_lists_cache_hit(mocker):
+    """
+    Test that returns from cache if cache has lists.
+    """
+    mock_cache = mocker.patch('ui.utils.cache')
+    mock_query_moira_lists = mocker.patch('ui.utils.query_moira_lists')
+    cached_list_names = set(['some_list'])
+    mock_cache.get.return_value = cached_list_names
+    result = user_moira_lists(factories.UserFactory())
+    assert result == cached_list_names
+    assert not mock_query_moira_lists.called
+
+
+def test_user_moira_lists_cache_miss(mocker, settings):
+    """
+    Test that queries and caches lists if not already in cache.
+    """
+    mock_cache = mocker.patch('ui.utils.cache')
+    mock_query_moira_lists = mocker.patch('ui.utils.query_moira_lists')
+    mock_cache.get.return_value = None
+    user = factories.UserFactory()
+    assert not mock_query_moira_lists.called
+    assert not mock_cache.set.called
+    result = user_moira_lists(user)
+    expected_result = set(mock_query_moira_lists.return_value)
+    assert result == expected_result
+    assert mock_query_moira_lists.called_once_with(user)
+    assert mock_cache.set.called_once_with(
+        MOIRA_CACHE_KEY.format(user_id=user.id),
+        expected_result,
+        settings.MOIRA_CACHE_TIMEOUT
+    )
+
+
+def test_has_common_lists(mocker):
     """
     Test that has_common_lists returns the correct boolean value
     """
-    mocker.patch('ui.utils.cache')
-    mock_moira_client.return_value.list_members.return_value = members
-    user = factories.UserFactory(username=member, email=member)
-    assert has_common_lists(user, ['mock_list1', 'mock_list2']) is is_member
-
-
-def test_has_common_lists_error(mock_moira_client):
-    """
-    Test that a Moira exception is raised if moira client list_members call fails
-    """
-    mock_moira_client.return_value.list_members.side_effect = OSError
-    with pytest.raises(MoiraException) as exc:
-        has_common_lists(factories.UserFactory(), ['mock_list1', 'mock_list2'])
-    assert exc.match('Something went wrong with getting moira-list members')
-
-
-@pytest.mark.parametrize(['member_of', 'not_member_of', 'lists', 'calls', 'accessible'], [
-    [{'list1', 'list2'}, {}, ['list1', 'list2'], 0, True],
-    [{}, {'list1', 'list2'}, ['list1', 'list2'], 0, False],
-    [{'list1', 'list2'}, {}, ['list3', 'list2'], 0, True],
-    [{'list1', 'list2'}, {}, ['list3', 'list4'], 2, False],
-    [{'list1', 'list2'}, {'list3'}, ['list3', 'list4'], 1, False],
-    [{'list1', 'list2'}, {}, ['list5', 'list6', 'list7'], 3, False],
-])
-def test_cached_moiralists(mocker, mock_moira_client, member_of, not_member_of, lists, calls, accessible):
-    """
-    Test that the expected number of moira service calls are made depending on what's available from cache
-    """
-    user_moira_membership = UserMoiraMembership(member_of=member_of, not_member_of=not_member_of)
-    mock_cache = mocker.patch('ui.utils.cache')
-    mock_cache.get.return_value = user_moira_membership
-    mock_moira_client.return_value.list_members.return_value = []
-    has_permission = has_common_lists(factories.UserFactory(), lists)
-    assert has_permission is accessible
-    assert mock_moira_client.return_value.list_members.call_count == calls
+    mock_user_moira_lists = mocker.patch('ui.utils.user_moira_lists')
+    mock_user_moira_lists.return_value = set(['a', 'b'])
+    user = factories.UserFactory()
+    assert has_common_lists(user, ['b', 'c']) is True
+    assert has_common_lists(user, ['c']) is False
 
 
 def test_get_video_analytics(mocker):
