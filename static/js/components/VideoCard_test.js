@@ -13,22 +13,22 @@ import { makeVideo } from "../factories/video"
 describe("VideoCard", () => {
   let sandbox,
     video,
-    showEditDialogStub,
-    showShareDialogStub,
-    showDeleteDialogStub,
+    showEditVideoDialogStub,
+    showShareVideoDialogStub,
+    showDeleteVideoDialogStub,
     showVideoMenuStub,
-    closeVideoMenuStub,
+    hideVideoMenuStub,
     dropboxSaveMenuStub,
     videoIsProcessingStub,
     videoHasErrorStub
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create()
-    showEditDialogStub = sandbox.stub()
-    showShareDialogStub = sandbox.stub()
-    showDeleteDialogStub = sandbox.stub()
+    showEditVideoDialogStub = sandbox.stub()
+    showShareVideoDialogStub = sandbox.stub()
+    showDeleteVideoDialogStub = sandbox.stub()
     showVideoMenuStub = sandbox.stub()
-    closeVideoMenuStub = sandbox.stub()
+    hideVideoMenuStub = sandbox.stub()
     video = makeVideo()
     videoIsProcessingStub = sandbox
       .stub(libVideo, "videoIsProcessing")
@@ -47,11 +47,11 @@ describe("VideoCard", () => {
         video={video}
         isAdmin={true}
         isMenuOpen={false}
-        showEditDialog={showEditDialogStub}
-        showShareDialog={showShareDialogStub}
-        showDeleteDialog={showDeleteDialogStub}
+        showEditVideoDialog={showEditVideoDialogStub}
+        showShareVideoDialog={showShareVideoDialogStub}
+        showDeleteVideoDialog={showDeleteVideoDialogStub}
         showVideoMenu={showVideoMenuStub}
-        closeVideoMenu={closeVideoMenuStub}
+        hideVideoMenu={hideVideoMenuStub}
         {...props}
       />
     )
@@ -82,13 +82,13 @@ describe("VideoCard", () => {
     const wrapper = renderComponent({ isAdmin: true })
     const menuItems = wrapper.find("Menu").props().menuItems
     menuItems[0].action()
-    sinon.assert.called(showShareDialogStub)
+    sinon.assert.called(showShareVideoDialogStub)
     menuItems[1].action()
-    sinon.assert.called(showEditDialogStub)
+    sinon.assert.called(showEditVideoDialogStub)
     menuItems[2].action()
     sinon.assert.called(dropboxSaveMenuStub)
     menuItems[3].action()
-    sinon.assert.called(showDeleteDialogStub)
+    sinon.assert.called(showDeleteVideoDialogStub)
   })
 
   it("Menu has correct show and hide functions", () => {
@@ -97,7 +97,7 @@ describe("VideoCard", () => {
     menu.props().showMenu()
     sinon.assert.calledOnce(showVideoMenuStub)
     menu.props().closeMenu()
-    sinon.assert.calledOnce(closeVideoMenuStub)
+    sinon.assert.calledOnce(hideVideoMenuStub)
   })
 
   it(`should have a title that links to the video detail page`, () => {
