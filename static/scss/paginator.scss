@@ -1,4 +1,18 @@
+
 .paginator {
+
+  $borderColor: hsl(0, 0, 75%);
+
+  border: thin solid $borderColor;
+  border-radius: 5px;
+  display: inline-block;
+  position: relative;
+  width: auto;
+
+  .paginator-current-range {
+    display: inline-block;
+    padding: .5em .7em;
+  }
 
   .paginator-button {
     font-weight: bold;
@@ -15,5 +29,13 @@
         }
       }
     }
+  }
+
+  .paginator-spacer {
+    position: absolute;
+    border: .5px solid $borderColor;
+    display: inline-block;
+    bottom: 0;
+    top: 0;
   }
 }
