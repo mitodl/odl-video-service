@@ -42,9 +42,8 @@ $video-card-width: 15.6%;
     }
   }
 
-  .create-collection-button {
+  .create-collection-button, .paginator {
     position: absolute;
-    top: 25px;
     right: 31px;
 
     @include breakpoint(phone) {
@@ -52,6 +51,14 @@ $video-card-width: 15.6%;
       margin: 28px 0 0 20px;
       display: inline-block;
     }
+  }
+
+  .create-collection-button {
+    top: 25px;
+  }
+
+  .paginator {
+    bottom: 25px;
   }
 
   .mdc-list {

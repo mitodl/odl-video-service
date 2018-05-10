@@ -34,8 +34,8 @@ export class CollectionListPage extends React.Component<*, void> {
       <div className="collection-list-content">
         <div className="card centered-content">
           <h1 className="mdc-typography--title">My Collections</h1>
-          {this.renderPaginator()}
           {this.renderCollectionLinks()}
+          {this.renderPaginator()}
           {this.renderFormLink()}
         </div>
       </div>
