@@ -181,6 +181,7 @@ class SimpleVideoSerializer(VideoSerializer):
             'created_at',
             'title',
             'description',
+            'videofile_set',
             'videosubtitle_set',
             'is_public',
             'is_private',
