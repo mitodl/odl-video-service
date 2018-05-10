@@ -229,12 +229,14 @@ def test_simplevideo_serializer():
     Test for SimpleVideoSerializer
     """
     video = factories.VideoFactory()
+    video_files = [factories.VideoFileFactory(video=video)]
     video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
     expected = {
         'key': video.hexkey,
         'created_at': DateTimeField().to_representation(video.created_at),
         'title': video.title,
         'description': video.description,
+        'videofile_set': serializers.VideoFileSerializer(video_files, many=True).data,
         'videosubtitle_set': [],
         'is_public': video.is_public,
         'is_private': video.is_private,
