@@ -5,9 +5,8 @@ from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
 
 
-class CollectionSetPagination(PageNumberPagination):
-    """ Custom pagination class for collections """
-    page_size = settings.PAGE_SIZE_COLLECTIONS
+class OVSPaginationMixin():
+    """ Common defs for OVS pagination classes """
     page_size_query_param = settings.PAGE_SIZE_QUERY_PARAM
     max_page_size = settings.PAGE_SIZE_MAXIMUM
 
@@ -18,3 +17,13 @@ class CollectionSetPagination(PageNumberPagination):
         response.data['end_index'] = self.page.end_index()
         response.data['num_pages'] = self.page.paginator.num_pages
         return response
+
+
+class CollectionSetPagination(OVSPaginationMixin, PageNumberPagination):
+    """ Custom pagination class for collections """
+    page_size = settings.PAGE_SIZE_COLLECTIONS
+
+
+class VideoSetPagination(OVSPaginationMixin, PageNumberPagination):
+    """ Custom pagination class for videos """
+    page_size = settings.PAGE_SIZE_VIDEOS

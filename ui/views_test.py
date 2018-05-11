@@ -1,3 +1,4 @@
+# pylint: disable-msg=too-many-lines
 """
 Tests for views
 """
@@ -24,7 +25,7 @@ from ui.factories import (
     VideoSubtitleFactory,
     YouTubeVideoFactory)
 from ui.models import VideoSubtitle
-from ui.pagination import CollectionSetPagination
+from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import (
     DropboxUploadSerializer,
     VideoSerializer)
@@ -752,6 +753,246 @@ def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
     url = reverse('models-api:video-analytics', kwargs={'key': video.hexkey})
     result = client.get(url, {'throw': 1})
     assert result.status_code == 500
+
+
+def test_video_viewset_list(mock_user_moira_lists, logged_in_apiclient):
+    # pylint: disable-msg=too-many-locals
+    """
+    Tests the list of videos for a user.
+
+    A quasi-integration test, because we're also testing models.VideoManager.all_vieweable here.
+    """
+    view_list = MoiraListFactory()
+    admin_list = MoiraListFactory()
+    mock_user_moira_lists.return_value = [view_list.name, admin_list.name]
+    non_matching_list = MoiraListFactory()
+    client, user = logged_in_apiclient
+    collections = {
+        'owned': CollectionFactory(owner=user),
+        'unowned': CollectionFactory(),
+        'can_view': CollectionFactory(
+            view_lists=[view_list],
+            admin_lists=[non_matching_list]
+        ),
+        'can_admin': CollectionFactory(
+            view_lists=[non_matching_list],
+            admin_lists=[admin_list]
+        ),
+        'can_view_and_admin': CollectionFactory(
+            view_lists=[view_list],
+            admin_lists=[admin_list]
+        ),
+        'can_not_view_or_admin': CollectionFactory(
+            view_lists=[non_matching_list],
+            admin_lists=[non_matching_list]
+        ),
+    }
+    viewable_collections = [
+        collections[key]
+        for key in ['owned', 'can_view', 'can_admin', 'can_view_and_admin']
+    ]
+    unowned_view_only_collections = [
+        collections[key]
+        for key in ['can_view']
+    ]
+    unowned_adminable_collections = [
+        collections[key]
+        for key in ['can_admin', 'can_view_and_admin']
+    ]
+    unviewable_collections = [
+        collections[key]
+        for key in ['unowned', 'can_not_view_or_admin']
+    ]
+    expected_viewable_videos = [
+        *[
+            VideoFactory(
+                title="no view_lists, in viewable collections",
+                view_lists=[], collection=collection
+            )
+            for collection in viewable_collections
+        ],
+        *[
+            VideoFactory(
+                title="matching view_lists, in unviewable collections",
+                view_lists=[view_list], collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title=("matching view_lists, is_public=True,"
+                       " in unviewable collections"),
+                view_lists=[view_list], is_public=True, collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title=("non-matching view_lists, is_public=True,"
+                       " in unviewable collections"),
+                view_lists=[non_matching_list], is_public=True, collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title="no view_lists, is_public=True, in unviewable collections",
+                view_lists=[], is_public=True, collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title=("no view_lists, is_private=True, is_public=False,"
+                       "in unowned adminable collections"),
+                view_lists=[], is_private=True, is_public=False, collection=collection
+            )
+            for collection in unowned_adminable_collections
+        ],
+    ]
+    expected_prohibited_videos = [
+        *[
+            VideoFactory(
+                title=("no view_lists, is_public=False,"
+                       " in unviewable collections"),
+                view_lists=[], is_public=False, collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title=("no view_lists, is_private=True, is_public=False,"
+                       "in unowned view-only collections"),
+                view_lists=[], is_private=True, is_public=True, collection=collection
+            )
+            for collection in unowned_view_only_collections
+        ],
+        *[
+            VideoFactory(
+                title=("no view_lists, is_private=True, is_public=True,"
+                       " in unowned view-only collections"),
+                view_lists=[], is_private=True, is_public=True, collection=collection
+            )
+            for collection in unowned_view_only_collections
+        ],
+        *[
+            VideoFactory(
+                title=("non-matching view_lists, is_private=False,"
+                       " is_public=False, in unviewable collections"),
+                view_lists=[non_matching_list], is_private=False,
+                is_public=False, collection=collection)
+            for collection in unviewable_collections
+        ],
+    ]
+    url = reverse('models-api:video-list')
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    expected_viewable_key_titles = set(
+        [(video.hexkey, video.title) for video in expected_viewable_videos]
+    )
+    expected_prohibited_key_titles = set(
+        [(video.hexkey, video.title) for video in expected_prohibited_videos]
+    )
+    actual_key_titles = set(
+        [(result['key'], result['title']) for result in result.data['results']]
+    )
+    assert actual_key_titles == expected_viewable_key_titles
+    assert actual_key_titles.isdisjoint(expected_prohibited_key_titles)
+    assert result.data['num_pages'] == 1
+    assert result.data['start_index'] == 1
+    assert result.data['end_index'] == len(expected_viewable_videos)
+    assert result.data['count'] == len(expected_viewable_key_titles)
+    # pylint: enable-msg=too-many-locals
+
+
+def test_video_viewset_list_superuser(logged_in_apiclient, settings):
+    """
+    Tests the list of collections for a superuser
+    """
+    client, user = logged_in_apiclient
+    user.is_superuser = True
+    user.save()
+    url = reverse('models-api:video-list')
+    owned_collection = CollectionFactory(owner=user)
+    unowned_collection = CollectionFactory()
+    owned_video_keys = [
+        VideoFactory(collection=owned_collection).hexkey for _ in range(5)
+    ]
+    unowned_video_keys = [VideoFactory(collection=unowned_collection).hexkey]
+    combined_video_keys = owned_video_keys + unowned_video_keys
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert len(result.data['results']) == len(combined_video_keys)
+    for coll_data in result.data['results']:
+        assert coll_data['key'] in combined_video_keys
+
+
+def test_videos_pagination(mocker, logged_in_apiclient):
+    """
+    Verify that the correct number of videos is returned per page
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    page_size = 8
+    VideoSetPagination.page_size = page_size
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    videos = VideoFactory.create_batch(20, collection=collection)
+    url = reverse('models-api:video-list')
+    result = client.get(url)
+    assert len(result.data['results']) == min(page_size, len(videos))
+    for i in range(1, 3):
+        paged_url = url + '?page={}'.format(i)
+        result = client.get(paged_url)
+        assert len(result.data['results']) == min(page_size, max(0, len(videos) - page_size * (i-1)))
+
+
+def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
+    """
+    Verify that videos are only returned for the specified collection.
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    page_size = 8
+    VideoSetPagination.page_size = page_size
+    client, user = logged_in_apiclient
+    collections = CollectionFactory.create_batch(3, owner=user)
+    videos_by_collection_key = {
+        collection.hexkey: VideoFactory.create_batch(20, collection=collection)
+        for collection in collections
+    }
+    url = reverse('models-api:video-list')
+    target_collection = collections[1]
+    result = client.get(url, {"collection": target_collection.hexkey})
+    expected_videos = videos_by_collection_key[target_collection.hexkey]
+    assert len(result.data['results']) == min(page_size, len(expected_videos))
+    for i in range(1, 3):
+        paged_url = url + '?page={}'.format(i)
+        result = client.get(paged_url)
+        assert len(result.data['results']) == min(
+            page_size,
+            max(0, len(expected_videos) - page_size * (i-1))
+        )
+
+
+@pytest.mark.parametrize('field', ['created_at', 'title'])
+def test_videos_ordering(mocker, logged_in_apiclient, field):
+    """ Verify that results are returned in the appropriate order"""
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    VideoSetPagination.page_size = 5
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    VideoFactory.create_batch(10, collection=collection)
+    url = reverse('models-api:video-list')
+    p1_response = client.get('{}?page=1&ordering={}'.format(url, field))
+    assert len(p1_response.data['results']) == 5
+    for i in range(4):
+        assert p1_response.data['results'][i][field].lower() <= p1_response.data['results'][i+1][field].lower()
+    p2_response = client.get('{}?page=2&ordering={}'.format(url, field))
+    assert p1_response.data['results'][-1][field].lower() <= p2_response.data['results'][0][field].lower()
+    for i in range(4):
+        assert p2_response.data['results'][i][field].lower() <= p2_response.data['results'][i+1][field].lower()
 
 
 def test_collection_pagination(mocker, logged_in_apiclient):
