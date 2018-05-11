@@ -14,11 +14,11 @@ type VideoCardProps = {
   video: Video,
   isAdmin: boolean,
   isMenuOpen: boolean,
-  showDeleteDialog: Function,
-  showEditDialog: Function,
-  showShareDialog: Function,
+  showDeleteVideoDialog: Function,
+  showEditVideoDialog: Function,
+  showShareVideoDialog: Function,
   showVideoMenu: Function,
-  closeVideoMenu: Function
+  hideVideoMenu: Function
 }
 
 const VideoCard = (props: VideoCardProps) => {
@@ -54,17 +54,19 @@ const VideoCard = (props: VideoCardProps) => {
     )
   }
 
-  let menuItems = [{ label: "Share", action: props.showShareDialog.bind(this) }]
+  let menuItems = [
+    { label: "Share", action: props.showShareVideoDialog.bind(this) }
+  ]
 
   if (props.isAdmin) {
     menuItems = _.concat(
       menuItems,
-      { label: "Edit", action: props.showEditDialog.bind(this) },
+      { label: "Edit", action: props.showEditVideoDialog.bind(this) },
       {
         label:  "Save To Dropbox",
         action: saveToDropbox.bind(this, props.video)
       },
-      { label: "Delete", action: props.showDeleteDialog.bind(this) }
+      { label: "Delete", action: props.showDeleteVideoDialog.bind(this) }
     )
   }
 
@@ -82,7 +84,7 @@ const VideoCard = (props: VideoCardProps) => {
         <Menu
           key={props.video.key}
           showMenu={props.showVideoMenu}
-          closeMenu={props.closeVideoMenu}
+          closeMenu={props.hideVideoMenu}
           open={props.isMenuOpen}
           menuItems={menuItems}
         />

@@ -8,7 +8,7 @@ import _ from "lodash"
 import DocumentTitle from "react-document-title"
 
 import WithDrawer from "./WithDrawer"
-import VideoCard from "../components/VideoCard"
+import VideoList from "../components/VideoList"
 import Button from "../components/material/Button"
 import EditVideoFormDialog from "../components/dialogs/EditVideoFormDialog"
 import ShareVideoDialog from "../components/dialogs/ShareVideoDialog"
@@ -21,7 +21,6 @@ import * as ErrorMessages from "../components/errorMessages"
 
 import { actions } from "../actions"
 import * as collectionUiActions from "../actions/collectionUi"
-import { getActiveCollectionDetail } from "../lib/collection"
 import { DIALOGS } from "../constants"
 
 import type { Collection } from "../flow/collectionTypes"
@@ -46,163 +45,192 @@ export class CollectionDetailPage extends React.Component<*, void> {
     this.updateRequirements()
   }
 
-  componentDidUpdate() {
-    if (!this.props.collectionError) {
-      this.updateRequirements()
-    }
-  }
-
-  updateRequirements = () => {
+  updateRequirements() {
     const { dispatch, needsUpdate, collectionKey } = this.props
     if (needsUpdate) {
       dispatch(actions.collections.get(collectionKey))
     }
   }
 
-  showEditCollectionDialog = (e: MouseEvent) => {
+  componentDidUpdate() {
+    if (!this.props.collectionError) {
+      this.updateRequirements()
+    }
+  }
+
+  render() {
+    const { collection, collectionError } = this.props
+    if (!collection && !collectionError) {
+      return null
+    }
+    return (
+      <DocumentTitle title={collection ? `OVS | ${collection.title}` : "OVS"}>
+        <WithDrawer>
+          <VideoSaverScript />
+          <div className="collection-detail-content">
+            {collectionError
+              ? this.renderError(collectionError)
+              : this.renderBody()}
+          </div>
+        </WithDrawer>
+      </DocumentTitle>
+    )
+  }
+
+  renderError(error: any) {
+    if (error.detail) {
+      return <ErrorMessage>Error: {error.detail}</ErrorMessage>
+    }
+    return <ErrorMessages.UnableToLoadData />
+  }
+
+  renderBody() {
+    const { collection } = this.props
+    if (!collection) {
+      return null
+    }
+    const videos = collection.videos || []
+    const isAdmin = collection.is_admin
+    return (
+      <div className="centered-content">
+        <header>
+          <div className="text">
+            <h1 className="mdc-typography--title">
+              {`${collection.title} (${videos.length})`}
+            </h1>
+          </div>
+          {this.renderTools(isAdmin)}
+          {this.renderDescription(collection.description)}
+        </header>
+        {this.renderVideos(videos, isAdmin)}
+      </div>
+    )
+  }
+
+  renderTools(isAdmin: boolean) {
+    return <div className="tools">{isAdmin && this.renderAdminTools()}</div>
+  }
+
+  renderAdminTools() {
+    return [this.renderSettingsFrob(), this.renderUploadFrob()]
+  }
+
+  renderSettingsFrob() {
+    return (
+      <a
+        id="edit-collection-button"
+        key="settings"
+        onClick={this.showEditCollectionDialog.bind(this)}
+      >
+        <i className="material-icons">settings</i>
+      </a>
+    )
+  }
+
+  showEditCollectionDialog(e: MouseEvent) {
     const { dispatch, collection } = this.props
     e.preventDefault()
-    if (!collection) throw new Error("Collection does not exist")
+    // $FlowFixMe: collection will really be a colleciton
     dispatch(collectionUiActions.showEditCollectionDialog(collection))
   }
 
-  showVideoMenu = (videoKey: string) => {
+  renderUploadFrob() {
+    return (
+      <DropboxChooser
+        key="upload"
+        appKey={SETTINGS.dropbox_key}
+        success={this.handleUpload.bind(this)}
+        linkType="direct"
+        multiselect={true}
+        extensions={["video"]}
+      >
+        <Button className="dropbox-btn mdc-button--unelevated mdc-ripple-upgraded">
+          <img src="/static/images/dropbox_logo.png" alt="Dropbox Icon" />
+          Add Videos from Dropbox
+        </Button>
+      </DropboxChooser>
+    )
+  }
+
+  async handleUpload(chosenFiles: Array<Object>) {
+    const { dispatch, collection } = this.props
+    if (!collection) {
+      return null
+    }
+    await dispatch(actions.uploadVideo.post(collection.key, chosenFiles))
+    dispatch(actions.collections.get(collection.key))
+  }
+
+  renderDescription(description: ?string) {
+    if (_.isEmpty(description)) {
+      return null
+    }
+    return <p className="description">{description}</p>
+  }
+
+  renderVideos(videos: Array<Video>, isAdmin: boolean) {
+    if (videos.length === 0) {
+      return this.renderEmptyVideoMessage()
+    }
+    return (
+      <VideoList
+        className="videos"
+        videos={videos}
+        commonUi={this.props.commonUi}
+        isAdmin={isAdmin}
+        showDeleteVideoDialog={this.showDeleteVideoDialog.bind(this)}
+        showEditVideoDialog={this.showEditVideoDialog.bind(this)}
+        showShareVideoDialog={this.showShareVideoDialog.bind(this)}
+        showVideoMenu={this.showVideoMenu.bind(this)}
+        hideVideoMenu={this.hideVideoMenu.bind(this)}
+        isVideoMenuOpen={this.isVideoMenuOpen.bind(this)}
+      />
+    )
+  }
+
+  renderEmptyVideoMessage() {
+    return (
+      <div className="no-videos">
+        <h3>You have not added any videos yet.</h3>
+        <p>
+          Click the button above to add videos from a linked Dropbox account.
+        </p>
+      </div>
+    )
+  }
+
+  showVideoMenu(videoKey: string) {
     const { dispatch } = this.props
     dispatch(collectionUiActions.setSelectedVideoKey(videoKey))
     dispatch(commonUiActions.showMenu(videoKey))
   }
 
-  closeVideoMenu = (videoKey: string) => {
+  hideVideoMenu(videoKey: string) {
     const { dispatch } = this.props
     dispatch(collectionUiActions.setSelectedVideoKey(videoKey))
     dispatch(commonUiActions.hideMenu(videoKey))
   }
 
-  showVideoDialog = R.curry((dialogName: string, videoKey: string) => {
+  isVideoMenuOpen(videoKey: string) {
+    return this.props.commonUi.menuVisibility[videoKey]
+  }
+
+  showVideoDialog(dialogName: string, videoKey: string) {
     const { dispatch, showDialog } = this.props
     dispatch(collectionUiActions.setSelectedVideoKey(videoKey))
     showDialog(dialogName)
-  })
-
-  showEditVideoDialog = this.showVideoDialog(DIALOGS.EDIT_VIDEO)
-
-  showShareVideoDialog = this.showVideoDialog(DIALOGS.SHARE_VIDEO)
-
-  showDeleteVideoDialog = this.showVideoDialog(DIALOGS.DELETE_VIDEO)
-
-  handleUpload = async (chosenFiles: Array<Object>) => {
-    const { dispatch, collection } = this.props
-    if (!collection) throw new Error("Collection does not exist")
-    await dispatch(actions.uploadVideo.post(collection.key, chosenFiles))
-    // Reload the collection after the video upload request succeeds
-    dispatch(actions.collections.get(collection.key))
   }
 
-  renderCollectionDescription = (description: ?string) =>
-    !_.isEmpty(description) ? (
-      <p className="description">{description}</p>
-    ) : null
-
-  renderEmptyVideoMessage = () => (
-    <div className="no-videos">
-      <h3>You have not added any videos yet.</h3>
-      <p>Click the button above to add videos from a linked Dropbox account.</p>
-    </div>
-  )
-
-  renderCollectionVideos = (videos: Array<Video>, isAdmin: boolean) => (
-    <div className="videos">
-      {videos.map(
-        video => (
-          <VideoCard
-            video={video}
-            key={video.key}
-            isAdmin={isAdmin}
-            showDeleteDialog={this.showDeleteVideoDialog.bind(this, video.key)}
-            showEditDialog={this.showEditVideoDialog.bind(this, video.key)}
-            showShareDialog={this.showShareVideoDialog.bind(this, video.key)}
-            showVideoMenu={this.showVideoMenu.bind(this, video.key)}
-            closeVideoMenu={this.closeVideoMenu.bind(this, video.key)}
-            isMenuOpen={this.props.commonUi.menuVisibility[video.key]}
-          />
-        ),
-        this
-      )}
-    </div>
-  )
-
-  renderBody() {
-    const { collection, collectionError } = this.props
-    if (collectionError) {
-      if (collectionError.detail) {
-        return (<ErrorMessage>Error: {collectionError.detail}</ErrorMessage>)
-      }
-      return (<ErrorMessages.UnableToLoadData/>)
-    }
-    if (! collection) {
-      return null
-    }
-    const videos = collection.videos || []
-    const collectionTitle =
-      videos.length === 0
-        ? collection.title
-        : `${collection.title} (${videos.length})`
-
-    return (
-      <div className="centered-content">
-        <header>
-          <div className="text">
-            <h1 className="mdc-typography--title">{collectionTitle}</h1>
-          </div>
-          <div className="tools">
-            {collection.is_admin && [
-              <a
-                id="edit-collection-button"
-                key="settings"
-                onClick={this.showEditCollectionDialog}
-              >
-                <i className="material-icons">settings</i>
-              </a>,
-              <DropboxChooser
-                key="upload"
-                appKey={SETTINGS.dropbox_key}
-                success={this.handleUpload}
-                linkType="direct"
-                multiselect={true}
-                extensions={["video"]}
-              >
-                <Button className="dropbox-btn mdc-button--unelevated mdc-ripple-upgraded">
-                  <img
-                    src="/static/images/dropbox_logo.png"
-                    alt="Dropbox Icon"
-                  />
-                  Add Videos from Dropbox
-                </Button>
-              </DropboxChooser>
-            ]}
-          </div>
-          {videos.length > 0
-            ? this.renderCollectionDescription(collection.description)
-            : this.renderEmptyVideoMessage()}
-        </header>
-        {this.renderCollectionVideos(videos, collection.is_admin)}
-      </div>
-    )
+  showEditVideoDialog(videoKey: string) {
+    this.showVideoDialog(DIALOGS.EDIT_VIDEO, videoKey)
   }
 
-  render() {
-    const { collection, collectionError } = this.props
-    if (! collection && ! collectionError) { return null }
-    return (
-      <DocumentTitle title={collection ? `OVS | ${collection.title}` : 'OVS'}>
-        <WithDrawer>
-          <VideoSaverScript />
-          <div className="collection-detail-content">
-            {this.renderBody()}
-          </div>
-        </WithDrawer>
-      </DocumentTitle>
-    )
+  showShareVideoDialog(videoKey: string) {
+    this.showVideoDialog(DIALOGS.SHARE_VIDEO, videoKey)
+  }
+
+  showDeleteVideoDialog(videoKey: string) {
+    this.showVideoDialog(DIALOGS.DELETE_VIDEO, videoKey)
   }
 
   getDialogComponent(dialogName: string) {
@@ -220,19 +248,17 @@ export class CollectionDetailPage extends React.Component<*, void> {
   }
 }
 
-const mapStateToProps = (state, ownProps) => {
+export const mapStateToProps = (state: any, ownProps: any) => {
   const { match } = ownProps
   const { collections, commonUi } = state
 
+  const collectionKey = match.params.collectionKey
   const collection =
     collections.loaded && collections.data ? collections.data : null
   const collectionError = collections.error || null
-  const collectionKey = match.params.collectionKey
-  const activeCollection = getActiveCollectionDetail(state)
-  const collectionChanged =
-    activeCollection && activeCollection.key !== collectionKey
+  const collectionChanged = collection && collection.key !== collectionKey
   const needsUpdate =
-    (!collections.processing && !collections.loaded) || collectionChanged
+    collectionChanged || (!collections.processing && !collections.loaded)
 
   return {
     collectionKey,
@@ -243,7 +269,7 @@ const mapStateToProps = (state, ownProps) => {
   }
 }
 
-const ConnectedCollectionDetailPage = R.compose(
+export const ConnectedCollectionDetailPage = R.compose(
   connect(mapStateToProps),
   withDialogs(
     [
