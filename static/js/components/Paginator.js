@@ -5,9 +5,10 @@ import React from "react"
 
 class Paginator extends React.Component<*, void> {
   render () {
-    const { currentPage, totalPages } = this.props
+    const { currentPage, totalPages, style } = this.props
+    const className = `paginator ${this.props.className || ''}`
     return (
-      <div className="paginator">
+      <div className={className} style={style}>
         <div className="contents" style={{position: "relative"}}>
           { this.renderPrevNextButton("prev") }
           <span className="paginator-spacer"/>

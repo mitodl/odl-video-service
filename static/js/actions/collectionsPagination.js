@@ -35,7 +35,7 @@ actionCreators.getPage = (opts: {page: number}) => {
       dispatch(actionCreators.receiveGetPageSuccess({
         page,
         count:       response.count,
-        collections: response.results,
+        items:       response.results,
         numPages:    response.num_pages,
         startIndex:  response.start_index,
         endIndex:    response.end_index,

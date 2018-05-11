@@ -32,7 +32,7 @@ describe("CollectionListPage", () => {
       currentPage:     1,
       currentPageData: {
         status: "LOADED",
-        collections
+        items:  collections
       }
     }
     sandbox
