@@ -1,6 +1,25 @@
 Release Notes
 =============
 
+Version 0.20.0
+--------------
+
+- Fix login redirect (#621)
+- update error message for 404
+- Don&#39;t require login for 404 collection URLs (#609)
+- Bring back the login view and make it the default LOGIN_URL (#616)
+- add collection_key to SimpleVideoSerializer
+- ignore transcode exceptions for deleted videos
+- change &#39;Only me&#39; =&gt; &#39;Only owner&#39;, to clarify permissions behavior
+- pass analytics overlay into video player for better sizing
+- refresh collections in drawer after editing collection
+- remove collections button from drawer, linkify drawer header
+- analytics style tweaks
+- add django-hijack for user masquerading
+- add close button to analytics overlay
+- Decouple watch bucket uploads from collection titles (#602)
+- add active style for icons
+
 Version 0.19.1
 --------------
 
