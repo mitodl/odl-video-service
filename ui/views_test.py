@@ -1,3 +1,4 @@
+# pylint: disable-msg=too-many-lines
 """
 Tests for views
 """
@@ -24,11 +25,10 @@ from ui.factories import (
     VideoSubtitleFactory,
     YouTubeVideoFactory)
 from ui.models import VideoSubtitle
-from ui.pagination import CollectionSetPagination
+from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import (
     DropboxUploadSerializer,
     VideoSerializer)
-from ui.utils import get_moira_user
 from ui.views import (
     CollectionReactView,
     TechTVDetail,
@@ -166,7 +166,7 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
     }
 
 
-def test_upload_dropbox_videos_authentication(mock_moira_client, logged_in_apiclient):
+def test_upload_dropbox_videos_authentication(mock_user_moira_lists, logged_in_apiclient):
     """
     Tests that only authenticated users with collection admin permissions can call UploadVideosFromDropbox
     """
@@ -262,7 +262,7 @@ def test_collection_viewset_permissions(logged_in_apiclient):
         assert client.post(url, {'owner': 1}).status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_collection_viewset_list(mock_moira_client, logged_in_apiclient):
+def test_collection_viewset_list(mock_user_moira_lists, logged_in_apiclient):
     """
     Tests the list of collections for a user
     """
@@ -278,7 +278,7 @@ def test_collection_viewset_list(mock_moira_client, logged_in_apiclient):
         CollectionFactory().hexkey,
         CollectionFactory(view_lists=[MoiraListFactory()]).hexkey
     ]
-    mock_moira_client.return_value.user_lists.return_value = [moira_list.name]
+    mock_user_moira_lists.return_value = {moira_list.name}
 
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
@@ -447,12 +447,12 @@ def test_collection_viewset_detail_as_superuser(mocker, logged_in_apiclient):
     assert result.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_login_next(mock_moira_client, logged_in_apiclient, user_admin_list_data):
+def test_login_next(mock_user_moira_lists, logged_in_apiclient, user_admin_list_data):
     """
     Tests that the login page redirects to the URL in the `next` parameter if present
     """
-    client, user = logged_in_apiclient
-    mock_moira_client.return_value.list_members.return_value = [user.username]
+    client = logged_in_apiclient[0]
+    mock_user_moira_lists.return_value = {user_admin_list_data.moira_list.name}
     video_url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     response = client.get('/login/?next={}'.format(video_url), follow=True)
     final_url, status_code = response.redirect_chain[-1]
@@ -460,48 +460,48 @@ def test_login_next(mock_moira_client, logged_in_apiclient, user_admin_list_data
     assert status_code == 302
 
 
-def test_login_nonext(mock_moira_client, logged_in_apiclient, user_admin_list_data):
+def test_login_nonext(mock_user_moira_lists, logged_in_apiclient, user_admin_list_data):
     """
     Tests that the login page redirects to the collections page if authenticated
     """
-    client, user = logged_in_apiclient
-    mock_moira_client.return_value.list_members.return_value = [user.username]
+    client = logged_in_apiclient[0]
+    mock_user_moira_lists = {user_admin_list_data.moira_list.name}
     response = client.get('/login', follow=True)
     final_url, status_code = response.redirect_chain[-1]
     assert final_url == '/collections/'
     assert status_code == 302
 
 
-def test_video_detail_view_permission(mock_moira_client, logged_in_apiclient, user_view_list_data):
+def test_video_detail_view_permission(mock_user_moira_lists, logged_in_apiclient, user_view_list_data):
     """
     Tests that a user can view a video if user is a member of collection's view_lists
     """
-    client, user = logged_in_apiclient
-    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
+    client = logged_in_apiclient[0]
+    mock_user_moira_lists.return_value = {user_view_list_data.moira_list.name}
     url = reverse('video-detail', kwargs={'video_key': user_view_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
     assert json.loads(result.context_data['js_settings_json'])['editable'] is False
 
 
-def test_video_detail_admin_permission(logged_in_apiclient, mock_moira_client, user_admin_list_data):
+def test_video_detail_admin_permission(logged_in_apiclient, mock_user_moira_lists, user_admin_list_data):
     """
     Tests that a user can view a video if user is a member of collection's admin_lists
     """
-    client, user = logged_in_apiclient
-    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
+    client = logged_in_apiclient[0]
+    mock_user_moira_lists.return_value = {user_admin_list_data.moira_list.name}
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
     assert json.loads(result.context_data['js_settings_json'])['editable'] is True
 
 
-def test_video_detail_no_permission(mock_moira_client, logged_in_apiclient, user_admin_list_data):
+def test_video_detail_no_permission(mock_user_moira_lists, logged_in_apiclient, user_admin_list_data):
     """
     Tests that a user cannot view a video if user is not a member of collection's lists
     """
     client, _ = logged_in_apiclient
-    mock_moira_client.return_value.list_members.return_value = ['someone_else']
+    mock_user_moira_lists.return_value = {'some_other_list'}
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_403_FORBIDDEN
@@ -522,26 +522,26 @@ def test_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_d
 
 
 @pytest.mark.parametrize('url', ['/videos/{}', '/videos/{}-foo'])
-def test_techtv_detail_standard_url(mock_moira_client, user_view_list_data, logged_in_apiclient, url):
+def test_techtv_detail_standard_url(mock_user_moira_lists, user_view_list_data, logged_in_apiclient, url):
     """
     Tests that a URL based on a TechTV id returns the correct Video detail page
     """
-    client, user = logged_in_apiclient
+    client = logged_in_apiclient[0]
+    mock_user_moira_lists.return_value = {user_view_list_data.moira_list.name}
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
-    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
     result = client.get(url.format(ttv_video.ttv_id))
     assert result.status_code == status.HTTP_200_OK
     assert json.loads(result.context_data['js_settings_json'])['videoKey'] == user_view_list_data.video.hexkey
     assert isinstance(result.context_data['view'], TechTVDetail)
 
 
-def test_techtv_detail_private_url(mock_moira_client, user_view_list_data, logged_in_apiclient):
+def test_techtv_detail_private_url(mock_user_moira_lists, user_view_list_data, logged_in_apiclient):
     """
     Tests that a URL based on a TechTV private token returns the correct Video detail page
     """
-    client, user = logged_in_apiclient
+    client = logged_in_apiclient[0]
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video, private=True, private_token=uuid4().hex)
-    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
+    mock_user_moira_lists.return_value = {user_view_list_data.moira_list.name}
     url = reverse('techtv-private', kwargs={'video_key': ttv_video.private_token})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
@@ -549,13 +549,13 @@ def test_techtv_detail_private_url(mock_moira_client, user_view_list_data, logge
 
 
 @pytest.mark.parametrize('url', ['/embeds/{}', '/embeds/{}-foo'])
-def test_techtv_detail_embed_url(mock_moira_client, user_view_list_data, logged_in_apiclient, url):
+def test_techtv_detail_embed_url(mock_user_moira_lists, user_view_list_data, logged_in_apiclient, url):
     """
     Tests that an embed URL based on a TechTV id returns the correct Video embed page
     """
-    client, user = logged_in_apiclient
+    client = logged_in_apiclient[0]
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
-    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
+    mock_user_moira_lists.return_value = {user_view_list_data.moira_list.name}
     result = client.get(url.format(ttv_video.ttv_id))
     assert result.status_code == status.HTTP_200_OK
     assert json.loads(result.context_data['js_settings_json'])['video']['key'] == user_view_list_data.video.hexkey
@@ -595,7 +595,7 @@ def test_upload_subtitles(logged_in_apiclient, mocker):
     youtube_task.assert_called_once_with(response.data['id'])
 
 
-def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient, mocker):
+def test_upload_subtitles_authentication(mock_user_moira_lists, logged_in_apiclient, mocker):
     """
     Tests that only authenticated users with collection admin permissions can call UploadVideoSubtitle
     """
@@ -622,11 +622,11 @@ def test_upload_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     client.force_login(user)
     assert client.post(url, input_data, format='multipart').status_code == status.HTTP_403_FORBIDDEN
     # call with user on admin list
-    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
+    mock_user_moira_lists.return_value = {moira_list.name}
     assert client.post(url, input_data, format='multipart').status_code == status.HTTP_202_ACCEPTED
 
 
-def test_delete_subtitles_authentication(mock_moira_client, logged_in_apiclient, mocker):
+def test_delete_subtitles_authentication(mock_user_moira_lists, logged_in_apiclient, mocker):
     """
     Tests that only authenticated users with collection admin permissions can delete VideoSubtitles
     """
@@ -645,7 +645,7 @@ def test_delete_subtitles_authentication(mock_moira_client, logged_in_apiclient,
     client.force_login(user)
     assert client.delete(url).status_code == status.HTTP_403_FORBIDDEN
     # call with user on admin list
-    mock_moira_client.return_value.list_members.return_value = [get_moira_user(user).username]
+    mock_user_moira_lists.return_value = {moira_list.name}
     assert client.delete(url).status_code == status.HTTP_204_NO_CONTENT
 
 
@@ -755,6 +755,246 @@ def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
     assert result.status_code == 500
 
 
+def test_video_viewset_list(mock_user_moira_lists, logged_in_apiclient):
+    # pylint: disable-msg=too-many-locals
+    """
+    Tests the list of videos for a user.
+
+    A quasi-integration test, because we're also testing models.VideoManager.all_vieweable here.
+    """
+    view_list = MoiraListFactory()
+    admin_list = MoiraListFactory()
+    mock_user_moira_lists.return_value = [view_list.name, admin_list.name]
+    non_matching_list = MoiraListFactory()
+    client, user = logged_in_apiclient
+    collections = {
+        'owned': CollectionFactory(owner=user),
+        'unowned': CollectionFactory(),
+        'can_view': CollectionFactory(
+            view_lists=[view_list],
+            admin_lists=[non_matching_list]
+        ),
+        'can_admin': CollectionFactory(
+            view_lists=[non_matching_list],
+            admin_lists=[admin_list]
+        ),
+        'can_view_and_admin': CollectionFactory(
+            view_lists=[view_list],
+            admin_lists=[admin_list]
+        ),
+        'can_not_view_or_admin': CollectionFactory(
+            view_lists=[non_matching_list],
+            admin_lists=[non_matching_list]
+        ),
+    }
+    viewable_collections = [
+        collections[key]
+        for key in ['owned', 'can_view', 'can_admin', 'can_view_and_admin']
+    ]
+    unowned_view_only_collections = [
+        collections[key]
+        for key in ['can_view']
+    ]
+    unowned_adminable_collections = [
+        collections[key]
+        for key in ['can_admin', 'can_view_and_admin']
+    ]
+    unviewable_collections = [
+        collections[key]
+        for key in ['unowned', 'can_not_view_or_admin']
+    ]
+    expected_viewable_videos = [
+        *[
+            VideoFactory(
+                title="no view_lists, in viewable collections",
+                view_lists=[], collection=collection
+            )
+            for collection in viewable_collections
+        ],
+        *[
+            VideoFactory(
+                title="matching view_lists, in unviewable collections",
+                view_lists=[view_list], collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title=("matching view_lists, is_public=True,"
+                       " in unviewable collections"),
+                view_lists=[view_list], is_public=True, collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title=("non-matching view_lists, is_public=True,"
+                       " in unviewable collections"),
+                view_lists=[non_matching_list], is_public=True, collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title="no view_lists, is_public=True, in unviewable collections",
+                view_lists=[], is_public=True, collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title=("no view_lists, is_private=True, is_public=False,"
+                       "in unowned adminable collections"),
+                view_lists=[], is_private=True, is_public=False, collection=collection
+            )
+            for collection in unowned_adminable_collections
+        ],
+    ]
+    expected_prohibited_videos = [
+        *[
+            VideoFactory(
+                title=("no view_lists, is_public=False,"
+                       " in unviewable collections"),
+                view_lists=[], is_public=False, collection=collection
+            )
+            for collection in unviewable_collections
+        ],
+        *[
+            VideoFactory(
+                title=("no view_lists, is_private=True, is_public=False,"
+                       "in unowned view-only collections"),
+                view_lists=[], is_private=True, is_public=True, collection=collection
+            )
+            for collection in unowned_view_only_collections
+        ],
+        *[
+            VideoFactory(
+                title=("no view_lists, is_private=True, is_public=True,"
+                       " in unowned view-only collections"),
+                view_lists=[], is_private=True, is_public=True, collection=collection
+            )
+            for collection in unowned_view_only_collections
+        ],
+        *[
+            VideoFactory(
+                title=("non-matching view_lists, is_private=False,"
+                       " is_public=False, in unviewable collections"),
+                view_lists=[non_matching_list], is_private=False,
+                is_public=False, collection=collection)
+            for collection in unviewable_collections
+        ],
+    ]
+    url = reverse('models-api:video-list')
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    expected_viewable_key_titles = set(
+        [(video.hexkey, video.title) for video in expected_viewable_videos]
+    )
+    expected_prohibited_key_titles = set(
+        [(video.hexkey, video.title) for video in expected_prohibited_videos]
+    )
+    actual_key_titles = set(
+        [(result['key'], result['title']) for result in result.data['results']]
+    )
+    assert actual_key_titles == expected_viewable_key_titles
+    assert actual_key_titles.isdisjoint(expected_prohibited_key_titles)
+    assert result.data['num_pages'] == 1
+    assert result.data['start_index'] == 1
+    assert result.data['end_index'] == len(expected_viewable_videos)
+    assert result.data['count'] == len(expected_viewable_key_titles)
+    # pylint: enable-msg=too-many-locals
+
+
+def test_video_viewset_list_superuser(logged_in_apiclient, settings):
+    """
+    Tests the list of collections for a superuser
+    """
+    client, user = logged_in_apiclient
+    user.is_superuser = True
+    user.save()
+    url = reverse('models-api:video-list')
+    owned_collection = CollectionFactory(owner=user)
+    unowned_collection = CollectionFactory()
+    owned_video_keys = [
+        VideoFactory(collection=owned_collection).hexkey for _ in range(5)
+    ]
+    unowned_video_keys = [VideoFactory(collection=unowned_collection).hexkey]
+    combined_video_keys = owned_video_keys + unowned_video_keys
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert len(result.data['results']) == len(combined_video_keys)
+    for coll_data in result.data['results']:
+        assert coll_data['key'] in combined_video_keys
+
+
+def test_videos_pagination(mocker, logged_in_apiclient):
+    """
+    Verify that the correct number of videos is returned per page
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    page_size = 8
+    VideoSetPagination.page_size = page_size
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    videos = VideoFactory.create_batch(20, collection=collection)
+    url = reverse('models-api:video-list')
+    result = client.get(url)
+    assert len(result.data['results']) == min(page_size, len(videos))
+    for i in range(1, 3):
+        paged_url = url + '?page={}'.format(i)
+        result = client.get(paged_url)
+        assert len(result.data['results']) == min(page_size, max(0, len(videos) - page_size * (i-1)))
+
+
+def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
+    """
+    Verify that videos are only returned for the specified collection.
+    """
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    page_size = 8
+    VideoSetPagination.page_size = page_size
+    client, user = logged_in_apiclient
+    collections = CollectionFactory.create_batch(3, owner=user)
+    videos_by_collection_key = {
+        collection.hexkey: VideoFactory.create_batch(20, collection=collection)
+        for collection in collections
+    }
+    url = reverse('models-api:video-list')
+    target_collection = collections[1]
+    result = client.get(url, {"collection": target_collection.hexkey})
+    expected_videos = videos_by_collection_key[target_collection.hexkey]
+    assert len(result.data['results']) == min(page_size, len(expected_videos))
+    for i in range(1, 3):
+        paged_url = url + '?page={}'.format(i)
+        result = client.get(paged_url)
+        assert len(result.data['results']) == min(
+            page_size,
+            max(0, len(expected_videos) - page_size * (i-1))
+        )
+
+
+@pytest.mark.parametrize('field', ['created_at', 'title'])
+def test_videos_ordering(mocker, logged_in_apiclient, field):
+    """ Verify that results are returned in the appropriate order"""
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    VideoSetPagination.page_size = 5
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    VideoFactory.create_batch(10, collection=collection)
+    url = reverse('models-api:video-list')
+    p1_response = client.get('{}?page=1&ordering={}'.format(url, field))
+    assert len(p1_response.data['results']) == 5
+    for i in range(4):
+        assert p1_response.data['results'][i][field].lower() <= p1_response.data['results'][i+1][field].lower()
+    p2_response = client.get('{}?page=2&ordering={}'.format(url, field))
+    assert p1_response.data['results'][-1][field].lower() <= p2_response.data['results'][0][field].lower()
+    for i in range(4):
+        assert p2_response.data['results'][i][field].lower() <= p2_response.data['results'][i+1][field].lower()
+
+
 def test_collection_pagination(mocker, logged_in_apiclient):
     """
     Verify that the correct number of collections is returned per page
@@ -793,7 +1033,7 @@ def test_collection_ordering(mocker, logged_in_apiclient, field):
         assert p2_response.data['results'][i][field].lower() <= p2_response.data['results'][i+1][field].lower()
 
 
-def test_help_for_anonymous_user(mock_moira_client):
+def test_help_for_anonymous_user(mock_user_moira_lists):
     """Test help page for anonymous user"""
     request = RequestFactory()
     request.method = 'GET'
@@ -811,7 +1051,7 @@ def test_help_for_anonymous_user(mock_moira_client):
         (False, False),
     ]
 )
-def test_help_for_logged_in_user(mock_moira_client, owns_collections, is_staff):
+def test_help_for_logged_in_user(mock_user_moira_lists, owns_collections, is_staff):
     """Test help page for anonymous user"""
     request = RequestFactory()
     request.method = 'GET'
@@ -824,7 +1064,7 @@ def test_help_for_logged_in_user(mock_moira_client, owns_collections, is_staff):
     assert js_settings["editable"] == owns_collections or is_staff
 
 
-def test_terms_of_service_for_anonymous_user(mock_moira_client):
+def test_terms_of_service_for_anonymous_user(mock_user_moira_lists):
     """Test help page for anonymous user"""
     request = RequestFactory()
     request.method = 'GET'
@@ -842,7 +1082,7 @@ def test_terms_of_service_for_anonymous_user(mock_moira_client):
         (False, False),
     ]
 )
-def test_terms_of_service_for_logged_in_user(mock_moira_client, owns_collections, is_staff):
+def test_terms_of_service_for_logged_in_user(mock_user_moira_lists, owns_collections, is_staff):
     """Test help page for anonymous user"""
     request = RequestFactory()
     request.method = 'GET'

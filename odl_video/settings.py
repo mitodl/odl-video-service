@@ -20,7 +20,7 @@ from odl_video.envs import (
     parse_env
 )
 
-VERSION = "0.20.0"
+VERSION = "0.21.0"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 parse_env(f'{BASE_DIR}/.env')
@@ -542,6 +542,7 @@ if MIDDLEWARE_FEATURE_FLAG_QS_PREFIX:
 PAGE_SIZE_QUERY_PARAM = get_string('PAGE_SIZE_QUERY_PARAM', 'page_size')
 PAGE_SIZE_MAXIMUM = get_int('PAGE_SIZE_MAXIMUM', 1000)
 PAGE_SIZE_COLLECTIONS = get_int('PAGE_SIZE_COLLECTIONS', 50)
+PAGE_SIZE_VIDEOS = get_int('PAGE_SIZE_VIDEOS', 1000)
 
 MOIRA_CACHE_TIMEOUT = get_int('MOIRA_CACHE_TIMEOUT', 10800)
 HIJACK_ALLOW_GET_REQUESTS = True

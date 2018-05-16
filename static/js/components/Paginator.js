@@ -8,22 +8,17 @@ class Paginator extends React.Component<*, void> {
     const { currentPage, totalPages } = this.props
     return (
       <div className="paginator">
-        <span className="paginator-current-range">
-          Page <span className="paginator-current-page">{currentPage}</span>
-          &nbsp;of&nbsp;
-          <span className="paginator-total-pages">{totalPages}</span>
-        </span>
-      
-        <span className="paginator-buttons"
-          style={{
-            marginLeft: '.5em',
-            position:   'relative',
-            top:        '-.1em',
-          }}
-        >
+        <div className="contents" style={{position: "relative"}}>
           { this.renderPrevNextButton("prev") }
+          <span className="paginator-spacer"/>
+          <span className="paginator-current-range">
+            <span className="paginator-current-page">{currentPage}</span>
+            {" of "}
+            <span className="paginator-total-pages">{totalPages}</span>
+          </span>
+          <span className="paginator-spacer"/>
           { this.renderPrevNextButton("next") }
-        </span>
+        </div>
       </div>
     )
   }
@@ -47,8 +42,12 @@ class Paginator extends React.Component<*, void> {
       }
     }
     let className = `paginator-button paginator-${nextPrevType}-button`
+    let iconExtraClassNames = ""
     if (disabled) {
       className += ' disabled'
+    } else {
+      className += ' activated'
+      iconExtraClassNames = "activated"
     }
     return (
       <span
@@ -56,7 +55,7 @@ class Paginator extends React.Component<*, void> {
         onClick={clickHandler}
         disabled={disabled}
       >
-        <i className="material-icons">{iconKey}</i>
+        <i className={`material-icons ${iconExtraClassNames}`}>{iconKey}</i>
       </span>
     )
   }

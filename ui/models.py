@@ -54,7 +54,7 @@ class CollectionManager(TimestampedModelManager):
         """
         if user.is_superuser:
             return self.all()
-        moira_list_qset = MoiraList.objects.filter(name__in=utils.user_moira_lists(user).member_of)
+        moira_list_qset = MoiraList.objects.filter(name__in=utils.user_moira_lists(user))
         return self.filter(
             models.Q(view_lists__in=moira_list_qset) |
             models.Q(admin_lists__in=moira_list_qset) |
@@ -74,7 +74,7 @@ class CollectionManager(TimestampedModelManager):
         if user.is_superuser:
             return self.all()
         return self.filter(
-            models.Q(admin_lists__in=MoiraList.objects.filter(name__in=utils.user_moira_lists(user).member_of)) |
+            models.Q(admin_lists__in=MoiraList.objects.filter(name__in=utils.user_moira_lists(user))) |
             models.Q(owner=user)).distinct()
 
 
@@ -122,6 +122,40 @@ class Collection(TimestampedModel):
         return cls.objects.filter(owner=owner)
 
 
+class VideoManager(TimestampedModelManager):
+    """
+    Custom manager for the Video model
+    """
+
+    def all_viewable(self, user):
+        """
+        Return all videos that a user has view permissions for.
+
+        Args:
+            user (django.contrib.auth.User): the Django user.
+
+        Returns:
+            A list of videos the user has view access to.
+        """
+        if user.is_superuser:
+            return self.all()
+        moira_list_qset = MoiraList.objects.filter(
+            name__in=utils.user_moira_lists(user))
+        return self.filter(
+            (
+                models.Q(collection__owner=user) |
+                models.Q(collection__admin_lists__in=moira_list_qset)
+            ) |
+            (
+                models.Q(is_private=False) & (
+                    models.Q(is_public=True) |
+                    models.Q(view_lists__in=moira_list_qset) |
+                    models.Q(collection__view_lists__in=moira_list_qset)
+                )
+            )
+        ).distinct()
+
+
 class Video(TimestampedModel):
     """
     Represents an uploaded video, primarily in terms of metadata (source url, title, etc).
@@ -143,6 +177,8 @@ class Video(TimestampedModel):
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='video_view_lists')
     is_public = models.BooleanField(null=False, default=False)
     is_private = models.BooleanField(null=False, default=False)
+
+    objects = VideoManager()
 
     class Meta:
         ordering = ['-created_at', ]

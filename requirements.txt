@@ -8,7 +8,7 @@
 
 git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
-git+https://github.com/mitodl/mit-moira.git#egg=mit-moira
+git+https://github.com/mitodl/mit-moira.git@bcf99688af5710e4dfb8bcd95a02fec7e2b43a7c#egg=mit-moira
 git+https://github.com/mitodl/pycaption.git#egg=pycaption
 amqp==2.2.1               # via kombu
 appdirs==1.4.3            # via fs, zeep

@@ -30,7 +30,7 @@ from rest_framework.views import APIView
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
 from techtv2ovs.models import TechTVVideo
-from ui.pagination import CollectionSetPagination
+from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
 from ui import (
@@ -326,7 +326,7 @@ class CollectionViewSet(viewsets.ModelViewSet):
         return serializers.CollectionListSerializer
 
 
-class VideoViewSet(ModelDetailViewset):
+class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
     """
     Implements all the REST views for the Video Model.
     This viewset does not implement the `create`: Video objects need
@@ -341,6 +341,19 @@ class VideoViewSet(ModelDetailViewset):
     permission_classes = (
         ui_permissions.HasVideoPermissions,
     )
+    pagination_class = VideoSetPagination
+    filter_backends = (OrderingFilter,)
+    ordering_fields = ('created_at', 'title')
+
+    def get_queryset(self):
+        return Video.objects.all_viewable(self.request.user)
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        collection_key = self.request.query_params.get('collection')
+        if collection_key:
+            queryset = queryset.filter(collection__key=collection_key)
+        return queryset
 
     @detail_route()
     def analytics(self, request, key=None):
