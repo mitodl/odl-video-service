@@ -8,7 +8,7 @@
 
 git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
-git+https://github.com/mitodl/mit-moira.git@bcf99688af5710e4dfb8bcd95a02fec7e2b43a7c#egg=mit-moira
+git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4
 git+https://github.com/mitodl/pycaption.git#egg=pycaption
 amqp==2.2.1               # via kombu
 appdirs==1.4.3            # via fs, zeep
@@ -37,8 +37,8 @@ defusedxml==0.5.0         # via zeep
 dj-database-url==0.3.0
 dj-static==0.0.6
 django-compat==1.0.15
-django-hijack==2.1.7
 django-hijack-admin==2.1.7
+django-hijack==2.1.7
 django-redis==4.7.0
 django-server-status==0.5.0
 django-webpack-loader==0.5.0
@@ -99,7 +99,7 @@ requests==2.18.1
 rsa==3.4.2                # via google-auth, google-auth-httplib2, oauth2client
 s3transfer==0.1.10        # via boto3
 simplegeneric==0.8.1      # via ipython
-six==1.10.0               # via cryptography, django-server-status, dropbox, faker, fs, google-api-python-client, google-auth, google-auth-httplib2, html5lib, oauth2client, packaging, prompt-toolkit, python-dateutil, stevedore, traitlets, zeep
+six==1.10.0               # via cryptography, django-compat, django-server-status, dropbox, faker, fs, google-api-python-client, google-auth, google-auth-httplib2, html5lib, oauth2client, packaging, prompt-toolkit, python-dateutil, stevedore, traitlets, zeep
 smart_open==1.5.7
 static3==0.7.0            # via dj-static
 stevedore==1.28.0         # via bonobo

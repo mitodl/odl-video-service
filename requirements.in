@@ -30,11 +30,15 @@ google-auth-httplib2
 oauth2client==3.0.0
 google-api-python-client
 
+django-compat==1.0.15
+django-hijack==2.1.7
+django-hijack-admin==2.1.7
+
 # Touchstone
 -e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
 
 # MIT-Moira
--e git+https://github.com/mitodl/mit-moira.git#egg=mit-moira
+-e git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4
 
 # Django-Elastic-Transcoder
 -e git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
