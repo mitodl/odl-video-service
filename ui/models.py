@@ -139,6 +139,8 @@ class VideoManager(TimestampedModelManager):
         """
         if user.is_superuser:
             return self.all()
+        if user.is_anonymous:
+            return self.filter(is_public=True)
         moira_list_qset = MoiraList.objects.filter(
             name__in=utils.user_moira_lists(user))
         return self.filter(

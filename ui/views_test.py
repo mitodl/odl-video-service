@@ -521,6 +521,19 @@ def test_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_d
     assert '?next=/videos/{}'.format(user_admin_list_data.video.hexkey) in last_url
 
 
+def test_public_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_data):
+    """
+    Tests that an anonymous user can access a public video
+    """
+    client, _ = logged_in_apiclient
+    client.logout()
+    user_admin_list_data.video.is_public = True
+    user_admin_list_data.video.save()
+    url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
+    response = client.get(url, follow=True)
+    assert response.status_code == 200
+
+
 @pytest.mark.parametrize('url', ['/videos/{}', '/videos/{}-foo'])
 def test_techtv_detail_standard_url(mock_user_moira_lists, user_view_list_data, logged_in_apiclient, url):
     """

@@ -88,6 +88,8 @@ def query_moira_lists(user):
     Returns:
         list_names(list): A list of names of moira lists which contain the user as a member.
     """
+    if user.is_anonymous:
+        return []
     moira_user = get_moira_user(user)
     moira = get_moira_client()
     try:
@@ -113,6 +115,8 @@ def user_moira_lists(user):
         list_names(set): An set containing all known lists the user belongs to,
             including ancestors of nested lists.
     """
+    if user.is_anonymous:
+        return []
     list_names = cache.get(MOIRA_CACHE_KEY.format(user_id=user.id), None)
     if list_names is None:
         list_names = set(query_moira_lists(user))
