@@ -19,7 +19,7 @@ from cloudsync.api import refresh_status, process_watch_file, transcode_video
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.youtube import YouTubeApi, API_QUOTA_ERROR_MSG
 from ui.models import Video, YouTubeVideo, VideoSubtitle
-from ui.constants import VideoStatus, YouTubeStatus
+from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.utils import get_bucket
 
 log = logging.getLogger(__name__)
@@ -168,7 +168,7 @@ def upload_youtube_videos():
     """
     yt_queue = Video.objects.filter(is_public=True).filter(
         status=VideoStatus.COMPLETE).filter(youtubevideo__id__isnull=True).exclude(
-            collection__stream_source='cloudfront').order_by('-created_at')[:settings.YT_DAILY_UPLOAD_LIMIT]
+            collection__stream_source=StreamSource.CLOUDFRONT).order_by('-created_at')[:settings.YT_DAILY_UPLOAD_LIMIT]
     for video in yt_queue.all():
         youtube_video = YouTubeVideo.objects.create(video=video)
         try:
