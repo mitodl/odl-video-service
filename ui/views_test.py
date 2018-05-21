@@ -918,6 +918,25 @@ def test_video_viewset_list(mock_user_moira_lists, logged_in_apiclient):
     # pylint: enable-msg=too-many-locals
 
 
+def test_video_viewset_list_anonymous(logged_in_apiclient):
+    """
+    Tests the list of collections for an anonymous user
+    """
+    client, _ = logged_in_apiclient
+    client.logout()
+    url = reverse('models-api:video-list')
+    collection = CollectionFactory()
+    public_video_keys = [
+        VideoFactory(collection=collection, is_public=True).hexkey for _ in range(2)
+    ]
+    VideoFactory(collection=collection, is_public=False)
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert len(result.data['results']) == len(public_video_keys)
+    for coll_data in result.data['results']:
+        assert coll_data['key'] in public_video_keys
+
+
 def test_video_viewset_list_superuser(logged_in_apiclient, settings):
     """
     Tests the list of collections for a superuser
