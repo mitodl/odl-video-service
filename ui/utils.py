@@ -88,8 +88,6 @@ def query_moira_lists(user):
     Returns:
         list_names(list): A list of names of moira lists which contain the user as a member.
     """
-    if user.is_anonymous:
-        return []
     moira_user = get_moira_user(user)
     moira = get_moira_client()
     try:

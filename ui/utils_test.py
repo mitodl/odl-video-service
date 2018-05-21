@@ -3,6 +3,7 @@ from tempfile import NamedTemporaryFile
 import json
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
 from zeep.exceptions import Fault
 
 from ui import factories
@@ -124,6 +125,13 @@ def test_user_moira_lists_cache_miss(mocker, settings):
         expected_result,
         settings.MOIRA_CACHE_TIMEOUT
     )
+
+
+def test_user_moira_lists_anonymous():
+    """
+    Test that empty list is returned for anonymous user
+    """
+    assert user_moira_lists(AnonymousUser()) == []
 
 
 def test_has_common_lists(mocker):
