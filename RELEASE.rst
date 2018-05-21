@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 0.21.0
+--------------
+
+- Update version for mit-moira (#632)
+- refactoring CollectionDetail, in preparation for videos pagination
+- add videos pagination backend
+- restore videofile_set to serializer
+- paginator style tweaks
+- refactor moira list logic to use moira_client.user_list_membership
+- Tweak line ordering
+- Additional unit test
+
 Version 0.20.0
 --------------
 
