@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.21.1
+--------------
+
+- Fix permissions issue with anonymous users and public videos (#635)
+
 Version 0.21.0
 --------------
 
