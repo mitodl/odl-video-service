@@ -521,6 +521,19 @@ def test_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_d
     assert '?next=/videos/{}'.format(user_admin_list_data.video.hexkey) in last_url
 
 
+def test_public_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_data):
+    """
+    Tests that an anonymous user can access a public video
+    """
+    client, _ = logged_in_apiclient
+    client.logout()
+    user_admin_list_data.video.is_public = True
+    user_admin_list_data.video.save()
+    url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
+    response = client.get(url, follow=True)
+    assert response.status_code == 200
+
+
 @pytest.mark.parametrize('url', ['/videos/{}', '/videos/{}-foo'])
 def test_techtv_detail_standard_url(mock_user_moira_lists, user_view_list_data, logged_in_apiclient, url):
     """
@@ -903,6 +916,25 @@ def test_video_viewset_list(mock_user_moira_lists, logged_in_apiclient):
     assert result.data['end_index'] == len(expected_viewable_videos)
     assert result.data['count'] == len(expected_viewable_key_titles)
     # pylint: enable-msg=too-many-locals
+
+
+def test_video_viewset_list_anonymous(logged_in_apiclient):
+    """
+    Tests the list of collections for an anonymous user
+    """
+    client, _ = logged_in_apiclient
+    client.logout()
+    url = reverse('models-api:video-list')
+    collection = CollectionFactory()
+    public_video_keys = [
+        VideoFactory(collection=collection, is_public=True).hexkey for _ in range(2)
+    ]
+    VideoFactory(collection=collection, is_public=False)
+    result = client.get(url)
+    assert result.status_code == status.HTTP_200_OK
+    assert len(result.data['results']) == len(public_video_keys)
+    for coll_data in result.data['results']:
+        assert coll_data['key'] in public_video_keys
 
 
 def test_video_viewset_list_superuser(logged_in_apiclient, settings):
