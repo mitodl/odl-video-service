@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.21.2
+--------------
+
+- Exclude &#39;Cloudfront&#39; stream_source videos from Youtube upload task (#638)
+
 Version 0.21.1
 --------------
 
