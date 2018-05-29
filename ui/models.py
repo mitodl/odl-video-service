@@ -231,6 +231,20 @@ class Video(TimestampedModel):
                       key=lambda x: EncodingNames.MP4.index(x.encoding) if x.encoding in EncodingNames.MP4 else 0)
 
     @property
+    def download(self):
+        """
+        Return the most appropriate videofile for downloading.
+
+        Returns:
+            VideoFile: The videofile most appropriate for download (highest quality MP4 transcode or original upload)
+        """
+        files = sorted(self.videofile_set.exclude(encoding=EncodingNames.HLS),
+                       key=lambda x: EncodingNames.MP4.index(x.encoding) if x.encoding in EncodingNames.MP4 else 5)
+        if files:
+            return files[0]
+        return None
+
+    @property
     def sources(self):
         """
         Generate a sources dict for VideoJS

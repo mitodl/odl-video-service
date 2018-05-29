@@ -1,11 +1,13 @@
 """Views for ui app"""
 import json
+from os.path import splitext
 
+import requests
 from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 from django.shortcuts import (
     get_object_or_404,
     redirect,
@@ -26,6 +28,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from slugify import slugify
 
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
@@ -154,6 +157,23 @@ class VideoEmbed(TemplateView):
         return context
 
 
+class VideoDownload(VideoDetail):
+    """
+    Download a public video
+    """
+    def get(self, request, *args, **kwargs):
+        video = get_object_or_404(Video, key=kwargs['video_key'], is_public=True)
+        # Check if there are
+        video_file = video.download
+        _, ext = splitext(video_file.s3_object_key)
+        video_bytes = requests.get(video_file.cloudfront_url, stream=True)
+        response = StreamingHttpResponse(
+            (chunk for chunk in video_bytes.iter_content(512 * 1024)),
+            content_type='video/mp4')
+        response['Content-Disposition'] = 'attachment; filename={}.{}'.format(slugify(video.title), ext)
+        return response
+
+
 class TechTVDetail(VideoDetail):
     """
     Video detail page for a TechTV-based URL
@@ -180,6 +200,26 @@ class TechTVEmbed(VideoEmbed):
     def get(self, request, *args, **kwargs):
         ttv_videos = get_list_or_404(TechTVVideo.objects.filter(ttv_id=kwargs['video_key']))
         return conditional_response(self, ttv_videos[0].video, *args, **kwargs)
+
+
+class TechTVDownload(VideoDetail):
+    """
+    Public video download for a TechTV-based URL
+    """
+    def get(self, request, *args, **kwargs):
+        ttv_videos = get_list_or_404(
+            Video.objects.filter(techtvvideo__ttv_id=kwargs['video_key']).filter(is_public=True)
+        )
+        video = ttv_videos[0]
+        if not ui_permissions.has_video_view_permission(video, request):
+            raise PermissionDenied
+        video_file = video.download
+        video_bytes = requests.get(video_file.cloudfront_url, stream=True)
+        response = StreamingHttpResponse(
+            (chunk for chunk in video_bytes.iter_content(512 * 1024)),
+            content_type='video/mp4')
+        response['Content-Disposition'] = 'attachment; filename={}.mp4'.format(slugify(video.title))
+        return response
 
 
 class HelpPageView(TemplateView):
