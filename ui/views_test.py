@@ -549,6 +549,19 @@ def test_video_download(logged_in_client, is_public, mocker):
 
 
 @pytest.mark.parametrize('is_public', [True, False])
+def test_video_download_nofiles(logged_in_client, is_public, mocker):
+    """ Tests that a 404 is returned if no videofiles are available """
+    mocker.patch('ui.views.requests.get')
+    client, _ = logged_in_client
+    client.logout()
+    video = VideoFactory(is_public=is_public)
+    assert video.download is None
+    url = reverse('video-download', kwargs={'video_key': video.hexkey})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.parametrize('is_public', [True, False])
 def test_techtv_video_download(logged_in_client, is_public, mocker):
     """ Tests that a TechTV video can be downloaded if public, returns 404 otherwise """
     mocker.patch('ui.views.requests.get')

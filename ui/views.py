@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse, StreamingHttpResponse, Http404
 from django.shortcuts import (
     get_object_or_404,
     redirect,
@@ -168,6 +168,8 @@ class VideoDownload(VideoDetail):
             HttpResponse: the response videofile content and a file attachment header
         """
         video_file = video.download
+        if not video_file:
+            raise Http404()
         _, ext = splitext(video_file.s3_object_key)
         video_bytes = requests.get(video_file.cloudfront_url, stream=True)
         response = StreamingHttpResponse(
