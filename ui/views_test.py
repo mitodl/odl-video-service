@@ -574,6 +574,19 @@ def test_techtv_video_download(logged_in_client, is_public, mocker):
     assert result.status_code == (status.HTTP_200_OK if is_public else status.HTTP_404_NOT_FOUND)
 
 
+@pytest.mark.parametrize('is_public', [True, False])
+def test_techtv_video_download_nofiles(logged_in_client, is_public, mocker):
+    """ Tests that a 404 is returned if no videofiles are available for a TechTV video"""
+    mocker.patch('ui.views.requests.get')
+    client, _ = logged_in_client
+    client.logout()
+    ttv_video = TechTVVideoFactory(video=VideoFactory(is_public=is_public))
+    assert ttv_video.video.download is None
+    url = reverse('techtv-download', kwargs={'video_key': ttv_video.ttv_id})
+    result = client.get(url)
+    assert result.status_code == status.HTTP_404_NOT_FOUND
+
+
 @pytest.mark.parametrize('url', ['/videos/{}', '/videos/{}-foo'])
 def test_techtv_detail_standard_url(mock_user_moira_lists, user_view_list_data, logged_in_apiclient, url):
     """
