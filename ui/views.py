@@ -161,9 +161,12 @@ class VideoDownload(VideoDetail):
     """
     Download a public video
     """
-    def get(self, request, *args, **kwargs):
-        video = get_object_or_404(Video, key=kwargs['video_key'], is_public=True)
-        # Check if there are
+    def download(self, video):
+        """
+        Return the response as a file download
+        Returns:
+            HttpResponse: the response videofile content and a file attachment header
+        """
         video_file = video.download
         _, ext = splitext(video_file.s3_object_key)
         video_bytes = requests.get(video_file.cloudfront_url, stream=True)
@@ -172,6 +175,10 @@ class VideoDownload(VideoDetail):
             content_type='video/mp4')
         response['Content-Disposition'] = 'attachment; filename={}.{}'.format(slugify(video.title), ext)
         return response
+
+    def get(self, request, *args, **kwargs):
+        video = get_object_or_404(Video, key=kwargs['video_key'], is_public=True)
+        return self.download(video)
 
 
 class TechTVDetail(VideoDetail):
@@ -202,7 +209,7 @@ class TechTVEmbed(VideoEmbed):
         return conditional_response(self, ttv_videos[0].video, *args, **kwargs)
 
 
-class TechTVDownload(VideoDetail):
+class TechTVDownload(VideoDownload):
     """
     Public video download for a TechTV-based URL
     """
@@ -211,15 +218,7 @@ class TechTVDownload(VideoDetail):
             Video.objects.filter(techtvvideo__ttv_id=kwargs['video_key']).filter(is_public=True)
         )
         video = ttv_videos[0]
-        if not ui_permissions.has_video_view_permission(video, request):
-            raise PermissionDenied
-        video_file = video.download
-        video_bytes = requests.get(video_file.cloudfront_url, stream=True)
-        response = StreamingHttpResponse(
-            (chunk for chunk in video_bytes.iter_content(512 * 1024)),
-            content_type='video/mp4')
-        response['Content-Disposition'] = 'attachment; filename={}.mp4'.format(slugify(video.title))
-        return response
+        return self.download(video)
 
 
 class HelpPageView(TemplateView):
