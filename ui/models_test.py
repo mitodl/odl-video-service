@@ -300,6 +300,24 @@ def test_transcoded_hls_video():
     assert video.transcoded_videos[0] == videofiles[1]
 
 
+@pytest.mark.parametrize('encodings,download', [
+    [[EncodingNames.ORIGINAL, EncodingNames.SMALL, EncodingNames.HD, EncodingNames.HLS], EncodingNames.HD],
+    [[EncodingNames.ORIGINAL, EncodingNames.HLS], EncodingNames.ORIGINAL],
+    [[EncodingNames.ORIGINAL, EncodingNames.LARGE], EncodingNames.LARGE],
+    [[EncodingNames.SMALL, EncodingNames.HD], EncodingNames.HD],
+    [[], None],
+])
+def test_download_mp4(encodings, download):
+    """ Tests that video.download returns the most appropriate file for download """
+    video = VideoFactory()
+    for encoding in encodings:
+        VideoFileFactory(video=video, s3_object_key='{}.mp4'.format(encoding), encoding=encoding)
+    if not download:
+        assert video.download is None
+    else:
+        assert video.download.encoding == download
+
+
 @pytest.mark.parametrize('status', [YouTubeStatus.UPLOADED, YouTubeStatus.PROCESSED, YouTubeStatus.FAILED, None])
 def test_video_youtube_id(status, video):
     """
