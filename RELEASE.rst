@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.22.0
+--------------
+
+- Public video download links (#642)
+
 Version 0.21.2
 --------------
 
