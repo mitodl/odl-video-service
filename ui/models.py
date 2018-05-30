@@ -238,8 +238,12 @@ class Video(TimestampedModel):
         Returns:
             VideoFile: The videofile most appropriate for download (highest quality MP4 transcode or original upload)
         """
-        files = sorted(self.videofile_set.exclude(encoding=EncodingNames.HLS),
-                       key=lambda x: EncodingNames.MP4.index(x.encoding) if x.encoding in EncodingNames.MP4 else 5)
+        files = sorted(
+            self.videofile_set.exclude(encoding=EncodingNames.HLS),
+            key=lambda x: EncodingNames.MP4.index(x.encoding) if x.encoding in EncodingNames.MP4 else len(
+                EncodingNames.MP4
+            )
+        )
         if files:
             return files[0]
         return None

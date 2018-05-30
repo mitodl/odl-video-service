@@ -14,6 +14,7 @@ from django.shortcuts import (
     render,
     get_list_or_404)
 from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
 from rest_framework import (
@@ -157,28 +158,36 @@ class VideoEmbed(TemplateView):
         return context
 
 
-class VideoDownload(VideoDetail):
+class VideoDownload(View):
     """
     Download a public video
     """
     def download(self, video):
         """
         Return the response as a file download
+
+        Args:
+            video(Video): the video to download
+
         Returns:
-            HttpResponse: the response videofile content and a file attachment header
+            StreamingHttpResponse: the response videofile content and a file attachment header
         """
         video_file = video.download
         if not video_file:
             raise Http404()
         _, ext = splitext(video_file.s3_object_key)
         video_bytes = requests.get(video_file.cloudfront_url, stream=True)
-        response = StreamingHttpResponse(
-            (chunk for chunk in video_bytes.iter_content(512 * 1024)),
-            content_type='video/mp4')
+        response = StreamingHttpResponse(video_bytes.iter_content(512 * 1024), content_type='video/mp4')
         response['Content-Disposition'] = 'attachment; filename={}.{}'.format(slugify(video.title), ext)
         return response
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint:disable=unused-argument
+        """
+        Respond to a GET request.
+
+        Returns:
+            StreamingHttpResponse: the response videofile content and a file attachment header
+        """
         video = get_object_or_404(Video, key=kwargs['video_key'], is_public=True)
         return self.download(video)
 
@@ -215,7 +224,7 @@ class TechTVDownload(VideoDownload):
     """
     Public video download for a TechTV-based URL
     """
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         ttv_videos = get_list_or_404(
             Video.objects.filter(techtvvideo__ttv_id=kwargs['video_key']).filter(is_public=True)
         )
