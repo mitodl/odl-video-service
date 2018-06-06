@@ -33,7 +33,7 @@ def process_dropbox_data(dropbox_upload_data):
         with transaction.atomic():
             video = models.Video.objects.create(
                 source_url=dropbox_link["link"],
-                title=dropbox_link["name"][:250],
+                title=dropbox_link["name"][:models.Video._meta.get_field("title").max_length],
                 collection=collection,
             )
             models.VideoFile.objects.create(
