@@ -327,3 +327,17 @@ def test_video_youtube_id(status, video):
     if status is not None:
         youtube_video = YouTubeVideoFactory.create(video=video, status=status)
     assert video.youtube_id == (None if status != YouTubeStatus.PROCESSED else youtube_video.id)
+
+
+def test_video_source_url(video):
+    """
+    Tests that a long source_url is acceptable up to 2000 characters
+    """
+    base_url = 'https://example.com/'
+    source_url = base_url + ('f' * (2000-len(base_url)))
+    video.source_url = source_url
+    video.save()
+    assert video.source_url == source_url
+    video.source_url = video.source_url + 'e'
+    with pytest.raises(ValidationError):
+        video.save()

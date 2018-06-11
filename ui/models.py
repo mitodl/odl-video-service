@@ -167,7 +167,7 @@ class Video(TimestampedModel):
     collection = models.ForeignKey(Collection, related_name='videos')
     title = models.CharField(max_length=250, blank=False)
     description = models.TextField(blank=True)
-    source_url = models.URLField()
+    source_url = models.URLField(max_length=2000)
     status = models.CharField(
         null=False,
         default=VideoStatus.CREATED,
