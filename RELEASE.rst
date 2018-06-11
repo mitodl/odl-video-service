@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.23.0
+--------------
+
+- Increase the max_length of Video.source_url (#644)
+
 Version 0.22.0
 --------------
 
