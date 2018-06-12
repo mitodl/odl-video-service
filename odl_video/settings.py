@@ -284,7 +284,7 @@ LOGGING = {
         'django': {
             'propagate': True,
             'level': DJANGO_LOG_LEVEL,
-            'handlers': ['console', 'syslog'],
+            'handlers': ['console', 'syslog', 'sentry'],
         },
         'django.request': {
             'handlers': ['mail_admins'],
@@ -301,17 +301,10 @@ LOGGING = {
         }
     },
     'root': {
-        'handlers': ['console', 'syslog'],
+        'handlers': ['console', 'syslog', 'sentry'],
         'level': LOG_LEVEL,
     },
 }
-
-# to run the app locally on mac you need to bypass syslog
-if get_bool('ODL_VIDEO_BYPASS_SYSLOG', False):
-    LOGGING['handlers'].pop('syslog')
-    LOGGING['loggers']['root']['handlers'] = ['console']
-    LOGGING['loggers']['ui']['handlers'] = ['console']
-    LOGGING['loggers']['django']['handlers'] = ['console']
 
 # Sentry
 ENVIRONMENT = get_string('ODL_VIDEO_ENVIRONMENT', 'dev')
