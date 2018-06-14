@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.23.1
+--------------
+
+- Add sentry handler to root and django logger configurations (#649)
+
 Version 0.23.0
 --------------
 
