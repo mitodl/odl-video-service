@@ -31,6 +31,15 @@ class CollectionAdmin(admin.ModelAdmin):
     exclude = ('view_lists', 'admin_lists')
     date_hierarchy = 'created_at'
     readonly_fields = ['created_at']
+    list_filter = ['stream_source']
+    search_fields = (
+        'title',
+        'slug',
+        'view_lists__name',
+        'admin_lists__name',
+        'owner__username',
+        'owner__email',
+    )
 
 
 class VideoFilesInline(admin.TabularInline):
@@ -84,11 +93,18 @@ class VideoAdmin(admin.ModelAdmin):
     ]
     list_display = (
         'title',
-        'created_at'
+        'created_at',
     )
-    list_filter = ['status']
+    list_filter = ['encode_jobs__state', 'status']
     date_hierarchy = 'created_at'
     readonly_fields = ['created_at']
+    search_fields = (
+        'title',
+        'description',
+        'source_url',
+        'collection__title',
+        'view_lists__name',
+    )
 
 
 class VideoFileAdmin(admin.ModelAdmin):
@@ -96,6 +112,8 @@ class VideoFileAdmin(admin.ModelAdmin):
     model = models.VideoFile
     date_hierarchy = 'created_at'
     readonly_fields = ['created_at']
+    search_fields = ('video__titles',)
+    list_filter = ('encoding',)
 
 
 class YouTubeVideoAdmin(admin.ModelAdmin):
@@ -123,10 +141,31 @@ class YouTubeVideoAdmin(admin.ModelAdmin):
         return obj.created_at
 
 
+class MoiraListAdmin(admin.ModelAdmin):
+    """admin page of Moira list"""
+    model = models.MoiraList
+    list_display = ('name',)
+    search_fields = ('name',)
+
+
+class VideoSubtitleAdmin(admin.ModelAdmin):
+    """admin page of Moira list"""
+    model = models.VideoSubtitle
+    list_display = ('filename', 'language',)
+    search_fields = ('filename', 'language', 'bucket_name', 'video__titles',)
+
+
+class VideoThumbnailAdmin(admin.ModelAdmin):
+    """admin page of Moira list"""
+    model = models.VideoThumbnail
+    list_display = ('s3_object_key', 'video_id',)
+    search_fields = ('bucket_name', 'video__titles',)
+
+
 admin.site.register(models.Collection, CollectionAdmin)
-admin.site.register(models.MoiraList)
+admin.site.register(models.MoiraList, MoiraListAdmin)
 admin.site.register(models.Video, VideoAdmin)
 admin.site.register(models.VideoFile, VideoFileAdmin)
-admin.site.register(models.VideoThumbnail)
-admin.site.register(models.VideoSubtitle)
+admin.site.register(models.VideoThumbnail, VideoThumbnailAdmin)
+admin.site.register(models.VideoSubtitle, VideoSubtitleAdmin)
 admin.site.register(models.YouTubeVideo, YouTubeVideoAdmin)
