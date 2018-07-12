@@ -31,12 +31,12 @@ class CollectionAdmin(admin.ModelAdmin):
     exclude = ('view_lists', 'admin_lists')
     date_hierarchy = 'created_at'
     readonly_fields = ['created_at']
+    list_filter = ['stream_source']
     search_fields = (
         'title',
         'slug',
         'view_lists__name',
         'admin_lists__name',
-        'stream_source',
         'owner__username',
         'owner__email',
     )
@@ -93,19 +93,17 @@ class VideoAdmin(admin.ModelAdmin):
     ]
     list_display = (
         'title',
-        'created_at'
+        'created_at',
     )
-    list_filter = ['status']
+    list_filter = ['encode_jobs__state', 'status']
     date_hierarchy = 'created_at'
     readonly_fields = ['created_at']
     search_fields = (
         'title',
         'description',
         'source_url',
-        'status',
         'collection__title',
         'view_lists__name',
-        'encode_jobs__state',
     )
 
 
@@ -114,7 +112,8 @@ class VideoFileAdmin(admin.ModelAdmin):
     model = models.VideoFile
     date_hierarchy = 'created_at'
     readonly_fields = ['created_at']
-    search_fields = ('encoding', 'bucket_name', 'video__titles', )
+    search_fields = ('video__titles',)
+    list_filter = ('encoding',)
 
 
 class YouTubeVideoAdmin(admin.ModelAdmin):
@@ -152,15 +151,15 @@ class MoiraListAdmin(admin.ModelAdmin):
 class VideoSubtitleAdmin(admin.ModelAdmin):
     """admin page of Moira list"""
     model = models.VideoSubtitle
-    list_display = ('filename', 'language', )
-    search_fields = ('filename', 'language', 'bucket_name', 'video__titles', )
+    list_display = ('filename', 'language',)
+    search_fields = ('filename', 'language', 'bucket_name', 'video__titles',)
 
 
 class VideoThumbnailAdmin(admin.ModelAdmin):
     """admin page of Moira list"""
     model = models.VideoThumbnail
-    list_display = ('max_width', 'max_height', )
-    search_fields = ('max_width', 'max_height', 'bucket_name', 'video__titles', )
+    list_display = ('s3_object_key', 'video_id',)
+    search_fields = ('bucket_name', 'video__titles',)
 
 
 admin.site.register(models.Collection, CollectionAdmin)
