@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.24.0
+--------------
+
+- Add search admin site (#661)
+- Pinned Dockerfile to python to 3.6.4
+
 Version 0.23.1
 --------------
 
