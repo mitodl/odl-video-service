@@ -1,38 +1,38 @@
 Release Notes
 =============
 
-Version 0.24.0
+Version 0.24.0 (Released July 13, 2018)
 --------------
 
 - Add search admin site (#661)
 - Pinned Dockerfile to python to 3.6.4
 
-Version 0.23.1
+Version 0.23.1 (Released June 14, 2018)
 --------------
 
 - Add sentry handler to root and django logger configurations (#649)
 
-Version 0.23.0
+Version 0.23.0 (Released June 11, 2018)
 --------------
 
 - Increase the max_length of Video.source_url (#644)
 
-Version 0.22.0
+Version 0.22.0 (Released May 30, 2018)
 --------------
 
 - Public video download links (#642)
 
-Version 0.21.2
+Version 0.21.2 (Released May 22, 2018)
 --------------
 
 - Exclude &#39;Cloudfront&#39; stream_source videos from Youtube upload task (#638)
 
-Version 0.21.1
+Version 0.21.1 (Released May 21, 2018)
 --------------
 
 - Fix permissions issue with anonymous users and public videos (#635)
 
-Version 0.21.0
+Version 0.21.0 (Released May 21, 2018)
 --------------
 
 - Update version for mit-moira (#632)
@@ -44,7 +44,7 @@ Version 0.21.0
 - Tweak line ordering
 - Additional unit test
 
-Version 0.20.0
+Version 0.20.0 (Released May 09, 2018)
 --------------
 
 - Fix login redirect (#621)
@@ -63,7 +63,7 @@ Version 0.20.0
 - Decouple watch bucket uploads from collection titles (#602)
 - add active style for icons
 
-Version 0.19.1
+Version 0.19.1 (Released May 03, 2018)
 --------------
 
 - add status messages to embed page
@@ -83,7 +83,7 @@ Version 0.19.1
 - add toast message for uploading subtitles
 - hides logout button when there is logged in user
 
-Version 0.19.0
+Version 0.19.0 (Released May 01, 2018)
 --------------
 
 - one more check for empty dimensions/padding in analytics chart
@@ -98,7 +98,7 @@ Version 0.19.0
 - add error message for collections page
 - analytics dialog =&gt; analytics overlay
 
-Version 0.18.1
+Version 0.18.1 (Released April 26, 2018)
 --------------
 
 - Make TTV collection name display on admin page for TTV video
@@ -136,14 +136,14 @@ Version 0.18.1
 - fleshing out actions/reducers for pagination
 - fleshing out collections pagination
 
-Version 0.18.0
+Version 0.18.0 (Released April 23, 2018)
 --------------
 
 - Set collection and video titles
 - add num_pages to response
 - add start/end indices to collections pagination output
 
-Version 0.17.1
+Version 0.17.1 (Released April 12, 2018)
 --------------
 
 - Add option to set start time on video
@@ -151,7 +151,7 @@ Version 0.17.1
 - Change embed size/styling
 - Removes purple theme colors, and fixes spacing issue in sidenav (#544)
 
-Version 0.17.0
+Version 0.17.0 (Released April 11, 2018)
 --------------
 
 - add &#39;more collections&#39; button to sidebar
@@ -161,7 +161,7 @@ Version 0.17.0
 - video analytics frontend
 - update example .env file with new keys
 
-Version 0.16.1
+Version 0.16.1 (Released April 06, 2018)
 --------------
 
 - fix text field regressions from mdc upgrade
@@ -178,7 +178,7 @@ Version 0.16.1
 - Stream videofiles from S3 to Youtube
 - Make `ENABLE_VIDEO_PERMISSIONS` affect front-end video edit form only
 
-Version 0.16.0
+Version 0.16.0 (Released April 02, 2018)
 --------------
 
 - add .pytest-cache to .gitignore
@@ -192,7 +192,7 @@ Version 0.16.0
 - Corrextly assign attributes to VideoSubtitles imported from TechTV
 - Fixes a layout issue with squeezed icons (#491)
 
-Version 0.15.2
+Version 0.15.2 (Released March 23, 2018)
 --------------
 
 - Don&#39;t try to save EncodeJobs on the video admin page
@@ -202,12 +202,12 @@ Version 0.15.2
 - Play YouTube videos through VideoJS
 - Custom selectPlaylist function for videojs
 
-Version 0.15.1
+Version 0.15.1 (Released March 21, 2018)
 --------------
 
 - Made the message posted in slack a bit more verbose for clarity
 
-Version 0.15.0
+Version 0.15.0 (Released March 19, 2018)
 --------------
 
 - Upgrade to Django 1.11 (#465)
@@ -218,17 +218,17 @@ Version 0.15.0
 - Added a check to verify that file has not already been synced and if it has to moved it to a &#34;conflict&#34; folder and notify slack
 - Import TechTV captions
 
-Version 0.14.1
+Version 0.14.1 (Released March 02, 2018)
 --------------
 
 - Update django-server-status to version 0.5.0
 
-Version 0.14.0
+Version 0.14.0 (Released February 27, 2018)
 --------------
 
 - Updated settings and requirements to fix deployment issues
 
-Version 0.13.0
+Version 0.13.0 (Released February 22, 2018)
 --------------
 
 - Handle nested moira permissions on individual video/collection pages
@@ -237,35 +237,35 @@ Version 0.13.0
 - Updated cryptography requirement to fix incompatibility with OpenSSL
 - Migration script for TechTV
 
-Version 0.12.0
+Version 0.12.0 (Released February 01, 2018)
 --------------
 
 - Support for playing MP4 videos in multiple resolutions
 - Fix scrolling issues in OVS sidebar (#425)
 
-Version 0.11.0
+Version 0.11.0 (Released January 23, 2018)
 --------------
 
 - Update the FAQ
 
-Version 0.10.1
+Version 0.10.1 (Released January 19, 2018)
 --------------
 
 - Refactor video analytics event collection
 - Terms of Service page
 
-Version 0.10.0
+Version 0.10.0 (Released January 16, 2018)
 --------------
 
 - fixed issue with long video titles that do not break (#400)
 - Reformat using eslint-config-mitodl (#398)
 
-Version 0.9.0
+Version 0.9.0 (Released January 08, 2018)
 -------------
 
 - Use unique s3 keys for each subtitle upload
 
-Version 0.8.1
+Version 0.8.1 (Released December 28, 2017)
 -------------
 
 - bump psycopg to 2.7.3.2 (#389)
@@ -273,30 +273,30 @@ Version 0.8.1
 - Fix moira-related issues
 - some accessibility changes (#387)
 
-Version 0.8.0
+Version 0.8.0 (Released December 21, 2017)
 -------------
 
 - Add cloudfront configuration steps
 
-Version 0.7.1
+Version 0.7.1 (Released November 30, 2017)
 -------------
 
 - Sync settings with cookiecutter (#376)
 
-Version 0.7.0
+Version 0.7.0 (Released November 29, 2017)
 -------------
 
 - Youtube integration
 - Fix subtitle deletion
 
-Version 0.6.0
+Version 0.6.0 (Released November 17, 2017)
 -------------
 
 - Remove default mit email address (#355)
 - Video-specific permission overrides
 - 404 for invalid collection/video keys
 
-Version 0.5.0
+Version 0.5.0 (Released November 08, 2017)
 -------------
 
 - Add FAQ page at /help
@@ -308,7 +308,7 @@ Version 0.5.0
 - Core review improvements
 - Download original video source to Dropbox
 
-Version 0.4.0
+Version 0.4.0 (Released October 26, 2017)
 -------------
 
 - Update README.rst
@@ -322,7 +322,7 @@ Version 0.4.0
 - Remove login and registration (#312)
 - Custom MoiraException
 
-Version 0.3.0
+Version 0.3.0 (Released October 11, 2017)
 -------------
 
 - Playback rate control, disable autoplay
@@ -334,7 +334,7 @@ Version 0.3.0
 - responsive layout fix (#294)
 - Fix logging configuration (#293)
 
-Version 0.2.1
+Version 0.2.1 (Released October 03, 2017)
 -------------
 
 - Fixing previous messy release
@@ -342,10 +342,10 @@ Version 0.2.1
 - Improved lecture capture default video titles
 - Smaller responsive video thumbnails on Collection Details page (#276)
 
-Version 0.2.0
+Version 0.2.0 (Released September 25, 2017)
 -------------
 
-Version 0.1.0
+Version 0.1.0 (Released July 27, 2017)
 -------------
 
 
