@@ -27,7 +27,7 @@ class TechTVVideo(TimestampedModel):
     A TechTV video with only the most relevant fields, and statuses to monitor migration to OVS
     """
     ttv_id = IntegerField(null=False)
-    ttv_collection = models.ForeignKey(TechTVCollection, null=True, blank=True)
+    ttv_collection = models.ForeignKey(TechTVCollection, models.CASCADE, null=True, blank=True)
     external_id = models.CharField(max_length=255, null=True, blank=True)
     title = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(blank=True, null=True)

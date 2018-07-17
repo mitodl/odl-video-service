@@ -24,14 +24,10 @@ class AdminListsInline(admin.TabularInline):
 
 class CollectionAdmin(admin.ModelAdmin):
     """Customized collection admin model"""
-    inlines = [
-        ViewListsInline,
-        AdminListsInline
-    ]
-    exclude = ('view_lists', 'admin_lists')
     date_hierarchy = 'created_at'
     readonly_fields = ['created_at']
     list_filter = ['stream_source']
+    autocomplete_fields = ['owner', 'view_lists', 'admin_lists']
     search_fields = (
         'title',
         'slug',
@@ -91,6 +87,7 @@ class VideoAdmin(admin.ModelAdmin):
         VideoSubtitlesInline,
         VideoThumbnailsInline
     ]
+    autocomplete_fields = ['view_lists']
     list_display = (
         'title',
         'created_at',

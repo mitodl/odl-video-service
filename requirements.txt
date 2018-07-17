@@ -6,7 +6,7 @@
 #
 --no-binary psycopg2
 
-git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder
+git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder==0.9.7
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
 git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4
 git+https://github.com/mitodl/pycaption.git#egg=pycaption
@@ -40,7 +40,7 @@ django-hijack==2.1.7
 django-redis==4.7.0
 django-server-status==0.5.0
 django-webpack-loader==0.5.0
-django==1.11.10
+Django==2.0.7
 djangorestframework==3.7.7
 docutils==0.13.1          # via botocore
 dropbox==8.6.0
