@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.24.1
+Version 0.24.1 (Released July 24, 2018)
 --------------
 
 - Added select2 to Moira list selection dropdown (#663)
