@@ -96,7 +96,7 @@
     "style-loader": "^0.18.2",
     "url-loader": "^0.5.9",
     "victory": "^0.25.6",
-    "video.js": "^5.20.1",
+    "video.js": "6.11.0",
     "videojs-contrib-hls": "^5.8.3",
     "videojs-contrib-quality-levels": "^2.0.4",
     "videojs-resolution-switcher": "^0.4.2",

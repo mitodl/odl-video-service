@@ -7245,6 +7245,19 @@ victory@^0.25.6:
     victory-core "^21.0.4"
     victory-pie "^14.0.1"
 
+video.js@6.11.0:
+  version "6.11.0"
+  resolved "https://registry.yarnpkg.com/video.js/-/video.js-6.11.0.tgz#1f0719bf50950bd57a19e4c309ca65bdb209240c"
+  dependencies:
+    babel-runtime "^6.9.2"
+    global "4.3.2"
+    safe-json-parse "4.0.0"
+    tsml "1.0.1"
+    videojs-font "2.1.0"
+    videojs-ie8 "1.1.2"
+    videojs-vtt.js "0.12.6"
+    xhr "2.4.0"
+
 "video.js@^5.10.1 || ^6.2.0":
   version "6.7.3"
   resolved "https://registry.yarnpkg.com/video.js/-/video.js-6.7.3.tgz#616ab015a74bb1bc8b092e9b4b8022519756f7c0"
@@ -7258,7 +7271,7 @@ victory@^0.25.6:
     videojs-vtt.js "0.12.5"
     xhr "2.4.0"
 
-video.js@^5.17.0, "video.js@^5.19.1 || ^6.2.0", video.js@^5.20.1, "video.js@^5.6.0 || ^6.2.8":
+video.js@^5.17.0, "video.js@^5.19.1 || ^6.2.0", "video.js@^5.6.0 || ^6.2.8":
   version "5.20.2"
   resolved "https://registry.yarnpkg.com/video.js/-/video.js-5.20.2.tgz#9f0b6121a2f841fc4b1c473d8983ef4d10c663ba"
   dependencies:
@@ -7333,6 +7346,12 @@ videojs-vtt.js@0.12.4:
 videojs-vtt.js@0.12.5:
   version "0.12.5"
   resolved "https://registry.yarnpkg.com/videojs-vtt.js/-/videojs-vtt.js-0.12.5.tgz#32852732741c8b4e7a4314caa2cd93646a9c2d40"
+  dependencies:
+    global "^4.3.1"
+
+videojs-vtt.js@0.12.6:
+  version "0.12.6"
+  resolved "https://registry.yarnpkg.com/videojs-vtt.js/-/videojs-vtt.js-0.12.6.tgz#e078600bda899eaa6f9c3307134cd0c811947b8e"
   dependencies:
     global "^4.3.1"
 
