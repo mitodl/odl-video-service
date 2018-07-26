@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.25.0
+--------------
+
+- Add version to django-shibboleth-remoteuser to force upgrade (#666)
+
 Version 0.24.1 (Released July 24, 2018)
 --------------
 
