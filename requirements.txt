@@ -7,7 +7,7 @@
 --no-binary psycopg2
 
 git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder==0.9.7
-git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
+git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser==0.9
 git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4
 git+https://github.com/mitodl/pycaption.git#egg=pycaption
 amqp==2.2.1               # via kombu

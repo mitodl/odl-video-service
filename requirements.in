@@ -35,7 +35,7 @@ django-hijack==2.1.7
 django-hijack-admin==2.1.7
 
 # Touchstone
--e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser
+-e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser==0.9
 
 # MIT-Moira
 -e git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4
