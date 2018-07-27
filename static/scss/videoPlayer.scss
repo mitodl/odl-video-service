@@ -81,3 +81,11 @@
   height: 100%;
   text-align: center;
 }
+
+.video-js.vjs-controls-enabled .vjs-big-play-button {
+  display: none;
+}
+
+.video-js.vjs-controls-enabled.vjs-paused .vjs-big-play-button {
+  display: block;
+}
