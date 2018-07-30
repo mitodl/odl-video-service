@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.25.1
+Version 0.25.1 (Released July 30, 2018)
 --------------
 
 - Fix issue with the Youtube play icon on mobile devices (#670)
