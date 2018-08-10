@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.26.0
+--------------
+
+- Removed extra LECTURE_CAPTURE_USER string (#672)
+
 Version 0.25.1 (Released July 30, 2018)
 --------------
 
