@@ -20,7 +20,7 @@ from odl_video.envs import (
     parse_env
 )
 
-VERSION = "0.25.1"
+VERSION = "0.26.0"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 parse_env(f'{BASE_DIR}/.env')
@@ -434,7 +434,6 @@ MANDATORY_SETTINGS = [
     'REDIS_URL',
     'SECRET_KEY',
     'VIDEO_CLOUDFRONT_DIST',
-    'LECTURE_CAPTURE_USER',
     'MIT_WS_CERTIFICATE',
     'MIT_WS_PRIVATE_KEY',
     'VIDEO_S3_BUCKET',
