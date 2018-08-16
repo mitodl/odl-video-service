@@ -8,7 +8,7 @@ import _ from "lodash"
 import DocumentTitle from "react-document-title"
 
 import WithDrawer from "./WithDrawer"
-import VideoList from "../components/VideoList"
+import PaginatedVideoList from "../components/PaginatedVideoList"
 import Button from "../components/material/Button"
 import EditVideoFormDialog from "../components/dialogs/EditVideoFormDialog"
 import ShareVideoDialog from "../components/dialogs/ShareVideoDialog"
@@ -29,6 +29,7 @@ import type { CommonUiState } from "../reducers/commonUi"
 import * as commonUiActions from "../actions/commonUi"
 import VideoSaverScript from "../components/VideoSaverScript"
 
+
 export class CollectionDetailPage extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
@@ -39,6 +40,13 @@ export class CollectionDetailPage extends React.Component<*, void> {
     needsUpdate: boolean,
     commonUi: CommonUiState,
     showDialog: Function
+  }
+
+  VIDEO_LIST_PAGE_SIZE:number
+
+  constructor(props:any) {
+    super(props)
+    this.VIDEO_LIST_PAGE_SIZE = 8
   }
 
   componentDidMount() {
@@ -173,9 +181,10 @@ export class CollectionDetailPage extends React.Component<*, void> {
       return this.renderEmptyVideoMessage()
     }
     return (
-      <VideoList
+      <PaginatedVideoList
         className="videos"
         videos={videos}
+        pageSize={this.VIDEO_LIST_PAGE_SIZE}
         commonUi={this.props.commonUi}
         isAdmin={isAdmin}
         showDeleteVideoDialog={this.showDeleteVideoDialog.bind(this)}

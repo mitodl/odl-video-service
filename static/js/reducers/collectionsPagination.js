@@ -1,23 +1,23 @@
 // @flow
 import type { Action } from "../flow/reduxTypes"
-import type { CollectionsPagination } from "../flow/collectionTypes"
+import type { Pagination } from "../flow/paginationTypes"
 
 import { constants } from "../actions/collectionsPagination"
 
-export const INITIAL_COLLECTIONS_PAGINATION_STATE:CollectionsPagination = {
+export const INITIAL_COLLECTIONS_PAGINATION_STATE:Pagination = {
   count:       0,
   currentPage: 1,
   pages:       {},
 }
 
 const generateInitialPageState = () => ({
-  status:      null,
-  collections: [],
+  status: null,
+  items:  [],
 })
 
 const reducer = (
-  state:CollectionsPagination = INITIAL_COLLECTIONS_PAGINATION_STATE,
-  action: Action<any, null>
+  state:Pagination = INITIAL_COLLECTIONS_PAGINATION_STATE,
+  action:Action<any, null>
 ) => {
   switch (action.type) {
   case constants.REQUEST_GET_PAGE:
@@ -40,7 +40,7 @@ const reducer = (
         ...state.pages,
         [action.payload.page]: {
           ...state.pages[action.payload.page],
-          collections: action.payload.collections,
+          items:       action.payload.items,
           startIndex:  action.payload.startIndex,
           endIndex:    action.payload.endIndex,
           status:      'LOADED',

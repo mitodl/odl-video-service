@@ -14,7 +14,8 @@ import CollectionFormDialog from "../components/dialogs/CollectionFormDialog"
 import { withDialogs } from "../components/dialogs/hoc"
 import { makeCollectionUrl } from "../lib/urls"
 import type { CommonUiState } from "../reducers/commonUi"
-import type { Collection, CollectionsPagination } from "../flow/collectionTypes"
+import type { Collection } from "../flow/collectionTypes"
+import type { Pagination } from "../flow/paginationTypes"
 import withPagedCollections from "./withPagedCollections"
 import LoadingIndicator from "../components/material/LoadingIndicator"
 import Paginator from "../components/Paginator"
@@ -22,7 +23,7 @@ import * as ErrorMessages from "../components/errorMessages"
 
 export class CollectionListPage extends React.Component<*, void> {
   props: {
-    collectionsPagination: CollectionsPagination,
+    collectionsPagination: Pagination,
     dispatch: Dispatch,
     collections: Array<Collection>,
     editable: boolean,
@@ -44,10 +45,7 @@ export class CollectionListPage extends React.Component<*, void> {
 
   renderPaginator() {
     const { collectionsPagination } = this.props
-    const { currentPage, numPages, currentPageData } = collectionsPagination
-    if (currentPageData) {
-      currentPageData
-    }
+    const { currentPage, numPages } = collectionsPagination
     return (
       <Paginator
         currentPage={currentPage}
@@ -92,7 +90,7 @@ export class CollectionListPage extends React.Component<*, void> {
     } else if (currentPageData.status === "LOADING") {
       return <LoadingIndicator />
     } else if (currentPageData.status === "LOADED") {
-      const { collections } = currentPageData
+      const collections = currentPageData.items
       return (
         <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list">
           {collections.map(collection => (

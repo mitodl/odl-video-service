@@ -99,7 +99,7 @@ describe("collectionsPagination actions", () => {
           {
             page,
             count:       response.count,
-            collections: response.results,
+            items:       response.results,
             numPages:    response.num_pages,
             startIndex:  response.start_index,
             endIndex:    response.end_index,

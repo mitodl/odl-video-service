@@ -67,7 +67,7 @@ describe("collectionsPagination reducer", () => {
         count,
         startIndex,
         endIndex,
-        collections,
+        items: collections,
       }))
     }
 
@@ -90,7 +90,7 @@ describe("collectionsPagination reducer", () => {
     it("updates page data", async () => {
       const expectedPageData = {
         status: 'LOADED',
-        collections,
+        items:  collections,
         startIndex,
         endIndex,
       }

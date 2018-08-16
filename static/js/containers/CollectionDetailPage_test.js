@@ -473,11 +473,12 @@ describe("CollectionDetailPage", () => {
         const videos = makeCollection().videos
         const isAdmin = "someIsAdminValue"
 
-        it("renders VideoList with expected basic props", () => {
-          const videoList = renderVideos({ videos, isAdmin }).find("VideoList")
+        it("renders PaginatedVideoList with expected basic props", () => {
+          const videoList = renderVideos({ videos, isAdmin }).find("PaginatedVideoList")
           const expectedBasicProps = {
             className: "videos",
             videos,
+            pageSize:  page.VIDEO_LIST_PAGE_SIZE,
             commonUi:  page.props.commonUi,
             isAdmin
           }
@@ -487,7 +488,7 @@ describe("CollectionDetailPage", () => {
           )
         })
 
-        describe("VideoList function props", () => {
+        describe("PaginatedVideoList function props", () => {
           const methodNames = [
             "showDeleteVideoDialog",
             "showEditVideoDialog",
@@ -497,10 +498,10 @@ describe("CollectionDetailPage", () => {
             "isVideoMenuOpen"
           ]
           _.forEach(methodNames, methodName => {
-            it(`it passes bound ${methodName} to VideoList`, () => {
+            it(`it passes bound ${methodName} to PaginatedVideoList`, () => {
               sandbox.stub(CollectionDetailPage.prototype, methodName)
               const videoList = renderVideos({ videos, isAdmin }).find(
-                "VideoList"
+                "PaginatedVideoList"
               )
               // $FlowFixMe: ignore index access
               sinon.assert.notCalled(CollectionDetailPage.prototype[methodName])
