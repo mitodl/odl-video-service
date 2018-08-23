@@ -212,28 +212,26 @@ describe("CollectionDetailPage", () => {
         assert.isTrue(wrapper.find("Connect(WithDrawer)").exists())
       })
 
-      describe("when there is an error", () => {
-        beforeEach(() => {
-          wrapper = render({ collectionError: "someError" })
-        })
-
-        it("renders error", () => {
-          sinon.assert.calledWith(
-            wrapper.instance().renderError,
-            wrapper.instance().props.collectionError
-          )
-          sinon.assert.notCalled(wrapper.instance().renderBody)
-        })
-      })
-
-      describe("when there is no error", () => {
-        beforeEach(() => {
-          wrapper = render({ collectionError: undefined })
-        })
-
-        it("renders body", () => {
-          sinon.assert.called(wrapper.instance().renderBody)
-          sinon.assert.notCalled(wrapper.instance().renderError)
+      //
+      ;[true, false].forEach(hasCollectionData => {
+        [true, false].forEach(hasCollectionError => {
+          const displayError = !hasCollectionData && hasCollectionError
+          it(`will ${
+            displayError ? "" : " not"
+          } render error instead of detail page`, () => {
+            wrapper = render({
+              collectionError: hasCollectionError ? "some error" : undefined,
+              collection:      hasCollectionData ? collection : undefined
+            })
+            assert.equal(
+              wrapper.instance().renderError.calledWith("some error"),
+              displayError
+            )
+            assert.equal(
+              wrapper.instance().renderBody.calledOnce,
+              hasCollectionData
+            )
+          })
         })
       })
     })
@@ -429,7 +427,10 @@ describe("CollectionDetailPage", () => {
 
     describe("renderDescription", () => {
       // $FlowFixMe: defaults are ok.
-      const renderDescription = ({extraProps = {}, description = ""} = {}) => {
+      const renderDescription = ({
+        extraProps = {},
+        description = ""
+      } = {}) => {
         page = new CollectionDetailPage({ ...props, ...extraProps })
         return shallow(<div>{page.renderDescription(description)}</div>)
       }
@@ -455,7 +456,11 @@ describe("CollectionDetailPage", () => {
 
     describe("renderVideos", () => {
       // $FlowFixMe: defaults are ok.
-      const renderVideos = ({extraProps = {}, videos = [], isAdmin = true} = {}) => {
+      const renderVideos = ({
+        extraProps = {},
+        videos = [],
+        isAdmin = true
+      } = {}) => {
         page = new CollectionDetailPage({ ...props, ...extraProps })
         // $FlowFixMe: isAdmin is ok.
         return shallow(<div>{page.renderVideos(videos, isAdmin)}</div>)
@@ -527,7 +532,11 @@ describe("CollectionDetailPage", () => {
         // dorska, 2018-05-10.
 
         // $FlowFixMe: defaults are ok.
-        const showVideoDialog = ({extraProps = {}, dialogName = "", videoKey = ""} = {}) => {
+        const showVideoDialog = ({
+          extraProps = {},
+          dialogName = "",
+          videoKey = ""
+        } = {}) => {
           // $FlowFixMe: Constructor call is intentional.
           page = new CollectionDetailPage({ ...props, ...extraProps })
           page.showVideoDialog(dialogName, videoKey)
