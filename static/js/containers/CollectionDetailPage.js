@@ -28,6 +28,7 @@ import type { Video } from "../flow/videoTypes"
 import type { CommonUiState } from "../reducers/commonUi"
 import * as commonUiActions from "../actions/commonUi"
 import VideoSaverScript from "../components/VideoSaverScript"
+import { clearCollectionErrors } from "../actions/collectionUi"
 
 export class CollectionDetailPage extends React.Component<*, void> {
   props: {
@@ -46,7 +47,10 @@ export class CollectionDetailPage extends React.Component<*, void> {
   }
 
   updateRequirements() {
-    const { dispatch, needsUpdate, collectionKey } = this.props
+    const { dispatch, needsUpdate, collectionKey, collectionError } = this.props
+    if (collectionError) {
+      dispatch(clearCollectionErrors())
+    }
     if (needsUpdate) {
       dispatch(actions.collections.get(collectionKey))
     }
@@ -68,7 +72,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
         <WithDrawer>
           <VideoSaverScript />
           <div className="collection-detail-content">
-            {!collection && collectionError
+            {collectionError
               ? this.renderError(collectionError)
               : this.renderBody()}
           </div>

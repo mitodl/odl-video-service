@@ -27,7 +27,8 @@ import {
   showNewCollectionDialog,
   showEditCollectionDialog,
   CLEAR_COLLECTION_FORM,
-  SET_COLLECTION_FORM_ERRORS
+  SET_COLLECTION_FORM_ERRORS,
+  CLEAR_COLLECTION_ERRORS
 } from "../../actions/collectionUi"
 import * as toastActions from "../../actions/toast"
 import { INITIAL_UI_STATE } from "../../reducers/collectionUi"
@@ -126,13 +127,15 @@ describe("CollectionFormDialog", () => {
           expectedActionTypes = [
             actions.collectionsList.post.requestType,
             "RECEIVE_POST_COLLECTIONS_LIST_FAILURE",
-            SET_COLLECTION_FORM_ERRORS
+            SET_COLLECTION_FORM_ERRORS,
+            CLEAR_COLLECTION_ERRORS
           ]
         } else {
           expectedActionTypes = [
             actions.collections.patch.requestType,
             "RECEIVE_PATCH_COLLECTIONS_FAILURE",
-            SET_COLLECTION_FORM_ERRORS
+            SET_COLLECTION_FORM_ERRORS,
+            CLEAR_COLLECTION_ERRORS
           ]
         }
         await listenForActions(expectedActionTypes, () => {
@@ -158,7 +161,6 @@ describe("CollectionFormDialog", () => {
         store.dispatch(setViewLists(listInput))
         store.dispatch(setCollectionDesc("new description"))
         store.dispatch(setCollectionTitle("new title"))
-
 
         sandbox.stub(api, "getCollections").returns(Promise.resolve({}))
         let apiStub, expectedActionTypes
@@ -231,7 +233,7 @@ describe("CollectionFormDialog", () => {
           expectedActionTypes = [
             actions.collectionsList.post.requestType,
             actions.collectionsList.post.successType,
-            toastActions.constants.ADD_MESSAGE,
+            toastActions.constants.ADD_MESSAGE
           ]
         } else {
           sandbox
@@ -240,7 +242,7 @@ describe("CollectionFormDialog", () => {
           expectedActionTypes = [
             actions.collections.patch.requestType,
             actions.collections.patch.successType,
-            toastActions.constants.ADD_MESSAGE,
+            toastActions.constants.ADD_MESSAGE
           ]
         }
 
@@ -250,49 +252,44 @@ describe("CollectionFormDialog", () => {
         })
 
         if (isNew) {
-          assert.deepEqual(
-            state.toast.messages,
-            [{
+          assert.deepEqual(state.toast.messages, [
+            {
               key:     "collection-created",
               content: "Collection created",
               icon:    "check"
-            }]
-          )
+            }
+          ])
         } else {
-          assert.deepEqual(
-            state.toast.messages,
-            [{
+          assert.deepEqual(state.toast.messages, [
+            {
               key:     "collection-updated",
               content: "Changes saved",
               icon:    "check"
-            }]
-          )
+            }
+          ])
         }
       })
-
 
       it("updates collections list for drawer", async () => {
         const stubs = {
           // Stub dispatch to return collection, per isNew=true condition.
           dispatch: sandbox.stub().returns(Promise.resolve(collection)),
-          history:            {
-            push: sandbox.stub(),
+          history:  {
+            push: sandbox.stub()
           },
           collectionsListGet:  sandbox.stub(actions.collectionsList, "get"),
-          collectionsListPost: (
-            sandbox.stub(actions.collectionsList, "post")
-              .returns(Promise.resolve(collection))
-          ),
-          collectionsPatch:    (
-            sandbox.stub(actions.collections, "patch")
-              .returns(Promise.resolve())
-          ),
+          collectionsListPost: sandbox
+            .stub(actions.collectionsList, "post")
+            .returns(Promise.resolve(collection)),
+          collectionsPatch: sandbox
+            .stub(actions.collections, "patch")
+            .returns(Promise.resolve())
         }
         const wrapper = shallow(
           <UnconnectedCollectionFormDialog
             dispatch={stubs.dispatch}
             history={stubs.history}
-            collectionUi={{isNew}}
+            collectionUi={{ isNew }}
             collectionForm={{}}
           />
         )

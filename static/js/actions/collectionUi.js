@@ -39,6 +39,9 @@ export const setIsNew = createAction(SET_IS_NEW)
 export const CLEAR_COLLECTION_FORM = qualifiedName("CLEAR_COLLECTION_FORM")
 export const clearCollectionForm = createAction(CLEAR_COLLECTION_FORM)
 
+export const CLEAR_COLLECTION_ERRORS = qualifiedName("CLEAR_COLLECTION_ERRORS")
+export const clearCollectionErrors = createAction(CLEAR_COLLECTION_ERRORS)
+
 export const showNewCollectionDialog = () => (dispatch: Dispatch) => {
   dispatch(setIsNew(true))
   dispatch(showDialog(DIALOGS.COLLECTION_FORM))
