@@ -34,7 +34,7 @@ class WithDrawer extends React.Component<*, void> {
 
 const mapStateToProps = state => {
   const { collectionsList, commonUi } = state
-  const collections = collectionsList.loaded ? collectionsList.data.results  : []
+  const collections = collectionsList.loaded ? collectionsList.data.results : []
   const needsUpdate = !collectionsList.processing && !collectionsList.loaded
 
   return {

@@ -56,7 +56,7 @@ describe("VideoDetailPage", () => {
       [
         actions.videos.get.requestType,
         actions.videos.get.successType,
-        videoUiActions.constants.SET_CURRENT_VIDEO_KEY,
+        videoUiActions.constants.SET_CURRENT_VIDEO_KEY
       ],
       () => {
         wrapper = mount(
@@ -99,11 +99,13 @@ describe("VideoDetailPage", () => {
   })
 
   it("renders the video player", () => {
-    const videoUi = { corner: 'someCorner' }
-    const pageWrapper = renderPageShallow({videoUi})
+    const videoUi = { corner: "someCorner" }
+    const pageWrapper = renderPageShallow({ videoUi })
     const pageInstance = pageWrapper.instance()
     const overlayChildrenStub = sandbox.stub(
-      pageInstance, "renderOverlayChildren")
+      pageInstance,
+      "renderOverlayChildren"
+    )
     const videoPlayerWrapper = shallow(pageInstance.renderVideoPlayer(video))
     const videoPlayerProps = videoPlayerWrapper.find("#video-player").props()
     assert.equal(videoPlayerProps.video, video)
@@ -119,7 +121,9 @@ describe("VideoDetailPage", () => {
       const pageWrapper = renderPageShallow()
       const pageInstance = pageWrapper.instance()
       const renderAnalyticsOverlayStub = sandbox.stub(
-        pageInstance, 'renderAnalyticsOverlay')
+        pageInstance,
+        "renderAnalyticsOverlay"
+      )
       const actualOverlayChildren = pageInstance.renderOverlayChildren()
       assert.equal(
         actualOverlayChildren[0],
@@ -238,7 +242,7 @@ describe("VideoDetailPage", () => {
         [
           actions.videoSubtitles.post.requestType,
           toastActions.constants.ADD_MESSAGE,
-          videoUiActions.constants.SET_UPLOAD_SUBTITLE,
+          videoUiActions.constants.SET_UPLOAD_SUBTITLE
         ],
         () => {
           uploadBtn.prop("onChange")({ target: { files: [file] } })
@@ -258,16 +262,14 @@ describe("VideoDetailPage", () => {
     })
 
     it("adds toast message", () => {
-      assert.deepEqual(
-        store.getState().toast.messages,
-        [{
+      assert.deepEqual(store.getState().toast.messages, [
+        {
           key:     "subtitles-uploaded",
           content: "Subtitles uploaded",
           icon:    "check"
-        }]
-      )
+        }
+      ])
     })
-
   })
 
   describe("when subtitle delete button is clicked", () => {
@@ -277,7 +279,9 @@ describe("VideoDetailPage", () => {
       const wrapper = await renderPage({ editable: true })
       const instance = wrapper.find("VideoDetailPage").instance()
       showDeleteSubtitlesDialogStub = sandbox.stub(
-        instance, "showDeleteSubtitlesDialog")
+        instance,
+        "showDeleteSubtitlesDialog"
+      )
       const deleteBtns = wrapper.find(".delete-btn")
       deleteBtns.at(0).prop("onClick")()
       sinon.assert.calledWith(
@@ -292,11 +296,12 @@ describe("VideoDetailPage", () => {
     const subtitlesKey = "someSubtitleKey"
     beforeEach(() => {
       stubs = {
-        dispatch:                sandbox.stub(),
-        showDialog:              sandbox.stub(),
-        setCurrentSubtitlesKey: (
-          sandbox.stub(actions.videoUi, 'setCurrentSubtitlesKey')
-        ),
+        dispatch:               sandbox.stub(),
+        showDialog:             sandbox.stub(),
+        setCurrentSubtitlesKey: sandbox.stub(
+          actions.videoUi,
+          "setCurrentSubtitlesKey"
+        )
       }
       const props = {
         dispatch:   stubs.dispatch,
@@ -329,8 +334,8 @@ describe("VideoDetailPage", () => {
         videoUi: {
           analyticsOverlayIsVisible: true,
           videoTime:                 42,
-          duration:                  42,
-        },
+          duration:                  42
+        }
       }).instance()
       const overlayWrapper = shallow(pageInstance.renderAnalyticsOverlay())
       overlayEl = overlayWrapper.find("#video-analytics-overlay")
@@ -355,13 +360,15 @@ describe("VideoDetailPage", () => {
     })
 
     it("passes closeOverlay", () => {
-      assert.equal(overlayEl.prop("onClose"), pageInstance.toggleAnalyticsOverlay)
+      assert.equal(
+        overlayEl.prop("onClose"),
+        pageInstance.toggleAnalyticsOverlay
+      )
     })
 
     it("passes showCloseButton", () => {
       assert.isTrue(overlayEl.prop("showCloseButton"))
     })
-
   })
 
   it("has toast message", async () => {

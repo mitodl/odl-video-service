@@ -11,7 +11,6 @@ import { makeVideoAnalyticsData } from "../factories/videoAnalytics"
 import { VideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 import { actions } from "../actions"
 
-
 describe("VideoAnalyticsOverlay", () => {
   let props, sandbox
 
@@ -32,11 +31,9 @@ describe("VideoAnalyticsOverlay", () => {
     sandbox.restore()
   })
 
-  const renderComponent = ((extraProps = {}) => {
-    return shallow(
-      <VideoAnalyticsOverlay {...{...props, ...extraProps}} />
-    )
-  })
+  const renderComponent = (extraProps = {}) => {
+    return shallow(<VideoAnalyticsOverlay {...{ ...props, ...extraProps }} />)
+  }
 
   it("renders nothing if no video or no videoAnalytics", () => {
     const wrapper = renderComponent({
@@ -50,7 +47,7 @@ describe("VideoAnalyticsOverlay", () => {
     const wrapper = renderComponent({
       videoAnalytics: {
         ...props.videoAnalytics,
-        data: new Map(),
+        data: new Map()
       }
     })
     assert.equal(wrapper.type(), null)
@@ -63,7 +60,7 @@ describe("VideoAnalyticsOverlay", () => {
         processing: true
       }
     })
-    assert.equal(wrapper.find('LoadingIndicator').length, 1)
+    assert.equal(wrapper.find("LoadingIndicator").length, 1)
   })
 
   describe("when there is error", () => {
@@ -81,30 +78,27 @@ describe("VideoAnalyticsOverlay", () => {
     })
 
     it("renders error indicator if error", () => {
-      assert.equal(wrapper.find('.error-indicator').length, 1)
+      assert.equal(wrapper.find(".error-indicator").length, 1)
     })
 
     it("dispatches clear action when 'try again' button is clicked", () => {
-      const tryAgainButton = wrapper.find('.error-indicator').find(".try-again")
+      const tryAgainButton = wrapper.find(".error-indicator").find(".try-again")
       sinon.assert.notCalled(dispatchSpy)
-      tryAgainButton.simulate('click')
+      tryAgainButton.simulate("click")
       sinon.assert.calledWith(dispatchSpy, actions.videoAnalytics.clear())
     })
   })
 
   it("renders AnalyticsPane w/ expected props", () => {
-    const extraProps = {a: '1', b: '2'}
+    const extraProps = { a: "1", b: "2" }
     const wrapper = renderComponent(extraProps)
-    const AnalyticsPane = wrapper.find('AnalyticsPane')
+    const AnalyticsPane = wrapper.find("AnalyticsPane")
     assert.isTrue(AnalyticsPane.exists())
-    assert.deepEqual(
-      AnalyticsPane.props(),
-      {
-        analyticsData: props.videoAnalytics.data.get(props.video.key),
-        video:         props.video,
-        ...extraProps
-      }
-    )
+    assert.deepEqual(AnalyticsPane.props(), {
+      analyticsData: props.videoAnalytics.data.get(props.video.key),
+      video:         props.video,
+      ...extraProps
+    })
   })
 
   describe("close button", () => {
@@ -120,12 +114,12 @@ describe("VideoAnalyticsOverlay", () => {
       })
 
       it("renders button", () => {
-        assert.isTrue(wrapper.find('.close-button').exists())
+        assert.isTrue(wrapper.find(".close-button").exists())
       })
 
       it("triggers props.onClose when button is clicked", () => {
         sinon.assert.notCalled(onCloseSpy)
-        wrapper.find('.close-button').simulate('click')
+        wrapper.find(".close-button").simulate("click")
         sinon.assert.called(onCloseSpy)
       })
     })
@@ -138,7 +132,7 @@ describe("VideoAnalyticsOverlay", () => {
       })
 
       it("does not render button", () => {
-        assert.isFalse(wrapper.find('.close-button').exists())
+        assert.isFalse(wrapper.find(".close-button").exists())
       })
     })
   })

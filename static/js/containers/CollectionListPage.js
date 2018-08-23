@@ -88,7 +88,7 @@ export class CollectionListPage extends React.Component<*, void> {
       return null
     }
     if (currentPageData.status === "ERROR") {
-      return (<ErrorMessages.UnableToLoadData/>)
+      return <ErrorMessages.UnableToLoadData />
     } else if (currentPageData.status === "LOADING") {
       return <LoadingIndicator />
     } else if (currentPageData.status === "LOADED") {

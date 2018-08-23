@@ -21,7 +21,7 @@ describe("VideoList", () => {
       showShareVideoDialog:  sandbox.stub(),
       showVideoMenu:         sandbox.stub(),
       hideVideoMenu:         sandbox.stub(),
-      isVideoMenuOpen:       sandbox.stub(),
+      isVideoMenuOpen:       sandbox.stub()
     }
   })
 
@@ -35,16 +35,16 @@ describe("VideoList", () => {
 
   describe("render", () => {
     it("renders a VideoCard for each video", () => {
-      sandbox.stub(VideoList.prototype, 'renderVideoCard').callsFake((video) => {
-        return (<div className="mocked-renderVideoCard" key={video.key}></div>)
+      sandbox.stub(VideoList.prototype, "renderVideoCard").callsFake(video => {
+        return <div className="mocked-renderVideoCard" key={video.key} />
       })
       const wrapper = renderComponent()
       const videos = wrapper.instance().props.videos
-      const videoCards = wrapper.find('.mocked-renderVideoCard')
+      const videoCards = wrapper.find(".mocked-renderVideoCard")
       assert.equal(videoCards.length, videos.length)
       assert.deepEqual(
-        videoCards.map((videoCard) => videoCard.key()),
-        videos.map((video) => video.key)
+        videoCards.map(videoCard => videoCard.key()),
+        videos.map(video => video.key)
       )
     })
   })
@@ -65,7 +65,7 @@ describe("VideoList", () => {
     it("sets basic props", () => {
       const expectedBasicProps = {
         video,
-        isAdmin: videoList.props.isAdmin,
+        isAdmin: videoList.props.isAdmin
       }
       assert.deepEqual(
         _.pick(videoCard.props, Object.keys(expectedBasicProps)),
@@ -87,9 +87,9 @@ describe("VideoList", () => {
         "showEditVideoDialog",
         "showShareVideoDialog",
         "showVideoMenu",
-        "hideVideoMenu",
+        "hideVideoMenu"
       ]
-      _.forEach(propNames, (propName) => {
+      _.forEach(propNames, propName => {
         it(`sets ${propName}`, () => {
           sinon.assert.notCalled(videoList.props[propName])
           videoCard.props[propName]()

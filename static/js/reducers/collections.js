@@ -11,7 +11,7 @@ export const collectionsListEndpoint = {
   getFunc:            (): Promise<CollectionList> => api.getCollections(),
   postFunc:           (collection: Collection) => api.createCollection(collection),
   postSuccessHandler: (payload: Collection, data: Object) => {
-    return {results: [payload, ...(data ? data.results || [] : [])]}
+    return { results: [payload, ...(data ? data.results || [] : [])] }
   }
 }
 

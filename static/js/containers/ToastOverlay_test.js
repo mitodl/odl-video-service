@@ -8,7 +8,6 @@ import sinon from "sinon"
 import type { ToastMessage as ToastMessageType } from "../flow/toastTypes"
 import { ToastOverlay, ToastMessage, mapStateToProps } from "./ToastOverlay"
 
-
 describe("ToastOverlayTests", () => {
   let sandbox, wrapper
 
@@ -20,12 +19,15 @@ describe("ToastOverlayTests", () => {
     sandbox.restore()
   })
 
-  const generateMessages = (n?:number = 3): Array<ToastMessageType> => {
-    return [...Array(n).keys()].map((i) => generateMessage(i))
+  const generateMessages = (n?: number = 3): Array<ToastMessageType> => {
+    return [...Array(n).keys()].map(i => generateMessage(i))
   }
 
-  const generateMessage = (key:(string|number) = 1, extraProps:Object = {}): ToastMessageType => {
-    return { 
+  const generateMessage = (
+    key: string | number = 1,
+    extraProps: Object = {}
+  ): ToastMessageType => {
+    return {
       key,
       content: `${key}:content`,
       ...extraProps
@@ -36,18 +38,17 @@ describe("ToastOverlayTests", () => {
     it("passes messages", () => {
       const someState = {
         toast: {
-          "messages": generateMessages()
+          messages: generateMessages()
         },
-        someOther: "someOtherStateShard",
+        someOther: "someOtherStateShard"
       }
-      const expectedProps = {messages: someState.toast.messages}
+      const expectedProps = { messages: someState.toast.messages }
       const actualProps = mapStateToProps(someState)
       assert.deepEqual(actualProps, expectedProps)
     })
   })
 
   describe("ToastOverlay", () => {
-
     const renderComponent = (extraProps = {}) => {
       const mergedProps = {
         dispatch:         sandbox.stub(),
@@ -59,15 +60,14 @@ describe("ToastOverlayTests", () => {
     }
 
     class DummyMessageComponent extends React.Component<*, void> {
-      render () {
-        return (<div/>)
+      render() {
+        return <div />
       }
     }
 
     describe("when there are no messages", () => {
-
       beforeEach(() => {
-        wrapper = renderComponent({messages: []})
+        wrapper = renderComponent({ messages: [] })
       })
 
       it("renders nothing", () => {
@@ -76,11 +76,10 @@ describe("ToastOverlayTests", () => {
     })
 
     describe("when there are messages", () => {
-
       beforeEach(() => {
         wrapper = renderComponent({
           messages:         generateMessages(3),
-          MessageComponent: DummyMessageComponent,
+          MessageComponent: DummyMessageComponent
         })
       })
 
@@ -91,23 +90,26 @@ describe("ToastOverlayTests", () => {
         const transitionGroupEl = wrapper.find("TransitionGroup")
         const cssTransitionEls = transitionGroupEl.find("CSSTransition")
         assert.equal(cssTransitionEls.length, messages.length)
-        cssTransitionEls.forEach((cssTransitionEl) => {
+        cssTransitionEls.forEach(cssTransitionEl => {
           const messageEl = cssTransitionEl.find(
-            wrapper.prop('MessageComponent'))
+            wrapper.prop("MessageComponent")
+          )
           const expectedMessage = keyedMessages[messageEl.key()]
-          assert.equal(messageEl.prop('message'), expectedMessage)
+          assert.equal(messageEl.prop("message"), expectedMessage)
         })
       })
 
       it("passes removeMessage to MessageComponent", () => {
         const messages = wrapper.prop("messages")
         assert.isTrue(messages.length > 0)
-        const messageEls = wrapper.find(wrapper.prop('MessageComponent'))
+        const messageEls = wrapper.find(wrapper.prop("MessageComponent"))
         const removeMessageStub = sandbox.stub(
-          wrapper.instance(), 'removeMessage')
+          wrapper.instance(),
+          "removeMessage"
+        )
         messageEls.forEach((messageEl, i) => {
           assert.equal(removeMessageStub.callCount, i)
-          messageEl.prop('removeMessage')()
+          messageEl.prop("removeMessage")()
           assert.equal(removeMessageStub.callCount, i + 1)
         })
       })
@@ -125,30 +127,29 @@ describe("ToastOverlayTests", () => {
 
     it("renders the message", () => {
       const message = generateMessage()
-      const wrapper = renderComponent({message})
-      assert.equal(wrapper.find('.message-content').text(), message.content)
+      const wrapper = renderComponent({ message })
+      assert.equal(wrapper.find(".message-content").text(), message.content)
     })
 
     describe("icon", () => {
       describe("when icon is present", () => {
-        const icon = 'someIcon'
-        const message = generateMessage(1, {icon})
+        const icon = "someIcon"
+        const message = generateMessage(1, { icon })
 
         it("it renders icon", () => {
-          const wrapper = renderComponent({message})
-          assert.equal(wrapper.find('.message-icon').text(), message.icon)
+          const wrapper = renderComponent({ message })
+          assert.equal(wrapper.find(".message-icon").text(), message.icon)
         })
       })
 
       describe("when icon is absent", () => {
-        const message = _.omit(generateMessage(), ['icon'])
+        const message = _.omit(generateMessage(), ["icon"])
 
         it("it does not render icon", () => {
-          const wrapper = renderComponent({message})
-          assert.equal(wrapper.find('.message-icon').length, 0)
+          const wrapper = renderComponent({ message })
+          assert.equal(wrapper.find(".message-icon").length, 0)
         })
       })
     })
   })
-
 })

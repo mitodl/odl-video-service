@@ -69,7 +69,7 @@ export class DeleteVideoDialog extends React.Component<*, void> {
   }
 }
 
-export const mapStateToProps = (state:Object, ownProps:Object) => {
+export const mapStateToProps = (state: Object, ownProps: Object) => {
   const { collectionUi: { selectedVideoKey } } = state
   const { collection, video } = ownProps
 

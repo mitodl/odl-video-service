@@ -13,13 +13,13 @@ describe("Paginator", () => {
     sandbox = sinon.sandbox.create()
     stubs = {
       onClickNext: sandbox.spy(),
-      onClickPrev: sandbox.spy(),
+      onClickPrev: sandbox.spy()
     }
     props = {
       currentPage: 42,
       totalPages:  4242,
       onClickNext: stubs.onClickNext,
-      onClickPrev: stubs.onClickPrev,
+      onClickPrev: stubs.onClickPrev
     }
   })
 
@@ -34,21 +34,20 @@ describe("Paginator", () => {
   it("shows current page", () => {
     const wrapper = renderComponent()
     assert.equal(
-      wrapper.find('.paginator-current-page').text(), 
-      props.currentPage,
+      wrapper.find(".paginator-current-page").text(),
+      props.currentPage
     )
   })
 
   it("shows total pages", () => {
     const wrapper = renderComponent()
     assert.equal(
-      wrapper.find('.paginator-total-pages').text(), 
-      props.totalPages,
+      wrapper.find(".paginator-total-pages").text(),
+      props.totalPages
     )
   })
 
   describe("when in the middle of the full range", () => {
-
     beforeEach(() => {
       props = {
         ...props,
@@ -60,14 +59,14 @@ describe("Paginator", () => {
     it("triggers onClickNext when next button clicked", () => {
       const wrapper = renderComponent()
       sinon.assert.notCalled(stubs.onClickNext)
-      wrapper.find('.paginator-next-button').simulate('click')
+      wrapper.find(".paginator-next-button").simulate("click")
       sinon.assert.called(stubs.onClickNext)
     })
 
     it("triggers onClickPrev when prev button clicked", () => {
       const wrapper = renderComponent()
       sinon.assert.notCalled(stubs.onClickPrev)
-      wrapper.find('.paginator-prev-button').simulate('click')
+      wrapper.find(".paginator-prev-button").simulate("click")
       sinon.assert.called(stubs.onClickPrev)
     })
   })
@@ -84,10 +83,10 @@ describe("Paginator", () => {
     it("disables the next button", () => {
       const wrapper = renderComponent()
       sinon.assert.notCalled(stubs.onClickNext)
-      const nextButton = wrapper.find('.paginator-next-button')
-      nextButton.simulate('click')
+      const nextButton = wrapper.find(".paginator-next-button")
+      nextButton.simulate("click")
       sinon.assert.notCalled(stubs.onClickNext)
-      assert.isTrue(nextButton.hasClass('disabled'))
+      assert.isTrue(nextButton.hasClass("disabled"))
     })
   })
 
@@ -103,10 +102,10 @@ describe("Paginator", () => {
     it("disables the prev button", () => {
       const wrapper = renderComponent()
       sinon.assert.notCalled(stubs.onClickPrev)
-      const prevButton = wrapper.find('.paginator-prev-button')
-      prevButton.simulate('click')
+      const prevButton = wrapper.find(".paginator-prev-button")
+      prevButton.simulate("click")
       sinon.assert.notCalled(stubs.onClickPrev)
-      assert.isTrue(prevButton.hasClass('disabled'))
+      assert.isTrue(prevButton.hasClass("disabled"))
     })
   })
 })

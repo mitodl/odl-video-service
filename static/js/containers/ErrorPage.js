@@ -30,7 +30,9 @@ export default class ErrorPage extends React.Component<*, void> {
     case 404:
       return (
         <span>
-          This is a 404 error. This is not the page you were looking for. If you are looking for a video or collection, it is no longer available for viewing.
+            This is a 404 error. This is not the page you were looking for. If
+            you are looking for a video or collection, it is no longer available
+            for viewing.
         </span>
       )
     default:

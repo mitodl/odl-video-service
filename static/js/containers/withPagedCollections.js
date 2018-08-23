@@ -6,85 +6,83 @@ import type { Dispatch } from "redux"
 
 import { actions } from "../actions"
 
-
-export const withPagedCollections = (WrappedComponent) => {
+export const withPagedCollections = WrappedComponent => {
   return class WithPagedCollections extends React.Component<*, void> {
     props: {
-      dispatch: Dispatch,
+      dispatch: Dispatch
     }
-    constructor (props) {
+    constructor(props) {
       super(props)
       this.setCurrentPage = this.setCurrentPage.bind(this)
     }
 
     render() {
-      return (
-        <WrappedComponent {...this.generatePropsForWrappedComponent()}/>
-      )
+      return <WrappedComponent {...this.generatePropsForWrappedComponent()} />
     }
 
-    generatePropsForWrappedComponent () {
+    generatePropsForWrappedComponent() {
       return {
-        ...(_.omit(this.props, ["needsUpdate"])),
+        ..._.omit(this.props, ["needsUpdate"]),
         collectionsPagination: {
           ...this.props.collectionsPagination,
           setCurrentPage:  this.setCurrentPage,
-          currentPageData: this.getCurrentPageData(),
+          currentPageData: this.getCurrentPageData()
         }
       }
     }
 
-    setCurrentPage (nextCurrentPage: number) {
-      this.props.dispatch(actions.collectionsPagination.setCurrentPage({
-        currentPage: nextCurrentPage
-      }))
+    setCurrentPage(nextCurrentPage: number) {
+      this.props.dispatch(
+        actions.collectionsPagination.setCurrentPage({
+          currentPage: nextCurrentPage
+        })
+      )
     }
 
-    getCurrentPageData () {
+    getCurrentPageData() {
       const { collectionsPagination } = this.props
-      if (collectionsPagination && collectionsPagination.pages
-        && collectionsPagination.currentPage
+      if (
+        collectionsPagination &&
+        collectionsPagination.pages &&
+        collectionsPagination.currentPage
       ) {
         return collectionsPagination.pages[collectionsPagination.currentPage]
       }
       return undefined
     }
 
-    componentDidMount () {
+    componentDidMount() {
       this.updateCurrentPageIfNeedsUpdate()
     }
 
-    componentDidUpdate () {
+    componentDidUpdate() {
       this.updateCurrentPageIfNeedsUpdate()
     }
 
-    updateCurrentPageIfNeedsUpdate () {
+    updateCurrentPageIfNeedsUpdate() {
       if (this.props.needsUpdate) {
         this.updateCurrentPage()
       }
     }
 
-    updateCurrentPage () {
+    updateCurrentPage() {
       this.props.dispatch(
         actions.collectionsPagination.getPage({
-          page: this.props.collectionsPagination.currentPage,
+          page: this.props.collectionsPagination.currentPage
         })
       )
     }
   }
 }
 
-export const mapStateToProps = (state) => {
+export const mapStateToProps = state => {
   const { collectionsPagination } = state
-  const { currentPage, pages } =  collectionsPagination
-  const needsUpdate = (pages && (pages[currentPage] === undefined))
+  const { currentPage, pages } = collectionsPagination
+  const needsUpdate = pages && pages[currentPage] === undefined
   return {
     collectionsPagination,
     needsUpdate
   }
 }
 
-export default R.compose(
-  connect(mapStateToProps),
-  withPagedCollections
-)
+export default R.compose(connect(mapStateToProps), withPagedCollections)

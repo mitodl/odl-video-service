@@ -20,7 +20,7 @@ const {
   setUploadSubtitle,
   setVideoTime,
   setVideoDuration,
-  toggleAnalyticsOverlay,
+  toggleAnalyticsOverlay
 } = actionCreators
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 
@@ -100,7 +100,8 @@ describe("videoUi", () => {
   })
 
   it("has an action that toggles analytics overlay", () => {
-    const _selectValue = () => store.getState().videoUi.analyticsOverlayIsVisible
+    const _selectValue = () =>
+      store.getState().videoUi.analyticsOverlayIsVisible
     assert.equal(_selectValue(), false)
     store.dispatch(toggleAnalyticsOverlay())
     assert.equal(_selectValue(), true)
@@ -117,21 +118,21 @@ describe("videoUi", () => {
       corner:                    42,
       editVideoForm:             {
         ...INITIAL_EDIT_VIDEO_FORM_STATE,
-        key: 'someKey',
+        key: "someKey"
       },
       videoSubtitleForm: {
         ...INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
-        key: 'someOtherKey',
+        key: "someOtherKey"
       },
       shareVideoForm: {
         ...INITIAL_SHARE_VIDEO_FORM_STATE,
-        shareTime: 42,
-      },
+        shareTime: 42
+      }
     }
 
     beforeEach(() => {
       // $FlowFixMe : flow thinks 2nd parameter is not used, but it is.
-      store = configureTestStore(rootReducer, {videoUi: initialVideoUiState})
+      store = configureTestStore(rootReducer, { videoUi: initialVideoUiState })
     })
 
     it("clears forms but preserves other state values", () => {
@@ -142,7 +143,7 @@ describe("videoUi", () => {
         ...initialVideoUiState,
         editVideoForm:     INITIAL_EDIT_VIDEO_FORM_STATE,
         videoSubtitleForm: INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
-        shareVideoForm:    INITIAL_SHARE_VIDEO_FORM_STATE,
+        shareVideoForm:    INITIAL_SHARE_VIDEO_FORM_STATE
       })
     })
   })
@@ -150,18 +151,18 @@ describe("videoUi", () => {
   it("has action that sets currentVideoKey", () => {
     const _selectValue = () => store.getState().videoUi.currentVideoKey
     assert.equal(_selectValue(), null)
-    store.dispatch(setCurrentVideoKey({videoKey: 'someKey'}))
-    assert.equal(_selectValue(), 'someKey')
-    store.dispatch(setCurrentVideoKey({videoKey: 'someOtherKey'}))
-    assert.equal(_selectValue(), 'someOtherKey')
+    store.dispatch(setCurrentVideoKey({ videoKey: "someKey" }))
+    assert.equal(_selectValue(), "someKey")
+    store.dispatch(setCurrentVideoKey({ videoKey: "someOtherKey" }))
+    assert.equal(_selectValue(), "someOtherKey")
   })
 
   it("has action that sets currentSubtitlesKey", () => {
     const _selectValue = () => store.getState().videoUi.currentSubtitlesKey
     assert.equal(_selectValue(), null)
-    store.dispatch(setCurrentSubtitlesKey({subtitlesKey: 'someKey'}))
-    assert.equal(_selectValue(), 'someKey')
-    store.dispatch(setCurrentSubtitlesKey({subtitlesKey: 'someOtherKey'}))
-    assert.equal(_selectValue(), 'someOtherKey')
+    store.dispatch(setCurrentSubtitlesKey({ subtitlesKey: "someKey" }))
+    assert.equal(_selectValue(), "someKey")
+    store.dispatch(setCurrentSubtitlesKey({ subtitlesKey: "someOtherKey" }))
+    assert.equal(_selectValue(), "someOtherKey")
   })
 })

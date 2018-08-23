@@ -35,7 +35,7 @@ describe("DeleteSubtitlesDialogTests", () => {
           currentSubtitlesKey: subtitlesFile.id
         },
         videos: {
-          data: new Map([[video.key, video]]),
+          data: new Map([[video.key, video]])
         }
       }
       actualProps = mapStateToProps(state)
@@ -48,7 +48,6 @@ describe("DeleteSubtitlesDialogTests", () => {
     it("passes videoKey ", () => {
       assert.equal(actualProps.videoKey, video.key)
     })
-
   })
 
   describe("DeleteSubtitlesDialog Component", () => {
@@ -59,10 +58,10 @@ describe("DeleteSubtitlesDialogTests", () => {
         hideDialog: noop,
         open:       true,
         videoKey:   video.key,
-        subtitlesFile,
+        subtitlesFile
       }
       return shallow(
-        <DeleteSubtitlesDialog {...{...defaultProps, ...extraProps}} />
+        <DeleteSubtitlesDialog {...{ ...defaultProps, ...extraProps }} />
       )
     }
 
@@ -82,7 +81,7 @@ describe("DeleteSubtitlesDialogTests", () => {
     })
 
     it("renders Dialog", () => {
-      const dialogEl = wrapper.find('Dialog')
+      const dialogEl = wrapper.find("Dialog")
       const expectedDialogProps = {
         title:      "Delete Subtitles",
         id:         "delete-subtitles-dialog",
@@ -93,11 +92,11 @@ describe("DeleteSubtitlesDialogTests", () => {
         onAccept:   instance.onConfirmDeletion
       }
       assert.deepEqual(
-        _.omit(dialogEl.props(), ['children']),
+        _.omit(dialogEl.props(), ["children"]),
         expectedDialogProps
       )
       assert.equal(
-        dialogEl.find('h5').text(),
+        dialogEl.find("h5").text(),
         instance.props.subtitlesFile.filename
       )
     })
@@ -107,18 +106,17 @@ describe("DeleteSubtitlesDialogTests", () => {
 
       beforeEach(async () => {
         promises = {
-          videoSubtitlesDelete: Promise.resolve(),
+          videoSubtitlesDelete: Promise.resolve()
         }
         stubs = {
           dispatch:             sandbox.stub(),
-          videoSubtitlesDelete: (
-            sandbox.stub(actions.videoSubtitles, 'delete')
-              .returns(promises.videoSubtitlesDelete)
-          ),
-          toastAddMessage: sandbox.stub(actions.toast, 'addMessage'),
-          videosGet:       sandbox.stub(actions.videos, 'get'),
+          videoSubtitlesDelete: sandbox
+            .stub(actions.videoSubtitles, "delete")
+            .returns(promises.videoSubtitlesDelete),
+          toastAddMessage: sandbox.stub(actions.toast, "addMessage"),
+          videosGet:       sandbox.stub(actions.videos, "get")
         }
-        instance = renderComponent({dispatch: stubs.dispatch}).instance()
+        instance = renderComponent({ dispatch: stubs.dispatch }).instance()
         await instance.onConfirmDeletion()
       })
 
@@ -137,12 +135,11 @@ describe("DeleteSubtitlesDialogTests", () => {
         const expectedMessage = {
           key:     "subtitles-deleted",
           content: "Subtitles file deleted",
-          icon:    "check",
+          icon:    "check"
         }
-        sinon.assert.calledWith(
-          stubs.toastAddMessage,
-          {message: expectedMessage}
-        )
+        sinon.assert.calledWith(stubs.toastAddMessage, {
+          message: expectedMessage
+        })
         sinon.assert.calledWith(
           stubs.dispatch,
           stubs.toastAddMessage.returnValues[0]
