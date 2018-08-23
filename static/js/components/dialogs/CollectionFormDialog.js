@@ -7,21 +7,22 @@ import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
 import Textarea from "../material/Textarea"
 
+import Dialog from "../material/Dialog"
+
 import * as uiActions from "../../actions/collectionUi"
 import { actions } from "../../actions"
 import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from "../../lib/dialog"
 import { getCollectionForm } from "../../lib/collection"
+import { makeCollectionUrl } from "../../lib/urls"
+import { calculateListPermissionValue } from "../../util/util"
+import { setCollectionFormErrors, clearCollectionErrors } from "../../actions/collectionUi"
 
 import type {
   CollectionFormState,
   CollectionUiState,
   Collection
 } from "../../flow/collectionTypes"
-import { makeCollectionUrl } from "../../lib/urls"
-import { calculateListPermissionValue } from "../../util/util"
-import { setCollectionFormErrors } from "../../actions/collectionUi"
-import Dialog from "../material/Dialog"
-import { clearCollectionErrors } from "../../actions/collectionUi"
+
 
 type DialogProps = {
   dispatch: Dispatch,
