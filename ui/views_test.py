@@ -587,7 +587,12 @@ def test_techtv_video_download_nofiles(logged_in_client, is_public, mocker):
     assert result.status_code == status.HTTP_404_NOT_FOUND
 
 
-@pytest.mark.parametrize('url', ['/videos/{}', '/videos/{}-foo'])
+@pytest.mark.parametrize('url', [
+    '/videos/{}',
+    '/videos/{}-foo',
+    '/collections/foo/videos/{}',
+    '/collections/foo-bar:935/videos/{}-bar/'
+])
 def test_techtv_detail_standard_url(mock_user_moira_lists, user_view_list_data, logged_in_apiclient, url):
     """
     Tests that a URL based on a TechTV id returns the correct Video detail page

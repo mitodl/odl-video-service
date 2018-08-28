@@ -17,6 +17,8 @@ urlpatterns = [
 
     url(r'^collections/(?P<collection_key>[0-9a-f]{32})?/?$', views.CollectionReactView.as_view(),
         name='collection-react-view'),
+    url(r'^collections/[0-9A-Za-z\-_\:]+/videos/(?P<video_key>\d+)(-.+)?/?$', views.TechTVDetail.as_view(),
+        name='techtv-collection-detail'),
 
     url(r'^help/', views.HelpPageView.as_view(), name='help-react-view'),
     url(r'^terms/', views.TermsOfServicePageView.as_view(), name='terms-react-view'),
