@@ -91,7 +91,7 @@ def query_moira_lists(user):
     moira_user = get_moira_user(user)
     moira = get_moira_client()
     try:
-        list_infos = moira.user_list_membership(moira_user.username, moira_user.type)
+        list_infos = moira.user_list_membership(moira_user.username, moira_user.type, max_return_count=100000)
         list_names = [list_info['listName'] for list_info in list_infos]
         return list_names
     except Exception as exc:  # pylint: disable=broad-except
