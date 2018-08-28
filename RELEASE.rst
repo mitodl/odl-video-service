@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.27.0
+--------------
+
+- Clear collection errors from state after form submission (#681)
+- Increase moira retrieval limit to 100K (#679)
+- Add a missing TechTV route to urls.py (#678)
+
 Version 0.26.0 (Released August 13, 2018)
 --------------
 
