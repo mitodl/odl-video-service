@@ -7,20 +7,22 @@ import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
 import Textarea from "../material/Textarea"
 
+import Dialog from "../material/Dialog"
+
 import * as uiActions from "../../actions/collectionUi"
 import { actions } from "../../actions"
 import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from "../../lib/dialog"
 import { getCollectionForm } from "../../lib/collection"
+import { makeCollectionUrl } from "../../lib/urls"
+import { calculateListPermissionValue } from "../../util/util"
+import { setCollectionFormErrors, clearCollectionErrors } from "../../actions/collectionUi"
 
 import type {
   CollectionFormState,
   CollectionUiState,
   Collection
 } from "../../flow/collectionTypes"
-import { makeCollectionUrl } from "../../lib/urls"
-import { calculateListPermissionValue } from "../../util/util"
-import { setCollectionFormErrors } from "../../actions/collectionUi"
-import Dialog from "../material/Dialog"
+
 
 type DialogProps = {
   dispatch: Dispatch,
@@ -106,7 +108,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
           message: {
             key:     "collection-created",
             content: "Collection created",
-            icon:    "check",
+            icon:    "check"
           }
         })
       } else {
@@ -115,7 +117,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
           message: {
             key:     "collection-updated",
             content: "Changes saved",
-            icon:    "check",
+            icon:    "check"
           }
         })
       }
@@ -126,7 +128,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
     }
   }
 
-  addToastMessage (...args:any[]) {
+  addToastMessage(...args: any[]) {
     this.props.dispatch(actions.toast.addMessage(...args))
   }
 
@@ -144,6 +146,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
         errors: error
       })
     )
+    dispatch(clearCollectionErrors())
   }
 
   render() {
@@ -256,7 +259,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
   }
 }
 
-export const mapStateToProps = (state:any) => {
+export const mapStateToProps = (state: any) => {
   const { collectionUi } = state
 
   const collectionForm = getCollectionForm(collectionUi)
@@ -266,5 +269,7 @@ export const mapStateToProps = (state:any) => {
   }
 }
 
-const ConnectedCollectionFormDialog = connect(mapStateToProps)(CollectionFormDialog)
+const ConnectedCollectionFormDialog = connect(mapStateToProps)(
+  CollectionFormDialog
+)
 export default ConnectedCollectionFormDialog
