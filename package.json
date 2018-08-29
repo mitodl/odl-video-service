@@ -69,6 +69,7 @@
     "prettier-eslint-cli": "^4.7.0",
     "prop-types": "^15.5.10",
     "ramda": "^0.24.1",
+    "raven-js": "^3.26.4",
     "react": "^15.6.1",
     "react-addons-shallow-compare": "^15.6.0",
     "react-document-title": "^2.0.3",

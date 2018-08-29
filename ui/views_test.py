@@ -113,6 +113,8 @@ def test_video_detail(logged_in_client, settings):
     client, user = logged_in_client
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.GA_TRACKING_ID = 'UA-xyz-1'
+    settings.ENVIRONMENT = 'test'
+    settings.VERSION = '1.2.3'
     settings.ENABLE_VIDEO_PERMISSIONS = False
     videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
     videofileHLS.video.status = 'Complete'
@@ -122,6 +124,9 @@ def test_video_detail(logged_in_client, settings):
     assert js_settings_json == {
         'editable': True,
         "gaTrackingID": settings.GA_TRACKING_ID,
+        'environment': settings.ENVIRONMENT,
+        'release_version': settings.VERSION,
+        'sentry_dsn': None,
         "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "public_path": '/static/bundles/',
         "videoKey": videofileHLS.video.hexkey,
@@ -141,6 +146,8 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
     client, user = logged_in_client
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.GA_TRACKING_ID = 'UA-xyz-1'
+    settings.ENVIRONMENT = 'test'
+    settings.VERSION = '1.2.3'
     settings.ENABLE_VIDEO_PERMISSIONS = False
     videofileHLS = VideoFileFactory(
         hls=True,
@@ -155,6 +162,9 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
     assert js_settings_json == {
         "video": VideoSerializer(video).data,
         "gaTrackingID": settings.GA_TRACKING_ID,
+        'release_version': settings.VERSION,
+        'environment': settings.ENVIRONMENT,
+        'sentry_dsn': None,
         "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "public_path": "/static/bundles/",
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
@@ -739,6 +749,8 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     """
     settings.VIDEO_CLOUDFRONT_BASE_URL = 'cloudfront_base_url'
     settings.GA_TRACKING_ID = 'tracking_id'
+    settings.ENVIRONMENT = 'test'
+    settings.VERSION = '1.2.3'
     settings.GA_DIMENSION_CAMERA = 'camera1'
     settings.EMAIL_SUPPORT = 'support'
     settings.ENABLE_VIDEO_PERMISSIONS = False
@@ -749,6 +761,9 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     assert json.loads(resp.context[0]['js_settings_json']) == {
         'cloudfront_base_url': settings.VIDEO_CLOUDFRONT_BASE_URL,
         'gaTrackingID': settings.GA_TRACKING_ID,
+        'environment': settings.ENVIRONMENT,
+        'release_version': settings.VERSION,
+        'sentry_dsn': None,
         "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         'public_path': '/static/bundles/',
         'status_code': status.HTTP_404_NOT_FOUND,

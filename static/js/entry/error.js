@@ -9,6 +9,15 @@ import { Provider } from "react-redux"
 import ErrorPage from "../containers/ErrorPage"
 import configureStore from "../store/configureStore"
 
+import Raven from "raven-js"
+
+Raven.config(SETTINGS.sentry_dsn, {
+  release:     SETTINGS.release_version,
+  environment: SETTINGS.environment
+}).install()
+
+window.Raven = Raven
+
 // Object.entries polyfill
 import entries from "object.entries"
 if (!Object.entries) {

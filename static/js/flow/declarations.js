@@ -18,7 +18,10 @@ declare var SETTINGS: {
   support_email_address: string,
   status_code?: number,
   is_admin: boolean,
-  ga_dimension_camera: string
+  ga_dimension_camera: string,
+  sentry_dsn: string,
+  release_version: string,
+  environment: string
 };
 
 // mocha
