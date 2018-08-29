@@ -1,4 +1,5 @@
 // @flow
+/* global SETTINGS:false */
 /* eslint-disable max-len */
 import React from "react"
 
@@ -34,11 +35,11 @@ export const sectionFAQs = {
           record lectures using multiple cameras. Currently these rooms include
           2-131, 2-190, 6-120 and 34-101. Recording requests should be sent to{" "}
           <a
-            href="https://mvp.mit.edu/schedule/"
+            href={`mailto:${SETTINGS.support_email_address}`}
             target="_blank"
             rel="noopener noreferrer"
           >
-            https://mvp.mit.edu/schedule/
+            {SETTINGS.support_email_address}
           </a>
         </div>
         <div>
@@ -53,13 +54,13 @@ export const sectionFAQs = {
       <div>
         Automated lecture capture is currently available in rooms 2-131, 2-190,
         6-120 and 34-101. You can request that your lectures be recorded by
-        filling out the form at{" "}
+        sending an email to{" "}
         <a
-          href="https://mvp.mit.edu/schedule/"
+          href={`mailto:${SETTINGS.support_email_address}`}
           target="_blank"
           rel="noopener noreferrer"
         >
-          https://mvp.mit.edu/schedule/
+          {SETTINGS.support_email_address}
         </a>
       </div>
     ),
@@ -77,20 +78,13 @@ export const sectionFAQs = {
       <ul>
         <li>Anyone in the MIT community can host videos on OVS.</li>
         <li>
-          For automated lecture capture, fill out this request form from MIT
-          Video Productions:{" "}
+          To request permission to upload your own videos, contact:{" "}
           <a
-            href="https://mvp.mit.edu/schedule/"
+            href={`mailto:${SETTINGS.support_email_address}`}
             target="_blank"
             rel="noopener noreferrer"
           >
-            https://mvp.mit.edu/schedule/
-          </a>
-        </li>
-        <li>
-          To request permission to upload your own videos, contact{" "}
-          <a href="mailto:odl-video-support@mit.edu">
-            odl-video-support@mit.edu
+            {SETTINGS.support_email_address}
           </a>
         </li>
       </ul>
