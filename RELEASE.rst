@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.27.0
+Version 0.27.0 (Released August 29, 2018)
 --------------
 
 - Clear collection errors from state after form submission (#681)
