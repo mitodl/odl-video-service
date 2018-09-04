@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.28.0
+--------------
+
+- Fix formatting with fmt
+- Formatting of javascript with fmt (#682)
+- Updated contact information in FAQ (#686)
+- Remove IS_OSX variable (#675)
+
 Version 0.27.0 (Released August 29, 2018)
 --------------
 
