@@ -15,14 +15,16 @@ import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from "../../lib/dialog"
 import { getCollectionForm } from "../../lib/collection"
 import { makeCollectionUrl } from "../../lib/urls"
 import { calculateListPermissionValue } from "../../util/util"
-import { setCollectionFormErrors, clearCollectionErrors } from "../../actions/collectionUi"
+import {
+  setCollectionFormErrors,
+  clearCollectionErrors
+} from "../../actions/collectionUi"
 
 import type {
   CollectionFormState,
   CollectionUiState,
   Collection
 } from "../../flow/collectionTypes"
-
 
 type DialogProps = {
   dispatch: Dispatch,
