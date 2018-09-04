@@ -105,7 +105,9 @@ describe("Drawer", () => {
   describe("when there are > 10 collections", () => {
     beforeEach(() => {
       const numCollections = 20
-      collections = [...Array(numCollections).keys()].map(() => makeCollection())
+      collections = [...Array(numCollections).keys()].map(() =>
+        makeCollection()
+      )
       getCollectionsStub.returns(Promise.resolve({ results: collections }))
     })
 
@@ -130,14 +132,16 @@ describe("Drawer", () => {
       const wrapper = await renderDrawer()
       const moreButton = wrapper.find(".more-collections-button")
       assert.equal(moreButton.length, 1)
-      assert.equal(moreButton.prop('href'), '/collections/')
+      assert.equal(moreButton.prop("href"), "/collections/")
     })
   })
 
   describe("when there are <= 10 collections", () => {
     beforeEach(() => {
       const numCollections = 10
-      collections = [...Array(numCollections).keys()].map(() => makeCollection())
+      collections = [...Array(numCollections).keys()].map(() =>
+        makeCollection()
+      )
       getCollectionsStub.returns(Promise.resolve({ results: collections }))
     })
 

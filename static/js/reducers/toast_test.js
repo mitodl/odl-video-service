@@ -6,7 +6,6 @@ import configureTestStore from "redux-asserts"
 import rootReducer from "../reducers"
 import { actions } from "../actions"
 
-
 describe("toast reducer", () => {
   let store, sandbox
 
@@ -33,36 +32,34 @@ describe("toast reducer", () => {
 
   it("has initial state", () => {
     const expectedInitialState = {
-      messages: [],
+      messages: []
     }
     assert.deepEqual(getToastState(), expectedInitialState)
   })
 
   describe("ADD_MESSAGE", () => {
-
     it("adds message", async () => {
       assert.deepEqual(getToastState().messages, [])
-      const message1 = {key: '1', content: 'message1'}
-      _dispatchAddMessage({message: message1})
+      const message1 = { key: "1", content: "message1" }
+      _dispatchAddMessage({ message: message1 })
       assert.deepEqual(getToastState().messages, [message1])
-      const message2 = {key: '2', content: 'message2'}
-      _dispatchAddMessage({message: message2})
+      const message2 = { key: "2", content: "message2" }
+      _dispatchAddMessage({ message: message2 })
       assert.deepEqual(getToastState().messages, [message1, message2])
     })
   })
 
   describe("REMOVE_MESSAGE", () => {
-
     it("removes message", async () => {
       assert.deepEqual(getToastState().messages, [])
-      const message1 = {key: '1', content: 'message1'}
-      _dispatchAddMessage({message: message1})
+      const message1 = { key: "1", content: "message1" }
+      _dispatchAddMessage({ message: message1 })
       assert.deepEqual(getToastState().messages, [message1])
-      _dispatchRemoveMessage({key: 'baloney'})
+      _dispatchRemoveMessage({ key: "baloney" })
       assert.deepEqual(getToastState().messages, [message1])
-      _dispatchRemoveMessage({key: message1.key})
+      _dispatchRemoveMessage({ key: message1.key })
       assert.deepEqual(getToastState().messages, [])
-      _dispatchRemoveMessage({key: 'ham'})
+      _dispatchRemoveMessage({ key: "ham" })
       assert.deepEqual(getToastState().messages, [])
     })
   })

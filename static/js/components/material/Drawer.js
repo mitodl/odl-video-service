@@ -88,7 +88,9 @@ class Drawer extends React.Component<*, void> {
           </nav>
           <header className="mdc-drawer__header">
             <div className="mdc-drawer__header-content">
-              <a href="/collections/" style={{color: "inherit"}}>My Collections</a>
+              <a href="/collections/" style={{ color: "inherit" }}>
+                My Collections
+              </a>
             </div>
           </header>
           <nav id="nav-collections" className="mdc-drawer__content mdc-list">
@@ -104,7 +106,7 @@ class Drawer extends React.Component<*, void> {
             {collections.length > MAX_VISIBLE_COLLECTIONS ? (
               <a
                 className="mdc-list-item mdc-list-item more-collections-button"
-                href='/collections/'
+                href="/collections/"
               >
                 more collections…
               </a>
@@ -123,19 +125,17 @@ class Drawer extends React.Component<*, void> {
               </i>
               Help
             </a>
-            {
-              SETTINGS.user ? (
-                <a className="mdc-list-item mdc-link logout" href="/logout/">
-                  <i
-                    className="material-icons mdc-list-item__graphic"
-                    aria-hidden="true"
-                  >
-                    input
-                  </i>
-                  Log out
-                </a>
-              ) : null
-            }
+            {SETTINGS.user ? (
+              <a className="mdc-list-item mdc-link logout" href="/logout/">
+                <i
+                  className="material-icons mdc-list-item__graphic"
+                  aria-hidden="true"
+                >
+                  input
+                </i>
+                Log out
+              </a>
+            ) : null}
           </nav>
         </nav>
       </aside>

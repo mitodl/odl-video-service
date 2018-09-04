@@ -22,7 +22,7 @@ const {
   TOGGLE_ANALYTICS_OVERLAY,
   SET_SHARE_VIDEO_TIME_ENABLED,
   SET_CURRENT_VIDEO_KEY,
-  SET_CURRENT_SUBTITLES_KEY,
+  SET_CURRENT_SUBTITLES_KEY
 } = constants
 
 export const INITIAL_EDIT_VIDEO_FORM_STATE = {
@@ -54,7 +54,7 @@ export const INITIAL_UI_STATE = {
   corner:                    Object.keys(CANVASES)[0],
   analyticsOverlayIsVisible: false,
   currentVideoKey:           null,
-  currentSubtitlesKey:       null,
+  currentSubtitlesKey:       null
 }
 
 const updateVideoForm = (
@@ -138,7 +138,7 @@ const reducer = (
       ...state,
       editVideoForm:     INITIAL_EDIT_VIDEO_FORM_STATE,
       videoSubtitleForm: INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
-      shareVideoForm:    INITIAL_SHARE_VIDEO_FORM_STATE,
+      shareVideoForm:    INITIAL_SHARE_VIDEO_FORM_STATE
     }
   case TOGGLE_ANALYTICS_OVERLAY:
     return {

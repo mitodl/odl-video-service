@@ -28,7 +28,6 @@ describe("DeleteVideoDialogTests", () => {
     let state, ownProps
 
     describe("when ownProps has video", () => {
-
       beforeEach(() => {
         state = { collectionUi: { selectedVideoKey: video.key } }
         ownProps = { video }
@@ -42,7 +41,6 @@ describe("DeleteVideoDialogTests", () => {
     })
 
     describe("when ownProps has collection", () => {
-
       beforeEach(() => {
         state = { collectionUi: { selectedVideoKey: video.key } }
         ownProps = { collection }
@@ -63,7 +61,9 @@ describe("DeleteVideoDialogTests", () => {
         open:       true,
         video
       }
-      return shallow(<DeleteVideoDialog {...{...defaultProps, ...extraProps}} />)
+      return shallow(
+        <DeleteVideoDialog {...{ ...defaultProps, ...extraProps }} />
+      )
     }
 
     describe("when there is no video", () => {
@@ -87,7 +87,7 @@ describe("DeleteVideoDialogTests", () => {
       })
 
       it("renders Dialog", () => {
-        const dialogEl = wrapper.find('Dialog')
+        const dialogEl = wrapper.find("Dialog")
         const expectedDialogProps = {
           title:      "Delete Video",
           id:         "delete-video-dialog",
@@ -98,10 +98,10 @@ describe("DeleteVideoDialogTests", () => {
           onAccept:   instance.confirmDeletion
         }
         assert.deepEqual(
-          _.omit(dialogEl.props(), ['children']),
+          _.omit(dialogEl.props(), ["children"]),
           expectedDialogProps
         )
-        assert.equal(dialogEl.find('h5').text(), instance.props.video.title)
+        assert.equal(dialogEl.find("h5").text(), instance.props.video.title)
       })
     })
 
@@ -114,13 +114,12 @@ describe("DeleteVideoDialogTests", () => {
         }
         stubs = {
           dispatch:     sandbox.stub(),
-          videosDelete: (
-            sandbox.stub(actions.videos, 'delete')
-              .returns(promises.videosDelete)
-          ),
-          collectionsGet:  sandbox.stub(actions.collections,'get'),
-          toastAddMessage: sandbox.stub(actions.toast, 'addMessage'),
-          window:          { location: { origin: 'someOrigin' } }
+          videosDelete: sandbox
+            .stub(actions.videos, "delete")
+            .returns(promises.videosDelete),
+          collectionsGet:  sandbox.stub(actions.collections, "get"),
+          toastAddMessage: sandbox.stub(actions.toast, "addMessage"),
+          window:          { location: { origin: "someOrigin" } }
         }
         await promises.videosDelete
       })
@@ -128,7 +127,7 @@ describe("DeleteVideoDialogTests", () => {
       const renderComponentWithStubs = (extraProps = {}) => {
         const wrapper = renderComponent({
           dispatch: stubs.dispatch,
-          ...extraProps,
+          ...extraProps
         })
         return wrapper
       }
@@ -144,14 +143,13 @@ describe("DeleteVideoDialogTests", () => {
 
         it("dispatches toast.addMessage", () => {
           const expectedMessage = {
-            key:     'video-delete',
+            key:     "video-delete",
             content: `Video "${video.title}" was deleted.`,
-            icon:    'check',
+            icon:    "check"
           }
-          sinon.assert.calledWith(
-            stubs.toastAddMessage,
-            {message: expectedMessage}
-          )
+          sinon.assert.calledWith(stubs.toastAddMessage, {
+            message: expectedMessage
+          })
           sinon.assert.calledWith(
             stubs.dispatch,
             stubs.toastAddMessage.returnValues[0]
@@ -171,16 +169,12 @@ describe("DeleteVideoDialogTests", () => {
         generateCommonConfirmDeletionTests()
 
         it("dispatches collections.get", () => {
-          sinon.assert.calledWith(
-            stubs.collectionsGet,
-            video.collection_key
-          )
+          sinon.assert.calledWith(stubs.collectionsGet, video.collection_key)
           sinon.assert.calledWith(
             stubs.dispatch,
             stubs.collectionsGet.returnValues[0]
           )
         })
-
       })
 
       describe("when not shouldUpdateCollection", () => {
@@ -188,7 +182,7 @@ describe("DeleteVideoDialogTests", () => {
           wrapper = renderComponentWithStubs({
             video,
             shouldUpdateCollection: false,
-            window:                 stubs.window,
+            window:                 stubs.window
           })
           await wrapper.instance().confirmDeletion()
         })
@@ -196,12 +190,11 @@ describe("DeleteVideoDialogTests", () => {
         generateCommonConfirmDeletionTests()
 
         it("assigns window.location", () => {
-          const expectedLocation = (
-            `someOrigin/collections/${video.collection_key}/`
-          )
+          const expectedLocation = `someOrigin/collections/${
+            video.collection_key
+          }/`
           assert.equal(stubs.window.location, expectedLocation)
         })
-
       })
     })
   })

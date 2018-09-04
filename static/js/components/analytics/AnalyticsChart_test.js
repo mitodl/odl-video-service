@@ -20,7 +20,7 @@ describe("AnalyticsChartTests", () => {
   })
 
   describe("ConditionalLabel", () => {
-    const renderLabel = (props) => {
+    const renderLabel = props => {
       return shallow(<ConditionalLabel {...props} />)
     }
 
@@ -55,7 +55,6 @@ describe("AnalyticsChartTests", () => {
   })
 
   describe("AnalyticsChart", () => {
-
     const renderChart = () => {
       const wrapper = mount(<AnalyticsChart {...props} />)
       wrapper.update()
@@ -71,7 +70,9 @@ describe("AnalyticsChartTests", () => {
       it("removes resize handler", () => {
         const wrapper = renderChart()
         const tearDownResizeStub = sandbox.stub(
-          wrapper.instance(), '_tearDownResizeHandler')
+          wrapper.instance(),
+          "_tearDownResizeHandler"
+        )
         assert.isFalse(tearDownResizeStub.called)
         wrapper.unmount()
         assert.isTrue(tearDownResizeStub.called)
@@ -82,7 +83,9 @@ describe("AnalyticsChartTests", () => {
       it("calls updateDimensions", () => {
         const wrapper = renderChart()
         const _updateDimensionsStub = sandbox.stub(
-          wrapper.instance(), '_updateDimensions')
+          wrapper.instance(),
+          "_updateDimensions"
+        )
         assert.isFalse(_updateDimensionsStub.called)
         wrapper.instance().onResize()
         assert.isTrue(_updateDimensionsStub.called)

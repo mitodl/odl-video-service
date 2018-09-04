@@ -86,7 +86,7 @@ class VideoPlayer extends React.Component<*, void> {
     cornerFunc: (corner: string) => void,
     embed: ?boolean,
     videoPlayerRef?: (player: any) => void,
-    overlayChildren?: any,
+    overlayChildren?: any
   }
 
   player: Object
@@ -258,9 +258,7 @@ class VideoPlayer extends React.Component<*, void> {
   switchVideoSource = () => {
     const { video } = this.props
     if (video.sources.length > 0) {
-      this.player
-        .reset()
-        .src(video.sources)
+      this.player.reset().src(video.sources)
     }
   }
 
@@ -420,7 +418,7 @@ class VideoPlayer extends React.Component<*, void> {
             video.multiangle ? "video-odl-multiangle" : ""
           } ${embed ? "video-odl-embed" : ""}`}
           ref={node => (this.videoContainer = node)}
-          style={{position: "relative"}}
+          style={{ position: "relative" }}
         >
           <div data-vjs-player className="vjs-big-play-centered">
             <video

@@ -7,8 +7,7 @@ import { mount } from "enzyme"
 
 import { actions } from "../actions"
 
-import { mapStateToProps, withPagedCollections } from './withPagedCollections'
-
+import { mapStateToProps, withPagedCollections } from "./withPagedCollections"
 
 describe("withPagedCollections", () => {
   let sandbox
@@ -28,7 +27,7 @@ describe("withPagedCollections", () => {
           collectionsPagination: {
             count:       0,
             currentPage: 42,
-            pages:       {},
+            pages:       {}
           }
         }
         const props = mapStateToProps(state)
@@ -42,7 +41,7 @@ describe("withPagedCollections", () => {
             currentPage: 42,
             pages:       {
               "42": {}
-            },
+            }
           }
         }
         const props = mapStateToProps(state)
@@ -53,8 +52,8 @@ describe("withPagedCollections", () => {
     it("passes collectionsPagination state", () => {
       const state = {
         collectionsPagination: {
-          someKey:      'someValue',
-          someOtherKey: 'someOtherValue',
+          someKey:      "someValue",
+          someOtherKey: "someOtherValue"
         }
       }
       const props = mapStateToProps(state)
@@ -64,8 +63,8 @@ describe("withPagedCollections", () => {
 
   describe("WrappedComponent", () => {
     class DummyComponent extends React.Component<*, void> {
-      render () {
-        return (<div>DummyComponent</div>)
+      render() {
+        return <div>DummyComponent</div>
       }
     }
 
@@ -79,13 +78,13 @@ describe("withPagedCollections", () => {
           updateCurrentPage: sandbox.stub(
             WrappedComponent.prototype,
             "updateCurrentPage"
-          ),
+          )
         }
       })
 
       describe("when needsUpdate is true", () => {
         it("calls updateCurrentPage", () => {
-          mount(<WrappedComponent needsUpdate={true}/>)
+          mount(<WrappedComponent needsUpdate={true} />)
           sinon.assert.called(stubs.updateCurrentPage)
         })
       })
@@ -104,7 +103,7 @@ describe("withPagedCollections", () => {
       beforeEach(() => {
         stubs = {
           dispatch: sandbox.spy(),
-          getPage:  sandbox.stub(actions.collectionsPagination, 'getPage'),
+          getPage:  sandbox.stub(actions.collectionsPagination, "getPage")
         }
       })
 
@@ -114,26 +113,23 @@ describe("withPagedCollections", () => {
           <WrappedComponent
             dispatch={stubs.dispatch}
             needsUpdate={true}
-            collectionsPagination={{currentPage}}
+            collectionsPagination={{ currentPage }}
           />
         )
-        sinon.assert.calledWith(
-          stubs.getPage,
-          {page: currentPage}
-        )
+        sinon.assert.calledWith(stubs.getPage, { page: currentPage })
         sinon.assert.calledWith(stubs.dispatch, stubs.getPage.returnValues[0])
       })
     })
 
     describe("generatePropsForWrappedComponent", () => {
       it("passes on expected props", () => {
-        const extraProps = {someKey: 'someVal', someOtherKey: 'someOtherVal'}
+        const extraProps = { someKey: "someVal", someOtherKey: "someOtherVal" }
         const currentPage = 42
         const collectionsPagination = {
           currentPage,
           pages: {
             [currentPage]: {
-              somePageDataKey: 'somePageDataValue'
+              somePageDataKey: "somePageDataValue"
             }
           }
         }
@@ -143,18 +139,15 @@ describe("withPagedCollections", () => {
             collectionsPagination={collectionsPagination}
           />
         )
-        const wrapped = wrapper.find('DummyComponent')
-        assert.deepEqual(
-          wrapped.props(),
-          {
-            ...extraProps,
-            collectionsPagination: {
-              ...collectionsPagination,
-              setCurrentPage:  wrapper.instance().setCurrentPage,
-              currentPageData: collectionsPagination.pages[currentPage],
-            }
+        const wrapped = wrapper.find("DummyComponent")
+        assert.deepEqual(wrapped.props(), {
+          ...extraProps,
+          collectionsPagination: {
+            ...collectionsPagination,
+            setCurrentPage:  wrapper.instance().setCurrentPage,
+            currentPageData: collectionsPagination.pages[currentPage]
           }
-        )
+        })
       })
     })
   })

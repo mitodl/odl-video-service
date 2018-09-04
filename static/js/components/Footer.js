@@ -38,7 +38,8 @@ export default class Footer extends React.Component<*, void> {
                   </a>
                   <a
                     className="contact-us"
-                    href={`mailto:${SETTINGS.support_email_address}`}>
+                    href={`mailto:${SETTINGS.support_email_address}`}
+                  >
                     Contact Us
                   </a>
                 </div>

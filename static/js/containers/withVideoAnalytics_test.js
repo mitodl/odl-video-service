@@ -7,8 +7,7 @@ import { mount } from "enzyme"
 
 import { actions } from "../actions"
 
-import { mapStateToProps, withVideoAnalytics } from './withVideoAnalytics'
-
+import { mapStateToProps, withVideoAnalytics } from "./withVideoAnalytics"
 
 describe("withVideoAnalytics", () => {
   let sandbox
@@ -24,22 +23,24 @@ describe("withVideoAnalytics", () => {
   describe("mapStateToProps", () => {
     describe("needsUpdate", () => {
       const testSpecs = [
-        [{video: true, processing: true, loaded: false}, false],
-        [{video: true, processing: true, loaded: true}, false],
-        [{video: true, processing: false, loaded: false}, true],
-        [{video: true, processing: false, loaded: true}, false],
-        [{video: false, processing: true, loaded: false}, false],
-        [{video: false, processing: true, loaded: true}, false],
-        [{video: false, processing: false, loaded: false}, false],
-        [{video: false, processing: false, loaded: true}, false]
+        [{ video: true, processing: true, loaded: false }, false],
+        [{ video: true, processing: true, loaded: true }, false],
+        [{ video: true, processing: false, loaded: false }, true],
+        [{ video: true, processing: false, loaded: true }, false],
+        [{ video: false, processing: true, loaded: false }, false],
+        [{ video: false, processing: true, loaded: true }, false],
+        [{ video: false, processing: false, loaded: false }, false],
+        [{ video: false, processing: false, loaded: true }, false]
       ]
-      testSpecs.forEach((testSpec) => {
+      testSpecs.forEach(testSpec => {
         const [inputs, expected] = testSpec
-        it(`is '${JSON.stringify(expected)}' when inputs are '${JSON.stringify(inputs)}'`, () => {
+        it(`is '${JSON.stringify(expected)}' when inputs are '${JSON.stringify(
+          inputs
+        )}'`, () => {
           const state = {
             videoAnalytics: {
               loaded:     inputs.loaded,
-              processing: inputs.processing,
+              processing: inputs.processing
             }
           }
           const ownProps = { video: inputs.video }
@@ -50,13 +51,13 @@ describe("withVideoAnalytics", () => {
 
       it("passes ownProps.video", () => {
         const state = { videoAnalytics: {} }
-        const ownProps = { video: 'someVideoObj' }
+        const ownProps = { video: "someVideoObj" }
         const props = mapStateToProps(state, ownProps)
         assert.equal(props.video, ownProps.video)
       })
 
       it("passes state.videoAnalytics", () => {
-        const state = { videoAnalytics: {'some': 'videoAnalytics'} }
+        const state = { videoAnalytics: { some: "videoAnalytics" } }
         const props = mapStateToProps(state)
         assert.equal(props.videoAnalytics, state.videoAnalytics)
       })
@@ -64,8 +65,8 @@ describe("withVideoAnalytics", () => {
 
     describe("WrappedComponent", () => {
       class DummyComponent extends React.Component<*, void> {
-        render () {
-          return (<div>DummyComponent</div>)
+        render() {
+          return <div>DummyComponent</div>
         }
       }
 
@@ -76,13 +77,13 @@ describe("withVideoAnalytics", () => {
 
         beforeEach(() => {
           stubs = {
-            update: sandbox.stub(WrappedComponent.prototype, "update"),
+            update: sandbox.stub(WrappedComponent.prototype, "update")
           }
         })
 
         describe("when needsUpdate is true", () => {
           it("calls update", () => {
-            mount(<WrappedComponent needsUpdate={true}/>)
+            mount(<WrappedComponent needsUpdate={true} />)
             sinon.assert.called(stubs.update)
           })
         })
@@ -101,17 +102,17 @@ describe("withVideoAnalytics", () => {
         beforeEach(() => {
           stubs = {
             dispatch:          sandbox.spy(),
-            videoAnalyticsGet:  sandbox.stub(actions.videoAnalytics, 'get'),
+            videoAnalyticsGet: sandbox.stub(actions.videoAnalytics, "get")
           }
         })
 
         it("dispatches action with video.key", () => {
-          const videoKey = 'someVideoKey'
+          const videoKey = "someVideoKey"
           mount(
             <WrappedComponent
               dispatch={stubs.dispatch}
               needsUpdate={true}
-              video={{key: videoKey}}
+              video={{ key: videoKey }}
             />
           )
           sinon.assert.calledWith(stubs.videoAnalyticsGet, videoKey)
@@ -124,22 +125,25 @@ describe("withVideoAnalytics", () => {
 
       describe("generatePropsForWrappedComponent", () => {
         it("passes on expected props", () => {
-          const extraProps = {someKey: 'someVal', someOtherKey: 'someOtherVal'}
-          const video = {'some': 'video'}
-          const videoAnalytics = {'some': 'videoAnalytics'}
+          const extraProps = {
+            someKey:      "someVal",
+            someOtherKey: "someOtherVal"
+          }
+          const video = { some: "video" }
+          const videoAnalytics = { some: "videoAnalytics" }
           const wrapper = mount(
-            <WrappedComponent {...extraProps} video={video}
-              videoAnalytics={videoAnalytics} />
+            <WrappedComponent
+              {...extraProps}
+              video={video}
+              videoAnalytics={videoAnalytics}
+            />
           )
-          const wrapped = wrapper.find('DummyComponent')
-          assert.deepEqual(
-            wrapped.props(),
-            {
-              ...extraProps,
-              video,
-              videoAnalytics,
-            }
-          )
+          const wrapped = wrapper.find("DummyComponent")
+          assert.deepEqual(wrapped.props(), {
+            ...extraProps,
+            video,
+            videoAnalytics
+          })
         })
       })
     })

@@ -1,7 +1,7 @@
 // @flow
 import React from "react"
 import sinon from "sinon"
-import { mount, shallow} from "enzyme"
+import { mount, shallow } from "enzyme"
 import { assert } from "chai"
 import { Provider } from "react-redux"
 import configureTestStore from "redux-asserts"
@@ -40,14 +40,14 @@ describe("VideoEmbedPage", () => {
     let wrapper
     beforeEach(() => {
       sandbox
-        .stub(UnconnectedVideoEmbedPage.prototype, 'getVideoStatus')
-        .returns('PROCESSING')
-      const element = (<UnconnectedVideoEmbedPage video={video} />)
+        .stub(UnconnectedVideoEmbedPage.prototype, "getVideoStatus")
+        .returns("PROCESSING")
+      const element = <UnconnectedVideoEmbedPage video={video} />
       wrapper = shallow(element)
     })
 
     it("renders processing message", () => {
-      assert.isTrue(wrapper.find('.processing-message').exists())
+      assert.isTrue(wrapper.find(".processing-message").exists())
     })
   })
 
@@ -55,14 +55,14 @@ describe("VideoEmbedPage", () => {
     let wrapper
     beforeEach(() => {
       sandbox
-        .stub(UnconnectedVideoEmbedPage.prototype, 'getVideoStatus')
-        .returns('ERROR')
-      const element = (<UnconnectedVideoEmbedPage video={video} />)
+        .stub(UnconnectedVideoEmbedPage.prototype, "getVideoStatus")
+        .returns("ERROR")
+      const element = <UnconnectedVideoEmbedPage video={video} />
       wrapper = shallow(element)
     })
 
     it("renders error message", () => {
-      assert.isTrue(wrapper.find('.error-message').exists())
+      assert.isTrue(wrapper.find(".error-message").exists())
     })
   })
 

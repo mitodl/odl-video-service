@@ -43,7 +43,7 @@ export class VideoDetailPage extends React.Component<*, void> {
     commonUi: CommonUiState,
     videoUi: VideoUiState,
     showDialog: Function,
-    editable: boolean,
+    editable: boolean
   }
 
   videoPlayerRef: Object
@@ -253,8 +253,7 @@ export class VideoDetailPage extends React.Component<*, void> {
           cornerFunc={this.updateCorner}
           selectedCorner={videoUi.corner}
           overlayChildren={this.renderOverlayChildren()}
-        >
-        </VideoPlayer>
+        />
       </div>
     )
   }
@@ -265,8 +264,12 @@ export class VideoDetailPage extends React.Component<*, void> {
 
   renderAnalyticsOverlay() {
     const { video } = this.props
-    const { analyticsOverlayIsVisible, videoTime, duration } = this.props.videoUi
-    if (! analyticsOverlayIsVisible) {
+    const {
+      analyticsOverlayIsVisible,
+      videoTime,
+      duration
+    } = this.props.videoUi
+    if (!analyticsOverlayIsVisible) {
       return null
     }
     const overlayPadding = "10px"

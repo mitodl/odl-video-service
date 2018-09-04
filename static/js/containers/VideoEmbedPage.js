@@ -27,13 +27,12 @@ export class VideoEmbedPage extends React.Component<*, void> {
     dispatch(actions.videoUi.updateVideoJsSync(corner))
   }
 
-  renderBody () {
+  renderBody() {
     const { video, videoUi } = this.props
     const videoStatus = this.getVideoStatus(video)
-    if (videoStatus === 'PROCESSING') {
+    if (videoStatus === "PROCESSING") {
       return this.renderProcessingMessage()
-    }
-    else if (videoStatus === 'ERROR') {
+    } else if (videoStatus === "ERROR") {
       return this.renderErrorMessage()
     }
     return (
@@ -48,16 +47,16 @@ export class VideoEmbedPage extends React.Component<*, void> {
     )
   }
 
-  getVideoStatus (video:Video) {
+  getVideoStatus(video: Video) {
     if (videoIsProcessing(video)) {
-      return 'PROCESSING'
+      return "PROCESSING"
     } else if (videoHasError(video)) {
-      return 'ERROR'
+      return "ERROR"
     }
-    return 'READY'
+    return "READY"
   }
 
-  renderProcessingMessage () {
+  renderProcessingMessage() {
     return (
       <div className="processing-message">
         <h5>Video processing...</h5>
@@ -66,7 +65,7 @@ export class VideoEmbedPage extends React.Component<*, void> {
     )
   }
 
-  renderErrorMessage () {
+  renderErrorMessage() {
     return (
       <div className="error-message">
         <h5>Error</h5>
@@ -86,7 +85,7 @@ export class VideoEmbedPage extends React.Component<*, void> {
   }
 }
 
-export const mapStateToProps = (state:{videoUi:VideoUiState}) => {
+export const mapStateToProps = (state: { videoUi: VideoUiState }) => {
   const { videoUi } = state
   return {
     videoUi

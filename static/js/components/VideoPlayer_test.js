@@ -467,12 +467,12 @@ describe("VideoPlayer", () => {
   })
 
   it("renders overlayChildren", () => {
-    const overlayChildKeys = [...Array(3).keys()].map((i) => `child-${i}`)
-    const overlayChildren = overlayChildKeys.map((key) => {
-      return (<div key={key} className="overlay-child"/>)
+    const overlayChildKeys = [...Array(3).keys()].map(i => `child-${i}`)
+    const overlayChildren = overlayChildKeys.map(key => {
+      return <div key={key} className="overlay-child" />
     })
-    const wrapper = renderPlayer({overlayChildren})
-    const renderedChildKeys = wrapper.find(".overlay-child").map((el) => el.key())
+    const wrapper = renderPlayer({ overlayChildren })
+    const renderedChildKeys = wrapper.find(".overlay-child").map(el => el.key())
     assert.deepEqual(overlayChildKeys.sort(), renderedChildKeys.sort())
   })
 })

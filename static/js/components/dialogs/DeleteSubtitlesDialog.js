@@ -10,19 +10,18 @@ import { actions } from "../../actions"
 
 import type { VideoSubtitle } from "../../flow/videoTypes"
 
-
 export class DeleteSubtitlesDialog extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
-      open: boolean,
-      hideDialog: Function,
-      subtitlesFile: VideoSubtitle,
-      videoKey: string,
+    open: boolean,
+    hideDialog: Function,
+    subtitlesFile: VideoSubtitle,
+    videoKey: string
   }
 
   render() {
     const { open, hideDialog, subtitlesFile } = this.props
-    if (! subtitlesFile) {
+    if (!subtitlesFile) {
       return null
     }
 
@@ -56,13 +55,15 @@ export class DeleteSubtitlesDialog extends React.Component<*, void> {
   }
 
   addToastMessage = () => {
-    this.props.dispatch(actions.toast.addMessage({
-      message: {
-        key:     "subtitles-deleted",
-        content: "Subtitles file deleted",
-        icon:    "check"
-      }
-    }))
+    this.props.dispatch(
+      actions.toast.addMessage({
+        message: {
+          key:     "subtitles-deleted",
+          content: "Subtitles file deleted",
+          icon:    "check"
+        }
+      })
+    )
   }
 
   updateVideo = () => {
@@ -70,17 +71,19 @@ export class DeleteSubtitlesDialog extends React.Component<*, void> {
   }
 }
 
-export const mapStateToProps = (state:Object) => {
+export const mapStateToProps = (state: Object) => {
   const { videoUi, videos } = state
   const { currentVideoKey, currentSubtitlesKey } = videoUi
   const video = videos.data.get(currentVideoKey)
   let subtitlesFile = null
   if (video) {
-    subtitlesFile = _.find(video.videosubtitle_set, {id: currentSubtitlesKey})
+    subtitlesFile = _.find(video.videosubtitle_set, { id: currentSubtitlesKey })
   }
   return { subtitlesFile, videoKey: currentVideoKey }
 }
 
-const ConnectedDeleteSubtitlesDialog = connect(mapStateToProps)(DeleteSubtitlesDialog)
+const ConnectedDeleteSubtitlesDialog = connect(mapStateToProps)(
+  DeleteSubtitlesDialog
+)
 
 export default ConnectedDeleteSubtitlesDialog

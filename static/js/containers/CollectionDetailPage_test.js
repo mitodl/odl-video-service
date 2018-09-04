@@ -428,8 +428,11 @@ describe("CollectionDetailPage", () => {
     })
 
     describe("renderDescription", () => {
-      // $FlowFixMe: defaults are ok.
-      const renderDescription = ({extraProps = {}, description = ""} = {}) => {
+      const renderDescription = ({
+        // $FlowFixMe: defaults are ok.
+        extraProps = {},
+        description = ""
+      } = {}) => {
         page = new CollectionDetailPage({ ...props, ...extraProps })
         return shallow(<div>{page.renderDescription(description)}</div>)
       }
@@ -454,8 +457,13 @@ describe("CollectionDetailPage", () => {
     })
 
     describe("renderVideos", () => {
-      // $FlowFixMe: defaults are ok.
-      const renderVideos = ({extraProps = {}, videos = [], isAdmin = true} = {}) => {
+      const renderVideos = ({
+        // $FlowFixMe: defaults are ok.
+        extraProps = {},
+        videos = [],
+        // $FlowFixMe: defaults are ok.
+        isAdmin = true
+      } = {}) => {
         page = new CollectionDetailPage({ ...props, ...extraProps })
         // $FlowFixMe: isAdmin is ok.
         return shallow(<div>{page.renderVideos(videos, isAdmin)}</div>)
@@ -526,8 +534,12 @@ describe("CollectionDetailPage", () => {
         // no side-effects.
         // dorska, 2018-05-10.
 
-        // $FlowFixMe: defaults are ok.
-        const showVideoDialog = ({extraProps = {}, dialogName = "", videoKey = ""} = {}) => {
+        const showVideoDialog = ({
+          // $FlowFixMe: defaults are ok.
+          extraProps = {},
+          dialogName = "",
+          videoKey = ""
+        } = {}) => {
           // $FlowFixMe: Constructor call is intentional.
           page = new CollectionDetailPage({ ...props, ...extraProps })
           page.showVideoDialog(dialogName, videoKey)

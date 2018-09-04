@@ -24,7 +24,9 @@ describe("collections endpoints", () => {
   })
 
   it("adds a new collection to the beginning of the list", async () => {
-    sandbox.stub(api, "getCollections").returns(Promise.resolve({results: collections}))
+    sandbox
+      .stub(api, "getCollections")
+      .returns(Promise.resolve({ results: collections }))
     let state = await dispatchThen(actions.collectionsList.get(), [
       actions.collectionsList.get.requestType,
       actions.collectionsList.get.successType
@@ -40,6 +42,9 @@ describe("collections endpoints", () => {
       actions.collectionsList.post.requestType,
       actions.collectionsList.post.successType
     ])
-    assert.deepEqual(state.collectionsList.data.results, [newCollection, ...collections])
+    assert.deepEqual(state.collectionsList.data.results, [
+      newCollection,
+      ...collections
+    ])
   })
 })

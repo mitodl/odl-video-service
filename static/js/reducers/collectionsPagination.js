@@ -4,19 +4,19 @@ import type { CollectionsPagination } from "../flow/collectionTypes"
 
 import { constants } from "../actions/collectionsPagination"
 
-export const INITIAL_COLLECTIONS_PAGINATION_STATE:CollectionsPagination = {
+export const INITIAL_COLLECTIONS_PAGINATION_STATE: CollectionsPagination = {
   count:       0,
   currentPage: 1,
-  pages:       {},
+  pages:       {}
 }
 
 const generateInitialPageState = () => ({
   status:      null,
-  collections: [],
+  collections: []
 })
 
 const reducer = (
-  state:CollectionsPagination = INITIAL_COLLECTIONS_PAGINATION_STATE,
+  state: CollectionsPagination = INITIAL_COLLECTIONS_PAGINATION_STATE,
   action: Action<any, null>
 ) => {
   switch (action.type) {
@@ -27,23 +27,23 @@ const reducer = (
         ...state.pages,
         [action.payload.page]: {
           ...generateInitialPageState(),
-          status: 'LOADING',
+          status: "LOADING"
         }
       }
     }
   case constants.RECEIVE_GET_PAGE_SUCCESS:
     return {
       ...state,
-      count:     action.payload.count,
+      count:    action.payload.count,
       numPages: action.payload.numPages,
-      pages:     {
+      pages:    {
         ...state.pages,
         [action.payload.page]: {
           ...state.pages[action.payload.page],
           collections: action.payload.collections,
           startIndex:  action.payload.startIndex,
           endIndex:    action.payload.endIndex,
-          status:      'LOADED',
+          status:      "LOADED"
         }
       }
     }
@@ -54,15 +54,15 @@ const reducer = (
         ...state.pages,
         [action.payload.page]: {
           ...state.pages[action.payload.page],
-          status: 'ERROR',
-          error:  action.payload.error,
+          status: "ERROR",
+          error:  action.payload.error
         }
       }
     }
   case constants.SET_CURRENT_PAGE:
     return {
       ...state,
-      currentPage: action.payload.currentPage,
+      currentPage: action.payload.currentPage
     }
   default:
     return state

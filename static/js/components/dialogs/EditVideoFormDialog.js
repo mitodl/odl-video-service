@@ -177,7 +177,7 @@ class EditVideoFormDialog extends React.Component<*, void> {
         message: {
           key:     "video-saved",
           content: "Changes saved",
-          icon:    "check",
+          icon:    "check"
         }
       })
       this.onClose()
@@ -186,7 +186,7 @@ class EditVideoFormDialog extends React.Component<*, void> {
     }
   }
 
-  addToastMessage (...args) {
+  addToastMessage(...args) {
     const { dispatch } = this.props
     dispatch(actions.toast.addMessage(...args))
   }
