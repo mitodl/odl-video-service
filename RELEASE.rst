@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.28.0
+Version 0.28.0 (Released September 05, 2018)
 --------------
 
 - Fix formatting with fmt
