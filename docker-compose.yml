@@ -1,17 +1,17 @@
 version: '2.1'
 services:
   db:
-    image: postgres
+    image: postgres:9.6
     ports:
       - "5432"
 
   redis:
-    image: redis
+    image: redis:3.2.10
     ports:
       - "6379"
 
   nginx:
-    image: nginx
+    image: nginx:1.9.5
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/web.conf
       - ./:/src
