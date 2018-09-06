@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.29.0 (Released September 06, 2018)
+--------------
+
+- Remove IS_OSX now that Docker for Mac is used by everyone (#687)
+
 Version 0.28.0 (Released September 05, 2018)
 --------------
 
