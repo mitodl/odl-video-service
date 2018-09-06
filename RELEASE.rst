@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.29.1
+--------------
+
+- Configure raven.js (#688)
+
 Version 0.29.0 (Released September 06, 2018)
 --------------
 
