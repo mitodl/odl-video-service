@@ -36,8 +36,6 @@ export const sectionFAQs = {
           2-131, 2-190, 6-120 and 34-101. Recording requests should be sent to{" "}
           <a
             href={`mailto:${SETTINGS.support_email_address}`}
-            target="_blank"
-            rel="noopener noreferrer"
           >
             {SETTINGS.support_email_address}
           </a>
@@ -57,8 +55,6 @@ export const sectionFAQs = {
         sending an email to{" "}
         <a
           href={`mailto:${SETTINGS.support_email_address}`}
-          target="_blank"
-          rel="noopener noreferrer"
         >
           {SETTINGS.support_email_address}
         </a>
@@ -81,8 +77,6 @@ export const sectionFAQs = {
           To request permission to upload your own videos, contact:{" "}
           <a
             href={`mailto:${SETTINGS.support_email_address}`}
-            target="_blank"
-            rel="noopener noreferrer"
           >
             {SETTINGS.support_email_address}
           </a>
