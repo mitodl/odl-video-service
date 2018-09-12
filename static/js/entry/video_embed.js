@@ -19,7 +19,6 @@ Raven.config(SETTINGS.sentry_dsn, {
 
 window.Raven = Raven
 
-
 // Object.entries polyfill
 import entries from "object.entries"
 if (!Object.entries) {
