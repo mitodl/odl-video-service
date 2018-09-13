@@ -191,8 +191,12 @@
       "description": "YouTube refresh token",
       "required": true
     },
+    "YT_UPLOAD_FREQUENCY": {
+      "description": "How often to run the upload_youtube_videos task, in seconds",
+      "required": false
+    },
     "YT_UPLOAD_LIMIT": {
-      "description": "Max YouTube videos to upload per task run",
+      "description": "Max YouTube videos to upload per task run (should not exceed 100/day total)",
       "required": false
     }
   },

@@ -486,7 +486,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'upload_youtube_videos': {
         'task': 'cloudsync.tasks.upload_youtube_videos',
-        'schedule': crontab(minute=0)
+        'schedule': get_int('YT_UPLOAD_FREQUENCY', 3600)
     }
 }
 
