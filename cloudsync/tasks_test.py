@@ -353,7 +353,7 @@ def test_upload_youtube_videos(mocker, source, max_uploads):
     Test that the upload_youtube_videos task calls YouTubeApi.upload_video
     & creates a YoutubeVideo object for each public video, up to the max daily limit
     """
-    settings.YT_DAILY_UPLOAD_LIMIT = max_uploads
+    settings.YT_UPLOAD_LIMIT = max_uploads
     private_videos = VideoFactory.create_batch(2, is_public=False, status=VideoStatus.COMPLETE)
     VideoFactory.create_batch(3,
                               collection=CollectionFactory(stream_source=source),
@@ -367,7 +367,7 @@ def test_upload_youtube_videos(mocker, source, max_uploads):
     })
     upload_youtube_videos()
     assert mock_uploader.call_count == (min(3, max_uploads) if source != StreamSource.CLOUDFRONT else 0)
-    for video in Video.objects.filter(is_public=True).order_by('-created_at')[:settings.YT_DAILY_UPLOAD_LIMIT]:
+    for video in Video.objects.filter(is_public=True).order_by('-created_at')[:settings.YT_UPLOAD_LIMIT]:
         if video.collection.stream_source != StreamSource.CLOUDFRONT:
             assert YouTubeVideo.objects.filter(video=video).first() is not None
         else:
