@@ -34,9 +34,7 @@ export const sectionFAQs = {
           Some rooms on campus at MIT have been configured to automatically
           record lectures using multiple cameras. Currently these rooms include
           2-131, 2-190, 6-120 and 34-101. Recording requests should be sent to{" "}
-          <a
-            href={`mailto:${SETTINGS.support_email_address}`}
-          >
+          <a href={`mailto:${SETTINGS.support_email_address}`}>
             {SETTINGS.support_email_address}
           </a>
         </div>
@@ -53,9 +51,7 @@ export const sectionFAQs = {
         Automated lecture capture is currently available in rooms 2-131, 2-190,
         6-120 and 34-101. You can request that your lectures be recorded by
         sending an email to{" "}
-        <a
-          href={`mailto:${SETTINGS.support_email_address}`}
-        >
+        <a href={`mailto:${SETTINGS.support_email_address}`}>
           {SETTINGS.support_email_address}
         </a>
       </div>
@@ -75,9 +71,7 @@ export const sectionFAQs = {
         <li>Anyone in the MIT community can host videos on OVS.</li>
         <li>
           To request permission to upload your own videos, contact:{" "}
-          <a
-            href={`mailto:${SETTINGS.support_email_address}`}
-          >
+          <a href={`mailto:${SETTINGS.support_email_address}`}>
             {SETTINGS.support_email_address}
           </a>
         </li>
