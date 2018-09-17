@@ -168,7 +168,7 @@ def upload_youtube_videos():
     """
     yt_queue = Video.objects.filter(is_public=True).filter(
         status=VideoStatus.COMPLETE).filter(youtubevideo__id__isnull=True).exclude(
-            collection__stream_source=StreamSource.CLOUDFRONT).order_by('-created_at')[:settings.YT_DAILY_UPLOAD_LIMIT]
+            collection__stream_source=StreamSource.CLOUDFRONT).order_by('-created_at')[:settings.YT_UPLOAD_LIMIT]
     for video in yt_queue.all():
         youtube_video = YouTubeVideo.objects.create(video=video)
         try:
