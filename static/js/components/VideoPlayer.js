@@ -369,12 +369,12 @@ class VideoPlayer extends React.Component<*, void> {
           gaEvents.forEach((event: string) => {
             createEventHandler(event, video.key)
           })
+          const params = new URLSearchParams(window.location.search)
+          this.currentTime(parseInt(params.get("start")) || 0)
         })
         if (this.tech_.hls !== undefined) {
           this.tech_.hls.selectPlaylist = selectPlaylist
         }
-        const params = new URLSearchParams(window.location.search)
-        this.currentTime(parseInt(params.get("start")) || 0)
       }
     )
     if (useYouTube) {
