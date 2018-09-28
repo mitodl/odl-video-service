@@ -127,16 +127,13 @@ describe("VideoPlayer", () => {
         })
         const enableTouchActivityStub = sandbox.stub()
         const onStub = sandbox.stub()
-        const timeStub = sandbox.stub()
         args[2].call({
           enableTouchActivity: enableTouchActivityStub,
           on:                  onStub,
-          currentTime:         timeStub,
           tech_:               { hls: {} }
         })
         sinon.assert.calledWith(enableTouchActivityStub)
         sinon.assert.calledWith(onStub)
-        sinon.assert.calledWith(timeStub)
         if (video.multiangle) {
           sinon.assert.calledWith(gaSetStub, {
             dimension1: "camera1"
