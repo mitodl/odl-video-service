@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.30.0
+--------------
+
+- Added server status end-point for checking application certificate (#704)
+- remove target from mailto links in faq (#699)
+- Run Youtube upload task every hour (#703)
+- Pin docker image versions (#693)
+
 Version 0.29.1 (Released September 06, 2018)
 --------------
 
