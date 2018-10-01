@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.30.0
+Version 0.30.0 (Released October 01, 2018)
 --------------
 
 - Added server status end-point for checking application certificate (#704)
