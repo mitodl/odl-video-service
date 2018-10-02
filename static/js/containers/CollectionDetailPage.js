@@ -71,11 +71,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
       <DocumentTitle title={collection ? `OVS | ${collection.title}` : "OVS"}>
         <WithDrawer>
           <VideoSaverScript />
-          <div className="collection-detail-content">
-            {collectionError
-              ? this.renderError(collectionError)
-              : this.renderBody()}
-          </div>
+          <div className="collection-detail-content">{this.renderBody()}</div>
         </WithDrawer>
       </DocumentTitle>
     )

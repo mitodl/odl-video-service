@@ -49,12 +49,16 @@ def has_video_view_permission(obj, request):
         return True
     if obj.is_private:
         return has_admin_permission(obj.collection, request)
+    if has_admin_permission(obj.collection, request):
+        return True
     if request.method in SAFE_METHODS:
         view_list = list(obj.view_lists.values_list('name', flat=True))
         if view_list:
             all_lists = view_list + list(obj.admin_lists.values_list('name', flat=True))
             return has_common_lists(request.user, all_lists)
-    return has_collection_view_permission(obj.collection, request)
+        # check collection's view list
+        return has_common_lists(request.user, list(obj.collection.view_lists.values_list('name', flat=True)))
+    return False
 
 
 def has_collection_view_permission(obj, request):
@@ -70,12 +74,8 @@ def has_collection_view_permission(obj, request):
         bool: True if the user is a superuser, owner, or is on the view or admin moira list
 
     """
-    if request.user == obj.owner or request.user.is_superuser:
+    if request.user == obj.owner or request.user.is_superuser or request.method in SAFE_METHODS:
         return True
-    if request.method in SAFE_METHODS:
-        lists = list(obj.view_lists.values_list('name', flat=True)) + \
-                list(obj.admin_lists.values_list('name', flat=True))
-        return has_common_lists(request.user, lists)
     return has_admin_permission(obj, request)
 
 
@@ -96,7 +96,7 @@ def has_admin_permission(obj, request):
     return has_common_lists(request.user, list(obj.admin_lists.values_list('name', flat=True)))
 
 
-class HasCollectionPermissions(IsAuthenticated):
+class HasCollectionPermissions(BasePermission):
     """
     Permission to view, edit, or create collections
     View/edit currently both limited to users with admin access
@@ -110,7 +110,7 @@ class HasCollectionPermissions(IsAuthenticated):
 
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
-            return has_collection_view_permission(obj, request)
+            return True
         return has_admin_permission(obj, request)
 
 

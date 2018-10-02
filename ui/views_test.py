@@ -417,17 +417,15 @@ def test_collection_viewset_detail_404(logged_in_apiclient, collection_key, logg
 
 
 def test_collection_detail_anonymous(mocker, logged_in_apiclient, settings):
-    """ Test that anonymous users get redirected to login for a collection detail page """
+    """ Test that anonymous users can see the collection detail page """
     mocker.patch('ui.serializers.get_moira_client')
     mocker.patch('ui.utils.get_moira_client')
     client, _ = logged_in_apiclient
     client.logout()
     collection = CollectionFactory()
     url = reverse('collection-react-view', kwargs={'collection_key': collection.hexkey})
-    response = client.get(url, follow=True)
-    final_url, status_code = response.redirect_chain[-1]
-    assert '{}?next=/collections/{}'.format(settings.LOGIN_URL, collection.hexkey) == final_url
-    assert status_code == 302
+    result = client.get(url, follow=True)
+    assert result.status_code == status.HTTP_200_OK
 
 
 def test_collection_viewset_detail_as_superuser(mocker, logged_in_apiclient):
