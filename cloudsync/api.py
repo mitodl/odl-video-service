@@ -3,6 +3,7 @@ import logging
 import re
 from collections import namedtuple
 from datetime import datetime
+from urllib.parse import quote
 
 import pytz
 import boto3
@@ -12,7 +13,6 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
 
-from cloudsync.exceptions import VideoFilenameError
 from cloudsync.utils import VideoTranscoder
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 THUMBNAIL_PATTERN = "thumbnails/{}_thumbnail_{{count}}"
 ParsedVideoAttributes = namedtuple(
     'ParsedVideoAttributes',
-    ['prefix', 'session', 'record_date', 'record_date_str']
+    ['prefix', 'session', 'record_date', 'record_date_str', 'name']
 )
 
 
@@ -195,7 +195,7 @@ def create_lecture_video_title(video_attributes):
         if not video_attributes.record_date
         else video_attributes.record_date.strftime('%B %d, %Y')
     )
-    return 'Lecture - {}'.format(video_title_date)
+    return 'Lecture - {}'.format(video_title_date) if video_title_date else video_attributes.name
 
 
 def process_watch_file(s3_filename):
@@ -217,9 +217,18 @@ def process_watch_file(s3_filename):
             'title': collection_slug
         }
     )
+    log.exception('https://{}/{}/{}'.format(
+                settings.AWS_S3_DOMAIN,
+                settings.VIDEO_S3_WATCH_BUCKET,
+                quote(s3_filename)
+            ))
     with transaction.atomic():
         video = Video.objects.create(
-            source_url='https://{}/{}/{}'.format(settings.AWS_S3_DOMAIN, settings.VIDEO_S3_WATCH_BUCKET, s3_filename),
+            source_url='https://{}/{}/{}'.format(
+                settings.AWS_S3_DOMAIN,
+                settings.VIDEO_S3_WATCH_BUCKET,
+                quote(s3_filename)
+            ),
             collection=collection,
             title=create_lecture_video_title(video_attributes),
             multiangle=True  # Assume all videos in watch bucket are multi-angle
@@ -274,17 +283,23 @@ def parse_lecture_video_filename(filename):
           r'.*\.\w')  # Rest of filename including extension (required)
     matches = re.search(rx, filename)
     if not matches or len(matches.groups()) != 5:
-        raise VideoFilenameError('No matches found for filename %s with regex %s', filename, rx)
-    prefix, recording_date_str, _, _, session = matches.groups()
-    try:
-        record_date = datetime.strptime(recording_date_str, "%Y%b%d")
-    except ValueError:
+        log.exception('No matches found for filename %s with regex %s', filename, rx)
+        prefix = settings.UNSORTED_COLLECTION
+        session = ''
+        recording_date_str = ''
         record_date = None
+    else:
+        prefix, recording_date_str, _, _, session = matches.groups()
+        try:
+            record_date = datetime.strptime(recording_date_str, "%Y%b%d")
+        except ValueError:
+            record_date = None
     return ParsedVideoAttributes(
         prefix=prefix,
         session=session,
         record_date=record_date,
-        record_date_str=recording_date_str
+        record_date_str=recording_date_str,
+        name=filename
     )
 
 

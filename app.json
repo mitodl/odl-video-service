@@ -171,6 +171,10 @@
       "description": "X509 private key as a string",
       "required": true
     },
+    "UNSORTED_COLLECTION": {
+      "description": "Name/slug of the default collection for bad lecture capture video filenames",
+      "required": false
+    },
     "YT_PROJECT_ID": {
       "description": "YouTube project ID",
       "required": false
