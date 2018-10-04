@@ -217,11 +217,6 @@ def process_watch_file(s3_filename):
             'title': collection_slug
         }
     )
-    log.exception('https://{}/{}/{}'.format(
-                settings.AWS_S3_DOMAIN,
-                settings.VIDEO_S3_WATCH_BUCKET,
-                quote(s3_filename)
-            ))
     with transaction.atomic():
         video = Video.objects.create(
             source_url='https://{}/{}/{}'.format(
