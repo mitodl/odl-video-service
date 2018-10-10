@@ -38,7 +38,7 @@ from ui.factories import (
     VideoSubtitleFactory,
     YouTubeVideoFactory,
     CollectionFactory)
-from ui.models import Video, YouTubeVideo
+from ui.models import Video, YouTubeVideo, Collection
 from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 
 pytestmark = pytest.mark.django_db
@@ -318,11 +318,17 @@ def test_monitor_watch(mocker, user):
 
 @mock_s3
 @override_settings(LECTURE_CAPTURE_USER='admin')
-def test_monitor_watch_badname(mocker):
+@pytest.mark.parametrize('filename,unsorted', [
+    ['MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4', False],
+    ['Bad Name.mp4', True],
+    ['MIT-6.046-lec-mit-0000-2017apr06-0404.mp4', False]
+])
+def test_monitor_watch_badname(mocker, filename, unsorted):
     """
-    Test no video is created for a file with a bad name, but other filenames are processed
+    Test that videos are created for files with good and bad names
     """
-    UserFactory(username='admin')
+    settings.UNSORTED_COLLECTION = 'Unsorted'
+    user = UserFactory(username='admin')
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
@@ -331,19 +337,12 @@ def test_monitor_watch_badname(mocker):
     s3c = boto3.client('s3')
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
     s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
-    filenames = (
-        'MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4',
-        'Bad Name.mp4',
-        'MIT-6.046-lec-mit-0000-2017apr06-0404.mp4'
-    )
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
-    for filename in filenames:
-        bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
     monitor_watch_bucket.delay()
-    assert mock_encoder.call_count == 2
-    assert not Video.objects.filter(source_url__endswith=filenames[1])
-    assert Video.objects.get(source_url__endswith=filenames[0])
-    assert Video.objects.get(source_url__endswith=filenames[2])
+    mock_encoder.assert_called_once()
+    collection, _ = Collection.objects.get_or_create(slug=settings.UNSORTED_COLLECTION, owner=user)
+    assert collection.videos.filter(title=filename).exists() == unsorted
 
 
 @pytest.mark.parametrize('source', [StreamSource.CLOUDFRONT, StreamSource.YOUTUBE, None])

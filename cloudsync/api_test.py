@@ -19,7 +19,6 @@ from moto import mock_s3
 from cloudsync import api
 from cloudsync.api import upload_subtitle_to_s3
 from cloudsync.conftest import MockClientET, MockBoto
-from cloudsync.exceptions import VideoFilenameError
 from ui.constants import VideoStatus
 from ui.factories import (
     VideoFactory,
@@ -217,7 +216,8 @@ def test_parse_lecture_video_filename(course_prefix, session, date_str, expected
         prefix=course_prefix,
         session=session,
         record_date=expected_record_date,
-        record_date_str=date_str
+        record_date_str=date_str,
+        name=filename
     )
     assert api.parse_lecture_video_filename(filename) == expected_parsed_attrs
 
@@ -233,8 +233,10 @@ def test_parse_lecture_video_filename_failure(filename):
     """
     Test failure cases for parsing a lecture video filename
     """
-    with pytest.raises(VideoFilenameError):
-        api.parse_lecture_video_filename(filename)
+    settings.UNSORTED_COLLECTION = 'Unsorted'
+    attributes = api.parse_lecture_video_filename(filename)
+    assert attributes.prefix == settings.UNSORTED_COLLECTION
+    assert attributes.record_date is None
 
 
 @mock_s3
@@ -273,9 +275,11 @@ def test_watch_s3_error():
 
 @mock_s3
 @override_settings(LECTURE_CAPTURE_USER='admin')
-def test_watch_filename_error():
-    """Test that a bad filename raises a VideoFilenameError"""
-    UserFactory(username='admin')  # pylint: disable=unused-variable
+def test_watch_filename_error(mocker):
+    """Test that a video with a bad filename is moved to the 'Unsorted' collection"""
+    settings.UNSORTED_COLLECTION = 'Unsorted'
+    mocker.patch('cloudsync.api.VideoTranscoder.encode')
+    UserFactory(username='admin')
     s3 = boto3.resource('s3')
     s3c = boto3.client('s3')
     filename = 'Bad filename.mp4'
@@ -283,10 +287,9 @@ def test_watch_filename_error():
     s3c.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
     bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
-    with transaction.atomic():
-        with pytest.raises(VideoFilenameError):
-            api.process_watch_file(filename)
-    assert not Video.objects.filter(title=filename).exists()
+    api.process_watch_file(filename)
+    video = Video.objects.get(title=filename)
+    assert video.collection.title == settings.UNSORTED_COLLECTION
 
 
 @mock_s3
@@ -354,6 +357,7 @@ def test_lecture_collection_slug():
         session='Session',
         record_date=None,
         record_date_str='',
+        name='MIT-0.000-2020-Fall-lec-mit-0000-2020sep28-0000-L09.mp4'
     )
     assert api.create_lecture_collection_slug(video_attrs) == 'Prefix-Session'
     video_attrs_no_session = api.ParsedVideoAttributes(
@@ -361,6 +365,7 @@ def test_lecture_collection_slug():
         session=None,
         record_date=None,
         record_date_str='',
+        name='MIT-0.000-2020-Fall-lec-mit-0000-2020sep28-0000-L09.mp4'
     )
     assert api.create_lecture_collection_slug(video_attrs_no_session) == 'Prefix'
 
@@ -372,6 +377,7 @@ def test_lecture_video_title():
         record_date_str='2017jan01',
         prefix='Prefix',
         session='Session',
+        name='MIT-0.000-2020-Fall-lec-mit-0000-2020sep28-0000-L09.mp4'
     )
     assert api.create_lecture_video_title(video_attrs) == 'Lecture - January 01, 2017'
     video_attrs_no_date = api.ParsedVideoAttributes(
@@ -379,6 +385,7 @@ def test_lecture_video_title():
         record_date_str='2017jan01',
         prefix='Prefix',
         session='Session',
+        name='MIT-0.000-2020-Fall-lec-mit-0000-2020sep28-0000-L09.mp4'
     )
     assert api.create_lecture_video_title(video_attrs_no_date) == 'Lecture - 2017jan01'
 
