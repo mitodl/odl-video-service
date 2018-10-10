@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.31.0 (Released October 10, 2018)
+--------------
+
+- Fix video start time in Safari (#705)
+- Updated requirements.in based on feedback
+- Updated package versions in requirements.txt file that have reported vulnerabilities
+
 Version 0.30.0 (Released October 01, 2018)
 --------------
 
