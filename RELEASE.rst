@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.31.0
+Version 0.31.0 (Released October 10, 2018)
 --------------
 
 - Fix video start time in Safari (#705)
