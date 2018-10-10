@@ -378,8 +378,7 @@ class CollectionViewSet(viewsets.ModelViewSet):
         authentication.SessionAuthentication,
     )
     permission_classes = (
-        permissions.IsAuthenticated,
-        ui_permissions.HasCollectionPermissions
+        ui_permissions.HasCollectionPermissions,
     )
 
     pagination_class = CollectionSetPagination

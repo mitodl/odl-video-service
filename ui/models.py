@@ -54,6 +54,8 @@ class CollectionManager(TimestampedModelManager):
         """
         if user.is_superuser:
             return self.all()
+        if user.is_anonymous:
+            return self.none()
         moira_list_qset = MoiraList.objects.filter(name__in=utils.user_moira_lists(user))
         return self.filter(
             models.Q(view_lists__in=moira_list_qset) |
