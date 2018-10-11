@@ -269,7 +269,7 @@ def test_collection_viewset_permissions(logged_in_apiclient):
         reverse('models-api:collection-detail', kwargs={'key': uuid4().hex}),
     )
     for url in urls:
-        assert client.get(url).status_code == status.HTTP_403_FORBIDDEN
+        assert client.get(url).status_code == status.HTTP_200_OK
         assert client.post(url, {'owner': 1}).status_code == status.HTTP_403_FORBIDDEN
 
 

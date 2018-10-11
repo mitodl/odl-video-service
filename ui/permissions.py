@@ -61,24 +61,6 @@ def has_video_view_permission(obj, request):
     return False
 
 
-def has_collection_view_permission(obj, request):
-    """
-    Determine if a user can view a collection or its videos based
-    on moira lists and superuser status
-
-    Args:
-        obj (ui.models.Collection): The collection to check permission for
-        request (HTTPRequest): The request object
-
-    Returns:
-        bool: True if the user is a superuser, owner, or is on the view or admin moira list
-
-    """
-    if request.user == obj.owner or request.user.is_superuser or request.method in SAFE_METHODS:
-        return True
-    return has_admin_permission(obj, request)
-
-
 def has_admin_permission(obj, request):
     """
     Determine if a user can edit a collection or its videos based

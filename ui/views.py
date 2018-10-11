@@ -93,28 +93,6 @@ def conditional_response(view, video=None, **kwargs):
     return view.render_to_response(context)
 
 
-def conditional_response_collection(view, collection=None, **kwargs):
-    """
-    Redirect to login page if user is anonymous and  is private.
-    Raise a permission denied error if user is logged in but doesn't have permission.
-    Otherwise, return standard template response.
-
-    Args:
-        view(TemplateView): a video-specific View object (ViewDetail, ViewEmbed, etc).
-        collection(ui.models.Collection): a collection to display with the view
-
-    Returns:
-        TemplateResponse: the template response to render
-    """
-    if not ui_permissions.has_collection_view_permission(collection, view.request):
-        if view.request.user.is_authenticated:
-            raise PermissionDenied
-        else:
-            return redirect_to_login(view.request.path)
-    context = view.get_context_data(**kwargs)
-    return view.render_to_response(context)
-
-
 def index(request):  # pylint: disable=unused-argument
     """Index"""
     return redirect('collection-react-view')
@@ -137,9 +115,8 @@ class CollectionReactView(TemplateView):
     def get(self, request, *args, **kwargs):
         collection_key = kwargs['collection_key']
         if collection_key:
-            collection = get_object_or_404(Collection, key=collection_key)
-            self.get_context_data(**kwargs)
-            return conditional_response_collection(self, collection, *args, **kwargs)
+            get_object_or_404(Collection, key=collection_key)
+            return super().get(request, *args, **kwargs)
 
         if not request.user.is_authenticated:
             return redirect_to_login(self.request.path)
