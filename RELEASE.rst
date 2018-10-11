@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.31.1
+--------------
+
+- Added default sorting to created_at descending (#711)
+- Lecture Capture: move unrecognized videos into an admin-only collection (#710)
+
 Version 0.31.0 (Released October 10, 2018)
 --------------
 
