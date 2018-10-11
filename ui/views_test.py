@@ -1080,6 +1080,32 @@ def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
         )
 
 
+def test_videos_default_ordering(mocker, logged_in_apiclient):
+    """ Verify that by default results are returned in the created_at descending order"""
+    mocker.patch('ui.serializers.get_moira_client')
+    mocker.patch('ui.utils.get_moira_client')
+    VideoSetPagination.page_size = 5
+    client, user = logged_in_apiclient
+    collection = CollectionFactory(owner=user)
+    VideoFactory.create_batch(10, collection=collection)
+    url = reverse('models-api:video-list')
+    p1_response = client.get('{}?page=1'.format(url))
+    assert len(p1_response.data['results']) == 5
+    for i in range(4):
+        current_video_date = p1_response.data['results'][i]['created_at']
+        next_video_date = p1_response.data['results'][i+1]['created_at']
+        assert current_video_date >= next_video_date
+
+    p2_response = client.get('{}?page=2'.format(url))
+    last_entry_data = p1_response.data['results'][-1]['created_at']
+    first_entry_data = p2_response.data['results'][0]['created_at']
+    assert last_entry_data >= first_entry_data
+    for i in range(4):
+        current_video_date = p2_response.data['results'][i]['created_at']
+        next_video_date = p2_response.data['results'][i + 1]['created_at']
+        assert current_video_date >= next_video_date
+
+
 @pytest.mark.parametrize('field', ['created_at', 'title'])
 def test_videos_ordering(mocker, logged_in_apiclient, field):
     """ Verify that results are returned in the appropriate order"""

@@ -397,7 +397,8 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
     )
     pagination_class = VideoSetPagination
     filter_backends = (OrderingFilter,)
-    ordering_fields = ('created_at', 'title')
+    ordering_fields = ('created_at', 'title', )
+    ordering = ('-created_at',)
 
     def get_queryset(self):
         return Video.objects.all_viewable(self.request.user)
