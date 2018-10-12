@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.31.1
+Version 0.31.1 (Released October 12, 2018)
 --------------
 
 - Added default sorting to created_at descending (#711)
