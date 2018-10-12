@@ -264,9 +264,10 @@ def test_collection_viewset_permissions(logged_in_apiclient):
     """
     client, _ = logged_in_apiclient
     client.logout()
+    collection = CollectionFactory()
     urls = (
         reverse('models-api:collection-list'),
-        reverse('models-api:collection-detail', kwargs={'key': uuid4().hex}),
+        reverse('models-api:collection-detail', kwargs={'key': collection.hexkey}),
     )
     for url in urls:
         assert client.get(url).status_code == status.HTTP_200_OK
