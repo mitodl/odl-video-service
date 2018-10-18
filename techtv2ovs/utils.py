@@ -153,7 +153,7 @@ class TechTVImporter:
         Run the import
         """
         with MySQLdb.connect(
-            user=self.db_user, password=self.db_pw, db=self.db_name, host=self.db_host
+                user=self.db_user, password=self.db_pw, db=self.db_name, host=self.db_host
         ) as self.connection:
             bonobo.settings.LOGGING_LEVEL.set(logging.ERROR)
             bonobo.run(

@@ -50,7 +50,7 @@ def resumable_upload(request, max_retries=10):
         try:
             _, response = request.next_chunk()
             if response is not None and 'id' not in response:
-                raise YouTubeUploadException('YouTube upload failed: %s', response)
+                raise YouTubeUploadException('YouTube upload failed: %s' % response)
         except HttpError as e:
             if e.resp.status in retry_statuses:
                 error = e
