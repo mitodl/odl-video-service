@@ -200,7 +200,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     """
     key = serializers.SerializerMethodField()
     video_count = serializers.SerializerMethodField()
-    videos = SimpleVideoSerializer(many=True, read_only=True)
+    videos = serializers.SerializerMethodField()
     view_lists = SingleAttrRelatedField(
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
     )
@@ -216,6 +216,13 @@ class CollectionSerializer(serializers.ModelSerializer):
     def get_video_count(self, obj):
         """Custom getter for video count"""
         return obj.videos.count()
+
+    def get_videos(self, obj):
+        if self.context.get('request') and self.context.get('request').user.is_anonymous:
+            videos = obj.videos.filter(is_public=True)
+        else:
+            videos = obj.videos.all()
+        return [SimpleVideoSerializer(video).data for video in videos]
 
     def get_is_admin(self, obj):
         """Custom field to indicate whether or not the requesting user is an admin"""

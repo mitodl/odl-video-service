@@ -116,6 +116,8 @@ class CollectionReactView(TemplateView):
         collection_key = kwargs['collection_key']
         if collection_key:
             get_object_or_404(Collection, key=collection_key)
+            return super().get(request, *args, **kwargs)
+
         if not request.user.is_authenticated:
             return redirect_to_login(self.request.path)
         return super().get(request, *args, **kwargs)
@@ -353,8 +355,7 @@ class CollectionViewSet(viewsets.ModelViewSet):
         authentication.SessionAuthentication,
     )
     permission_classes = (
-        permissions.IsAuthenticated,
-        ui_permissions.HasCollectionPermissions
+        ui_permissions.HasCollectionPermissions,
     )
 
     pagination_class = CollectionSetPagination

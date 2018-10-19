@@ -191,24 +191,11 @@ def test_is_collection_owner_user_superuser(collection_owner_permission, collect
 def test_is_collection_admin_anonymous_users(collection_permission, collection, request_data_anon):
     """
     Test for HasCollectionPermissions.has_object_permission to verify that
-    anonymous users do not have permission.
+    anonymous users have permission.
     """
     assert collection_permission.has_object_permission(request_data_anon.request,
                                                        request_data_anon.view,
-                                                       collection) is False
-
-
-def test_is_collection_admin_user_different_from_collecton_owner(mock_user_moira_lists,
-                                                                 collection_permission,
-                                                                 collection,
-                                                                 request_data):
-    """
-    Test for HasCollectionPermissions.has_object_permission to verify
-    that user who does not own the collection does not have permission
-    """
-    assert collection_permission.has_object_permission(request_data.request,
-                                                       request_data.view,
-                                                       collection) is False
+                                                       collection) is True
 
 
 def test_is_collection_user_not_matching_admin_lists(mock_user_moira_lists,
@@ -218,26 +205,10 @@ def test_is_collection_user_not_matching_admin_lists(mock_user_moira_lists,
                                                      request_data):
     """
     Test for HasCollectionPermissions.has_object_permission to verify
-    that user who does not match a collection moira admin list does not have permission
+    that user who does not match a collection moira admin list does have permission
     """
     collection.admin_lists.set([moira_list])
     mock_user_moira_lists.return_value = {'some_other_list'}
-    assert collection_permission.has_object_permission(request_data.request,
-                                                       request_data.view,
-                                                       collection) is False
-
-
-def test_is_collection_user_matching_admin_lists(mock_user_moira_lists,
-                                                 moira_list,
-                                                 collection_permission,
-                                                 collection,
-                                                 request_data):
-    """
-    Test for HasCollectionPermissions.has_object_permission to verify
-    that user who is in one of the collection's admin lists has permission
-    """
-    collection.admin_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
     assert collection_permission.has_object_permission(request_data.request,
                                                        request_data.view,
                                                        collection) is True
@@ -250,26 +221,10 @@ def test_is_collection_user_not_matching_view_lists(mock_user_moira_lists,
                                                     request_data):
     """
     Test for HasCollectionPermissions.has_object_permission to verify
-    that user who does not match a collection moira view list does not have permission
+    that user who does not match a collection moira view list has permission
     """
     collection.view_lists.set([moira_list])
     mock_user_moira_lists.return_value = {'some_other_list'}
-    assert collection_permission.has_object_permission(request_data.request,
-                                                       request_data.view,
-                                                       collection) is False
-
-
-def test_is_collection_user_matching_view_lists(mock_user_moira_lists,
-                                                moira_list,
-                                                collection_permission,
-                                                collection,
-                                                request_data):
-    """
-    Test for HasCollectionPermissions.has_object_permission to verify
-    that user who is in one of the collection's view lists has permission
-    """
-    collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
     assert collection_permission.has_object_permission(request_data.request,
                                                        request_data.view,
                                                        collection) is True
@@ -685,7 +640,7 @@ def test_subtitle_view_permission_matching_lists(mock_user_moira_lists,
     Test for HasVideoSubtitlePermissions.has_object_permission to verify
     that a user in one of the subtitle collection's view-only moira lists can see it.
     """
-    subtitle.video.collection.view_lists.set([moira_list])
+    subtitle.video.view_lists.set([moira_list])
     mock_user_moira_lists.return_value = {moira_list.name}
     assert subtitle_permission.has_object_permission(request_data.request, request_data.view, subtitle) is True
 
