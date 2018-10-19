@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.32.0
+--------------
+
+- Enable anonymous access to collection pages (#709)
+
 Version 0.31.1 (Released October 12, 2018)
 --------------
 
