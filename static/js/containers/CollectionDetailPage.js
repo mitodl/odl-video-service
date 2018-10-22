@@ -195,11 +195,12 @@ export class CollectionDetailPage extends React.Component<*, void> {
   renderEmptyVideoMessage(isAdmin: boolean) {
     let message = "There are no public videos available for viewing."
     if (isAdmin) {
-      message = "There are no videos yet. Click the button above to add videos from a linked Dropbox account."
+      message =
+        "There are no videos yet. Click the button above to add videos from a linked Dropbox account."
     }
     return (
       <div className="no-videos">
-        <p>{ message }</p>
+        <p>{message}</p>
       </div>
     )
   }
