@@ -477,6 +477,15 @@ describe("CollectionDetailPage", () => {
         )
       })
 
+      it("renders 'no videos' message for anonymous", () => {
+        assert.equal(
+          renderVideos({ videos: [], isAdmin: false })
+            .find(".no-videos a")
+            .text(),
+          "login"
+        )
+      })
+
       describe("when there are videos", () => {
         const videos = makeCollection().videos
         const isAdmin = "someIsAdminValue"
