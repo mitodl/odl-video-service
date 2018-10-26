@@ -174,7 +174,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
 
   renderVideos(videos: Array<Video>, isAdmin: boolean) {
     if (videos.length === 0) {
-      return this.renderEmptyVideoMessage()
+      return this.renderEmptyVideoMessage(isAdmin)
     }
     return (
       <VideoList
@@ -192,15 +192,25 @@ export class CollectionDetailPage extends React.Component<*, void> {
     )
   }
 
-  renderEmptyVideoMessage() {
-    return (
-      <div className="no-videos">
-        <h3>You have not added any videos yet.</h3>
-        <p>
-          Click the button above to add videos from a linked Dropbox account.
-        </p>
-      </div>
+  renderEmptyVideoMessage(isAdmin: boolean) {
+    const { collectionKey } = this.props
+
+    let message = (
+      <p>
+        There are no public videos available for viewing. Please{" "}
+        <a href={`/login/?next=/collections/${collectionKey}`}>login</a> to view
+        private videos.
+      </p>
     )
+    if (isAdmin) {
+      message = (
+        <p>
+          There are no videos yet. Click the button above to add videos from a
+          linked Dropbox account.
+        </p>
+      )
+    }
+    return <div className="no-videos">{message}</div>
   }
 
   showVideoMenu(videoKey: string) {
