@@ -195,16 +195,22 @@ export class CollectionDetailPage extends React.Component<*, void> {
   renderEmptyVideoMessage(isAdmin: boolean) {
     const { collectionKey } = this.props
 
-    let message = <p>There are no public videos available for viewing. Please{" "}
-      <a href={`/login/?next=/collections/${collectionKey}`}>login</a> to view private videos.</p>
-    if (isAdmin) {
-      message = <p>There are no videos yet. Click the button above to add videos from a linked Dropbox account.</p>
-    }
-    return (
-      <div className="no-videos">
-        {message}
-      </div>
+    let message = (
+      <p>
+        There are no public videos available for viewing. Please{" "}
+        <a href={`/login/?next=/collections/${collectionKey}`}>login</a> to view
+        private videos.
+      </p>
     )
+    if (isAdmin) {
+      message = (
+        <p>
+          There are no videos yet. Click the button above to add videos from a
+          linked Dropbox account.
+        </p>
+      )
+    }
+    return <div className="no-videos">{message}</div>
   }
 
   showVideoMenu(videoKey: string) {
