@@ -218,6 +218,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         return obj.videos.count()
 
     def get_videos(self, obj):
+        """Custom getter for videos"""
         if self.context.get('request') and self.context.get('request').user.is_anonymous:
             videos = obj.videos.filter(is_public=True)
         else:
