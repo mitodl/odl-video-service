@@ -972,15 +972,15 @@ def test_video_viewset_list(mock_user_moira_lists, logged_in_apiclient):
     url = reverse('models-api:video-list')
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
-    expected_viewable_key_titles = set(
-        [(video.hexkey, video.title) for video in expected_viewable_videos]
-    )
-    expected_prohibited_key_titles = set(
-        [(video.hexkey, video.title) for video in expected_prohibited_videos]
-    )
-    actual_key_titles = set(
-        [(result['key'], result['title']) for result in result.data['results']]
-    )
+    expected_viewable_key_titles = {
+        (video.hexkey, video.title) for video in expected_viewable_videos
+    }
+    expected_prohibited_key_titles = {
+        (video.hexkey, video.title) for video in expected_prohibited_videos
+    }
+    actual_key_titles = {
+        (result['key'], result['title']) for result in result.data['results']
+    }
     assert actual_key_titles == expected_viewable_key_titles
     assert actual_key_titles.isdisjoint(expected_prohibited_key_titles)
     assert result.data['num_pages'] == 1

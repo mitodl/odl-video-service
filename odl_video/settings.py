@@ -7,7 +7,6 @@ import platform
 from urllib.parse import urljoin
 
 import dj_database_url
-from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from redbeat import RedBeatScheduler
 
