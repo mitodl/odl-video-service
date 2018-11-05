@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.33.0
+Version 0.33.0 (Released November 05, 2018)
 --------------
 
 - Upgrade requests
