@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.33.0
+--------------
+
+- Upgrade requests
+- Fix lint tests (#721)
+- Update pylint, astroid, and related packages (#716)
+- Change no-videos message for anonymous (#719)
+
 Version 0.32.0 (Released October 22, 2018)
 --------------
 
