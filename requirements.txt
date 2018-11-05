@@ -93,7 +93,7 @@ raven==6.9.0
 redis==2.10.5
 requests-oauthlib==0.8.0  # via google-auth-oauthlib
 requests-toolbelt==0.8.0  # via zeep
-requests==2.18.1
+requests>=2.20.0
 rsa==3.4.2                # via google-auth, google-auth-httplib2, oauth2client
 s3transfer==0.1.10        # via boto3
 simplegeneric==0.8.1      # via ipython
