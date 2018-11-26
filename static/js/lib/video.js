@@ -25,7 +25,7 @@ require("videojs-contrib-quality-levels")
 require("videojs-resolution-switcher")
 require("videojs-youtube")
 
-_videojs.plugin("hlsQualitySelector", hlsQualitySelector)
+_videojs.registerPlugin("hlsQualitySelector", hlsQualitySelector)
 
 // export here to allow mocking of videojs function
 export const videojs = _videojs

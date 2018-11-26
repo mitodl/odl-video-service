@@ -89,3 +89,20 @@
 .video-js.vjs-controls-enabled.vjs-paused .vjs-big-play-button {
   display: block;
 }
+
+.vjs-icon-hd:before {
+  content: "";
+}
+
+.vjs-quality-selector {
+  button.vjs-menu-button {
+    width: 30px;
+    padding: 0 0 5px 0  ;
+    margin: 2px 0 2px 0;
+    color: white;
+
+    &:after {
+      content: "Quality";
+    }
+  }
+}
