@@ -2,7 +2,6 @@
 from datetime import datetime
 
 import pytz
-from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
@@ -17,6 +16,7 @@ from factory import (
 from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyText, FuzzyInteger
 import faker
+from dj_elastictranscoder.models import EncodeJob
 
 from ui.constants import YouTubeStatus
 from ui.encodings import EncodingNames

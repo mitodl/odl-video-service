@@ -10,13 +10,13 @@ import boto3
 import pytest
 from botocore.exceptions import ClientError
 import celery
-from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.test import override_settings
 from googleapiclient.errors import HttpError, ResumableUploadError
 from mock import PropertyMock, call
 from moto import mock_s3
 from requests import HTTPError
+from dj_elastictranscoder.models import EncodeJob
 
 from cloudsync.conftest import MockBoto, MockHttpErrorResponse
 from cloudsync.exceptions import TranscodeTargetDoesNotExist

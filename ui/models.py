@@ -8,9 +8,8 @@ import boto3
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.conf import settings
-from dj_elastictranscoder.models import EncodeJob
 from pycountry import languages
-
+from dj_elastictranscoder.models import EncodeJob
 
 from odl_video.models import TimestampedModel, TimestampedModelManager
 from mail import tasks
@@ -181,11 +180,12 @@ class Video(TimestampedModel):
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='video_view_lists')
     is_public = models.BooleanField(null=False, default=False)
     is_private = models.BooleanField(null=False, default=False)
+    custom_order = models.IntegerField(null=True, blank=True)
 
     objects = VideoManager()
 
     class Meta:
-        ordering = ['-created_at', ]
+        ordering = ['custom_order', '-created_at', ]
 
     @property
     def hexkey(self):

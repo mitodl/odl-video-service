@@ -341,3 +341,22 @@ def test_video_source_url(video):
     video.source_url = video.source_url + 'e'
     with pytest.raises(ValidationError):
         video.save()
+
+
+def test_video_ordering():
+    """
+    Tests that videos are sorted by reverse creation date or forward custom order
+    """
+    collection = CollectionFactory.create()
+    VideoFactory.create_batch(10, collection=collection)
+    # Should be sorted by reverse creation date
+    videos = collection.videos.all()
+    for (idx, video) in enumerate(videos):
+        if idx > len(videos) - 1:
+            assert video.created_at >= videos[idx+1].created_at
+        videos[idx].custom_order = len(videos) - idx - 1
+        videos[idx].save()
+    # Should be sorted by custom_order
+    resorted_videos = Collection.objects.get(id=collection.id).videos.all()
+    for (idx, video) in enumerate(resorted_videos):
+        assert video.custom_order == idx
