@@ -108,7 +108,12 @@ export class AnalyticsChart extends React.Component {
     return (
       <VictoryChart
         {...dimensions}
-        domain={{ x: [0, duration / 60 || 1] }}
+        domain={{
+          x: [
+            0,
+            duration > 0 ? duration / 60 : analyticsData.times.slice(-1)[0]
+          ]
+        }}
         domainPadding={{ x: [0, 0], y: [0, 0] }}
         padding={padding}
       >
