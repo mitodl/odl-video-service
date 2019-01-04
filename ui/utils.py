@@ -11,9 +11,9 @@ import boto3
 from django.conf import settings
 from django.core.cache import caches
 
-from mit_moira import Moira
 from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
+from mit_moira import Moira
 
 from ui.exceptions import MoiraException, GoogleAnalyticsException
 

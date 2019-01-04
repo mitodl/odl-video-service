@@ -11,9 +11,9 @@ import boto3
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from celery import shared_task, states, Task
-from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from googleapiclient.errors import HttpError
+from dj_elastictranscoder.models import EncodeJob
 
 from cloudsync.api import refresh_status, process_watch_file, transcode_video
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
