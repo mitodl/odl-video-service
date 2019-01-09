@@ -268,6 +268,10 @@ def test_parse_google_analytics_response_multiangle():
                         "dimensions": ["T0002", "camera2"],
                         "metrics": [{"values": ["3"]}]
                     },
+                    {
+                        "dimensions": ["T0002", "Bad channel"],
+                        "metrics": [{"values": ["3"]}]
+                    },
                 ],
                 "totals": [{"values": ["30"]}]
             }
