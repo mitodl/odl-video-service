@@ -105,10 +105,16 @@ export class AnalyticsChart extends React.Component {
     const chartBodyClipPathId = `${this._namespace}-chart-body-clipPath`
     const chartBodyBounds = this._getRelativeChartBodyBounds()
     const yTicks = this._getYTicks({ analyticsData })
+    const xMax =
+      duration > 0
+        ? duration / 60
+        : analyticsData.times ? analyticsData.times.slice(-1)[0] : 0
     return (
       <VictoryChart
         {...dimensions}
-        domain={{ x: [0, duration / 60 || 1] }}
+        domain={{
+          x: [0, xMax]
+        }}
         domainPadding={{ x: [0, 0], y: [0, 0] }}
         padding={padding}
       >

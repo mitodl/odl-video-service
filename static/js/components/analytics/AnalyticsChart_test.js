@@ -5,14 +5,21 @@ import sinon from "sinon"
 
 import { makeVideoAnalyticsData } from "../../factories/videoAnalytics"
 import { ConditionalLabel, AnalyticsChart } from "./AnalyticsChart"
+import { shouldIf } from "../../lib/test_utils"
 
 describe("AnalyticsChartTests", () => {
-  let analyticsData, props, sandbox
+  let analyticsData, padding, getColorForChannelStub, props, sandbox
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create()
     analyticsData = makeVideoAnalyticsData(10)
-    props = { analyticsData }
+    padding = 2
+    getColorForChannelStub = sandbox.stub()
+    props = {
+      analyticsData,
+      padding,
+      getColorForChannel: getColorForChannelStub
+    }
   })
 
   afterEach(() => {
@@ -64,6 +71,23 @@ describe("AnalyticsChartTests", () => {
     it("renders", () => {
       const wrapper = renderChart()
       assert.isTrue(wrapper.exists())
+    })
+    ;[0, NaN, 6000].forEach(duration => {
+      it(`${shouldIf(
+        duration > 0
+      )} use analytics times to determine duration`, () => {
+        props["duration"] = duration
+        const wrapper = renderChart()
+        wrapper.update()
+        wrapper.instance().setState({ dimensions: { width: 100, height: 200 } })
+        const chart = wrapper.instance().renderChart()
+        assert.deepEqual(chart.props.domain, {
+          x: [
+            0,
+            duration > 0 ? duration / 60 : analyticsData.times.slice(-1)[0]
+          ]
+        })
+      })
     })
 
     describe("when it unmounts", () => {
