@@ -327,10 +327,11 @@ def parse_google_analytics_response(ga_response):
             channel = row['dimensions'][1]
         else:
             channel = 'views'
-        viewers = int(row['metrics'][0]['values'][0])
-        views_at_times.setdefault(time_, {}).update({channel: viewers})
-        times.add(time_)
-        channels.add(channel)
+        if re.match(r'camera\d+|views', channel):
+            viewers = int(row['metrics'][0]['values'][0])
+            views_at_times.setdefault(time_, {}).update({channel: viewers})
+            times.add(time_)
+            channels.add(channel)
     return {
         'times': sorted(list(times)),
         'channels': sorted(list(channels)),
