@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.34.0
+--------------
+
+- Filter out bad analytics data (#731)
+- Handle bad video duration values for the analytics chart (#730)
+- Add Video.custom_order field, reorder imports (#727)
+
 Version 0.33.0 (Released November 05, 2018)
 --------------
 
