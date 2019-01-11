@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.34.1
+Version 0.34.1 (Released January 11, 2019)
 --------------
 
 - Download videos directly from cloudfront (#734)
