@@ -9,6 +9,7 @@ from uuid import uuid4
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import AnonymousUser
+from django.http import HttpResponseRedirect
 from django.test import RequestFactory
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -547,20 +548,23 @@ def test_public_video_detail_anonymous(settings, logged_in_apiclient, user_admin
 @pytest.mark.parametrize('is_public', [True, False])
 def test_video_download(logged_in_client, is_public, mocker):
     """ Tests that a video can be downloaded if public, returns 404 otherwise """
-    mocker.patch('ui.views.requests.get')
+    mock_redirect = mocker.patch('ui.views.redirect', return_value=HttpResponseRedirect(redirect_to="/"))
     client, _ = logged_in_client
     client.logout()
     video = VideoFactory(is_public=is_public)
     VideoFileFactory(video=video, encoding=EncodingNames.ORIGINAL)
     url = reverse('video-download', kwargs={'video_key': video.hexkey})
     result = client.get(url)
-    assert result.status_code == (status.HTTP_200_OK if is_public else status.HTTP_404_NOT_FOUND)
+    if is_public:
+        mock_redirect.assert_called_with(video.download.cloudfront_url)
+    else:
+        assert result.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.parametrize('is_public', [True, False])
 def test_video_download_nofiles(logged_in_client, is_public, mocker):
     """ Tests that a 404 is returned if no videofiles are available """
-    mocker.patch('ui.views.requests.get')
+    mocker.patch('ui.views.redirect', return_value=HttpResponseRedirect(redirect_to="/"))
     client, _ = logged_in_client
     client.logout()
     video = VideoFactory(is_public=is_public)
@@ -573,20 +577,23 @@ def test_video_download_nofiles(logged_in_client, is_public, mocker):
 @pytest.mark.parametrize('is_public', [True, False])
 def test_techtv_video_download(logged_in_client, is_public, mocker):
     """ Tests that a TechTV video can be downloaded if public, returns 404 otherwise """
-    mocker.patch('ui.views.requests.get')
+    mock_redirect = mocker.patch('ui.views.redirect', return_value=HttpResponseRedirect(redirect_to="/"))
     client, _ = logged_in_client
     client.logout()
     ttv_video = TechTVVideoFactory(video=VideoFactory(is_public=is_public))
     VideoFileFactory(video=ttv_video.video, encoding=EncodingNames.ORIGINAL)
     url = reverse('techtv-download', kwargs={'video_key': ttv_video.ttv_id})
     result = client.get(url)
-    assert result.status_code == (status.HTTP_200_OK if is_public else status.HTTP_404_NOT_FOUND)
+    if is_public:
+        mock_redirect.assert_called_with(ttv_video.video.download.cloudfront_url)
+    else:
+        assert result.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.parametrize('is_public', [True, False])
 def test_techtv_video_download_nofiles(logged_in_client, is_public, mocker):
     """ Tests that a 404 is returned if no videofiles are available for a TechTV video"""
-    mocker.patch('ui.views.requests.get')
+    mocker.patch('ui.views.redirect')
     client, _ = logged_in_client
     client.logout()
     ttv_video = TechTVVideoFactory(video=VideoFactory(is_public=is_public))
