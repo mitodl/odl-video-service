@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.34.0
+Version 0.34.0 (Released January 11, 2019)
 --------------
 
 - Filter out bad analytics data (#731)
