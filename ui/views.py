@@ -1,13 +1,11 @@
 """Views for ui app"""
 import json
-from os.path import splitext
 
-import requests
 from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, StreamingHttpResponse, Http404
+from django.http import HttpResponse, Http404
 from django.shortcuts import (
     get_object_or_404,
     redirect,
@@ -30,7 +28,6 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from slugify import slugify
 
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
@@ -176,23 +173,19 @@ class VideoDownload(View):
             video(Video): the video to download
 
         Returns:
-            StreamingHttpResponse: the response videofile content and a file attachment header
+            HttpResponseRedirect: redirect to the cloudfront URL for the video download
         """
         video_file = video.download
         if not video_file:
             raise Http404()
-        _, ext = splitext(video_file.s3_object_key)
-        video_bytes = requests.get(video_file.cloudfront_url, stream=True)
-        response = StreamingHttpResponse(video_bytes.iter_content(512 * 1024), content_type='video/mp4')
-        response['Content-Disposition'] = 'attachment; filename={}.{}'.format(slugify(video.title), ext)
-        return response
+        return redirect(video_file.cloudfront_url)
 
     def get(self, request, *args, **kwargs):  # pylint:disable=unused-argument
         """
         Respond to a GET request.
 
         Returns:
-            StreamingHttpResponse: the response videofile content and a file attachment header
+            HttpResponseRedirect: redirect to the cloudfront URL for the video download
         """
         video = get_object_or_404(Video, key=kwargs['video_key'], is_public=True)
         return self.download(video)
