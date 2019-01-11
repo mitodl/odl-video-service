@@ -104,7 +104,7 @@ stevedore==1.28.0         # via bonobo
 traitlets==4.3.2          # via ipython
 unidecode==1.0.22         # via python-slugify
 uritemplate==3.0.0        # via google-api-python-client
-urllib3==1.21.1           # via elasticsearch, requests
+urllib3>=1.23             # via elasticsearch, requests
 uwsgi==2.0.15
 vine==1.1.4               # via amqp
 wcwidth==0.1.7            # via prompt-toolkit
