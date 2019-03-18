@@ -61,7 +61,7 @@ class ShareVideoDialog extends React.Component<*, void> {
             label="Embed HTML"
             id="video-embed-code"
             rows="4"
-            value={`<iframe src="${videoEmbedUrl}" width="560" height="315" frameborder="0" allowfullscreen></iframe>`}
+            value={`<iframe src="${videoEmbedUrl}" width="560" height="315" frameborder="0" allow="autoplay" allowfullscreen></iframe>`}
           />
           <Checkbox
             label={`Start at ${formatSecondsToMinutes(startTime)}`}
