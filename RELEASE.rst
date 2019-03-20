@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.35.0
+Version 0.35.0 (Released March 20, 2019)
 --------------
 
 - fix embded video not playing
