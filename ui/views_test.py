@@ -1256,3 +1256,41 @@ def test_moira_list_views_permission(logged_in_apiclient, url):
     user.save()
     client.force_login(user)
     assert client.get(url).status_code == status.HTTP_200_OK
+
+
+def test_moira_list_users(logged_in_apiclient, mock_moira_client):
+    """Test that UsersForMoiraList returns list of users for a given list name"""
+    client, user = logged_in_apiclient
+    user.is_staff = True
+    user.save()
+    client.force_login(user)
+    mock_moira_client.return_value.list_members.return_value = ["fakeuser1", "fakeuser2"]
+    url = reverse('list-members', kwargs={'list_name': 'test_name'})
+    expected = {
+        "users": ["fakeuser1", "fakeuser2"]
+    }
+    response = client.get(url)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert expected == response.data
+
+
+def test_users_moira_list(logged_in_apiclient, mock_moira_client):
+    """Test that MoiraListsForUser returns lists for a given username or email."""
+    client, user = logged_in_apiclient
+    user.is_staff = True
+    user.save()
+    client.force_login(user)
+    list_names = ['test_moira_list01', 'test_moira_list02']
+    mock_moira_client.return_value.user_list_membership.return_value = [
+        {'listName': list_name} for list_name in list_names
+    ]
+
+    url = reverse('member-lists', kwargs={'username_or_email': user.username})
+    expected = {
+        "user_lists": list_names
+    }
+    response = client.get(url)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert expected == response.data
