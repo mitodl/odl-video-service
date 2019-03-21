@@ -1,10 +1,13 @@
 """Views for ui app"""
 import json
+import re
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import HttpResponse, Http404
 from django.shortcuts import (
     get_object_or_404,
@@ -46,7 +49,7 @@ from ui.models import (
     VideoSubtitle,
 )
 
-from ui.utils import get_video_analytics, generate_mock_video_analytics_data
+from ui.utils import get_video_analytics, generate_mock_video_analytics_data, query_moira_lists, list_members
 
 
 def default_js_settings(request):
@@ -494,3 +497,38 @@ class LoginView(DjangoLoginView):
             else:
                 return redirect('/')
         return super().get(request, *args, **kwargs)
+
+
+class MoiraListsForUser(APIView):
+    """
+    View for getting moira lists against given user.
+    """
+    authentication_classes = (authentication.SessionAuthentication,)
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get(self, request, username_or_email):
+        regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+
+        email = username_or_email
+        if not username_or_email.endswith("@mit.edu"):
+            if not re.match(regex, username_or_email):
+                email = "{username}@mit.edu".format(username=username_or_email)
+
+        try:
+            user = User.objects.get(Q(username=username_or_email) | Q(email=email))
+        except User.DoesNotExist:
+            return Response(status.HTTP_404_NOT_FOUND)
+
+        user_lists = query_moira_lists(user)
+        return Response(data={'user_lists': user_lists})
+
+
+class UsersForMoiraList(APIView):
+    """
+    View for getting users against give list name.
+    """
+    authentication_classes = (authentication.SessionAuthentication,)
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get(self, request, list_name):
+        return Response(data={'users': list_members(list_name)})

@@ -360,3 +360,21 @@ def generate_mock_video_analytics_data(n=24, seed=42):
         'channels': sorted(list(channels)),
         'views_at_times': views_at_times,
     }
+
+
+def list_members(list_name):
+    """
+    Get a set of all moira users against given list name
+
+    Args:
+        list_name (str): name of list.
+
+    Returns:
+        list_users(list): A list of users
+    """
+    moira = get_moira_client()
+    try:
+        list_users = moira.list_members(list_name)
+        return list_users
+    except Exception as exc:  # pylint: disable=broad-except
+        raise MoiraException('Something went wrong with getting moira-users for %s' % list_name) from exc
