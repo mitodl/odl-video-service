@@ -507,6 +507,7 @@ class MoiraListsForUser(APIView):
     permission_classes = (permissions.IsAdminUser,)
 
     def get(self, request, username_or_email):
+        """Get and return the list names"""
         regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 
         email = username_or_email
@@ -531,4 +532,5 @@ class UsersForMoiraList(APIView):
     permission_classes = (permissions.IsAdminUser,)
 
     def get(self, request, list_name):
+        """Get and return the users"""
         return Response(data={'users': list_members(list_name)})
