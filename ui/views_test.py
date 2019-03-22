@@ -1288,11 +1288,15 @@ def test_users_moira_list(logged_in_apiclient, mock_moira_client):
         {'listName': list_name} for list_name in list_names
     ]
 
-    url = reverse('member-lists', kwargs={'username_or_email': user.username})
-    expected = {
-        "user_lists": list_names
-    }
-    response = client.get(url)
+    username_or_email = [user.username, user.email, UserFactory(email='username@mit.edu').email]
 
-    assert response.status_code == status.HTTP_200_OK
-    assert expected == response.data
+    for arg in username_or_email:
+        url = reverse('member-lists', kwargs={'username_or_email': arg})
+        expected = {
+            "user_lists": list_names
+        }
+
+        response = client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert expected == response.data
