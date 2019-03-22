@@ -20,7 +20,7 @@ from ui.utils import (
     generate_google_analytics_query,
     parse_google_analytics_response,
     generate_mock_video_analytics_data,
-)
+    list_members)
 
 # pylint: disable=unused-argument, too-many-arguments
 
@@ -381,3 +381,12 @@ def test_generate_mock_video_analytics_data(n, seed, expected):
     """Test that returns expected result."""
     actual = generate_mock_video_analytics_data(n=n, seed=seed)
     assert actual == expected
+
+
+def test_list_members_exception(mock_moira_client):
+    """
+    Test that a Moira exception is raised if moira client call fails with anything other than a java NPE
+    """
+    mock_moira_client.return_value.list_members.side_effect = Exception("exception")
+    with pytest.raises(MoiraException):
+        list_members(factories.UserFactory())
