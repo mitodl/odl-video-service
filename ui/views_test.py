@@ -1239,10 +1239,12 @@ def test_terms_of_service_for_logged_in_user(mock_user_moira_lists, owns_collect
         reverse('list-members', kwargs={'list_name': 'test_name'}),
     ]
 )
-def test_moira_list_views_permission(logged_in_apiclient, url):
+def test_moira_list_views_permission(logged_in_apiclient, mocker, url):
     """
     Tests that only authenticated users with admin permissions can call MoiraListsForUser and UsersForMoiraList
     """
+    mocker.patch('ui.views.list_members', return_value=[])
+
     client, user = logged_in_apiclient
     client.logout()
 
