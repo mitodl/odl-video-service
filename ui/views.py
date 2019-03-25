@@ -1,6 +1,5 @@
 """Views for ui app"""
 import json
-import re
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -508,12 +507,10 @@ class MoiraListsForUser(APIView):
 
     def get(self, request, username_or_email):
         """Get and return the list names"""
-        regex = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 
         email = username_or_email
-        if not username_or_email.endswith("@mit.edu"):
-            if not re.match(regex, username_or_email):
-                email = "{username}@mit.edu".format(username=username_or_email)
+        if '@' not in email:
+            email = "{username}@mit.edu".format(username=username_or_email)
 
         try:
             user = User.objects.get(Q(username=username_or_email) | Q(email=email))

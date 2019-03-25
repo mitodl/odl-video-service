@@ -38,7 +38,7 @@ urlpatterns = [
         name='upload-subtitles'),
     url(r'^api/v0/', include((router.urls, 'models-api'))),
 
-    url(r'^api/v0/moira/user/(?P<username_or_email>[-\w]+$|[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)$',
+    url(r'^api/v0/moira/user/(?P<username_or_email>[-\w]+$|.*@.*)$',
         views.MoiraListsForUser.as_view(), name='member-lists'),
     url(r'^api/v0/moira/list/(?P<list_name>[-\w]+)$', views.UsersForMoiraList.as_view(), name='list-members'),
 ]
