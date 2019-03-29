@@ -108,8 +108,8 @@
     "webpack-hot-middleware": "^2.18.2"
   },
   "engines": {
-    "node": "8.5",
-    "yarn": "1.2.1"
+    "node": "10.15.1",
+    "yarn": "1.13.0"
   },
   "scripts": {
     "postinstall": "./webpack_if_prod.sh",
