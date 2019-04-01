@@ -1,6 +1,6 @@
 # Commented out since this image doesn't exist yet
 # FROM mitodl/odl_video_service_web_travis_next
-FROM python:3.6
+FROM python:3.6.8-stretch
 
 WORKDIR /tmp
 
