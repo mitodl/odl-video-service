@@ -62,7 +62,7 @@
     "lodash": "^4.17.4",
     "mocha": "^3.4.2",
     "moment": "^2.18.1",
-    "node-sass": "^4.5.3",
+    "node-sass": "^4.11.0",
     "nyc": "^11.0.3",
     "object.entries": "^1.0.4",
     "postcss-loader": "^2.0.6",
@@ -108,8 +108,8 @@
     "webpack-hot-middleware": "^2.18.2"
   },
   "engines": {
-    "node": "8.5",
-    "yarn": "1.2.1"
+    "node": "10.15.1",
+    "yarn": "1.13.0"
   },
   "scripts": {
     "postinstall": "./webpack_if_prod.sh",
