@@ -1,6 +1,20 @@
 Release Notes
 =============
 
+Version 0.36.0
+--------------
+
+- bump docker to use stretch (#746)
+- email validation updated
+- test update to meet coverage
+- util test added
+- fix tests
+- test added for views
+- test updated
+- test added for permissions
+- fix quality
+- views added for moira list and users
+
 Version 0.35.0 (Released March 20, 2019)
 --------------
 
