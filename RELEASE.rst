@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.36.0
+Version 0.36.0 (Released April 01, 2019)
 --------------
 
 - bump docker to use stretch (#746)
