@@ -1,6 +1,7 @@
 Django==2.0.8
 boto3==1.4.4
 celery==4.2.0
+celery-redbeat==0.11.1
 cryptography
 dj-database-url==0.3.0
 dj-static==0.0.6
@@ -14,13 +15,13 @@ html5lib==0.999999999
 ipython
 newrelic
 psycopg2==2.7.3.2
+pycountry
 pytz
 raven==6.9.0
 redis==2.10.5
 requests>=2.20.0
+urllib3>=1.23
 uwsgi
-pycountry
-celery-redbeat==0.11.1
 
 # Google/Youtube API access
 httplib2
