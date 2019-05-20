@@ -109,7 +109,7 @@ class VideoFileAdmin(admin.ModelAdmin):
     model = models.VideoFile
     date_hierarchy = 'created_at'
     readonly_fields = ['created_at']
-    search_fields = ('video__titles',)
+    search_fields = ('video__title',)
     list_filter = ('encoding',)
 
 
@@ -149,14 +149,14 @@ class VideoSubtitleAdmin(admin.ModelAdmin):
     """admin page of Moira list"""
     model = models.VideoSubtitle
     list_display = ('filename', 'language',)
-    search_fields = ('filename', 'language', 'bucket_name', 'video__titles',)
+    search_fields = ('filename', 'language', 'bucket_name', 'video__title',)
 
 
 class VideoThumbnailAdmin(admin.ModelAdmin):
     """admin page of Moira list"""
     model = models.VideoThumbnail
     list_display = ('s3_object_key', 'video_id',)
-    search_fields = ('bucket_name', 'video__titles',)
+    search_fields = ('bucket_name', 'video__title',)
 
 
 admin.site.register(models.Collection, CollectionAdmin)
