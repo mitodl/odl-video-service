@@ -1,4 +1,4 @@
-Django==2.0.8
+django==2.1.7
 boto3==1.4.4
 celery==4.2.0
 celery-redbeat==0.11.1
@@ -6,7 +6,7 @@ cryptography
 dj-database-url==0.3.0
 dj-static==0.0.6
 django-redis==4.7.0
-djangorestframework==3.7.7
+djangorestframework==3.9.1
 django-server-status==0.5.0
 django-webpack-loader==0.5.0
 factory_boy
@@ -20,7 +20,7 @@ pytz
 raven==6.9.0
 redis==2.10.5
 requests>=2.20.0
-urllib3>=1.23
+urllib3>=1.24.2
 uwsgi
 
 # Google/Youtube API access
@@ -47,6 +47,7 @@ django-hijack-admin==2.1.7
 # TechTV Migration
 mysqlclient
 dropbox
+Jinja2==2.10.1
 bonobo
 -e git+https://github.com/mitodl/pycaption.git#egg=pycaption
 smart_open==1.5.7

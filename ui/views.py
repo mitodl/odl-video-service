@@ -25,7 +25,7 @@ from rest_framework import (
     viewsets,
     mixins,
 )
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
@@ -406,7 +406,7 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
             queryset = queryset.filter(collection__key=collection_key)
         return queryset
 
-    @detail_route()
+    @action(detail=True)
     def analytics(self, request, key=None):
         """get video analytics data"""
         # pylint: disable=unused-argument

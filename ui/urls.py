@@ -1,19 +1,19 @@
 """urls for ui"""
 from django.conf import settings
 from django.conf.urls import url, include
-from django.contrib.auth.views import logout as django_logout_view
+from django.contrib.auth.views import LogoutView
 from rest_framework import routers
 from ui import views
 
 router = routers.DefaultRouter()
-router.register(r'videos', views.VideoViewSet, base_name='video')
-router.register(r'collections', views.CollectionViewSet, base_name='collection')
-router.register(r'subtitles', views.VideoSubtitleViewSet, base_name='subtitle')
+router.register(r'videos', views.VideoViewSet, basename='video')
+router.register(r'collections', views.CollectionViewSet, basename='collection')
+router.register(r'subtitles', views.VideoSubtitleViewSet, basename='subtitle')
 
 urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^login/$', views.LoginView.as_view(), name='login'),
-    url(r'^logout/$', django_logout_view, {'next_page': settings.LOGIN_URL}),
+    url(r'^logout/$', LogoutView.as_view(next_page=settings.LOGIN_URL), name='logout'),
 
     url(r'^collections/(?P<collection_key>[0-9a-f]{32})?/?$', views.CollectionReactView.as_view(),
         name='collection-react-view'),
