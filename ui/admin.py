@@ -68,7 +68,7 @@ class VideoEncodeJobsInline(GenericTabularInline):
     list_display = ('id', 'state', 'message')
     readonly_fields = ('id', 'state', 'message')
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj=None):
         return False
 
     def has_change_permission(self, request, obj=None):
