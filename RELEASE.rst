@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.38.0
+--------------
+
+- Update dependencies
+- Update procfile
+- Fix 500 error in video admin (#749)
+
 Version 0.37.0 (Released April 22, 2019)
 --------------
 
