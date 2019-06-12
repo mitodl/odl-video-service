@@ -99,6 +99,7 @@ class VideoSerializer(serializers.ModelSerializer):
     key = serializers.SerializerMethodField()
     collection_key = serializers.SerializerMethodField()
     collection_title = serializers.SerializerMethodField()
+    cloudfront_url = serializers.SerializerMethodField()
     videofile_set = VideoFileSerializer(many=True, read_only=True)
     videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
     videosubtitle_set = VideoSubtitleSerializer(many=True)
@@ -135,6 +136,14 @@ class VideoSerializer(serializers.ModelSerializer):
         """
         return validate_moira_lists(value)
 
+    def get_cloudfront_url(self, obj):
+        """Get cloudfront_url"""
+        video_file = obj.download
+        if obj.collection.allow_share_openedx:
+            return video_file.cloudfront_url
+        else:
+            return ""
+
     class Meta:
         model = models.Video
         fields = (
@@ -154,7 +163,8 @@ class VideoSerializer(serializers.ModelSerializer):
             'is_public',
             'is_private',
             'sources',
-            'youtube_id'
+            'youtube_id',
+            'cloudfront_url'
         )
         read_only_fields = (
             'key',

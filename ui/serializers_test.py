@@ -138,7 +138,8 @@ def test_video_serializer(youtube, public):
         'sources': [],
         'is_private': False,
         'is_public': public,
-        'youtube_id': (video.youtube_id if youtube and public else None)
+        'youtube_id': (video.youtube_id if youtube and public else None),
+        'cloudfront_url': '',
     }
     assert serializers.VideoSerializer(video).data == expected
 

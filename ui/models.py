@@ -90,6 +90,7 @@ class Collection(TimestampedModel):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, models.CASCADE)
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
     admin_lists = models.ManyToManyField(MoiraList, blank=True, related_name='admin_lists')
+    allow_share_openedx = models.BooleanField(null=False, default=False)
     stream_source = models.CharField(
         null=True,
         blank=True,

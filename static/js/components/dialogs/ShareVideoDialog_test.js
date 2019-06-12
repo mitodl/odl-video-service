@@ -62,6 +62,20 @@ describe("ShareVideoDialog", () => {
           `<iframe src="http://fake/videos/${video.key}/embed/"`
         )
     )
+    assert.isFalse(wrapper.find("#video-openedx-url").exists())
+  })
+
+  it("shows cloudfront_url if the value is set", async () => {
+    const video = makeVideo()
+    const cloudfrontUrl = "https://fake.cloudfront.net/fake_key"
+    video.cloudfront_url = cloudfrontUrl
+    assert.equal(
+      renderComponent({ video: video })
+        .find("#video-openedx-url")
+        .hostNodes()
+        .props().value,
+      cloudfrontUrl
+    )
   })
   ;[false, true].forEach(function(checked) {
     it("adds time in seconds to the links only if checkbox is checked", async () => {

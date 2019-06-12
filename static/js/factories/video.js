@@ -96,7 +96,8 @@ export const makeVideo = (
   is_public:          false,
   view_lists:         [],
   sources:            [makeVideoSource(videoKey, ENCODING_HLS)],
-  youtube_id:         null
+  youtube_id:         null,
+  cloudfront_url:     ""
 })
 
 export const makeVideos = (

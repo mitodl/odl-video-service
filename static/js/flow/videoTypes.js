@@ -50,7 +50,8 @@ export type Video = {
   is_public:              boolean,
   is_private:             boolean,
   sources:                Array<VideoSource>,
-  youtube_id:            ?string
+  youtube_id:            ?string,
+  cloudfront_url:          string
 };
 
 export type VideoFormState = {
