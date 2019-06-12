@@ -110,11 +110,13 @@ def test_collection_list_serializer():
 
 @pytest.mark.parametrize('youtube', [True, False])
 @pytest.mark.parametrize('public', [True, False])
-def test_video_serializer(youtube, public):
+@pytest.mark.parametrize('allow_share_openedx', [True, False])
+def test_video_serializer(youtube, public, allow_share_openedx):
     """
     Test for VideoSerializer
     """
     video = factories.VideoFactory()
+    video.collection.allow_share_openedx = allow_share_openedx
     video_files = [factories.VideoFileFactory(video=video)]
     video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
     video.is_public = public
@@ -139,7 +141,7 @@ def test_video_serializer(youtube, public):
         'is_private': False,
         'is_public': public,
         'youtube_id': (video.youtube_id if youtube and public else None),
-        'cloudfront_url': '',
+        'cloudfront_url': video.download.cloudfront_url if allow_share_openedx else "",
     }
     assert serializers.VideoSerializer(video).data == expected
 
