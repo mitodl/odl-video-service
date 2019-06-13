@@ -7,6 +7,7 @@ from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
 
 from ui import models, permissions as ui_permissions
+from ui.encodings import EncodingNames
 from ui.utils import get_moira_client
 
 
@@ -138,7 +139,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
     def get_cloudfront_url(self, obj):
         """Get cloudfront_url"""
-        video_file = obj.download
+        video_file = obj.videofile_set.filter(encoding=EncodingNames.HLS).first()
         if obj.collection.allow_share_openedx:
             return video_file.cloudfront_url
         else:
