@@ -140,7 +140,7 @@ class VideoSerializer(serializers.ModelSerializer):
     def get_cloudfront_url(self, obj):
         """Get cloudfront_url"""
         video_file = obj.videofile_set.filter(encoding=EncodingNames.HLS).first()
-        if obj.collection.allow_share_openedx:
+        if obj.collection.allow_share_openedx and video_file:
             return video_file.cloudfront_url
         else:
             return ""

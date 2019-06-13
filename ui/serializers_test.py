@@ -7,6 +7,7 @@ import pytest
 from rest_framework.serializers import DateTimeField, ValidationError
 
 from ui import factories, serializers
+from ui.encodings import EncodingNames
 
 pytestmark = pytest.mark.django_db
 
@@ -111,13 +112,14 @@ def test_collection_list_serializer():
 @pytest.mark.parametrize('youtube', [True, False])
 @pytest.mark.parametrize('public', [True, False])
 @pytest.mark.parametrize('allow_share_openedx', [True, False])
-def test_video_serializer(youtube, public, allow_share_openedx):
+@pytest.mark.parametrize('hsl', [True, False])
+def test_video_serializer(youtube, public, allow_share_openedx, hsl):
     """
     Test for VideoSerializer
     """
     video = factories.VideoFactory()
     video.collection.allow_share_openedx = allow_share_openedx
-    video_files = [factories.VideoFileFactory(video=video)]
+    video_files = [factories.VideoFileFactory(video=video, hls=hsl)]
     video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
     video.is_public = public
     if youtube and public:
@@ -137,11 +139,12 @@ def test_video_serializer(youtube, public, allow_share_openedx):
         'status': video.status,
         'collection_view_lists': [],
         'view_lists': [],
-        'sources': [],
+        'sources': video.sources,
         'is_private': False,
         'is_public': public,
         'youtube_id': (video.youtube_id if youtube and public else None),
-        'cloudfront_url': video.download.cloudfront_url if allow_share_openedx else "",
+        'cloudfront_url': (video.videofile_set.filter(encoding=EncodingNames.HLS).first().cloudfront_url
+                           if allow_share_openedx and hsl else ""),
     }
     assert serializers.VideoSerializer(video).data == expected
 
