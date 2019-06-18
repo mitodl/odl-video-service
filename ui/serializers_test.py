@@ -109,7 +109,7 @@ def test_collection_list_serializer():
     assert serializers.CollectionListSerializer(collection).data == expected
 
 
-def get_expected_result(video, hls=False):
+def get_expected_result(video):
     """
     Expected result for VideoSerializer
     """
@@ -121,11 +121,6 @@ def get_expected_result(video, hls=False):
         'multiangle': video.multiangle,
         'title': video.title,
         'description': video.description,
-        'videofile_set': serializers.VideoFileSerializer(
-            [factories.VideoFileFactory(video=video, hls=hls)], many=True).data,
-        'videothumbnail_set': serializers.VideoThumbnailSerializer(
-            [factories.VideoThumbnailFactory(video=video)],
-            many=True).data,
         'videosubtitle_set': [],
         'status': video.status,
         'collection_view_lists': [],
@@ -145,12 +140,17 @@ def test_video_serializer(youtube, public):
     Test for VideoSerializer
     """
     video = factories.VideoFactory()
+    video_files = [factories.VideoFileFactory(video=video)]
+    video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
     video.is_public = public
     if youtube and public:
         factories.YouTubeVideoFactory(video=video)
     expected = get_expected_result(video)
+    expected['videofile_set'] = serializers.VideoFileSerializer(video_files, many=True).data
+    expected['videothumbnail_set'] = serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data
+
     expected['youtube_id'] = video.youtube_id if youtube and public else None
-    assert serializers.VideoSerializer(video).data == get_expected_result(video)
+    assert serializers.VideoSerializer(video).data == expected
 
 
 @pytest.mark.parametrize("has_permission", [True, False])
@@ -163,15 +163,19 @@ def test_video_serializer_with_sharing_url(mocker, has_permission, allow_share_o
     mocked_admin_permission = mocker.patch('ui.permissions.has_admin_permission', return_value=has_permission)
     mocked_request = mocker.MagicMock()
     video = factories.VideoFactory()
+    video_files = [factories.VideoFileFactory(video=video, hls=hls)]
+    video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
     video.collection.allow_share_openedx = allow_share_openedx
     video.is_public = True
-    expected = get_expected_result(video, hls=hls)
+    expected = get_expected_result(video)
     expected['cloudfront_url'] = (
         video.videofile_set.filter(encoding=EncodingNames.HLS).first().cloudfront_url
         if allow_share_openedx and hls and has_permission else ""
     )
+    expected['videofile_set'] = serializers.VideoFileSerializer(video_files, many=True).data
+    expected['videothumbnail_set'] = serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data
     assert serializers.VideoSerializer(video, context={'request': mocked_request}).data == expected
-    mocked_admin_permission.assert_called_with(video, mocked_request)
+    mocked_admin_permission.assert_called_with(video.collection, mocked_request)
 
 
 def test_video_serializer_validate_title(mocker):
@@ -275,6 +279,7 @@ def test_simplevideo_serializer():
         'collection_view_lists': [],
         'videothumbnail_set': serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data,
         'status': video.status,
-        'collection_key': video.collection.hexkey
+        'collection_key': video.collection.hexkey,
+        'cloudfront_url': ""
     }
     assert serializers.SimpleVideoSerializer(video).data == expected
