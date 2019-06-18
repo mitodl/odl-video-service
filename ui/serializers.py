@@ -139,7 +139,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
     def get_cloudfront_url(self, obj):
         """Get cloudfront_url"""
-        if self.context.get('request') and ui_permissions.has_admin_permission(obj, self.context['request']):
+        if self.context.get('request') and ui_permissions.has_admin_permission(obj.collection, self.context['request']):
             video_file = obj.videofile_set.filter(encoding=EncodingNames.HLS).first()
             if obj.collection.allow_share_openedx and video_file:
                 return video_file.cloudfront_url
@@ -202,6 +202,7 @@ class SimpleVideoSerializer(VideoSerializer):
             'videothumbnail_set',
             'status',
             'collection_key',
+            'cloudfront_url'
         )
         read_only_fields = fields
 
@@ -235,7 +236,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             videos = obj.videos.filter(is_public=True)
         else:
             videos = obj.videos.all()
-        return [SimpleVideoSerializer(video).data for video in videos]
+        return [SimpleVideoSerializer(video, context=self.context).data for video in videos]
 
     def get_is_admin(self, obj):
         """Custom field to indicate whether or not the requesting user is an admin"""
