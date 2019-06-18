@@ -109,23 +109,11 @@ def test_collection_list_serializer():
     assert serializers.CollectionListSerializer(collection).data == expected
 
 
-@pytest.mark.parametrize('youtube', [True, False])
-@pytest.mark.parametrize('public', [True, False])
-@pytest.mark.parametrize('allow_share_openedx', [True, False])
-@pytest.mark.parametrize('hsl', [True, False])
-def test_video_serializer(youtube, public, allow_share_openedx, hsl):
+def get_expected_result(video, hls=False):
     """
-    Test for VideoSerializer
+    Expected result for VideoSerializer
     """
-    video = factories.VideoFactory()
-    video.collection.allow_share_openedx = allow_share_openedx
-    video_files = [factories.VideoFileFactory(video=video, hls=hsl)]
-    video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
-    video.is_public = public
-    if youtube and public:
-        factories.YouTubeVideoFactory(video=video)
-
-    expected = {
+    return {
         'key': video.hexkey,
         'collection_key': video.collection.hexkey,
         'collection_title': video.collection.title,
@@ -133,20 +121,57 @@ def test_video_serializer(youtube, public, allow_share_openedx, hsl):
         'multiangle': video.multiangle,
         'title': video.title,
         'description': video.description,
-        'videofile_set': serializers.VideoFileSerializer(video_files, many=True).data,
-        'videothumbnail_set': serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data,
+        'videofile_set': serializers.VideoFileSerializer(
+            [factories.VideoFileFactory(video=video, hls=hls)], many=True).data,
+        'videothumbnail_set': serializers.VideoThumbnailSerializer(
+            [factories.VideoThumbnailFactory(video=video)],
+            many=True).data,
         'videosubtitle_set': [],
         'status': video.status,
         'collection_view_lists': [],
         'view_lists': [],
         'sources': video.sources,
         'is_private': False,
-        'is_public': public,
-        'youtube_id': (video.youtube_id if youtube and public else None),
-        'cloudfront_url': (video.videofile_set.filter(encoding=EncodingNames.HLS).first().cloudfront_url
-                           if allow_share_openedx and hsl else ""),
+        'is_public': video.is_public,
+        'youtube_id': None,
+        'cloudfront_url': "",
     }
-    assert serializers.VideoSerializer(video).data == expected
+
+
+@pytest.mark.parametrize('youtube', [True, False])
+@pytest.mark.parametrize('public', [True, False])
+def test_video_serializer(youtube, public):
+    """
+    Test for VideoSerializer
+    """
+    video = factories.VideoFactory()
+    video.is_public = public
+    if youtube and public:
+        factories.YouTubeVideoFactory(video=video)
+    expected = get_expected_result(video)
+    expected['youtube_id'] = video.youtube_id if youtube and public else None
+    assert serializers.VideoSerializer(video).data == get_expected_result(video)
+
+
+@pytest.mark.parametrize("has_permission", [True, False])
+@pytest.mark.parametrize('allow_share_openedx', [True, False])
+@pytest.mark.parametrize('hls', [True, False])
+def test_video_serializer_with_sharing_url(mocker, has_permission, allow_share_openedx, hls):
+    """
+    Test for VideoSerializer for sharing cloudfront url
+    """
+    mocked_admin_permission = mocker.patch('ui.permissions.has_admin_permission', return_value=has_permission)
+    mocked_request = mocker.MagicMock()
+    video = factories.VideoFactory()
+    video.collection.allow_share_openedx = allow_share_openedx
+    video.is_public = True
+    expected = get_expected_result(video, hls=hls)
+    expected['cloudfront_url'] = (
+        video.videofile_set.filter(encoding=EncodingNames.HLS).first().cloudfront_url
+        if allow_share_openedx and hls and has_permission else ""
+    )
+    assert serializers.VideoSerializer(video, context={'request': mocked_request}).data == expected
+    mocked_admin_permission.assert_called_with(video, mocked_request)
 
 
 def test_video_serializer_validate_title(mocker):

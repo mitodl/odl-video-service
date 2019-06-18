@@ -139,11 +139,12 @@ class VideoSerializer(serializers.ModelSerializer):
 
     def get_cloudfront_url(self, obj):
         """Get cloudfront_url"""
-        video_file = obj.videofile_set.filter(encoding=EncodingNames.HLS).first()
-        if obj.collection.allow_share_openedx and video_file:
-            return video_file.cloudfront_url
-        else:
-            return ""
+        if self.context.get('request') and ui_permissions.has_admin_permission(obj, self.context['request']):
+            video_file = obj.videofile_set.filter(encoding=EncodingNames.HLS).first()
+            if obj.collection.allow_share_openedx and video_file:
+                return video_file.cloudfront_url
+
+        return ""
 
     class Meta:
         model = models.Video
