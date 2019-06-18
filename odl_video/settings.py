@@ -19,7 +19,7 @@ from odl_video.envs import (
     parse_env
 )
 
-VERSION = "0.38.0"
+VERSION = "0.39.0"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 parse_env(f'{BASE_DIR}/.env')
