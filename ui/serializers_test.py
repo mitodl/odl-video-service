@@ -121,6 +121,8 @@ def get_expected_result(video):
         'multiangle': video.multiangle,
         'title': video.title,
         'description': video.description,
+        'videofile_set': serializers.VideoFileSerializer(video.videofile_set.all(), many=True).data,
+        'videothumbnail_set': serializers.VideoThumbnailSerializer(video.videothumbnail_set.all(), many=True).data,
         'videosubtitle_set': [],
         'status': video.status,
         'collection_view_lists': [],
@@ -140,14 +142,12 @@ def test_video_serializer(youtube, public):
     Test for VideoSerializer
     """
     video = factories.VideoFactory()
-    video_files = [factories.VideoFileFactory(video=video)]
-    video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
+    factories.VideoFileFactory(video=video)
+    factories.VideoThumbnailFactory(video=video)
     video.is_public = public
     if youtube and public:
         factories.YouTubeVideoFactory(video=video)
     expected = get_expected_result(video)
-    expected['videofile_set'] = serializers.VideoFileSerializer(video_files, many=True).data
-    expected['videothumbnail_set'] = serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data
 
     expected['youtube_id'] = video.youtube_id if youtube and public else None
     assert serializers.VideoSerializer(video).data == expected
@@ -163,8 +163,8 @@ def test_video_serializer_with_sharing_url(mocker, has_permission, allow_share_o
     mocked_admin_permission = mocker.patch('ui.permissions.has_admin_permission', return_value=has_permission)
     mocked_request = mocker.MagicMock()
     video = factories.VideoFactory()
-    video_files = [factories.VideoFileFactory(video=video, hls=hls)]
-    video_thumbnails = [factories.VideoThumbnailFactory(video=video)]
+    factories.VideoFileFactory(video=video, hls=hls)
+    factories.VideoThumbnailFactory(video=video)
     video.collection.allow_share_openedx = allow_share_openedx
     video.is_public = True
     expected = get_expected_result(video)
@@ -172,8 +172,6 @@ def test_video_serializer_with_sharing_url(mocker, has_permission, allow_share_o
         video.videofile_set.filter(encoding=EncodingNames.HLS).first().cloudfront_url
         if allow_share_openedx and hls and has_permission else ""
     )
-    expected['videofile_set'] = serializers.VideoFileSerializer(video_files, many=True).data
-    expected['videothumbnail_set'] = serializers.VideoThumbnailSerializer(video_thumbnails, many=True).data
     assert serializers.VideoSerializer(video, context={'request': mocked_request}).data == expected
     mocked_admin_permission.assert_called_with(video.collection, mocked_request)
 
