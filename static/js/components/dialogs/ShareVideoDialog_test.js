@@ -122,4 +122,14 @@ describe("ShareVideoDialog", () => {
     const wrapper = renderComponent({ video: null })
     assert.equal(wrapper.find("ShareVideoDialog").prop("videoKey"), videoKey)
   })
+
+  it("gets the video from the state using SelectedVideoKey if a video object isn't passed in", () => {
+    const url = "cloudfront-url"
+
+    const video = makeVideo()
+    video['cloudfront_url'] = url
+    store.dispatch(setSelectedVideoKey(video.key))
+    const wrapper = renderComponent({ video: null, collection: {videos: [video]}})
+    assert.equal(wrapper.find("ShareVideoDialog").prop("cloudfrontUrl"), url)
+  })
 })
