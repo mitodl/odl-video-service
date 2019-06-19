@@ -127,9 +127,12 @@ describe("ShareVideoDialog", () => {
     const url = "cloudfront-url"
 
     const video = makeVideo()
-    video['cloudfront_url'] = url
+    video["cloudfront_url"] = url
     store.dispatch(setSelectedVideoKey(video.key))
-    const wrapper = renderComponent({ video: null, collection: {videos: [video]}})
+    const wrapper = renderComponent({
+      video:      null,
+      collection: { videos: [video] }
+    })
     assert.equal(wrapper.find("ShareVideoDialog").prop("cloudfrontUrl"), url)
   })
 })
