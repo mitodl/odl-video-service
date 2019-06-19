@@ -847,7 +847,7 @@ def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
     assert result.status_code == 500
 
 
-def test_video_viewset_list(mock_user_moira_lists, logged_in_apiclient):
+def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
     # pylint: disable-msg=too-many-locals
     """
     Tests the list of videos for a user.
@@ -856,6 +856,7 @@ def test_video_viewset_list(mock_user_moira_lists, logged_in_apiclient):
     """
     view_list = MoiraListFactory()
     admin_list = MoiraListFactory()
+    mocker.patch('ui.serializers.ui_permissions')
     mock_user_moira_lists.return_value = [view_list.name, admin_list.name]
     non_matching_list = MoiraListFactory()
     client, user = logged_in_apiclient

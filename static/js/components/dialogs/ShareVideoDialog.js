@@ -18,7 +18,8 @@ type DialogProps = {
   videoUi: VideoUiState,
   open: boolean,
   hideDialog: Function,
-  videoKey: string
+  videoKey: string,
+  cloudfrontUrl: string
 }
 
 class ShareVideoDialog extends React.Component<*, void> {
@@ -30,7 +31,7 @@ class ShareVideoDialog extends React.Component<*, void> {
   }
 
   render() {
-    const { open, hideDialog, videoKey, videoUi } = this.props
+    const { open, hideDialog, videoKey, videoUi, cloudfrontUrl } = this.props
     const { shareVideoForm } = videoUi
     const startTime = videoUi.videoTime
     const startParam = shareVideoForm.shareTime ? `?start=${startTime}` : ""
@@ -56,6 +57,14 @@ class ShareVideoDialog extends React.Component<*, void> {
             id="video-url"
             value={videoShareUrl}
           />
+          {cloudfrontUrl ? (
+            <Textfield
+              readOnly
+              label="Open edX video URL"
+              id="video-openedx-url"
+              value={cloudfrontUrl}
+            />
+          ) : null}
           <Textarea
             readOnly
             label="Embed HTML"
@@ -78,15 +87,19 @@ class ShareVideoDialog extends React.Component<*, void> {
 
 const mapStateToProps = (state, ownProps) => {
   const { videoUi, collectionUi: { selectedVideoKey } } = state
-  const { video } = ownProps
+  let { video } = ownProps
 
   // The dialog needs a video key passed in as a prop. Depending on the container that includes this dialog,
   // that video key can be retrieved in a couple different ways.
+  if (!video && ownProps.collection) {
+    video = ownProps.collection.videos.find(obj => obj.key === selectedVideoKey)
+  }
   const videoKey = video ? video.key : selectedVideoKey
 
   return {
-    videoUi:  videoUi,
-    videoKey: videoKey
+    videoUi:       videoUi,
+    videoKey:      videoKey,
+    cloudfrontUrl: video ? video.cloudfront_url : ""
   }
 }
 

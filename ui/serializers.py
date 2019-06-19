@@ -7,6 +7,7 @@ from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
 
 from ui import models, permissions as ui_permissions
+from ui.encodings import EncodingNames
 from ui.utils import get_moira_client
 
 
@@ -99,6 +100,7 @@ class VideoSerializer(serializers.ModelSerializer):
     key = serializers.SerializerMethodField()
     collection_key = serializers.SerializerMethodField()
     collection_title = serializers.SerializerMethodField()
+    cloudfront_url = serializers.SerializerMethodField()
     videofile_set = VideoFileSerializer(many=True, read_only=True)
     videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
     videosubtitle_set = VideoSubtitleSerializer(many=True)
@@ -135,6 +137,16 @@ class VideoSerializer(serializers.ModelSerializer):
         """
         return validate_moira_lists(value)
 
+    def get_cloudfront_url(self, obj):
+        """Get cloudfront_url"""
+        if (self.context.get('request') and
+                ui_permissions.has_admin_permission(obj.collection, self.context['request'])):
+            video_file = obj.videofile_set.filter(encoding=EncodingNames.HLS).first()
+            if obj.collection.allow_share_openedx and video_file:
+                return video_file.cloudfront_url
+
+        return ""
+
     class Meta:
         model = models.Video
         fields = (
@@ -154,7 +166,8 @@ class VideoSerializer(serializers.ModelSerializer):
             'is_public',
             'is_private',
             'sources',
-            'youtube_id'
+            'youtube_id',
+            'cloudfront_url'
         )
         read_only_fields = (
             'key',
@@ -190,6 +203,7 @@ class SimpleVideoSerializer(VideoSerializer):
             'videothumbnail_set',
             'status',
             'collection_key',
+            'cloudfront_url'
         )
         read_only_fields = fields
 
@@ -223,7 +237,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             videos = obj.videos.filter(is_public=True)
         else:
             videos = obj.videos.all()
-        return [SimpleVideoSerializer(video).data for video in videos]
+        return [SimpleVideoSerializer(video, context=self.context).data for video in videos]
 
     def get_is_admin(self, obj):
         """Custom field to indicate whether or not the requesting user is an admin"""

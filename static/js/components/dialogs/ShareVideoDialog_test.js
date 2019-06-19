@@ -62,6 +62,20 @@ describe("ShareVideoDialog", () => {
           `<iframe src="http://fake/videos/${video.key}/embed/"`
         )
     )
+    assert.isFalse(wrapper.find("#video-openedx-url").exists())
+  })
+
+  it("shows cloudfront_url if the value is set", async () => {
+    const video = makeVideo()
+    const cloudfrontUrl = "https://fake.cloudfront.net/fake_key"
+    video.cloudfront_url = cloudfrontUrl
+    assert.equal(
+      renderComponent({ video: video })
+        .find("#video-openedx-url")
+        .hostNodes()
+        .props().value,
+      cloudfrontUrl
+    )
   })
   ;[false, true].forEach(function(checked) {
     it("adds time in seconds to the links only if checkbox is checked", async () => {
@@ -107,5 +121,18 @@ describe("ShareVideoDialog", () => {
     store.dispatch(setSelectedVideoKey(videoKey))
     const wrapper = renderComponent({ video: null })
     assert.equal(wrapper.find("ShareVideoDialog").prop("videoKey"), videoKey)
+  })
+
+  it("gets the video from the state using SelectedVideoKey if a video object isn't passed in", () => {
+    const url = "cloudfront-url"
+
+    const video = makeVideo()
+    video["cloudfront_url"] = url
+    store.dispatch(setSelectedVideoKey(video.key))
+    const wrapper = renderComponent({
+      video:      null,
+      collection: { videos: [video] }
+    })
+    assert.equal(wrapper.find("ShareVideoDialog").prop("cloudfrontUrl"), url)
   })
 })
