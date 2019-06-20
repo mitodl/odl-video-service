@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.39.0
+Version 0.39.0 (Released June 20, 2019)
 --------------
 
 - Upgrade css-loader (#756)
