@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.40.0
+--------------
+
+- Update hijack version (#760)
+
 Version 0.39.1 (Released June 26, 2019)
 --------------
 
