@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.39.1
+Version 0.39.1 (Released June 26, 2019)
 --------------
 
 - Add cloudfront url to ShareVideoDialog (#755)
