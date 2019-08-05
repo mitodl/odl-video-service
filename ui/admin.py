@@ -35,6 +35,7 @@ class CollectionAdmin(admin.ModelAdmin):
         'admin_lists__name',
         'owner__username',
         'owner__email',
+        'edx_course_id',
     )
 
 

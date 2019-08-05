@@ -1,24 +1,21 @@
 """
 ui celery tasks
 """
-from celery import shared_task
+import logging
 
-from ui.utils import get_bucket
+from odl_video.celery import app
+from ui.models import VideoFile
+from ui import api as ovs_api
+
+log = logging.getLogger()
 
 
-@shared_task(bind=True)
-def delete_s3_objects(self, bucket_name, key, as_filter=False):  # pylint:disable=unused-argument
-    """
-    Delete objects from an S3 bucket
-
-    Args:
-        bucket_name(str): Name of S3 bucket
-        key(str): S3 key or key prefix
-        as_filter(bool): Filter the bucket by the key
-    """
-    bucket = get_bucket(bucket_name)
-    if not as_filter:
-        bucket.delete_objects(Delete={'Objects': [{'Key': key}]})
-    else:
-        for obj in bucket.objects.filter(Prefix=key):
-            obj.delete()
+@app.task
+def post_hls_to_edx(video_file_id):
+    """Loads a VideoFile and calls our API method to add it to edX"""
+    video_file = VideoFile.objects.filter(id=video_file_id).select_related("video__collection").first()
+    if not video_file:
+        log.error("VideoFile with id %s doesn't exist", video_file_id)
+        return
+    resp = ovs_api.post_hls_to_edx(video_file)
+    return resp.status_code

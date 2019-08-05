@@ -1,7 +1,6 @@
 """
 conftest for pytest in this module
 """
-
 import pytest
 from rest_framework.test import APIClient
 
@@ -43,3 +42,17 @@ def ga_client_mocks(mocker):
             'ui.utils.ServiceAccountCredentials'),
     }
     return mocks
+
+
+@pytest.fixture()
+def edx_settings(settings):
+    """Fixture that sets necessary edX-related settings"""
+    new_settings = dict(
+        EDX_BASE_URL="http://example.com",
+        EDX_HLS_API_URL="api",
+        EDX_ACCESS_TOKEN="abcdefg",
+        EDX_API_KEY="apikey",
+    )
+    for k, v in new_settings.items():
+        setattr(settings, k, v)
+    return new_settings

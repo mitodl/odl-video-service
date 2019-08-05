@@ -1,6 +1,7 @@
 """
 ui model signals
 """
+# pylint: disable=unused-argument
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_out
@@ -8,10 +9,8 @@ from django.contrib.auth.signals import user_logged_out
 from cloudsync.tasks import remove_youtube_video, remove_youtube_caption
 from ui.constants import StreamSource, YouTubeStatus
 from ui.models import VideoFile, VideoThumbnail, VideoSubtitle, Video, YouTubeVideo, Collection
-
-
-# pylint: disable=unused-argument
-from ui.utils import delete_moira_cache
+from ui import tasks as ovs_tasks
+from ui.utils import delete_moira_cache, edx_settings_configured
 
 
 @receiver(pre_delete, sender=VideoFile)
@@ -64,6 +63,16 @@ def update_video_youtube(sender, **kwargs):
     If a video's is_public field is changed, sync associated YoutubeVideo object
     """
     sync_youtube(kwargs['instance'])
+
+
+@receiver(post_save, sender=VideoFile)
+def add_hls_to_edx(sender, instance, created, **kwargs):
+    """
+    If an HLS VideoFile was created and the correct edX settings are present, kick off a task
+    to add this video to edX via API.
+    """
+    if created and edx_settings_configured() and instance.can_add_to_edx():
+        ovs_tasks.post_hls_to_edx.delay(instance.id)
 
 
 def sync_youtube(video):

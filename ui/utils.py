@@ -6,6 +6,7 @@ from functools import lru_cache
 import json
 import random
 import re
+from urllib.parse import urljoin
 
 import boto3
 from django.conf import settings
@@ -378,3 +379,33 @@ def list_members(list_name):
         return list_users
     except Exception as exc:  # pylint: disable=broad-except
         raise MoiraException('Something went wrong with getting moira-users for %s' % list_name) from exc
+
+
+def multi_urljoin(url_base, *url_parts, add_trailing_slash=False):
+    """
+    Takes a base URL and any number of strings that make up the URL path and returns a valid slash-separated URL
+
+    Args:
+         url_base (str): The base of the URL, e.g.: "http://example.com"
+         url_parts (str): Strings that make up the URL path (e.g.: "api/v1/" "/my-resource/" "1")
+         add_trailing_slash (bool): If True, adds a trailing slash to the URL if the last part of the URL path did
+            not already have a trailing slash.
+
+    Returns:
+        str: Valid slash-separated URL
+    """
+    stripped_url_parts = map(lambda part: part.strip("/"), url_parts)
+    url_path = "/".join(stripped_url_parts)
+    if add_trailing_slash or (url_parts and url_parts[-1].endswith("/")):
+        url_path = "".join((url_path, "/"))
+    return urljoin(url_base, url_path)
+
+
+def edx_settings_configured():
+    """Returns True if all the necessary settings for adding a video to edX via API are properly configured"""
+    return all((
+        settings.EDX_BASE_URL,
+        settings.EDX_HLS_API_URL,
+        settings.EDX_ACCESS_TOKEN,
+        settings.EDX_API_KEY
+    ))

@@ -1,5 +1,6 @@
 """ Test model signals"""
 import pytest
+import factory
 
 from ui.constants import StreamSource, YouTubeStatus
 from ui.encodings import EncodingNames
@@ -7,15 +8,14 @@ from ui.factories import VideoFactory, YouTubeVideoFactory, VideoSubtitleFactory
 
 pytestmark = pytest.mark.django_db
 
-# pylint: disable=redefined-outer-name,too-many-arguments
+# pylint: disable=redefined-outer-name,too-many-arguments,unused-argument
 
 
 @pytest.fixture()
 def video_with_file():
     """ Fixture to create a video with an original videofile """
-    video = VideoFactory(is_public=True)
-    VideoFileFactory(video=video, encoding=EncodingNames.ORIGINAL)
-    return video
+    video_file = VideoFileFactory(video__is_public=True, encoding=EncodingNames.ORIGINAL)
+    return video_file.video
 
 
 def test_youtube_video_delete_signal(mocker):
@@ -72,10 +72,21 @@ def test_youtube_sync_signal(mocker, is_public, on_youtube, delete_count, video_
 
 @pytest.mark.parametrize('status', [YouTubeStatus.REJECTED, YouTubeStatus.FAILED, YouTubeStatus.UPLOADED])
 def test_youtube_sync_redo_failed(mocker, video_with_file, status):
-    """ Test that an existing youtube video is deleted if it has a bad status"""
+    """Test that an existing youtube video is deleted if it has a bad status"""
     mock_delete = mocker.patch('ui.signals.YouTubeVideo.delete')
     YouTubeVideoFactory(video=video_with_file, status=status)
     video_with_file.is_public = True
     video_with_file.save()
     expected_count = (0 if status == YouTubeStatus.UPLOADED else 1)
     assert mock_delete.call_count == expected_count
+
+
+def test_edx_video_file_signal(mocker, edx_settings):
+    """When a VideoFile is created with the right properties, a task to add the video to edX should be called"""
+    patched_edx_task = mocker.patch('ui.signals.ovs_tasks.post_hls_to_edx.delay')
+    video_files = VideoFileFactory.create_batch(
+        3,
+        encoding=factory.Iterator([EncodingNames.HLS, EncodingNames.HLS, "other-encoding"]),
+        video__collection__edx_course_id=factory.Iterator(["courseid", None, "courseid"])
+    )
+    patched_edx_task.assert_called_once_with(video_files[0].id)

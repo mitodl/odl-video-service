@@ -76,7 +76,10 @@ class MailAPITests(TestCase):
         else:
             self.assertEqual(called_kwargs['data']['from'], settings.EMAIL_SUPPORT)
 
-    @override_settings(MAILGUN_RECIPIENT_OVERRIDE='recipient@override.com')
+    @override_settings(
+        MAILGUN_RECIPIENT_OVERRIDE='recipient@override.com',
+        EMAIL_SUPPORT='support@example.com'
+    )
     def test_send_batch_recipient_override(self, mock_post):
         """
         Test that MailgunClient.send_batch works properly with recipient override enabled

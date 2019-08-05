@@ -4,16 +4,8 @@ conftest for pytest in this module
 from io import BytesIO
 
 import pytest
-import requests_mock
 import botocore.session
 from botocore.stub import Stubber, ANY
-
-
-@pytest.fixture
-def reqmocker():
-    """Fixture for requests mock"""
-    with requests_mock.Mocker() as m:
-        yield m
 
 
 @pytest.fixture
