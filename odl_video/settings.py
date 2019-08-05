@@ -539,3 +539,8 @@ PAGE_SIZE_VIDEOS = get_int('PAGE_SIZE_VIDEOS', 1000)
 MOIRA_CACHE_TIMEOUT = get_int('MOIRA_CACHE_TIMEOUT', 10800)
 HIJACK_ALLOW_GET_REQUESTS = True
 HIJACK_LOGOUT_REDIRECT_URL = '/admin/auth/user'
+
+EDX_ACCESS_TOKEN = get_string('EDX_ACCESS_TOKEN', None)
+EDX_API_KEY = get_string('EDX_API_KEY', None)
+EDX_BASE_URL = get_string('EDX_BASE_URL', None)
+EDX_HLS_API_URL = get_string('EDX_HLS_API_URL', '/api/course_videos/')

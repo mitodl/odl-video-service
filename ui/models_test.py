@@ -8,11 +8,13 @@ from datetime import datetime
 
 import boto3
 import pytest
-
 import pytz
+import factory
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.db.models import signals
 
 from mail import tasks
 from ui.encodings import EncodingNames
@@ -360,3 +362,18 @@ def test_video_ordering():
     resorted_videos = Collection.objects.get(id=collection.id).videos.all()
     for (idx, video) in enumerate(resorted_videos):
         assert video.custom_order == idx
+
+
+@pytest.mark.parametrize("encoding,edx_course_id,expected", [
+    (EncodingNames.HLS, "course-v1", True),
+    (EncodingNames.HLS, None, False),
+    ("other-encoding", "course-v1", False),
+])
+@factory.django.mute_signals(signals.post_save)
+def test_video_file_can_add_to_edx(encoding, edx_course_id, expected):
+    """Test that VideoFile.can_add_to_edx returns True under the right conditions"""
+    video_files = VideoFileFactory.create(
+        encoding=encoding,
+        video__collection__edx_course_id=edx_course_id
+    )
+    assert video_files.can_add_to_edx() is expected

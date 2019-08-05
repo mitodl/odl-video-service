@@ -1,0 +1,35 @@
+version: '2.1'
+
+services:
+  notebook:
+    build:
+      context: .
+      dockerfile: Dockerfile-nb
+    volumes:
+      - .:/src
+    environment:
+      BASE_DJANGO_APP_NAME: odl_video
+      DEBUG: ${DEBUG:-True}
+      DEV_ENV: 'True'
+      NODE_ENV: 'development'
+      PORT: 8087
+      COVERAGE_DIR: htmlcov
+      DATABASE_URL: postgres://postgres@db:5432/postgres
+      ODL_VIDEO_USE_WEBPACK_DEV_SERVER: 'True'
+      ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
+      ODL_VIDEO_DB_DISABLE_SSL: 'True'
+      CELERY_TASK_ALWAYS_EAGER: 'False'
+      CELERY_BROKER_URL: redis://redis:6379/4
+      CELERY_RESULT_BACKEND: redis://redis:6379/4
+      REDIS_URL: redis://redis:6379/4
+      DOCKER_HOST: ${DOCKER_HOST:-missing}
+      WEBPACK_DEV_SERVER_HOST: ${WEBPACK_DEV_SERVER_HOST:-localhost}
+      COVERAGE_DIR: htmlcov
+      DOCKER_HOST: ${DOCKER_HOST:-missing}
+    env_file: .env
+    command: >
+      /bin/bash -c '
+      sleep 3 &&
+      jupyter notebook --no-browser --ip=0.0.0.0 --port=8080'
+    ports:
+      - "8080:8080"

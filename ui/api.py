@@ -3,6 +3,7 @@ API methods
 """
 import logging
 
+import requests
 from celery import chain
 from django.conf import settings
 from django.db import transaction
@@ -10,7 +11,7 @@ from django.shortcuts import get_object_or_404
 
 from cloudsync import tasks
 from ui import models
-
+from ui.utils import multi_urljoin, edx_settings_configured
 
 log = logging.getLogger(__name__)
 
@@ -53,3 +54,42 @@ def process_dropbox_data(dropbox_upload_data):
             "task": task_result.id,
         }
     return response_data
+
+
+def post_hls_to_edx(video_file):
+    """
+    Posts an HLS video to edX via API using attributes from a video file
+
+    Args:
+        video_file (ui.models.VideoFile): An HLS-encoded video file
+
+    Returns:
+        requests.models.Response: The API response
+    """
+    assert edx_settings_configured(), "edX settings need to be configured"
+    assert video_file.can_add_to_edx(), "This video file is not of the correct type"
+    hls_api_url = multi_urljoin(
+        settings.EDX_BASE_URL,
+        settings.EDX_HLS_API_URL,
+        video_file.video.collection.edx_course_id,
+        add_trailing_slash=True
+    )
+    resp = requests.post(
+        hls_api_url,
+        json={
+            "filename": video_file.video.title,
+            "hls_url": video_file.cloudfront_url,
+        },
+        headers={
+            "Authorization": "Bearer {}".format(settings.EDX_ACCESS_TOKEN),
+            "X-EdX-Api-Key": settings.EDX_API_KEY
+        }
+    )
+    if not resp.ok:
+        log.error(
+            "Request to add HLS video to edX failed - VideoFile: %d, API response: [%d] %s",
+            video_file.pk,
+            resp.status_code,
+            resp.content.decode("utf-8"),
+        )
+    return resp

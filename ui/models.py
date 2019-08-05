@@ -5,6 +5,7 @@ import os
 from uuid import uuid4
 
 import boto3
+from celery import shared_task
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.conf import settings
@@ -16,10 +17,27 @@ from mail import tasks
 from ui import utils
 from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.encodings import EncodingNames
-from ui.tasks import delete_s3_objects
-
+from ui.utils import get_bucket
 
 TRANSCODE_PREFIX = 'transcoded'
+
+
+@shared_task(bind=True)
+def delete_s3_objects(self, bucket_name, key, as_filter=False):  # pylint:disable=unused-argument
+    """
+    Delete objects from an S3 bucket
+
+    Args:
+        bucket_name(str): Name of S3 bucket
+        key(str): S3 key or key prefix
+        as_filter(bool): Filter the bucket by the key
+    """
+    bucket = get_bucket(bucket_name)
+    if not as_filter:
+        bucket.delete_objects(Delete={'Objects': [{'Key': key}]})
+    else:
+        for obj in bucket.objects.filter(Prefix=key):
+            obj.delete()
 
 
 class MoiraList(TimestampedModel):
@@ -97,6 +115,7 @@ class Collection(TimestampedModel):
         choices=[(status, status) for status in StreamSource.ALL_SOURCES],
         max_length=10
     )
+    edx_course_id = models.CharField(null=True, blank=True, max_length=150)
 
     objects = CollectionManager()
 
@@ -432,6 +451,19 @@ class VideoFile(VideoS3):
             delete_s3_objects.delay(self.bucket_name, key, as_filter=True)
         else:
             super().delete_from_s3()
+
+    def can_add_to_edx(self):
+        """
+        Returns True if this VideoFile can be added to edX via API
+
+        Returns:
+            bool:
+        """
+        return bool(
+            self.encoding == EncodingNames.HLS and
+            self.cloudfront_url and
+            self.video.collection.edx_course_id
+        )
 
     def __str__(self):
         return '{}: {} encoding'.format(self.video.title, self.encoding)

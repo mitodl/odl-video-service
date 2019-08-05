@@ -20,9 +20,12 @@ from ui.utils import (
     generate_google_analytics_query,
     parse_google_analytics_response,
     generate_mock_video_analytics_data,
-    list_members)
+    list_members,
+    edx_settings_configured,
+    multi_urljoin,
+)
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument,too-many-arguments
 
 pytestmark = pytest.mark.django_db
 
@@ -390,3 +393,31 @@ def test_list_members_exception(mock_moira_client):
     mock_moira_client.return_value.list_members.side_effect = Exception("exception")
     with pytest.raises(MoiraException):
         list_members(factories.UserFactory())
+
+
+def test_edx_settings_configured(settings):
+    """edx_settings_configured should return True if edX settings values are set"""
+    settings_names = [
+        "EDX_BASE_URL",
+        "EDX_HLS_API_URL",
+        "EDX_ACCESS_TOKEN",
+        "EDX_API_KEY"
+    ]
+    for settings_name in settings_names:
+        setattr(settings, settings_name, "abc")
+    assert edx_settings_configured() is True
+    for settings_name in settings_names:
+        setattr(settings, settings_name, None)
+    assert edx_settings_configured() is False
+
+
+@pytest.mark.parametrize("url_base,url_parts,trailing,expected", [
+    ("http://mit.edu", ["a", "b"], False, "http://mit.edu/a/b"),
+    ("http://mit.edu", ["a", "b/c/d", "e"], False, "http://mit.edu/a/b/c/d/e"),
+    ("http://mit.edu/", ["/a/", "/b"], False, "http://mit.edu/a/b"),
+    ("http://mit.edu", ["a", "b"], True, "http://mit.edu/a/b/"),
+    ("http://mit.edu", ["a", "b/"], False, "http://mit.edu/a/b/"),
+])
+def test_multi_urljoin(url_base, url_parts, trailing, expected):
+    """multi_urljoin should construct a valid URL from a base string and an arbitrary number of URL parts"""
+    assert multi_urljoin(url_base, *url_parts, add_trailing_slash=trailing) == expected

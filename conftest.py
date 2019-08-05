@@ -5,6 +5,7 @@ Pytest configuration file for the entire application
 import warnings
 
 import pytest
+import requests_mock
 
 
 @pytest.fixture(autouse=True)
@@ -27,3 +28,10 @@ def warnings_as_errors():
         yield
     finally:
         warnings.resetwarnings()
+
+
+@pytest.fixture
+def reqmocker():
+    """Fixture for requests mock"""
+    with requests_mock.Mocker() as m:
+        yield m
