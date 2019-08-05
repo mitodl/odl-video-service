@@ -20,6 +20,7 @@ from ui.factories import (
     VideoFileFactory,
 )
 from ui.encodings import EncodingNames
+from odl_video.test_utils import any_instance_of
 
 pytestmark = pytest.mark.django_db
 
@@ -28,18 +29,19 @@ pytestmark = pytest.mark.django_db
 @factory.django.mute_signals(signals.post_save)
 def edx_api_scenario(edx_settings):
     """Fixture that provides a VideoFile with the correct properties to post to edX"""
+    course_id = "course-v1:abc"
     video_file = VideoFileFactory.create(
         encoding=EncodingNames.HLS,
         video__title="My Video",
-        video__collection__edx_course_id="course-v1:abc"
+        video__collection__edx_course_id=course_id
     )
     return SimpleNamespace(
         video_file=video_file,
         edx_settings=edx_settings,
-        expected_url="{}/{}/{}/".format(
+        course_id=course_id,
+        expected_url="{}/{}/".format(
             edx_settings["EDX_BASE_URL"],
-            edx_settings["EDX_HLS_API_URL"],
-            video_file.video.collection.edx_course_id,
+            edx_settings["EDX_HLS_API_URL"]
         )
     )
 
@@ -123,7 +125,6 @@ def test_post_hls_to_edx(reqmocker, edx_api_scenario):
     """post_hls_to_edx should make a POST request to an edX API endpoint"""
     expected_headers = {
         "Authorization": "Bearer {}".format(edx_api_scenario.edx_settings["EDX_ACCESS_TOKEN"]),
-        "X-EdX-Api-Key": edx_api_scenario.edx_settings["EDX_API_KEY"]
     }
     mocked_post = reqmocker.register_uri(
         "POST",
@@ -133,10 +134,23 @@ def test_post_hls_to_edx(reqmocker, edx_api_scenario):
     )
     api.post_hls_to_edx(edx_api_scenario.video_file)
     assert mocked_post.call_count == 1
-    assert mocked_post.last_request.json() == {
-        "filename": edx_api_scenario.video_file.video.title,
-        "hls_url": edx_api_scenario.video_file.cloudfront_url,
+    request_body = mocked_post.last_request.json()
+    assert request_body == {
+        "client_video_id": edx_api_scenario.video_file.video.title,
+        "edx_video_id": any_instance_of(str),
+        "encoded_videos": [
+            {
+                "url": edx_api_scenario.video_file.cloudfront_url,
+                "file_size": 0,
+                "bitrate": 0,
+                "profile": "hls"
+            }
+        ],
+        "courses": [{edx_api_scenario.course_id: None}],
+        "status": "file_complete",
+        "duration": 0.0,
     }
+    assert len(request_body["edx_video_id"]) == 36
 
 
 def test_post_hls_to_edx_bad_resp(mocker, reqmocker, edx_api_scenario):

@@ -33,16 +33,12 @@
       "description": "Access token value for an edX admin user",
       "required": false
     },
-    "EDX_API_KEY": {
-      "description": "edX API key",
-      "required": false
-    },
     "EDX_BASE_URL": {
       "description": "Base URL for the edX API",
       "required": false
     },
     "EDX_HLS_API_URL": {
-      "default": "/api/course_videos/",
+      "default": "/api/val/v0/videos/",
       "description": "URL path for the HLS video endpoint on edX",
       "required": false
     },

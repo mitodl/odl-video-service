@@ -2,6 +2,7 @@
 API methods
 """
 import logging
+from uuid import uuid4
 
 import requests
 from celery import chain
@@ -71,18 +72,27 @@ def post_hls_to_edx(video_file):
     hls_api_url = multi_urljoin(
         settings.EDX_BASE_URL,
         settings.EDX_HLS_API_URL,
-        video_file.video.collection.edx_course_id,
         add_trailing_slash=True
     )
     resp = requests.post(
         hls_api_url,
         json={
-            "filename": video_file.video.title,
-            "hls_url": video_file.cloudfront_url,
+            "client_video_id": video_file.video.title,
+            "edx_video_id": str(uuid4()),
+            "encoded_videos": [
+                {
+                    "url": video_file.cloudfront_url,
+                    "file_size": 0,
+                    "bitrate": 0,
+                    "profile": "hls"
+                }
+            ],
+            "courses": [{video_file.video.collection.edx_course_id: None}],
+            "status": "file_complete",
+            "duration": 0.0,
         },
         headers={
             "Authorization": "Bearer {}".format(settings.EDX_ACCESS_TOKEN),
-            "X-EdX-Api-Key": settings.EDX_API_KEY
         }
     )
     if not resp.ok:

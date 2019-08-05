@@ -407,5 +407,4 @@ def edx_settings_configured():
         settings.EDX_BASE_URL,
         settings.EDX_HLS_API_URL,
         settings.EDX_ACCESS_TOKEN,
-        settings.EDX_API_KEY
     ))
