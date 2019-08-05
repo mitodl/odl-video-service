@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.41.0
+--------------
+
+- Added request to auto-add HLS videos to edX when appropriate
+
 Version 0.40.0 (Released June 26, 2019)
 --------------
 
