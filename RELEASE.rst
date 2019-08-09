@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.41.1
+--------------
+
+- Changed edX auto-add to use edxval library endpoints
+
 Version 0.41.0 (Released August 07, 2019)
 --------------
 
