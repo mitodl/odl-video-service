@@ -108,7 +108,9 @@ export class AnalyticsChart extends React.Component {
     const xMax =
       duration > 0
         ? duration / 60
-        : analyticsData.times ? analyticsData.times.slice(-1)[0] : 0
+        : analyticsData.times
+          ? analyticsData.times.slice(-1)[0]
+          : 0
     return (
       <VictoryChart
         {...dimensions}

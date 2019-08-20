@@ -48,4 +48,7 @@ export const mapStateToProps = (state = {}, ownProps = {}) => {
   return { video, videoAnalytics, needsUpdate }
 }
 
-export default R.compose(connect(mapStateToProps), withVideoAnalytics)
+export default R.compose(
+  connect(mapStateToProps),
+  withVideoAnalytics
+)

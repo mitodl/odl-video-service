@@ -74,7 +74,8 @@ class TermsPage extends React.Component<*, void> {
                     href="http://web.mit.edu/copyright/"
                   >
                     MIT's copyright guidelines
-                  </a>.
+                  </a>
+                  .
                 </li>
                 <li>
                   <span className="terms-strong">
@@ -85,7 +86,8 @@ class TermsPage extends React.Component<*, void> {
                   us at{" "}
                   <a href="mailto:odl-video-support@mit.edu">
                     odl-video-support@mit.edu
-                  </a>.
+                  </a>
+                  .
                 </li>
               </ul>
               <h3 className="terms-subheading">User Obligation</h3>
@@ -176,14 +178,16 @@ class TermsPage extends React.Component<*, void> {
                   rel="noopener noreferrer"
                 >
                   Touchstone Collaboration account
-                </a>. Users are bound by the{" "}
+                </a>
+                . Users are bound by the{" "}
                 <a
                   href="https://idp.touchstonenetwork.net/cams/terms"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   Touchstone Rules of Use
-                </a>.
+                </a>
+                .
               </div>
               <h3 className="terms-subheading">Privacy</h3>
               <div className="terms-div">
@@ -260,8 +264,9 @@ class TermsPage extends React.Component<*, void> {
                 following address:{" "}
                 <a href="mailto:odl-video-support@mit.edu">
                   odl-video-support@mit.edu
-                </a>. When you do remove your content, the license described
-                above will automatically expire.
+                </a>
+                . When you do remove your content, the license described above
+                will automatically expire.
               </div>
               <h3 className="terms-subheading">
                 Copyright And Other Intellectual Property
@@ -339,8 +344,9 @@ class TermsPage extends React.Component<*, void> {
                   rel="noopener noreferrer"
                 >
                   http://www.creativecommons.org/
-                </a>) or on an all rights reserved basis. You agree to be bound
-                by the terms of each license. As a creator of user-generated
+                </a>
+                ) or on an all rights reserved basis. You agree to be bound by
+                the terms of each license. As a creator of user-generated
                 content or as a passive user of the ODL Video site, you may not
                 modify, publish, transmit, participate in the transfer or sale
                 of, reproduce, create derivative works of, distribute, publicly
@@ -362,7 +368,8 @@ class TermsPage extends React.Component<*, void> {
                 to{" "}
                 <a href="mailto:odl-video-support@mit.edu">
                   odl-video-support@mit.edu
-                </a>:
+                </a>
+                :
                 <ul className="terms-list">
                   <li>
                     The nature of your complaint and an exact description of
@@ -399,7 +406,8 @@ class TermsPage extends React.Component<*, void> {
                   rel="noopener noreferrer"
                 >
                   http://web.mit.edu/stopit/
-                </a>. Any rights not expressly granted herein are reserved.
+                </a>
+                . Any rights not expressly granted herein are reserved.
               </div>
               <h3 className="terms-subheading">Prohibited Content</h3>
               <div className="terms-div">

@@ -12,9 +12,7 @@ export const makeCollectionUrl = (collectionKey: string) =>
   `/collections/${encodeURI(collectionKey)}/`
 export const makeVideoThumbnailUrl = (video: Video): ?string =>
   video.videothumbnail_set && video.videothumbnail_set.length > 0
-    ? `${SETTINGS.cloudfront_base_url}${
-      video.videothumbnail_set[0].s3_object_key
-    }`
+    ? `${SETTINGS.cloudfront_base_url}${video.videothumbnail_set[0].s3_object_key}`
     : null
 
 export const makeVideoFileUrl = (videoFile: VideoFile): ?string =>

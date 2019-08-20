@@ -63,7 +63,7 @@
     "mocha": "^3.4.2",
     "moment": "^2.18.1",
     "node-sass": "^4.11.0",
-    "nyc": "^11.0.3",
+    "nyc": "^14.1.1",
     "object.entries": "^1.0.4",
     "postcss-loader": "^2.0.6",
     "prettier-eslint-cli": "^4.7.0",

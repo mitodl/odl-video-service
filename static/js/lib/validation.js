@@ -25,7 +25,11 @@ export const validation = R.curry(
 // wrapped in a Just will do.
 export const validate = R.curry((validations, toValidate) =>
   R.converge(
-    R.compose(R.reduce((acc, setter) => setter(acc), {}), S.justs, Array),
+    R.compose(
+      R.reduce((acc, setter) => setter(acc), {}),
+      S.justs,
+      Array
+    ),
     validations
   )(toValidate)
 )

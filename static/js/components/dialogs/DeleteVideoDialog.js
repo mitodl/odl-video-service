@@ -70,7 +70,9 @@ export class DeleteVideoDialog extends React.Component<*, void> {
 }
 
 export const mapStateToProps = (state: Object, ownProps: Object) => {
-  const { collectionUi: { selectedVideoKey } } = state
+  const {
+    collectionUi: { selectedVideoKey }
+  } = state
   const { collection, video } = ownProps
 
   // The dialog needs a Video object passed in as a prop. Depending on the container that includes this dialog,

@@ -24,7 +24,8 @@ export default class ErrorPage extends React.Component<*, void> {
             If you want permission to view this video please{" "}
           <a href={`mailto:${SETTINGS.support_email_address}`}>
               Contact ODL Video Services
-          </a>.
+          </a>
+            .
         </span>
       )
     case 404:
@@ -42,7 +43,8 @@ export default class ErrorPage extends React.Component<*, void> {
             continues to happen please{" "}
           <a href={`mailto:${SETTINGS.support_email_address}`}>
               Contact Support
-          </a>.
+          </a>
+            .
         </span>
       )
     }

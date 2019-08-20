@@ -64,9 +64,7 @@ describe("VideoCard", () => {
     ]
   ].forEach(
     ([adminPermissionSetting, expectedControlLabels, testDescriptor]) => {
-      it(`${testDescriptor} should be shown ${
-        expectedControlLabels.length
-      } option(s) for video controls`, () => {
+      it(`${testDescriptor} should be shown ${expectedControlLabels.length} option(s) for video controls`, () => {
         const isAdmin = adminPermissionSetting
         const wrapper = renderComponent({ isAdmin: isAdmin })
         const menuItems = wrapper.find("Menu").props().menuItems

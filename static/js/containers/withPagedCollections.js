@@ -85,4 +85,7 @@ export const mapStateToProps = state => {
   }
 }
 
-export default R.compose(connect(mapStateToProps), withPagedCollections)
+export default R.compose(
+  connect(mapStateToProps),
+  withPagedCollections
+)

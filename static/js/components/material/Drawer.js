@@ -83,7 +83,9 @@ class Drawer extends React.Component<*, void> {
             >
               {SETTINGS.email
                 ? SETTINGS.email
-                : SETTINGS.user ? SETTINGS.user : "Not logged in"}
+                : SETTINGS.user
+                  ? SETTINGS.user
+                  : "Not logged in"}
             </a>
           </nav>
           <header className="mdc-drawer__header">

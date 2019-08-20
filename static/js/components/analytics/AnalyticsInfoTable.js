@@ -86,7 +86,7 @@ export default class AnalyticsInfoTable extends React.Component<*, void> {
         },
         ...analyticsData.channels.map(channel => {
           const numViews = parseFloat(viewsAtTime[channel] || 0)
-          const percent = totalViews === 0 ? 0 : numViews / totalViews * 100
+          const percent = totalViews === 0 ? 0 : (numViews / totalViews) * 100
           return {
             key:       channel,
             className: `channel ${channel}`,

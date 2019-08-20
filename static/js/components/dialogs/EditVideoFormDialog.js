@@ -45,7 +45,11 @@ class EditVideoFormDialog extends React.Component<*, void> {
   }
 
   checkActiveVideo() {
-    const { open, video, videoUi: { editVideoForm } } = this.props
+    const {
+      open,
+      video,
+      videoUi: { editVideoForm }
+    } = this.props
     if (open && video && video.key !== editVideoForm.key) {
       this.initializeFormWithVideo(video)
     }
@@ -94,7 +98,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
   }
 
   setVideoViewPermChoice = (choice: string) => {
-    const { dispatch, videoUi: { editVideoForm } } = this.props
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
     if (choice !== editVideoForm.viewChoice) {
       dispatch(actions.videoUi.setViewChoice(choice))
     }
@@ -105,7 +112,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
   }
 
   setVideoPermOverrideChoice = (choice: boolean) => {
-    const { dispatch, videoUi: { editVideoForm } } = this.props
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
     if (choice !== editVideoForm.overrideChoice) {
       dispatch(actions.videoUi.setPermOverrideChoice(choice))
     }
@@ -127,7 +137,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
   }
 
   handleError = (error: Error) => {
-    const { dispatch, videoUi: { editVideoForm } } = this.props
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
     dispatch(
       actions.videoUi.setVideoFormErrors({
         ...editVideoForm,
@@ -192,7 +205,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
   }
 
   renderPermissions() {
-    const { videoUi: { editVideoForm, errors }, video } = this.props
+    const {
+      videoUi: { editVideoForm, errors },
+      video
+    } = this.props
 
     const defaultPerms = editVideoForm.overrideChoice === PERM_CHOICE_COLLECTION
 
@@ -325,7 +341,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
 }
 
 const mapStateToProps = (state, ownProps) => {
-  const { videoUi, collectionUi: { selectedVideoKey } } = state
+  const {
+    videoUi,
+    collectionUi: { selectedVideoKey }
+  } = state
   const { collection, video } = ownProps
 
   // The dialog needs a Video object passed in as a prop. Depending on the container that includes this dialog,

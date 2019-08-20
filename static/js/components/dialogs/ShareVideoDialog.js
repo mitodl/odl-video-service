@@ -86,7 +86,10 @@ class ShareVideoDialog extends React.Component<*, void> {
 }
 
 const mapStateToProps = (state, ownProps) => {
-  const { videoUi, collectionUi: { selectedVideoKey } } = state
+  const {
+    videoUi,
+    collectionUi: { selectedVideoKey }
+  } = state
   let { video } = ownProps
 
   // The dialog needs a video key passed in as a prop. Depending on the container that includes this dialog,

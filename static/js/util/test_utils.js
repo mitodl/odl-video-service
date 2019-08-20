@@ -38,7 +38,10 @@ export function createAssertReducerResultState(
   }
 }
 
-export const stringStrip = R.compose(R.join(" "), _.words)
+export const stringStrip = R.compose(
+  R.join(" "),
+  _.words
+)
 
 export const makeCounter = (): (() => number) => {
   const gen = (function*() {

@@ -35,7 +35,8 @@ export default class VideoSubtitleCard extends React.Component<*, void> {
                       {subtitle.s3_object_key
                         .split("/")
                         .slice(-1)[0]
-                        .slice(0, 10)}..._{subtitle.language}.vtt
+                        .slice(0, 10)}
+                      ..._{subtitle.language}.vtt
                     </span>
                     <span className="video-subtitle-language">
                       ({subtitle.language_name})

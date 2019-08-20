@@ -13,10 +13,16 @@ const makeGAEvent = (category, action, label, value) => ({
 const isValidNumber = R.both(R.is(Number), R.complement(R.equals(NaN)))
 
 const removeInvalidValue = R.when(
-  R.compose(R.complement(isValidNumber), R.prop("value")),
+  R.compose(
+    R.complement(isValidNumber),
+    R.prop("value")
+  ),
   R.dissoc("value")
 )
-const formatGAEvent = R.compose(removeInvalidValue, makeGAEvent)
+const formatGAEvent = R.compose(
+  removeInvalidValue,
+  makeGAEvent
+)
 
 export const sendGAEvent = (
   category: string,

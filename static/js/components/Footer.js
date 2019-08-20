@@ -44,8 +44,8 @@ export default class Footer extends React.Component<*, void> {
                   </a>
                 </div>
                 <address className="footer-address">
-                  Massachusetts Institute of Technology<br /> Cambridge, MA
-                  02139
+                  Massachusetts Institute of Technology
+                  <br /> Cambridge, MA 02139
                 </address>
               </div>
               <div className="mdc-layout-grid__cell--span-6 mdc-layout-grid__cell--span-12-tablet copyright">
