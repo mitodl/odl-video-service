@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.42.0
+--------------
+
+- Upgrade Django to 2.1.11 (#770)
+
 Version 0.41.1 (Released August 12, 2019)
 --------------
 
