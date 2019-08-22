@@ -36,13 +36,13 @@ django-hijack==2.1.10
 django-hijack-admin==2.1.10
 
 # Touchstone
--e git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser==0.9
+git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser==0.9
 
 # MIT-Moira
--e git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4
+git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4
 
 # Django-Elastic-Transcoder
--e git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder==0.9.7
+git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder==0.9.7
 
 # TechTV Migration
 mysqlclient
