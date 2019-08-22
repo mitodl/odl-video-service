@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.42.0
+Version 0.42.0 (Released August 22, 2019)
 --------------
 
 - Remove -e flags from requirements.in (#776)
