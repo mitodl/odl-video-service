@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.43.0
+Version 0.43.0 (Released August 26, 2019)
 --------------
 
 - Added runtime.txt to specify python version
