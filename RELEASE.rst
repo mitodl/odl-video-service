@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.43.1
+--------------
+
+- Upgraded version of django-server-status
+
 Version 0.43.0 (Released August 26, 2019)
 --------------
 
