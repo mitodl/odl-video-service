@@ -162,5 +162,87 @@
       "PaddingPolicy": "NoPad",
       "SizingPolicy": "Fit"
     }
+  },
+  {
+    "Name": "MP4_AV_1_0Mbps",
+    "Description": "MP4 for low network bandwidth",
+    "Container": "mp4",
+    "Video": {
+      "BitRate": "900",
+      "Codec": "H.264",
+      "CodecOptions": {
+        "ColorSpaceConversionMode": "None",
+        "InterlacedMode": "Progressive",
+        "Level": "3.1",
+        "MaxReferenceFrames": "1",
+        "Profile": "main"
+      },
+      "DisplayAspectRatio": "auto",
+      "FixedGOP": "true",
+      "FrameRate": "30",
+      "KeyframesMaxDist": "90",
+      "MaxHeight": "360",
+      "MaxWidth": "640",
+      "PaddingPolicy": "NoPad",
+      "SizingPolicy": "Fit"
+    },
+    "Audio": {
+      "BitRate": "96",
+      "Channels": "1",
+      "Codec": "AAC",
+      "CodecOptions": {
+        "Profile": "AAC-LC"
+      },
+      "SampleRate": "44100"
+    },
+    "Thumbnails": {
+      "Format": "jpg",
+      "Interval": "300",
+      "MaxHeight": "338",
+      "MaxWidth": "600",
+      "PaddingPolicy": "NoPad",
+      "SizingPolicy": "Fit"
+    }
+  },
+  {
+    "Name": "WebM_AV_1_0Mbps",
+    "Description": "WebM for low network bandwidth",
+    "Container": "webm",
+    "Video": {
+      "BitRate": "900",
+      "Codec": "vp8",
+      "CodecOptions": {
+        "ColorSpaceConversionMode": "None",
+        "InterlacedMode": "Progressive",
+        "Level": "3.1",
+        "MaxReferenceFrames": "1",
+        "Profile": "main"
+      },
+      "DisplayAspectRatio": "auto",
+      "FixedGOP": "true",
+      "FrameRate": "30",
+      "KeyframesMaxDist": "90",
+      "MaxHeight": "360",
+      "MaxWidth": "640",
+      "PaddingPolicy": "NoPad",
+      "SizingPolicy": "Fit"
+    },
+    "Audio": {
+      "BitRate": "96",
+      "Channels": "1",
+      "Codec": "vorbis",
+      "CodecOptions": {
+        "Profile": "AAC-LC"
+      },
+      "SampleRate": "44100"
+    },
+    "Thumbnails": {
+      "Format": "jpg",
+      "Interval": "300",
+      "MaxHeight": "338",
+      "MaxWidth": "600",
+      "PaddingPolicy": "NoPad",
+      "SizingPolicy": "Fit"
+    }
   }
 ]
