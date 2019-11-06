@@ -373,7 +373,7 @@ class VideoS3(TimestampedModel):
     s3_object_key = models.TextField(unique=True, blank=False, null=False)
     bucket_name = models.CharField(max_length=63, blank=False, null=False)
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
-    preset_id = models.CharField(max_length=128, blank=True, null=True)
+    preset_id = models.TextField(blank=True, null=True)
 
     @property
     def s3_object(self):
