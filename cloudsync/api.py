@@ -21,12 +21,15 @@ from ui.models import (
     VideoThumbnail,
     Collection,
     Video,
-    VideoSubtitle)
+    VideoSubtitle,
+    delete_s3_objects
+)
 from ui.utils import get_et_preset, get_bucket, get_et_job
 
 log = logging.getLogger(__name__)
 
 THUMBNAIL_PATTERN = "thumbnails/{}_thumbnail_{{count}}"
+TRANSCODE_TEMP_FOLDER = "temp/"
 ParsedVideoAttributes = namedtuple(
     'ParsedVideoAttributes',
     ['prefix', 'session', 'record_date', 'record_date_str', 'name']
@@ -43,8 +46,8 @@ def process_transcode_results(video, job):
     """
 
     for playlist in job['Playlists']:
-        VideoFile.objects.get_or_create(
-            s3_object_key='{}.m3u8'.format(playlist['Name']),  # This assumes HLS encoding
+        VideoFile.objects.update_or_create(
+            s3_object_key='{}.m3u8'.format(playlist['Name'].replace(TRANSCODE_TEMP_FOLDER, "")),  # This assumes HLS encoding
             defaults={
                 'video': video,
                 'bucket_name': settings.VIDEO_S3_TRANSCODE_BUCKET,
@@ -60,8 +63,8 @@ def process_transcode_results(video, job):
         preset = get_et_preset(output['PresetId'])
         bucket = get_bucket(settings.VIDEO_S3_THUMBNAIL_BUCKET)
         for thumb in bucket.objects.filter(Prefix=thumbnail_pattern):
-            VideoThumbnail.objects.get_or_create(
-                s3_object_key=thumb.key,
+            VideoThumbnail.objects.update_or_create(
+                s3_object_key=thumb.key.replace(TRANSCODE_TEMP_FOLDER, ""),
                 defaults={
                     'video': video,
                     'bucket_name': settings.VIDEO_S3_THUMBNAIL_BUCKET,
@@ -109,6 +112,8 @@ def refresh_status(video, encode_job=None):
             encode_job = video.encode_jobs.latest("created_at")
         et_job = get_et_job(encode_job.id)
         if et_job['Status'] == VideoStatus.COMPLETE:
+            move_s3_objects(settings.VIDEO_S3_TRANSCODE_BUCKET, TRANSCODE_TEMP_FOLDER, "")
+            move_s3_objects(settings.VIDEO_S3_THUMBNAIL_BUCKET, TRANSCODE_TEMP_FOLDER, "")
             process_transcode_results(video, et_job)
             video.update_status(VideoStatus.COMPLETE)
         elif et_job['Status'] == VideoStatus.ERROR:
@@ -131,16 +136,23 @@ def transcode_video(video, video_file):
         'Key': video_file.s3_object_key,
     }
 
+    # Delete any stray S3 objects in the transcode & thumbnail buckets temp folders for this video key
+    delete_s3_objects(settings.VIDEO_S3_TRANSCODE_BUCKET, f"{TRANSCODE_TEMP_FOLDER}{video.hexkey}", as_filter=True)
+    delete_s3_objects(
+        settings.VIDEO_S3_THUMBNAIL_BUCKET,
+        f"{TRANSCODE_TEMP_FOLDER}{THUMBNAIL_PATTERN.format(video_file.s3_basename)}", as_filter=True
+    )
+
     # Generate an output video file for each encoding (assumed to be HLS)
     outputs = [{
-        'Key': video.transcode_key(preset),
+        'Key': f"{TRANSCODE_TEMP_FOLDER}{video.transcode_key(preset)}",
         'PresetId': preset,
         'SegmentDuration': '10.0'
     } for preset in settings.ET_PRESET_IDS]
 
     playlists = [{
         'Format': 'HLSv3',
-        'Name': video.transcode_key('_index'),
+        'Name': f"{TRANSCODE_TEMP_FOLDER}{video.transcode_key('_index')}",
         'OutputKeys': [output['Key'] for output in outputs]
     }]
 
@@ -353,3 +365,22 @@ def upload_subtitle_to_s3(caption_data, file_data):
     vt.s3_object_key = s3_key
     vt.save()
     return vt
+
+
+def move_s3_objects(bucket_name, from_prefix, to_prefix):
+    """
+    Copies files from one prefix (subfolder) to another, then deletes the originals
+
+    Args:
+        bucket_name (str): The bucket name
+        from_prefix(str): The subfolder to copy from
+        to_prefix(str): The subfolder to copy to
+    """
+    bucket = get_bucket(bucket_name)
+    for obj in bucket.objects.filter(Prefix=from_prefix):
+        copy_src = {
+            "Bucket": bucket_name,
+            "Key": obj.key
+        }
+        bucket.copy(copy_src, obj.key.replace(from_prefix, to_prefix))
+    delete_s3_objects(bucket_name, from_prefix, as_filter=True)
