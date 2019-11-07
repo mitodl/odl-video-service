@@ -166,7 +166,7 @@ def retranscode_video(self, video_id):
         transcode_video(video, video_file)
     except ClientError:
         self.update_state(task_id=task_id, state=states.FAILURE)
-        video.update_status(VideoStatus.RETRANSCODE_FAILED, notify=False)
+        video.update_status(VideoStatus.RETRANSCODE_FAILED)
         raise
 
 
