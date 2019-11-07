@@ -22,6 +22,7 @@ class VideoStatus:
         TRANSCODE_FAILED_INTERNAL,
         TRANSCODE_FAILED_VIDEO,
         RETRANSCODING,
+        RETRANSCODE_FAILED,
         COMPLETE,
         ERROR,
     ]
