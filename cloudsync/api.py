@@ -123,10 +123,10 @@ def refresh_status(video, encode_job=None):
             process_transcode_results(video, et_job)
             video.update_status(VideoStatus.COMPLETE)
         elif et_job['Status'] == VideoStatus.ERROR:
-            if video.status == VideoStatus.TRANSCODING:
-                video.update_status(get_error_type_from_et_error(et_job.get('Output', {}).get('StatusDetail')))
+            if video.status == VideoStatus.RETRANSCODING:
+                video.update_status(VideoStatus.RETRANSCODE_FAILED)
             else:
-                video.update_status(VideoStatus.COMPLETE)
+                video.update_status(get_error_type_from_et_error(et_job.get('Output', {}).get('StatusDetail')))
             log.error('Transcoding failed for video %d', video.id)
         encode_job.message = et_job
         encode_job.save()
@@ -187,11 +187,11 @@ def transcode_video(video, video_file):
         transcoder.encode(video_input, outputs, Playlists=playlists, UserMetadata=user_meta)
     except ClientError as exc:
         log.error('Transcode job creation failed for video %s', video.id)
-        if video.status != VideoStatus.RETRANSCODING:
-            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
+        if video.status == VideoStatus.RETRANSCODING:
+            video.status = VideoStatus.RETRANSCODE_FAILED
         else:
-            video.status = VideoStatus.COMPLETE
-            video.save()
+            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
+        video.save()
         if hasattr(exc, 'response'):
             transcoder.message = exc.response
         raise
@@ -200,6 +200,7 @@ def transcode_video(video, video_file):
         if video.status not in (
                 VideoStatus.TRANSCODE_FAILED_INTERNAL,
                 VideoStatus.TRANSCODE_FAILED_VIDEO,
+                VideoStatus.RETRANSCODE_FAILED,
                 VideoStatus.RETRANSCODING
         ):
             video.update_status(VideoStatus.TRANSCODING)
