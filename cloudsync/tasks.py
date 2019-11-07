@@ -9,8 +9,8 @@ from urllib.parse import unquote
 import requests
 import boto3
 from boto3.s3.transfer import TransferConfig
+from celery import shared_task, states, group, Task
 from botocore.exceptions import ClientError
-from celery import shared_task, states, Task
 from django.conf import settings
 from googleapiclient.errors import HttpError
 from dj_elastictranscoder.models import EncodeJob
@@ -18,7 +18,7 @@ from dj_elastictranscoder.models import EncodeJob
 from cloudsync.api import refresh_status, process_watch_file, transcode_video
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.youtube import YouTubeApi, API_QUOTA_ERROR_MSG
-from ui.models import Video, YouTubeVideo, VideoSubtitle
+from ui.models import Video, YouTubeVideo, VideoSubtitle, Collection
 from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.utils import get_bucket
 
@@ -117,7 +117,7 @@ def stream_to_s3(self, video_id):
 
 
 @shared_task(bind=True, base=VideoTask)
-def transcode_from_s3(self, video_id):
+def transcode_from_s3(self, video_id, retranscode=False):
     """
     Given an S3 object key, transcode that object using a video pipeline, overwrite the original when done.
 
@@ -142,23 +142,80 @@ def transcode_from_s3(self, video_id):
         raise
 
 
+@shared_task(bind=True, base=VideoTask)
+def retranscode_video(self, video_id):
+    """
+    Given an S3 object key, retranscode that object using a video pipeline
+
+    Args:
+        video_id(int): The video primary key
+    """
+    try:
+        video = Video.objects.get(id=video_id)
+    except Video.DoesNotExist as exc:
+        # Note: we ignore this exception in sentry, per
+        # odl_video.settings.RAVEN_CONFIG.ignore_exceptions
+        raise TranscodeTargetDoesNotExist from exc
+    task_id = self.get_task_id()
+    self.update_state(task_id=task_id, state=VideoStatus.RETRANSCODING)
+
+    video_file = video.videofile_set.get(encoding='original')
+
+    try:
+        video.update_status(VideoStatus.RETRANSCODING)
+        transcode_video(video, video_file)
+    except ClientError:
+        self.update_state(task_id=task_id, state=states.FAILURE)
+        video.update_status(VideoStatus.COMPLETE, notify=False)
+        raise
+
+
+@shared_task(bind=True)
+def schedule_retranscodes(self):
+    """
+    Start retranscode tasks for all scheduled videos,
+    and reset scheduled collections without scheduled videos
+    """
+    # Reset all collections with no scheduled videos
+    Collection.objects.filter(schedule_retranscode=True).exclude(videos__schedule_retranscode=True).update(
+        schedule_retranscode=False
+    )
+
+    # Run retranscodes on all videos with schedule_retranscode=True
+    try:
+        retranscode_tasks = group(
+            [
+                retranscode_video.si(video_id)
+                for video_id in Video.objects.filter(schedule_retranscode=True).values_list("id", flat=True)
+            ])
+    except:  # pylint: disable=bare-except
+        error = "schedule_retranscodes threw an error"
+        log.exception(error)
+        return error
+    raise self.replace(retranscode_tasks)
+
+
 @shared_task(bind=True)
 def update_video_statuses(self):
     """
     Check on statuses of all transcoding videos and update their status if appropriate
     """
-    transcoding_videos = Video.objects.filter(status=VideoStatus.TRANSCODING)
+    transcoding_videos = Video.objects.filter(status__in=(VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING))
     for video in transcoding_videos:
+        if video.status == VideoStatus.RETRANSCODING:
+            error = VideoStatus.RETRANSCODE_FAILED
+        else:
+            error = VideoStatus.TRANSCODE_FAILED_INTERNAL
         try:
             refresh_status(video)
         except EncodeJob.DoesNotExist:
             # Log the exception but don't raise it so other videos can be checked.
             log.exception("No EncodeJob object exists for video id %d", video.id)
-            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
+            video.update_status(error)
         except ClientError as exc:
             # Log the exception but don't raise it so other videos can be checked.
             log.exception("AWS error when refreshing job status for video %d: %s", video.id, exc.response)
-            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
+            video.update_status(error)
 
 
 @shared_task()

@@ -42,6 +42,10 @@
       "description": "URL path for the HLS video endpoint on edX",
       "required": false
     },
+    "FEATURE_RETRANSCODE_ENABLED": {
+      "description": "Enable retranscoding ov videos",
+      "required": false
+    },
     "GA_DIMENSION_CAMERA": {
       "default": "",
       "description": "Google Analytics custom dimension number for tracking camera angle",
@@ -156,6 +160,10 @@
     },
     "PGBOUNCER_MIN_POOL_SIZE": {
       "value": "5"
+    },
+    "SCHEDULE_TRANSCODE_FREQUENCY": {
+      "description": "How often to check for scheduled retranscodes",
+      "required": "false"
     },
     "SECRET_KEY": {
       "description": "Django secret key.",

@@ -9,6 +9,8 @@ class VideoStatus:
     TRANSCODING = 'Transcoding'
     TRANSCODE_FAILED_INTERNAL = 'Transcode failed internal error'
     TRANSCODE_FAILED_VIDEO = 'Transcode failed video error'
+    RETRANSCODING = 'Retranscoding'
+    RETRANSCODE_FAILED = "Retranscode failed error"
     COMPLETE = 'Complete'
     ERROR = 'Error'
 
@@ -19,6 +21,7 @@ class VideoStatus:
         TRANSCODING,
         TRANSCODE_FAILED_INTERNAL,
         TRANSCODE_FAILED_VIDEO,
+        RETRANSCODING,
         COMPLETE,
         ERROR,
     ]

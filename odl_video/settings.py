@@ -518,6 +518,13 @@ FEATURES = {
     in get_all_config_keys() if key.startswith(ODL_VIDEO_FEATURES_PREFIX)
 }
 
+
+if FEATURES.get("RETRANSCODE_ENABLED", False):
+    CELERY_BEAT_SCHEDULE['schedule_retranscodes'] = {
+        'task': 'cloudsync.tasks.schedule_retranscodes',
+        'schedule': get_int('SHCEDULE_TRANSCODE_FREQUENCY', 600)
+    }
+
 MIDDLEWARE_FEATURE_FLAG_QS_PREFIX = get_string("MIDDLEWARE_FEATURE_FLAG_QS_PREFIX", None)
 MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME = get_string(
     'MIDDLEWARE_FEATURE_FLAG_COOKIE_NAME', 'ODL_VIDEO_FEATURE_FLAGS')

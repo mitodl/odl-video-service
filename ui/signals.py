@@ -2,6 +2,7 @@
 ui model signals
 """
 # pylint: disable=unused-argument
+from django.conf import settings
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_out
@@ -55,6 +56,16 @@ def update_collection_youtube(sender, **kwargs):
     """
     for video in kwargs['instance'].videos.filter(is_public=True):
         sync_youtube(video)
+
+
+@receiver(post_save, sender=Collection)
+def update_collection_retranscodes(sender, **kwargs):
+    """
+    Sync schedule_retranscode value for all videos in the collection
+    """
+    if settings.FEATURES.get("RETRANSCODE_ENABLED", False):
+        collection = kwargs['instance']
+        Video.objects.filter(collection=collection).update(schedule_retranscode=collection.schedule_retranscode)
 
 
 @receiver(post_save, sender=Video)
