@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.44.0
+--------------
+
+- Change prefix_id to a TextField (#790)
+
 Version 0.43.1 (Released August 28, 2019)
 --------------
 
