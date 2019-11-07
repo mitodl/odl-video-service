@@ -117,7 +117,7 @@ def stream_to_s3(self, video_id):
 
 
 @shared_task(bind=True, base=VideoTask)
-def transcode_from_s3(self, video_id, retranscode=False):
+def transcode_from_s3(self, video_id):
     """
     Given an S3 object key, transcode that object using a video pipeline, overwrite the original when done.
 
@@ -166,7 +166,7 @@ def retranscode_video(self, video_id):
         transcode_video(video, video_file)
     except ClientError:
         self.update_state(task_id=task_id, state=states.FAILURE)
-        video.update_status(VideoStatus.COMPLETE, notify=False)
+        video.update_status(VideoStatus.RETRANSCODE_FAILED, notify=False)
         raise
 
 
