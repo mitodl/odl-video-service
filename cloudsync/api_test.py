@@ -17,7 +17,7 @@ from django.test import override_settings
 from moto import mock_s3
 
 from cloudsync import api
-from cloudsync.api import upload_subtitle_to_s3, TRANSCODE_TEMP_FOLDER
+from cloudsync.api import upload_subtitle_to_s3, TRANSCODE_TEMP_FOLDER, move_s3_objects
 from cloudsync.conftest import MockClientET, MockBoto
 from ui.constants import VideoStatus
 from ui.factories import (
@@ -534,3 +534,29 @@ def test_upload_subtitle_to_s3_bad_video(mocker, file_object):
     subtitle_data = {"video": "12345678123456781234567812345678", "language": "en", "filename": file_object.name}
     with pytest.raises(Video.DoesNotExist):
         upload_subtitle_to_s3(subtitle_data, file_object.data)
+
+
+@mock_s3
+def test_move_s3_objects():
+    """
+    Test that move_s3_objects changes the S3 object keys to expected values
+    """
+    s3 = boto3.resource('s3')
+    s3c = boto3.client('s3')
+    bucket_name = "MYBUCKET"
+    filename = "MYFILE"
+    from_prefix = "fromtest/"
+    to_prefix = "totest/"
+    s3c.create_bucket(Bucket=bucket_name)
+    bucket = s3.Bucket(bucket_name)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), f"{from_prefix}{filename}")
+
+    bucket_keys = [obj.key for obj in bucket.objects.all()]
+    assert f"{from_prefix}{filename}" in bucket_keys
+    assert f"{to_prefix}{filename}" not in bucket_keys
+
+    move_s3_objects(bucket_name, from_prefix, to_prefix)
+
+    bucket_keys = [obj.key for obj in bucket.objects.all()]
+    assert f"{from_prefix}{filename}" not in bucket_keys
+    assert f"{to_prefix}{filename}" in bucket_keys
