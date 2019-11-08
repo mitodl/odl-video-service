@@ -351,7 +351,7 @@ class Video(TimestampedModel):
             notify(bool): Send a notification if true
         """
         self.status = status
-        if status == VideoStatus.RETRANSCODING:
+        if status == VideoStatus.RETRANSCODE_SCHEDULED:
             self.schedule_retranscode = False
         self.save()
         if status in tasks.STATUS_TO_NOTIFICATION.keys():

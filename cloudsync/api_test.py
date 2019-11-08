@@ -400,54 +400,71 @@ def test_lecture_video_title():
     assert api.create_lecture_video_title(video_attrs_no_date) == 'Lecture - 2017jan01'
 
 
-def test_transcode_job(mocker, videofile):
+@pytest.mark.parametrize("status,expected_status", [
+    [VideoStatus.UPLOADING, VideoStatus.TRANSCODING],
+    [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODING]
+])
+def test_transcode_job(mocker, status, expected_status):
     """
     Test that video status is updated properly after a transcode job is successfully created
     """
-    new_video = videofile.video
+    video = VideoFactory.create(status=status)
+    videofile = VideoFileFactory.create(video=video)
+
+    prefix = (RETRANSCODE_FOLDER if status == VideoStatus.RETRANSCODE_SCHEDULED else "")
+    preset = {
+        "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000040",
+        "PresetId": "1351620000001-000040",
+        "SegmentDuration": "10.0",
+    }
+    if status != VideoStatus.RETRANSCODE_SCHEDULED:
+        preset["ThumbnailPattern"] = "thumbnails/" + video.hexkey + "/video_thumbnail_{count}"
+
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo', ENVIRONMENT='test')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
-    api.transcode_video(new_video, videofile)  # pylint: disable=no-value-for-parameter
+    mock_delete_objects = mocker.patch('cloudsync.api.delete_s3_objects')
+    mocker.patch('ui.models.tasks')
+
+    api.transcode_video(video, videofile)  # pylint: disable=no-value-for-parameter
     mock_encoder.assert_called_once_with(
         {
             "Key": videofile.s3_object_key
-        }, [{
-            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
-            "PresetId": "1351620000001-000040",
-            "SegmentDuration": "10.0",
-            "ThumbnailPattern": "thumbnails/" + new_video.hexkey + "/video_thumbnail_{count}"
-        }, {
-            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000020",
-            "PresetId": "1351620000001-000020",
-            "SegmentDuration": "10.0"
-        }],
+        }, [
+            preset,
+            {
+                "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020",
+                "PresetId": "1351620000001-000020",
+                "SegmentDuration": "10.0"
+            }
+        ],
         Playlists=[{
             "Format": "HLSv3",
-            "Name": "transcoded/" + new_video.hexkey + "/video__index",
+            "Name": f"{prefix}transcoded/" + video.hexkey + "/video__index",
             "OutputKeys": [
-                "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
-                "transcoded/" + new_video.hexkey + "/video_1351620000001-000020"
+                f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000040",
+                f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020"
             ]
         }],
         UserMetadata={
             'pipeline': 'odl-video-service-test'
         }
     )
-    assert len(new_video.encode_jobs.all()) == 1
-    assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODING
+    assert len(video.encode_jobs.all()) == 1
+    assert mock_delete_objects.call_count == (1 if status == VideoStatus.RETRANSCODE_SCHEDULED else 0)
+    assert Video.objects.get(id=video.id).status == expected_status
 
 
-@pytest.mark.parametrize("status,call_count,error_status", [
-    [VideoStatus.TRANSCODING, 0, VideoStatus.TRANSCODE_FAILED_INTERNAL],
-    [VideoStatus.RETRANSCODING, 1, VideoStatus.RETRANSCODE_FAILED]
+@pytest.mark.parametrize("status,error_status", [
+    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
+    [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODE_FAILED]
 ])
-def test_transcode_job_failure(mocker, status, call_count, error_status):
+def test_transcode_job_failure(mocker, status, error_status):
     """
     Test that video status is updated properly after a transcode or retranscode job creation fails
     """
-    mock_delete_objects = mocker.patch("cloudsync.api.delete_s3_objects")
+    mocker.patch("cloudsync.api.delete_s3_objects")
     video = VideoFactory.create(status=status)
     videofile = VideoFileFactory.create(video=video)
 
@@ -483,7 +500,6 @@ def test_transcode_job_failure(mocker, status, call_count, error_status):
             'pipeline': 'odl-video-service-test'
         }
     )
-    assert mock_delete_objects.call_count == call_count
     assert len(video.encode_jobs.all()) == 1
     assert Video.objects.get(id=video.id).status == error_status
 

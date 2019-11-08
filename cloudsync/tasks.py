@@ -162,7 +162,7 @@ def retranscode_video(self, video_id):
     video_file = video.videofile_set.get(encoding='original')
 
     try:
-        video.update_status(VideoStatus.RETRANSCODING)
+        video.update_status(VideoStatus.RETRANSCODE_SCHEDULED)
         transcode_video(video, video_file)
     except ClientError:
         self.update_state(task_id=task_id, state=states.FAILURE)

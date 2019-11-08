@@ -145,7 +145,7 @@ def transcode_video(video, video_file):
         'Key': video_file.s3_object_key,
     }
 
-    if video.status == VideoStatus.RETRANSCODING:
+    if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
         prefix = RETRANSCODE_FOLDER
         # pylint:disable=no-value-for-parameter
@@ -171,7 +171,7 @@ def transcode_video(video, video_file):
     }]
 
     # Generate thumbnails for the 1st encoding (no point in doing so for each).
-    if video.status != VideoStatus.RETRANSCODING:
+    if video.status != VideoStatus.RETRANSCODE_SCHEDULED:
         outputs[0]['ThumbnailPattern'] = f"{prefix}{THUMBNAIL_PATTERN.format(video_file.s3_basename)}"
 
     transcoder = VideoTranscoder(
@@ -187,7 +187,7 @@ def transcode_video(video, video_file):
         transcoder.encode(video_input, outputs, Playlists=playlists, UserMetadata=user_meta)
     except ClientError as exc:
         log.error('Transcode job creation failed for video %s', video.id)
-        if video.status == VideoStatus.RETRANSCODING:
+        if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
             video.status = VideoStatus.RETRANSCODE_FAILED
         else:
             video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
@@ -197,11 +197,12 @@ def transcode_video(video, video_file):
         raise
     finally:
         transcoder.create_job_for_object(video)
-        if video.status not in (
+        if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
+            video.update_status(VideoStatus.RETRANSCODING)
+        elif video.status not in (
                 VideoStatus.TRANSCODE_FAILED_INTERNAL,
                 VideoStatus.TRANSCODE_FAILED_VIDEO,
-                VideoStatus.RETRANSCODE_FAILED,
-                VideoStatus.RETRANSCODING
+                VideoStatus.RETRANSCODE_FAILED
         ):
             video.update_status(VideoStatus.TRANSCODING)
 
