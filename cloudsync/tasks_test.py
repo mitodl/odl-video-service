@@ -215,6 +215,15 @@ def test_transcode_target_does_not_exist():
         transcode_from_s3(nonexistent_video_id)
 
 
+def test_retranscode_target_does_not_exist():
+    """
+    Test retranscode task, verify exception is thrown when target does not exist.
+    """
+    nonexistent_video_id = 12345
+    with pytest.raises(TranscodeTargetDoesNotExist):
+        retranscode_video(nonexistent_video_id)
+
+
 def test_transcode_starting(mocker, videofile, mock_transcode, mock_successful_encode_job):
     """
     Test that video status is updated properly after a transcode success
