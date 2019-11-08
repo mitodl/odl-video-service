@@ -104,7 +104,7 @@
     "videojs-resolution-switcher": "^0.4.2",
     "videojs-youtube": "^2.4.1",
     "webpack": "^3.2.0",
-    "webpack-bundle-tracker": "^0.4.3",
+    "webpack-bundle-tracker": "^0.2.0",
     "webpack-dev-middleware": "^1.11.0",
     "webpack-hot-middleware": "^2.18.2"
   },

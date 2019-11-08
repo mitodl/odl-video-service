@@ -161,7 +161,7 @@
     "PGBOUNCER_MIN_POOL_SIZE": {
       "value": "5"
     },
-    "SCHEDULE_TRANSCODE_FREQUENCY": {
+    "SCHEDULE_RETRANSCODE_FREQUENCY": {
       "description": "How often to check for scheduled retranscodes",
       "required": "false"
     },
