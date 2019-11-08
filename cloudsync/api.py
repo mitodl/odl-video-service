@@ -30,7 +30,7 @@ from ui.utils import get_et_preset, get_bucket, get_et_job
 log = logging.getLogger(__name__)
 
 THUMBNAIL_PATTERN = "thumbnails/{}_thumbnail_{{count}}"
-TRANSCODE_TEMP_FOLDER = "temp/"
+RETRANSCODE_FOLDER = "retranscode/"
 ParsedVideoAttributes = namedtuple(
     'ParsedVideoAttributes',
     ['prefix', 'session', 'record_date', 'record_date_str', 'name']
@@ -49,13 +49,13 @@ def process_transcode_results(video, job):
         # Overwrite old playlists/files with new transcoding output
         move_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
-            f"{TRANSCODE_TEMP_FOLDER}{TRANSCODE_PREFIX}/{video.hexkey}",
+            f"{RETRANSCODE_FOLDER}{TRANSCODE_PREFIX}/{video.hexkey}",
             f"{TRANSCODE_PREFIX}/{video.hexkey}")
 
     for playlist in job['Playlists']:
         VideoFile.objects.update_or_create(
             # This assumes HLS encoding
-            s3_object_key='{}.m3u8'.format(playlist['Name'].replace(TRANSCODE_TEMP_FOLDER, "")),
+            s3_object_key='{}.m3u8'.format(playlist['Name'].replace(RETRANSCODE_FOLDER, "")),
             defaults={
                 'video': video,
                 'bucket_name': settings.VIDEO_S3_TRANSCODE_BUCKET,
@@ -72,7 +72,7 @@ def process_transcode_results(video, job):
         bucket = get_bucket(settings.VIDEO_S3_THUMBNAIL_BUCKET)
         for thumb in bucket.objects.filter(Prefix=thumbnail_pattern):
             VideoThumbnail.objects.update_or_create(
-                s3_object_key=thumb.key.replace(TRANSCODE_TEMP_FOLDER, ""),
+                s3_object_key=thumb.key.replace(RETRANSCODE_FOLDER, ""),
                 defaults={
                     'video': video,
                     'bucket_name': settings.VIDEO_S3_THUMBNAIL_BUCKET,
@@ -147,7 +147,7 @@ def transcode_video(video, video_file):
 
     if video.status == VideoStatus.RETRANSCODING:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
-        prefix = TRANSCODE_TEMP_FOLDER
+        prefix = RETRANSCODE_FOLDER
         # pylint:disable=no-value-for-parameter
         delete_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,

@@ -17,7 +17,7 @@ from django.test import override_settings
 from moto import mock_s3
 
 from cloudsync import api
-from cloudsync.api import upload_subtitle_to_s3, TRANSCODE_TEMP_FOLDER, move_s3_objects
+from cloudsync.api import RETRANSCODE_FOLDER, upload_subtitle_to_s3, move_s3_objects
 from cloudsync.conftest import MockClientET, MockBoto
 from ui.constants import VideoStatus
 from ui.factories import (
@@ -140,7 +140,7 @@ def test_process_transcode_results(mocker, status):
     # We need to create the thumbnail bucket since this is all in the Moto virtual AWS account
     conn = boto3.resource('s3', region_name='us-east-1')
     bucket = conn.create_bucket(Bucket=settings.VIDEO_S3_THUMBNAIL_BUCKET)
-    p = TRANSCODE_TEMP_FOLDER if status == VideoStatus.RETRANSCODING else ""
+    p = RETRANSCODE_FOLDER if status == VideoStatus.RETRANSCODING else ""
 
     # Throw a fake thumbnail in the bucket:
     data = io.BytesIO(b'00000001111111')
@@ -461,7 +461,7 @@ def test_transcode_job_failure(mocker, status, call_count, error_status):
     with pytest.raises(ClientError):
         api.transcode_video(video, videofile)
 
-    prefix = ("" if status == VideoStatus.TRANSCODING else TRANSCODE_TEMP_FOLDER)
+    prefix = ("" if status == VideoStatus.TRANSCODING else RETRANSCODE_FOLDER)
     preset = {
         "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020",
         "PresetId": "1351620000001-000020",

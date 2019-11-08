@@ -617,3 +617,14 @@ def test_schedule_retranscodes(mocker, mock_transcode, mock_successful_encode_jo
     for video in scheduled_videos:
         retranscode_video_mock.si.assert_any_call(video.id)
     assert Collection.objects.get(id=collection.id).schedule_retranscode is False
+
+
+def test_schedule_retranscodes_error(mocker, mocked_celery):
+    """
+    Test that schedule_retranscodes logs an error if it occurs
+    """
+    mock_error_log = mocker.patch("cloudsync.tasks.log.exception")
+    mocker.patch("cloudsync.tasks.retranscode_video.si", side_effect=ClientError)
+    VideoFactory.create_batch(5, schedule_retranscode=True)
+    schedule_retranscodes.delay()
+    mock_error_log.assert_called_with("schedule_retranscodes threw an error")
