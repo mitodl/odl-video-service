@@ -307,25 +307,33 @@ def test_video_task_no_chain(mocker):
     assert task.get_task_id() == task.request.id
 
 
-def test_update_video_statuses_nojob(mocker, video):
+@pytest.mark.parametrize("status, error_status", [
+    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_VIDEO],
+    [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED]
+])
+def test_update_video_statuses_nojob(mocker, video, status, error_status):
     """Test NoEncodeJob error handling"""
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=EncodeJob.DoesNotExist())
     mocker.patch('ui.models.tasks')
-    video.update_status(VideoStatus.TRANSCODING)
+    video.update_status(status)
     update_video_statuses()
-    assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
+    assert error_status == Video.objects.get(id=video.id).status
 
 
-def test_update_video_statuses_clienterror(mocker, video):
+@pytest.mark.parametrize("status, error_status", [
+    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_VIDEO],
+    [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED]
+])
+def test_update_video_statuses_clienterror(mocker, video, status, error_status):
     """Test NoEncodeJob error handling"""
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
     mocker.patch('ui.models.tasks')
-    video.update_status(VideoStatus.TRANSCODING)
+    video.update_status(status)
     update_video_statuses()
-    assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
+    assert error_status == Video.objects.get(id=video.id).status
 
 
 def test_stream_to_s3_no_video():
