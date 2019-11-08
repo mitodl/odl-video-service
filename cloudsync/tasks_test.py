@@ -308,7 +308,7 @@ def test_video_task_no_chain(mocker):
 
 
 @pytest.mark.parametrize("status, error_status", [
-    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_VIDEO],
+    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
     [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED]
 ])
 def test_update_video_statuses_nojob(mocker, video, status, error_status):
@@ -322,7 +322,7 @@ def test_update_video_statuses_nojob(mocker, video, status, error_status):
 
 
 @pytest.mark.parametrize("status, error_status", [
-    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_VIDEO],
+    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
     [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED]
 ])
 def test_update_video_statuses_clienterror(mocker, video, status, error_status):
