@@ -17,7 +17,7 @@ from django.test import override_settings
 from moto import mock_s3
 
 from cloudsync import api
-from cloudsync.api import upload_subtitle_to_s3
+from cloudsync.api import RETRANSCODE_FOLDER, upload_subtitle_to_s3, move_s3_objects
 from cloudsync.conftest import MockClientET, MockBoto
 from ui.constants import VideoStatus
 from ui.factories import (
@@ -71,11 +71,15 @@ def test_get_error_type_from_et_erro():
         '4123 this is a video error') == VideoStatus.TRANSCODE_FAILED_VIDEO
 
 
-def test_refresh_status_video_job_status_error(mocker):
+@pytest.mark.parametrize("prior_status, error_status", [
+    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_VIDEO],
+    [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED]
+])
+def test_refresh_status_video_job_status_error(mocker, prior_status, error_status):
     """
     Verify that Video.job_status property returns the status of its encoding job
     """
-    video = VideoFactory(status=VideoStatus.TRANSCODING)
+    video = VideoFactory(status=prior_status)
     encodejob = EncodeJobFactory(video=video)
     MockClientET.job = {
         'Job': {
@@ -90,14 +94,15 @@ def test_refresh_status_video_job_status_error(mocker):
     mocker.patch('ui.utils.boto3', MockBoto)
     mocker.patch('ui.models.tasks')
     api.refresh_status(video, encodejob)
-    assert video.status == VideoStatus.TRANSCODE_FAILED_VIDEO
+    assert video.status == error_status
 
 
-def test_refresh_status_video_job_status_complete(mocker):
+@pytest.mark.parametrize("status", [VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING])
+def test_refresh_status_video_job_status_complete(mocker, status):
     """
     Verify that Video.job_status property returns the status of its encoding job
     """
-    video = VideoFactory(status=VideoStatus.TRANSCODING)
+    video = VideoFactory(status=status)
     encodejob = EncodeJobFactory(video=video)
     MockClientET.job = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Complete'}}
     mocker.patch('ui.utils.boto3', MockBoto)
@@ -107,11 +112,12 @@ def test_refresh_status_video_job_status_complete(mocker):
     assert video.status == VideoStatus.COMPLETE
 
 
-def test_refresh_status_video_job_othererror(mocker):
+@pytest.mark.parametrize("status", [VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING])
+def test_refresh_status_video_job_othererror(mocker, status):
     """
     Verify that refresh_status does not raise ClientError
     """
-    video = VideoFactory(status=VideoStatus.TRANSCODING)
+    video = VideoFactory(status=status)
     EncodeJobFactory(video=video)
     video.status = VideoStatus.TRANSCODING
     mocker.patch('ui.utils.boto3', MockBoto)
@@ -122,16 +128,19 @@ def test_refresh_status_video_job_othererror(mocker):
 
 
 @mock_s3
-def test_process_transcode_results(mocker):
+@pytest.mark.parametrize("status", [VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING])
+def test_process_transcode_results(mocker, status):
     """
     Verify that a videofile object is created for each output in the job JSON, and a thumbnail
     is created for each S3 object in the appropriate bucket virtual subfolder.
     """
-    videofile = VideoFileFactory()
-    video = videofile.video
+    mock_move_s3_objects = mocker.patch('cloudsync.api.move_s3_objects')
+    video = VideoFactory.create(status=status)
+    VideoFileFactory.create(video=video)
     # We need to create the thumbnail bucket since this is all in the Moto virtual AWS account
     conn = boto3.resource('s3', region_name='us-east-1')
     bucket = conn.create_bucket(Bucket=settings.VIDEO_S3_THUMBNAIL_BUCKET)
+    p = RETRANSCODE_FOLDER if status == VideoStatus.RETRANSCODING else ""
 
     # Throw a fake thumbnail in the bucket:
     data = io.BytesIO(b'00000001111111')
@@ -142,12 +151,12 @@ def test_process_transcode_results(mocker):
            'Input': {'Key': '1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi.mp4'},
            'Inputs': [{'Key': '1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi.mp4'}],
            'Output': {'Id': '1',
-                      'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700489769-iyi2t4',
+                      'Key': f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700489769-iyi2t4',
                       'PresetId': '1498700489769-iyi2t4',
                       'SegmentDuration': '10.0',
                       'Status': 'Complete'},
            'Outputs': [{'Id': '1',
-                        'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700489769-iyi2t4',
+                        'Key': f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700489769-iyi2t4',
                         'PresetId': '1498700489769-iyi2t4',
                         'SegmentDuration': '10.0',
                         'Status': 'Complete',
@@ -155,21 +164,21 @@ def test_process_transcode_results(mocker):
                         'Watermarks': [],
                         'Width': 1280},
                        {'Id': '2',
-                        'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700403561-zc5oo5',
+                        'Key': f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700403561-zc5oo5',
                         'PresetId': '1498700403561-zc5oo5',
                         'SegmentDuration': '10.0',
                         'Status': 'Complete',
                         'Watermarks': [],
                         'Width': 1280},
                        {'Id': '3',
-                        'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700578799-qvvjor',
+                        'Key': f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700578799-qvvjor',
                         'PresetId': '1498700578799-qvvjor',
                         'SegmentDuration': '10.0',
                         'Status': 'Complete',
                         'Watermarks': [],
                         'Width': 854},
                        {'Id': '4',
-                        'Key': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700649488-6t9m3h',
+                        'Key': f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700649488-6t9m3h',
                         'PresetId': '1498700649488-6t9m3h',
                         'SegmentDuration': '10.0',
                         'Status': 'Complete',
@@ -177,12 +186,12 @@ def test_process_transcode_results(mocker):
                         'Width': 640}],
            'PipelineId': '1497455687488-evsuze',
            'Playlists': [{'Format': 'HLSv4',
-                          'Name': 'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi__index',
+                          'Name': f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi__index',
                           'OutputKeys': [
-                              'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700489769-iyi2t4',
-                              'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700403561-zc5oo5',
-                              'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700578799-qvvjor',
-                              'transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700649488-6t9m3h'],
+                              f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700489769-iyi2t4',
+                              f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700403561-zc5oo5',
+                              f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700578799-qvvjor',
+                              f'{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700649488-6t9m3h'],
                           'Status': 'Complete'}],
            'Status': 'Complete'}
 
@@ -191,6 +200,7 @@ def test_process_transcode_results(mocker):
     api.process_transcode_results(video, job)
     assert len(video.videofile_set.all()) == 2
     assert len(video.videothumbnail_set.all()) == 1
+    assert mock_move_s3_objects.call_count == (1 if status == VideoStatus.RETRANSCODING else 0)
 
 
 @pytest.mark.parametrize(
@@ -390,50 +400,74 @@ def test_lecture_video_title():
     assert api.create_lecture_video_title(video_attrs_no_date) == 'Lecture - 2017jan01'
 
 
-def test_transcode_job(mocker, videofile):
+@pytest.mark.parametrize("status,expected_status", [
+    [VideoStatus.UPLOADING, VideoStatus.TRANSCODING],
+    [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODING]
+])
+def test_transcode_job(mocker, status, expected_status):
     """
     Test that video status is updated properly after a transcode job is successfully created
     """
-    new_video = videofile.video
+    video = VideoFactory.create(status=status)
+    videofile = VideoFileFactory.create(video=video)
+
+    prefix = (RETRANSCODE_FOLDER if status == VideoStatus.RETRANSCODE_SCHEDULED else "")
+    preset = {
+        "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000040",
+        "PresetId": "1351620000001-000040",
+        "SegmentDuration": "10.0",
+    }
+    if status != VideoStatus.RETRANSCODE_SCHEDULED:
+        preset["ThumbnailPattern"] = "thumbnails/" + video.hexkey + "/video_thumbnail_{count}"
+
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000040', '1351620000001-000020'),
                           AWS_REGION='us-east-1', ET_PIPELINE_ID='foo', ENVIRONMENT='test')
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode')
-    api.transcode_video(new_video, videofile)  # pylint: disable=no-value-for-parameter
+    mock_delete_objects = mocker.patch('cloudsync.api.delete_s3_objects')
+    mocker.patch('ui.models.tasks')
+
+    api.transcode_video(video, videofile)  # pylint: disable=no-value-for-parameter
     mock_encoder.assert_called_once_with(
         {
             "Key": videofile.s3_object_key
-        }, [{
-            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
-            "PresetId": "1351620000001-000040",
-            "SegmentDuration": "10.0",
-            "ThumbnailPattern": "thumbnails/" + new_video.hexkey + "/video_thumbnail_{count}"
-        }, {
-            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000020",
-            "PresetId": "1351620000001-000020",
-            "SegmentDuration": "10.0"
-        }],
+        }, [
+            preset,
+            {
+                "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020",
+                "PresetId": "1351620000001-000020",
+                "SegmentDuration": "10.0"
+            }
+        ],
         Playlists=[{
             "Format": "HLSv3",
-            "Name": "transcoded/" + new_video.hexkey + "/video__index",
+            "Name": f"{prefix}transcoded/" + video.hexkey + "/video__index",
             "OutputKeys": [
-                "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
-                "transcoded/" + new_video.hexkey + "/video_1351620000001-000020"
+                f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000040",
+                f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020"
             ]
         }],
         UserMetadata={
             'pipeline': 'odl-video-service-test'
         }
     )
-    assert len(new_video.encode_jobs.all()) == 1
-    assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODING
+    assert len(video.encode_jobs.all()) == 1
+    assert mock_delete_objects.call_count == (1 if status == VideoStatus.RETRANSCODE_SCHEDULED else 0)
+    assert Video.objects.get(id=video.id).status == expected_status
 
 
-def test_transcode_job_failure(mocker, videofile):
+@pytest.mark.parametrize("status,error_status", [
+    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
+    [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODE_FAILED]
+])
+def test_transcode_job_failure(mocker, status, error_status):
     """
-    Test that video status is updated properly after a transcode job creation fails
+    Test that video status is updated properly after a transcode or retranscode job creation fails
     """
-    new_video = videofile.video
+    mocker.patch("cloudsync.api.delete_s3_objects")
+    video = VideoFactory.create(status=status)
+    videofile = VideoFileFactory.create(video=video)
+
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch.multiple('cloudsync.tasks.settings',
                           ET_PRESET_IDS=('1351620000001-000020',),
@@ -442,27 +476,32 @@ def test_transcode_job_failure(mocker, videofile):
     mock_encoder = mocker.patch('cloudsync.api.VideoTranscoder.encode',
                                 side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
     with pytest.raises(ClientError):
-        api.transcode_video(new_video, videofile)
+        api.transcode_video(video, videofile)
+
+    prefix = ("" if status == VideoStatus.TRANSCODING else RETRANSCODE_FOLDER)
+    preset = {
+        "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020",
+        "PresetId": "1351620000001-000020",
+        "SegmentDuration": "10.0",
+    }
+    if status == VideoStatus.TRANSCODING:
+        preset["ThumbnailPattern"] = "thumbnails/" + video.hexkey + "/video_thumbnail_{count}"
     mock_encoder.assert_called_once_with(
         {
             "Key": videofile.s3_object_key
-        }, [{
-            "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000020",
-            "PresetId": "1351620000001-000020",
-            "SegmentDuration": "10.0",
-            "ThumbnailPattern": "thumbnails/" + new_video.hexkey + "/video_thumbnail_{count}"
-        }],
+        },
+        [preset],
         Playlists=[{
             "Format": "HLSv3",
-            "Name": "transcoded/" + new_video.hexkey + "/video__index",
-            "OutputKeys": ["transcoded/" + new_video.hexkey + "/video_1351620000001-000020"]
+            "Name": f"{prefix}transcoded/" + video.hexkey + "/video__index",
+            "OutputKeys": [f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020"]
         }],
         UserMetadata={
             'pipeline': 'odl-video-service-test'
         }
     )
-    assert len(new_video.encode_jobs.all()) == 1
-    assert Video.objects.get(id=new_video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL
+    assert len(video.encode_jobs.all()) == 1
+    assert Video.objects.get(id=video.id).status == error_status
 
 
 @pytest.mark.parametrize('replace', [True, False])
@@ -511,3 +550,29 @@ def test_upload_subtitle_to_s3_bad_video(mocker, file_object):
     subtitle_data = {"video": "12345678123456781234567812345678", "language": "en", "filename": file_object.name}
     with pytest.raises(Video.DoesNotExist):
         upload_subtitle_to_s3(subtitle_data, file_object.data)
+
+
+@mock_s3
+def test_move_s3_objects():
+    """
+    Test that move_s3_objects changes the S3 object keys to expected values
+    """
+    s3 = boto3.resource('s3')
+    s3c = boto3.client('s3')
+    bucket_name = "MYBUCKET"
+    filename = "MYFILE"
+    from_prefix = "fromtest/"
+    to_prefix = "totest/"
+    s3c.create_bucket(Bucket=bucket_name)
+    bucket = s3.Bucket(bucket_name)
+    bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), f"{from_prefix}{filename}")
+
+    bucket_keys = [obj.key for obj in bucket.objects.all()]
+    assert f"{from_prefix}{filename}" in bucket_keys
+    assert f"{to_prefix}{filename}" not in bucket_keys
+
+    move_s3_objects(bucket_name, from_prefix, to_prefix)
+
+    bucket_keys = [obj.key for obj in bucket.objects.all()]
+    assert f"{from_prefix}{filename}" not in bucket_keys
+    assert f"{to_prefix}{filename}" in bucket_keys

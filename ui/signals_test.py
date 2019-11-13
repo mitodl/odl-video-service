@@ -5,6 +5,7 @@ import factory
 from ui.constants import StreamSource, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import VideoFactory, YouTubeVideoFactory, VideoSubtitleFactory, VideoFileFactory
+from ui.models import Video
 
 pytestmark = pytest.mark.django_db
 
@@ -90,3 +91,14 @@ def test_edx_video_file_signal(mocker, edx_settings):
         video__collection__edx_course_id=factory.Iterator(["courseid", None, "courseid"])
     )
     patched_edx_task.assert_called_once_with(video_files[0].id)
+
+
+@pytest.mark.parametrize("retranscode_enabled", [True, False])
+def test_collection_schedule_retranscode_signal(settings, video_with_file, retranscode_enabled):
+    """Test that a collection's videos are synced to the same retranscode_enabled value on save"""
+    settings.FEATURES["RETRANSCODE_ENABLED"] = retranscode_enabled
+    assert video_with_file.schedule_retranscode is False
+    collection = video_with_file.collection
+    collection.schedule_retranscode = True
+    collection.save()
+    assert Video.objects.get(id=video_with_file.id).schedule_retranscode is retranscode_enabled

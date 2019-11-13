@@ -5,6 +5,7 @@ import io
 import os
 import random
 import string
+from types import SimpleNamespace
 
 import boto3
 import pytest
@@ -29,7 +30,7 @@ from cloudsync.tasks import (
     upload_youtube_videos,
     upload_youtube_caption,
     update_youtube_statuses,
-    remove_youtube_video, remove_youtube_caption)
+    remove_youtube_video, remove_youtube_caption, retranscode_video, schedule_retranscodes)
 from cloudsync.youtube import API_QUOTA_ERROR_MSG
 from ui.factories import (
     VideoFactory,
@@ -42,6 +43,8 @@ from ui.models import Video, YouTubeVideo, Collection
 from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 
 pytestmark = pytest.mark.django_db
+
+# pylint: disable=redefined-outer-name,unused-argument,no-value-for-parameter,unused-variable,redefined-outer-name
 
 
 @pytest.fixture()
@@ -68,7 +71,52 @@ def user():
     return UserFactory()
 
 
-# pylint: disable=redefined-outer-name,unused-argument,no-value-for-parameter,unused-variable
+@pytest.fixture()
+def mocked_celery(mocker):
+    """Mock object that patches certain celery functions"""
+    exception_class = TabError
+    replace_mock = mocker.patch(
+        "celery.app.task.Task.replace", autospec=True, side_effect=exception_class
+    )
+    group_mock = mocker.patch("cloudsync.tasks.group", autospec=True)
+
+    yield SimpleNamespace(
+        replace=replace_mock,
+        group=group_mock,
+        replace_exception_class=exception_class,
+    )
+
+
+@pytest.fixture()
+def mock_transcode(mocker):
+    """Mock everything required for a  transcode"""
+    mocker.patch.multiple('cloudsync.tasks.settings',
+                          ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
+                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
+    mocker.patch('dj_elastictranscoder.transcoder.Session')
+    mocker.patch('celery.app.task.Task.update_state')
+    mocker.patch('cloudsync.api.process_transcode_results')
+    mocker.patch('ui.utils.boto3', MockBoto)
+    mocker.patch('cloudsync.api.delete_s3_objects')
+    mocker.patch('ui.models.tasks')
+
+
+@pytest.fixture()
+def mock_failed_encode_job(mocker):
+    """ Mock everything required for a failed encode job"""
+    job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
+    mocker.patch('cloudsync.api.VideoTranscoder.encode',
+                 side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
+    mocker.patch('cloudsync.api.get_et_job',
+                 return_value=job_result['Job'])
+
+
+@pytest.fixture()
+def mock_successful_encode_job(mocker):
+    """Mock everything required for a successful transcode"""
+    mocker.patch('cloudsync.api.VideoTranscoder.encode')
+    mocker.patch('cloudsync.api.get_et_job',
+                 return_value={'Id': '1498220566931-qtmtcu', 'Status': 'Complete'})
 
 
 def test_empty_video_id():
@@ -131,28 +179,31 @@ def test_upload_failure(mocker, reqmocker, mock_video_headers, video):
     assert mock_update.call_args == call(state='FAILURE', task_id=None)
 
 
-def test_transcode_failure(mocker, videofile):
+def test_transcode_failures(mocker, videofile, mock_transcode, mock_failed_encode_job):
     """
     Test transcode task, verify there is an EncodeJob associated with the video to encode
     """
     video = videofile.video
-    job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
-    mocker.patch.multiple('cloudsync.tasks.settings',
-                          ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
-                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
-    mocker.patch('cloudsync.api.VideoTranscoder.encode',
-                 side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
-    mocker.patch('dj_elastictranscoder.transcoder.Session')
-    mocker.patch('celery.app.task.Task.update_state')
-    mocker.patch('ui.utils.boto3', MockBoto)
-    mocker.patch('ui.models.tasks')
-    mocker.patch('cloudsync.api.get_et_job',
-                 return_value=job_result['Job'])
+
     # Transcode the video
     with pytest.raises(ClientError):
         transcode_from_s3(video.id)
     assert video.encode_jobs.count() == 1
     assert Video.objects.get(id=video.id).status == VideoStatus.TRANSCODE_FAILED_INTERNAL
+
+
+def test_retranscode_failures(mocker, videofile, mock_transcode, mock_failed_encode_job):
+    """
+    Test transcode task, verify there is an EncodeJob associated with the video to encode
+    """
+    video = videofile.video
+
+    # Retranscode the video
+    with pytest.raises(ClientError):
+        retranscode_video(video.id)
+    assert Video.objects.filter(
+        id=video.id, status=VideoStatus.RETRANSCODE_FAILED, schedule_retranscode=False
+    ).count() == 1
 
 
 def test_transcode_target_does_not_exist():
@@ -164,24 +215,34 @@ def test_transcode_target_does_not_exist():
         transcode_from_s3(nonexistent_video_id)
 
 
-def test_transcode_starting(mocker, videofile):
+def test_retranscode_target_does_not_exist():
     """
-    Test that video status is updated properly after a transcode failure
+    Test retranscode task, verify exception is thrown when target does not exist.
+    """
+    nonexistent_video_id = 12345
+    with pytest.raises(TranscodeTargetDoesNotExist):
+        retranscode_video(nonexistent_video_id)
+
+
+def test_transcode_starting(mocker, videofile, mock_transcode, mock_successful_encode_job):
+    """
+    Test that video status is updated properly after a transcode success
     """
     video = videofile.video
-    mocker.patch.multiple('cloudsync.tasks.settings',
-                          ET_PRESET_IDS=('1351620000001-000061', '1351620000001-000040', '1351620000001-000020'),
-                          AWS_REGION='us-east-1', ET_PIPELINE_ID='foo')
-    mocker.patch('cloudsync.api.VideoTranscoder.encode')
-    mocker.patch('dj_elastictranscoder.transcoder.Session')
-    mocker.patch('celery.app.task.Task.update_state')
-    mocker.patch('cloudsync.api.process_transcode_results')
-    mocker.patch('ui.utils.boto3', MockBoto)
-    mocker.patch('cloudsync.api.get_et_job',
-                 return_value={'Id': '1498220566931-qtmtcu', 'Status': 'Complete'})
     transcode_from_s3(video.id)
     assert video.encode_jobs.count() == 1
-    assert Video.objects.filter(id=video.id, status=VideoStatus.TRANSCODING).count() == 1
+    assert Video.objects.filter(
+        id=video.id, status=VideoStatus.TRANSCODING, schedule_retranscode=False
+    ).count() == 1
+
+
+def test_retranscode_starting(mocker, videofile, mock_transcode, mock_successful_encode_job):
+    """
+    Test that video status is updated properly after a retranscode success
+    """
+    video = videofile.video
+    retranscode_video(video.id)
+    assert Video.objects.filter(id=video.id, status=VideoStatus.RETRANSCODING).count() == 1
 
 
 def test_video_task_chain(mocker):
@@ -246,25 +307,33 @@ def test_video_task_no_chain(mocker):
     assert task.get_task_id() == task.request.id
 
 
-def test_update_video_statuses_nojob(mocker, video):
+@pytest.mark.parametrize("status, error_status", [
+    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
+    [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED]
+])
+def test_update_video_statuses_nojob(mocker, video, status, error_status):
     """Test NoEncodeJob error handling"""
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=EncodeJob.DoesNotExist())
     mocker.patch('ui.models.tasks')
-    video.update_status(VideoStatus.TRANSCODING)
+    video.update_status(status)
     update_video_statuses()
-    assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
+    assert error_status == Video.objects.get(id=video.id).status
 
 
-def test_update_video_statuses_clienterror(mocker, video):
+@pytest.mark.parametrize("status, error_status", [
+    [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
+    [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED]
+])
+def test_update_video_statuses_clienterror(mocker, video, status, error_status):
     """Test NoEncodeJob error handling"""
     job_result = {'Job': {'Id': '1498220566931-qtmtcu', 'Status': 'Error'}, 'Error': {'Code': 200, 'Message': 'FAIL'}}
     mocker.patch('cloudsync.tasks.refresh_status',
                  side_effect=ClientError(error_response=job_result, operation_name='ReadJob'))
     mocker.patch('ui.models.tasks')
-    video.update_status(VideoStatus.TRANSCODING)
+    video.update_status(status)
     update_video_statuses()
-    assert VideoStatus.TRANSCODE_FAILED_INTERNAL == Video.objects.get(id=video.id).status
+    assert error_status == Video.objects.get(id=video.id).status
 
 
 def test_stream_to_s3_no_video():
@@ -531,3 +600,31 @@ def test_update_youtube_statuses_failed(mocker):
     update_youtube_statuses()
     assert mock_uploader.call_count == 0
     assert YouTubeVideo.objects.filter(status=YouTubeStatus.FAILED).count() == 2
+
+
+def test_schedule_retranscodes(mocker, mock_transcode, mock_successful_encode_job, mocked_celery):
+    """
+    Test that schedule_retranscodes triggers retranscode_video tasks for each scheduled video
+    """
+    retranscode_video_mock = mocker.patch("cloudsync.tasks.retranscode_video", autospec=True)
+    collection = CollectionFactory.create(schedule_retranscode=True)
+    scheduled_videos = VideoFactory.create_batch(5, schedule_retranscode=True)
+    VideoFactory.create_batch(3, schedule_retranscode=False)
+    with pytest.raises(mocked_celery.replace_exception_class):
+        schedule_retranscodes.delay()
+    assert mocked_celery.group.call_count == 1
+    assert retranscode_video_mock.si.call_count == len(scheduled_videos)
+    for video in scheduled_videos:
+        retranscode_video_mock.si.assert_any_call(video.id)
+    assert Collection.objects.get(id=collection.id).schedule_retranscode is False
+
+
+def test_schedule_retranscodes_error(mocker, mocked_celery):
+    """
+    Test that schedule_retranscodes logs an error if it occurs
+    """
+    mock_error_log = mocker.patch("cloudsync.tasks.log.exception")
+    mocker.patch("cloudsync.tasks.retranscode_video.si", side_effect=ClientError)
+    VideoFactory.create_batch(5, schedule_retranscode=True)
+    schedule_retranscodes.delay()
+    mock_error_log.assert_called_with("schedule_retranscodes threw an error")

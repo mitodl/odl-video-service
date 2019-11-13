@@ -41,6 +41,7 @@ class CollectionFactory(DjangoModelFactory):
     title = FuzzyText(prefix="Collection ")
     description = FAKE.text()
     owner = SubFactory(UserFactory)
+    schedule_retranscode = False
 
     class Meta:
         model = models.Collection
@@ -71,6 +72,7 @@ class VideoFactory(DjangoModelFactory):
     description = Faker('text')
     source_url = '{url}{file_name}'.format(url=FAKE.url(), file_name=FAKE.file_name('video'))
     multiangle = False
+    schedule_retranscode = False
 
     class Meta:
         model = models.Video

@@ -32,6 +32,7 @@ def delete_s3_objects(self, bucket_name, key, as_filter=False):  # pylint:disabl
         key(str): S3 key or key prefix
         as_filter(bool): Filter the bucket by the key
     """
+    print("BUCKET NAME {}".format(bucket_name))
     bucket = get_bucket(bucket_name)
     if not as_filter:
         bucket.delete_objects(Delete={'Objects': [{'Key': key}]})
@@ -116,6 +117,7 @@ class Collection(TimestampedModel):
         max_length=10
     )
     edx_course_id = models.CharField(null=True, blank=True, max_length=150)
+    schedule_retranscode = models.BooleanField(default=False)
 
     objects = CollectionManager()
 
@@ -201,6 +203,7 @@ class Video(TimestampedModel):
     is_public = models.BooleanField(null=False, default=False)
     is_private = models.BooleanField(null=False, default=False)
     custom_order = models.IntegerField(null=True, blank=True)
+    schedule_retranscode = models.BooleanField(default=False)
 
     objects = VideoManager()
 
@@ -345,8 +348,11 @@ class Video(TimestampedModel):
 
         Args:
             status(str): The status to assign the video
+            notify(bool): Send a notification if true
         """
         self.status = status
+        if status == VideoStatus.RETRANSCODE_SCHEDULED:
+            self.schedule_retranscode = False
         self.save()
         if status in tasks.STATUS_TO_NOTIFICATION.keys():
             tasks.async_send_notification_email.delay(self.id)
