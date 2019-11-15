@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.45.0
+Version 0.45.0 (Released November 15, 2019)
 --------------
 
 - Support for retranscoding videos (#792)
