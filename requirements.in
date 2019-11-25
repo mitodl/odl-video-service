@@ -18,7 +18,7 @@ psycopg2==2.7.3.2
 pycountry
 pytz
 raven==6.9.0
-redis==2.10.5
+redis==3.2.1
 requests>=2.20.0
 urllib3>=1.24.2
 uwsgi

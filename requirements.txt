@@ -94,7 +94,7 @@ python-dateutil==2.6.1    # via botocore, celery-redbeat, faker
 python-slugify==1.2.4     # via bonobo
 pytz==2017.2
 raven==6.9.0
-redis==2.10.5
+redis==3.2.1
 requests-oauthlib==0.8.0  # via google-auth-oauthlib
 requests-toolbelt==0.8.0  # via zeep
 requests==2.21.0
@@ -120,4 +120,4 @@ zeep==2.2.0
 zipp==0.6.0               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
-# setuptools==41.6.0        # via fs, html5lib, ipython
+# setuptools==42.0.1        # via fs, html5lib, ipython
