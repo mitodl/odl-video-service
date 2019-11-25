@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.46.0
+--------------
+
+- Updated Celery to 4.3.0
+
 Version 0.45.0 (Released November 15, 2019)
 --------------
 
