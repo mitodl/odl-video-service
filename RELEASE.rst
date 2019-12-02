@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.46.0
+Version 0.46.0 (Released December 02, 2019)
 --------------
 
 - Upgraded redis
