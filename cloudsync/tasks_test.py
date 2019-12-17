@@ -30,7 +30,11 @@ from cloudsync.tasks import (
     upload_youtube_videos,
     upload_youtube_caption,
     update_youtube_statuses,
-    remove_youtube_video, remove_youtube_caption, retranscode_video, schedule_retranscodes)
+    remove_youtube_video,
+    remove_youtube_caption,
+    retranscode_video,
+    schedule_retranscodes,
+    sort_transcoded_m3u8_files)
 from cloudsync.youtube import API_QUOTA_ERROR_MSG
 from ui.factories import (
     VideoFactory,
@@ -628,3 +632,83 @@ def test_schedule_retranscodes_error(mocker, mocked_celery):
     VideoFactory.create_batch(5, schedule_retranscode=True)
     schedule_retranscodes.delay()
     mock_error_log.assert_called_with("schedule_retranscodes threw an error")
+
+
+@mock_s3
+def test_sort_transcoded_m3u8_files(mocker):
+    # pylint: disable=too-many-locals
+    """
+    Test that sort_transcoded_m3u8_files changes the m3u8 file on s3 if it needs to be sorted
+    """
+    s3 = boto3.resource('s3')
+    s3c = boto3.client('s3')
+
+    bucket_name = "MYBUCKET"
+    s3c.create_bucket(Bucket=bucket_name)
+    bucket = s3.Bucket(bucket_name)
+    mocker.patch('cloudsync.tasks.settings.VIDEO_S3_TRANSCODE_BUCKET', bucket_name)
+
+    file_key = "key"
+    file_body = """
+#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=2723000,RESOLUTION=1280x720,CODECS="avc1.4d001f,mp4a.40.2"
+video_1504127981867-06dkm6.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=4881000,RESOLUTION=1920x1080,CODECS="avc1.4d001f,mp4a.40.2"
+video_1504127981921-c2jlwt.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=2723000,RESOLUTION=1920x1080,CODECS="avc1.4d001f,mp4a.40.2"
+video_1504127981921-c2jlwt.m3u8
+"""
+    s3c.put_object(Body=file_body, Bucket=bucket_name, Key=file_key)
+    VideoFileFactory(s3_object_key=file_key, encoding='HLS')
+
+    already_sorted_file_key = "already_sorted"
+    already_sorted_file_body = """
+#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=4881000,RESOLUTION=1920x1080,CODECS="avc1.4d001f,mp4a.40.2"
+video_1604127981921-c2jlwt.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=2723000,RESOLUTION=1280x720,CODECS="avc1.4d001f,mp4a.40.2"
+video_1604127981867-06dkm6.m3u8
+"""
+    s3c.put_object(Body=already_sorted_file_body, Bucket=bucket_name, Key=already_sorted_file_key)
+    VideoFileFactory(s3_object_key=already_sorted_file_key, encoding='HLS')
+
+    invalid_header_file_key = "invalid_header"
+    invalid_header_file_body = """
+invalid_header
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=2723000,RESOLUTION=1280x720,CODECS="avc1.4d001f,mp4a.40.2"
+video_1504127981867-06dkm6.m3u8
+"""
+    s3c.put_object(Body=invalid_header_file_body, Bucket=bucket_name, Key=invalid_header_file_key)
+    VideoFileFactory(s3_object_key=invalid_header_file_key, encoding='HLS')
+
+    invalid_content_file_key = "invalid_content"
+    invalid_content_file_body = """
+#EXTM3U
+#EXT-X-STREAM-INF: No
+#EXT-X-STREAM-INF: RESOLUTIONS
+"""
+    s3c.put_object(Body=invalid_content_file_body, Bucket=bucket_name, Key=invalid_content_file_key)
+    VideoFileFactory(s3_object_key=invalid_content_file_key, encoding='HLS')
+
+    sort_transcoded_m3u8_files()
+
+    expected_file_body = """
+#EXTM3U
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=4881000,RESOLUTION=1920x1080,CODECS="avc1.4d001f,mp4a.40.2"
+video_1504127981921-c2jlwt.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=2723000,RESOLUTION=1920x1080,CODECS="avc1.4d001f,mp4a.40.2"
+video_1504127981921-c2jlwt.m3u8
+#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=2723000,RESOLUTION=1280x720,CODECS="avc1.4d001f,mp4a.40.2"
+video_1504127981867-06dkm6.m3u8
+"""
+    updated_file = s3c.get_object(Bucket=bucket_name, Key=file_key)
+    assert updated_file['Body'].read().decode() == expected_file_body
+
+    already_sorted_file = s3c.get_object(Bucket=bucket_name, Key=already_sorted_file_key)
+    assert already_sorted_file['Body'].read().decode() == already_sorted_file_body
+
+    invalid_header_file = s3c.get_object(Bucket=bucket_name, Key=invalid_header_file_key)
+    assert invalid_header_file['Body'].read().decode() == invalid_header_file_body
+
+    invalid_content_file = s3c.get_object(Bucket=bucket_name, Key=invalid_content_file_key)
+    assert invalid_content_file['Body'].read().decode() == invalid_content_file_body

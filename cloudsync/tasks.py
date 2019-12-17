@@ -21,6 +21,7 @@ from cloudsync.youtube import YouTubeApi, API_QUOTA_ERROR_MSG
 from ui.models import Video, YouTubeVideo, VideoSubtitle, Collection
 from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.utils import get_bucket
+from ui.encodings import EncodingNames
 
 log = logging.getLogger(__name__)
 
@@ -352,3 +353,44 @@ def parse_content_metadata(response):
         content_length = int(content_length)
 
     return file_name, content_type, content_length
+
+
+@shared_task(bind=True)
+def sort_transcoded_m3u8_files(self):
+    """
+    Sort files with highest resolution first in trancoded video playlist
+    """
+    for video in Video.objects.filter(videofile__encoding=EncodingNames.HLS).iterator():
+        for transcoded_video in video.transcoded_videos:
+            s3_filename = transcoded_video.s3_object_key
+            s3_client = boto3.client('s3')
+            file = s3_client.get_object(Bucket=settings.VIDEO_S3_TRANSCODE_BUCKET, Key=s3_filename)
+            file_content = file['Body'].read().decode()
+
+            delimiter = '#EXT-X-STREAM-INF:'
+            lines = file_content.split(delimiter)
+            header = lines.pop(0)
+
+            if str.strip(header) != "#EXTM3U":
+                log.error("Unexpected format for transcoded video file for video id=%d", video.id)
+                continue
+
+            try:
+                lines.sort(
+                    key=lambda line: [
+                        -int(re.search(r'RESOLUTION=(\d+)', line).group(1)),
+                        -int(re.search(r'BANDWIDTH=(\d+)', line).group(1)),
+                    ]
+                )
+            except AttributeError:
+                log.error("Unexpected format for transcoded video file for video id=%d", video.id)
+                continue
+
+            lines.insert(0, header)
+            sorted_content = delimiter.join(lines)
+
+            if sorted_content != file_content:
+                s3_client.put_object(
+                    Body=str.encode(sorted_content),
+                    Bucket=settings.VIDEO_S3_TRANSCODE_BUCKET,
+                    Key=s3_filename)
