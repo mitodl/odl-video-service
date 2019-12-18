@@ -690,6 +690,10 @@ video_1504127981867-06dkm6.m3u8
     s3c.put_object(Body=invalid_content_file_body, Bucket=bucket_name, Key=invalid_content_file_key)
     VideoFileFactory(s3_object_key=invalid_content_file_key, encoding='HLS')
 
+    # The task should not raise an error if a VideoFile hase a s3_object_key without a corresponding
+    # file on s3
+    VideoFileFactory(s3_object_key='not a valid key', encoding='HLS')
+
     sort_transcoded_m3u8_files()
 
     expected_file_body = """
