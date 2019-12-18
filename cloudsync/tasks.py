@@ -364,7 +364,12 @@ def sort_transcoded_m3u8_files(self):
         for transcoded_video in video.transcoded_videos:
             s3_filename = transcoded_video.s3_object_key
             s3_client = boto3.client('s3')
-            file = s3_client.get_object(Bucket=settings.VIDEO_S3_TRANSCODE_BUCKET, Key=s3_filename)
+            try:
+                file = s3_client.get_object(Bucket=settings.VIDEO_S3_TRANSCODE_BUCKET, Key=s3_filename)
+            except ClientError:
+                log.error("Object not found on s3 for video id=%d", video.id)
+                continue
+
             file_content = file['Body'].read().decode()
 
             delimiter = '#EXT-X-STREAM-INF:'
