@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.47.0
+--------------
+
+- m3u8 reorder task
+
 Version 0.46.0 (Released December 02, 2019)
 --------------
 
