@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.47.0
+--------------
+
+- continue m3u8 reorder task if s3_object_key is not found on s3
+- m3u8 reorder task
+
 Version 0.46.0 (Released December 02, 2019)
 --------------
 
