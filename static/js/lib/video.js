@@ -20,7 +20,6 @@ import hlsQualitySelector from "./videojs_hls_quality_selector"
 
 // For this to work properly videojs must be available as a global
 global.videojs = _videojs
-require("videojs-contrib-hls")
 require("videojs-contrib-quality-levels")
 require("videojs-resolution-switcher")
 require("videojs-youtube")
