@@ -16,15 +16,13 @@ import type { Video, VideoFile } from "../flow/videoTypes"
 
 import _videojs from "video.js"
 import { makeVideoFileName, makeVideoFileUrl } from "./urls"
-import hlsQualitySelector from "./videojs_hls_quality_selector"
 
 // For this to work properly videojs must be available as a global
 global.videojs = _videojs
 require("videojs-contrib-quality-levels")
 require("videojs-resolution-switcher")
+require("videojs-hls-quality-selector")
 require("videojs-youtube")
-
-_videojs.registerPlugin("hlsQualitySelector", hlsQualitySelector)
 
 // export here to allow mocking of videojs function
 export const videojs = _videojs

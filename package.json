@@ -100,6 +100,7 @@
     "victory": "^0.25.6",
     "video.js": "^7.6.6",
     "videojs-contrib-quality-levels": "^2.0.4",
+    "videojs-hls-quality-selector": "^1.1.0",
     "videojs-resolution-switcher": "^0.4.2",
     "videojs-youtube": "^2.6.0",
     "webpack": "^3.2.0",
