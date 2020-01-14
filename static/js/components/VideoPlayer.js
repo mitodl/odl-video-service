@@ -46,6 +46,7 @@ const makeConfigForVideo = (
       }
     ]
     : video.sources,
+  youtube: { ytControls: 2 },
   plugins: {
     hlsQualitySelector:        {},
     videoJsResolutionSwitcher: {
