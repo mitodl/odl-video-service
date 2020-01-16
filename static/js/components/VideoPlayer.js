@@ -378,7 +378,6 @@ class VideoPlayer extends React.Component<*, void> {
     if (useYouTube) {
       this.checkYouTube()
     }else {
-      this.player.src(video.sources)
       this.player.controlBar.addChild('QualitySelector')
 
     }
