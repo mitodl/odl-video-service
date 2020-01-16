@@ -50,7 +50,18 @@ const makeConfigForVideo = (
   youtube: { ytControls: 2 },
   plugins: {
     hlsQualitySelector:        {},
-  }
+  },
+  controlBar: {
+    children: [
+      'playToggle',
+      'volumePanel',
+      'progressControl',
+      'remainingTimeDisplay',
+      'playbackRateMenuButton',
+      'qualitySelector',
+      'fullscreenToggle',
+    ],
+  },
 })
 
 const drawCanvasImage = function(canvas, videoNode, shiftX, shiftY) {
@@ -377,9 +388,6 @@ class VideoPlayer extends React.Component<*, void> {
     )
     if (useYouTube) {
       this.checkYouTube()
-    }else {
-      this.player.controlBar.addChild('QualitySelector')
-
     }
     this.updateSubtitles()
   }
