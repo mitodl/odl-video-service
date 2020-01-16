@@ -58,6 +58,7 @@ const makeConfigForVideo = (
       "progressControl",
       "remainingTimeDisplay",
       "playbackRateMenuButton",
+      "subsCapsButton",
       "qualitySelector",
       "fullscreenToggle"
     ]

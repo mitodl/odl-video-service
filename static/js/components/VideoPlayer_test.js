@@ -121,6 +121,7 @@ describe("VideoPlayer", () => {
               "progressControl",
               "remainingTimeDisplay",
               "playbackRateMenuButton",
+              "subsCapsButton",
               "qualitySelector",
               "fullscreenToggle"
             ]
