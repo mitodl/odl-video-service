@@ -20,12 +20,13 @@ import { makeVideoFileName, makeVideoFileUrl } from "./urls"
 // For this to work properly videojs must be available as a global
 global.videojs = _videojs
 require("videojs-contrib-quality-levels")
-require("videojs-resolution-switcher")
 require("videojs-hls-quality-selector")
 require("videojs-youtube")
 
 // export here to allow mocking of videojs function
 export const videojs = _videojs
+require('@silvermine/videojs-quality-selector')(videojs);
+
 
 export const getHLSEncodedUrl = (video: Video): string | null => {
   const videofile = video.videofile_set.find(
