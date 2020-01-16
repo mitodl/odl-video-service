@@ -46,22 +46,22 @@ const makeConfigForVideo = (
       }
     ]
     : video.sources,
-  src: video.sources,
+  src:     video.sources,
   youtube: { ytControls: 2 },
   plugins: {
-    hlsQualitySelector:        {},
+    hlsQualitySelector: {}
   },
   controlBar: {
     children: [
-      'playToggle',
-      'volumePanel',
-      'progressControl',
-      'remainingTimeDisplay',
-      'playbackRateMenuButton',
-      'qualitySelector',
-      'fullscreenToggle',
-    ],
-  },
+      "playToggle",
+      "volumePanel",
+      "progressControl",
+      "remainingTimeDisplay",
+      "playbackRateMenuButton",
+      "qualitySelector",
+      "fullscreenToggle"
+    ]
+  }
 })
 
 const drawCanvasImage = function(canvas, videoNode, shiftX, shiftY) {

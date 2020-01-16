@@ -111,19 +111,19 @@ describe("VideoPlayer", () => {
           },
           playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
           plugins:       {
-            hlsQualitySelector:        {},
+            hlsQualitySelector: {}
           },
-          youtube: { ytControls: 2 },
+          youtube:    { ytControls: 2 },
           controlBar: {
             children: [
-              'playToggle',
-              'volumePanel',
-              'progressControl',
-              'remainingTimeDisplay',
-              'playbackRateMenuButton',
-              'qualitySelector',
-              'fullscreenToggle',
-            ],
+              "playToggle",
+              "volumePanel",
+              "progressControl",
+              "remainingTimeDisplay",
+              "playbackRateMenuButton",
+              "qualitySelector",
+              "fullscreenToggle"
+            ]
           },
           sources: [
             {
@@ -138,7 +138,7 @@ describe("VideoPlayer", () => {
               type:  "application/x-mpegURL",
               label: "HLS"
             }
-          ],
+          ]
         })
         const enableTouchActivityStub = sandbox.stub()
         const onStub = sandbox.stub()

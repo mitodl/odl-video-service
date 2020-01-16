@@ -25,8 +25,7 @@ require("videojs-youtube")
 
 // export here to allow mocking of videojs function
 export const videojs = _videojs
-require('@silvermine/videojs-quality-selector')(videojs)
-
+require("@silvermine/videojs-quality-selector")(videojs)
 
 export const getHLSEncodedUrl = (video: Video): string | null => {
   const videofile = video.videofile_set.find(
