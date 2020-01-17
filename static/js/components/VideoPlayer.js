@@ -46,12 +46,22 @@ const makeConfigForVideo = (
       }
     ]
     : video.sources,
+  src:     video.sources,
+  youtube: { ytControls: 2 },
   plugins: {
-    hlsQualitySelector:        {},
-    videoJsResolutionSwitcher: {
-      default:      "high",
-      dynamicLabel: true
-    }
+    hlsQualitySelector: {}
+  },
+  controlBar: {
+    children: [
+      "playToggle",
+      "volumePanel",
+      "progressControl",
+      "remainingTimeDisplay",
+      "playbackRateMenuButton",
+      "subsCapsButton",
+      "qualitySelector",
+      "fullscreenToggle"
+    ]
   }
 })
 

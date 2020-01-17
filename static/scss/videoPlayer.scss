@@ -82,10 +82,45 @@
   text-align: center;
 }
 
-.video-js.vjs-controls-enabled .vjs-big-play-button {
+.video-js.vjs-controls-enabled.vjs-paused .vjs-big-play-button {
+  display: block;
+}
+
+.video-js.vjs-controls-enabled.vjs-youtube .vjs-big-play-button {
   display: none;
 }
 
-.video-js.vjs-controls-enabled.vjs-paused .vjs-big-play-button {
-  display: block;
+.video-js.vjs-controls-enabled .vjs-big-play-button {
+  top: 50%;
+  left: 50%;
+  margin-top: -0.75em;
+  margin-left: -1.5em;
+}
+
+
+.video-js.vjs-controls-enabled.vjs-youtube .vjs-control-bar {
+  visibility: hidden;
+}
+
+
+.vjs-quality-selector {
+  padding: 9px;
+
+  .vjs-menu-button {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+  .vjs-icon-placeholder {
+    // From video.js font: https://github.com/videojs/font
+    font-family: 'VideoJS';
+    font-weight: normal;
+    font-style: normal;
+
+    &:before {
+      content: '\f110';
+    }
+  }
 }
