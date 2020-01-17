@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.48.0
+--------------
+
+- Update Video.js to v7 (#817)
+
 Version 0.47.0 (Released December 18, 2019)
 --------------
 
