@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.48.0
+Version 0.48.0 (Released January 29, 2020)
 --------------
 
 - Update Video.js to v7 (#817)
