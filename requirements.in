@@ -1,4 +1,4 @@
-django==2.1.11
+django==2.2.10
 boto3==1.4.4
 celery==4.3.0
 celery-redbeat==0.13.0
