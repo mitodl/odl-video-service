@@ -86,9 +86,6 @@
   display: block;
 }
 
-.video-js.vjs-controls-enabled.vjs-youtube .vjs-big-play-button {
-  display: none;
-}
 
 .video-js.vjs-controls-enabled .vjs-big-play-button {
   top: 50%;
@@ -99,7 +96,7 @@
 
 
 .video-js.vjs-controls-enabled.vjs-youtube .vjs-control-bar {
-  visibility: hidden;
+  display: none;
 }
 
 
