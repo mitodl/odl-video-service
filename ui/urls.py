@@ -40,5 +40,5 @@ urlpatterns = [
 
     url(r'^api/v0/moira/user/(?P<username_or_email>[-\w]+$|.*@.*)$',
         views.MoiraListsForUser.as_view(), name='member-lists'),
-    url(r'^api/v0/moira/list/(?P<list_name>[-\w]+)$', views.UsersForMoiraList.as_view(), name='list-members'),
+    url(r'^api/v0/moira/list/(?P<list_name>[-_\.\w]+)$', views.UsersForMoiraList.as_view(), name='list-members'),
 ]

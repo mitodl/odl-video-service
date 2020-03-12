@@ -1268,7 +1268,7 @@ def test_moira_list_users(logged_in_apiclient, mock_moira_client):
     user.save()
     client.force_login(user)
     mock_moira_client.return_value.list_members.return_value = ["fakeuser1", "fakeuser2"]
-    url = reverse('list-members', kwargs={'list_name': 'test_name'})
+    url = reverse('list-members', kwargs={'list_name': 'Test-list_name.1'})
     expected = {
         "users": ["fakeuser1", "fakeuser2"]
     }
@@ -1289,7 +1289,7 @@ def test_users_moira_list(logged_in_apiclient, mock_moira_client):
         {'listName': list_name} for list_name in list_names
     ]
 
-    username_or_email = [user.username, user.email, UserFactory(email='username@mit.edu').email]
+    username_or_email = [user.username, user.email, UserFactory(email='user-name.1@mit.edu').email]
 
     for arg in username_or_email:
         url = reverse('member-lists', kwargs={'username_or_email': arg})
