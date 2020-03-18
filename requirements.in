@@ -12,7 +12,7 @@ django-webpack-loader==0.5.0
 factory_boy
 faker
 html5lib==0.999999999
-ipython
+ipython==7.13.0
 newrelic
 psycopg2==2.7.3.2
 pycountry
