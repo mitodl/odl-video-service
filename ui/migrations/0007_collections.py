@@ -43,7 +43,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='video',
             name='collection',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='videos', to='ui.Collection'),
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name='videos',
+                to='ui.Collection'
+            ),
             preserve_default=False,
         ),
     ]
