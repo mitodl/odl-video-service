@@ -60,7 +60,7 @@
     "isomorphic-fetch": "^2.2.1",
     "jsdom": "^11.6.2",
     "jsdom-global": "^3.0.2",
-    "lodash": "^4.17.4",
+    "lodash": "4.17.13",
     "mocha": "^3.4.2",
     "moment": "^2.18.1",
     "node-sass": "^4.11.0",
