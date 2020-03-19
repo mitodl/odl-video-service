@@ -106,7 +106,7 @@ class Collection(TimestampedModel):
     title = models.TextField()
     slug = models.TextField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, models.CASCADE)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
     admin_lists = models.ManyToManyField(MoiraList, blank=True, related_name='admin_lists')
     allow_share_openedx = models.BooleanField(null=False, default=False)
@@ -187,7 +187,7 @@ class Video(TimestampedModel):
     The actual video files (original and encoded) are represented by the VideoFile model.
     """
     key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
-    collection = models.ForeignKey(Collection, models.CASCADE, related_name='videos')
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name='videos')
     title = models.CharField(max_length=250, blank=False)
     description = models.TextField(blank=True)
     source_url = models.URLField(max_length=2000)
