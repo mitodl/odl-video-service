@@ -27,7 +27,8 @@ const gaEvents = [
 const makeConfigForVideo = (
   video: Video,
   useYouTube: boolean,
-  embedded: ?boolean
+  embedded: ?boolean,
+  startTime: number
 ): Object => ({
   autoplay:    false,
   controls:    !useYouTube,
@@ -47,7 +48,7 @@ const makeConfigForVideo = (
     ]
     : video.sources,
   src:     video.sources,
-  youtube: { ytControls: 2 },
+  youtube: { ytControls: 2, start: startTime},
   plugins: {
     hlsQualitySelector: {}
   },
@@ -358,9 +359,11 @@ class VideoPlayer extends React.Component<*, void> {
     this.lastMinuteTracked = null
     const selectPlaylist = this.selectPlaylist.bind(this)
     const self = this
+    const params = new URLSearchParams(window.location.search)
+    const startTime = parseInt(params.get("start")) || 0
     this.player = videojs(
       this.videoNode,
-      makeConfigForVideo(video, useYouTube, embed),
+      makeConfigForVideo(video, useYouTube, embed, startTime),
       function onPlayerReady() {
         this.enableTouchActivity()
         if (video.multiangle) {
@@ -379,8 +382,9 @@ class VideoPlayer extends React.Component<*, void> {
           gaEvents.forEach((event: string) => {
             createEventHandler(event, video.key)
           })
-          const params = new URLSearchParams(window.location.search)
-          this.currentTime(parseInt(params.get("start")) || 0)
+          if (!useYouTube) {
+            this.currentTime(startTime)
+          }
         })
         if (this.tech_.hls !== undefined) {
           this.tech_.hls.selectPlaylist = selectPlaylist
