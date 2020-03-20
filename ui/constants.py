@@ -1,5 +1,7 @@
 """ Statuses for Video objects """
 
+EDX_ADMIN_GROUP = "edX Course Admin"
+
 
 class VideoStatus:
     """Simple class for possible video statuses"""

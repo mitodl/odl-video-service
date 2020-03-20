@@ -29,7 +29,8 @@ def test_collection_serializer():
         'video_count': len(videos),
         'view_lists': [],
         'admin_lists': [],
-        'is_admin': None
+        'is_admin': False,
+        'edx_course_id': collection.edx_course_id,
     }
     expected['videos'].sort(key=lambda x: x['key'])
     serialized_data = serializers.CollectionSerializer(collection).data
@@ -105,6 +106,7 @@ def test_collection_list_serializer():
         'view_lists': [],
         'admin_lists': [],
         'video_count': collection.videos.count(),
+        'edx_course_id': collection.edx_course_id,
     }
     assert serializers.CollectionListSerializer(collection).data == expected
 

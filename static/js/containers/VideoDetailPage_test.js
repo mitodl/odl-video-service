@@ -82,7 +82,7 @@ describe("VideoDetailPage", () => {
       commonUi:    {},
       videoUi:     {},
       showDialog:  sandbox.spy(),
-      editable:    false,
+      isAdmin:     false,
       ...props
     }
     return shallow(<UnwrappedVideoDetailPage {...propsWithDefaults} />)
@@ -168,7 +168,7 @@ describe("VideoDetailPage", () => {
   })
 
   it("does not include buttons for privileged functionality when lacking permission", async () => {
-    const wrapper = await renderPage({ editable: false })
+    const wrapper = await renderPage({ isAdmin: false })
     assert.isFalse(wrapper.find(".analytics").exists())
     assert.isFalse(wrapper.find(".edit").exists())
     assert.isFalse(wrapper.find(".dropbox").exists())
@@ -181,12 +181,12 @@ describe("VideoDetailPage", () => {
     }
 
     it("includes the analytics button when the user has correct permissions", async () => {
-      const wrapper = await renderPage({ editable: true })
+      const wrapper = await renderPage({ isAdmin: true })
       assert.isTrue(_findAnalyticsButton(wrapper).exists())
     })
 
     it("onClick calls toggleAnalyticsOverlay", async () => {
-      const wrapper = await renderPage({ editable: true })
+      const wrapper = await renderPage({ isAdmin: true })
       const pageInstance = wrapper.find("VideoDetailPage").instance()
       const toggleStub = sandbox.stub(pageInstance, "toggleAnalyticsOverlay")
       const analyticsButton = _findAnalyticsButton(wrapper)
@@ -197,19 +197,19 @@ describe("VideoDetailPage", () => {
   })
 
   it("includes the edit button and dialog when the user has correct permissions", async () => {
-    const wrapper = await renderPage({ editable: true })
+    const wrapper = await renderPage({ isAdmin: true })
     assert.isTrue(wrapper.find(".edit").exists())
     assert.isTrue(wrapper.find("EditVideoFormDialog").exists())
   })
 
   it("includes the delete button and dialog when the user has correct permissions", async () => {
-    const wrapper = await renderPage({ editable: true })
+    const wrapper = await renderPage({ isAdmin: true })
     assert.isTrue(wrapper.find(".delete").exists())
     assert.isTrue(wrapper.find("DeleteVideoDialog").exists())
   })
 
   it("includes the dropbox button that triggers dialog when the user has correct permissions", async () => {
-    const wrapper = await renderPage({ editable: true })
+    const wrapper = await renderPage({ isAdmin: true })
     const dropboxButton = wrapper.find(".dropbox").hostNodes()
     assert.isTrue(dropboxButton.exists())
     dropboxButton.simulate("click")
@@ -234,7 +234,7 @@ describe("VideoDetailPage", () => {
       createSubtitleStub = sandbox
         .stub(api, "createSubtitle")
         .returns(Promise.resolve())
-      wrapper = await renderPage({ editable: true })
+      wrapper = await renderPage({ isAdmin: true })
       const uploadBtn = wrapper.find(".upload-input")
       file = new File(["foo"], "filename.vtt")
       store.getState().videoUi.videoSubtitleForm.video = video.key
@@ -276,7 +276,7 @@ describe("VideoDetailPage", () => {
     let showDeleteSubtitlesDialogStub
 
     beforeEach(async () => {
-      const wrapper = await renderPage({ editable: true })
+      const wrapper = await renderPage({ isAdmin: true })
       const instance = wrapper.find("VideoDetailPage").instance()
       showDeleteSubtitlesDialogStub = sandbox.stub(
         instance,
@@ -306,7 +306,7 @@ describe("VideoDetailPage", () => {
       const props = {
         dispatch:   stubs.dispatch,
         showDialog: stubs.showDialog,
-        editable:   true
+        isAdmin:    true
       }
       const wrapper = shallow(<UnwrappedVideoDetailPage {...props} />)
       instance = wrapper.instance()

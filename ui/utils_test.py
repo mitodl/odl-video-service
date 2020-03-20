@@ -132,9 +132,9 @@ def test_user_moira_lists_cache_miss(mocker, settings):
 
 def test_user_moira_lists_anonymous():
     """
-    Test that empty list is returned for anonymous user
+    Test that empty set is returned for anonymous user
     """
-    assert user_moira_lists(AnonymousUser()) == []
+    assert user_moira_lists(AnonymousUser()) == set()
 
 
 def test_has_common_lists(mocker):

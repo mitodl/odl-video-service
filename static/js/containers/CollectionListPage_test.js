@@ -78,14 +78,14 @@ describe("CollectionListPage", () => {
     return wrapper
   }
 
-  it("doesn't show the create collection button if SETTINGS.editable is false", async () => {
-    SETTINGS.editable = false
+  it("doesn't show the create collection button if SETTINGS.is_app_admin is false", async () => {
+    SETTINGS.is_app_admin = false
     const wrapper = await renderPage()
     assert.lengthOf(wrapper.find(".create-collection-button"), 0)
   })
 
   it("opens a dialog to create a new collection", async () => {
-    SETTINGS.editable = true
+    SETTINGS.is_app_admin = true
     const wrapper = await renderPage()
     const state = await listenForActions([SHOW_DIALOG, SET_IS_NEW], () => {
       wrapper

@@ -11,6 +11,7 @@ from rest_framework.permissions import (
     BasePermission,
     SAFE_METHODS
 )
+
 from ui.models import Collection
 from ui.utils import has_common_lists
 

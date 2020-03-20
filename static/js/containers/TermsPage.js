@@ -507,7 +507,7 @@ class TermsPage extends React.Component<*, void> {
                 remove the user-generated content.
               </div>
 
-              <h3 classNam="terms-subheading">Warranty Disclaimer</h3>
+              <h3 className="terms-subheading">Warranty Disclaimer</h3>
               <div className="terms-div">
                 Please note that the information, software, products and
                 services included in, or available through, the ODL Video

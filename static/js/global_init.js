@@ -13,7 +13,8 @@ configureEnzyme({ adapter: new Adapter() })
 const _createSettings = () => ({
   videoKey:              "a_video_key",
   video:                 makeVideo("a_video_key"),
-  editable:              false,
+  is_app_admin:          false,
+  is_edx_course_admin:   false,
   user:                  "",
   dropbox_key:           "dropbox_key",
   thumbnail_base_url:    "http://fake/",

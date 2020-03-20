@@ -15,7 +15,7 @@ type DialogProps = {
   title?: string,
   cancelText: string,
   submitText: string,
-  noSubmit: boolean,
+  noSubmit?: boolean,
   id: string,
   validateOnClick?: boolean
 }

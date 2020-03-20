@@ -123,7 +123,7 @@ def test_video_detail(logged_in_client, settings):
     response = client.get(url)
     js_settings_json = json.loads(response.context_data['js_settings_json'])
     assert js_settings_json == {
-        'editable': True,
+        'is_app_admin': False,
         "gaTrackingID": settings.GA_TRACKING_ID,
         'environment': settings.ENVIRONMENT,
         'release_version': settings.VERSION,
@@ -138,7 +138,8 @@ def test_video_detail(logged_in_client, settings):
         "dropbox_key": "foo_dropbox_key",
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": False
-        }
+        },
+        'is_video_admin': True
     }
 
 
@@ -171,6 +172,7 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
         "user": user.username,
         "email": user.email,
+        "is_app_admin": False,
         "support_email_address": settings.EMAIL_SUPPORT,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": False
@@ -492,7 +494,7 @@ def test_video_detail_view_permission(mock_user_moira_lists, logged_in_apiclient
     url = reverse('video-detail', kwargs={'video_key': user_view_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
-    assert json.loads(result.context_data['js_settings_json'])['editable'] is False
+    assert json.loads(result.context_data['js_settings_json'])['is_video_admin'] is False
 
 
 def test_video_detail_admin_permission(logged_in_apiclient, mock_user_moira_lists, user_admin_list_data):
@@ -504,7 +506,7 @@ def test_video_detail_admin_permission(logged_in_apiclient, mock_user_moira_list
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
-    assert json.loads(result.context_data['js_settings_json'])['editable'] is True
+    assert json.loads(result.context_data['js_settings_json'])['is_video_admin'] is True
 
 
 def test_video_detail_no_permission(mock_user_moira_lists, logged_in_apiclient, user_admin_list_data):
@@ -776,6 +778,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
         'support_email_address': settings.EMAIL_SUPPORT,
         'email': user.email,
         'user': user.username,
+        'is_app_admin': False,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": False
         }
@@ -1180,28 +1183,6 @@ def test_help_for_anonymous_user(mock_user_moira_lists):
     assert response.status_code == status.HTTP_200_OK
 
 
-@pytest.mark.parametrize(
-    'owns_collections,is_staff',
-    [
-        (True, True),
-        (True, False),
-        (False, True),
-        (False, False),
-    ]
-)
-def test_help_for_logged_in_user(mock_user_moira_lists, owns_collections, is_staff):
-    """Test help page for anonymous user"""
-    request = RequestFactory()
-    request.method = 'GET'
-    request.user = UserFactory(is_staff=is_staff)
-    if owns_collections:
-        CollectionFactory(owner=request.user)
-    response = HelpPageView.as_view()(request)
-    assert response.status_code == status.HTTP_200_OK
-    js_settings = json.loads(response.context_data["js_settings_json"])
-    assert js_settings["editable"] == owns_collections or is_staff
-
-
 def test_terms_of_service_for_anonymous_user(mock_user_moira_lists):
     """Test help page for anonymous user"""
     request = RequestFactory()
@@ -1209,28 +1190,6 @@ def test_terms_of_service_for_anonymous_user(mock_user_moira_lists):
     request.user = AnonymousUser()
     response = TermsOfServicePageView.as_view()(request)
     assert response.status_code == status.HTTP_200_OK
-
-
-@pytest.mark.parametrize(
-    'owns_collections,is_staff',
-    [
-        (True, True),
-        (True, False),
-        (False, True),
-        (False, False),
-    ]
-)
-def test_terms_of_service_for_logged_in_user(mock_user_moira_lists, owns_collections, is_staff):
-    """Test help page for anonymous user"""
-    request = RequestFactory()
-    request.method = 'GET'
-    request.user = UserFactory(is_staff=is_staff)
-    if owns_collections:
-        CollectionFactory(owner=request.user)
-    response = TermsOfServicePageView.as_view()(request)
-    assert response.status_code == status.HTTP_200_OK
-    js_settings = json.loads(response.context_data["js_settings_json"])
-    assert js_settings["editable"] == owns_collections or is_staff
 
 
 @pytest.mark.parametrize(
