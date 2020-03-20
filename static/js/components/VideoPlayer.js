@@ -48,7 +48,7 @@ const makeConfigForVideo = (
     ]
     : video.sources,
   src:     video.sources,
-  youtube: { ytControls: 2, start: startTime},
+  youtube: { ytControls: 2, start: startTime },
   plugins: {
     hlsQualitySelector: {}
   },
