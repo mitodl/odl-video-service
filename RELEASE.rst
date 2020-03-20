@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.49.0
+--------------
+
+- Fix the play button and video controls for  Youtube videos (#822)
+- Fix heroku build (#829)
+- Update postgres & python, fix Moira list api URL pattern (#825)
+
 Version 0.48.0 (Released January 29, 2020)
 --------------
 
