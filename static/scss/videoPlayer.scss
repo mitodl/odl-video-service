@@ -94,6 +94,10 @@
   margin-left: -1.5em;
 }
 
+.video-js.vjs-controls-enabled.vjs-youtube .vjs-control-bar {
+  display: none;
+}
+
 .vjs-quality-selector {
   padding: 9px;
 
