@@ -86,9 +86,6 @@
   display: block;
 }
 
-.video-js.vjs-controls-enabled.vjs-youtube .vjs-big-play-button {
-  display: none;
-}
 
 .video-js.vjs-controls-enabled .vjs-big-play-button {
   top: 50%;
@@ -96,12 +93,6 @@
   margin-top: -0.75em;
   margin-left: -1.5em;
 }
-
-
-.video-js.vjs-controls-enabled.vjs-youtube .vjs-control-bar {
-  visibility: hidden;
-}
-
 
 .vjs-quality-selector {
   padding: 9px;
