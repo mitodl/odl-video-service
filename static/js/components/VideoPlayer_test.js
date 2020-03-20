@@ -113,7 +113,7 @@ describe("VideoPlayer", () => {
           plugins:       {
             hlsQualitySelector: {}
           },
-          youtube:    { ytControls: 2 },
+          youtube:    { ytControls: 2, start: 0 },
           controlBar: {
             children: [
               "playToggle",
