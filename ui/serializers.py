@@ -8,7 +8,7 @@ from rest_framework.settings import api_settings
 
 from ui import models, permissions as ui_permissions
 from ui.encodings import EncodingNames
-from ui.utils import get_moira_client
+from ui.utils import get_moira_client, has_common_lists
 
 
 def validate_moira_lists(lists):
@@ -233,8 +233,14 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     def get_videos(self, obj):
         """Custom getter for videos"""
-        if self.context.get('request') and self.context.get('request').user.is_anonymous:
-            videos = obj.videos.filter(is_public=True)
+        if self.context.get('request'):
+            user = self.context.get('request').user
+            if user.is_anonymous:
+                videos = obj.videos.filter(is_public=True)
+            elif user.is_superuser or has_common_lists(user, list(obj.admin_lists.values_list('name', flat=True))):
+                videos = obj.videos.all()
+            else:
+                videos = obj.videos.filter(is_private=False)
         else:
             videos = obj.videos.all()
         return [SimpleVideoSerializer(video, context=self.context).data for video in videos]

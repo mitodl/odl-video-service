@@ -8,6 +8,7 @@ from rest_framework.serializers import DateTimeField, ValidationError
 
 from ui import factories, serializers
 from ui.encodings import EncodingNames
+from ui.factories import UserFactory, MoiraListFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -89,6 +90,31 @@ def test_collection_serializer_admin_flag(mocker, has_permission):
     ).data
     mocked_admin_permission.assert_called_with(collection, mocked_request)
     assert serialized_data['is_admin'] is has_permission
+
+
+@pytest.mark.parametrize("is_admin", [True, False])
+@pytest.mark.parametrize("is_superuser", [True, False])
+def test_collection_serializer_private_video(mocker, is_admin, is_superuser):
+    """
+    Test that a private video is not included in the serializer unless the user is super/admin
+    """
+    has_permission = is_superuser or is_admin
+    mocker.patch('ui.permissions.has_admin_permission', return_value=has_permission)
+    mocked_request = mocker.MagicMock()
+    mocked_request.user = UserFactory.create(is_superuser=is_superuser)
+
+    mocker.patch("ui.serializers.has_common_lists", return_value=is_admin)
+
+    collection = factories.CollectionFactory(admin_lists=[MoiraListFactory.create()])
+    VideoFactory.create(collection=collection)
+    VideoFactory.create(is_private=True, collection=collection)
+
+    serialized_data = serializers.CollectionSerializer(
+        collection,
+        context=dict(request=mocked_request)
+    ).data
+
+    assert len(serialized_data["videos"]) == (2 if has_permission else 1)
 
 
 def test_collection_list_serializer():
