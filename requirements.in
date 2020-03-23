@@ -1,5 +1,5 @@
 django==2.2.10
-boto3==1.4.4
+boto3==1.12.26
 celery==4.3.0
 celery-redbeat==0.13.0
 cryptography
@@ -16,6 +16,7 @@ ipython==7.13.0
 newrelic
 psycopg2==2.7.3.2
 pycountry
+python-dateutil==2.8.1
 pytz
 raven==6.9.0
 redis==3.2.1
@@ -46,9 +47,9 @@ git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-t
 
 # TechTV Migration
 mysqlclient
-dropbox
+dropbox==9.0.0
 Jinja2==2.11.1
 markupsafe==1.1.1
 bonobo==0.6.4
--e git+https://github.com/mitodl/pycaption.git#egg=pycaption
+git+https://github.com/mitodl/pycaption.git#egg=pycaption
 smart_open==1.5.7
