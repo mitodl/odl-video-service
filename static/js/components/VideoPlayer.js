@@ -375,7 +375,7 @@ class VideoPlayer extends React.Component<*, void> {
           this.on("loadedmetadata", resizeYouTube)
           window.addEventListener("resize", resizeYouTube)
         }
-        this.on("loadedmetadata", function() {
+        this.on("onLoadedMetadata", function() {
           self.props.dispatch(
             actions.videoUi.setVideoDuration(self.player.duration())
           )

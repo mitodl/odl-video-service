@@ -448,29 +448,6 @@ describe("VideoPlayer", () => {
   })
   ;[false, true].forEach(function(isPublic) {
     ["asdJ4y", null].forEach(function(youtubeId) {
-      it(`currentTime ${expect(
-        isPublic && youtubeId !== null
-      )} be changed when if video.is_public=${String(isPublic)}
-      and video.youtube_id=${String(youtubeId)}`, async () => {
-        video.is_public = isPublic
-        video.youtube_id = youtubeId
-        video.multiangle = false
-        const wrapper = renderPlayer().find("VideoPlayer")
-        const useYoutube = isPublic && youtubeId !== null
-
-        const stub = sandbox.stub(URLSearchParams, {get: "34"})
-        wrapper.instance().componentDidMount()
-        wrapper.simulate("loadedmetadata")
-        assert.equal(wrapper.instance().player.currentTime(), useYoutube ? 630.5 : 34)
-        sinon.assert.callCount(
-          stub,
-          Number(useYoutube)
-        )
-      })
-    })
-  })
-  ;[false, true].forEach(function(isPublic) {
-    ["asdJ4y", null].forEach(function(youtubeId) {
       it(`checkYouTube ${expect(
         isPublic && youtubeId !== null
       )} be called if video.is_public=${String(isPublic)} and video.youtube_id=${String(youtubeId)}`, async () => {
