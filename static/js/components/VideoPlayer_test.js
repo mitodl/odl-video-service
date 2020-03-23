@@ -460,6 +460,7 @@ describe("VideoPlayer", () => {
 
         const stub = sandbox.stub(URLSearchParams, {get: "34"})
         wrapper.instance().componentDidMount()
+        wrapper.simulate("loadedmetadata")
         assert.equal(wrapper.instance().player.currentTime(), useYoutube ? 630.5 : 34)
         sinon.assert.callCount(
           stub,
