@@ -253,9 +253,9 @@ def test_process_files_error(mocker, importer):
 def test_run(mocker, importer):
     """ Test that etl_graph is called by run method """
     mocker.patch('MySQLdb.connect')
-    mock_graph = mocker.patch('techtv2ovs.utils.TechTVImporter.etl_graph')
+    mock_bonobo = mocker.patch('techtv2ovs.utils.bonobo.run', autospec=True)
     importer.run()
-    mock_graph.assert_called_once()
+    mock_bonobo.assert_called_once()
 
 
 def test_etl_graph(importer):
