@@ -17,14 +17,12 @@ import * as toastActions from "../../actions/toast"
 import { setSelectedVideoKey } from "../../actions/collectionUi"
 import { INITIAL_UI_STATE } from "../../reducers/videoUi"
 import * as api from "../../lib/api"
-import { makeVideo, makeVideoSubtitle } from "../../factories/video"
+import { makeVideo } from "../../factories/video"
 import { makeCollection } from "../../factories/collection"
-import { expect } from "../../util/test_utils"
 import {
   PERM_CHOICE_LISTS,
   PERM_CHOICE_NONE,
-  PERM_CHOICE_OVERRIDE,
-  PERM_CHOICE_PUBLIC
+  PERM_CHOICE_OVERRIDE
 } from "../../lib/dialog"
 
 const {
@@ -135,12 +133,6 @@ describe("EditVideoFormDialog", () => {
       PERM_CHOICE_OVERRIDE
     ],
     [
-      "#video-view-perms-view-public",
-      "viewChoice",
-      SET_VIEW_CHOICE,
-      PERM_CHOICE_PUBLIC
-    ],
-    [
       "#video-view-perms-view-only-me",
       "viewChoice",
       SET_VIEW_CHOICE,
@@ -174,25 +166,6 @@ describe("EditVideoFormDialog", () => {
       SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false
       const wrapper = await renderComponent()
       assert.equal(wrapper.find(selector).hostNodes().length, 0)
-    })
-  }
-
-  for (const [disabled, count] of [[true, 0], [false, 1]]) {
-    it(`public option ${expect(
-      disabled
-    )} be disabled because subtitle count is ${count}`, async () => {
-      SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = true
-      video.is_private = true
-      video.videosubtitle_set = []
-      if (count === 1) {
-        video.videosubtitle_set.push(makeVideoSubtitle(video.key, "fr"))
-      }
-      const wrapper = await renderComponent()
-      const publicOption = wrapper
-        .find("#video-view-perms-view-public")
-        .hostNodes()
-        .props()
-      assert.equal(publicOption.disabled, disabled)
     })
   }
 
@@ -248,7 +221,6 @@ describe("EditVideoFormDialog", () => {
       title:       "New Title",
       description: "New Description",
       is_private:  false,
-      is_public:   false,
       view_lists:  ["my-moira-list1", "my-moira-list2"]
     }
     store.dispatch(setEditVideoTitle(newValues.title))

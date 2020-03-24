@@ -5,10 +5,7 @@ import {
   fetchWithCSRF
 } from "redux-hammock/django_csrf_fetch"
 import type { Collection } from "../flow/collectionTypes"
-
-export type VideoUpdatePayload = {
-  description?: string
-}
+import type { VideoUpdatePayload } from "../flow/videoTypes"
 
 export type PaginationParams = {
   page: string | number
