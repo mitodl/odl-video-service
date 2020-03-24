@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.49.0
+Version 0.49.0 (Released March 24, 2020)
 --------------
 
 - Sharing a youtube video link with start time (#832)
