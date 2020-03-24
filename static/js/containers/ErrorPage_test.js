@@ -55,7 +55,7 @@ describe("ErrorPage", () => {
     [
       403,
       "You do not have permission to view this video",
-      "If you want permission to view this video please Contact ODL Video Services."
+      "You do not have permission to view this video."
     ],
     [
       404,
