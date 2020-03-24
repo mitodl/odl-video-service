@@ -37,12 +37,13 @@ export function makeInitializedForm(
 ): CollectionFormState {
   if (!collection) {
     collection = {
-      key:         "",
-      title:       "",
-      description: "",
-      view_lists:  [],
-      admin_lists: [],
-      video_count: 0
+      key:           "",
+      title:         "",
+      description:   "",
+      view_lists:    [],
+      admin_lists:   [],
+      edx_course_id: "",
+      video_count:   0
     }
   }
   const viewChoice =
@@ -58,6 +59,7 @@ export function makeInitializedForm(
     viewLists:   _.join(collection.view_lists, ","),
     adminChoice: adminChoice,
     adminLists:  _.join(collection.admin_lists, ","),
+    edxCourseId: collection.edx_course_id,
     videoCount:  collection.video_count
   }
 }

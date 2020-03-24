@@ -64,10 +64,11 @@ describe("Dialog higher-order component", () => {
     sandbox.restore()
   })
 
-  const renderTestComponentWithDialogs = () => {
+  const renderTestComponentWithDialogs = (extraProps = {}) => {
     const WrappedTestContainerPage = R.compose(
       connect(state => ({
-        commonUi: state.commonUi
+        commonUi: state.commonUi,
+        ...extraProps
       })),
       withDialogs(dialogConfigs)
     )(TestContainerPage)
@@ -117,5 +118,16 @@ describe("Dialog higher-order component", () => {
       wrapper.find(selectors.OPEN_BTN).prop("onClick")()
       wrapper.find("Dialog").prop("hideDialog")()
     })
+  })
+
+  it("should pass additional props to the dialog component if they are defined", async () => {
+    const wrapper = renderTestComponentWithDialogs({
+      dialogProps: { [dialogName]: { newProp: "newPropValue" } }
+    })
+    const testDialog = wrapper.find("TestDialog")
+    assert.isTrue(testDialog.exists())
+    const addedPropValue = testDialog.prop("newProp")
+    assert.isString(addedPropValue)
+    assert.equal(addedPropValue, "newPropValue")
   })
 })

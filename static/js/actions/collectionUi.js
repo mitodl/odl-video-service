@@ -30,6 +30,9 @@ export const setAdminChoice = createAction(SET_ADMIN_CHOICE)
 export const SET_ADMIN_LISTS = qualifiedName("SET_ADMIN_LISTS")
 export const setAdminLists = createAction(SET_ADMIN_LISTS)
 
+export const SET_EDX_COURSE_ID = qualifiedName("SET_EDX_COURSE_ID")
+export const setEdxCourseId = createAction(SET_EDX_COURSE_ID)
+
 export const SET_SELECTED_VIDEO_KEY = qualifiedName("SET_SELECTED_VIDEO_KEY")
 export const setSelectedVideoKey = createAction(SET_SELECTED_VIDEO_KEY)
 

@@ -36,6 +36,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
     collection: ?Collection,
     collectionError: ?Object,
     collectionKey: string,
+    isCollectionAdmin: boolean,
     editable: boolean,
     needsUpdate: boolean,
     commonUi: CommonUiState,
@@ -89,12 +90,11 @@ export class CollectionDetailPage extends React.Component<*, void> {
   }
 
   renderBody() {
-    const { collection } = this.props
+    const { collection, isCollectionAdmin } = this.props
     if (!collection) {
       return null
     }
     const videos = collection.videos || []
-    const isAdmin = collection.is_admin
     return (
       <div className="centered-content">
         <header>
@@ -103,10 +103,10 @@ export class CollectionDetailPage extends React.Component<*, void> {
               {`${collection.title} (${videos.length})`}
             </h1>
           </div>
-          {this.renderTools(isAdmin)}
+          {this.renderTools(isCollectionAdmin)}
           {this.renderDescription(collection.description)}
         </header>
-        {this.renderVideos(videos, isAdmin)}
+        {this.renderVideos(videos, isCollectionAdmin)}
       </div>
     )
   }
@@ -246,20 +246,13 @@ export class CollectionDetailPage extends React.Component<*, void> {
   showDeleteVideoDialog(videoKey: string) {
     this.showVideoDialog(DIALOGS.DELETE_VIDEO, videoKey)
   }
+}
 
-  getDialogComponent(dialogName: string) {
-    switch (dialogName) {
-    case DIALOGS.COLLECTION_FORM:
-      return CollectionFormDialog
-    case DIALOGS.EDIT_VIDEO:
-      return EditVideoFormDialog
-    case DIALOGS.SHARE_VIDEO:
-      return ShareVideoDialog
-    case DIALOGS.DELETE_VIDEO:
-      return DeleteVideoDialog
-    }
-    throw Error(`unknown dialog '${dialogName}'`)
-  }
+const enabledDialogs = {
+  [DIALOGS.COLLECTION_FORM]: CollectionFormDialog,
+  [DIALOGS.EDIT_VIDEO]:      EditVideoFormDialog,
+  [DIALOGS.SHARE_VIDEO]:     ShareVideoDialog,
+  [DIALOGS.DELETE_VIDEO]:    DeleteVideoDialog
 }
 
 export const mapStateToProps = (state: any, ownProps: any) => {
@@ -271,34 +264,34 @@ export const mapStateToProps = (state: any, ownProps: any) => {
     collections.loaded && collections.data ? collections.data : null
   const collectionError = collections.error || null
   const collectionChanged = collection && collection.key !== collectionKey
+  const isCollectionAdmin = collection && collection.is_admin
   const needsUpdate =
     collectionChanged || (!collections.processing && !collections.loaded)
+  const dialogProps = {
+    [DIALOGS.COLLECTION_FORM]: {
+      isEdxCourseAdmin: SETTINGS.is_app_admin || SETTINGS.is_edx_course_admin
+    }
+  }
 
   return {
     collectionKey,
     collection,
     collectionError,
+    isCollectionAdmin,
     needsUpdate,
-    commonUi
+    commonUi,
+    dialogProps
   }
 }
 
 export const ConnectedCollectionDetailPage = R.compose(
   connect(mapStateToProps),
   withDialogs(
-    [
-      DIALOGS.COLLECTION_FORM,
-      DIALOGS.EDIT_VIDEO,
-      DIALOGS.SHARE_VIDEO,
-      DIALOGS.DELETE_VIDEO
-    ].map(dialogName => {
-      const dialogConfig = {
-        name:         dialogName,
-        getComponent: () => {
-          return CollectionDetailPage.prototype.getDialogComponent(dialogName)
-        }
+    Object.keys(enabledDialogs).map(dialogName => {
+      return {
+        name:      dialogName,
+        component: enabledDialogs[dialogName]
       }
-      return dialogConfig
     })
   )
 )(CollectionDetailPage)

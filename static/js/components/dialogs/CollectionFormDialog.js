@@ -33,7 +33,8 @@ type DialogProps = {
   collection: ?Collection,
   collectionForm: CollectionFormState,
   open: boolean,
-  hideDialog: Function
+  hideDialog: Function,
+  isEdxCourseAdmin?: boolean
 }
 
 export class CollectionFormDialog extends React.Component<*, void> {
@@ -81,15 +82,21 @@ export class CollectionFormDialog extends React.Component<*, void> {
     dispatch(uiActions.setAdminLists(event.target.value))
   }
 
+  setCollectionEdxCourseId = (event: Object) => {
+    const { dispatch } = this.props
+    dispatch(uiActions.setEdxCourseId(event.target.value))
+  }
+
   submitForm = async () => {
     const {
       dispatch,
       history,
       collectionUi: { isNew },
-      collectionForm
+      collectionForm,
+      isEdxCourseAdmin
     } = this.props
 
-    const payload = {
+    const payload: Object = {
       title:       collectionForm.title,
       description: collectionForm.description,
       view_lists:  calculateListPermissionValue(
@@ -100,6 +107,9 @@ export class CollectionFormDialog extends React.Component<*, void> {
         collectionForm.adminChoice,
         collectionForm.adminLists
       )
+    }
+    if (isEdxCourseAdmin) {
+      payload.edx_course_id = collectionForm.edxCourseId
     }
 
     try {
@@ -156,7 +166,8 @@ export class CollectionFormDialog extends React.Component<*, void> {
       open,
       hideDialog,
       collectionForm,
-      collectionUi: { isNew, errors }
+      collectionUi: { isNew, errors },
+      isEdxCourseAdmin
     } = this.props
 
     const title = isNew ? "Create a New Collection" : "Edit Collection"
@@ -255,6 +266,17 @@ export class CollectionFormDialog extends React.Component<*, void> {
               />
             </Radio>
           </section>
+
+          {!!isEdxCourseAdmin && (
+            <Textfield
+              label="edx Course ID"
+              id="edx-course-id"
+              onChange={this.setCollectionEdxCourseId}
+              value={collectionForm.edxCourseId || ""}
+              required={false}
+              validationMessage={errors ? errors.edx_course_id : ""}
+            />
+          )}
         </div>
       </Dialog>
     )

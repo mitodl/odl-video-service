@@ -78,6 +78,7 @@ describe("collection library function", () => {
       adminLists:  "",
       viewChoice:  PERM_CHOICE_NONE,
       viewLists:   "",
+      edxCourseId: "",
       videoCount:  0
     })
   })
@@ -92,6 +93,7 @@ describe("collection library function", () => {
       adminLists:  collection.admin_lists.join(","),
       viewChoice:  PERM_CHOICE_LISTS,
       viewLists:   collection.view_lists.join(","),
+      edxCourseId: collection.edx_course_id,
       videoCount:  collection.video_count
     })
   })

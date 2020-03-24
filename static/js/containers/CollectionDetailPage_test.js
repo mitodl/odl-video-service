@@ -12,6 +12,7 @@ import * as collectionUiActions from "../actions/collectionUi"
 import * as commonUiActions from "../actions/commonUi"
 import { makeCollection } from "../factories/collection"
 import { DIALOGS } from "../constants"
+import { shouldIf } from "../lib/test_utils"
 
 describe("CollectionDetailPage", () => {
   let sandbox
@@ -176,6 +177,25 @@ describe("CollectionDetailPage", () => {
       }
       const actualProps = mapStateToProps(state, ownProps)
       assert.equal(actualProps.commonUi, state.commonUi)
+    })
+    ;[
+      [true, true, true],
+      [false, true, true],
+      [true, false, true],
+      [false, false, false]
+    ].forEach(([isAppAdmin, isEdxCourseAdmin, expAdminProp]) => {
+      it(`${shouldIf(
+        expAdminProp
+      )} set isEdxCourseAdmin=true for the collection edit form 
+        if is_app_admin=${isAppAdmin.toString()}, is_edx_course_admin=${isEdxCourseAdmin.toString()}`, () => {
+        SETTINGS.is_app_admin = isAppAdmin
+        SETTINGS.is_edx_course_admin = isEdxCourseAdmin
+        const actualProps = mapStateToProps(state, ownProps)
+        assert.equal(
+          actualProps.dialogProps[DIALOGS.COLLECTION_FORM].isEdxCourseAdmin,
+          expAdminProp
+        )
+      })
     })
   })
 

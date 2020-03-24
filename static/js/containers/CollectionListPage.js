@@ -25,7 +25,7 @@ export class CollectionListPage extends React.Component<*, void> {
     collectionsPagination: CollectionsPagination,
     dispatch: Dispatch,
     collections: Array<Collection>,
-    editable: boolean,
+    isAdmin: boolean,
     commonUi: CommonUiState
   }
 
@@ -44,10 +44,7 @@ export class CollectionListPage extends React.Component<*, void> {
 
   renderPaginator() {
     const { collectionsPagination } = this.props
-    const { currentPage, numPages, currentPageData } = collectionsPagination
-    if (currentPageData) {
-      currentPageData
-    }
+    const { currentPage, numPages } = collectionsPagination
     return (
       <Paginator
         currentPage={currentPage}
@@ -66,7 +63,7 @@ export class CollectionListPage extends React.Component<*, void> {
   }
 
   renderFormLink() {
-    return SETTINGS.editable ? (
+    return SETTINGS.is_app_admin ? (
       <a
         className="button-link create-collection-button"
         onClick={this.openNewCollectionDialog.bind(this)}

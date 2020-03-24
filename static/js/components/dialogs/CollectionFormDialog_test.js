@@ -18,6 +18,7 @@ import {
   setViewLists,
   setCollectionDesc,
   setCollectionTitle,
+  setEdxCourseId,
   SET_COLLECTION_TITLE,
   SET_COLLECTION_DESC,
   SET_ADMIN_CHOICE,
@@ -63,6 +64,7 @@ describe("CollectionFormDialog", () => {
             collection={collection}
             open={true}
             hideDialog={hideDialogStub}
+            isEdxCourseAdmin={true}
             {...props}
           />
         </div>
@@ -161,6 +163,7 @@ describe("CollectionFormDialog", () => {
         store.dispatch(setViewLists(listInput))
         store.dispatch(setCollectionDesc("new description"))
         store.dispatch(setCollectionTitle("new title"))
+        store.dispatch(setEdxCourseId("edx-course-id"))
 
         sandbox.stub(api, "getCollections").returns(Promise.resolve({}))
         let apiStub, expectedActionTypes
@@ -194,10 +197,11 @@ describe("CollectionFormDialog", () => {
         })
 
         const expectedRequestPayload = {
-          title:       "new title",
-          description: "new description",
-          view_lists:  expectedListRequestData,
-          admin_lists: expectedListRequestData
+          title:         "new title",
+          description:   "new description",
+          view_lists:    expectedListRequestData,
+          admin_lists:   expectedListRequestData,
+          edx_course_id: "edx-course-id"
         }
 
         if (isNew) {
@@ -215,6 +219,50 @@ describe("CollectionFormDialog", () => {
           sinon.assert.notCalled(historyPushStub)
         }
         assert.isTrue(store.getState().collectionUi.isNew)
+      })
+
+      it("does not send edx course id in the API request if isEdxCourseAdmin=false", async () => {
+        const wrapper = await renderComponent({
+          isEdxCourseAdmin: false,
+          history:          {
+            push: sandbox.stub()
+          }
+        })
+
+        store.dispatch(setAdminChoice(PERM_CHOICE_NONE))
+        store.dispatch(setViewChoice(PERM_CHOICE_NONE))
+        store.dispatch(setCollectionDesc("new description"))
+        store.dispatch(setCollectionTitle("new title"))
+
+        sandbox.stub(api, "getCollections").returns(Promise.resolve({}))
+        let apiStub, expectedActionTypes
+        if (isNew) {
+          apiStub = sandbox
+            .stub(api, "createCollection")
+            .returns(Promise.resolve(collection))
+          expectedActionTypes = [
+            actions.collectionsList.post.requestType,
+            actions.collectionsList.post.successType
+          ]
+        } else {
+          apiStub = sandbox
+            .stub(api, "updateCollection")
+            .returns(Promise.resolve(collection))
+          expectedActionTypes = [
+            actions.collections.patch.requestType,
+            actions.collections.patch.successType
+          ]
+        }
+
+        await listenForActions(expectedActionTypes, () => {
+          // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
+          wrapper.find("Dialog").prop("onAccept")()
+        })
+
+        const payloadArg = isNew
+          ? apiStub.firstCall.args[0]
+          : apiStub.firstCall.args[1]
+        assert.doesNotHaveAnyKeys(payloadArg, "edx_course_id")
       })
 
       it("adds toast messages", async () => {

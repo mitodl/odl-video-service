@@ -43,7 +43,7 @@ export class VideoDetailPage extends React.Component<*, void> {
     commonUi: CommonUiState,
     videoUi: VideoUiState,
     showDialog: Function,
-    editable: boolean
+    isAdmin: boolean
   }
 
   videoPlayerRef: Object
@@ -124,7 +124,7 @@ export class VideoDetailPage extends React.Component<*, void> {
   }
 
   render() {
-    const { video, commonUi, editable, showDialog } = this.props
+    const { video, commonUi, isAdmin, showDialog } = this.props
     if (!video) {
       return null
     }
@@ -163,7 +163,7 @@ export class VideoDetailPage extends React.Component<*, void> {
                     >
                       Share
                     </Button>
-                    {editable && (
+                    {isAdmin && (
                       <span>
                         <Button
                           className="edit mdc-button--raised"
@@ -206,7 +206,7 @@ export class VideoDetailPage extends React.Component<*, void> {
                 <VideoSubtitleCard
                   id="subtitleCard"
                   video={video}
-                  isAdmin={editable}
+                  isAdmin={isAdmin}
                   uploadVideoSubtitle={this.setUploadSubtitle}
                   deleteVideoSubtitle={this.showDeleteSubtitlesDialog}
                 />

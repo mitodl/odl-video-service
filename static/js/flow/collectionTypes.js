@@ -8,12 +8,14 @@ export type CollectionListItem = {
   description:        ?string,
   view_lists:         Array<string>,
   admin_lists:        Array<string>,
-  video_count:        number
+  video_count:        number,
+  edx_course_id:      ?string
 };
 
 export type Collection = CollectionListItem & {
-  videos:             Array<Video>,
-  is_admin:           boolean
+  videos:              Array<Video>,
+  is_admin:            boolean,
+  is_edx_course_admin: boolean,
 };
 
 export type CollectionList = Array<CollectionListItem>;
@@ -26,12 +28,14 @@ export type CollectionFormState = {
   viewLists: ?string,
   adminChoice: string,
   adminLists: ?string,
+  edxCourseId: ?string,
 };
 
 export type CollectionValidation = {
   title?:  string,
   view_lists?: string,
-  admin_lists?: string
+  admin_lists?: string,
+  edx_course_id?: string
 }
 
 export type CollectionUiState = {

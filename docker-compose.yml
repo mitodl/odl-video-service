@@ -33,7 +33,7 @@ services:
       NODE_ENV: 'development'
       PORT: 8087
       COVERAGE_DIR: htmlcov
-      DATABASE_URL: postgres://postgres@db:5432/postgres
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres@db:5432/postgres}
       ODL_VIDEO_USE_WEBPACK_DEV_SERVER: 'True'
       ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
       ODL_VIDEO_DB_DISABLE_SSL: 'True'

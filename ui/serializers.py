@@ -243,7 +243,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         """Custom field to indicate whether or not the requesting user is an admin"""
         if self.context.get('request'):
             return ui_permissions.has_admin_permission(obj, self.context['request'])
-        return None
+        return False
 
     def validate_view_lists(self, value):
         """
@@ -280,6 +280,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             'video_count',
             'view_lists',
             'admin_lists',
+            'edx_course_id',
             'is_admin',
         )
         read_only_fields = (
@@ -336,6 +337,7 @@ class CollectionListSerializer(serializers.ModelSerializer):
             'view_lists',
             'admin_lists',
             'video_count',
+            'edx_course_id',
         )
         read_only_fields = (
             'key',

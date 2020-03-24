@@ -34,6 +34,7 @@ from rest_framework.views import APIView
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
 from techtv2ovs.models import TechTVVideo
+from ui.constants import EDX_ADMIN_GROUP
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
@@ -62,6 +63,11 @@ def default_js_settings(request):
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
         "user": request.user.username if request.user.is_authenticated else None,
         "email": request.user.email if request.user.is_authenticated else None,
+        "is_app_admin": (
+            (request.user.is_superuser or request.user.is_staff)
+            if request.user.is_authenticated
+            else False
+        ),
         "support_email_address": settings.EMAIL_SUPPORT,
         "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "FEATURES": {
@@ -106,7 +112,10 @@ class CollectionReactView(TemplateView):
         context = super().get_context_data(**kwargs)
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
-            'editable': ui_permissions.is_staff_or_superuser(self.request.user),
+            'is_edx_course_admin': (
+                self.request.user.is_authenticated and
+                self.request.user.groups.filter(name=EDX_ADMIN_GROUP).exists()
+            ),
             'dropbox_key': settings.DROPBOX_KEY
         })
         return context
@@ -138,7 +147,7 @@ class VideoDetail(TemplateView):
         context["js_settings_json"] = json.dumps({
             **default_js_settings(self.request),
             'videoKey': video.key.hex,
-            'editable': ui_permissions.has_admin_permission(video.collection, self.request),
+            'is_video_admin': ui_permissions.has_admin_permission(video.collection, self.request),
             'dropbox_key': settings.DROPBOX_KEY
         })
         return context
@@ -240,10 +249,6 @@ class HelpPageView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         js_settings = default_js_settings(self.request)
-        if not self.request.user.is_anonymous:
-            has_admin = Collection.objects.all_admin(self.request.user).exists()
-            is_staff_or_superuser = ui_permissions.is_staff_or_superuser(self.request.user)
-            js_settings["editable"] = has_admin or is_staff_or_superuser
         context["js_settings_json"] = json.dumps(js_settings)
         return context
 
@@ -255,10 +260,6 @@ class TermsOfServicePageView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         js_settings = default_js_settings(self.request)
-        if not self.request.user.is_anonymous:
-            has_admin = Collection.objects.all_admin(self.request.user).exists()
-            is_staff_or_superuser = ui_permissions.is_staff_or_superuser(self.request.user)
-            js_settings["editable"] = has_admin or is_staff_or_superuser
         context["js_settings_json"] = json.dumps(js_settings)
         return context
 

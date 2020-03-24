@@ -42,6 +42,7 @@ class CollectionFactory(DjangoModelFactory):
     description = FAKE.text()
     owner = SubFactory(UserFactory)
     schedule_retranscode = False
+    edx_course_id = Sequence(lambda n: "course-v1:fake+course+%d" % n)
 
     class Meta:
         model = models.Collection

@@ -13,7 +13,8 @@ export const withDialogs = R.curry(
     class WithDialog extends React.Component<*, void> {
       props: {
         dispatch: Dispatch,
-        commonUi: CommonUiState
+        commonUi: CommonUiState,
+        dialogProps?: Object
       }
 
       showDialog = (dialogName: string) => {
@@ -28,6 +29,8 @@ export const withDialogs = R.curry(
 
       render() {
         const { commonUi } = this.props
+        const dialogProps = this.props.dialogProps || {}
+
         const renderedDialogs = dialogs.map(dialogConfig =>
           React.createElement(
             dialogConfig.getComponent
@@ -39,6 +42,7 @@ export const withDialogs = R.curry(
                 commonUi.dialogVisibility &&
                 !!commonUi.dialogVisibility[dialogConfig.name],
               hideDialog: this.hideDialog.bind(this, dialogConfig.name),
+              ...(dialogProps[dialogConfig.name] || {}),
               ...this.props
             }
           )

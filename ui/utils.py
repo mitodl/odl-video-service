@@ -87,7 +87,7 @@ def query_moira_lists(user):
         user (django.contrib.auth.User): the Django user.
 
     Returns:
-        list_names(list): A list of names of moira lists which contain the user as a member.
+        List[str]: A list of names of moira lists which contain the user as a member.
     """
     moira_user = get_moira_user(user)
     moira = get_moira_client()
@@ -111,13 +111,13 @@ def user_moira_lists(user):
         user (django.contrib.auth.User): the Django user.
 
     Returns:
-        list_names(set): An set containing all known lists the user belongs to,
+        Set[str]: An set containing all known lists the user belongs to,
             including ancestors of nested lists.
     """
     if user.is_anonymous:
-        return []
-    list_names = cache.get(MOIRA_CACHE_KEY.format(user_id=user.id), None)
-    if list_names is None:
+        return set()
+    list_names = cache.get(MOIRA_CACHE_KEY.format(user_id=user.id)) or set()
+    if not list_names:
         list_names = set(query_moira_lists(user))
         cache.set(
             MOIRA_CACHE_KEY.format(user_id=user.id),
@@ -125,6 +125,24 @@ def user_moira_lists(user):
             settings.MOIRA_CACHE_TIMEOUT
         )
     return list_names
+
+
+def list_members(list_name):
+    """
+    Get a set of all moira users against given list name
+
+    Args:
+        list_name (str): name of list.
+
+    Returns:
+        list_users(list): A list of users
+    """
+    moira = get_moira_client()
+    try:
+        list_users = moira.list_members(list_name)
+        return list_users
+    except Exception as exc:  # pylint: disable=broad-except
+        raise MoiraException('Something went wrong with getting moira-users for %s' % list_name) from exc
 
 
 def has_common_lists(user, list_names):
@@ -361,24 +379,6 @@ def generate_mock_video_analytics_data(n=24, seed=42):
         'channels': sorted(list(channels)),
         'views_at_times': views_at_times,
     }
-
-
-def list_members(list_name):
-    """
-    Get a set of all moira users against given list name
-
-    Args:
-        list_name (str): name of list.
-
-    Returns:
-        list_users(list): A list of users
-    """
-    moira = get_moira_client()
-    try:
-        list_users = moira.list_members(list_name)
-        return list_users
-    except Exception as exc:  # pylint: disable=broad-except
-        raise MoiraException('Something went wrong with getting moira-users for %s' % list_name) from exc
 
 
 def multi_urljoin(url_base, *url_parts, add_trailing_slash=False):

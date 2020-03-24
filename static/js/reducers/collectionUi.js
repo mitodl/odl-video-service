@@ -9,6 +9,7 @@ import {
   SET_VIEW_LISTS,
   SET_ADMIN_CHOICE,
   SET_ADMIN_LISTS,
+  SET_EDX_COURSE_ID,
   SET_SELECTED_VIDEO_KEY,
   SET_IS_NEW,
   CLEAR_COLLECTION_FORM,
@@ -26,7 +27,8 @@ export const INITIAL_COLLECTION_FORM_STATE = {
   viewChoice:  PERM_CHOICE_NONE,
   viewLists:   null,
   adminChoice: PERM_CHOICE_NONE,
-  adminLists:  null
+  adminLists:  null,
+  edxCourseId: ""
 }
 
 export const INITIAL_UI_STATE = {
@@ -73,6 +75,8 @@ const reducer = (
     return updateCollectionForm(state, "adminChoice", action.payload)
   case SET_ADMIN_LISTS:
     return updateCollectionForm(state, "adminLists", action.payload)
+  case SET_EDX_COURSE_ID:
+    return updateCollectionForm(state, "edxCourseId", action.payload)
   case SET_SELECTED_VIDEO_KEY:
     return { ...state, selectedVideoKey: action.payload }
   case SET_IS_NEW:

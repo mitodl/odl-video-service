@@ -37,7 +37,6 @@ ALLOWED_HOSTS = ['*']
 
 SECURE_SSL_REDIRECT = get_bool('ODL_VIDEO_SECURE_SSL_REDIRECT', True)
 
-
 WEBPACK_LOADER = {
     'DEFAULT': {
         'CACHE': not DEBUG,
@@ -159,7 +158,7 @@ else:
     DEFAULT_DATABASE_CONFIG['OPTIONS'] = {'sslmode': 'require'}
 
 DATABASES = {
-    'default': DEFAULT_DATABASE_CONFIG
+    'default': DEFAULT_DATABASE_CONFIG,
 }
 
 # the full URL of the current application is mandatory
