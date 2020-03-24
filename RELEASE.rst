@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.49.1
+--------------
+
+- add youtube tos and google privacy policy links (#845)
+- Collection of security updates in 1 PR (#831)
+- Removed 'public' option for videos in front end
+- Enabled edX course ID editing for collections
+
 Version 0.49.0 (Released March 24, 2020)
 --------------
 
