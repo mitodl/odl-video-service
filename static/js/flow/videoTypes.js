@@ -46,12 +46,20 @@ export type Video = {
   videosubtitle_set:      Array<VideoSubtitle>,
   status:                 string,
   view_lists:             Array<string>,
-  collection_view_lists:   Array<string>,
+  collection_view_lists:  Array<string>,
   is_public:              boolean,
   is_private:             boolean,
   sources:                Array<VideoSource>,
-  youtube_id:            ?string,
-  cloudfront_url:          string
+  youtube_id:             ?string,
+  cloudfront_url:         string
+};
+
+export type VideoUpdatePayload = {
+  title: string,
+  description: string,
+  view_lists?: Array<string>,
+  is_private?: boolean,
+  is_public?: boolean,
 };
 
 export type VideoFormState = {
@@ -77,7 +85,7 @@ export type VideoSubtitleState = {
 export type VideoValidation = {
   title?:  string,
   view_lists?: string,
-}
+};
 
 export type VideoUiState = {
   editVideoForm: VideoFormState,

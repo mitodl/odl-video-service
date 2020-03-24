@@ -15,7 +15,6 @@ import { getVideoWithKey } from "../../lib/collection"
 import {
   PERM_CHOICE_NONE,
   PERM_CHOICE_LISTS,
-  PERM_CHOICE_PUBLIC,
   PERM_CHOICE_COLLECTION,
   PERM_CHOICE_OVERRIDE
 } from "../../lib/dialog"
@@ -54,8 +53,6 @@ class EditVideoFormDialog extends React.Component<*, void> {
   determineViewChoice(video: Video) {
     if (video.is_private) {
       return PERM_CHOICE_NONE
-    } else if (video.is_public) {
-      return PERM_CHOICE_PUBLIC
     } else if (video.view_lists.length > 0) {
       return PERM_CHOICE_LISTS
     } else {
@@ -145,24 +142,23 @@ class EditVideoFormDialog extends React.Component<*, void> {
 
     const overridePerms = editVideoForm.overrideChoice === PERM_CHOICE_OVERRIDE
 
-    const patchData = {
+    let patchData = {
       title:       editVideoForm.title,
       description: editVideoForm.description
     }
 
     if (SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS) {
-      _.assign(patchData, {
+      patchData = {
+        ...patchData,
         view_lists: overridePerms
           ? calculateListPermissionValue(
             editVideoForm.viewChoice,
             editVideoForm.viewLists
           )
           : [],
-        is_public:
-          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_PUBLIC,
         is_private:
           overridePerms && editVideoForm.viewChoice === PERM_CHOICE_NONE
-      })
+      }
     }
 
     try {
@@ -259,19 +255,6 @@ class EditVideoFormDialog extends React.Component<*, void> {
               validationMessage={errors ? errors.view_lists : ""}
             />
           </Radio>
-          <Radio
-            id="view-public"
-            label="Public - Subtitles are required for this option"
-            radioGroupName="video-view-perms"
-            value={PERM_CHOICE_PUBLIC}
-            selectedValue={editVideoForm.viewChoice}
-            onChange={this.handleVideoViewPermClick}
-            className="wideLabel"
-            // $FlowFixMe
-            disabled={
-              defaultPerms || (video && video.videosubtitle_set.length === 0)
-            }
-          />
         </section>
       </section>
     )

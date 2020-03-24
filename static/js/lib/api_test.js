@@ -84,7 +84,8 @@ describe("api", () => {
     fetchStub.returns(Promise.resolve(video))
 
     const payload = {
-      title: "new title"
+      title:       "new title",
+      description: "new description"
     }
     const result = await updateVideo(video.key, payload)
     sinon.assert.calledWith(fetchStub, `/api/v0/videos/${video.key}/`, {
