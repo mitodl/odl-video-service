@@ -467,18 +467,17 @@ def test_login_next(mock_user_moira_lists, logged_in_apiclient, user_admin_list_
     client = logged_in_apiclient[0]
     mock_user_moira_lists.return_value = {user_admin_list_data.moira_list.name}
     video_url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
-    response = client.get('/login/?next={}'.format(video_url), follow=True)
+    response = client.get(f"/login/?next={video_url}/%3Fstart%3D20", follow=True)
     final_url, status_code = response.redirect_chain[-1]
-    assert video_url == final_url
+    assert final_url == f"{video_url}/?start=20"
     assert status_code == 302
 
 
-def test_login_nonext(mock_user_moira_lists, logged_in_apiclient, user_admin_list_data):
+def test_login_nonext(mock_user_moira_lists, logged_in_apiclient):
     """
     Tests that the login page redirects to the collections page if authenticated
     """
     client = logged_in_apiclient[0]
-    mock_user_moira_lists = {user_admin_list_data.moira_list.name}
     response = client.get('/login', follow=True)
     final_url, status_code = response.redirect_chain[-1]
     assert final_url == '/collections/'
@@ -527,11 +526,11 @@ def test_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_d
     client, _ = logged_in_apiclient
     client.logout()
     url = reverse('video-detail', kwargs={'video_key': user_admin_list_data.video.hexkey})
-    response = client.get(url, follow=True)
+    response = client.get(f"{url}?start=35", follow=True)
     last_url, status_code = response.redirect_chain[-1]
     assert settings.LOGIN_URL in last_url
     assert status_code == 302
-    assert '?next=/videos/{}'.format(user_admin_list_data.video.hexkey) in last_url
+    assert f"?next={url}%3Fstart%3D35" in last_url
 
 
 def test_public_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_data):

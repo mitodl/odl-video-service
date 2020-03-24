@@ -93,7 +93,7 @@ def conditional_response(view, video=None, **kwargs):
         if view.request.user.is_authenticated:
             raise PermissionDenied
         else:
-            return redirect_to_login(view.request.path)
+            return redirect_to_login(view.request.get_full_path())
     context = view.get_context_data(video, **kwargs)
     return view.render_to_response(context)
 
