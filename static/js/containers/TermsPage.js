@@ -87,6 +87,22 @@ class TermsPage extends React.Component<*, void> {
                     odl-video-support@mit.edu
                   </a>.
                 </li>
+                <li>
+                  <span className="terms-strong">
+                    Public videos are hosted on YouTube.
+                  </span>
+                  When you upload a video for public viewing, outside of MIT, we
+                  may upload it to YouTube in additoin to this site. In this
+                  case, you must accept{" "}
+                  <a
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://www.youtube.com/t/terms"
+                  >
+                    YouTube's Terms of Service
+                  </a>{" "}
+                  as well.
+                </li>
               </ul>
               <h3 className="terms-subheading">User Obligation</h3>
               <div className="terms-div">
@@ -97,6 +113,16 @@ class TermsPage extends React.Component<*, void> {
                 member. As part of the registration process, you will be asked
                 to ACCEPT these Terms of Use. On doing so, you will be deemed to
                 have consented to and you will be bound by these Terms of Use.
+                If you are uploading videos for public viewing, you must also
+                accept the{" "}
+                <a
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href="https://www.youtube.com/t/terms"
+                >
+                  {" "}
+                  YouTube Terms of Service
+                </a>.
               </div>
               <div className="terms-div">
                 Visitors to the site merely wishing to view content do not need
@@ -203,6 +229,16 @@ class TermsPage extends React.Component<*, void> {
                 required by law. Otherwise, this information will be kept
                 private and confidential and will not be passed on to third
                 parties without your express consent.
+              </div>
+              <div className="terms-div">
+                Public videos may be streamed from YouTube and are subject to{" "}
+                <a
+                  href="https://policies.google.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Google's privacy policy
+                </a>.
               </div>
               <h3 className="terms-subheading">
                 Hold Harmless And Indemnification
