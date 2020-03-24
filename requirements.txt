@@ -78,7 +78,7 @@ pbr==3.1.1                # via stevedore
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
 prompt-toolkit==3.0.4     # via ipython
-psutil==5.4.3             # via bonobo
+psutil==5.6.6             # via -r requirements.in, bonobo
 psycopg2==2.7.3.2         # via -r requirements.in, django-server-status
 ptyprocess==0.6.0         # via pexpect
 pyasn1-modules==0.1.5     # via google-auth, google-auth-httplib2, oauth2client
