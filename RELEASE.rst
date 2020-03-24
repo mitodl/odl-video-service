@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.49.0 (Released March 24, 2020)
+--------------
+
+- Sharing a youtube video link with start time (#832)
+- Get tox to run and pass (#839)
+- Fix the play button and video controls for  Youtube videos (#822)
+- Fix heroku build (#829)
+- Update postgres & python, fix Moira list api URL pattern (#825)
+
 Version 0.48.0 (Released January 29, 2020)
 --------------
 
