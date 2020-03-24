@@ -89,10 +89,10 @@ class TermsPage extends React.Component<*, void> {
                 </li>
                 <li>
                   <span className="terms-strong">
-                    Public videos are hosted on YouTube.
+                    Public videos are hosted on YouTube.{" "}
                   </span>
                   When you upload a video for public viewing, outside of MIT, we
-                  may upload it to YouTube in additoin to this site. In this
+                  may upload it to YouTube in addition to this site. In this
                   case, you must accept{" "}
                   <a
                     target="_blank"
