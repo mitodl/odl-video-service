@@ -395,6 +395,12 @@ class VideoPlayer extends React.Component<*, void> {
       this.checkYouTube()
     }
     this.updateSubtitles()
+
+    this.player.hotkeys({
+      volumeStep: 0.1,
+      seekStep: 5,
+      enableModifiersForNumbers: false
+    })
   }
 
   componentDidUpdate() {
