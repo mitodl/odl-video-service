@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.49.1
+Version 0.49.1 (Released March 25, 2020)
 --------------
 
 - add youtube tos and google privacy policy links (#845)
