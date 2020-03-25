@@ -37,7 +37,7 @@ const makeConfigForVideo = (
   techOrder:   useYouTube ? ["youtube", "html5"] : ["html5"],
   html5:       {
     nativeTextTracks: false,
-    hls: {
+    hls:              {
       overrideNative: true
     }
   },

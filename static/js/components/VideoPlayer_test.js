@@ -108,7 +108,7 @@ describe("VideoPlayer", () => {
           techOrder:   ["html5"],
           html5:       {
             nativeTextTracks: false,
-            hls: {
+            hls:              {
               overrideNative: true
             }
           },
