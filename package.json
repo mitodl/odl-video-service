@@ -102,6 +102,7 @@
     "video.js": "^7.6.6",
     "videojs-contrib-quality-levels": "^2.0.4",
     "videojs-hls-quality-selector": "^1.1.0",
+    "videojs-hotkeys": "^0.2.25",
     "videojs-youtube": "^2.6.0",
     "webpack": "^3.2.0",
     "webpack-bundle-tracker": "^0.2.0",

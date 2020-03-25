@@ -22,6 +22,7 @@ global.videojs = _videojs
 require("videojs-contrib-quality-levels")
 require("videojs-hls-quality-selector")
 require("videojs-youtube")
+require("videojs-hotkeys")
 
 // export here to allow mocking of videojs function
 export const videojs = _videojs
