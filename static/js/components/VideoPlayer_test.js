@@ -66,6 +66,7 @@ describe("VideoPlayer", () => {
       fluid:         sandbox.stub().returns(playerStub),
       width:         sandbox.stub(),
       height:        sandbox.stub(),
+      hotkeys:        sandbox.stub(),
       currentTime:   () => 630.5,
       duration:      () => 2400.0,
       videoWidth:    () => 640,
@@ -81,6 +82,7 @@ describe("VideoPlayer", () => {
       addRemoteTextTrack: function(track) {
         this.tracks.push({ src: track.src, addEventListener: function() {} })
       }
+
     }
     containerStub = { style: {}, parentElement: { style: {} } }
     nodeStub = { style: {} }
