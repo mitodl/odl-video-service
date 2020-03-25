@@ -269,7 +269,7 @@ class VideoPlayer extends React.Component<*, void> {
   switchVideoSource = () => {
     const { video } = this.props
     if (video.sources.length > 0) {
-      this.player.reset().src(video.sources)
+      this.player.src(video.sources)
     }
   }
 

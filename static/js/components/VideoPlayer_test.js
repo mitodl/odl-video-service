@@ -465,7 +465,7 @@ describe("VideoPlayer", () => {
     })
   })
   ;[[makeVideoSource()], []].forEach(function(sources) {
-    it(`player.reset() ${expect(
+    it(`player.src() ${expect(
       sources.length > 0
     )} be called if video has ${sources.length} sources`, async () => {
       video.sources = sources
@@ -473,7 +473,7 @@ describe("VideoPlayer", () => {
       const wrapper = await renderPlayer().find("VideoPlayer")
       wrapper.instance().switchVideoSource()
       sinon.assert.callCount(
-        wrapper.instance().player.reset,
+        wrapper.instance().player.src,
         sources.length > 0 ? 1 : 0
       )
     })
