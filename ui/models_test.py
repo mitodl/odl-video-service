@@ -367,7 +367,7 @@ def test_video_ordering():
 @pytest.mark.parametrize("encoding,edx_course_id,expected", [
     (EncodingNames.HLS, "course-v1", True),
     (EncodingNames.HLS, None, False),
-    ("other-encoding", "course-v1", False),
+    (EncodingNames.ORIGINAL, "course-v1", False),
 ])
 @factory.django.mute_signals(signals.post_save)
 def test_video_file_can_add_to_edx(encoding, edx_course_id, expected):
@@ -376,4 +376,4 @@ def test_video_file_can_add_to_edx(encoding, edx_course_id, expected):
         encoding=encoding,
         video__collection__edx_course_id=edx_course_id
     )
-    assert video_files.can_add_to_edx() is expected
+    assert video_files.can_add_to_edx is expected

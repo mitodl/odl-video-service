@@ -82,7 +82,7 @@ def test_youtube_sync_redo_failed(mocker, video_with_file, status):
     assert mock_delete.call_count == expected_count
 
 
-def test_edx_video_file_signal(mocker, edx_settings):
+def test_edx_video_file_signal(mocker):
     """When a VideoFile is created with the right properties, a task to add the video to edX should be called"""
     patched_edx_task = mocker.patch('ui.signals.ovs_tasks.post_hls_to_edx.delay')
     video_files = VideoFileFactory.create_batch(

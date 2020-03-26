@@ -11,7 +11,7 @@ from cloudsync.tasks import remove_youtube_video, remove_youtube_caption
 from ui.constants import StreamSource, YouTubeStatus
 from ui.models import VideoFile, VideoThumbnail, VideoSubtitle, Video, YouTubeVideo, Collection
 from ui import tasks as ovs_tasks
-from ui.utils import delete_moira_cache, edx_settings_configured
+from ui.utils import delete_moira_cache
 
 
 @receiver(pre_delete, sender=VideoFile)
@@ -79,10 +79,9 @@ def update_video_youtube(sender, **kwargs):
 @receiver(post_save, sender=VideoFile)
 def add_hls_to_edx(sender, instance, created, **kwargs):
     """
-    If an HLS VideoFile was created and the correct edX settings are present, kick off a task
-    to add this video to edX via API.
+    If an HLS VideoFile was created and is of the right type, kick off a task to add this video to edX via API.
     """
-    if created and edx_settings_configured() and instance.can_add_to_edx():
+    if created and instance.can_add_to_edx:
         ovs_tasks.post_hls_to_edx.delay(instance.id)
 
 

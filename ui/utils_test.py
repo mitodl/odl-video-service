@@ -6,6 +6,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from zeep.exceptions import Fault
 
+from odl_video.test_utils import MockResponse
 from ui import factories
 from ui.exceptions import MoiraException, GoogleAnalyticsException
 from ui.utils import (
@@ -21,8 +22,10 @@ from ui.utils import (
     parse_google_analytics_response,
     generate_mock_video_analytics_data,
     list_members,
-    edx_settings_configured,
     multi_urljoin,
+    partition,
+    partition_to_lists,
+    get_error_response_summary_dict,
 )
 
 # pylint: disable=unused-argument,too-many-arguments
@@ -395,22 +398,6 @@ def test_list_members_exception(mock_moira_client):
         list_members(factories.UserFactory())
 
 
-def test_edx_settings_configured(settings):
-    """edx_settings_configured should return True if edX settings values are set"""
-    settings_names = [
-        "EDX_BASE_URL",
-        "EDX_HLS_API_URL",
-        "EDX_ACCESS_TOKEN",
-        "EDX_API_KEY"
-    ]
-    for settings_name in settings_names:
-        setattr(settings, settings_name, "abc")
-    assert edx_settings_configured() is True
-    for settings_name in settings_names:
-        setattr(settings, settings_name, None)
-    assert edx_settings_configured() is False
-
-
 @pytest.mark.parametrize("url_base,url_parts,trailing,expected", [
     ("http://mit.edu", ["a", "b"], False, "http://mit.edu/a/b"),
     ("http://mit.edu", ["a", "b/c/d", "e"], False, "http://mit.edu/a/b/c/d/e"),
@@ -421,3 +408,62 @@ def test_edx_settings_configured(settings):
 def test_multi_urljoin(url_base, url_parts, trailing, expected):
     """multi_urljoin should construct a valid URL from a base string and an arbitrary number of URL parts"""
     assert multi_urljoin(url_base, *url_parts, add_trailing_slash=trailing) == expected
+
+
+def test_partition():
+    """
+    Assert that partition splits an iterable into two iterables according to a condition
+    """
+    nums = [1, 2, 1, 3, 1, 4, 0, None, None]
+    not_ones, ones = partition(nums, lambda n: n == 1)
+    assert list(not_ones) == [2, 3, 4, 0, None, None]
+    assert list(ones) == [1, 1, 1]
+    # The default predicate is the standard Python bool() function
+    falsey, truthy = partition(nums)
+    assert list(falsey) == [0, None, None]
+    assert list(truthy) == [1, 2, 1, 3, 1, 4]
+
+
+def test_partition_to_lists():
+    """
+    Assert that partition_to_lists splits an iterable into two lists according to a condition
+    """
+    nums = [1, 2, 1, 3, 1, 4, 0, None, None]
+    not_ones, ones = partition_to_lists(nums, lambda n: n == 1)
+    assert not_ones == [2, 3, 4, 0, None, None]
+    assert ones == [1, 1, 1]
+    # The default predicate is the standard Python bool() function
+    falsey, truthy = partition_to_lists(nums)
+    assert falsey == [0, None, None]
+    assert truthy == [1, 2, 1, 3, 1, 4]
+
+
+@pytest.mark.parametrize(
+    "content,content_type,exp_summary_content",
+    [
+        ['{"bad": "response"}', "application/json", '{"bad": "response"}'],
+        ["plain text", "text/plain", "plain text"],
+        [
+            "<div>HTML content</div>",
+            "text/html; charset=utf-8",
+            "(HTML body ignored)"
+        ],
+    ],
+)
+def test_get_error_response_summary(
+        content, content_type, exp_summary_content
+):
+    """
+    get_error_response_summary should provide a summary of an error HTTP response object with the correct bits of
+    information depending on the type of content.
+    """
+    status_code = 400
+    url = "http://example.com"
+    mock_response = MockResponse(
+        status_code=status_code, content=content, content_type=content_type, url=url
+    )
+    assert get_error_response_summary_dict(mock_response) == {
+        "content": exp_summary_content,
+        "url": url,
+        "code": status_code,
+    }
