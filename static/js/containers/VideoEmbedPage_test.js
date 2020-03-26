@@ -21,7 +21,37 @@ describe("VideoEmbedPage", () => {
     store = configureTestStore(rootReducer)
     video = makeVideo()
     // silence videojs warnings
-    sandbox.stub(libVideo, "videojs")
+
+    const playerStub = {
+      el_: {
+        style:         {},
+        dispatchEvent: sandbox.stub()
+      },
+      tracks:        [],
+      on:            sandbox.stub(),
+      tech_:         {},
+      reset:         sandbox.stub().returns(playerStub),
+      src:           sandbox.stub().returns(playerStub),
+      fluid:         sandbox.stub().returns(playerStub),
+      width:         sandbox.stub(),
+      height:        sandbox.stub(),
+      hotkeys:        sandbox.stub(),
+      duration:      () => 2400.0,
+      videoWidth:    () => 640,
+      videoHeight:   () => 360,
+      currentWidth:  () => 1280,
+      textTracks:    function() {
+        return this.tracks
+      },
+      removeRemoteTextTrack: function(track) {
+        this.tracks.splice(this.tracks.indexOf(track), 1)
+      },
+      addRemoteTextTrack: function(track) {
+        this.tracks.push({ src: track.src, addEventListener: function() {} })
+      }
+
+    }
+    sandbox.stub(libVideo, "videojs").returns(playerStub)
   })
 
   afterEach(() => {
