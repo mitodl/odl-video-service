@@ -397,8 +397,8 @@ class VideoPlayer extends React.Component<*, void> {
     this.updateSubtitles()
 
     this.player.hotkeys({
-      volumeStep: 0.1,
-      seekStep: 5,
+      volumeStep:                0.1,
+      seekStep:                  5,
       enableModifiersForNumbers: false
     })
   }

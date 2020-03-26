@@ -42,8 +42,25 @@ describe("VideoDetailPage", () => {
       .stub(api, "getCollections")
       .returns(Promise.resolve({ results: [] }))
 
-    // silence videojs warnings
-    sandbox.stub(libVideo, "videojs")
+    const playerStub = {
+      el_: {
+        style:         {},
+        dispatchEvent: sandbox.stub()
+      },
+      tracks:     [],
+      width:      sandbox.stub(),
+      hotkeys:    sandbox.stub(),
+      textTracks: function() {
+        return this.tracks
+      },
+      removeRemoteTextTrack: function(track) {
+        this.tracks.splice(this.tracks.indexOf(track), 1)
+      },
+      addRemoteTextTrack: function(track) {
+        this.tracks.push({ src: track.src, addEventListener: function() {} })
+      }
+    }
+    sandbox.stub(libVideo, "videojs").returns(playerStub)
   })
 
   afterEach(() => {
