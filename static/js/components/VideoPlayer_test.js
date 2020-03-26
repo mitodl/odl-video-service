@@ -107,7 +107,10 @@ describe("VideoPlayer", () => {
           playsinline: true,
           techOrder:   ["html5"],
           html5:       {
-            nativeTextTracks: false
+            nativeTextTracks: false,
+            hls:              {
+              overrideNative: true
+            }
           },
           playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
           plugins:       {
