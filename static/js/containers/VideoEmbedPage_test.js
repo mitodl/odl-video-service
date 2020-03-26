@@ -14,7 +14,7 @@ import { makeVideo } from "../factories/video"
 import type { Video } from "../flow/videoTypes"
 
 describe("VideoEmbedPage", () => {
-  let sandbox, store, video: Video
+  let sandbox, store, playerStub, video: Video
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create()
@@ -22,7 +22,7 @@ describe("VideoEmbedPage", () => {
     video = makeVideo()
     // silence videojs warnings
 
-    const playerStub = {
+    playerStub = {
       el_: {
         style:         {},
         dispatchEvent: sandbox.stub()
