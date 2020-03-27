@@ -54,7 +54,7 @@ class VideoTask(Task):
             except (IndexError, KeyError,) as exc:
                 # Log the error and continue, using self.request.id instead
                 # The worst that will happen is that progress bar won't work.
-                log.error("Could not find task_id in chain: %s", str(exc))
+                log.exception("Could not find task_id in chain")
                 return
         return self.request.id
 
@@ -70,7 +70,7 @@ def stream_to_s3(self, video_id):
     try:
         video = Video.objects.get(id=video_id)
     except (Video.DoesNotExist, Video.MultipleObjectsReturned):
-        log.error("Exception retrieving video with id %d", video_id)
+        log.error("Exception retrieving video", video_id=video_id)
         raise
     video.update_status(VideoStatus.UPLOADING)
 
@@ -211,11 +211,12 @@ def update_video_statuses(self):
             refresh_status(video)
         except EncodeJob.DoesNotExist:
             # Log the exception but don't raise it so other videos can be checked.
-            log.exception("No EncodeJob object exists for video id %d", video.id)
+            log.exception("No EncodeJob object exists", video_id=video.id)
             video.update_status(error)
         except ClientError as exc:
             # Log the exception but don't raise it so other videos can be checked.
-            log.exception("AWS error when refreshing job status for video %d: %s", video.id, exc.response)
+            log.exception("AWS error when refreshing job status",
+                          video_id=video.id, response=exc.response)
             video.update_status(error)
 
 
@@ -236,7 +237,9 @@ def upload_youtube_videos():
             youtube_video.status = response['status']['uploadStatus']
             youtube_video.save()
         except HttpError as error:
-            log.exception("HttpError uploading video %s to Youtube: %s", video.hexkey, youtube_video.status)
+            log.exception("HttpError uploading video to Youtube",
+                          video_hexkey=video.hexkey,
+                          status=youtube_video.status)
             if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
                 break
         except:  # pylint: disable=bare-except
@@ -257,7 +260,8 @@ def remove_youtube_video(self, video_id):
         YouTubeApi().delete_video(video_id)
     except HttpError as error:
         if error.resp.status == 404:
-            log.info('Not found on Youtube, already deleted? %s', video_id)
+            log.info('Not found on Youtube, already deleted?',
+                     video_id=video_id)
         else:
             raise
 
@@ -302,7 +306,9 @@ def update_youtube_statuses(self):
             # Video might be a dupe or deleted, mark it as failed and continue to next one.
             yt_video.status = YouTubeStatus.FAILED
             yt_video.save()
-            log.exception('Status of YoutubeVideo %s for Video %s not found.', yt_video.id, yt_video.video_id)
+            log.exception('Status of YoutubeVideo not found.',
+                          youtubevideo_id=yt_video.id,
+                          youtubevideo_video_id=yt_video.video_id)
         except HttpError as error:
             if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
                 # Don't raise the error, task will try on next run until daily quota is reset
@@ -322,10 +328,12 @@ def monitor_watch_bucket(self):
             process_watch_file(key.key)
         except ClientError as exc:
             # Log ClientError, raise later so other files can be processed.
-            log.exception("AWS error when ingesting file from watch bucket %s: %s", key.key, exc.response)
+            log.exception("AWS error when ingesting file from watch bucket",
+                          s3_object_key=key.key, response=exc.response)
         except Exception as exc:  # pylint: disable=broad-except
             # Log any other exception, raise later so other files can be processed.
-            log.exception("AWS error when ingesting file from watch bucket %s: %s", key.key, str(exc))
+            log.exception("AWS error when ingesting file from watch bucket",
+                          s3_object_key=key.key)
 
 
 def parse_content_metadata(response):
@@ -367,7 +375,7 @@ def sort_transcoded_m3u8_files(self):
             try:
                 file = s3_client.get_object(Bucket=settings.VIDEO_S3_TRANSCODE_BUCKET, Key=s3_filename)
             except ClientError:
-                log.error("Object not found on s3 for video id=%d", video.id)
+                log.error("Object not found on s3", video_id=video.id)
                 continue
 
             file_content = file['Body'].read().decode()
@@ -377,7 +385,8 @@ def sort_transcoded_m3u8_files(self):
             header = lines.pop(0)
 
             if str.strip(header) != "#EXTM3U":
-                log.error("Unexpected format for transcoded video file for video id=%d", video.id)
+                log.error("Unexpected format for transcoded video file",
+                          video_id=video.id)
                 continue
 
             try:
@@ -388,7 +397,8 @@ def sort_transcoded_m3u8_files(self):
                     ]
                 )
             except AttributeError:
-                log.error("Unexpected format for transcoded video file for video id=%d", video.id)
+                log.error("Unexpected format for transcoded video file",
+                          video_id=video.id)
                 continue
 
             lines.insert(0, header)

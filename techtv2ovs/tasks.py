@@ -71,7 +71,9 @@ def process_videofiles(self, ttv_id, files, run_copy):
                 }
             )
         except Exception as exc:
-            log.exception("Error processing video file %s for ttv video %s", s3file['Key'], ttv_video.id)
+            log.exception("Error processing video file for ttv video",
+                          s3_object_key=s3file['Key'],
+                          ttv_video_id=ttv_video.id)
             ttv_video.status = ImportStatus.ERROR
             ttv_video.videofile_status = ImportStatus.ERROR
             ttv_video.errors += '{}\n\n'.format(str(exc))

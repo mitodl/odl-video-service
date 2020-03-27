@@ -61,13 +61,14 @@ def send_notification_email(video):
         video (ui.models.Video): a video object
     """
     if video.status not in STATUS_TO_NOTIFICATION.keys():
-        log.error("Tried to send notifications for video %s with status %s", video.hexkey, video.status)
+        log.error("Unexpected video status",
+                  video_hexkey=video.hexkey, video_status=video.status)
         return
     # get the list of emails
     recipients = _get_recipients_for_video(video)
     if not recipients:
-        log.error("No email was sent because there were no "
-                  "valid recipient emails for video %s with status %s", video.hexkey, video.status)
+        log.error("No email sent, no valid recipient emails",
+                  video_hexkey=video.hexkey, video_status=video.status)
         return
     try:
         email_template = NotificationEmail.objects.get(notification_type=STATUS_TO_NOTIFICATION[video.status])
@@ -97,7 +98,8 @@ def send_notification_email(video):
         if video.status in STATUSES_THAT_TRIGGER_DEBUG_EMAIL:
             _send_debug_email(video=video, email_kwargs=email_kwargs)
     except:  # pylint: disable=bare-except
-        log.exception('Impossible to send notification for video %s with status %s', video.hexkey, video.status)
+        log.exception('Impossible to send notification',
+                      video_hexkey=video.hexkey, video_status=video.status)
 
 
 @shared_task(bind=True)
@@ -110,7 +112,8 @@ def async_send_notification_email(self, video_id):  # pylint: disable=unused-arg
     try:
         video = Video.objects.get(id=video_id)
     except Video.DoesNotExist:
-        log.error('tried to send notification for non existing video with id=%s', video_id)
+        log.error('Can not send notification for nonexistant video',
+                  video_id=video_id)
         return
     send_notification_email(video)
 
