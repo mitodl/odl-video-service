@@ -72,7 +72,7 @@ def default_js_settings(request):
         "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": settings.ENABLE_VIDEO_PERMISSIONS,
-            "VIDEOJS_ANNOTATIONS": settings.FEATURES.get("VIDEOJS_ANNOTATIONS"),
+            "VIDEOJS_ANNOTATIONS": settings.FEATURES.get("VIDEOJS_ANNOTATIONS", False),
         }
     }
 

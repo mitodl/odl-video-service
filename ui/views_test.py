@@ -137,7 +137,8 @@ def test_video_detail(logged_in_client, settings):
         "support_email_address": settings.EMAIL_SUPPORT,
         "dropbox_key": "foo_dropbox_key",
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": False
+            "ENABLE_VIDEO_PERMISSIONS": False,
+            "VIDEOJS_ANNOTATIONS": False,
         },
         'is_video_admin': True
     }
@@ -175,7 +176,8 @@ def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-o
         "is_app_admin": False,
         "support_email_address": settings.EMAIL_SUPPORT,
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": False
+            "ENABLE_VIDEO_PERMISSIONS": False,
+            "VIDEOJS_ANNOTATIONS": False,
         }
     }
 
@@ -780,7 +782,8 @@ def test_page_not_found(url, logged_in_apiclient, settings):
         'user': user.username,
         'is_app_admin': False,
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": False
+            "ENABLE_VIDEO_PERMISSIONS": False,
+            "VIDEOJS_ANNOTATIONS": False,
         }
     }
 
