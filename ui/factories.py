@@ -34,6 +34,18 @@ class UserFactory(DjangoModelFactory):
         model = get_user_model()
 
 
+class EdxEndpointFactory(DjangoModelFactory):
+    """Factory for EdxEndpoint model"""
+    name = Faker("slug")
+    base_url = Faker("url")
+    access_token = Faker("sha1")
+    hls_api_path = Faker("uri_path")
+    is_global_default = False
+
+    class Meta:
+        model = models.EdxEndpoint
+
+
 class CollectionFactory(DjangoModelFactory):
     """
     Factory for a Collection
@@ -62,6 +74,15 @@ class CollectionFactory(DjangoModelFactory):
             # An object was created and view_lists were passed in
             for moira_list in extracted:
                 self.view_lists.add(moira_list)
+
+
+class CollectionEdxEndpointFactory(DjangoModelFactory):
+    """Factory for CollectionEdxEndpoint model"""
+    collection = SubFactory(CollectionFactory)
+    edx_endpoint = SubFactory(EdxEndpointFactory)
+
+    class Meta:
+        model = models.CollectionEdxEndpoint
 
 
 class VideoFactory(DjangoModelFactory):

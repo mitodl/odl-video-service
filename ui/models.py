@@ -7,17 +7,19 @@ from uuid import uuid4
 import boto3
 from celery import shared_task
 from django.contrib.contenttypes.fields import GenericRelation
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
 from pycountry import languages
 from dj_elastictranscoder.models import EncodeJob
 
+from odl_video.constants import DEFAULT_EDX_HLS_API_PATH
 from odl_video.models import TimestampedModel, TimestampedModelManager
 from mail import tasks
 from ui import utils
 from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.encodings import EncodingNames
-from ui.utils import get_bucket
+from ui.utils import get_bucket, multi_urljoin
 
 TRANSCODE_PREFIX = 'transcoded'
 
@@ -41,6 +43,20 @@ def delete_s3_objects(self, bucket_name, key, as_filter=False):  # pylint:disabl
             obj.delete()
 
 
+class ValidateOnSaveMixin(models.Model):
+    """Mixin that calls field/model validation methods before saving a model object"""
+
+    class Meta:
+        abstract = True
+
+    def save(
+            self, force_insert=False, force_update=False, **kwargs
+    ):  # pylint: disable=arguments-differ
+        if not (force_insert or force_update):
+            self.full_clean()
+        super().save(force_insert=force_insert, force_update=force_update, **kwargs)
+
+
 class MoiraList(TimestampedModel):
     """
     Model for Moira
@@ -52,6 +68,45 @@ class MoiraList(TimestampedModel):
 
     def __repr__(self):
         return '<MoiraList: {self.name!r}>'.format(self=self)
+
+
+class EdxEndpoint(ValidateOnSaveMixin):
+    """Model that represents an edX instance to which videos will be posted"""
+    name = models.CharField(max_length=20, unique=True, blank=False, null=False)
+    base_url = models.CharField(max_length=100, blank=False, null=False)
+    access_token = models.CharField(max_length=2048)
+    hls_api_path = models.CharField(max_length=100, default=DEFAULT_EDX_HLS_API_PATH)
+    is_global_default = models.BooleanField(default=False)
+    collections = models.ManyToManyField("Collection", through='CollectionEdxEndpoint')
+
+    @property
+    def full_api_url(self):
+        """Returns the full URL of the edX API endpoint for posting videos"""
+        return multi_urljoin(
+            self.base_url,
+            self.hls_api_path or DEFAULT_EDX_HLS_API_PATH,
+            add_trailing_slash=True
+        )
+
+    def clean(self):
+        if self.is_global_default is True:
+            existing_global_default_qset = EdxEndpoint.objects.filter(is_global_default=True)
+            if self.pk:
+                existing_global_default_qset = existing_global_default_qset.exclude(pk=self.pk)
+            if existing_global_default_qset.exists():
+                raise ValidationError({
+                    'is_global_default':
+                        'Only one EdxEndpoint should be set as the global default (is_global_default=True)'
+                })
+
+    def __str__(self):
+        return "{} - {}".format(self.name, self.base_url)
+
+    def __repr__(self):
+        return (
+            '<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}", '
+            'is_global_default={self.is_global_default}>'.format(self=self)
+        )
 
 
 class CollectionManager(TimestampedModelManager):
@@ -117,6 +172,7 @@ class Collection(TimestampedModel):
         max_length=10
     )
     edx_course_id = models.CharField(null=True, blank=True, max_length=150)
+    edx_endpoints = models.ManyToManyField("EdxEndpoint", through='CollectionEdxEndpoint')
     schedule_retranscode = models.BooleanField(default=False)
 
     objects = CollectionManager()
@@ -143,6 +199,12 @@ class Collection(TimestampedModel):
         Returns a queryset of all the objects filtered by owner
         """
         return cls.objects.filter(owner=owner)
+
+
+class CollectionEdxEndpoint(models.Model):
+    """Model for a mapping table between Collections and EdxEndpoints"""
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
+    edx_endpoint = models.ForeignKey(EdxEndpoint, on_delete=models.CASCADE)
 
 
 class VideoManager(TimestampedModelManager):
@@ -458,6 +520,7 @@ class VideoFile(VideoS3):
         else:
             super().delete_from_s3()
 
+    @property
     def can_add_to_edx(self):
         """
         Returns True if this VideoFile can be added to edX via API

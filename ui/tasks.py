@@ -17,5 +17,8 @@ def post_hls_to_edx(video_file_id):
     if not video_file:
         log.error("VideoFile with id %s doesn't exist", video_file_id)
         return
-    resp = ovs_api.post_hls_to_edx(video_file)
-    return resp.status_code
+    response_dict = ovs_api.post_hls_to_edx(video_file)
+    return [
+        (endpoint.full_api_url, getattr(resp, "status_code", None))
+        for endpoint, resp in response_dict.items()
+    ]

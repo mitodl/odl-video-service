@@ -1,5 +1,6 @@
 """Test suite utilities"""
 import abc
+import json
 
 
 def any_instance_of(*cls):
@@ -22,3 +23,26 @@ def any_instance_of(*cls):
     for c in cls:
         AnyInstanceOf.register(c)
     return AnyInstanceOf()
+
+
+class MockResponse:
+    """
+    Mock requests.Response
+    """
+
+    def __init__(
+            self, content, status_code=200, content_type="application/json", url=None
+    ):
+        if isinstance(content, (dict, list)):
+            self.content = json.dumps(content)
+        else:
+            self.content = str(content)
+        self.text = self.content
+        self.status_code = status_code
+        self.headers = {"Content-Type": content_type}
+        if url:
+            self.url = url
+
+    def json(self):
+        """ Return json content"""
+        return json.loads(self.content)

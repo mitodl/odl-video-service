@@ -22,6 +22,19 @@ class AdminListsInline(admin.TabularInline):
     verbose_name_plural = "Admin moira lists"
 
 
+class EdxEndpointAdmin(admin.ModelAdmin):
+    """EdxEndpoint admin"""
+    model = models.EdxEndpoint
+    list_display = ('id', 'name', 'base_url', 'is_global_default')
+    ordering = ['-is_global_default', 'id']
+
+
+class CollectionEdxEndpointInlineAdmin(admin.StackedInline):
+    """CollectionEdxEndpoint inline admin"""
+    model = models.CollectionEdxEndpoint
+    extra = 1
+
+
 class CollectionAdmin(admin.ModelAdmin):
     """Customized collection admin model"""
     date_hierarchy = 'created_at'
@@ -37,6 +50,27 @@ class CollectionAdmin(admin.ModelAdmin):
         'owner__email',
         'edx_course_id',
     )
+    inlines = [
+        CollectionEdxEndpointInlineAdmin
+    ]
+
+
+class CollectionEdxEndpointAdmin(admin.ModelAdmin):
+    """CollectionEdxEndpoint admin"""
+    model = models.CollectionEdxEndpoint
+    list_display = ('id', 'get_edx_endpoint_str', 'get_collection_title')
+
+    def get_edx_endpoint_str(self, obj):  # pylint:disable=missing-docstring
+        return "{} - {}".format(obj.edx_endpoint.name, obj.edx_endpoint.base_url)
+
+    get_edx_endpoint_str.short_description = "EdX Endpoint"
+    get_edx_endpoint_str.admin_order_field = "edx_endpoint__name"
+
+    def get_collection_title(self, obj):  # pylint:disable=missing-docstring
+        return obj.collection.title
+
+    get_collection_title.short_description = "Collection"
+    get_collection_title.admin_order_field = "collection__title"
 
 
 class VideoFilesInline(admin.TabularInline):
@@ -160,7 +194,9 @@ class VideoThumbnailAdmin(admin.ModelAdmin):
     search_fields = ('bucket_name', 'video__title',)
 
 
+admin.site.register(models.EdxEndpoint, EdxEndpointAdmin)
 admin.site.register(models.Collection, CollectionAdmin)
+admin.site.register(models.CollectionEdxEndpoint, CollectionEdxEndpointAdmin)
 admin.site.register(models.MoiraList, MoiraListAdmin)
 admin.site.register(models.Video, VideoAdmin)
 admin.site.register(models.VideoFile, VideoFileAdmin)

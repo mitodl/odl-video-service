@@ -8,11 +8,12 @@ import requests
 from celery import chain
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 from cloudsync import tasks
 from ui import models
-from ui.utils import multi_urljoin, edx_settings_configured
+from ui.utils import get_error_response_summary_dict
 
 log = logging.getLogger(__name__)
 
@@ -59,47 +60,60 @@ def process_dropbox_data(dropbox_upload_data):
 
 def post_hls_to_edx(video_file):
     """
-    Posts an HLS video to edX via API using attributes from a video file
+    Posts an HLS video to all configured edX endpoints via API using attributes from a video file
 
     Args:
         video_file (ui.models.VideoFile): An HLS-encoded video file
 
     Returns:
-        requests.models.Response: The API response
+        Dict[EdxEndpoint, requests.models.Response]: Each configured edX endpoint mapped to the response from the
+            request to post the video file to that endpoint.
     """
-    assert edx_settings_configured(), "edX settings need to be configured"
-    assert video_file.can_add_to_edx(), "This video file is not of the correct type"
-    hls_api_url = multi_urljoin(
-        settings.EDX_BASE_URL,
-        settings.EDX_HLS_API_URL,
-        add_trailing_slash=True
+    assert video_file.can_add_to_edx, "This video file cannot be added to edX"
+
+    edx_endpoints = models.EdxEndpoint.objects.filter(
+        Q(collections__id__in=[video_file.video.collection_id]) | Q(is_global_default=True)
     )
-    resp = requests.post(
-        hls_api_url,
-        json={
-            "client_video_id": video_file.video.title,
-            "edx_video_id": str(uuid4()),
-            "encoded_videos": [
-                {
-                    "url": video_file.cloudfront_url,
-                    "file_size": 0,
-                    "bitrate": 0,
-                    "profile": "hls"
+    if not edx_endpoints.exists():
+        log.error("Trying to post HLS to edX endpoints, but no endpoints exist (%d, %s)", video_file.pk, video_file)
+
+    responses = {}
+    for edx_endpoint in edx_endpoints:
+        try:
+            resp = requests.post(
+                edx_endpoint.full_api_url,
+                json={
+                    "client_video_id": video_file.video.title,
+                    "edx_video_id": str(uuid4()),
+                    "encoded_videos": [
+                        {
+                            "url": video_file.cloudfront_url,
+                            "file_size": 0,
+                            "bitrate": 0,
+                            "profile": "hls"
+                        }
+                    ],
+                    "courses": [{video_file.video.collection.edx_course_id: None}],
+                    "status": "file_complete",
+                    "duration": 0.0,
+                },
+                headers={
+                    "Authorization": "Bearer {}".format(edx_endpoint.access_token),
                 }
-            ],
-            "courses": [{video_file.video.collection.edx_course_id: None}],
-            "status": "file_complete",
-            "duration": 0.0,
-        },
-        headers={
-            "Authorization": "Bearer {}".format(settings.EDX_ACCESS_TOKEN),
-        }
-    )
-    if not resp.ok:
-        log.error(
-            "Request to add HLS video to edX failed - VideoFile: %d, API response: [%d] %s",
-            video_file.pk,
-            resp.status_code,
-            resp.content.decode("utf-8"),
-        )
-    return resp
+            )
+            resp.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            if exc is not None and exc.response is not None:
+                response_summary_dict = get_error_response_summary_dict(exc.response)
+            elif isinstance(exc, requests.exceptions.ConnectionError):
+                response_summary_dict = {"exception": "ConnectionError (No server response)"}
+            else:
+                response_summary_dict = {"exception": str(exc)}
+            log.error(
+                "Request to add HLS video to edX failed - VideoFile: %d, API response: %s",
+                video_file.pk,
+                response_summary_dict,
+            )
+            resp = exc.response
+        responses[edx_endpoint] = resp
+    return responses

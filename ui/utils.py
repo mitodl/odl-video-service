@@ -1,4 +1,5 @@
 """Utils for ui app"""
+import itertools
 import logging
 import os
 from collections import namedtuple
@@ -401,10 +402,49 @@ def multi_urljoin(url_base, *url_parts, add_trailing_slash=False):
     return urljoin(url_base, url_path)
 
 
-def edx_settings_configured():
-    """Returns True if all the necessary settings for adding a video to edX via API are properly configured"""
-    return all((
-        settings.EDX_BASE_URL,
-        settings.EDX_HLS_API_URL,
-        settings.EDX_ACCESS_TOKEN,
-    ))
+def partition(items, predicate=bool):
+    """
+    Partitions an iterable into two different iterables - the first does not match the given condition, and the second
+    does match the given condition.
+
+    Args:
+        items (iterable): An iterable of items to partition
+        predicate (function): A function that takes each item and returns True or False
+    Returns:
+        tuple of iterables: An iterable of non-matching items, paired with an iterable of matching items
+    """
+    a, b = itertools.tee((predicate(item), item) for item in items)
+    return (item for pred, item in a if not pred), (item for pred, item in b if pred)
+
+
+def partition_to_lists(items, predicate=bool):
+    """
+    Partitions an iterable into two different lists - the first does not match the given condition, and the second
+    does match the given condition.
+
+    Args:
+        items (iterable): An iterable of items to partition
+        predicate (function): A function that takes each item and returns True or False
+    Returns:
+        tuple of lists: A list of non-matching items, paired with a list of matching items
+    """
+    a, b = partition(items, predicate=predicate)
+    return list(a), list(b)
+
+
+def get_error_response_summary_dict(response):
+    """
+    Returns a summary of an error raised from a failed HTTP request using the requests library
+
+    Args:
+        response (requests.models.Response): The requests library response object
+
+    Returns:
+        dict: A summary of the error response
+    """
+    # If the response is an HTML document, include the URL in the summary but not the raw HTML
+    if "text/html" in response.headers.get("Content-Type", ""):
+        summary_dict = {"content": "(HTML body ignored)"}
+    else:
+        summary_dict = {"content": response.text}
+    return {"code": response.status_code, "url": response.url, **summary_dict}

@@ -6,6 +6,7 @@ from uuid import uuid4
 from types import SimpleNamespace
 import pytest
 import factory
+import requests
 
 from django.core.exceptions import ValidationError
 from django.http import Http404
@@ -18,16 +19,18 @@ from ui import (
 from ui.factories import (
     CollectionFactory,
     VideoFileFactory,
+    CollectionEdxEndpointFactory,
+    EdxEndpointFactory,
 )
 from ui.encodings import EncodingNames
-from odl_video.test_utils import any_instance_of
+from odl_video.test_utils import any_instance_of, MockResponse
 
 pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture()
 @factory.django.mute_signals(signals.post_save)
-def edx_api_scenario(edx_settings):
+def edx_api_scenario():
     """Fixture that provides a VideoFile with the correct properties to post to edX"""
     course_id = "course-v1:abc"
     video_file = VideoFileFactory.create(
@@ -35,14 +38,16 @@ def edx_api_scenario(edx_settings):
         video__title="My Video",
         video__collection__edx_course_id=course_id
     )
+    default_endpoint = EdxEndpointFactory.create(is_global_default=True)
+    collection_edx_endpoint = CollectionEdxEndpointFactory(
+        collection=video_file.video.collection,
+        edx_endpoint__is_global_default=False
+    )
     return SimpleNamespace(
         video_file=video_file,
-        edx_settings=edx_settings,
         course_id=course_id,
-        expected_url="{}/{}/".format(
-            edx_settings["EDX_BASE_URL"],
-            edx_settings["EDX_HLS_API_URL"]
-        )
+        default_endpoint=default_endpoint,
+        collection_endpoint=collection_edx_endpoint.edx_endpoint,
     )
 
 
@@ -122,42 +127,95 @@ def test_process_dropbox_data_wrong_collection():
 
 
 def test_post_hls_to_edx(reqmocker, edx_api_scenario):
-    """post_hls_to_edx should make a POST request to an edX API endpoint"""
-    expected_headers = {
-        "Authorization": "Bearer {}".format(edx_api_scenario.edx_settings["EDX_ACCESS_TOKEN"]),
-    }
-    mocked_post = reqmocker.register_uri(
-        "POST",
-        edx_api_scenario.expected_url,
-        headers=expected_headers,
-        status_code=200
-    )
+    """
+    post_hls_to_edx should make POST requests to all edX API endpoints that are configured
+    for a video file's collection
+    """
+    mocked_posts = [
+        reqmocker.register_uri(
+            "POST",
+            edx_endpoint.full_api_url,
+            headers={
+                "Authorization": "Bearer {}".format(edx_endpoint.access_token),
+            },
+            status_code=200
+        )
+        for edx_endpoint in [edx_api_scenario.default_endpoint, edx_api_scenario.collection_endpoint]
+    ]
     api.post_hls_to_edx(edx_api_scenario.video_file)
-    assert mocked_post.call_count == 1
-    request_body = mocked_post.last_request.json()
-    assert request_body == {
-        "client_video_id": edx_api_scenario.video_file.video.title,
-        "edx_video_id": any_instance_of(str),
-        "encoded_videos": [
-            {
-                "url": edx_api_scenario.video_file.cloudfront_url,
-                "file_size": 0,
-                "bitrate": 0,
-                "profile": "hls"
-            }
-        ],
-        "courses": [{edx_api_scenario.course_id: None}],
-        "status": "file_complete",
-        "duration": 0.0,
-    }
-    assert len(request_body["edx_video_id"]) == 36
+    for mocked_post in mocked_posts:
+        assert mocked_post.call_count == 1
+        request_body = mocked_post.last_request.json()
+        assert request_body == {
+            "client_video_id": edx_api_scenario.video_file.video.title,
+            "edx_video_id": any_instance_of(str),
+            "encoded_videos": [
+                {
+                    "url": edx_api_scenario.video_file.cloudfront_url,
+                    "file_size": 0,
+                    "bitrate": 0,
+                    "profile": "hls"
+                }
+            ],
+            "courses": [{edx_api_scenario.course_id: None}],
+            "status": "file_complete",
+            "duration": 0.0,
+        }
+        assert len(request_body["edx_video_id"]) == 36
+
+
+@factory.django.mute_signals(signals.post_save)
+def test_post_hls_to_edx_no_endpoints(mocker):
+    """post_hls_to_edx should log an error if no endpoints are configured for some video's collection"""
+    patched_log_error = mocker.patch("ui.api.log.error")
+    video_file = VideoFileFactory.create(
+        encoding=EncodingNames.HLS,
+        video__collection__edx_course_id="some-course-id",
+    )
+    responses = api.post_hls_to_edx(video_file)
+    patched_log_error.assert_called_once()
+    assert responses == {}
+
+
+def test_post_hls_to_edx_wrong_type(mocker):
+    """
+    post_hls_to_edx should raise an exception if the given video file is not
+    configured correctly for posting to edX
+    """
+    video_file = VideoFileFactory.create(encoding=EncodingNames.ORIGINAL)
+    with pytest.raises(Exception):
+        api.post_hls_to_edx(video_file)
 
 
 def test_post_hls_to_edx_bad_resp(mocker, reqmocker, edx_api_scenario):
-    """post_hls_to_edx should log an error if the edX API POST request does not return a 2** status code"""
+    """post_hls_to_edx should log an error if an edX API POST request does not return a 2** status code"""
     patched_log_error = mocker.patch("ui.api.log.error")
-    mocked_post = reqmocker.register_uri("POST", edx_api_scenario.expected_url, status_code=400)
-    api.post_hls_to_edx(edx_api_scenario.video_file)
-    assert mocked_post.call_count == 1
+    default_endpoint = edx_api_scenario.default_endpoint
+    collection_endpoint = edx_api_scenario.collection_endpoint
+    mocked_posts = [
+        reqmocker.register_uri(
+            "POST",
+            default_endpoint.full_api_url,
+            exc=requests.exceptions.RequestException(
+                response=MockResponse(
+                    content='{"error": "text"}'.encode("utf-8"),
+                    status_code=400,
+                    url=default_endpoint.full_api_url,
+                )
+            )
+        ),
+        reqmocker.register_uri(
+            "POST",
+            collection_endpoint.full_api_url,
+            headers={
+                "Authorization": "Bearer {}".format(collection_endpoint.access_token),
+            },
+            status_code=200
+        )
+    ]
+    responses = api.post_hls_to_edx(edx_api_scenario.video_file)
+    for mocked_post in mocked_posts:
+        assert mocked_post.call_count == 1
     patched_log_error.assert_called_once()
     assert "Request to add HLS video to edX failed" in patched_log_error.call_args[0][0]
+    assert len(responses) == 2
