@@ -42,7 +42,6 @@ describe("VideoDetailPage", () => {
       .stub(api, "getCollections")
       .returns(Promise.resolve({ results: [] }))
 
-    // silence videojs warnings
     sandbox.stub(libVideo, "videojs")
   })
 

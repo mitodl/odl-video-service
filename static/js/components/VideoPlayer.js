@@ -369,6 +369,11 @@ class VideoPlayer extends React.Component<*, void> {
       makeConfigForVideo(video, useYouTube, embed, startTime),
       function onPlayerReady() {
         this.enableTouchActivity()
+        this.hotkeys({
+          volumeStep:                0.1,
+          seekStep:                  5,
+          enableModifiersForNumbers: false
+        })
         if (video.multiangle) {
           setCustomDimension(SETTINGS.ga_dimension_camera, selectedCorner)
           this.on("loadeddata", cropVideo)

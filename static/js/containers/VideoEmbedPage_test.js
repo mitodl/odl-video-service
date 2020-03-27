@@ -21,6 +21,7 @@ describe("VideoEmbedPage", () => {
     store = configureTestStore(rootReducer)
     video = makeVideo()
     // silence videojs warnings
+
     sandbox.stub(libVideo, "videojs")
   })
 
