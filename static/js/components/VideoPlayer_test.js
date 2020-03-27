@@ -66,7 +66,6 @@ describe("VideoPlayer", () => {
       fluid:         sandbox.stub().returns(playerStub),
       width:         sandbox.stub(),
       height:        sandbox.stub(),
-      hotkeys:       sandbox.stub(),
       currentTime:   () => 630.5,
       duration:      () => 2400.0,
       videoWidth:    () => 640,
@@ -144,10 +143,17 @@ describe("VideoPlayer", () => {
         })
         const enableTouchActivityStub = sandbox.stub()
         const onStub = sandbox.stub()
+        const hotkeysStub = sandbox.stub()
         args[2].call({
           enableTouchActivity: enableTouchActivityStub,
           on:                  onStub,
-          tech_:               { hls: {} }
+          tech_:               { hls: {} },
+          hotkeys:             hotkeysStub
+        })
+        sinon.assert.calledWith(hotkeysStub, {
+          volumeStep:                0.1,
+          seekStep:                  5,
+          enableModifiersForNumbers: false
         })
         sinon.assert.calledWith(enableTouchActivityStub)
         sinon.assert.calledWith(onStub)
