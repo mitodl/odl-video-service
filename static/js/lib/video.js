@@ -23,6 +23,12 @@ require("videojs-contrib-quality-levels")
 require("videojs-hls-quality-selector")
 require("videojs-youtube")
 
+if (SETTINGS.FEATURES.VIDEOJS_ANNOTATIONS) {
+  const AnnotationComments = require("@contently/videojs-annotation-comments")
+  _videojs.registerPlugin("annotationComments", AnnotationComments(_videojs))
+  require("@contently/videojs-annotation-comments/build/css/annotations.css")
+}
+
 // export here to allow mocking of videojs function
 export const videojs = _videojs
 require("@silvermine/videojs-quality-selector")(videojs)

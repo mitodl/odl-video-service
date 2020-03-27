@@ -71,7 +71,8 @@ def default_js_settings(request):
         "support_email_address": settings.EMAIL_SUPPORT,
         "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "FEATURES": {
-            "ENABLE_VIDEO_PERMISSIONS": settings.ENABLE_VIDEO_PERMISSIONS
+            "ENABLE_VIDEO_PERMISSIONS": settings.ENABLE_VIDEO_PERMISSIONS,
+            "VIDEOJS_ANNOTATIONS": settings.FEATURES.get("VIDEOJS_ANNOTATIONS"),
         }
     }
 

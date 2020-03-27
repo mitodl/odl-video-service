@@ -11,7 +11,8 @@
     {% load raven %}
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" type="text/css" href="{% static 'hijack/hijack-styles.css' %}" />
-    <script type="text/javascript">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+      <script type="text/javascript">
       var SETTINGS = {{ js_settings_json|safe }};
     </script>
     {% block prebundle %}
