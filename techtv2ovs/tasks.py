@@ -1,5 +1,4 @@
 """ Celery tasks for techtv2ovs """
-import logging
 from os.path import splitext
 
 import boto3
@@ -9,6 +8,7 @@ from django.conf import settings
 from techtv2ovs.constants import TTV_VIDEO_BUCKET, ImportStatus
 from techtv2ovs.models import TechTVVideo
 from ui.models import VideoFile
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +71,9 @@ def process_videofiles(self, ttv_id, files, run_copy):
                 }
             )
         except Exception as exc:
-            log.exception("Error processing video file %s for ttv video %s", s3file['Key'], ttv_video.id)
+            log.exception("Error processing video file for ttv video",
+                          s3_object_key=s3file['Key'],
+                          ttv_video_id=ttv_video.id)
             ttv_video.status = ImportStatus.ERROR
             ttv_video.videofile_status = ImportStatus.ERROR
             ttv_video.errors += '{}\n\n'.format(str(exc))

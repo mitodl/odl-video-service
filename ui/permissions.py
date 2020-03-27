@@ -1,7 +1,6 @@
 """
 Permissions for ui app
 """
-import logging
 import uuid
 
 from django.contrib.auth import get_user_model
@@ -14,6 +13,7 @@ from rest_framework.permissions import (
 
 from ui.models import Collection
 from ui.utils import has_common_lists
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 

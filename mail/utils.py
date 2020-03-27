@@ -1,8 +1,8 @@
 """
 General bootcamp utility functions
 """
-import logging
 from itertools import islice
+from odl_video import logging
 
 
 log = logging.getLogger(__name__)
