@@ -1,5 +1,5 @@
 """ Celery tasks for techtv2ovs """
-import logging
+from odl_video import logging
 from os.path import splitext
 
 import boto3

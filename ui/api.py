@@ -1,7 +1,7 @@
 """
 API methods
 """
-import logging
+from odl_video import logging
 from uuid import uuid4
 
 import requests

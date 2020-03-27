@@ -1,6 +1,6 @@
 """Utils for ui app"""
 import itertools
-import logging
+from odl_video import logging
 import os
 from collections import namedtuple
 from functools import lru_cache

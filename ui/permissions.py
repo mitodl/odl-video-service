@@ -1,7 +1,7 @@
 """
 Permissions for ui app
 """
-import logging
+from odl_video import logging
 import uuid
 
 from django.contrib.auth import get_user_model

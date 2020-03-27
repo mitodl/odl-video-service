@@ -2,7 +2,7 @@
 import http
 import re
 import time
-import logging
+from odl_video import logging
 from tempfile import NamedTemporaryFile
 
 import boto3

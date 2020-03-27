@@ -2,6 +2,7 @@
 Celery configuration
 """
 
+from odl_video import logging
 import os
 
 from celery import Celery

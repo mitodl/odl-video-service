@@ -3,7 +3,7 @@ from enum import (
     auto,
     Flag,
 )
-import logging
+from odl_video import logging
 
 from django.conf import settings
 

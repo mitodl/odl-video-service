@@ -1,7 +1,7 @@
 """
 Tasks for cloudsync app
 """
-import logging
+from odl_video import logging
 import os
 import re
 from urllib.parse import unquote

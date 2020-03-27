@@ -1,7 +1,7 @@
 """
 ui celery tasks
 """
-import logging
+from odl_video import logging
 
 from odl_video.celery import app
 from ui.models import VideoFile

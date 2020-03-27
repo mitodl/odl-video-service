@@ -1,5 +1,5 @@
 """APIs for coudsync app"""
-import logging
+from odl_video import logging
 import re
 from collections import namedtuple
 from datetime import datetime

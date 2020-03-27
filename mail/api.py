@@ -1,7 +1,7 @@
 """
 Provides functions for sending and retrieving data about in-app email
 """
-import logging
+from odl_video import logging
 import json
 
 import requests

@@ -1,5 +1,5 @@
 """Tasks for mail app"""
-import logging
+from odl_video import logging
 import textwrap
 from urllib.parse import urljoin
 
