@@ -399,6 +399,16 @@ class VideoPlayer extends React.Component<*, void> {
         }
       }
     )
+    if (SETTINGS.FEATURES.VIDEOJS_ANNOTATIONS) {
+      this.player.annotationComments({
+        annotationsObjects: [],
+        meta:               {
+          user_name: SETTINGS.user || null,
+          user_id:   SETTINGS.user || null
+        },
+        startInAnnotationMode: true
+      })
+    }
     if (useYouTube) {
       this.checkYouTube()
     }

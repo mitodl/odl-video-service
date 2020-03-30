@@ -24,6 +24,13 @@ require("videojs-hls-quality-selector")
 require("videojs-youtube")
 require("videojs-hotkeys")
 
+if (SETTINGS.FEATURES.VIDEOJS_ANNOTATIONS) {
+  global.$ = require("jquery")
+  const AnnotationComments = require("@contently/videojs-annotation-comments")
+  _videojs.registerPlugin("annotationComments", AnnotationComments(_videojs))
+  require("@contently/videojs-annotation-comments/build/css/annotations.css")
+}
+
 // export here to allow mocking of videojs function
 export const videojs = _videojs
 require("@silvermine/videojs-quality-selector")(videojs)
