@@ -243,7 +243,9 @@ def upload_youtube_videos():
             if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
                 break
         except:  # pylint: disable=bare-except
-            log.exception("Error uploading video %s to Youtube: %s", video.hexkey, youtube_video.status)
+            log.exception("Error uploading videoto Youtube",
+                          video_hexkey=video.hexkey,
+                          status=youtube_video.status)
         finally:
             # If anything went wrong with the upload, delete the YouTubeVideo object.
             # Another upload attempt will be made the next time the task is run.
