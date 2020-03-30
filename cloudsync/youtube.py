@@ -2,7 +2,6 @@
 import http
 import re
 import time
-from odl_video import logging
 from tempfile import NamedTemporaryFile
 
 import boto3
@@ -14,6 +13,7 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 from smart_open.s3 import SeekableBufferedInputBase
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 

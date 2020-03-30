@@ -1,5 +1,4 @@
 """ Celery tasks for techtv2ovs """
-from odl_video import logging
 from os.path import splitext
 
 import boto3
@@ -9,6 +8,7 @@ from django.conf import settings
 from techtv2ovs.constants import TTV_VIDEO_BUCKET, ImportStatus
 from techtv2ovs.models import TechTVVideo
 from ui.models import VideoFile
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 

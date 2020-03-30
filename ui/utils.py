@@ -1,6 +1,5 @@
 """Utils for ui app"""
 import itertools
-from odl_video import logging
 import os
 from collections import namedtuple
 from functools import lru_cache
@@ -18,6 +17,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from mit_moira import Moira
 
 from ui.exceptions import MoiraException, GoogleAnalyticsException
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 

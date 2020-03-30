@@ -1,5 +1,4 @@
 """APIs for coudsync app"""
-from odl_video import logging
 import re
 from collections import namedtuple
 from datetime import datetime
@@ -26,6 +25,7 @@ from ui.models import (
     delete_s3_objects
 )
 from ui.utils import get_et_preset, get_bucket, get_et_job
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 

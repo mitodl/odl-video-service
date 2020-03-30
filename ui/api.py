@@ -1,7 +1,6 @@
 """
 API methods
 """
-from odl_video import logging
 from uuid import uuid4
 
 import requests
@@ -14,6 +13,8 @@ from django.shortcuts import get_object_or_404
 from cloudsync import tasks
 from ui import models
 from ui.utils import get_error_response_summary_dict
+from odl_video import logging
+
 
 log = logging.getLogger(__name__)
 

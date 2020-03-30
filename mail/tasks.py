@@ -1,5 +1,4 @@
 """Tasks for mail app"""
-from odl_video import logging
 import textwrap
 from urllib.parse import urljoin
 
@@ -11,6 +10,7 @@ from mail import api
 from mail.models import NotificationEmail
 from ui.constants import VideoStatus
 from ui.utils import has_common_lists, get_moira_client
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 

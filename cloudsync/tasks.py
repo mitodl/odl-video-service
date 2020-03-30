@@ -1,7 +1,6 @@
 """
 Tasks for cloudsync app
 """
-from odl_video import logging
 import os
 import re
 from urllib.parse import unquote
@@ -22,6 +21,7 @@ from ui.models import Video, YouTubeVideo, VideoSubtitle, Collection
 from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.utils import get_bucket
 from ui.encodings import EncodingNames
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class VideoTask(Task):
         if self.request.chain:
             try:
                 return self.request.chain[0]['options']['task_id']
-            except (IndexError, KeyError,) as exc:
+            except (IndexError, KeyError,):
                 # Log the error and continue, using self.request.id instead
                 # The worst that will happen is that progress bar won't work.
                 log.exception("Could not find task_id in chain")

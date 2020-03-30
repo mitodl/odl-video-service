@@ -1,3 +1,4 @@
+"""Configure structured logging for our application"""
 import logging
 import structlog
 from odl_video import settings
@@ -33,5 +34,7 @@ structlog.configure(
     logger_factory=structlog.stdlib.LoggerFactory()
 )
 
+
 def getLogger(name):
-	return structlog.get_logger(name)
+    """Return a logger with the given name"""
+    return structlog.get_logger(name)
