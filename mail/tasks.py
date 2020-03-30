@@ -73,7 +73,8 @@ def send_notification_email(video):
     try:
         email_template = NotificationEmail.objects.get(notification_type=STATUS_TO_NOTIFICATION[video.status])
     except NotificationEmail.DoesNotExist:
-        log.error("No template found for error %s", STATUS_TO_NOTIFICATION[video.status])
+        log.error("No template found",
+                  status=STATUS_TO_NOTIFICATION[video.status])
         return
 
     try:
