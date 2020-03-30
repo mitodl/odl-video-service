@@ -54,7 +54,6 @@ from ui.utils import get_video_analytics, generate_mock_video_analytics_data, qu
 
 def default_js_settings(request):
     """Default JS settings for views"""
-    video_annotations_feature_flag = settings.FEATURES.get("VIDEOJS_ANNOTATIONS", False)
     return {
         "gaTrackingID": settings.GA_TRACKING_ID,
         "environment": settings.ENVIRONMENT,
@@ -71,10 +70,9 @@ def default_js_settings(request):
         ),
         "support_email_address": settings.EMAIL_SUPPORT,
         "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
-        "video_annotations": video_annotations_feature_flag,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": settings.ENABLE_VIDEO_PERMISSIONS,
-            "VIDEOJS_ANNOTATIONS": video_annotations_feature_flag,
+            "VIDEOJS_ANNOTATIONS": settings.FEATURES.get("VIDEOJS_ANNOTATIONS", False),
         }
     }
 

@@ -24,6 +24,7 @@ require("videojs-hls-quality-selector")
 require("videojs-youtube")
 
 if (SETTINGS.FEATURES.VIDEOJS_ANNOTATIONS) {
+  global.$ = require("jquery")
   const AnnotationComments = require("@contently/videojs-annotation-comments")
   _videojs.registerPlugin("annotationComments", AnnotationComments(_videojs))
   require("@contently/videojs-annotation-comments/build/css/annotations.css")
