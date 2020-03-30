@@ -7,7 +7,7 @@ from odl_video.celery import app
 from ui.models import VideoFile
 from ui import api as ovs_api
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 
 @app.task
