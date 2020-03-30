@@ -1,6 +1,6 @@
 import logging
 import structlog
-import settings
+from odl_video import settings
 
 
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL),
