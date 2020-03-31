@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.49.2
+Version 0.49.2 (Released March 31, 2020)
 --------------
 
 - Include paramters in login redirects (#850)
