@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.49.2 (Released March 31, 2020)
+--------------
+
+- Include paramters in login redirects (#850)
+- fix typos in terms of service (#851)
+- Hide private videos (#840)
+- Add uWSGI settings (#847)
+
 Version 0.49.1 (Released March 25, 2020)
 --------------
 
