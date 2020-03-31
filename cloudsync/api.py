@@ -318,7 +318,8 @@ def parse_lecture_video_filename(filename):
           r'.*\.\w')  # Rest of filename including extension (required)
     matches = re.search(rx, filename)
     if not matches or len(matches.groups()) != 5:
-        log.exception('No matches found', filename=filename, regex=rx)
+        log.error('No matches found',
+                  filename=filename, regex=rx, exc_info=True)
         prefix = settings.UNSORTED_COLLECTION
         session = ''
         recording_date_str = ''
@@ -389,8 +390,9 @@ def upload_subtitle_to_s3(caption_data, file_data):
         try:
             vt.delete_from_s3()
         except ClientError:
-            log.exception('Could not delete old subtitle from S3',
-                          s3_object_key=vt.s3_object_key)
+            log.error('Could not delete old subtitle from S3',
+                      s3_object_key=vt.s3_object_key,
+                      exc_info=True)
     vt.s3_object_key = s3
     vt.filename = filename
     vt.s3_object_key = s3_key

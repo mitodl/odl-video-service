@@ -99,8 +99,10 @@ def send_notification_email(video):
         if video.status in STATUSES_THAT_TRIGGER_DEBUG_EMAIL:
             _send_debug_email(video=video, email_kwargs=email_kwargs)
     except:  # pylint: disable=bare-except
-        log.exception('Impossible to send notification',
-                      video_hexkey=video.hexkey, video_status=video.status)
+        log.error('Impossible to send notification',
+                  video_hexkey=video.hexkey,
+                  video_status=video.status,
+                  exc_info=True)
 
 
 @shared_task(bind=True)

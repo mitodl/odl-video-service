@@ -54,7 +54,7 @@ class VideoTask(Task):
             except (IndexError, KeyError,):
                 # Log the error and continue, using self.request.id instead
                 # The worst that will happen is that progress bar won't work.
-                log.exception("Could not find task_id in chain")
+                log.error("Could not find task_id in chain", exc_info=True)
                 return
         return self.request.id
 
@@ -191,7 +191,7 @@ def schedule_retranscodes(self):
             ])
     except:  # pylint: disable=bare-except
         error = "schedule_retranscodes threw an error"
-        log.exception(error)
+        log.error(error, exc_info=True)
         return error
     raise self.replace(retranscode_tasks)
 
@@ -211,12 +211,16 @@ def update_video_statuses(self):
             refresh_status(video)
         except EncodeJob.DoesNotExist:
             # Log the exception but don't raise it so other videos can be checked.
-            log.exception("No EncodeJob object exists", video_id=video.id)
+            log.error("No EncodeJob object exists",
+                      video_id=video.id,
+                      exc_info=True)
             video.update_status(error)
         except ClientError as exc:
             # Log the exception but don't raise it so other videos can be checked.
-            log.exception("AWS error when refreshing job status",
-                          video_id=video.id, response=exc.response)
+            log.error("AWS error when refreshing job status",
+                      video_id=video.id,
+                      response=exc.response,
+                      exc_info=True)
             video.update_status(error)
 
 
@@ -237,15 +241,17 @@ def upload_youtube_videos():
             youtube_video.status = response['status']['uploadStatus']
             youtube_video.save()
         except HttpError as error:
-            log.exception("HttpError uploading video to Youtube",
-                          video_hexkey=video.hexkey,
-                          status=youtube_video.status)
+            log.error("HttpError uploading video to Youtube",
+                      video_hexkey=video.hexkey,
+                      status=youtube_video.status,
+                      exc_info=True)
             if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
                 break
         except:  # pylint: disable=bare-except
-            log.exception("Error uploading videoto Youtube",
-                          video_hexkey=video.hexkey,
-                          status=youtube_video.status)
+            log.error("Error uploading videoto Youtube",
+                      video_hexkey=video.hexkey,
+                      status=youtube_video.status,
+                      exc_info=True)
         finally:
             # If anything went wrong with the upload, delete the YouTubeVideo object.
             # Another upload attempt will be made the next time the task is run.
@@ -308,9 +314,10 @@ def update_youtube_statuses(self):
             # Video might be a dupe or deleted, mark it as failed and continue to next one.
             yt_video.status = YouTubeStatus.FAILED
             yt_video.save()
-            log.exception('Status of YoutubeVideo not found.',
-                          youtubevideo_id=yt_video.id,
-                          youtubevideo_video_id=yt_video.video_id)
+            log.error('Status of YoutubeVideo not found.',
+                      youtubevideo_id=yt_video.id,
+                      youtubevideo_video_id=yt_video.video_id,
+                      exc_info=True)
         except HttpError as error:
             if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
                 # Don't raise the error, task will try on next run until daily quota is reset
@@ -330,12 +337,15 @@ def monitor_watch_bucket(self):
             process_watch_file(key.key)
         except ClientError as exc:
             # Log ClientError, raise later so other files can be processed.
-            log.exception("AWS error when ingesting file from watch bucket",
-                          s3_object_key=key.key, response=exc.response)
+            log.error("AWS error when ingesting file from watch bucket",
+                      s3_object_key=key.key,
+                      response=exc.response,
+                      exc_info=True)
         except Exception as exc:  # pylint: disable=broad-except
             # Log any other exception, raise later so other files can be processed.
-            log.exception("AWS error when ingesting file from watch bucket",
-                          s3_object_key=key.key)
+            log.error("AWS error when ingesting file from watch bucket",
+                      s3_object_key=key.key,
+                      exc_info=True)
 
 
 def parse_content_metadata(response):

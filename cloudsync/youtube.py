@@ -62,7 +62,7 @@ def resumable_upload(request, max_retries=10):
         if error is not None:
             retry += 1
             if retry > max_retries:
-                log.exception('Final upload failure')
+                log.error('Final upload failure', exc_info=True)
                 raise YouTubeUploadException('Retried YouTube upload 10x, giving up') from error
             sleep_time = 2 ** retry
             time.sleep(sleep_time)
