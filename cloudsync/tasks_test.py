@@ -627,7 +627,7 @@ def test_schedule_retranscodes_error(mocker, mocked_celery):
     """
     Test that schedule_retranscodes logs an error if it occurs
     """
-    mock_error_log = mocker.patch("cloudsync.tasks.log.exception")
+    mock_error_log = mocker.patch("cloudsync.tasks.log.error")
     mocker.patch("cloudsync.tasks.retranscode_video.si", side_effect=ClientError)
     VideoFactory.create_batch(5, schedule_retranscode=True)
     schedule_retranscodes.delay()
