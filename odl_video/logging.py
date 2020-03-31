@@ -1,5 +1,6 @@
 """Configure structured logging for our application"""
 import logging
+from structlog_sentry import SentryJsonProcessor
 import structlog
 from odl_video import settings
 
@@ -22,6 +23,7 @@ structlog_processors_per_debug = {
         structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
         structlog.processors.StackInfoRenderer(),
+        SentryJsonProcessor(tag_keys='__all__'),
         structlog.dev.set_exc_info,
         structlog.processors.format_exc_info,
         structlog.processors.TimeStamper(),
