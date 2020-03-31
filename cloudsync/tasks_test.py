@@ -631,7 +631,8 @@ def test_schedule_retranscodes_error(mocker, mocked_celery):
     mocker.patch("cloudsync.tasks.retranscode_video.si", side_effect=ClientError)
     VideoFactory.create_batch(5, schedule_retranscode=True)
     schedule_retranscodes.delay()
-    mock_error_log.assert_called_with("schedule_retranscodes threw an error")
+    mock_error_log.assert_called_with("schedule_retranscodes threw an error",
+                                      exc_info=True)
 
 
 @mock_s3
