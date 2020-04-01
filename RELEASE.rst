@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.50.0
+Version 0.50.0 (Released April 01, 2020)
 --------------
 
 - Add videojs-annotation-comments plugin and put it behind a feature flag (#864)
