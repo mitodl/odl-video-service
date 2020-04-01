@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.50.0
+--------------
+
+- Add videojs-annotation-comments plugin and put it behind a feature flag (#864)
+- Add keyboard control to video player (#856)
+- Fix video source switch failover (#858)
+- Enabled multiple edX endpoints for posting HLS videos
+- Force non-native HLS playback to fix quality selector in Edge, Safari (#860)
+
 Version 0.49.2 (Released March 31, 2020)
 --------------
 
