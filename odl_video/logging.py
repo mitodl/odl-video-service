@@ -19,14 +19,9 @@ structlog_processors_per_debug = {
         structlog.dev.ConsoleRenderer()
     ],
     False: [
-        structlog.stdlib.filter_by_level,
-        structlog.stdlib.add_log_level,
         structlog.stdlib.add_logger_name,
-        structlog.processors.StackInfoRenderer(),
-        SentryJsonProcessor(tag_keys='__all__'),
-        structlog.dev.set_exc_info,
-        structlog.processors.format_exc_info,
-        structlog.processors.TimeStamper(),
+        structlog.stdlib.add_log_level,
+        SentryJsonProcessor(level=logging.ERROR, tag_keys="__all__"),
         structlog.processors.JSONRenderer()
     ]
 }
