@@ -21,7 +21,17 @@ structlog_processors_per_debug = {
     False: [
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
-        SentryJsonProcessor(level=logging.ERROR, tag_keys="__all__"),
+        structlog.stdlib.filter_by_level,
+        structlog.processors.TimeStamper(),
+        SentryJsonProcessor(level=logging.ERROR,
+                            tag_keys=['environment', 'level', 'logger',
+                                      'runtime', 'server_name', 'video_id',
+                                      'video_hexkey', 's3_object_key',
+                                      'filename', 'youtubevideo_id',
+                                      'youtubevideo_video_id'],
+                            as_extra=False),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
         structlog.processors.JSONRenderer()
     ]
 }
