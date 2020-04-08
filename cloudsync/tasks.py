@@ -70,7 +70,9 @@ def stream_to_s3(self, video_id):
     try:
         video = Video.objects.get(id=video_id)
     except (Video.DoesNotExist, Video.MultipleObjectsReturned):
-        log.error("Exception retrieving video", video_id=video_id)
+        log.error("Exception retrieving video",
+                  video_id=video_id,
+                  exc_info=True)
         raise
     video.update_status(VideoStatus.UPLOADING)
 
