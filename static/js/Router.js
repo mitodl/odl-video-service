@@ -2,7 +2,7 @@ import React from "react"
 import { Provider } from "react-redux"
 import { Route, Router as ReactRouter } from "react-router-dom"
 
-import CollectionsApp from "./containers/CollectionsApp"
+import App from "./containers/App"
 import withTracker from "./util/withTracker"
 
 export default class Router extends React.Component {
@@ -23,7 +23,4 @@ export default class Router extends React.Component {
     )
   }
 }
-
-export const routes = (
-  <Route path="/collections" component={withTracker(CollectionsApp)} />
-)
+export const routes = <Route component={withTracker(App)} />
