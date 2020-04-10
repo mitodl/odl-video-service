@@ -13,19 +13,23 @@ import ToastOverlay from "./ToastOverlay"
 
 import type { Match } from "react-router"
 
-
-
 class App extends React.Component<*, void> {
   props: {
     match: Match
   }
 
   renderVideoEmbedPage = (routeProps: any) => {
-    return <VideoEmbedPage video={SETTINGS.video} {...routeProps}/>
+    return <VideoEmbedPage video={SETTINGS.video} {...routeProps} />
   }
 
   renderVideoDetailPage = (routeProps: any) => {
-    return <VideoDetailPage videoKey={SETTINGS.videoKey} isAdmin={!!SETTINGS.is_video_admin} {...routeProps}/>
+    return (
+      <VideoDetailPage
+        videoKey={SETTINGS.videoKey}
+        isAdmin={!!SETTINGS.is_video_admin}
+        {...routeProps}
+      />
+    )
   }
 
   render() {
@@ -33,7 +37,11 @@ class App extends React.Component<*, void> {
     return (
       <div className="app">
         <ToastOverlay />
-        <Route exact path={`${match.url}collections/`} component={CollectionListPage} />
+        <Route
+          exact
+          path={`${match.url}collections/`}
+          component={CollectionListPage}
+        />
         <Route
           exact
           path={`${match.url}collections/:collectionKey/`}
@@ -49,16 +57,8 @@ class App extends React.Component<*, void> {
           path={`${match.url}videos/:videoKey/embed/`}
           component={this.renderVideoEmbedPage}
         />
-        <Route
-          exact
-          path={`${match.url}help/`}
-          component={HelpPage}
-        />
-        <Route
-          exact
-          path={`${match.url}terms/`}
-          component={TermsPage}
-        />
+        <Route exact path={`${match.url}help/`} component={HelpPage} />
+        <Route exact path={`${match.url}terms/`} component={TermsPage} />
       </div>
     )
   }
