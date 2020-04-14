@@ -5,13 +5,9 @@ const glob = require('glob');
 module.exports = {
   config: {
     entry: {
-      'collections': ['babel-polyfill', './static/js/entry/collections'],
-      'error': ['babel-polyfill', './static/js/entry/error'],
-      'video_detail': ['babel-polyfill', './static/js/entry/video_detail'],
-      'video_embed': ['babel-polyfill', './static/js/entry/video_embed'],
-      'help_page': ['babel-polyfill', './static/js/entry/help_page'],
-      'terms_page': ['babel-polyfill', './static/js/entry/terms_page'],
-      'style': './static/js/entry/style',
+      'root':  ['babel-polyfill',  './static/js/entry/root'],
+      'error':  ['babel-polyfill',  './static/js/entry/error'],
+      'style': "./static/js/entry/style"
     },
     module: {
       rules: [

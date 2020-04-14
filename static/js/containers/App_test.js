@@ -2,15 +2,15 @@ import React from "react"
 import { shallow } from "enzyme"
 import { assert } from "chai"
 
-import CollectionsApp from "./CollectionsApp"
+import App from "./App"
 
-describe("CollectionsApp", () => {
+describe("App", () => {
   const renderComponent = (extraProps = {}) => {
     const mergedProps = {
       match: {},
       ...extraProps
     }
-    return shallow(<CollectionsApp {...mergedProps} />)
+    return shallow(<App {...mergedProps} />)
   }
 
   it("has toast message", () => {

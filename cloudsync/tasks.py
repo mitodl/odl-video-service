@@ -129,7 +129,7 @@ def transcode_from_s3(self, video_id):
         video = Video.objects.get(id=video_id)
     except Video.DoesNotExist as exc:
         # Note: we ignore this exception in sentry, per
-        # odl_video.settings.RAVEN_CONFIG.ignore_exceptions
+        # odl_video.sentry.before_send
         raise TranscodeTargetDoesNotExist from exc
     task_id = self.get_task_id()
     self.update_state(task_id=task_id, state=VideoStatus.TRANSCODING)
@@ -155,7 +155,7 @@ def retranscode_video(self, video_id):
         video = Video.objects.get(id=video_id)
     except Video.DoesNotExist as exc:
         # Note: we ignore this exception in sentry, per
-        # odl_video.settings.RAVEN_CONFIG.ignore_exceptions
+        # odl_video.sentry.before_send
         raise TranscodeTargetDoesNotExist from exc
     task_id = self.get_task_id()
     self.update_state(task_id=task_id, state=VideoStatus.RETRANSCODING)

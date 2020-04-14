@@ -17,7 +17,6 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
-from raven.contrib.django.raven_compat.models import client as sentry
 from rest_framework import (
     authentication,
     permissions,
@@ -57,7 +56,7 @@ def default_js_settings(request):
     return {
         "gaTrackingID": settings.GA_TRACKING_ID,
         "environment": settings.ENVIRONMENT,
-        "sentry_dsn": sentry.get_public_dsn(),
+        "sentry_dsn": settings.SENTRY_DSN,
         "release_version": settings.VERSION,
         "public_path": public_path(request),
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
