@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.51.1
+--------------
+
+- Remove py-call-osafterfork uWSGI setting (#867)
+
 Version 0.51.0 (Released April 16, 2020)
 --------------
 
