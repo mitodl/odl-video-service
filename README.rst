@@ -193,3 +193,10 @@ like this:
 .. |coverage-status| image:: http://codecov.io/github/mitodl/odl-video-service/coverage.svg?branch=master
    :target: http://codecov.io/github/mitodl/odl-video-service?branch=master
    :alt: Test coverage
+
+
+Commits
+-------
+To commit changes to github, you should install the following first:
+.. code-bloack:: bash
+    pip install pre_commit detect-secrets

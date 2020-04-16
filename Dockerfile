@@ -28,6 +28,7 @@ RUN pip install -r requirements.txt -r test_requirements.txt
 COPY . /src
 WORKDIR /src
 RUN chown -R mitodl:mitodl /src
+RUN pre-commit install
 
 RUN apt-get clean && apt-get purge
 USER mitodl
