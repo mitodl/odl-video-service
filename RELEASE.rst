@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.51.0 (Released April 16, 2020)
+--------------
+
+- Use sentry sdk instead of raven (#869)
+
 Version 0.50.0 (Released April 01, 2020)
 --------------
 
