@@ -197,6 +197,7 @@ like this:
 
 Commits
 -------
-To commit changes to github, you should install the following first:
+To ensure commits to github are safe, you should install the following first:
 .. code-bloack:: bash
     pip install pre_commit detect-secrets
+    pre-commit install
