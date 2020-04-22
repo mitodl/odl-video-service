@@ -57,6 +57,11 @@ class App extends React.Component<*, void> {
           path={`${match.url}videos/:videoKey/embed/`}
           component={this.renderVideoEmbedPage}
         />
+        <Route
+          exact
+          path={`${match.url}embeds/:videoKey/`}
+          component={this.renderVideoEmbedPage}
+        />
         <Route exact path={`${match.url}help/`} component={HelpPage} />
         <Route exact path={`${match.url}terms/`} component={TermsPage} />
       </div>
