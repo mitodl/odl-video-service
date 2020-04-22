@@ -1,0 +1,1 @@
+Video "{{video_title}}" is ready in collection "{{collection_title}}"

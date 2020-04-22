@@ -21,7 +21,8 @@ from rest_framework.status import (
 )
 
 from mail.exceptions import SendBatchException
-from mail.api import MailgunClient
+from mail.api import MailgunClient, context_for_video, render_email_templates
+from ui.factories import VideoFactory
 
 
 def mocked_json(return_data=None):
@@ -54,12 +55,13 @@ class MailAPITests(TestCase):
         Test that MailgunClient.send_batch sends expected parameters to the Mailgun API
         Base case with only one batch call to the Mailgun API.
         """
-        MailgunClient.send_batch('email subject', 'email body', self.batch_recipient_arg, sender_name=sender_name)
+        MailgunClient.send_batch('email subject', 'html', 'text', self.batch_recipient_arg, sender_name=sender_name)
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
         assert list(called_args)[0] == '{}/{}'.format(settings.MAILGUN_URL, 'messages')
         assert called_kwargs['auth'] == ('api', settings.MAILGUN_KEY)
-        assert called_kwargs['data']['text'].startswith('email body')
+        assert called_kwargs['data']['html'].startswith('html')
+        assert called_kwargs['data']['text'].startswith('text')
         assert called_kwargs['data']['subject'] == 'email subject'
         assert sorted(called_kwargs['data']['to']) == sorted([email for email, _ in self.batch_recipient_arg])
         assert called_kwargs['data']['recipient-variables'] == json.dumps(
@@ -84,16 +86,12 @@ class MailAPITests(TestCase):
         """
         Test that MailgunClient.send_batch works properly with recipient override enabled
         """
-        MailgunClient.send_batch('subject', 'body', self.batch_recipient_arg, sender_name='sender')
+        MailgunClient.send_batch('subject', 'html', 'text', self.batch_recipient_arg, sender_name='sender')
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
         assert list(called_args)[0] == '{}/{}'.format(settings.MAILGUN_URL, 'messages')
         assert called_kwargs['auth'] == ('api', settings.MAILGUN_KEY)
-        assert called_kwargs['data']['text'] == """body
-
-[overridden recipient]
-a@example.com: {}
-b@example.com: {"name": "B"}"""
+        assert called_kwargs['data']['html'] == 'html'
         assert called_kwargs['data']['subject'] == 'subject'
         assert called_kwargs['data']['to'] == ['recipient@override.com']
         assert called_kwargs['data']['recipient-variables'] == json.dumps(
@@ -112,13 +110,14 @@ b@example.com: {"name": "B"}"""
         recipient_tuples = [("{0}@example.com".format(letter), None) for letter in string.ascii_letters]
         chunked_emails_to = [recipient_tuples[i:i + chunk_size] for i in range(0, len(recipient_tuples), chunk_size)]
         assert len(recipient_tuples) == 52
-        responses = MailgunClient.send_batch('email subject', 'email body', recipient_tuples, chunk_size=chunk_size)
+        responses = MailgunClient.send_batch('email subject', 'html', 'text', recipient_tuples, chunk_size=chunk_size)
         assert mock_post.called
         assert mock_post.call_count == 6
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
             assert list(called_args)[0] == '{}/{}'.format(settings.MAILGUN_URL, 'messages')
-            assert called_kwargs['data']['text'].startswith('email body')
+            assert called_kwargs['data']['html'].startswith('html')
+            assert called_kwargs['data']['text'].startswith('text')
             assert called_kwargs['data']['subject'] == 'email subject'
             assert sorted(called_kwargs['data']['to']) == sorted([email for email, _ in chunked_emails_to[call_num]])
             assert called_kwargs['data']['recipient-variables'] == json.dumps(
@@ -143,7 +142,7 @@ b@example.com: {"name": "B"}"""
         with override_settings(
                 MAILGUN_RECIPIENT_OVERRIDE=recipient_override,
         ), self.assertRaises(SendBatchException) as send_batch_exception:
-            MailgunClient.send_batch('email subject', 'email body', recipient_tuples, chunk_size=chunk_size)
+            MailgunClient.send_batch('email subject', 'html', 'text', recipient_tuples, chunk_size=chunk_size)
 
         if recipient_override is None:
             assert mock_post.call_count == 6
@@ -154,7 +153,8 @@ b@example.com: {"name": "B"}"""
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
             assert list(called_args)[0] == '{}/{}'.format(settings.MAILGUN_URL, 'messages')
-            assert called_kwargs['data']['text'].startswith('email body')
+            assert called_kwargs['data']['html'].startswith('html')
+            assert called_kwargs['data']['text'].startswith('text')
             assert called_kwargs['data']['subject'] == 'email subject'
             assert sorted(called_kwargs['data']['to']) == sorted([email for email, _ in chunked_emails_to[call_num]])
             assert called_kwargs['data']['recipient-variables'] == json.dumps(
@@ -189,7 +189,7 @@ b@example.com: {"name": "B"}"""
                 MAILGUN_RECIPIENT_OVERRIDE=None,
         ):
             resp_list = MailgunClient.send_batch(
-                'email subject', 'email body', recipient_tuples, chunk_size=chunk_size, raise_for_status=False
+                'email subject', 'html', 'text', recipient_tuples, chunk_size=chunk_size, raise_for_status=False
             )
 
         assert len(resp_list) == 6
@@ -210,13 +210,14 @@ b@example.com: {"name": "B"}"""
         chunked_emails_to = [recipient_tuples[i:i + chunk_size] for i in range(0, len(recipient_tuples), chunk_size)]
         assert len(recipient_tuples) == 52
         with self.assertRaises(SendBatchException) as send_batch_exception:
-            MailgunClient.send_batch('email subject', 'email body', recipient_tuples, chunk_size=chunk_size)
+            MailgunClient.send_batch('email subject', 'html', 'text', recipient_tuples, chunk_size=chunk_size)
         assert mock_post.called
         assert mock_post.call_count == 6
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
             assert list(called_args)[0] == '{}/{}'.format(settings.MAILGUN_URL, 'messages')
-            assert called_kwargs['data']['text'].startswith('email body')
+            assert called_kwargs['data']['html'].startswith('html')
+            assert called_kwargs['data']['text'].startswith('text')
             assert called_kwargs['data']['subject'] == 'email subject'
             assert sorted(called_kwargs['data']['to']) == sorted([email for email, _ in chunked_emails_to[call_num]])
             assert called_kwargs['data']['recipient-variables'] == json.dumps(
@@ -242,13 +243,13 @@ b@example.com: {"name": "B"}"""
         chunk_size = 10
         recipient_pairs = [("{0}@example.com".format(letter), None) for letter in string.ascii_letters]
         with self.assertRaises(ImproperlyConfigured) as ex:
-            MailgunClient.send_batch('email subject', 'email body', recipient_pairs, chunk_size=chunk_size)
+            MailgunClient.send_batch('email subject', 'html', 'text', recipient_pairs, chunk_size=chunk_size)
         assert ex.exception.args[0] == "Mailgun API keys not properly configured."
 
     @override_settings(MAILGUN_RECIPIENT_OVERRIDE=None)
     def test_send_batch_empty(self, mock_post):
         """If the recipient list is empty there should be no attempt to mail users"""
-        assert MailgunClient.send_batch('subject', 'body', []) == []
+        assert MailgunClient.send_batch('subject', 'html', 'text', []) == []
         assert mock_post.called is False
 
     @override_settings(MAILGUN_RECIPIENT_OVERRIDE=None)
@@ -260,7 +261,8 @@ b@example.com: {"name": "B"}"""
         context = {'abc': {'def': 'xyz'}}
         response = MailgunClient.send_individual_email(
             subject='email subject',
-            body='email body',
+            html_body='html',
+            text_body='text',
             recipient='a@example.com',
             recipient_variables=context,
             sender_name=sender_name,
@@ -270,7 +272,8 @@ b@example.com: {"name": "B"}"""
         called_args, called_kwargs = mock_post.call_args
         assert list(called_args)[0] == '{}/{}'.format(settings.MAILGUN_URL, 'messages')
         assert called_kwargs['auth'] == ('api', settings.MAILGUN_KEY)
-        assert called_kwargs['data']['text'].startswith('email body')
+        assert called_kwargs['data']['html'].startswith('html')
+        assert called_kwargs['data']['text'].startswith('text')
         assert called_kwargs['data']['subject'] == 'email subject'
         assert called_kwargs['data']['to'] == ['a@example.com']
         assert called_kwargs['data']['recipient-variables'] == json.dumps({'a@example.com': context})
@@ -295,7 +298,8 @@ b@example.com: {"name": "B"}"""
 
         response = MailgunClient.send_individual_email(
             subject='email subject',
-            body='email body',
+            html_body='html',
+            text_body='text',
             recipient='a@example.com',
             raise_for_status=raise_for_status,
         )
@@ -312,11 +316,27 @@ b@example.com: {"name": "B"}"""
         """
         sender_address = 'sender@example.com'
         MailgunClient.send_batch(
-            'email subject', 'email body', self.batch_recipient_arg, sender_address=sender_address
+            'email subject', 'html', 'text', self.batch_recipient_arg, sender_address=sender_address
         )
         MailgunClient.send_individual_email(
-            'email subject', 'email body', self.individual_recipient_arg, sender_address=sender_address
+            'email subject', 'html', 'text', self.individual_recipient_arg, sender_address=sender_address
         )
         for args in mock_post.call_args_list:
             _, called_kwargs = args
             assert called_kwargs['data']['from'] == sender_address
+
+    def test_render_email_templates(self, _):
+        """Test render_email_templates"""
+        video = VideoFactory.create()
+        context = context_for_video(video)
+        subject, text_body, html_body = render_email_templates("sample", context)
+        assert subject == f"Your video \"{video.title}\" is ready"
+        assert text_body == f"html link ({context['video_url']})"
+        assert html_body == (
+            '<style type="text/css">\n'
+            "a {\n"
+            "  color: red;\n"
+            "}\n"
+            "</style>\n"
+            f'<a href=\"{context["video_url"]}\">html link</a>\n'
+        )

@@ -1,0 +1,16 @@
+{% extends "email_base.html" %}
+{% block content %}
+  <tr>
+      <td style="background-color: #ffffff;">
+        <p>Hello, your video is now available on the OVS web site.</p>
+
+        <p>Video: <a href={{ video_url }}>{{video_title}}</a></p>
+        <p>Collection: <a href={{ collection_url }}>{{collection_title}}</a></p>
+        <p>
+            <a class="link-button" href={{ video_url }}>
+                <span>View Your Video</span>
+            </a>
+        </p>
+      </td>
+  </tr>
+{%  endblock %}

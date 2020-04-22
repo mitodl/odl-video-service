@@ -1,0 +1,1 @@
+Your video "{{ video_title }}" is ready

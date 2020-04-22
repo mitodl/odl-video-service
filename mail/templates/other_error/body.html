@@ -1,0 +1,11 @@
+{% extends "email_base.html" %}
+{% block content %}
+  <tr>
+      <td style="background-color: #ffffff;">
+        <p>We’re sorry, there was a problem processing your video</p>
+        <p>Video: <a href={{ video_url }}>{{video_title}}</a></p>
+        <p>Collection: <a href={{ collection_url }}>{{collection_title}}</a></p>
+        <p>Someone on the engineering team has been notified and will contact you shortly.</p>
+      </td>
+  </tr>
+{%  endblock %}
