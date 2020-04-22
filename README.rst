@@ -200,4 +200,5 @@ Commits
 To ensure commits to github are safe, you should install the following first:
 .. code-bloack:: bash
     pip install pre_commit detect-secrets
-    pre-commit install
+    git config --global init.templateDir ~/.git-template
+    pre-commit init-templatedir ~/.git-template
