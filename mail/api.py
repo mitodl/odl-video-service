@@ -1,7 +1,6 @@
 """
 Provides functions for sending and retrieving data about in-app email
 """
-import logging
 import json
 
 import requests
@@ -11,6 +10,7 @@ from rest_framework import status
 
 from mail.exceptions import SendBatchException
 from mail.utils import chunks
+from odl_video import logging
 
 
 log = logging.getLogger(__name__)

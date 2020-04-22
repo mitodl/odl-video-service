@@ -1,5 +1,4 @@
 """APIs for coudsync app"""
-import logging
 import re
 from collections import namedtuple
 from datetime import datetime
@@ -26,6 +25,7 @@ from ui.models import (
     delete_s3_objects
 )
 from ui.utils import get_et_preset, get_bucket, get_et_job
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ def refresh_status(video, encode_job=None):
                 video.update_status(VideoStatus.RETRANSCODE_FAILED)
             else:
                 video.update_status(get_error_type_from_et_error(et_job.get('Output', {}).get('StatusDetail')))
-            log.error('Transcoding failed for video %d', video.id)
+            log.error('Transcoding failed', video_id=video.id)
         encode_job.message = et_job
         encode_job.save()
 
@@ -186,7 +186,7 @@ def transcode_video(video, video_file):
     try:
         transcoder.encode(video_input, outputs, Playlists=playlists, UserMetadata=user_meta)
     except ClientError as exc:
-        log.error('Transcode job creation failed for video %s', video.id)
+        log.error('Transcode job creation failed', video_id=video.id)
         if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
             video.status = VideoStatus.RETRANSCODE_FAILED
         else:
@@ -284,7 +284,8 @@ def process_watch_file(s3_filename):
         try:
             video.delete()
         except:
-            log.error('Failed to delete video id %s after failed S3 file copy', video.hexkey)
+            log.error('Failed to delete video after failed S3 file copy',
+                      video_hexkey=video.hexkey)
             raise
         raise
 
@@ -292,7 +293,8 @@ def process_watch_file(s3_filename):
     try:
         s3_client.delete_object(Bucket=settings.VIDEO_S3_WATCH_BUCKET, Key=s3_filename)
     except ClientError:
-        log.error('Failed to delete %s from watch bucket', s3_filename)
+        log.error('Failed to delete from watch bucket',
+                  s3_object_key=s3_filename)
 
     # Start a transcode job for the video
     transcode_video(video, video_file)
@@ -316,7 +318,9 @@ def parse_lecture_video_filename(filename):
           r'.*\.\w')  # Rest of filename including extension (required)
     matches = re.search(rx, filename)
     if not matches or len(matches.groups()) != 5:
-        log.exception('No matches found for filename %s with regex %s', filename, rx)
+        log.exception('No matches found for filename %s with regex %s',
+                      positional_args=(filename, rx),
+                      filename=filename)
         prefix = settings.UNSORTED_COLLECTION
         session = ''
         recording_date_str = ''
@@ -354,7 +358,8 @@ def upload_subtitle_to_s3(caption_data, file_data):
     try:
         video = Video.objects.get(key=video_key)
     except Video.DoesNotExist:
-        log.error("Attempted to upload subtitle to Video that does not exist (key: %d)", video_key)
+        log.error("Attempted to upload subtitle to Video that does not exist",
+                  video_key=video_key)
         raise
 
     s3 = boto3.resource('s3')
@@ -371,7 +376,8 @@ def upload_subtitle_to_s3(caption_data, file_data):
             Config=config
         )
     except Exception:
-        log.error('An error occurred uploading caption file to video %s', video_key)
+        log.error('An error occurred uploading caption file',
+                  video_key=video_key)
         raise
 
     vt, created = VideoSubtitle.objects.get_or_create(
@@ -385,7 +391,8 @@ def upload_subtitle_to_s3(caption_data, file_data):
         try:
             vt.delete_from_s3()
         except ClientError:
-            log.exception('Could not delete old subtitle from S3: %s', vt.s3_object_key)
+            log.exception('Could not delete old subtitle from S3',
+                          s3_object_key=vt.s3_object_key)
     vt.s3_object_key = s3
     vt.filename = filename
     vt.s3_object_key = s3_key

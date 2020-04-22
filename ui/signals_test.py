@@ -4,7 +4,7 @@ import factory
 
 from ui.constants import StreamSource, YouTubeStatus
 from ui.encodings import EncodingNames
-from ui.factories import VideoFactory, YouTubeVideoFactory, VideoSubtitleFactory, VideoFileFactory
+from ui.factories import VideoFactory, YouTubeVideoFactory, VideoSubtitleFactory, VideoFileFactory, CollectionFactory
 from ui.models import Video
 
 pytestmark = pytest.mark.django_db
@@ -85,10 +85,12 @@ def test_youtube_sync_redo_failed(mocker, video_with_file, status):
 def test_edx_video_file_signal(mocker):
     """When a VideoFile is created with the right properties, a task to add the video to edX should be called"""
     patched_edx_task = mocker.patch('ui.signals.ovs_tasks.post_hls_to_edx.delay')
+
+    collections = CollectionFactory.create_batch(3, edx_course_id=factory.Iterator(["courseid", None, "courseid"]))
     video_files = VideoFileFactory.create_batch(
         3,
         encoding=factory.Iterator([EncodingNames.HLS, EncodingNames.HLS, "other-encoding"]),
-        video__collection__edx_course_id=factory.Iterator(["courseid", None, "courseid"])
+        video__collection=factory.Iterator(collections)
     )
     patched_edx_task.assert_called_once_with(video_files[0].id)
 

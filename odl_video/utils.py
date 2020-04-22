@@ -3,9 +3,8 @@ from enum import (
     auto,
     Flag,
 )
-import logging
-
 from django.conf import settings
+from odl_video import logging
 
 
 log = logging.getLogger(__name__)

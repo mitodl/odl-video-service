@@ -1,7 +1,6 @@
 """
 API methods
 """
-import logging
 from uuid import uuid4
 
 import requests
@@ -14,6 +13,8 @@ from django.shortcuts import get_object_or_404
 from cloudsync import tasks
 from ui import models
 from ui.utils import get_error_response_summary_dict
+from odl_video import logging
+
 
 log = logging.getLogger(__name__)
 
@@ -75,7 +76,9 @@ def post_hls_to_edx(video_file):
         Q(collections__id__in=[video_file.video.collection_id]) | Q(is_global_default=True)
     )
     if not edx_endpoints.exists():
-        log.error("Trying to post HLS to edX endpoints, but no endpoints exist (%d, %s)", video_file.pk, video_file)
+        log.error("Trying to post HLS to edX endpoints, but no endpoints exist",
+                  videofile_id=video_file.pk,
+                  videofile=video_file)
 
     responses = {}
     for edx_endpoint in edx_endpoints:
@@ -110,9 +113,9 @@ def post_hls_to_edx(video_file):
             else:
                 response_summary_dict = {"exception": str(exc)}
             log.error(
-                "Request to add HLS video to edX failed - VideoFile: %d, API response: %s",
-                video_file.pk,
-                response_summary_dict,
+                "Can not add HLS video to edX",
+                videofile_id=video_file.pk,
+                response=str(response_summary_dict),
             )
             resp = exc.response
         responses[edx_endpoint] = resp

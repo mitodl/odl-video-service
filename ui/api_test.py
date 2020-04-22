@@ -217,5 +217,5 @@ def test_post_hls_to_edx_bad_resp(mocker, reqmocker, edx_api_scenario):
     for mocked_post in mocked_posts:
         assert mocked_post.call_count == 1
     patched_log_error.assert_called_once()
-    assert "Request to add HLS video to edX failed" in patched_log_error.call_args[0][0]
+    assert "Can not add HLS video to edX" in patched_log_error.call_args[0][0]
     assert len(responses) == 2
