@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.52.0
+--------------
+
+- Fix TechTV embed URLs (#879)
+- Add structured logging with structlog
+- Fix signal test
+
 Version 0.51.2 (Released April 23, 2020)
 --------------
 
