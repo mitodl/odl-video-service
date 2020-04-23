@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.51.2
+Version 0.51.2 (Released April 23, 2020)
 --------------
 
 - Rename a couple UWSGI environment variables, remove redundant if-env blocks (#871)
