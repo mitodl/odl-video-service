@@ -51,7 +51,7 @@ def test_send_notification_email_wrong_status(mocker):
     """
     mocked_mailgun = mocker.patch('mail.api.MailgunClient', autospec=True)
     mocked__get_recipients_for_video = mocker.patch('mail.tasks._get_recipients_for_video', autospec=True)
-    assert VideoStatus.UPLOADING not in STATUS_TO_NOTIFICATION
+    assert VideoStatus.UPLOADING not in tasks.STATUS_TO_NOTIFICATION
     video = VideoFactory(status=VideoStatus.UPLOADING)
     tasks.send_notification_email(video)
     assert mocked_mailgun.send_individual_email.call_count == 0
@@ -68,7 +68,7 @@ def test_send_notification_email_no_recipients(mocker):
         autospec=True,
         return_value=[]
     )
-    assert VideoStatus.COMPLETE in STATUS_TO_NOTIFICATION
+    assert VideoStatus.COMPLETE in tasks.STATUS_TO_NOTIFICATION
     video = VideoFactory(status=VideoStatus.COMPLETE)
     tasks.send_notification_email(video)
     assert mocked_mailgun.send_individual_email.call_count == 0
@@ -85,9 +85,9 @@ def test_send_notification_email_no_mail_template(mocker):
     tasks.send_notification_email(video)
     assert mocked_mailgun.send_individual_email.call_count == 0
     mock_log.assert_called_once_with(
-        "Tried to send notifications for video %s with status %s",
-        video.hexkey,
-        video.status
+        "Unexpected video status",
+        video_hexkey=video.hexkey,
+        video_status='Retranscoding'
     )
 
 
@@ -96,7 +96,7 @@ def test_send_notification_email_happy_path(mocker):
     Tests send_notification_email with happy path
     """
     mocked_mailgun = mocker.patch('mail.api.MailgunClient', autospec=True)
-    assert VideoStatus.COMPLETE in STATUS_TO_NOTIFICATION
+    assert VideoStatus.COMPLETE in tasks.STATUS_TO_NOTIFICATION
     video = VideoFactory(status=VideoStatus.COMPLETE)
     subject, text, html = render_email_templates(
         STATUS_TO_NOTIFICATION[VideoStatus.COMPLETE],
