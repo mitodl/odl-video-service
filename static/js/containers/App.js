@@ -49,6 +49,11 @@ class App extends React.Component<*, void> {
         />
         <Route
           exact
+          path={`${match.url}collections/:collectionKey/videos/:videoKey/`}
+          component={this.renderVideoDetailPage}
+        />
+        <Route
+          exact
           path={`${match.url}videos/:videoKey/`}
           component={this.renderVideoDetailPage}
         />
