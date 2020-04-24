@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.52.0
+Version 0.52.0 (Released April 24, 2020)
 --------------
 
 - Fix TechTV embed URLs (#879)
