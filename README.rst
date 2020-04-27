@@ -193,3 +193,16 @@ like this:
 .. |coverage-status| image:: http://codecov.io/github/mitodl/odl-video-service/coverage.svg?branch=master
    :target: http://codecov.io/github/mitodl/odl-video-service?branch=master
    :alt: Test coverage
+
+
+Commits
+-------
+To ensure commits to github are safe, you should install the following first:
+.. code-block:: bash
+    pip install pre_commit detect-secrets
+    pre-commit install
+
+To automatically install precommit hooks when cloning a repo, you can run this:
+.. code-block:: bash
+    git config --global init.templateDir ~/.git-template
+    pre-commit init-templatedir ~/.git-template
