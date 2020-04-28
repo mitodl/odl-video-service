@@ -1,0 +1,17 @@
+{% extends "email_base.html" %}
+{% block content %}
+  <tr>
+      <td style="padding: 0 20px 20px;">
+        <p>Hello, your video has finished processing and is ready!</p>
+
+        <p>Video: <a href="{{ video_url }}">{{video_title}}</a></p>
+        <p>Collection: <a href="{{ collection_url }}">{{collection_title}}</a></p>
+         <table align="left" role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: auto;">
+          <tr>
+              <td class="button-td button-td-primary" style="border-radius: 4px; background: #ffffff;"><a class="button-a button-a-primary" style="background: #007EE5; font-family: Roboto; font-size: 16px; line-height: 19px; text-decoration: none; padding: 13px 28px; color: #ffffff; display: block; border-radius: 4px;" href="{{ video_url }}"><span>View Your Video</span></a>
+              </td>
+          </tr>
+         </table>
+      </td>
+  </tr>
+{%  endblock %}

@@ -1,0 +1,13 @@
+{% extends "email_base.html" %}
+{% block content %}
+  <tr>
+      <td style="padding: 0 20px 20px;">
+        <p>We’re sorry, there was a problem processing your video</p>
+        <p>Video: <a href="{{ video_url }}">{{video_title}}</a></p>
+        <p>Collection: <a href="{{ collection_url }}">{{collection_title}}</a></p>
+        <p>Please check if the file you uploaded is an actual video and you can play it.
+            If you think it should work, please contact us at {{support_email}}
+        </p>
+      </td>
+  </tr>
+{%  endblock %}

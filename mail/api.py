@@ -2,10 +2,15 @@
 Provides functions for sending and retrieving data about in-app email
 """
 import json
+import re
+from urllib.parse import urljoin
 
 import requests
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.template.loader import render_to_string
+from django.urls import reverse
 from rest_framework import status
 
 from mail.exceptions import SendBatchException
@@ -71,15 +76,16 @@ class MailgunClient:
         return response
 
     @classmethod
-    def send_batch(cls, subject, body, recipients,  # pylint: disable=too-many-arguments, too-many-locals
-                   sender_address=None, sender_name=None, chunk_size=settings.MAILGUN_BATCH_CHUNK_SIZE,
+    def send_batch(cls, subject, html_body, text_body,  # pylint: disable=too-many-arguments, too-many-locals
+                   recipients, sender_address=None, sender_name=None, chunk_size=settings.MAILGUN_BATCH_CHUNK_SIZE,
                    raise_for_status=True):
         """
         Sends a text email to a list of recipients (one email per recipient) via batch.
 
         Args:
-            subject (str): Email subject
-            body (str): Text email body
+            subject (str): email subject
+            html_body (str): email html body
+            text_body (str): email text body
             recipients (iterable of (recipient, context)):
                 A list where each tuple is:
                     (recipient, context)
@@ -105,12 +111,6 @@ class MailgunClient:
 
         if settings.MAILGUN_RECIPIENT_OVERRIDE is not None:
             # This is used for debugging only
-            body = '{body}\n\n[overridden recipient]\n{recipient_data}'.format(
-                body=body,
-                recipient_data='\n'.join(
-                    ["{}: {}".format(recipient, json.dumps(context)) for recipient, context in recipients]
-                ),
-            )
             recipients = [(settings.MAILGUN_RECIPIENT_OVERRIDE, {})]
 
         responses = []
@@ -123,7 +123,8 @@ class MailgunClient:
             params = {
                 'to': emails,
                 'subject': subject,
-                'text': body,
+                'html': html_body,
+                'text': text_body,
                 'recipient-variables': json.dumps(chunk_dict),
             }
             if sender_address:
@@ -152,7 +153,7 @@ class MailgunClient:
         return responses
 
     @classmethod
-    def send_individual_email(cls, subject, body, recipient,  # pylint: disable=too-many-arguments
+    def send_individual_email(cls, subject, html_body, text_body, recipient,  # pylint: disable=too-many-arguments
                               recipient_variables=None,
                               sender_address=None, sender_name=None, raise_for_status=True):
         """
@@ -160,7 +161,8 @@ class MailgunClient:
 
         Args:
             subject (str): email subject
-            body (str): email body
+            html_body (str): email text body
+            text_body (str): email html body
             recipient (str): email recipient
             recipient_variables (dict): A dict of template variables to use (may be None for empty)
             sender_address (str): Sender email address
@@ -173,10 +175,77 @@ class MailgunClient:
         # Since .send_batch() returns a list, we need to return the first in the list
         responses = cls.send_batch(
             subject,
-            body,
+            html_body,
+            text_body,
             [(recipient, recipient_variables)],
             sender_address=sender_address,
             sender_name=sender_name,
             raise_for_status=raise_for_status,
         )
         return responses[0]
+
+
+def render_email_templates(template_name, context):
+    """
+    Renders the email templates for the email
+
+    Args:
+        template_name (str): name of the template, this should match a directory in mail/templates
+        context (dict): context data for the email
+
+    Returns:
+        (str, str, str): tuple of the templates for subject, text_body, html_body
+    """
+    subject_text = render_to_string(
+        "{}/subject.txt".format(template_name), context
+    ).rstrip()
+
+    context.update({"subject": subject_text})
+    html_text = render_to_string("{}/body.html".format(template_name), context)
+
+    # pynliner internally uses bs4, which we can now modify the inlined version into a plaintext version
+    # this avoids parsing the body twice in bs4
+    soup = BeautifulSoup(html_text, "html5lib")
+    for link in soup.find_all("a"):
+        link.replace_with("{} ({})".format(link.string, link.attrs["href"]))
+
+    # clear any surviving style and title tags, so their contents don't get printed
+    for style in soup.find_all(["style", "title"]):
+        style.clear()  # clear contents, just removing the tag isn't enough
+
+    fallback_text = soup.get_text().strip()
+    # truncate more than 3 consecutive newlines
+    fallback_text = re.sub(r"\n\s*\n", "\n\n\n", fallback_text)
+    # ltrim the left side of all lines
+    fallback_text = re.sub(
+        r"^([ ]+)([\s\\X])", r"\2", fallback_text, flags=re.MULTILINE
+    )
+
+    return subject_text, fallback_text, html_text
+
+
+def context_for_video(video):
+    """
+    Returns an email context for the given video
+
+    Args:
+        video (Video): video this email is about
+
+    Returns:
+        dict: the context for this user
+    """
+
+    context = {
+        "video_url": urljoin(
+            settings.ODL_VIDEO_BASE_URL,
+            reverse('video-detail', kwargs={'video_key': video.hexkey})),
+        "video_title": video.title,
+        "collection_title": video.collection.title,
+        "collection_url": urljoin(
+            settings.ODL_VIDEO_BASE_URL,
+            reverse('collection-react-view', kwargs={'collection_key': video.collection.hexkey})),
+        "support_email": settings.EMAIL_SUPPORT,
+        "static_url": urljoin(settings.ODL_VIDEO_BASE_URL, settings.STATIC_URL)
+
+    }
+    return context

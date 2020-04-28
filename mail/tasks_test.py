@@ -1,16 +1,15 @@
 """
 Tests for Task module
 """
-from urllib.parse import urljoin
 from collections import defaultdict
 import textwrap
 
 import pytest
 from django.conf import settings
-from django.urls import reverse
 
 from mail import tasks
-from mail.models import NotificationEmail
+from mail.api import render_email_templates, context_for_video
+from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
 from ui.constants import VideoStatus
 from ui.factories import VideoFactory, MoiraListFactory
 
@@ -81,12 +80,15 @@ def test_send_notification_email_no_mail_template(mocker):
     Tests send_notification_email for a video with a status not correspondent to a email template
     """
     mocked_mailgun = mocker.patch('mail.api.MailgunClient', autospec=True)
-    assert VideoStatus.COMPLETE in tasks.STATUS_TO_NOTIFICATION
-    video = VideoFactory(status=VideoStatus.COMPLETE)
-    NotificationEmail.objects.filter(
-        notification_type=tasks.STATUS_TO_NOTIFICATION[VideoStatus.COMPLETE]).delete()
+    mock_log = mocker.patch('mail.tasks.log.error')
+    video = VideoFactory(status=VideoStatus.RETRANSCODING)
     tasks.send_notification_email(video)
     assert mocked_mailgun.send_individual_email.call_count == 0
+    mock_log.assert_called_once_with(
+        "Unexpected video status",
+        video_hexkey=video.hexkey,
+        video_status='Retranscoding'
+    )
 
 
 def test_send_notification_email_happy_path(mocker):
@@ -96,24 +98,17 @@ def test_send_notification_email_happy_path(mocker):
     mocked_mailgun = mocker.patch('mail.api.MailgunClient', autospec=True)
     assert VideoStatus.COMPLETE in tasks.STATUS_TO_NOTIFICATION
     video = VideoFactory(status=VideoStatus.COMPLETE)
+    subject, text, html = render_email_templates(
+        STATUS_TO_NOTIFICATION[VideoStatus.COMPLETE],
+        context_for_video(video)
+    )
     tasks.send_notification_email(video)
-    email_template = NotificationEmail.objects.get(
-        notification_type=tasks.STATUS_TO_NOTIFICATION[VideoStatus.COMPLETE])
-    mocked_mailgun.send_individual_email.assert_called_once_with(**{
-        'subject': email_template.email_subject.format(
-            collection_title=video.collection.title,
-            video_title=video.title
-        ),
-        'body': email_template.email_body.format(
-            collection_title=video.collection.title,
-            video_title=video.title,
-            video_url=urljoin(
-                settings.ODL_VIDEO_BASE_URL,
-                reverse('video-detail', kwargs={'video_key': video.hexkey})
-            ),
-            support_email=settings.EMAIL_SUPPORT
-        ),
-        'recipient': video.collection.owner.email,
+    mocked_mailgun.send_batch.assert_called_once_with(**{
+        'subject': subject,
+        'html_body': html,
+        'text_body': text,
+        'recipients': [(video.collection.owner.email, {})],
+        'sender_address': settings.EMAIL_SUPPORT,
         'raise_for_status': True,
     })
 
@@ -138,7 +133,7 @@ def test_async_send_notification_email_happy_path(mocker):
     mocked_send_email.assert_called_once_with(video)
 
 
-@pytest.mark.parametrize("status", tasks.STATUSES_THAT_TRIGGER_DEBUG_EMAIL)
+@pytest.mark.parametrize("status", STATUSES_THAT_TRIGGER_DEBUG_EMAIL)
 def test_sends_debug_emails(mocker, status):
     """
     Tests send_notification_email with statuses that should trigger sending a
@@ -150,7 +145,7 @@ def test_sends_debug_emails(mocker, status):
     tasks.send_notification_email(video)
     mocked_send_debug_email.assert_called_once_with(
         video=video,
-        email_kwargs=mocked_mailgun.send_individual_email.call_args[1]
+        email_kwargs=mocked_mailgun.send_batch.call_args[1]
     )
 
 
@@ -169,7 +164,8 @@ def test_send_debug_email(mocker):
     )
     mocked_mailgun.send_individual_email.assert_called_once_with(**{
         'subject': 'DEBUG:{}'.format(mock_email_kwargs['subject']),
-        'body': mocked_generate_debug_email_body.return_value,
+        'html_body': None,
+        'text_body': mocked_generate_debug_email_body.return_value,
         'recipient': settings.EMAIL_SUPPORT,
     })
 
@@ -205,9 +201,9 @@ def test_generate_debug_email_body(mocker):
         video=video,
         collection=video.collection,
         owner=video.collection.owner,
-        recipient=email_kwargs['recipient'],
+        recipient=email_kwargs['recipients'],
         subject=email_kwargs['subject'],
-        body=email_kwargs['body'],
+        body=email_kwargs['text_body'],
     )
     actual_body = tasks._generate_debug_email_body(
         video=video,

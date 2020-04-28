@@ -1,14 +1,12 @@
 """Tasks for mail app"""
 import textwrap
-from urllib.parse import urljoin
 
 from django.conf import settings
-from django.urls.base import reverse
 from celery import shared_task
 
 from mail import api
-from mail.models import NotificationEmail
-from ui.constants import VideoStatus
+from mail.api import render_email_templates, context_for_video
+from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
 from ui.utils import has_common_lists, get_moira_client
 from odl_video import logging
 
@@ -38,20 +36,6 @@ def _get_recipients_for_video(video):
     return recipients_list
 
 
-STATUS_TO_NOTIFICATION = {
-    VideoStatus.COMPLETE: NotificationEmail.SUCCESS,
-    VideoStatus.TRANSCODE_FAILED_INTERNAL: NotificationEmail.OTHER_ERROR,
-    VideoStatus.TRANSCODE_FAILED_VIDEO: NotificationEmail.INVALID_INPUT_ERROR,
-    VideoStatus.UPLOAD_FAILED: NotificationEmail.OTHER_ERROR,
-}
-
-STATUSES_THAT_TRIGGER_DEBUG_EMAIL = set([
-    VideoStatus.TRANSCODE_FAILED_INTERNAL,
-    VideoStatus.TRANSCODE_FAILED_VIDEO,
-    VideoStatus.UPLOAD_FAILED,
-])
-
-
 def send_notification_email(video):
     """
     Sends notification emails to the admin of the channels where a video belongs
@@ -71,31 +55,17 @@ def send_notification_email(video):
                   video_hexkey=video.hexkey, video_status=video.status)
         return
     try:
-        email_template = NotificationEmail.objects.get(notification_type=STATUS_TO_NOTIFICATION[video.status])
-    except NotificationEmail.DoesNotExist:
-        log.error("No template found",
-                  status=STATUS_TO_NOTIFICATION[video.status])
-        return
-
-    try:
+        email_template = STATUS_TO_NOTIFICATION[video.status]
+        subject, text_body, html_body = render_email_templates(email_template, context_for_video(video))
         email_kwargs = {
-            'subject': email_template.email_subject.format(
-                collection_title=video.collection.title,
-                video_title=video.title
-            ),
-            'body': email_template.email_body.format(
-                collection_title=video.collection.title,
-                video_title=video.title,
-                video_url=urljoin(
-                    settings.ODL_VIDEO_BASE_URL,
-                    reverse('video-detail', kwargs={'video_key': video.hexkey})
-                ),
-                support_email=settings.EMAIL_SUPPORT
-            ),
-            'recipient': ', '.join(recipients),
-            'raise_for_status': True
+            'subject': subject,
+            'html_body': html_body,
+            'text_body': text_body,
+            'recipients': [(recipient, {}) for recipient in recipients],
+            'raise_for_status': True,
+            'sender_address': settings.EMAIL_SUPPORT
         }
-        api.MailgunClient.send_individual_email(**email_kwargs)
+        api.MailgunClient.send_batch(**email_kwargs)
         if video.status in STATUSES_THAT_TRIGGER_DEBUG_EMAIL:
             _send_debug_email(video=video, email_kwargs=email_kwargs)
     except:  # pylint: disable=bare-except
@@ -126,7 +96,8 @@ def _send_debug_email(video=None, email_kwargs=None):
     """
     debug_email_kwargs = {
         'subject': 'DEBUG:{}'.format(email_kwargs['subject']),
-        'body': _generate_debug_email_body(video=video, email_kwargs=email_kwargs),
+        'html_body': None,
+        'text_body': _generate_debug_email_body(video=video, email_kwargs=email_kwargs),
         'recipient': settings.EMAIL_SUPPORT,
     }
     api.MailgunClient.send_individual_email(**debug_email_kwargs)
@@ -161,7 +132,7 @@ def _generate_debug_email_body(video=None, email_kwargs=None):
         video=video,
         collection=video.collection,
         owner=video.collection.owner,
-        recipient=email_kwargs['recipient'],
+        recipient=email_kwargs['recipients'],
         subject=email_kwargs['subject'],
-        body=email_kwargs['body'],
+        body=email_kwargs['text_body']
     )
