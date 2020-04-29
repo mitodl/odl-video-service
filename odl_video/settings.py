@@ -234,6 +234,7 @@ else:
 # Logging configuration
 LOG_LEVEL = get_string('ODL_VIDEO_LOG_LEVEL', 'INFO')
 DJANGO_LOG_LEVEL = get_string('DJANGO_LOG_LEVEL', 'INFO')
+LOG_FILE = get_string('ODL_VIDEO_LOG_FILE', None)
 
 # For logging to a remote syslog host
 LOG_HOST = get_string('ODL_VIDEO_LOG_HOST', 'localhost')
