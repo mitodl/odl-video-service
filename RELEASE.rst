@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.53.0
+Version 0.53.0 (Released April 30, 2020)
 --------------
 
 - Pre-commit checks (#876)
