@@ -121,6 +121,10 @@
       "description": "Application base URL",
       "required": true
     },
+    "ODL_VIDEO_LOG_FILE": {
+      "description": "Log file for Django application messages, as alternative to default stderr",
+      "required": false
+    },
     "ODL_VIDEO_LOG_LEVEL": {
       "description": "Logging level for the application",
       "required": true,
