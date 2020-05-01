@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.53.1
+--------------
+
+- Add ODL_VIDEO_LOG_FILE to app.json (#885)
+- Add optional logging to file, not stdio (#883)
+- Email templates (#873)
+
 Version 0.53.0 (Released April 30, 2020)
 --------------
 
