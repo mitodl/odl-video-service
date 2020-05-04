@@ -4,15 +4,8 @@ from structlog_sentry import SentryJsonProcessor
 import structlog
 from odl_video import settings
 
-log_config_args = {
-    'level': getattr(logging, settings.LOG_LEVEL),
-    'format': '%(message)s'
-}
-
-if settings.LOG_FILE:
-    log_config_args['filename'] = settings.LOG_FILE
-
-logging.basicConfig(**log_config_args)
+logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL),
+                    format='%(message)s')
 
 structlog_processors_per_debug = {
     True: [
@@ -54,4 +47,7 @@ structlog.configure(
 
 def getLogger(name):
     """Return a logger with the given name"""
-    return structlog.get_logger(name)
+    logger = structlog.get_logger(name)
+    if settings.LOG_FILE:
+        logger.addHandler(logging.FileHandler(settings.LOG_FILE))
+    return logger
