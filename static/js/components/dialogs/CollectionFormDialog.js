@@ -11,7 +11,7 @@ import Dialog from "../material/Dialog"
 
 import * as uiActions from "../../actions/collectionUi"
 import { actions } from "../../actions"
-import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from "../../lib/dialog"
+import {PERM_CHOICE_NONE, PERM_CHOICE_LISTS, PERM_CHOICE_LOGGED_IN} from "../../lib/dialog"
 import { getCollectionForm } from "../../lib/collection"
 import { makeCollectionUrl } from "../../lib/urls"
 import { calculateListPermissionValue } from "../../util/util"
@@ -233,6 +233,14 @@ export class CollectionFormDialog extends React.Component<*, void> {
                 validationMessage={errors ? errors.view_lists : ""}
               />
             </Radio>
+            <Radio
+              id="view-logged-in-only"
+              label="Only logged in"
+              radioGroupName="view-perms"
+              value={PERM_CHOICE_LOGGED_IN}
+              selectedValue={collectionForm.viewChoice}
+              onChange={this.handleCollectionViewPermClick}
+            />
           </section>
 
           <section className="permission-group">

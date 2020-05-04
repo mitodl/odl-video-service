@@ -52,6 +52,8 @@ def has_video_view_permission(obj, request):
     if has_admin_permission(obj.collection, request):
         return True
     if request.method in SAFE_METHODS:
+        if obj.is_logged_in_only or obj.collection.is_logged_in_only:
+            return request.user.is_authenticated
         view_list = list(obj.view_lists.values_list('name', flat=True))
         if view_list:
             all_lists = view_list + list(obj.admin_lists.values_list('name', flat=True))

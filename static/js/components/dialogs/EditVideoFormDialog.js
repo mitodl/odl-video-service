@@ -16,7 +16,7 @@ import {
   PERM_CHOICE_NONE,
   PERM_CHOICE_LISTS,
   PERM_CHOICE_COLLECTION,
-  PERM_CHOICE_OVERRIDE
+  PERM_CHOICE_OVERRIDE, PERM_CHOICE_LOGGED_IN
 } from "../../lib/dialog"
 
 import type { Video, VideoUiState } from "../../flow/videoTypes"
@@ -255,6 +255,16 @@ class EditVideoFormDialog extends React.Component<*, void> {
               validationMessage={errors ? errors.view_lists : ""}
             />
           </Radio>
+          <Radio
+            id="view-only-logged-in-users"
+            label="Only logged in users"
+            radioGroupName="video-view-perms"
+            value={PERM_CHOICE_LOGGED_IN}
+            selectedValue={editVideoForm.viewChoice}
+            onChange={this.handleVideoViewPermClick}
+            disabled={defaultPerms}
+            className="wideLabel"
+          />
         </section>
       </section>
     )
