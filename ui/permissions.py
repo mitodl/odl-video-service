@@ -33,6 +33,7 @@ def is_staff_or_superuser(user):
     return user.is_superuser or user.is_staff
 
 
+# pylint: disable=too-many-return-statements
 def has_video_view_permission(obj, request):
     """
     Determine if a user can view a video
