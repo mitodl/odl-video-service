@@ -165,6 +165,7 @@ class VideoSerializer(serializers.ModelSerializer):
             'collection_view_lists',
             'is_public',
             'is_private',
+            'is_logged_in_only',
             'sources',
             'youtube_id',
             'cloudfront_url'
@@ -286,6 +287,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             'video_count',
             'view_lists',
             'admin_lists',
+            'is_logged_in_only',
             'edx_course_id',
             'is_admin',
         )

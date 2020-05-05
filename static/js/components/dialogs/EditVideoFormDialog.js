@@ -53,6 +53,8 @@ class EditVideoFormDialog extends React.Component<*, void> {
   determineViewChoice(video: Video) {
     if (video.is_private) {
       return PERM_CHOICE_NONE
+    } else if (video.is_logged_in_only) {
+      return PERM_CHOICE_LOGGED_IN
     } else if (video.view_lists.length > 0) {
       return PERM_CHOICE_LISTS
     } else {
@@ -157,7 +159,9 @@ class EditVideoFormDialog extends React.Component<*, void> {
           )
           : [],
         is_private:
-          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_NONE
+          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_NONE,
+        is_logged_in_only:
+          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_LOGGED_IN,
       }
     }
 

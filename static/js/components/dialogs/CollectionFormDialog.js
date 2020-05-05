@@ -106,7 +106,8 @@ export class CollectionFormDialog extends React.Component<*, void> {
       admin_lists: calculateListPermissionValue(
         collectionForm.adminChoice,
         collectionForm.adminLists
-      )
+      ),
+      is_only_logged_in:  collectionForm.viewChoice === PERM_CHOICE_LOGGED_IN
     }
     if (isEdxCourseAdmin) {
       payload.edx_course_id = collectionForm.edxCourseId
