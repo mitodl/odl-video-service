@@ -2,7 +2,11 @@
 import R from "ramda"
 import _ from "lodash"
 
-import {PERM_CHOICE_NONE, PERM_CHOICE_LISTS, PERM_CHOICE_LOGGED_IN} from "../lib/dialog"
+import {
+  PERM_CHOICE_NONE,
+  PERM_CHOICE_LISTS,
+  PERM_CHOICE_LOGGED_IN
+} from "../lib/dialog"
 import type {
   Collection,
   CollectionFormState,
@@ -37,13 +41,14 @@ export function makeInitializedForm(
 ): CollectionFormState {
   if (!collection) {
     collection = {
-      key:           "",
-      title:         "",
-      description:   "",
-      view_lists:    [],
-      admin_lists:   [],
-      edx_course_id: "",
-      video_count:   0
+      key:               "",
+      title:             "",
+      description:       "",
+      view_lists:        [],
+      admin_lists:       [],
+      is_logged_in_only: false,
+      edx_course_id:     "",
+      video_count:       0
     }
   }
   const viewChoice =
@@ -55,7 +60,9 @@ export function makeInitializedForm(
     key:         collection.key,
     title:       collection.title,
     description: collection.description,
-    viewChoice:  collection.is_logged_in_only ? PERM_CHOICE_LOGGED_IN : viewChoice,
+    viewChoice:  collection.is_logged_in_only
+      ? PERM_CHOICE_LOGGED_IN
+      : viewChoice,
     viewLists:   _.join(collection.view_lists, ","),
     adminChoice: adminChoice,
     adminLists:  _.join(collection.admin_lists, ","),

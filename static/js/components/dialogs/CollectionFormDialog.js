@@ -11,7 +11,11 @@ import Dialog from "../material/Dialog"
 
 import * as uiActions from "../../actions/collectionUi"
 import { actions } from "../../actions"
-import {PERM_CHOICE_NONE, PERM_CHOICE_LISTS, PERM_CHOICE_LOGGED_IN} from "../../lib/dialog"
+import {
+  PERM_CHOICE_NONE,
+  PERM_CHOICE_LISTS,
+  PERM_CHOICE_LOGGED_IN
+} from "../../lib/dialog"
 import { getCollectionForm } from "../../lib/collection"
 import { makeCollectionUrl } from "../../lib/urls"
 import { calculateListPermissionValue } from "../../util/util"
@@ -107,7 +111,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
         collectionForm.adminChoice,
         collectionForm.adminLists
       ),
-      is_only_logged_in:  collectionForm.viewChoice === PERM_CHOICE_LOGGED_IN
+      is_logged_in_only: collectionForm.viewChoice === PERM_CHOICE_LOGGED_IN
     }
     if (isEdxCourseAdmin) {
       payload.edx_course_id = collectionForm.edxCourseId

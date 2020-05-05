@@ -16,6 +16,7 @@ export const makeCollection = (
   video_count:         2,
   view_lists:          casual.array_of_words(2),
   admin_lists:         casual.array_of_words(2),
+  is_logged_in_only:   false,
   edx_course_id:       casual.word,
   is_admin:            true,
   is_edx_course_admin: true

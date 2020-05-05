@@ -218,10 +218,11 @@ describe("EditVideoFormDialog", () => {
       "addToastMessage"
     )
     const newValues = {
-      title:       "New Title",
-      description: "New Description",
-      is_private:  false,
-      view_lists:  ["my-moira-list1", "my-moira-list2"]
+      title:             "New Title",
+      description:       "New Description",
+      is_private:        false,
+      is_logged_in_only: false,
+      view_lists:        ["my-moira-list1", "my-moira-list2"]
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))

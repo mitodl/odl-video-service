@@ -197,11 +197,12 @@ describe("CollectionFormDialog", () => {
         })
 
         const expectedRequestPayload = {
-          title:         "new title",
-          description:   "new description",
-          view_lists:    expectedListRequestData,
-          admin_lists:   expectedListRequestData,
-          edx_course_id: "edx-course-id"
+          title:             "new title",
+          description:       "new description",
+          view_lists:        expectedListRequestData,
+          admin_lists:       expectedListRequestData,
+          edx_course_id:     "edx-course-id",
+          is_logged_in_only: false
         }
 
         if (isNew) {

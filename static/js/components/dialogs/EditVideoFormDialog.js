@@ -16,7 +16,8 @@ import {
   PERM_CHOICE_NONE,
   PERM_CHOICE_LISTS,
   PERM_CHOICE_COLLECTION,
-  PERM_CHOICE_OVERRIDE, PERM_CHOICE_LOGGED_IN
+  PERM_CHOICE_OVERRIDE,
+  PERM_CHOICE_LOGGED_IN
 } from "../../lib/dialog"
 
 import type { Video, VideoUiState } from "../../flow/videoTypes"
@@ -161,7 +162,7 @@ class EditVideoFormDialog extends React.Component<*, void> {
         is_private:
           overridePerms && editVideoForm.viewChoice === PERM_CHOICE_NONE,
         is_logged_in_only:
-          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_LOGGED_IN,
+          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_LOGGED_IN
       }
     }
 
