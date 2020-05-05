@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.53.1
+Version 0.53.1 (Released May 05, 2020)
 --------------
 
 - Add ODL_VIDEO_LOG_FILE to app.json (#885)
