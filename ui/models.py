@@ -164,6 +164,7 @@ class Collection(TimestampedModel):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
     admin_lists = models.ManyToManyField(MoiraList, blank=True, related_name='admin_lists')
+    is_logged_in_only = models.BooleanField(null=False, default=False)
     allow_share_openedx = models.BooleanField(null=False, default=False)
     stream_source = models.CharField(
         null=True,
@@ -236,6 +237,8 @@ class VideoManager(TimestampedModelManager):
             (
                 models.Q(is_private=False) & (
                     models.Q(is_public=True) |
+                    models.Q(is_logged_in_only=True) |
+                    models.Q(collection__is_logged_in_only=True) |
                     models.Q(view_lists__in=moira_list_qset) |
                     models.Q(collection__view_lists__in=moira_list_qset)
                 )
@@ -264,6 +267,7 @@ class Video(TimestampedModel):
     view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='video_view_lists')
     is_public = models.BooleanField(null=False, default=False)
     is_private = models.BooleanField(null=False, default=False)
+    is_logged_in_only = models.BooleanField(null=False, default=False)
     custom_order = models.IntegerField(null=True, blank=True)
     schedule_retranscode = models.BooleanField(default=False)
 

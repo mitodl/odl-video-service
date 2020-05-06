@@ -49,6 +49,7 @@ export type Video = {
   collection_view_lists:  Array<string>,
   is_public:              boolean,
   is_private:             boolean,
+  is_logged_in_only:      boolean,
   sources:                Array<VideoSource>,
   youtube_id:             ?string,
   cloudfront_url:         string
@@ -58,6 +59,7 @@ export type VideoUpdatePayload = {
   title: string,
   description: string,
   view_lists?: Array<string>,
+  is_logged_in_only?: boolean,
   is_private?: boolean,
   is_public?: boolean,
 };

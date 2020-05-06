@@ -16,7 +16,8 @@ import {
   PERM_CHOICE_NONE,
   PERM_CHOICE_LISTS,
   PERM_CHOICE_COLLECTION,
-  PERM_CHOICE_OVERRIDE
+  PERM_CHOICE_OVERRIDE,
+  PERM_CHOICE_LOGGED_IN
 } from "../../lib/dialog"
 
 import type { Video, VideoUiState } from "../../flow/videoTypes"
@@ -53,6 +54,8 @@ class EditVideoFormDialog extends React.Component<*, void> {
   determineViewChoice(video: Video) {
     if (video.is_private) {
       return PERM_CHOICE_NONE
+    } else if (video.is_logged_in_only) {
+      return PERM_CHOICE_LOGGED_IN
     } else if (video.view_lists.length > 0) {
       return PERM_CHOICE_LISTS
     } else {
@@ -157,7 +160,9 @@ class EditVideoFormDialog extends React.Component<*, void> {
           )
           : [],
         is_private:
-          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_NONE
+          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_NONE,
+        is_logged_in_only:
+          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_LOGGED_IN
       }
     }
 
@@ -255,6 +260,16 @@ class EditVideoFormDialog extends React.Component<*, void> {
               validationMessage={errors ? errors.view_lists : ""}
             />
           </Radio>
+          <Radio
+            id="view-logged-in-only"
+            label="MIT Touchstone"
+            radioGroupName="video-view-perms"
+            value={PERM_CHOICE_LOGGED_IN}
+            selectedValue={editVideoForm.viewChoice}
+            onChange={this.handleVideoViewPermClick}
+            disabled={defaultPerms}
+            className="wideLabel"
+          />
         </section>
       </section>
     )

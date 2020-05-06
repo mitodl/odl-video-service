@@ -8,6 +8,7 @@ export type CollectionListItem = {
   description:        ?string,
   view_lists:         Array<string>,
   admin_lists:        Array<string>,
+  is_logged_in_only:  boolean,
   video_count:        number,
   edx_course_id:      ?string
 };

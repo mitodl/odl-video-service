@@ -21,6 +21,7 @@ import { makeVideo } from "../../factories/video"
 import { makeCollection } from "../../factories/collection"
 import {
   PERM_CHOICE_LISTS,
+  PERM_CHOICE_LOGGED_IN,
   PERM_CHOICE_NONE,
   PERM_CHOICE_OVERRIDE
 } from "../../lib/dialog"
@@ -137,6 +138,12 @@ describe("EditVideoFormDialog", () => {
       "viewChoice",
       SET_VIEW_CHOICE,
       PERM_CHOICE_NONE
+    ],
+    [
+      "#video-view-perms-view-logged-in-only",
+      "viewChoice",
+      SET_VIEW_CHOICE,
+      PERM_CHOICE_LOGGED_IN
     ]
   ]) {
     it(`sets ${prop}`, async () => {
@@ -160,7 +167,8 @@ describe("EditVideoFormDialog", () => {
     "#view-moira-input",
     "#video-view-perms-override-view-collection-override",
     "#video-view-perms-view-public",
-    "#video-view-perms-view-only-me"
+    "#video-view-perms-view-only-me",
+    "#video-view-perms-view-logged-in-only"
   ]) {
     it(`permissions field ${selector} not present if feature is disabled`, async () => {
       SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false
@@ -218,10 +226,11 @@ describe("EditVideoFormDialog", () => {
       "addToastMessage"
     )
     const newValues = {
-      title:       "New Title",
-      description: "New Description",
-      is_private:  false,
-      view_lists:  ["my-moira-list1", "my-moira-list2"]
+      title:             "New Title",
+      description:       "New Description",
+      is_private:        false,
+      is_logged_in_only: false,
+      view_lists:        ["my-moira-list1", "my-moira-list2"]
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))

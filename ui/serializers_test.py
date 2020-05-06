@@ -30,6 +30,7 @@ def test_collection_serializer():
         'video_count': len(videos),
         'view_lists': [],
         'admin_lists': [],
+        'is_logged_in_only': False,
         'is_admin': False,
         'edx_course_id': collection.edx_course_id,
     }
@@ -158,6 +159,7 @@ def get_expected_result(video):
         'sources': video.sources,
         'is_private': False,
         'is_public': video.is_public,
+        'is_logged_in_only': video.is_logged_in_only,
         'youtube_id': None,
         'cloudfront_url': "",
     }
