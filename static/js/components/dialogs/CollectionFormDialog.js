@@ -240,7 +240,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
             </Radio>
             <Radio
               id="view-logged-in-only"
-              label="Only logged in"
+              label="MIT Touchstone"
               radioGroupName="view-perms"
               value={PERM_CHOICE_LOGGED_IN}
               selectedValue={collectionForm.viewChoice}

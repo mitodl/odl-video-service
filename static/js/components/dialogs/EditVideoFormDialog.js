@@ -261,8 +261,8 @@ class EditVideoFormDialog extends React.Component<*, void> {
             />
           </Radio>
           <Radio
-            id="view-only-logged-in-users"
-            label="Only logged in users"
+            id="view-logged-in-only"
+            label="MIT Touchstone"
             radioGroupName="video-view-perms"
             value={PERM_CHOICE_LOGGED_IN}
             selectedValue={editVideoForm.viewChoice}
