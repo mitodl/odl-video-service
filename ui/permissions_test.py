@@ -548,6 +548,35 @@ def test_override_video_private_collection_admin_lists(mock_user_moira_lists,
     assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
 
 
+def test_override_video_logged_in_collection_view_lists(mock_user_moira_lists,
+                                                        moira_list,
+                                                        request_data,
+                                                        video_permission,
+                                                        video):
+    """
+    A logged_in_only video should be viewable by users in the collection view lists
+    """
+    video.is_logged_in_only = True
+    video.collection.view_lists.set([moira_list])
+    mock_user_moira_lists.return_value = {moira_list.name}
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
+
+
+def test_override_video_logged_in_collection_private(mock_user_moira_lists,
+                                                     moira_list,
+                                                     video_permission,
+                                                     request_data,
+                                                     request_data_anon,
+                                                     video):
+    """
+    A logged_in_only video should be viewable by users in a private collection
+    """
+    video.is_logged_in_only = True
+    mock_user_moira_lists.return_value = {moira_list.name}
+    assert video_permission.has_object_permission(request_data_anon.request, request_data_anon.view, video) is False
+    assert video_permission.has_object_permission(request_data.request, request_data.view, video) is True
+
+
 def test_override_video_view_lists_collection_view_lists(mock_user_moira_lists,
                                                          request_data,
                                                          video_permission,
