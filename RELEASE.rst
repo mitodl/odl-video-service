@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.53.3
+--------------
+
+- Add permissions just for logged in users (#889)
+
 Version 0.53.2 (Released May 06, 2020)
 --------------
 
