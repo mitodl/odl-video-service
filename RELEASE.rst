@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.53.2
+Version 0.53.2 (Released May 06, 2020)
 --------------
 
 - With log file specified, force logger to write to file (#888)
