@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.53.3
+Version 0.53.3 (Released May 07, 2020)
 --------------
 
 - New error message for 403 (#870)
