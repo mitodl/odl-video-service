@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.53.3
+--------------
+
+- New error message for 403 (#870)
+- pin ddt (#893)
+- Add permissions just for logged in users (#889)
+
 Version 0.53.2 (Released May 06, 2020)
 --------------
 
