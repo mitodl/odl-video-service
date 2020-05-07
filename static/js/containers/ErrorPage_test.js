@@ -55,7 +55,7 @@ describe("ErrorPage", () => {
     [
       403,
       "You do not have permission to view this video",
-      "You do not have permission to view this video."
+      "Please contact course faculty or staff and ask them to add you as a student or listener on stellar.mit.edu"
     ],
     [
       404,

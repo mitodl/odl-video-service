@@ -19,7 +19,12 @@ export default class ErrorPage extends React.Component<*, void> {
   errorMessage = () => {
     switch (SETTINGS.status_code) {
     case 403:
-      return <span>You do not have permission to view this video.</span>
+      return (
+        <span>
+            Please contact course faculty or staff and ask them to add you as a
+            student or listener on stellar.mit.edu
+        </span>
+      )
     case 404:
       return (
         <span>
