@@ -6,10 +6,10 @@ from urllib.parse import urljoin
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
-
-from dj_elastictranscoder.models import EncodeJob
 from django.urls import reverse
 from django.utils.html import format_html
+
+from dj_elastictranscoder.models import EncodeJob
 
 from ui import models
 
@@ -52,7 +52,7 @@ class CollectionAdmin(admin.ModelAdmin):
         )
         return format_html("<a href='{url}'>{url}</a>", url=url)
 
-    def get_fields(self, request, obj):
+    def get_fields(self, request, obj=None):
         """ Add show_url to the beginning of model fields"""
         return ['show_url'] + super().get_fields(request, obj)
 
@@ -147,7 +147,7 @@ class VideoAdmin(admin.ModelAdmin):
         )
         return format_html("<a href='{url}'>{url}</a>", url=url)
 
-    def get_fields(self, request, obj):
+    def get_fields(self, request, obj=None):
         """ Add show_url to the beginning of model fields"""
         return ['show_url'] + super().get_fields(request, obj)
 
