@@ -1,10 +1,16 @@
 """
 Admin for UI app
 """
+from urllib.parse import urljoin
+
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 
 from dj_elastictranscoder.models import EncodeJob
+from django.urls import reverse
+from django.utils.html import format_html
+
 from ui import models
 
 
@@ -37,9 +43,26 @@ class CollectionEdxEndpointInlineAdmin(admin.StackedInline):
 
 class CollectionAdmin(admin.ModelAdmin):
     """Customized collection admin model"""
+
+    def show_url(self, obj):
+        """ Display the collection URL"""
+        url = urljoin(
+            settings.ODL_VIDEO_BASE_URL,
+            reverse('collection-react-view', kwargs={'collection_key': obj.hexkey})
+        )
+        return format_html("<a href='{url}'>{url}</a>", url=url)
+
+    def get_fields(self, request, obj):
+        """ Add show_url to the beginning of model fields"""
+        return ['show_url'] + super().get_fields(request, obj)
+
+    show_url.short_description = "URL"
+    show_url.mark_safe = True
+
     date_hierarchy = 'created_at'
-    readonly_fields = ['created_at']
+    readonly_fields = ['show_url', 'created_at']
     list_filter = ['stream_source']
+    list_display = ['title', 'show_url']
     autocomplete_fields = ['owner', 'view_lists', 'admin_lists']
     search_fields = (
         'title',
@@ -115,6 +138,22 @@ class VideoEncodeJobsInline(GenericTabularInline):
 
 class VideoAdmin(admin.ModelAdmin):
     """Customized Video admin model"""
+
+    def show_url(self, obj):
+        """ Display the video URL"""
+        url = urljoin(
+            settings.ODL_VIDEO_BASE_URL,
+            reverse('video-detail', kwargs={'video_key': obj.hexkey})
+        )
+        return format_html("<a href='{url}'>{url}</a>", url=url)
+
+    def get_fields(self, request, obj):
+        """ Add show_url to the beginning of model fields"""
+        return ['show_url'] + super().get_fields(request, obj)
+
+    show_url.short_description = "URL"
+    show_url.mark_safe = True
+
     model = models.Video
     inlines = [
         VideoEncodeJobsInline,
@@ -126,10 +165,11 @@ class VideoAdmin(admin.ModelAdmin):
     list_display = (
         'title',
         'created_at',
+        'show_url',
     )
     list_filter = ['encode_jobs__state', 'status']
     date_hierarchy = 'created_at'
-    readonly_fields = ['created_at']
+    readonly_fields = ['show_url', 'created_at']
     search_fields = (
         'title',
         'description',
