@@ -60,7 +60,7 @@
     "fetch-mock": "^5.12.1",
     "flow-bin": "0.59.0",
     "isomorphic-fetch": "^2.2.1",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "jsdom": "^11.6.2",
     "jsdom-global": "^3.0.2",
     "lodash": "4.17.13",
