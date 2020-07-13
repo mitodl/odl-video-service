@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.54.0
+Version 0.54.0 (Released July 13, 2020)
 --------------
 
 - Bump forwarded from 0.1.0 to 0.1.2 (#848)
