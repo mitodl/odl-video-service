@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.54.0
+--------------
+
+- Bump forwarded from 0.1.0 to 0.1.2 (#848)
+- Bump jquery from 3.4.1 to 3.5.0 (#886)
+- Bump httplib2 from 0.17.2 to 0.18.0 (#895)
+- Bump django from 2.2.10 to 2.2.13 (#896)
+- Add url links to video/collection admin (#898)
+
 Version 0.53.3 (Released May 07, 2020)
 --------------
 
