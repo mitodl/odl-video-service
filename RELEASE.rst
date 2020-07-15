@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.54.1
+Version 0.54.1 (Released July 15, 2020)
 --------------
 
 - Update dependencies (#900)
