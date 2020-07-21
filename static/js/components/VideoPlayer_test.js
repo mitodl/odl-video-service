@@ -50,6 +50,7 @@ describe("VideoPlayer", () => {
   beforeEach(() => {
     video = makeVideo()
     sandbox = sinon.sandbox.create()
+    sandbox.stub(global, "setTimeout")
     cornerFunction = sandbox.stub()
     gaEventStub = sandbox.stub(ga, "event")
     gaSetStub = sandbox.stub(ga, "set")

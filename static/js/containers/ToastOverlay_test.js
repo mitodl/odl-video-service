@@ -119,7 +119,8 @@ describe("ToastOverlayTests", () => {
   describe("ToastMessage", () => {
     const renderComponent = (extraProps = {}) => {
       const mergedProps = {
-        message: generateMessage(),
+        message:       generateMessage(),
+        removeMessage: sandbox.stub(),
         ...extraProps
       }
       return mount(<ToastMessage {...mergedProps} />)
