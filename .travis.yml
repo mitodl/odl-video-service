@@ -14,10 +14,10 @@ matrix:
       env:
         name: Python
     - install:
-      - env | grep TRAVIS > .env
-      - env | grep CI >> .env
+        - yarn install --frozen-lockfile
       script: bash ./travis/js_tests.sh
-      services:
-        - docker
+      language: node_js
+      node_js:
+        - 13.13
       env:
         name: JavaScript
