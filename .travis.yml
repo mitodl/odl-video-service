@@ -16,7 +16,6 @@ matrix:
     - install:
       - env | grep TRAVIS > .env
       - env | grep CI >> .env
-      - docker build -t travis-watch -f ./travis/Dockerfile-travis-watch .
       script: bash ./travis/js_tests.sh
       services:
         - docker
