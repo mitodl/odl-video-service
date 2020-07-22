@@ -12,7 +12,7 @@ describe("ToastOverlayTests", () => {
   let sandbox, wrapper
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
   })
 
   afterEach(() => {

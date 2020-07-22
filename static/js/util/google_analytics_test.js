@@ -9,7 +9,7 @@ describe("Google Analytics", () => {
   let event, sandbox
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     event = sandbox.stub(ga, "event")
   })
 

@@ -9,7 +9,7 @@ describe("ProgressSlider", () => {
   let props, sandbox
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     props = {
       progress: 0.42
     }

@@ -12,7 +12,7 @@ describe("VideoList", () => {
   let sandbox, props
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     props = {
       videos:                [...Array(3).keys()].map(() => makeVideo()),
       isAdmin:               true,

@@ -17,7 +17,7 @@ describe("DeleteVideoDialogTests", () => {
   beforeEach(() => {
     collection = makeCollection()
     video = collection.videos[0]
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
   })
 
   afterEach(() => {

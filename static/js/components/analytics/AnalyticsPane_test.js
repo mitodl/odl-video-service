@@ -12,7 +12,7 @@ describe("AnalyticsPane", () => {
   let props, sandbox
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     props = {
       analyticsData: makeVideoAnalyticsData(),
       video:         makeVideo(),

@@ -31,7 +31,7 @@ describe("VideoDetailPage", () => {
   let sandbox, store, getVideoStub, dropboxStub, video: Video, listenForActions
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     video = makeVideo()

@@ -17,7 +17,7 @@ describe("ErrorPage", () => {
   let sandbox, store, collections, listenForActions
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     collections = [makeCollection(), makeCollection(), makeCollection()]

@@ -43,7 +43,7 @@ describe("CollectionFormDialog", () => {
   let sandbox, store, listenForActions, hideDialogStub, collection, uiState
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     hideDialogStub = sandbox.stub()

@@ -24,7 +24,7 @@ describe("CollectionListPage", () => {
   let sandbox, store, collections, listenForActions, collectionsPagination
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     collections = [makeCollection(), makeCollection(), makeCollection()]

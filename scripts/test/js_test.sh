@@ -34,6 +34,7 @@ if [[ ! -z "$2" ]]; then
     CMD_ARGS+=" -g \"$2\""
 fi
 
+echo "$CMD $CMD_ARGS" 2> >(tee "$TMP_FILE")
 eval "$CMD $CMD_ARGS" 2> >(tee "$TMP_FILE")
 
 export TEST_RESULT=$?

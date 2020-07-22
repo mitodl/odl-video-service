@@ -21,7 +21,7 @@ describe("Drawer", () => {
     listenForActions,
     getCollectionsStub
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     SETTINGS.email = "foo@mit.edu"
     SETTINGS.user = "foo_user"

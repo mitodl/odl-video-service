@@ -17,7 +17,7 @@ describe("VideoEmbedPage", () => {
   let sandbox, store, video: Video
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     video = makeVideo()
     // silence videojs warnings
