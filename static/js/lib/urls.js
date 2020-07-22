@@ -11,11 +11,11 @@ export const makeEmbedUrl = (videoKey: string) =>
 export const makeCollectionUrl = (collectionKey: string) =>
   `/collections/${encodeURI(collectionKey)}/`
 export const makeVideoThumbnailUrl = (video: Video): ?string =>
-  video.videothumbnail_set && video.videothumbnail_set.length > 0
-    ? `${SETTINGS.cloudfront_base_url}${
+  video.videothumbnail_set && video.videothumbnail_set.length > 0 ?
+    `${SETTINGS.cloudfront_base_url}${
       video.videothumbnail_set[0].s3_object_key
-    }`
-    : null
+    }` :
+    null
 
 export const makeVideoFileUrl = (videoFile: VideoFile): ?string =>
   `${SETTINGS.cloudfront_base_url}${encodeURI(videoFile.s3_object_key)}`

@@ -28,9 +28,9 @@ export default class Filefield extends React.Component<*, void> {
         onClick={this.handleClick}
         href="#"
         className={
-          className
-            ? `${className} button-link upload-link`
-            : "button-link upload-link"
+          className ?
+            `${className} button-link upload-link` :
+            "button-link upload-link"
         }
       >
         <input

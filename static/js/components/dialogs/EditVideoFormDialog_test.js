@@ -118,6 +118,7 @@ describe("EditVideoFormDialog", () => {
     assert.deepEqual(previousFormState, store.getState().videoUi.editVideoForm)
   })
 
+  // eslint-disable-next-line no-unused-vars
   for (const [selector, prop, actionType, newValue] of [
     ["#video-title", "title", SET_EDIT_VIDEO_TITLE, "new title"],
     [
@@ -163,6 +164,7 @@ describe("EditVideoFormDialog", () => {
     })
   }
 
+  // eslint-disable-next-line no-unused-vars
   for (const selector of [
     "#view-moira-input",
     "#video-view-perms-override-view-collection-override",

@@ -106,9 +106,9 @@ export class AnalyticsChart extends React.Component {
     const chartBodyBounds = this._getRelativeChartBodyBounds()
     const yTicks = this._getYTicks({ analyticsData })
     const xMax =
-      duration > 0
-        ? duration / 60
-        : analyticsData.times ? analyticsData.times.slice(-1)[0] : 0
+      duration > 0 ?
+        duration / 60 :
+        analyticsData.times ? analyticsData.times.slice(-1)[0] : 0
     return (
       <VictoryChart
         {...dimensions}
@@ -225,11 +225,14 @@ export class AnalyticsChart extends React.Component {
 
   _generateViewsAtTimesByChannel(analyticsData) {
     const viewsAtTimesByChannel = {}
+    // eslint-disable-next-line no-unused-vars
     for (const channel of analyticsData.channels) {
       viewsAtTimesByChannel[channel] = []
     }
+    // eslint-disable-next-line no-unused-vars
     for (const time of analyticsData.times) {
       const viewsAtTime = analyticsData.views_at_times[time] || {}
+      // eslint-disable-next-line no-unused-vars
       for (const channel of analyticsData.channels) {
         viewsAtTimesByChannel[channel].push({
           time:  time,

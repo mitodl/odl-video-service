@@ -326,9 +326,9 @@ const mapStateToProps = (state, ownProps) => {
   const { videoKey } = ownProps
   const { videos, commonUi, videoUi } = state
   const video =
-    videos.data && _.isFunction(videos.data.get)
-      ? videos.data.get(videoKey)
-      : null
+    videos.data && _.isFunction(videos.data.get) ?
+      videos.data.get(videoKey) :
+      null
   const needsUpdate = !videos.processing && !videos.loaded
 
   return {

@@ -18,9 +18,9 @@ const videoThumbnailId = makeCounter()
 const videoSubtitleId = makeCounter()
 
 const makeObjectKey = (videoKey: string, encoding: string): string =>
-  encoding === ENCODING_ORIGINAL
-    ? `${videoKey}/video.mp4`
-    : `transcoded/${videoKey}/video__index.m3u8`
+  encoding === ENCODING_ORIGINAL ?
+    `${videoKey}/video.mp4` :
+    `transcoded/${videoKey}/video__index.m3u8`
 
 const makeSubtitleObjectKey = (videoKey: string, lang: string): string =>
   `subtitles/${videoKey}/subtitle_${lang}.vtt`

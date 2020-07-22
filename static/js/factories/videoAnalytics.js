@@ -10,9 +10,9 @@ export const makeVideoAnalyticsData = (
   const videoAnalyticsData = {
     is_multichannel: multichannel,
     times:           [...Array(n).keys()],
-    channels:        multichannel
-      ? [...Array(4).keys()].map(i => `channel${i + 1}`)
-      : ["views"],
+    channels:        multichannel ?
+      [...Array(4).keys()].map(i => `channel${i + 1}`) :
+      ["views"],
     views_at_times: {}
   }
   for (let tIdx = 0; tIdx < videoAnalyticsData.times.length; tIdx++) {

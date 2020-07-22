@@ -21,9 +21,9 @@ export class VideoList extends React.Component<*, void> {
     const className = `video-list ${this.props.className || ""}`
     return (
       <div className={className} style={this.props.style}>
-        {this.props.videos
-          ? this.props.videos.map(video => this.renderVideoCard(video))
-          : null}
+        {this.props.videos ?
+          this.props.videos.map(video => this.renderVideoCard(video)) :
+          null}
       </div>
     )
   }

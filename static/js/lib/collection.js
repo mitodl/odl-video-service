@@ -19,9 +19,9 @@ import type {} from "../reducers/collectionUi"
 export const getActiveCollectionDetail = (state: {
   collections?: ?RestState<Collection>
 }): ?Collection =>
-  state.collections && state.collections.data && state.collections.loaded
-    ? state.collections.data
-    : null
+  state.collections && state.collections.data && state.collections.loaded ?
+    state.collections.data :
+    null
 
 export const getVideoWithKey = (collection: Collection, key: string) =>
   R.compose(R.find(R.propEq("key", key)), R.defaultTo([]))(collection.videos)
@@ -60,9 +60,9 @@ export function makeInitializedForm(
     key:         collection.key,
     title:       collection.title,
     description: collection.description,
-    viewChoice:  collection.is_logged_in_only
-      ? PERM_CHOICE_LOGGED_IN
-      : viewChoice,
+    viewChoice:  collection.is_logged_in_only ?
+      PERM_CHOICE_LOGGED_IN :
+      viewChoice,
     viewLists:   _.join(collection.view_lists, ","),
     adminChoice: adminChoice,
     adminLists:  _.join(collection.admin_lists, ","),

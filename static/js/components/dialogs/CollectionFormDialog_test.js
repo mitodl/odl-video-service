@@ -72,6 +72,7 @@ describe("CollectionFormDialog", () => {
     )
   }
 
+  // eslint-disable-next-line no-unused-vars
   for (const isNew of [true, false]) {
     describe(`with isNew=${String(isNew)}`, () => {
       beforeEach(() => {
@@ -82,6 +83,7 @@ describe("CollectionFormDialog", () => {
         }
       })
 
+      // eslint-disable-next-line no-unused-vars
       for (const [selector, prop, actionType, newValue] of [
         ["#collection-title", "title", SET_COLLECTION_TITLE, "new title"],
         [
@@ -260,9 +262,9 @@ describe("CollectionFormDialog", () => {
           wrapper.find("Dialog").prop("onAccept")()
         })
 
-        const payloadArg = isNew
-          ? apiStub.firstCall.args[0]
-          : apiStub.firstCall.args[1]
+        const payloadArg = isNew ?
+          apiStub.firstCall.args[0] :
+          apiStub.firstCall.args[1]
         assert.doesNotHaveAnyKeys(payloadArg, "edx_course_id")
       })
 

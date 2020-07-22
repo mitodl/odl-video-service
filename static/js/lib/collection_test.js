@@ -51,6 +51,7 @@ describe("collection library function", () => {
     })
   })
 
+  // eslint-disable-next-line no-unused-vars
   for (const isNew of [true, false]) {
     describe(`with isNew = ${String(isNew)}`, () => {
       it("getFormKey returns the key for the form", () => {

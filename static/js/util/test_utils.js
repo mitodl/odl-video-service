@@ -19,6 +19,7 @@ export function createAssertReducerResultState(
     const getState = () => stateLookup(getReducerState(store.getState()))
 
     assert.deepEqual(defaultValue, getState())
+    // eslint-disable-next-line no-unused-vars
     for (const value of [
       true,
       null,
@@ -41,7 +42,7 @@ export function createAssertReducerResultState(
 export const stringStrip = R.compose(R.join(" "), _.words)
 
 export const makeCounter = (): (() => number) => {
-  const gen = (function*() {
+  const gen = (function* () {
     let i = 1
     while (true) {
       // eslint-disable-line no-constant-condition

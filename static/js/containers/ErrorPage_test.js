@@ -51,6 +51,7 @@ describe("ErrorPage", () => {
     return wrapper
   }
 
+  // eslint-disable-next-line no-unused-vars
   for (const [status, title, message] of [
     [
       403,
