@@ -9,7 +9,7 @@ describe("collectionsPagination actions", () => {
   let sandbox, dispatch
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     dispatch = sandbox.spy()
   })
 

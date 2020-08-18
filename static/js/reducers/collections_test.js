@@ -13,7 +13,7 @@ describe("collections endpoints", () => {
 
   beforeEach(() => {
     store = configureTestStore(rootReducer)
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     dispatchThen = store.createDispatchThen()
 
     collections = [makeCollection(), makeCollection()]

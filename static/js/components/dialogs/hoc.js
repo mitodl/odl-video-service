@@ -33,9 +33,9 @@ export const withDialogs = R.curry(
 
         const renderedDialogs = dialogs.map(dialogConfig =>
           React.createElement(
-            dialogConfig.getComponent
-              ? dialogConfig.getComponent()
-              : dialogConfig.component,
+            dialogConfig.getComponent ?
+              dialogConfig.getComponent() :
+              dialogConfig.component,
             {
               key:  dialogConfig.name,
               open:

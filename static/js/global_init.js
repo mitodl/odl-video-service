@@ -1,6 +1,5 @@
 // Define globals we would usually get from Django
 import ReactDOM from "react-dom"
-import sinon from "sinon"
 import { makeVideo } from "./factories/video"
 
 // For setting up enzyme with react adapter.
@@ -27,30 +26,20 @@ const _createSettings = () => ({
 
 global.SETTINGS = _createSettings()
 
-// workarounds for MDC
+// workarounds for MDC and HTMLCanvasElement
 global.cancelAnimationFrame = () => null
 global.requestAnimationFrame = () => null
+global.HTMLCanvasElement.prototype.getContext = () => {
+  return {
+    drawImage: function() {}
+  }
+}
 
 // polyfill for Object.entries
 import entries from "object.entries"
 if (!Object.entries) {
   entries.shim()
 }
-
-let sandbox
-// eslint-disable-next-line mocha/no-top-level-hooks
-before(() => {
-  // eslint-disable-line mocha/no-top-level-hooks
-  sandbox = sinon.sandbox.create()
-  sandbox.stub(HTMLCanvasElement.prototype, "getContext").returns({
-    drawImage: sandbox.stub()
-  })
-})
-
-// eslint-disable-next-line mocha/no-top-level-hooks
-after(() => {
-  sandbox.restore()
-})
 
 // cleanup after each test run
 // eslint-disable-next-line mocha/no-top-level-hooks

@@ -26,8 +26,8 @@ export class ToastOverlay extends React.Component<*, void> {
     return (
       <div className="toast-overlay">
         <TransitionGroup className="toast-messages" appear={true}>
-          {messages
-            ? messages.map(message => {
+          {messages ?
+            messages.map(message => {
               return (
                 <CSSTransition
                   key={message.key}
@@ -44,8 +44,8 @@ export class ToastOverlay extends React.Component<*, void> {
                   />
                 </CSSTransition>
               )
-            })
-            : null}
+            }) :
+            null}
         </TransitionGroup>
       </div>
     )

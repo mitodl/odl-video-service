@@ -13,7 +13,7 @@ describe("withPagedCollections", () => {
   let sandbox
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
   })
 
   afterEach(() => {
@@ -40,7 +40,8 @@ describe("withPagedCollections", () => {
             count:       0,
             currentPage: 42,
             pages:       {
-              "42": {}
+              // $FlowFixMe
+              42: {}
             }
           }
         }

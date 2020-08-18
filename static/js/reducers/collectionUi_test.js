@@ -66,6 +66,7 @@ describe("collectionUi", () => {
     assert.deepEqual(store.getState().collectionUi, INITIAL_UI_STATE)
   })
 
+  // eslint-disable-next-line no-unused-vars
   for (const isNew of [true, false]) {
     describe(`when isNew is ${String(isNew)}`, () => {
       beforeEach(() => {

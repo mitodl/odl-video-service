@@ -18,7 +18,7 @@ describe("CollectionDetailPage", () => {
   let sandbox
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
   })
 
   afterEach(() => {
@@ -466,6 +466,7 @@ describe("CollectionDetailPage", () => {
 
       it("is null when description is empty", () => {
         const emptyDescriptions = ["", null, undefined]
+        // eslint-disable-next-line no-unused-vars
         for (const description of emptyDescriptions) {
           assert.isFalse(
             renderDescription({ description })

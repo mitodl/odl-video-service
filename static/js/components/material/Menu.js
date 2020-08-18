@@ -25,6 +25,7 @@ export default class Menu extends React.Component<*, void> {
     }
   }
 
+  // eslint-disable-next-line react/no-deprecated
   componentWillReceiveProps(nextProps: MenuProps) {
     if (this.menu) {
       if (this.props.open !== nextProps.open) {

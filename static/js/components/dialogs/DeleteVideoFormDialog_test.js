@@ -20,7 +20,7 @@ describe("DeleteVideoDialog", () => {
   let sandbox, store, listenForActions, hideDialogStub, deleteVideoStub, video
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     hideDialogStub = sandbox.stub()

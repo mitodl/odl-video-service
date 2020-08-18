@@ -42,14 +42,14 @@ const makeConfigForVideo = (
     }
   },
   playbackRates: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0],
-  sources:       useYouTube
-    ? [
+  sources:       useYouTube ?
+    [
       {
         type: "video/youtube",
         src:  `https://www.youtube.com/watch?v=${video.youtube_id || ""}`
       }
-    ]
-    : video.sources,
+    ] :
+    video.sources,
   src:     video.sources,
   youtube: { ytControls: 2, start: startTime },
   plugins: {

@@ -49,7 +49,8 @@ describe("VideoPlayer", () => {
 
   beforeEach(() => {
     video = makeVideo()
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
+    sandbox.stub(global, "setTimeout")
     cornerFunction = sandbox.stub()
     gaEventStub = sandbox.stub(ga, "event")
     gaSetStub = sandbox.stub(ga, "set")
@@ -310,9 +311,9 @@ describe("VideoPlayer", () => {
     wrapper.instance().videoContainer = containerStub
 
     wrapper.instance().toggleFullscreen()
-    sinon.assert.calledWith(
-      wrapper.instance().player.el_.dispatchEvent,
-      new Event("fullscreen on")
+    assert.equal(
+      wrapper.instance().player.el_.dispatchEvent.getCalls()[0].args[0].type,
+      "fullscreen on"
     )
   })
 
@@ -326,9 +327,9 @@ describe("VideoPlayer", () => {
     wrapper.instance().videoContainer = containerStub
 
     wrapper.instance().toggleFullscreen()
-    sinon.assert.calledWith(
-      wrapper.instance().player.el_.dispatchEvent,
-      new Event("fullscreen off")
+    assert.equal(
+      wrapper.instance().player.el_.dispatchEvent.getCalls()[0].args[0].type,
+      "fullscreen off"
     )
   })
   ;[

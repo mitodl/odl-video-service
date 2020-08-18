@@ -12,7 +12,7 @@ describe("AnalyticsPane", () => {
   let props, sandbox
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     props = {
       analyticsData: makeVideoAnalyticsData(),
       video:         makeVideo(),
@@ -33,6 +33,7 @@ describe("AnalyticsPane", () => {
   it("renders chart", () => {
     const wrapper = renderComponent()
     const chart = wrapper.find("AnalyticsChart")
+    // eslint-disable-next-line no-unused-vars
     for (const prop of ["analyticsData", "currentTime", "duration"]) {
       assert.equal(chart.prop(prop), props[prop])
     }
@@ -47,6 +48,7 @@ describe("AnalyticsPane", () => {
   it("renders table", () => {
     const wrapper = renderComponent()
     const table = wrapper.find("AnalyticsInfoTable")
+    // eslint-disable-next-line no-unused-vars
     for (const prop of ["analyticsData", "currentTime"]) {
       assert.equal(table.prop(prop), props[prop])
     }

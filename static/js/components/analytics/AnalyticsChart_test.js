@@ -11,7 +11,7 @@ describe("AnalyticsChartTests", () => {
   let analyticsData, padding, getColorForChannelStub, props, sandbox
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     analyticsData = makeVideoAnalyticsData(10)
     padding = 2
     getColorForChannelStub = sandbox.stub()

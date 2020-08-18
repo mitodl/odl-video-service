@@ -54,7 +54,7 @@ describe("Dialog higher-order component", () => {
   }
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     dialogConfigs = [{ name: dialogName, component: TestDialog }]

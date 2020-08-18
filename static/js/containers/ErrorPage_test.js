@@ -17,7 +17,7 @@ describe("ErrorPage", () => {
   let sandbox, store, collections, listenForActions
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     collections = [makeCollection(), makeCollection(), makeCollection()]
@@ -51,6 +51,7 @@ describe("ErrorPage", () => {
     return wrapper
   }
 
+  // eslint-disable-next-line no-unused-vars
   for (const [status, title, message] of [
     [
       403,

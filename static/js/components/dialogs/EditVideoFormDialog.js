@@ -74,9 +74,9 @@ class EditVideoFormDialog extends React.Component<*, void> {
         title:          video.title,
         description:    video.description,
         overrideChoice:
-          viewChoice === PERM_CHOICE_COLLECTION
-            ? PERM_CHOICE_COLLECTION
-            : PERM_CHOICE_OVERRIDE,
+          viewChoice === PERM_CHOICE_COLLECTION ?
+            PERM_CHOICE_COLLECTION :
+            PERM_CHOICE_OVERRIDE,
         viewChoice: viewChoice,
         viewLists:  _.join(video.view_lists, ",")
       })
@@ -153,12 +153,12 @@ class EditVideoFormDialog extends React.Component<*, void> {
     if (SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS) {
       patchData = {
         ...patchData,
-        view_lists: overridePerms
-          ? calculateListPermissionValue(
+        view_lists: overridePerms ?
+          calculateListPermissionValue(
             editVideoForm.viewChoice,
             editVideoForm.viewLists
-          )
-          : [],
+          ) :
+          [],
         is_private:
           overridePerms && editVideoForm.viewChoice === PERM_CHOICE_NONE,
         is_logged_in_only:
@@ -211,9 +211,9 @@ class EditVideoFormDialog extends React.Component<*, void> {
         />
         <div className="collectionPerms">
           {`${
-            video && video.collection_view_lists.length > 0
-              ? _.map(video.collection_view_lists).join(",")
-              : "Only owner"
+            video && video.collection_view_lists.length > 0 ?
+              _.map(video.collection_view_lists).join(",") :
+              "Only owner"
           }`}
         </div>
         <Radio

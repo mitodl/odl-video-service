@@ -87,7 +87,7 @@ describe("video library functions", () => {
   describe("uploadToDropbox", () => {
     it("calls the Dropbox API with correct arguments", () => {
       SETTINGS.cloudfront_base_url = "http://asdasldk.cloudfront.net/"
-      const sandbox = sinon.sandbox.create()
+      const sandbox = sinon.createSandbox()
       window.Dropbox = { save: () => {} }
       const dropboxStub = sandbox.stub(window.Dropbox, "save")
       saveToDropbox(video)

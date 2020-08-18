@@ -18,7 +18,7 @@ describe("DeleteSubtitlesDialogTests", () => {
     collection = makeCollection()
     video = collection.videos[0]
     subtitlesFile = video.videosubtitle_set[0]
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
   })
 
   afterEach(() => {

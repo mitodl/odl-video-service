@@ -19,7 +19,7 @@ describe("ShareVideoDialog", () => {
   let sandbox, store, hideDialogStub, listenForActions
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     hideDialogStub = sandbox.stub()

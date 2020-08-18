@@ -15,26 +15,29 @@ const insertHotReload = (host, port, entries) => (
 
 const devConfig = Object.assign({}, config, {
   context: __dirname,
+  mode:    "development",
   output: {
     path: path.resolve('./static/bundles/'),
     filename: "[name].js"
   },
   plugins: [
     new webpack.DefinePlugin({
-      'process.env': {
-        'NODE_ENV': '"development"'
+      "process.env": {
+        NODE_ENV: '"development"'
       }
     }),
-    new webpack.optimize.CommonsChunkPlugin({
-      name: 'common',
-      minChunks: 2,
-    }),
     new webpack.HotModuleReplacementPlugin(),
-    new webpack.NamedModulesPlugin(),
-    new webpack.NoEmitOnErrorsPlugin(),
-    new BundleTracker({filename: './webpack-stats.json'})
+    new BundleTracker({ path: __dirname, filename: "./webpack-stats.json" })
   ],
-  devtool: 'source-map'
+  devtool: 'source-map',
+  optimization: {
+    namedModules: true,
+    splitChunks:  {
+      name:      "common",
+      minChunks: 2
+    },
+    noEmitOnErrors: true
+  }
 });
 
 devConfig.module.rules = [
@@ -49,11 +52,13 @@ devConfig.module.rules = [
       {
         loader: 'sass-loader',
         options: {
-          sourceMap: true,
-          includePaths: ['node_modules', 'node_modules/@material/*']
-            .map(dir => path.join(__dirname, dir))
-            .map(fullPath => glob.sync(fullPath))
-            .reduce((acc, matches) => acc.concat(matches), []),
+          sassOptions: {
+            sourceMap: true,
+            includePaths: ['node_modules', 'node_modules/@material/*']
+              .map(dir => path.join(__dirname, dir))
+              .map(fullPath => glob.sync(fullPath))
+              .reduce((acc, matches) => acc.concat(matches), [])
+          }
         }
       },
     ]

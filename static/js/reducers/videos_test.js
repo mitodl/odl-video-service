@@ -15,7 +15,7 @@ describe("videos endpoint", () => {
   beforeEach(() => {
     store = configureTestStore(rootReducer)
     dispatchThen = store.createDispatchThen()
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     getVideoStub = sandbox.stub(api, "getVideo").throws()
     updateVideoStub = sandbox.stub(api, "updateVideo").throws()
   })

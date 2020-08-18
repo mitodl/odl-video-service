@@ -2,7 +2,7 @@ var webpack = require('webpack');
 var path = require("path");
 var BundleTracker = require('webpack-bundle-tracker');
 const glob = require('glob');
-const ExtractTextPlugin = require("extract-text-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const { config, babelSharedLoader } = require(path.resolve("./webpack.config.shared.js"));
 
 const prodBabelConfig = Object.assign({}, babelSharedLoader);
@@ -18,28 +18,31 @@ prodConfig.module.rules = [
   ...config.module.rules,
   {
     test: /\.css$|\.scss$/,
-    use: ExtractTextPlugin.extract({
-      fallback: 'style-loader',
-      use: [
-        'css-loader',
-        'postcss-loader',
-        {
-          loader: 'sass-loader',
-          options: {
+    use:  [
+      {
+        loader: MiniCssExtractPlugin.loader
+      },
+      "css-loader",
+      "postcss-loader",
+      {
+        loader: 'sass-loader',
+        options: {
+          sassOptions: {
             sourceMap: true,
             includePaths: ['node_modules', 'node_modules/@material/*']
               .map(dir => path.join(__dirname, dir))
               .map(fullPath => glob.sync(fullPath))
-              .reduce((acc, matches) => acc.concat(matches), []),
+              .reduce((acc, matches) => acc.concat(matches), [])
           }
-        },
-      ],
-    })
+        }
+      }
+    ]
   }
 ];
 
 module.exports = Object.assign(prodConfig, {
   context: __dirname,
+  mode:    "production",
   output: {
     path: path.resolve('./static/bundles/'),
     filename: "[name]-[chunkhash].js",
@@ -58,16 +61,6 @@ module.exports = Object.assign(prodConfig, {
     new webpack.DefinePlugin({
       'typeof global': JSON.stringify('undefined')
     }),
-    new webpack.optimize.UglifyJsPlugin({
-      compress: {
-        warnings: false
-      },
-      sourceMap: true,
-    }),
-    new webpack.optimize.CommonsChunkPlugin({
-      name: 'common',
-      minChunks: 2,
-    }),
     new BundleTracker({
       filename: './webpack-stats.json'
     }),
@@ -75,11 +68,18 @@ module.exports = Object.assign(prodConfig, {
       minimize: true
     }),
     new webpack.optimize.AggressiveMergingPlugin(),
-    new ExtractTextPlugin({
+    new MiniCssExtractPlugin({
       filename: "[name]-[contenthash].css",
       allChunks: true,
       ignoreOrder: false,
     })
   ],
+  optimization: {
+    splitChunks: {
+      name:      "common",
+      minChunks: 2
+    },
+    minimize: true
+  },
   devtool: 'source-map'
 });

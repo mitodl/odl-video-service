@@ -15,7 +15,7 @@ describe("VideoAnalyticsOverlay", () => {
   let props, sandbox
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     const video = makeVideo()
     props = {
       video,

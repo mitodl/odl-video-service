@@ -13,7 +13,7 @@ describe("VideoSubtitleCard", () => {
   let sandbox, video, uploadStub, deleteStub
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     uploadStub = sandbox.stub()
     deleteStub = sandbox.stub()
     video = makeVideo()

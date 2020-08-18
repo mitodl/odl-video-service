@@ -21,7 +21,7 @@ describe("CommonUi", () => {
   let sandbox, assertReducerResultState, store
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     assertReducerResultState = createAssertReducerResultState(
       store,
       state => state.commonUi

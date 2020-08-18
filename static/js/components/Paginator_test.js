@@ -10,7 +10,7 @@ describe("Paginator", () => {
   let sandbox, stubs, props
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     stubs = {
       onClickNext: sandbox.spy(),
       onClickPrev: sandbox.spy()

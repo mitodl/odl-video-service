@@ -24,7 +24,7 @@ describe("api", () => {
   let sandbox, fetchStub
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     fetchStub = sandbox.stub(fetchFuncs, "fetchJSONWithCSRF")
   })
 

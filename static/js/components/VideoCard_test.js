@@ -23,7 +23,7 @@ describe("VideoCard", () => {
     videoHasErrorStub
 
   beforeEach(() => {
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
     showEditVideoDialogStub = sandbox.stub()
     showShareVideoDialogStub = sandbox.stub()
     showDeleteVideoDialogStub = sandbox.stub()

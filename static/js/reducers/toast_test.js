@@ -11,7 +11,7 @@ describe("toast reducer", () => {
 
   beforeEach(() => {
     store = configureTestStore(rootReducer)
-    sandbox = sinon.sandbox.create()
+    sandbox = sinon.createSandbox()
   })
 
   afterEach(() => {
