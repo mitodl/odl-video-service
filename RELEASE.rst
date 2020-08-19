@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.55.0
+Version 0.55.0 (Released August 19, 2020)
 --------------
 
 - More JS upgrades (#903)
