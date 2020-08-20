@@ -161,7 +161,7 @@ class VideoAdmin(admin.ModelAdmin):
         VideoSubtitlesInline,
         VideoThumbnailsInline
     ]
-    autocomplete_fields = ['view_lists']
+    autocomplete_fields = ['view_lists', 'collection']
     list_display = (
         'title',
         'created_at',
