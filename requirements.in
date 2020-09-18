@@ -7,7 +7,7 @@ dj-database-url==0.3.0
 dj-static==0.0.6
 django-redis==4.7.0
 djangorestframework==3.11.0
-django-server-status==0.6.0
+django-server-status==0.7.3
 django-webpack-loader==0.5.0
 factory_boy
 faker
