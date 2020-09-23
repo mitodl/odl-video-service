@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 0.56.0
+--------------
+
+- add github templates copied from mitxpro (#789)
+- Bump elliptic from 6.4.0 to 6.5.3 (#905)
+- Make collection autocomplete field for video (#909)
+- Added openssl to pass tests
+- Delete NotificationEmail (#877)
+- Bumped to latest django-server-status
+
 Version 0.55.0 (Released August 19, 2020)
 --------------
 
