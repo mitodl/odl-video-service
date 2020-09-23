@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.56.0
+Version 0.56.0 (Released September 23, 2020)
 --------------
 
 - add github templates copied from mitxpro (#789)
