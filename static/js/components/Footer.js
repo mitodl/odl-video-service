@@ -42,6 +42,13 @@ export default class Footer extends React.Component<*, void> {
                   >
                     Contact Us
                   </a>
+                  <a
+                    className="accessibility"
+                    target="_blank"
+                    href="https://accessibility.mit.edu/"
+                  >
+                    Accessibility
+                  </a>
                 </div>
                 <address className="footer-address">
                   Massachusetts Institute of Technology<br /> Cambridge, MA
