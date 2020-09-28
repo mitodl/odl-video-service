@@ -45,6 +45,7 @@ export default class Footer extends React.Component<*, void> {
                   <a
                     className="accessibility"
                     target="_blank"
+                    rel="noopener noreferrer"
                     href="https://accessibility.mit.edu/"
                   >
                     Accessibility
