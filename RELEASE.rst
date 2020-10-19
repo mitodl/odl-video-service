@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.57.0
+--------------
+
+- accessibility link in the footer (#913)
+
 Version 0.56.0 (Released September 23, 2020)
 --------------
 
