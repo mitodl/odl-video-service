@@ -6,7 +6,6 @@
 #
 amqp==2.5.2               # via kombu
 appdirs==1.4.3            # via fs, zeep
-appnope==0.1.0            # via ipython
 attrs==19.3.0             # via zeep
 backcall==0.1.0           # via ipython
 beautifulsoup4==4.9.0     # via pycaption
@@ -24,7 +23,7 @@ certifi==2020.4.5.1       # via requests, sentry-sdk
 cffi==1.14.0              # via cryptography
 chardet==3.0.4            # via requests
 colorama==0.3.9           # via mondrian
-cryptography==2.9         # via -r requirements.in, pyopenssl
+cryptography==3.2         # via -r requirements.in, pyopenssl
 cssutils==1.0.2           # via pycaption
 decorator==4.4.2          # via ipython, traitlets
 defusedxml==0.6.0         # via zeep
@@ -57,6 +56,7 @@ graphviz==0.8.4           # via bonobo
 html5lib==0.999999999     # via -r requirements.in
 httplib2==0.18.0          # via -r requirements.in, google-api-python-client, google-auth-httplib2, oauth2client
 idna==2.9                 # via requests
+importlib-metadata==2.0.0  # via kombu
 ipython-genutils==0.2.0   # via traitlets
 ipython==7.13.0           # via -r requirements.in
 isodate==0.6.0            # via zeep
@@ -120,6 +120,7 @@ wcwidth==0.1.9            # via prompt-toolkit
 webencodings==0.5.1       # via html5lib
 whistle==1.0.1            # via bonobo
 zeep==3.4.0               # via mit-moira
+zipp==3.4.0               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
