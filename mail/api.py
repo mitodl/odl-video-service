@@ -74,11 +74,11 @@ class MailgunClient:
         return response
 
     @classmethod
-    def send_batch(
+    def send_batch(  # pylint:disable=too-many-arguments,too-many-locals
         cls,
         subject,
         html_body,
-        text_body,  # pylint: disable=too-many-arguments, too-many-locals
+        text_body,
         recipients,
         sender_address=None,
         sender_name=None,
@@ -155,12 +155,12 @@ class MailgunClient:
         return responses
 
     @classmethod
-    def send_individual_email(
+    def send_individual_email(  # pylint:disable=too-many-arguments
         cls,
         subject,
         html_body,
         text_body,
-        recipient,  # pylint: disable=too-many-arguments
+        recipient,
         recipient_variables=None,
         sender_address=None,
         sender_name=None,

@@ -25,9 +25,9 @@ class VideoTranscoder(Transcoder):
         content_type = ContentType.objects.get_for_model(obj)
         uuid = str(uuid4())
         if not hasattr(self, "message"):
-            self.message = {
+            self.message = {  # pylint:disable=attribute-defined-outside-init
                 "Job": {"Status": "Error", "Id": uuid}
-            }  # pylint:disable=attribute-defined-outside-init
+            }
         job = EncodeJob()
         job.id = self.message["Job"]["Id"] if "Job" in self.message else uuid
         job.message = self.message
