@@ -6,10 +6,7 @@ import uuid
 from django.contrib.auth import get_user_model
 
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import (
-    BasePermission,
-    SAFE_METHODS
-)
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 from ui.models import Collection
 from ui.utils import has_common_lists
@@ -46,7 +43,11 @@ def has_video_view_permission(obj, request):
         bool: True if the user can view the video, False otherwise
 
     """
-    if obj.is_public or request.user.is_superuser or request.user == obj.collection.owner:
+    if (
+        obj.is_public
+        or request.user.is_superuser
+        or request.user == obj.collection.owner
+    ):
         return True
     if obj.is_private:
         return has_admin_permission(obj.collection, request)
@@ -55,12 +56,14 @@ def has_video_view_permission(obj, request):
     if request.method in SAFE_METHODS:
         if obj.is_logged_in_only or obj.collection.is_logged_in_only:
             return request.user.is_authenticated
-        view_list = list(obj.view_lists.values_list('name', flat=True))
+        view_list = list(obj.view_lists.values_list("name", flat=True))
         if view_list:
-            all_lists = view_list + list(obj.admin_lists.values_list('name', flat=True))
+            all_lists = view_list + list(obj.admin_lists.values_list("name", flat=True))
             return has_common_lists(request.user, all_lists)
         # check collection's view list
-        return has_common_lists(request.user, list(obj.collection.view_lists.values_list('name', flat=True)))
+        return has_common_lists(
+            request.user, list(obj.collection.view_lists.values_list("name", flat=True))
+        )
     return False
 
 
@@ -78,7 +81,9 @@ def has_admin_permission(obj, request):
     """
     if request.user == obj.owner or request.user.is_superuser:
         return True
-    return has_common_lists(request.user, list(obj.admin_lists.values_list('name', flat=True)))
+    return has_common_lists(
+        request.user, list(obj.admin_lists.values_list("name", flat=True))
+    )
 
 
 class HasCollectionPermissions(BasePermission):
@@ -87,8 +92,9 @@ class HasCollectionPermissions(BasePermission):
     View/edit currently both limited to users with admin access
     Creation currently limited to staff or superusers
     """
+
     def has_permission(self, request, view):
-        if request.method == 'POST':
+        if request.method == "POST":
             if not is_staff_or_superuser(request.user):
                 return False
         return True
@@ -101,6 +107,7 @@ class HasCollectionPermissions(BasePermission):
 
 class HasVideoPermissions(BasePermission):
     """Permission to view a video, based on its collection"""
+
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return has_video_view_permission(obj, request)
@@ -109,6 +116,7 @@ class HasVideoPermissions(BasePermission):
 
 class HasVideoSubtitlePermissions(BasePermission):
     """Permission to view/edit a video videoSubtitle"""
+
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return has_video_view_permission(obj.video, request)
@@ -119,6 +127,7 @@ class IsCollectionOwner(BasePermission):
     """
     Permission to check if user is owner of the collection
     """
+
     def has_object_permission(self, request, view, obj):
         if request.user == obj.owner or request.user.is_superuser:
             return True
@@ -130,15 +139,16 @@ class CanUploadToCollection(BasePermission):
     """
     Permission that checks for a collection in the request.data and verifies that the user can post to it
     """
+
     def has_permission(self, request, view):
         if request.user.is_superuser:
             return True
-        collection_key = request.data.get('collection')
+        collection_key = request.data.get("collection")
         if collection_key is None:
             return False
         try:
             uuid.UUID(collection_key)
         except ValueError:
-            raise ValidationError('wrong UUID format for {}'.format(collection_key))
+            raise ValidationError("wrong UUID format for {}".format(collection_key))
         collection = Collection.objects.filter(key=collection_key)
         return len(collection) > 0 and has_admin_permission(collection.first(), request)

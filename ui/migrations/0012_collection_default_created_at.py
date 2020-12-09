@@ -9,7 +9,7 @@ from django.db import migrations, models
 
 def populate_collection_created_at(apps, schema_editor):
     """Populate values"""
-    Collection = apps.get_model('ui', 'Collection')
+    Collection = apps.get_model("ui", "Collection")
 
     for collection in Collection.objects.iterator():
         collection.created_at = datetime.now(tz=pytz.utc)
@@ -19,14 +19,14 @@ def populate_collection_created_at(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0011_collection_created_at'),
+        ("ui", "0011_collection_created_at"),
     ]
 
     operations = [
         migrations.RunPython(populate_collection_created_at, migrations.RunPython.noop),
         migrations.AlterField(
-            model_name='collection',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True)
+            model_name="collection",
+            name="created_at",
+            field=models.DateTimeField(auto_now_add=True),
         ),
     ]

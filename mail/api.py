@@ -25,7 +25,8 @@ class MailgunClient:
     """
     Provides functions for communicating with the Mailgun REST API.
     """
-    _basic_auth_credentials = ('api', settings.MAILGUN_KEY)
+
+    _basic_auth_credentials = ("api", settings.MAILGUN_KEY)
 
     @staticmethod
     def default_params():
@@ -36,11 +37,11 @@ class MailgunClient:
         Returns:
             dict: A dict of default parameters for the Mailgun API
         """
-        return {'from': settings.EMAIL_SUPPORT}
+        return {"from": settings.EMAIL_SUPPORT}
 
     @classmethod
     def _mailgun_request(  # pylint: disable=too-many-arguments
-            cls, request_func, endpoint, params, sender_name=None, raise_for_status=True
+        cls, request_func, endpoint, params, sender_name=None, raise_for_status=True
     ):
         """
         Sends a request to the Mailgun API
@@ -53,19 +54,16 @@ class MailgunClient:
         Returns:
             requests.Response: HTTP response
         """
-        mailgun_url = '{}/{}'.format(settings.MAILGUN_URL, endpoint)
+        mailgun_url = "{}/{}".format(settings.MAILGUN_URL, endpoint)
         email_params = cls.default_params()
         email_params.update(params)
         # Update 'from' address if sender_name was specified
         if sender_name is not None:
-            email_params['from'] = "{sender_name} <{email}>".format(
-                sender_name=sender_name,
-                email=email_params['from']
+            email_params["from"] = "{sender_name} <{email}>".format(
+                sender_name=sender_name, email=email_params["from"]
             )
         response = request_func(
-            mailgun_url,
-            auth=cls._basic_auth_credentials,
-            data=email_params
+            mailgun_url, auth=cls._basic_auth_credentials, data=email_params
         )
         if response.status_code == status.HTTP_401_UNAUTHORIZED:
             message = "Mailgun API keys not properly configured."
@@ -76,9 +74,17 @@ class MailgunClient:
         return response
 
     @classmethod
-    def send_batch(cls, subject, html_body, text_body,  # pylint: disable=too-many-arguments, too-many-locals
-                   recipients, sender_address=None, sender_name=None, chunk_size=settings.MAILGUN_BATCH_CHUNK_SIZE,
-                   raise_for_status=True):
+    def send_batch(
+        cls,
+        subject,
+        html_body,
+        text_body,  # pylint: disable=too-many-arguments, too-many-locals
+        recipients,
+        sender_address=None,
+        sender_name=None,
+        chunk_size=settings.MAILGUN_BATCH_CHUNK_SIZE,
+        raise_for_status=True,
+    ):
         """
         Sends a text email to a list of recipients (one email per recipient) via batch.
 
@@ -105,9 +111,7 @@ class MailgunClient:
                along with recipients we failed to send to.
         """
         # Convert null contexts to empty dicts
-        recipients = (
-            (email, context or {}) for email, context in recipients
-        )
+        recipients = ((email, context or {}) for email, context in recipients)
 
         if settings.MAILGUN_RECIPIENT_OVERRIDE is not None:
             # This is used for debugging only
@@ -121,19 +125,19 @@ class MailgunClient:
             emails = list(chunk_dict.keys())
 
             params = {
-                'to': emails,
-                'subject': subject,
-                'html': html_body,
-                'text': text_body,
-                'recipient-variables': json.dumps(chunk_dict),
+                "to": emails,
+                "subject": subject,
+                "html": html_body,
+                "text": text_body,
+                "recipient-variables": json.dumps(chunk_dict),
             }
             if sender_address:
-                params['from'] = sender_address
+                params["from"] = sender_address
 
             try:
                 response = cls._mailgun_request(
                     requests.post,
-                    'messages',
+                    "messages",
                     params,
                     sender_name=sender_name,
                     raise_for_status=raise_for_status,
@@ -143,9 +147,7 @@ class MailgunClient:
             except ImproperlyConfigured:
                 raise
             except Exception as exception:  # pylint: disable=broad-except
-                exception_pairs.append(
-                    (emails, exception)
-                )
+                exception_pairs.append((emails, exception))
 
         if exception_pairs:
             raise SendBatchException(exception_pairs)
@@ -153,9 +155,17 @@ class MailgunClient:
         return responses
 
     @classmethod
-    def send_individual_email(cls, subject, html_body, text_body, recipient,  # pylint: disable=too-many-arguments
-                              recipient_variables=None,
-                              sender_address=None, sender_name=None, raise_for_status=True):
+    def send_individual_email(
+        cls,
+        subject,
+        html_body,
+        text_body,
+        recipient,  # pylint: disable=too-many-arguments
+        recipient_variables=None,
+        sender_address=None,
+        sender_name=None,
+        raise_for_status=True,
+    ):
         """
         Sends a text email to a single recipient.
 
@@ -238,14 +248,18 @@ def context_for_video(video):
     context = {
         "video_url": urljoin(
             settings.ODL_VIDEO_BASE_URL,
-            reverse('video-detail', kwargs={'video_key': video.hexkey})),
+            reverse("video-detail", kwargs={"video_key": video.hexkey}),
+        ),
         "video_title": video.title,
         "collection_title": video.collection.title,
         "collection_url": urljoin(
             settings.ODL_VIDEO_BASE_URL,
-            reverse('collection-react-view', kwargs={'collection_key': video.collection.hexkey})),
+            reverse(
+                "collection-react-view",
+                kwargs={"collection_key": video.collection.hexkey},
+            ),
+        ),
         "support_email": settings.EMAIL_SUPPORT,
-        "static_url": urljoin(settings.ODL_VIDEO_BASE_URL, settings.STATIC_URL)
-
+        "static_url": urljoin(settings.ODL_VIDEO_BASE_URL, settings.STATIC_URL),
     }
     return context

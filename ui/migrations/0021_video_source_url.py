@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0020_collection_name'),
+        ("ui", "0020_collection_name"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='video',
-            name='source_url',
+            model_name="video",
+            name="source_url",
             field=models.URLField(max_length=2000),
         ),
     ]

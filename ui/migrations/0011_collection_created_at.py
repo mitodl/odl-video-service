@@ -8,17 +8,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0010_video_default_sort'),
+        ("ui", "0010_video_default_sort"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collection',
-            name='created_at',
+            model_name="collection",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True, null=True),
         ),
         migrations.AlterModelOptions(
-            name='collection',
-            options={'ordering': ['-created_at']},
+            name="collection",
+            options={"ordering": ["-created_at"]},
         ),
     ]

@@ -17,13 +17,13 @@ from django.conf.urls import url, include
 from django.contrib import admin
 
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-    url(r'^status/', include('server_status.urls')),
-    url(r'^', include('ui.urls')),
-    url(r'^', include('cloudsync.urls')),
-    url(r'^hijack/', include('hijack.urls', namespace='hijack')),
+    url(r"^admin/", admin.site.urls),
+    url(r"^status/", include("server_status.urls")),
+    url(r"^", include("ui.urls")),
+    url(r"^", include("cloudsync.urls")),
+    url(r"^hijack/", include("hijack.urls", namespace="hijack")),
 ]
 
-handler403 = 'ui.views.permission_denied_403_view'
-handler404 = 'ui.views.page_not_found_404_view'
-handler500 = 'ui.views.error_500_view'
+handler403 = "ui.views.permission_denied_403_view"
+handler404 = "ui.views.page_not_found_404_view"
+handler500 = "ui.views.error_500_view"

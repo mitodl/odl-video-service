@@ -35,10 +35,16 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        if not options["video_file_id"] and not any((options["edx_course_id"], options["video_title"])):
-            raise CommandError("Please provide --video-file-id or at least one of --edx-course-id and --video-title")
+        if not options["video_file_id"] and not any(
+            (options["edx_course_id"], options["video_title"])
+        ):
+            raise CommandError(
+                "Please provide --video-file-id or at least one of --edx-course-id and --video-title"
+            )
         if options["video_file_id"] and options["video_title"]:
-            raise CommandError("Please provide --video-file-id or --video-title, not both")
+            raise CommandError(
+                "Please provide --video-file-id or --video-title, not both"
+            )
 
         filters = dict(encoding=EncodingNames.HLS)
         if options["video_file_id"]:
@@ -50,33 +56,47 @@ class Command(BaseCommand):
                 filters["video__title"] = options["video_title"]
         video_files = list(VideoFile.objects.filter(**filters).all())
         if not video_files:
-            raise CommandError("No HLS-encoded VideoFiles found that match the given parameters ({})".format(filters))
+            raise CommandError(
+                "No HLS-encoded VideoFiles found that match the given parameters ({})".format(
+                    filters
+                )
+            )
 
-        self.stdout.write(
-            "Attempting to post video(s) to edX..."
-        )
+        self.stdout.write("Attempting to post video(s) to edX...")
         for video_file in video_files:
             response_dict = post_hls_to_edx(video_file)
-            good_responses = {endpoint: resp for endpoint, resp in response_dict.items() if getattr(resp, "ok", None)}
+            good_responses = {
+                endpoint: resp
+                for endpoint, resp in response_dict.items()
+                if getattr(resp, "ok", None)
+            }
             bad_responses = {
-                endpoint: resp for endpoint, resp in response_dict.items() if endpoint not in good_responses
+                endpoint: resp
+                for endpoint, resp in response_dict.items()
+                if endpoint not in good_responses
             }
             for _, resp in good_responses.items():
-                self.stdout.write(self.style.SUCCESS(
-                    "Video successfully added to edX – VideoFile: {} ({}), edX url: {}".format(
-                        video_file.video.title,
-                        video_file.pk,
-                        resp.url,
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        "Video successfully added to edX – VideoFile: {} ({}), edX url: {}".format(
+                            video_file.video.title,
+                            video_file.pk,
+                            resp.url,
+                        )
                     )
-                ))
+                )
             for edx_endpoint, resp in bad_responses.items():
-                resp_summary = None if resp is None else get_error_response_summary_dict(resp)
-                self.stdout.write(self.style.ERROR(
-                    "Request to add HLS video to edX failed – "
-                    "VideoFile: {} ({}), edX url: {}, API response: {}".format(
-                        video_file.video.title,
-                        video_file.pk,
-                        edx_endpoint.full_api_url,
-                        resp_summary,
+                resp_summary = (
+                    None if resp is None else get_error_response_summary_dict(resp)
+                )
+                self.stdout.write(
+                    self.style.ERROR(
+                        "Request to add HLS video to edX failed – "
+                        "VideoFile: {} ({}), edX url: {}, API response: {}".format(
+                            video_file.video.title,
+                            video_file.pk,
+                            edx_endpoint.full_api_url,
+                            resp_summary,
+                        )
                     )
-                ))
+                )

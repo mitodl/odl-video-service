@@ -6,4 +6,5 @@ from django.apps import AppConfig
 
 class CloudSyncConfig(AppConfig):
     """AppConfig for cloudsync"""
-    name = 'cloudsync'
+
+    name = "cloudsync"

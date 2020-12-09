@@ -21,7 +21,8 @@ def mock_video_headers():
 
 @pytest.fixture
 def mocked_video_request(
-        reqmocker, mock_video_url, mock_video_headers, mock_video_file):  # pylint: disable=redefined-outer-name
+    reqmocker, mock_video_url, mock_video_headers, mock_video_file
+):  # pylint: disable=redefined-outer-name
     """Mocks video request"""
     reqmocker.get(
         mock_video_url,
@@ -34,15 +35,15 @@ def mocked_video_request(
 @pytest.fixture
 def stub_aws_upload():
     """Mocks upload to AWS"""
-    s3 = botocore.session.get_session().create_client('s3')
+    s3 = botocore.session.get_session().create_client("s3")
     stubber = Stubber(s3)
     expected_params = {
-        'Bucket': 'video-s3',
-        'Key': 'video.mp4',
-        'ContentType': 'video/mp4',
-        'Body': ANY,
+        "Bucket": "video-s3",
+        "Key": "video.mp4",
+        "ContentType": "video/mp4",
+        "Body": ANY,
     }
-    stubber.add_response('put_object', {}, expected_params)
+    stubber.add_response("put_object", {}, expected_params)
     stubber.activate()
     yield stubber
     stubber.deactivate()
@@ -53,24 +54,27 @@ def youtube_mock(mocker):
     """
     Mocks calls for youtube api tests
     """
-    mocker.patch('cloudsync.youtube.boto3')
-    mocker.patch('cloudsync.youtube.oauth2client')
-    mocker.patch('cloudsync.youtube.build')
-    mocker.patch('cloudsync.youtube.SeekableBufferedInputBase', return_value=BytesIO(b'123'))
+    mocker.patch("cloudsync.youtube.boto3")
+    mocker.patch("cloudsync.youtube.oauth2client")
+    mocker.patch("cloudsync.youtube.build")
+    mocker.patch(
+        "cloudsync.youtube.SeekableBufferedInputBase", return_value=BytesIO(b"123")
+    )
 
 
 class MockClientET:
     """
     Mock boto3 ElasticTranscoder client, because ElasticTranscode isn't supported by moto yet
     """
+
     job = None
     preset = None
     error = None
 
     def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
         """Mock __init__"""
-        if 'error' in kwargs:
-            self.error = kwargs['error']
+        if "error" in kwargs:
+            self.error = kwargs["error"]
 
     def read_job(self, **kwargs):  # pylint: disable=unused-argument
         """Mock read_job method"""
@@ -89,9 +93,10 @@ class MockBoto:
     """
     Mock boto3 class for returning mock elastictranscoder client
     """
+
     def client(*args, **kwargs):  # pylint: disable=unused-argument,no-method-argument
         """Return a mock client"""
-        if args[0] == 'elastictranscoder':
+        if args[0] == "elastictranscoder":
             return MockClientET()
 
 
@@ -99,6 +104,7 @@ class MockHttpErrorResponse:
     """
     Mock googleapiclient.HttpError response
     """
-    def __init__(self, status, reason='mock reason'):
+
+    def __init__(self, status, reason="mock reason"):
         self.status = status
         self.reason = reason

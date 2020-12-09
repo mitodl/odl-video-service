@@ -8,12 +8,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0009_moira_lists'),
+        ("ui", "0009_moira_lists"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='video',
-            options={'ordering': ['-created_at']},
+            name="video",
+            options={"ordering": ["-created_at"]},
         ),
     ]

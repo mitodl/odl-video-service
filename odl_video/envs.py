@@ -41,15 +41,17 @@ def get_bool(name, default):
         return default
 
     parsed_value = value.lower()
-    if parsed_value == 'true':
+    if parsed_value == "true":
         return True
-    elif parsed_value == 'false':
+    elif parsed_value == "false":
         return False
 
-    raise EnvironmentVariableParseException("Expected value in {name}={value} to be a boolean".format(
-        name=name,
-        value=value,
-    ))
+    raise EnvironmentVariableParseException(
+        "Expected value in {name}={value} to be a boolean".format(
+            name=name,
+            value=value,
+        )
+    )
 
 
 def get_int(name, default):
@@ -71,10 +73,12 @@ def get_int(name, default):
     try:
         parsed_value = int(value)
     except ValueError as ex:
-        raise EnvironmentVariableParseException("Expected value in {name}={value} to be an int".format(
-            name=name,
-            value=value,
-        )) from ex
+        raise EnvironmentVariableParseException(
+            "Expected value in {name}={value} to be an int".format(
+                name=name,
+                value=value,
+            )
+        ) from ex
 
     return parsed_value
 
@@ -95,10 +99,12 @@ def get_list_of_str(name, default):
     if value is None:
         return default
 
-    parse_exception = EnvironmentVariableParseException("Expected value in {name}={value} to be a list of str".format(
-        name=name,
-        value=value,
-    ))
+    parse_exception = EnvironmentVariableParseException(
+        "Expected value in {name}={value} to be a list of str".format(
+            name=name,
+            value=value,
+        )
+    )
 
     try:
         parsed_value = literal_eval(value)
@@ -152,7 +158,7 @@ def get_key(name, default):
     value = get_string(name, default)
     if not isinstance(value, str):
         return value
-    return value.encode().decode('unicode_escape').encode()
+    return value.encode().decode("unicode_escape").encode()
 
 
 def parse_env(env_file):
@@ -172,7 +178,7 @@ def parse_env(env_file):
     try:
         with open(env_file) as envsettings:
             for line in envsettings:
-                k, v = line.rstrip('\n').lstrip('export ').split('=', maxsplit=1)
+                k, v = line.rstrip("\n").lstrip("export ").split("=", maxsplit=1)
                 os.environ.setdefault(k, v)
     except FileNotFoundError:
         pass

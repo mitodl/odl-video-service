@@ -4,7 +4,13 @@ import factory
 
 from ui.constants import StreamSource, YouTubeStatus
 from ui.encodings import EncodingNames
-from ui.factories import VideoFactory, YouTubeVideoFactory, VideoSubtitleFactory, VideoFileFactory, CollectionFactory
+from ui.factories import (
+    VideoFactory,
+    YouTubeVideoFactory,
+    VideoSubtitleFactory,
+    VideoFileFactory,
+    CollectionFactory,
+)
 from ui.models import Video
 
 pytestmark = pytest.mark.django_db
@@ -15,13 +21,15 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture()
 def video_with_file():
     """ Fixture to create a video with an original videofile """
-    video_file = VideoFileFactory(video__is_public=True, encoding=EncodingNames.ORIGINAL)
+    video_file = VideoFileFactory(
+        video__is_public=True, encoding=EncodingNames.ORIGINAL
+    )
     return video_file.video
 
 
 def test_youtube_video_delete_signal(mocker):
     """ Tests that a video's YouTubeVideo object is deleted after changing from public to private"""
-    mock_task = mocker.patch('ui.signals.remove_youtube_video.delay')
+    mock_task = mocker.patch("ui.signals.remove_youtube_video.delay")
     video = VideoFactory(is_public=True)
     yt_video = YouTubeVideoFactory(video=video)
     youtube_id = yt_video.id
@@ -32,14 +40,14 @@ def test_youtube_video_delete_signal(mocker):
 
 def test_youtube_video_permissions_signal(mocker):
     """ Tests that a video's public permissions are removed if it's subtitle is deleted """
-    mock_delete_video = mocker.patch('ui.signals.remove_youtube_video.delay')
-    mock_delete_caption = mocker.patch('ui.signals.remove_youtube_caption.delay')
-    mocker.patch('ui.models.VideoSubtitle.delete_from_s3')
+    mock_delete_video = mocker.patch("ui.signals.remove_youtube_video.delay")
+    mock_delete_caption = mocker.patch("ui.signals.remove_youtube_caption.delay")
+    mocker.patch("ui.models.VideoSubtitle.delete_from_s3")
     video = VideoFactory(is_public=True)
     YouTubeVideoFactory(video=video)
     VideoSubtitleFactory(video=video)
-    VideoSubtitleFactory(video=video, language='fr')
-    video.videosubtitle_set.get(language='fr').delete()
+    VideoSubtitleFactory(video=video, language="fr")
+    video.videosubtitle_set.get(language="fr").delete()
     # video's public status should not be changed as long as 1 subtitle still exists
     assert video.is_public is True
     assert mock_delete_caption.call_count == 1
@@ -48,21 +56,21 @@ def test_youtube_video_permissions_signal(mocker):
     assert mock_delete_video.call_count == 1
     assert not video.is_public
     caption = VideoSubtitleFactory(video=video)
-    mock_video_save = mocker.patch('ui.models.Video.save')
+    mock_video_save = mocker.patch("ui.models.Video.save")
     caption.delete()
     # If video is not public, no change to it should be saved after a caption is deleted.
     assert mock_video_save.call_count == 0
 
 
-@pytest.mark.parametrize(["is_public", "on_youtube", "delete_count"], [
-    [True, True, 0],
-    [True, False, 0],
-    [False, True, 1],
-    [False, False, 0]
-])
-def test_youtube_sync_signal(mocker, is_public, on_youtube, delete_count, video_with_file):
+@pytest.mark.parametrize(
+    ["is_public", "on_youtube", "delete_count"],
+    [[True, True, 0], [True, False, 0], [False, True, 1], [False, False, 0]],
+)
+def test_youtube_sync_signal(
+    mocker, is_public, on_youtube, delete_count, video_with_file
+):
     """Tests tasks for uploading or deleting from YouTube are called when appropriate."""
-    mock_delete = mocker.patch('ui.signals.YouTubeVideo.delete')
+    mock_delete = mocker.patch("ui.signals.YouTubeVideo.delete")
     if on_youtube:
         YouTubeVideoFactory(video=video_with_file)
     collection = video_with_file.collection
@@ -71,36 +79,47 @@ def test_youtube_sync_signal(mocker, is_public, on_youtube, delete_count, video_
     assert mock_delete.call_count == (1 if is_public and on_youtube else delete_count)
 
 
-@pytest.mark.parametrize('status', [YouTubeStatus.REJECTED, YouTubeStatus.FAILED, YouTubeStatus.UPLOADED])
+@pytest.mark.parametrize(
+    "status", [YouTubeStatus.REJECTED, YouTubeStatus.FAILED, YouTubeStatus.UPLOADED]
+)
 def test_youtube_sync_redo_failed(mocker, video_with_file, status):
     """Test that an existing youtube video is deleted if it has a bad status"""
-    mock_delete = mocker.patch('ui.signals.YouTubeVideo.delete')
+    mock_delete = mocker.patch("ui.signals.YouTubeVideo.delete")
     YouTubeVideoFactory(video=video_with_file, status=status)
     video_with_file.is_public = True
     video_with_file.save()
-    expected_count = (0 if status == YouTubeStatus.UPLOADED else 1)
+    expected_count = 0 if status == YouTubeStatus.UPLOADED else 1
     assert mock_delete.call_count == expected_count
 
 
 def test_edx_video_file_signal(mocker):
     """When a VideoFile is created with the right properties, a task to add the video to edX should be called"""
-    patched_edx_task = mocker.patch('ui.signals.ovs_tasks.post_hls_to_edx.delay')
+    patched_edx_task = mocker.patch("ui.signals.ovs_tasks.post_hls_to_edx.delay")
 
-    collections = CollectionFactory.create_batch(3, edx_course_id=factory.Iterator(["courseid", None, "courseid"]))
+    collections = CollectionFactory.create_batch(
+        3, edx_course_id=factory.Iterator(["courseid", None, "courseid"])
+    )
     video_files = VideoFileFactory.create_batch(
         3,
-        encoding=factory.Iterator([EncodingNames.HLS, EncodingNames.HLS, "other-encoding"]),
-        video__collection=factory.Iterator(collections)
+        encoding=factory.Iterator(
+            [EncodingNames.HLS, EncodingNames.HLS, "other-encoding"]
+        ),
+        video__collection=factory.Iterator(collections),
     )
     patched_edx_task.assert_called_once_with(video_files[0].id)
 
 
 @pytest.mark.parametrize("retranscode_enabled", [True, False])
-def test_collection_schedule_retranscode_signal(settings, video_with_file, retranscode_enabled):
+def test_collection_schedule_retranscode_signal(
+    settings, video_with_file, retranscode_enabled
+):
     """Test that a collection's videos are synced to the same retranscode_enabled value on save"""
     settings.FEATURES["RETRANSCODE_ENABLED"] = retranscode_enabled
     assert video_with_file.schedule_retranscode is False
     collection = video_with_file.collection
     collection.schedule_retranscode = True
     collection.save()
-    assert Video.objects.get(id=video_with_file.id).schedule_retranscode is retranscode_enabled
+    assert (
+        Video.objects.get(id=video_with_file.id).schedule_retranscode
+        is retranscode_enabled
+    )

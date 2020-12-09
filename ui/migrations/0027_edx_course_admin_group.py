@@ -16,7 +16,9 @@ def create_edx_course_admin_group(*args, **kwargs):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0026_schedule_retranscode'),
+        ("ui", "0026_schedule_retranscode"),
     ]
 
-    operations = [migrations.RunPython(create_edx_course_admin_group, migrations.RunPython.noop)]
+    operations = [
+        migrations.RunPython(create_edx_course_admin_group, migrations.RunPython.noop)
+    ]

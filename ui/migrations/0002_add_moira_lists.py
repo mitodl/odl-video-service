@@ -8,20 +8,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0001_initial'),
+        ("ui", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MoiraList',
+            name="MoiraList",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=250)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=250)),
             ],
         ),
         migrations.AddField(
-            model_name='video',
-            name='moira_lists',
-            field=models.ManyToManyField(to='ui.MoiraList'),
+            model_name="video",
+            name="moira_lists",
+            field=models.ManyToManyField(to="ui.MoiraList"),
         ),
     ]

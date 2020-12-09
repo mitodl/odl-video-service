@@ -49,6 +49,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt -r test_requirements.txt
 
+      - name: Code formatting
+        run: black --check .
+
       - name: Lint
         run: pylint ./**/*.py
 

@@ -6,17 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0021_video_source_url'),
+        ("ui", "0021_video_source_url"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='video',
-            options={'ordering': ['custom_order', '-created_at']},
+            name="video",
+            options={"ordering": ["custom_order", "-created_at"]},
         ),
         migrations.AddField(
-            model_name='video',
-            name='custom_order',
+            model_name="video",
+            name="custom_order",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]

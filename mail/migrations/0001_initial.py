@@ -9,17 +9,36 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='NotificationEmail',
+            name="NotificationEmail",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('notification_type', models.CharField(choices=[('Success', 'Success'), ('Invalid Input Error', 'Invalid Input Error'), ('Other Error', 'Other Error')], default='Success', max_length=50, unique=True)),
-                ('email_subject', models.TextField(blank=True)),
-                ('email_body', models.TextField(blank=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "notification_type",
+                    models.CharField(
+                        choices=[
+                            ("Success", "Success"),
+                            ("Invalid Input Error", "Invalid Input Error"),
+                            ("Other Error", "Other Error"),
+                        ],
+                        default="Success",
+                        max_length=50,
+                        unique=True,
+                    ),
+                ),
+                ("email_subject", models.TextField(blank=True)),
+                ("email_body", models.TextField(blank=True)),
             ],
         ),
     ]

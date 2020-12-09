@@ -29,26 +29,27 @@ def process_dropbox_data(dropbox_upload_data):
     Returns:
         list: A list of dictionaries containing informations about the videos
     """
-    collection_key = dropbox_upload_data['collection']
-    dropbox_links_list = dropbox_upload_data['files']
+    collection_key = dropbox_upload_data["collection"]
+    dropbox_links_list = dropbox_upload_data["files"]
     collection = get_object_or_404(models.Collection, key=collection_key)
     response_data = {}
     for dropbox_link in dropbox_links_list:
         with transaction.atomic():
             video = models.Video.objects.create(
                 source_url=dropbox_link["link"],
-                title=dropbox_link["name"][:models.Video._meta.get_field("title").max_length],
+                title=dropbox_link["name"][
+                    : models.Video._meta.get_field("title").max_length
+                ],
                 collection=collection,
             )
             models.VideoFile.objects.create(
                 s3_object_key=video.get_s3_key(),
                 video_id=video.id,
-                bucket_name=settings.VIDEO_S3_BUCKET
+                bucket_name=settings.VIDEO_S3_BUCKET,
             )
         # Kick off chained async celery tasks to transfer file to S3, then start a transcode job
         task_result = chain(
-            tasks.stream_to_s3.s(video.id),
-            tasks.transcode_from_s3.si(video.id)
+            tasks.stream_to_s3.s(video.id), tasks.transcode_from_s3.si(video.id)
         )()
 
         response_data[video.hexkey] = {
@@ -73,12 +74,15 @@ def post_hls_to_edx(video_file):
     assert video_file.can_add_to_edx, "This video file cannot be added to edX"
 
     edx_endpoints = models.EdxEndpoint.objects.filter(
-        Q(collections__id__in=[video_file.video.collection_id]) | Q(is_global_default=True)
+        Q(collections__id__in=[video_file.video.collection_id])
+        | Q(is_global_default=True)
     )
     if not edx_endpoints.exists():
-        log.error("Trying to post HLS to edX endpoints, but no endpoints exist",
-                  videofile_id=video_file.pk,
-                  videofile=video_file)
+        log.error(
+            "Trying to post HLS to edX endpoints, but no endpoints exist",
+            videofile_id=video_file.pk,
+            videofile=video_file,
+        )
 
     responses = {}
     for edx_endpoint in edx_endpoints:
@@ -93,7 +97,7 @@ def post_hls_to_edx(video_file):
                             "url": video_file.cloudfront_url,
                             "file_size": 0,
                             "bitrate": 0,
-                            "profile": "hls"
+                            "profile": "hls",
                         }
                     ],
                     "courses": [{video_file.video.collection.edx_course_id: None}],
@@ -102,14 +106,16 @@ def post_hls_to_edx(video_file):
                 },
                 headers={
                     "Authorization": "Bearer {}".format(edx_endpoint.access_token),
-                }
+                },
             )
             resp.raise_for_status()
         except requests.exceptions.RequestException as exc:
             if exc is not None and exc.response is not None:
                 response_summary_dict = get_error_response_summary_dict(exc.response)
             elif isinstance(exc, requests.exceptions.ConnectionError):
-                response_summary_dict = {"exception": "ConnectionError (No server response)"}
+                response_summary_dict = {
+                    "exception": "ConnectionError (No server response)"
+                }
             else:
                 response_summary_dict = {"exception": str(exc)}
             log.error(

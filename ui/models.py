@@ -21,11 +21,13 @@ from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.encodings import EncodingNames
 from ui.utils import get_bucket, multi_urljoin
 
-TRANSCODE_PREFIX = 'transcoded'
+TRANSCODE_PREFIX = "transcoded"
 
 
 @shared_task(bind=True)
-def delete_s3_objects(self, bucket_name, key, as_filter=False):  # pylint:disable=unused-argument
+def delete_s3_objects(
+    self, bucket_name, key, as_filter=False
+):  # pylint:disable=unused-argument
     """
     Delete objects from an S3 bucket
 
@@ -37,7 +39,7 @@ def delete_s3_objects(self, bucket_name, key, as_filter=False):  # pylint:disabl
     print("BUCKET NAME {}".format(bucket_name))
     bucket = get_bucket(bucket_name)
     if not as_filter:
-        bucket.delete_objects(Delete={'Objects': [{'Key': key}]})
+        bucket.delete_objects(Delete={"Objects": [{"Key": key}]})
     else:
         for obj in bucket.objects.filter(Prefix=key):
             obj.delete()
@@ -50,7 +52,7 @@ class ValidateOnSaveMixin(models.Model):
         abstract = True
 
     def save(
-            self, force_insert=False, force_update=False, **kwargs
+        self, force_insert=False, force_update=False, **kwargs
     ):  # pylint: disable=arguments-differ
         if not (force_insert or force_update):
             self.full_clean()
@@ -61,23 +63,25 @@ class MoiraList(TimestampedModel):
     """
     Model for Moira
     """
+
     name = models.CharField(max_length=250, unique=True)
 
     def __str__(self):
         return self.name
 
     def __repr__(self):
-        return '<MoiraList: {self.name!r}>'.format(self=self)
+        return "<MoiraList: {self.name!r}>".format(self=self)
 
 
 class EdxEndpoint(ValidateOnSaveMixin):
     """Model that represents an edX instance to which videos will be posted"""
+
     name = models.CharField(max_length=20, unique=True, blank=False, null=False)
     base_url = models.CharField(max_length=100, blank=False, null=False)
     access_token = models.CharField(max_length=2048)
     hls_api_path = models.CharField(max_length=100, default=DEFAULT_EDX_HLS_API_PATH)
     is_global_default = models.BooleanField(default=False)
-    collections = models.ManyToManyField("Collection", through='CollectionEdxEndpoint')
+    collections = models.ManyToManyField("Collection", through="CollectionEdxEndpoint")
 
     @property
     def full_api_url(self):
@@ -85,19 +89,24 @@ class EdxEndpoint(ValidateOnSaveMixin):
         return multi_urljoin(
             self.base_url,
             self.hls_api_path or DEFAULT_EDX_HLS_API_PATH,
-            add_trailing_slash=True
+            add_trailing_slash=True,
         )
 
     def clean(self):
         if self.is_global_default is True:
-            existing_global_default_qset = EdxEndpoint.objects.filter(is_global_default=True)
+            existing_global_default_qset = EdxEndpoint.objects.filter(
+                is_global_default=True
+            )
             if self.pk:
-                existing_global_default_qset = existing_global_default_qset.exclude(pk=self.pk)
+                existing_global_default_qset = existing_global_default_qset.exclude(
+                    pk=self.pk
+                )
             if existing_global_default_qset.exists():
-                raise ValidationError({
-                    'is_global_default':
-                        'Only one EdxEndpoint should be set as the global default (is_global_default=True)'
-                })
+                raise ValidationError(
+                    {
+                        "is_global_default": "Only one EdxEndpoint should be set as the global default (is_global_default=True)"
+                    }
+                )
 
     def __str__(self):
         return "{} - {}".format(self.name, self.base_url)
@@ -105,7 +114,7 @@ class EdxEndpoint(ValidateOnSaveMixin):
     def __repr__(self):
         return (
             '<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}", '
-            'is_global_default={self.is_global_default}>'.format(self=self)
+            "is_global_default={self.is_global_default}>".format(self=self)
         )
 
 
@@ -129,11 +138,14 @@ class CollectionManager(TimestampedModelManager):
             return self.all()
         if user.is_anonymous:
             return self.none()
-        moira_list_qset = MoiraList.objects.filter(name__in=utils.user_moira_lists(user))
+        moira_list_qset = MoiraList.objects.filter(
+            name__in=utils.user_moira_lists(user)
+        )
         return self.filter(
-            models.Q(view_lists__in=moira_list_qset) |
-            models.Q(admin_lists__in=moira_list_qset) |
-            models.Q(owner=user)).distinct()
+            models.Q(view_lists__in=moira_list_qset)
+            | models.Q(admin_lists__in=moira_list_qset)
+            | models.Q(owner=user)
+        ).distinct()
 
     def all_admin(self, user):
         """
@@ -149,43 +161,59 @@ class CollectionManager(TimestampedModelManager):
         if user.is_superuser:
             return self.all()
         return self.filter(
-            models.Q(admin_lists__in=MoiraList.objects.filter(name__in=utils.user_moira_lists(user))) |
-            models.Q(owner=user)).distinct()
+            models.Q(
+                admin_lists__in=MoiraList.objects.filter(
+                    name__in=utils.user_moira_lists(user)
+                )
+            )
+            | models.Q(owner=user)
+        ).distinct()
 
 
 class Collection(TimestampedModel):
     """
     Model for Video Collections
     """
+
     key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     title = models.TextField()
     slug = models.TextField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='view_lists')
-    admin_lists = models.ManyToManyField(MoiraList, blank=True, related_name='admin_lists')
+    view_lists = models.ManyToManyField(
+        MoiraList, blank=True, related_name="view_lists"
+    )
+    admin_lists = models.ManyToManyField(
+        MoiraList, blank=True, related_name="admin_lists"
+    )
     is_logged_in_only = models.BooleanField(null=False, default=False)
     allow_share_openedx = models.BooleanField(null=False, default=False)
     stream_source = models.CharField(
         null=True,
         blank=True,
         choices=[(status, status) for status in StreamSource.ALL_SOURCES],
-        max_length=10
+        max_length=10,
     )
     edx_course_id = models.CharField(null=True, blank=True, max_length=150)
-    edx_endpoints = models.ManyToManyField("EdxEndpoint", through='CollectionEdxEndpoint')
+    edx_endpoints = models.ManyToManyField(
+        "EdxEndpoint", through="CollectionEdxEndpoint"
+    )
     schedule_retranscode = models.BooleanField(default=False)
 
     objects = CollectionManager()
 
     class Meta:
-        ordering = ['-created_at', ]
+        ordering = [
+            "-created_at",
+        ]
 
     def __str__(self):
         return self.title
 
     def __repr__(self):
-        return '<Collection: title="{self.title!r}", owner={self.owner.username!r}>'.format(self=self)
+        return '<Collection: title="{self.title!r}", owner={self.owner.username!r}>'.format(
+            self=self
+        )
 
     @property
     def hexkey(self):
@@ -204,6 +232,7 @@ class Collection(TimestampedModel):
 
 class CollectionEdxEndpoint(models.Model):
     """Model for a mapping table between Collections and EdxEndpoints"""
+
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     edx_endpoint = models.ForeignKey(EdxEndpoint, on_delete=models.CASCADE)
 
@@ -228,19 +257,21 @@ class VideoManager(TimestampedModelManager):
         if user.is_anonymous:
             return self.filter(is_public=True)
         moira_list_qset = MoiraList.objects.filter(
-            name__in=utils.user_moira_lists(user))
+            name__in=utils.user_moira_lists(user)
+        )
         return self.filter(
             (
-                models.Q(collection__owner=user) |
-                models.Q(collection__admin_lists__in=moira_list_qset)
-            ) |
-            (
-                models.Q(is_private=False) & (
-                    models.Q(is_public=True) |
-                    models.Q(is_logged_in_only=True) |
-                    models.Q(collection__is_logged_in_only=True) |
-                    models.Q(view_lists__in=moira_list_qset) |
-                    models.Q(collection__view_lists__in=moira_list_qset)
+                models.Q(collection__owner=user)
+                | models.Q(collection__admin_lists__in=moira_list_qset)
+            )
+            | (
+                models.Q(is_private=False)
+                & (
+                    models.Q(is_public=True)
+                    | models.Q(is_logged_in_only=True)
+                    | models.Q(collection__is_logged_in_only=True)
+                    | models.Q(view_lists__in=moira_list_qset)
+                    | models.Q(collection__view_lists__in=moira_list_qset)
                 )
             )
         ).distinct()
@@ -251,8 +282,11 @@ class Video(TimestampedModel):
     Represents an uploaded video, primarily in terms of metadata (source url, title, etc).
     The actual video files (original and encoded) are represented by the VideoFile model.
     """
+
     key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
-    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name='videos')
+    collection = models.ForeignKey(
+        Collection, on_delete=models.CASCADE, related_name="videos"
+    )
     title = models.CharField(max_length=250, blank=False)
     description = models.TextField(blank=True)
     source_url = models.URLField(max_length=2000)
@@ -264,7 +298,9 @@ class Video(TimestampedModel):
     )
     encode_jobs = GenericRelation(EncodeJob)
     multiangle = models.BooleanField(null=False, default=False)
-    view_lists = models.ManyToManyField(MoiraList, blank=True, related_name='video_view_lists')
+    view_lists = models.ManyToManyField(
+        MoiraList, blank=True, related_name="video_view_lists"
+    )
     is_public = models.BooleanField(null=False, default=False)
     is_private = models.BooleanField(null=False, default=False)
     is_logged_in_only = models.BooleanField(null=False, default=False)
@@ -274,7 +310,10 @@ class Video(TimestampedModel):
     objects = VideoManager()
 
     class Meta:
-        ordering = ['custom_order', '-created_at', ]
+        ordering = [
+            "custom_order",
+            "-created_at",
+        ]
 
     @property
     def hexkey(self):
@@ -318,8 +357,12 @@ class Video(TimestampedModel):
         Returns:
             list: sorted list of transcoded VideoFile objects, from highest to lowest resolution
         """
-        return sorted(self.videofile_set.exclude(encoding=EncodingNames.ORIGINAL),
-                      key=lambda x: EncodingNames.MP4.index(x.encoding) if x.encoding in EncodingNames.MP4 else 0)
+        return sorted(
+            self.videofile_set.exclude(encoding=EncodingNames.ORIGINAL),
+            key=lambda x: EncodingNames.MP4.index(x.encoding)
+            if x.encoding in EncodingNames.MP4
+            else 0,
+        )
 
     @property
     def download(self):
@@ -331,9 +374,9 @@ class Video(TimestampedModel):
         """
         files = sorted(
             self.videofile_set.exclude(encoding=EncodingNames.HLS),
-            key=lambda x: EncodingNames.MP4.index(x.encoding) if x.encoding in EncodingNames.MP4 else len(
-                EncodingNames.MP4
-            )
+            key=lambda x: EncodingNames.MP4.index(x.encoding)
+            if x.encoding in EncodingNames.MP4
+            else len(EncodingNames.MP4),
         )
         if files:
             return files[0]
@@ -347,14 +390,21 @@ class Video(TimestampedModel):
         Returns:
             dict: Dict of video sources for VideoJS
         """
-        if self.is_public and self.collection.stream_source == StreamSource.YOUTUBE and self.youtube_id is not None:
+        if (
+            self.is_public
+            and self.collection.stream_source == StreamSource.YOUTUBE
+            and self.youtube_id is not None
+        ):
             return []
         sources = [
             {
                 "src": file.cloudfront_url,
                 "label": file.encoding,
-                "type":  "application/x-mpegURL" if file.encoding == EncodingNames.HLS else "video/mp4"
-            } for file in self.transcoded_videos
+                "type": "application/x-mpegURL"
+                if file.encoding == EncodingNames.HLS
+                else "video/mp4",
+            }
+            for file in self.transcoded_videos
         ]
         return sources
 
@@ -369,8 +419,8 @@ class Video(TimestampedModel):
         Returns:
             str: A unique S3 key including the user id as a virtual subfolder
         """
-        _, extension = os.path.splitext(self.source_url.split('/')[-1])
-        newkey = '{uuid}/video{ext}'.format(uuid=str(self.hexkey), ext=extension)
+        _, extension = os.path.splitext(self.source_url.split("/")[-1])
+        newkey = "{uuid}/video{ext}".format(uuid=str(self.hexkey), ext=extension)
         return newkey
 
     def transcode_key(self, preset=None):
@@ -383,14 +433,16 @@ class Video(TimestampedModel):
         Returns:
             str: The S3 key to used for the encoded file.
         """
-        original_s3_key = self.videofile_set.get(encoding='original').s3_object_key
+        original_s3_key = self.videofile_set.get(encoding="original").s3_object_key
         if not preset:
             return original_s3_key
-        output_template = '{prefix}/{s3key}_{preset}'
+        output_template = "{prefix}/{s3key}_{preset}"
         basename, _ = os.path.splitext(original_s3_key)
-        return output_template.format(prefix=TRANSCODE_PREFIX, s3key=basename, preset=preset)
+        return output_template.format(
+            prefix=TRANSCODE_PREFIX, s3key=basename, preset=preset
+        )
 
-    def subtitle_key(self, dttm, language='en', prefix='subtitles'):
+    def subtitle_key(self, dttm, language="en", prefix="subtitles"):
         """
         Returns an S3 object key to be used for a subtitle file
         Args:
@@ -401,11 +453,11 @@ class Video(TimestampedModel):
         Returns:
             str: S3 object key
         """
-        return '{prefix}/{key}/subtitles_{key}_{dt}_{lang}.vtt'.format(
+        return "{prefix}/{key}/subtitles_{key}_{dt}_{lang}.vtt".format(
             prefix=prefix,
             key=self.hexkey,
-            dt=dttm.strftime('%Y%m%d%H%M%S'),
-            lang=language
+            dt=dttm.strftime("%Y%m%d%H%M%S"),
+            lang=language,
         )
 
     def update_status(self, status):
@@ -434,7 +486,7 @@ class Video(TimestampedModel):
         return self.title or "<untitled video>"
 
     def __repr__(self):
-        return '<Video: {self.title!r} {self.key!r}>'.format(self=self)
+        return "<Video: {self.title!r} {self.key!r}>".format(self=self)
 
 
 class VideoS3(TimestampedModel):
@@ -455,7 +507,7 @@ class VideoS3(TimestampedModel):
             Returns:
                 s3.Object: Video file's S3 object
         """
-        s3 = boto3.resource('s3')
+        s3 = boto3.resource("s3")
         return s3.Object(self.bucket_name, self.s3_object_key)
 
     @property
@@ -494,8 +546,7 @@ class VideoS3(TimestampedModel):
         if not distribution:
             raise RuntimeError("Missing required setting: VIDEO_CLOUDFRONT_DIST")
         return "https://{dist}.cloudfront.net/{key}".format(
-            dist=distribution,
-            key=self.s3_object_key
+            dist=distribution, key=self.s3_object_key
         )
 
     def delete_from_s3(self):
@@ -512,6 +563,7 @@ class VideoFile(VideoS3):
     """
     A file associated with a Video object, either the original upload or a transcoded file.
     """
+
     encoding = models.CharField(max_length=128, default=EncodingNames.ORIGINAL)
 
     def delete_from_s3(self):
@@ -533,16 +585,18 @@ class VideoFile(VideoS3):
             bool:
         """
         return bool(
-            self.encoding == EncodingNames.HLS and
-            self.cloudfront_url and
-            self.video.collection.edx_course_id
+            self.encoding == EncodingNames.HLS
+            and self.cloudfront_url
+            and self.video.collection.edx_course_id
         )
 
     def __str__(self):
-        return '{}: {} encoding'.format(self.video.title, self.encoding)
+        return "{}: {} encoding".format(self.video.title, self.encoding)
 
     def __repr__(self):
-        return '<VideoFile: {self.video.title!r} {self.s3_object_key!r} {self.encoding!r}>'.format(self=self)
+        return "<VideoFile: {self.video.title!r} {self.s3_object_key!r} {self.encoding!r}>".format(
+            self=self
+        )
 
 
 class VideoThumbnail(VideoS3):
@@ -550,20 +604,29 @@ class VideoThumbnail(VideoS3):
     A thumbnail associated with a video object; the number of thumbnails for a video
     will depend on the length of the video.
     """
+
     max_width = models.IntegerField(null=True, blank=True)
     max_height = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
-        return '{}: {}'.format(self.video.title, self.s3_object_key)
+        return "{}: {}".format(self.video.title, self.s3_object_key)
 
     def __repr__(self):
-        return '<VideoThumbnail: {self.s3_object_key!r} {self.max_width!r} {self.max_height!r}>'.format(self=self)
+        return "<VideoThumbnail: {self.s3_object_key!r} {self.max_width!r} {self.max_height!r}>".format(
+            self=self
+        )
 
 
 class VideoSubtitle(VideoS3):
     """A VTT file that provides captions for a Video"""
+
     filename = models.CharField(max_length=1024, null=False, blank=True)
-    language = models.CharField(max_length=2, null=False, blank=True, default=languages.get(name='English').alpha_2)
+    language = models.CharField(
+        max_length=2,
+        null=False,
+        blank=True,
+        default=languages.get(name="English").alpha_2,
+    )
     unique_together = (("video", "language"),)
 
     @property
@@ -574,20 +637,27 @@ class VideoSubtitle(VideoS3):
         return languages.get(alpha_2=self.language).name
 
     def __str__(self):
-        return '{}: {}: {}'.format(self.video.title, self.s3_object_key, self.language)
+        return "{}: {}: {}".format(self.video.title, self.s3_object_key, self.language)
 
     def __repr__(self):
-        return '<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >'.format(self=self)
+        return "<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >".format(
+            self=self
+        )
 
 
 class YouTubeVideo(TimestampedModel):
     """A YouTube version of the video"""
+
     video = models.OneToOneField(Video, on_delete=models.CASCADE, primary_key=True)
     id = models.CharField(max_length=11, null=True)
-    status = models.CharField(null=False, default=YouTubeStatus.UPLOADING, max_length=24)
+    status = models.CharField(
+        null=False, default=YouTubeStatus.UPLOADING, max_length=24
+    )
 
     def __repr__(self):
-        return '<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >'.format(self=self)
+        return "<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >".format(
+            self=self
+        )
 
     def __str__(self):
-        return '{}: {}: {}'.format(self.id, self.video.title, self.video.hexkey)
+        return "{}: {}: {}".format(self.id, self.video.title, self.video.hexkey)
