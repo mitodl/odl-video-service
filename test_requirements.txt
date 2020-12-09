@@ -13,7 +13,7 @@ pytest==4.4.1
 pytest-cov>=2.6.1
 pytest-django==3.4.8
 pytest-env==0.6.2
-pytest-mock
+pytest-mock==3.2.0
 pytest-pep8==1.0.6
 pytest-pylint==0.12.3
 requests-mock==1.8.0
