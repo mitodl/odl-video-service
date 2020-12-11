@@ -21,7 +21,7 @@ from odl_video.envs import (
 
 from odl_video.sentry import init_sentry
 
-VERSION = "0.57.0"
+VERSION = "0.58.0"
 
 ENVIRONMENT = get_string("ODL_VIDEO_ENVIRONMENT", "dev")
 

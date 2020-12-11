@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.58.0
+--------------
+
+- Remove techtv2ovs tasks, functions, and dependencies (#918)
+- Migrate from Travis to Github Actions and update broken requirements (#916)
+
 Version 0.57.0 (Released October 20, 2020)
 --------------
 
