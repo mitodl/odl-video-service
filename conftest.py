@@ -16,9 +16,9 @@ def warnings_as_errors():
     """
     try:
         warnings.resetwarnings()
-        warnings.simplefilter('error')
+        warnings.simplefilter("error")
         # For celery
-        warnings.simplefilter('ignore', category=ImportWarning)
+        warnings.simplefilter("ignore", category=ImportWarning)
         warnings.filterwarnings(
             "ignore",
             message="'async' and 'await' will become reserved keywords in Python 3.7",

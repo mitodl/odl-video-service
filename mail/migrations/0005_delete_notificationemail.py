@@ -6,11 +6,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('mail', '0004_add_timestamps'),
+        ("mail", "0004_add_timestamps"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='NotificationEmail',
+            name="NotificationEmail",
         ),
     ]

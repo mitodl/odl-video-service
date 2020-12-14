@@ -6,8 +6,10 @@ from django.db import migrations, models
 
 
 def forwards_func(apps, schema_editor):
-    Collection = apps.get_model('ui', 'Collection')
-    for collection in Collection.objects.filter(techtvcollection__isnull=True).iterator():
+    Collection = apps.get_model("ui", "Collection")
+    for collection in Collection.objects.filter(
+        techtvcollection__isnull=True
+    ).iterator():
         collection.slug = collection.title
         collection.save()
 
@@ -19,14 +21,14 @@ def reverse_func(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0019_add_timestamps'),
+        ("ui", "0019_add_timestamps"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collection',
-            name='slug',
+            model_name="collection",
+            name="slug",
             field=models.TextField(blank=True, null=True),
         ),
-    migrations.RunPython(forwards_func, reverse_func),
+        migrations.RunPython(forwards_func, reverse_func),
     ]

@@ -8,13 +8,29 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0007_collections'),
+        ("ui", "0007_collections"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='video',
-            name='status',
-            field=models.CharField(choices=[('Created', 'Created'), ('Uploading', 'Uploading'), ('Upload failed', 'Upload failed'), ('Transcoding', 'Transcoding'), ('Transcode failed internal error', 'Transcode failed internal error'), ('Transcode failed video error', 'Transcode failed video error'), ('Complete', 'Complete'), ('Error', 'Error')], default='Created', max_length=50),
+            model_name="video",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("Created", "Created"),
+                    ("Uploading", "Uploading"),
+                    ("Upload failed", "Upload failed"),
+                    ("Transcoding", "Transcoding"),
+                    (
+                        "Transcode failed internal error",
+                        "Transcode failed internal error",
+                    ),
+                    ("Transcode failed video error", "Transcode failed video error"),
+                    ("Complete", "Complete"),
+                    ("Error", "Error"),
+                ],
+                default="Created",
+                max_length=50,
+            ),
         ),
     ]

@@ -22,6 +22,7 @@ class TimestampedModelQuerySet(QuerySet):
     """
     Subclassed QuerySet for TimestampedModelManager
     """
+
     def update(self, **kwargs):
         """
         Automatically update updated_at timestamp when .update(). This is because .update()
@@ -37,6 +38,7 @@ class TimestampedModelManager(Manager):
     """
     Subclassed manager for TimestampedModel
     """
+
     def update(self, **kwargs):
         """
         Allows access to TimestampedModelQuerySet's update method on the manager
@@ -54,6 +56,7 @@ class TimestampedModel(Model):
     """
     Base model for create/update timestamps
     """
+
     objects = TimestampedModelManager()
     created_at = DateTimeField(auto_now_add=True)  # UTC
     updated_at = DateTimeField(auto_now=True)  # UTC

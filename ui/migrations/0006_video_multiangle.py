@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0005_video_statuses'),
+        ("ui", "0005_video_statuses"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='video',
-            name='multiangle',
+            model_name="video",
+            name="multiangle",
             field=models.BooleanField(default=False),
         ),
     ]

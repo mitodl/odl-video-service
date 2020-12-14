@@ -6,23 +6,42 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0025_preset_id_textfield'),
+        ("ui", "0025_preset_id_textfield"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collection',
-            name='schedule_retranscode',
+            model_name="collection",
+            name="schedule_retranscode",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='video',
-            name='schedule_retranscode',
+            model_name="video",
+            name="schedule_retranscode",
             field=models.BooleanField(default=False),
         ),
         migrations.AlterField(
-            model_name='video',
-            name='status',
-            field=models.CharField(choices=[('Created', 'Created'), ('Uploading', 'Uploading'), ('Upload failed', 'Upload failed'), ('Transcoding', 'Transcoding'), ('Transcode failed internal error', 'Transcode failed internal error'), ('Transcode failed video error', 'Transcode failed video error'), ('Retranscoding', 'Retranscoding'), ('Retranscode failed error', 'Retranscode failed error'), ('Retranscode scheduled', 'Retranscode scheduled'), ('Complete', 'Complete'), ('Error', 'Error')], default='Created', max_length=50),
+            model_name="video",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("Created", "Created"),
+                    ("Uploading", "Uploading"),
+                    ("Upload failed", "Upload failed"),
+                    ("Transcoding", "Transcoding"),
+                    (
+                        "Transcode failed internal error",
+                        "Transcode failed internal error",
+                    ),
+                    ("Transcode failed video error", "Transcode failed video error"),
+                    ("Retranscoding", "Retranscoding"),
+                    ("Retranscode failed error", "Retranscode failed error"),
+                    ("Retranscode scheduled", "Retranscode scheduled"),
+                    ("Complete", "Complete"),
+                    ("Error", "Error"),
+                ],
+                default="Created",
+                max_length=50,
+            ),
         ),
     ]

@@ -9,14 +9,16 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0017_require_video_title'),
+        ("ui", "0017_require_video_title"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='youtubevideo',
-            name='created_at',
-            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
+            model_name="youtubevideo",
+            name="created_at",
+            field=models.DateTimeField(
+                auto_now_add=True, default=django.utils.timezone.now
+            ),
             preserve_default=False,
         ),
     ]

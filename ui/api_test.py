@@ -36,12 +36,11 @@ def edx_api_scenario():
     video_file = VideoFileFactory.create(
         encoding=EncodingNames.HLS,
         video__title="My Video",
-        video__collection__edx_course_id=course_id
+        video__collection__edx_course_id=course_id,
     )
     default_endpoint = EdxEndpointFactory.create(is_global_default=True)
     collection_edx_endpoint = CollectionEdxEndpointFactory(
-        collection=video_file.video.collection,
-        edx_endpoint__is_global_default=False
+        collection=video_file.video.collection, edx_endpoint__is_global_default=False
     )
     return SimpleNamespace(
         video_file=video_file,
@@ -55,14 +54,20 @@ def test_process_dropbox_data_happy_path(mocker):
     """
     Tests that the process_dropbox_data in case everything is fine
     """
-    mocked_chain = mocker.patch('ui.api.chain')
-    mocked_stream_to_s3 = mocker.patch('cloudsync.tasks.stream_to_s3')
-    mocked_transcode_from_s3 = mocker.patch('cloudsync.tasks.transcode_from_s3')
+    mocked_chain = mocker.patch("ui.api.chain")
+    mocked_stream_to_s3 = mocker.patch("cloudsync.tasks.stream_to_s3")
+    mocked_transcode_from_s3 = mocker.patch("cloudsync.tasks.transcode_from_s3")
     collection = CollectionFactory()
 
     input_data = {
-        'collection': collection.hexkey,
-        'files': [{'name': name, 'link': 'http://example.com/{}'.format(name)} for name in ('foo', 'bar',)],
+        "collection": collection.hexkey,
+        "files": [
+            {"name": name, "link": "http://example.com/{}".format(name)}
+            for name in (
+                "foo",
+                "bar",
+            )
+        ],
     }
 
     results = api.process_dropbox_data(input_data)
@@ -74,14 +79,13 @@ def test_process_dropbox_data_happy_path(mocker):
         assert qset.count() == 1
         video = qset.first()
         assert video.collection == collection
-        assert video.title == data['title']
-        assert video.get_s3_key() == data['s3key']
+        assert video.title == data["title"]
+        assert video.get_s3_key() == data["s3key"]
         # checking that the functions in the chain have been called
         mocked_stream_to_s3.s.assert_any_call(video.id)
         mocked_transcode_from_s3.si.assert_any_call(video.id)
         mocked_chain.assert_any_call(
-            mocked_stream_to_s3.s(video.id),
-            mocked_transcode_from_s3.si(video.id)
+            mocked_stream_to_s3.s(video.id), mocked_transcode_from_s3.si(video.id)
         )
 
 
@@ -89,17 +93,20 @@ def test_process_dropbox_data_empty_link_list(mocker):
     """
     Tests that the process_dropbox_data in case the collection does not exist
     """
-    mocked_chain = mocker.patch('ui.api.chain')
-    mocked_stream_to_s3 = mocker.patch('cloudsync.tasks.stream_to_s3')
-    mocked_transcode_from_s3 = mocker.patch('cloudsync.tasks.transcode_from_s3')
+    mocked_chain = mocker.patch("ui.api.chain")
+    mocked_stream_to_s3 = mocker.patch("cloudsync.tasks.stream_to_s3")
+    mocked_transcode_from_s3 = mocker.patch("cloudsync.tasks.transcode_from_s3")
     collection = CollectionFactory()
 
-    assert api.process_dropbox_data(
-        {
-            'collection': collection.hexkey,
-            'files': [],
-        }
-    ) == {}
+    assert (
+        api.process_dropbox_data(
+            {
+                "collection": collection.hexkey,
+                "files": [],
+            }
+        )
+        == {}
+    )
     assert mocked_chain.call_count == 0
     assert mocked_stream_to_s3.s.call_count == 0
     assert mocked_transcode_from_s3.si.call_count == 0
@@ -112,16 +119,16 @@ def test_process_dropbox_data_wrong_collection():
     with pytest.raises(ValidationError):
         api.process_dropbox_data(
             {
-                'collection': 'fooooooooo',
-                'files': [],
+                "collection": "fooooooooo",
+                "files": [],
             }
         )
 
     with pytest.raises(Http404):
         api.process_dropbox_data(
             {
-                'collection': uuid4().hex,
-                'files': [],
+                "collection": uuid4().hex,
+                "files": [],
             }
         )
 
@@ -138,9 +145,12 @@ def test_post_hls_to_edx(reqmocker, edx_api_scenario):
             headers={
                 "Authorization": "Bearer {}".format(edx_endpoint.access_token),
             },
-            status_code=200
+            status_code=200,
         )
-        for edx_endpoint in [edx_api_scenario.default_endpoint, edx_api_scenario.collection_endpoint]
+        for edx_endpoint in [
+            edx_api_scenario.default_endpoint,
+            edx_api_scenario.collection_endpoint,
+        ]
     ]
     api.post_hls_to_edx(edx_api_scenario.video_file)
     for mocked_post in mocked_posts:
@@ -154,7 +164,7 @@ def test_post_hls_to_edx(reqmocker, edx_api_scenario):
                     "url": edx_api_scenario.video_file.cloudfront_url,
                     "file_size": 0,
                     "bitrate": 0,
-                    "profile": "hls"
+                    "profile": "hls",
                 }
             ],
             "courses": [{edx_api_scenario.course_id: None}],
@@ -202,7 +212,7 @@ def test_post_hls_to_edx_bad_resp(mocker, reqmocker, edx_api_scenario):
                     status_code=400,
                     url=default_endpoint.full_api_url,
                 )
-            )
+            ),
         ),
         reqmocker.register_uri(
             "POST",
@@ -210,8 +220,8 @@ def test_post_hls_to_edx_bad_resp(mocker, reqmocker, edx_api_scenario):
             headers={
                 "Authorization": "Bearer {}".format(collection_endpoint.access_token),
             },
-            status_code=200
-        )
+            status_code=200,
+        ),
     ]
     responses = api.post_hls_to_edx(edx_api_scenario.video_file)
     for mocked_post in mocked_posts:

@@ -22,7 +22,7 @@ from ui.models import (
     Collection,
     Video,
     VideoSubtitle,
-    delete_s3_objects
+    delete_s3_objects,
 )
 from ui.utils import get_et_preset, get_bucket, get_et_job
 from odl_video import logging
@@ -32,8 +32,8 @@ log = logging.getLogger(__name__)
 THUMBNAIL_PATTERN = "thumbnails/{}_thumbnail_{{count}}"
 RETRANSCODE_FOLDER = "retranscode/"
 ParsedVideoAttributes = namedtuple(
-    'ParsedVideoAttributes',
-    ['prefix', 'session', 'record_date', 'record_date_str', 'name']
+    "ParsedVideoAttributes",
+    ["prefix", "session", "record_date", "record_date_str", "name"],
 )
 
 
@@ -50,36 +50,40 @@ def process_transcode_results(video, job):
         move_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
             f"{RETRANSCODE_FOLDER}{TRANSCODE_PREFIX}/{video.hexkey}",
-            f"{TRANSCODE_PREFIX}/{video.hexkey}")
+            f"{TRANSCODE_PREFIX}/{video.hexkey}",
+        )
 
-    for playlist in job['Playlists']:
+    for playlist in job["Playlists"]:
         VideoFile.objects.update_or_create(
             # This assumes HLS encoding
-            s3_object_key='{}.m3u8'.format(playlist['Name'].replace(RETRANSCODE_FOLDER, "")),
+            s3_object_key="{}.m3u8".format(
+                playlist["Name"].replace(RETRANSCODE_FOLDER, "")
+            ),
             defaults={
-                'video': video,
-                'bucket_name': settings.VIDEO_S3_TRANSCODE_BUCKET,
-                'encoding': EncodingNames.HLS,
-                'preset_id': ','.join([output['PresetId'] for output in job['Outputs']]),
-            }
-
+                "video": video,
+                "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
+                "encoding": EncodingNames.HLS,
+                "preset_id": ",".join(
+                    [output["PresetId"] for output in job["Outputs"]]
+                ),
+            },
         )
-    for output in job['Outputs']:
-        if 'ThumbnailPattern' not in output:
+    for output in job["Outputs"]:
+        if "ThumbnailPattern" not in output:
             continue
-        thumbnail_pattern = output['ThumbnailPattern'].replace("{count}", "")
-        preset = get_et_preset(output['PresetId'])
+        thumbnail_pattern = output["ThumbnailPattern"].replace("{count}", "")
+        preset = get_et_preset(output["PresetId"])
         bucket = get_bucket(settings.VIDEO_S3_THUMBNAIL_BUCKET)
         for thumb in bucket.objects.filter(Prefix=thumbnail_pattern):
             VideoThumbnail.objects.update_or_create(
                 s3_object_key=thumb.key.replace(RETRANSCODE_FOLDER, ""),
                 defaults={
-                    'video': video,
-                    'bucket_name': settings.VIDEO_S3_THUMBNAIL_BUCKET,
-                    'preset_id': output['PresetId'],
-                    'max_height': int(preset['Thumbnails']['MaxHeight']),
-                    'max_width': int(preset['Thumbnails']['MaxWidth'])
-                }
+                    "video": video,
+                    "bucket_name": settings.VIDEO_S3_THUMBNAIL_BUCKET,
+                    "preset_id": output["PresetId"],
+                    "max_height": int(preset["Thumbnails"]["MaxHeight"]),
+                    "max_width": int(preset["Thumbnails"]["MaxWidth"]),
+                },
             )
 
 
@@ -94,13 +98,13 @@ def get_error_type_from_et_error(et_error):
         ui.constants.VideoStatus: a string representing the video status
     """
     if not et_error:
-        log.error('Elastic transcoder did not return an error string')
+        log.error("Elastic transcoder did not return an error string")
         return VideoStatus.TRANSCODE_FAILED_INTERNAL
-    error_code = et_error.split(' ')[0]
+    error_code = et_error.split(" ")[0]
     try:
         error_code = int(error_code)
     except ValueError:
-        log.error('Elastic transcoder did not return an expected error string')
+        log.error("Elastic transcoder did not return an expected error string")
         return VideoStatus.TRANSCODE_FAILED_INTERNAL
     if 4000 <= error_code < 5000:
         return VideoStatus.TRANSCODE_FAILED_VIDEO
@@ -119,15 +123,19 @@ def refresh_status(video, encode_job=None):
         if not encode_job:
             encode_job = video.encode_jobs.latest("created_at")
         et_job = get_et_job(encode_job.id)
-        if et_job['Status'] == VideoStatus.COMPLETE:
+        if et_job["Status"] == VideoStatus.COMPLETE:
             process_transcode_results(video, et_job)
             video.update_status(VideoStatus.COMPLETE)
-        elif et_job['Status'] == VideoStatus.ERROR:
+        elif et_job["Status"] == VideoStatus.ERROR:
             if video.status == VideoStatus.RETRANSCODING:
                 video.update_status(VideoStatus.RETRANSCODE_FAILED)
             else:
-                video.update_status(get_error_type_from_et_error(et_job.get('Output', {}).get('StatusDetail')))
-            log.error('Transcoding failed', video_id=video.id)
+                video.update_status(
+                    get_error_type_from_et_error(
+                        et_job.get("Output", {}).get("StatusDetail")
+                    )
+                )
+            log.error("Transcoding failed", video_id=video.id)
         encode_job.message = et_job
         encode_job.save()
 
@@ -142,7 +150,7 @@ def transcode_video(video, video_file):
     """
 
     video_input = {
-        'Key': video_file.s3_object_key,
+        "Key": video_file.s3_object_key,
     }
 
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
@@ -152,47 +160,58 @@ def transcode_video(video, video_file):
         delete_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
             f"{prefix}{TRANSCODE_PREFIX}/{video.hexkey}",
-            as_filter=True
+            as_filter=True,
         )
     else:
         prefix = ""
 
     # Generate an output video file for each encoding (assumed to be HLS)
-    outputs = [{
-        'Key': f"{prefix}{video.transcode_key(preset)}",
-        'PresetId': preset,
-        'SegmentDuration': '10.0'
-    } for preset in settings.ET_PRESET_IDS]
+    outputs = [
+        {
+            "Key": f"{prefix}{video.transcode_key(preset)}",
+            "PresetId": preset,
+            "SegmentDuration": "10.0",
+        }
+        for preset in settings.ET_PRESET_IDS
+    ]
 
-    playlists = [{
-        'Format': 'HLSv3',
-        'Name': f"{prefix}{video.transcode_key('_index')}",
-        'OutputKeys': [output['Key'] for output in outputs]
-    }]
+    playlists = [
+        {
+            "Format": "HLSv3",
+            "Name": f"{prefix}{video.transcode_key('_index')}",
+            "OutputKeys": [output["Key"] for output in outputs],
+        }
+    ]
 
     # Generate thumbnails for the 1st encoding (no point in doing so for each).
     if video.status != VideoStatus.RETRANSCODE_SCHEDULED:
-        outputs[0]['ThumbnailPattern'] = f"{prefix}{THUMBNAIL_PATTERN.format(video_file.s3_basename)}"
+        outputs[0][
+            "ThumbnailPattern"
+        ] = f"{prefix}{THUMBNAIL_PATTERN.format(video_file.s3_basename)}"
 
     transcoder = VideoTranscoder(
         settings.ET_PIPELINE_ID,
         settings.AWS_REGION,
         settings.AWS_ACCESS_KEY_ID,
-        settings.AWS_SECRET_ACCESS_KEY
+        settings.AWS_SECRET_ACCESS_KEY,
     )
 
-    user_meta = {'pipeline': 'odl-video-service-{}'.format(settings.ENVIRONMENT).lower()}
+    user_meta = {
+        "pipeline": "odl-video-service-{}".format(settings.ENVIRONMENT).lower()
+    }
 
     try:
-        transcoder.encode(video_input, outputs, Playlists=playlists, UserMetadata=user_meta)
+        transcoder.encode(
+            video_input, outputs, Playlists=playlists, UserMetadata=user_meta
+        )
     except ClientError as exc:
-        log.error('Transcode job creation failed', video_id=video.id)
+        log.error("Transcode job creation failed", video_id=video.id)
         if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
             video.status = VideoStatus.RETRANSCODE_FAILED
         else:
             video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
         video.save()
-        if hasattr(exc, 'response'):
+        if hasattr(exc, "response"):
             transcoder.message = exc.response
         raise
     finally:
@@ -200,9 +219,9 @@ def transcode_video(video, video_file):
         if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
             video.update_status(VideoStatus.RETRANSCODING)
         elif video.status not in (
-                VideoStatus.TRANSCODE_FAILED_INTERNAL,
-                VideoStatus.TRANSCODE_FAILED_VIDEO,
-                VideoStatus.RETRANSCODE_FAILED
+            VideoStatus.TRANSCODE_FAILED_INTERNAL,
+            VideoStatus.TRANSCODE_FAILED_VIDEO,
+            VideoStatus.RETRANSCODE_FAILED,
         ):
             video.update_status(VideoStatus.TRANSCODING)
 
@@ -217,7 +236,7 @@ def create_lecture_collection_slug(video_attributes):
     return (
         video_attributes.prefix
         if not video_attributes.session
-        else '{}-{}'.format(video_attributes.prefix, video_attributes.session)
+        else "{}-{}".format(video_attributes.prefix, video_attributes.session)
     )
 
 
@@ -231,9 +250,13 @@ def create_lecture_video_title(video_attributes):
     video_title_date = (
         video_attributes.record_date_str
         if not video_attributes.record_date
-        else video_attributes.record_date.strftime('%B %d, %Y')
+        else video_attributes.record_date.strftime("%B %d, %Y")
     )
-    return 'Lecture - {}'.format(video_title_date) if video_title_date else video_attributes.name
+    return (
+        "Lecture - {}".format(video_title_date)
+        if video_title_date
+        else video_attributes.name
+    )
 
 
 def process_watch_file(s3_filename):
@@ -251,41 +274,38 @@ def process_watch_file(s3_filename):
     collection, _ = Collection.objects.get_or_create(
         slug=collection_slug,
         owner=User.objects.get(username=settings.LECTURE_CAPTURE_USER),
-        defaults={
-            'title': collection_slug
-        }
+        defaults={"title": collection_slug},
     )
     with transaction.atomic():
         video = Video.objects.create(
-            source_url='https://{}/{}/{}'.format(
+            source_url="https://{}/{}/{}".format(
                 settings.AWS_S3_DOMAIN,
                 settings.VIDEO_S3_WATCH_BUCKET,
-                quote(s3_filename)
+                quote(s3_filename),
             ),
             collection=collection,
             title=create_lecture_video_title(video_attributes),
-            multiangle=True  # Assume all videos in watch bucket are multi-angle
+            multiangle=True,  # Assume all videos in watch bucket are multi-angle
         )
         video_file = VideoFile.objects.create(
             s3_object_key=video.get_s3_key(),
             video_id=video.id,
-            bucket_name=settings.VIDEO_S3_BUCKET
+            bucket_name=settings.VIDEO_S3_BUCKET,
         )
 
     # Copy the file to the upload bucket using a new s3 key
-    s3_client = boto3.client('s3')
-    copy_source = {
-        'Bucket': watch_bucket.name,
-        'Key': s3_filename
-    }
+    s3_client = boto3.client("s3")
+    copy_source = {"Bucket": watch_bucket.name, "Key": s3_filename}
     try:
         s3_client.copy(copy_source, settings.VIDEO_S3_BUCKET, video_file.s3_object_key)
     except:
         try:
             video.delete()
         except:
-            log.error('Failed to delete video after failed S3 file copy',
-                      video_hexkey=video.hexkey)
+            log.error(
+                "Failed to delete video after failed S3 file copy",
+                video_hexkey=video.hexkey,
+            )
             raise
         raise
 
@@ -293,8 +313,7 @@ def process_watch_file(s3_filename):
     try:
         s3_client.delete_object(Bucket=settings.VIDEO_S3_WATCH_BUCKET, Key=s3_filename)
     except ClientError:
-        log.error('Failed to delete from watch bucket',
-                  s3_object_key=s3_filename)
+        log.error("Failed to delete from watch bucket", s3_object_key=s3_filename)
 
     # Start a transcode job for the video
     transcode_video(video, video_file)
@@ -311,19 +330,23 @@ def parse_lecture_video_filename(filename):
     Returns:
         ParsedVideoAttributes: A named tuple of information extracted from the video file name
     """
-    rx = (r'(.+)-lec-mit-0000-'  # prefix to be used as the start of the collection name
-          r'(\w+)'  # Recording date (required)
-          r'-(\d+)'  # Recording time (required)
-          r'(-([L\d\-]+))?'  # Session or room number (optional)
-          r'.*\.\w')  # Rest of filename including extension (required)
+    rx = (
+        r"(.+)-lec-mit-0000-"  # prefix to be used as the start of the collection name
+        r"(\w+)"  # Recording date (required)
+        r"-(\d+)"  # Recording time (required)
+        r"(-([L\d\-]+))?"  # Session or room number (optional)
+        r".*\.\w"
+    )  # Rest of filename including extension (required)
     matches = re.search(rx, filename)
     if not matches or len(matches.groups()) != 5:
-        log.exception('No matches found for filename %s with regex %s',
-                      positional_args=(filename, rx),
-                      filename=filename)
+        log.exception(
+            "No matches found for filename %s with regex %s",
+            positional_args=(filename, rx),
+            filename=filename,
+        )
         prefix = settings.UNSORTED_COLLECTION
-        session = ''
-        recording_date_str = ''
+        session = ""
+        recording_date_str = ""
         record_date = None
     else:
         prefix, recording_date_str, _, _, session = matches.groups()
@@ -336,7 +359,7 @@ def parse_lecture_video_filename(filename):
         session=session,
         record_date=record_date,
         record_date_str=recording_date_str,
-        name=filename
+        name=filename,
     )
 
 
@@ -350,19 +373,21 @@ def upload_subtitle_to_s3(caption_data, file_data):
     Returns:
         VideoSubtitle or None: New or updated VideoSubtitle (or None)
     """
-    video_key = caption_data.get('video')
-    filename = caption_data.get('filename')
-    language = caption_data.get('language', 'en')
+    video_key = caption_data.get("video")
+    filename = caption_data.get("filename")
+    language = caption_data.get("language", "en")
     if not video_key:
         return None
     try:
         video = Video.objects.get(key=video_key)
     except Video.DoesNotExist:
-        log.error("Attempted to upload subtitle to Video that does not exist",
-                  video_key=video_key)
+        log.error(
+            "Attempted to upload subtitle to Video that does not exist",
+            video_key=video_key,
+        )
         raise
 
-    s3 = boto3.resource('s3')
+    s3 = boto3.resource("s3")
     bucket_name = settings.VIDEO_S3_SUBTITLE_BUCKET
     bucket = s3.Bucket(bucket_name)
     config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
@@ -372,27 +397,26 @@ def upload_subtitle_to_s3(caption_data, file_data):
         bucket.upload_fileobj(
             Fileobj=file_data,
             Key=s3_key,
-            ExtraArgs={"ContentType": 'mime/vtt'},
-            Config=config
+            ExtraArgs={"ContentType": "mime/vtt"},
+            Config=config,
         )
     except Exception:
-        log.error('An error occurred uploading caption file',
-                  video_key=video_key)
+        log.error("An error occurred uploading caption file", video_key=video_key)
         raise
 
     vt, created = VideoSubtitle.objects.get_or_create(
         video=video,
         language=language,
         bucket_name=bucket_name,
-        defaults={
-            "s3_object_key": s3_key
-        })
+        defaults={"s3_object_key": s3_key},
+    )
     if not created:
         try:
             vt.delete_from_s3()
         except ClientError:
-            log.exception('Could not delete old subtitle from S3',
-                          s3_object_key=vt.s3_object_key)
+            log.exception(
+                "Could not delete old subtitle from S3", s3_object_key=vt.s3_object_key
+            )
     vt.s3_object_key = s3
     vt.filename = filename
     vt.s3_object_key = s3_key
@@ -411,9 +435,6 @@ def move_s3_objects(bucket_name, from_prefix, to_prefix):
     """
     bucket = get_bucket(bucket_name)
     for obj in bucket.objects.filter(Prefix=from_prefix):
-        copy_src = {
-            "Bucket": bucket_name,
-            "Key": obj.key
-        }
+        copy_src = {"Bucket": bucket_name, "Key": obj.key}
         bucket.copy(copy_src, Key=obj.key.replace(from_prefix, to_prefix))
     delete_s3_objects.delay(bucket_name, from_prefix, as_filter=True)

@@ -26,9 +26,7 @@ from odl_video import logging
 log = logging.getLogger(__name__)
 
 
-CONTENT_DISPOSITION_RE = re.compile(
-    r"filename\*=UTF-8''(?P<filename>[^ ]+)"
-)
+CONTENT_DISPOSITION_RE = re.compile(r"filename\*=UTF-8''(?P<filename>[^ ]+)")
 
 # pylint: disable=unused-argument
 
@@ -50,8 +48,11 @@ class VideoTask(Task):
         """
         if self.request.chain:
             try:
-                return self.request.chain[0]['options']['task_id']
-            except (IndexError, KeyError,):
+                return self.request.chain[0]["options"]["task_id"]
+            except (
+                IndexError,
+                KeyError,
+            ):
                 # Log the error and continue, using self.request.id instead
                 # The worst that will happen is that progress bar won't work.
                 log.error("Could not find task_id in chain")
@@ -70,8 +71,7 @@ def stream_to_s3(self, video_id):
     try:
         video = Video.objects.get(id=video_id)
     except (Video.DoesNotExist, Video.MultipleObjectsReturned):
-        log.error("Exception retrieving video",
-                  video_id=video_id)
+        log.error("Exception retrieving video", video_id=video_id)
         raise
     video.update_status(VideoStatus.UPLOADING)
 
@@ -86,7 +86,7 @@ def stream_to_s3(self, video_id):
 
     _, content_type, content_length = parse_content_metadata(response)
 
-    s3 = boto3.resource('s3')
+    s3 = boto3.resource("s3")
     bucket_name = settings.VIDEO_S3_BUCKET
     bucket = s3.Bucket(bucket_name)
     total_bytes_uploaded = 0
@@ -110,7 +110,7 @@ def stream_to_s3(self, video_id):
             Key=video.get_s3_key(),
             ExtraArgs={"ContentType": content_type},
             Callback=callback,
-            Config=config
+            Config=config,
         )
     except Exception:
         video.update_status(VideoStatus.UPLOAD_FAILED)
@@ -135,7 +135,7 @@ def transcode_from_s3(self, video_id):
     task_id = self.get_task_id()
     self.update_state(task_id=task_id, state=VideoStatus.TRANSCODING)
 
-    video_file = video.videofile_set.get(encoding='original')
+    video_file = video.videofile_set.get(encoding="original")
 
     try:
         transcode_video(video, video_file)
@@ -161,7 +161,7 @@ def retranscode_video(self, video_id):
     task_id = self.get_task_id()
     self.update_state(task_id=task_id, state=VideoStatus.RETRANSCODING)
 
-    video_file = video.videofile_set.get(encoding='original')
+    video_file = video.videofile_set.get(encoding="original")
 
     try:
         video.update_status(VideoStatus.RETRANSCODE_SCHEDULED)
@@ -179,17 +179,20 @@ def schedule_retranscodes(self):
     and reset scheduled collections without scheduled videos
     """
     # Reset all collections with no scheduled videos
-    Collection.objects.filter(schedule_retranscode=True).exclude(videos__schedule_retranscode=True).update(
-        schedule_retranscode=False
-    )
+    Collection.objects.filter(schedule_retranscode=True).exclude(
+        videos__schedule_retranscode=True
+    ).update(schedule_retranscode=False)
 
     # Run retranscodes on all videos with schedule_retranscode=True
     try:
         retranscode_tasks = group(
             [
                 retranscode_video.si(video_id)
-                for video_id in Video.objects.filter(schedule_retranscode=True).values_list("id", flat=True)
-            ])
+                for video_id in Video.objects.filter(
+                    schedule_retranscode=True
+                ).values_list("id", flat=True)
+            ]
+        )
     except:  # pylint: disable=bare-except
         error = "schedule_retranscodes threw an error"
         log.exception(error)
@@ -202,7 +205,9 @@ def update_video_statuses(self):
     """
     Check on statuses of all transcoding videos and update their status if appropriate
     """
-    transcoding_videos = Video.objects.filter(status__in=(VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING))
+    transcoding_videos = Video.objects.filter(
+        status__in=(VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING)
+    )
     for video in transcoding_videos:
         if video.status == VideoStatus.RETRANSCODING:
             error = VideoStatus.RETRANSCODE_FAILED
@@ -212,14 +217,15 @@ def update_video_statuses(self):
             refresh_status(video)
         except EncodeJob.DoesNotExist:
             # Log the exception but don't raise it so other videos can be checked.
-            log.exception("No EncodeJob object exists for video",
-                          video_id=video.id)
+            log.exception("No EncodeJob object exists for video", video_id=video.id)
             video.update_status(error)
         except ClientError as exc:
             # Log the exception but don't raise it so other videos can be checked.
-            log.exception("AWS error when refreshing job status",
-                          video_id=video.id,
-                          response=exc.response)
+            log.exception(
+                "AWS error when refreshing job status",
+                video_id=video.id,
+                response=exc.response,
+            )
             video.update_status(error)
 
 
@@ -228,27 +234,35 @@ def upload_youtube_videos():
     """
     Upload public videos one at a time to YouTube (if not already there) until the daily maximum is reached.
     """
-    yt_queue = Video.objects.filter(is_public=True).filter(
-        status=VideoStatus.COMPLETE).filter(youtubevideo__id__isnull=True).exclude(
-            collection__stream_source=StreamSource.CLOUDFRONT).order_by('-created_at')[:settings.YT_UPLOAD_LIMIT]
+    yt_queue = (
+        Video.objects.filter(is_public=True)
+        .filter(status=VideoStatus.COMPLETE)
+        .filter(youtubevideo__id__isnull=True)
+        .exclude(collection__stream_source=StreamSource.CLOUDFRONT)
+        .order_by("-created_at")[: settings.YT_UPLOAD_LIMIT]
+    )
     for video in yt_queue.all():
         youtube_video = YouTubeVideo.objects.create(video=video)
         try:
             youtube = YouTubeApi()
             response = youtube.upload_video(video)
-            youtube_video.id = response['id']
-            youtube_video.status = response['status']['uploadStatus']
+            youtube_video.id = response["id"]
+            youtube_video.status = response["status"]["uploadStatus"]
             youtube_video.save()
         except HttpError as error:
-            log.exception("HttpError uploading video to Youtube",
-                          video_hexkey=video.hexkey,
-                          status=youtube_video.status)
-            if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
+            log.exception(
+                "HttpError uploading video to Youtube",
+                video_hexkey=video.hexkey,
+                status=youtube_video.status,
+            )
+            if API_QUOTA_ERROR_MSG in error.content.decode("utf-8"):
                 break
         except:  # pylint: disable=bare-except
-            log.exception("Error uploading video to Youtube",
-                          video_hexkey=video.hexkey,
-                          status=youtube_video.status)
+            log.exception(
+                "Error uploading video to Youtube",
+                video_hexkey=video.hexkey,
+                status=youtube_video.status,
+            )
         finally:
             # If anything went wrong with the upload, delete the YouTubeVideo object.
             # Another upload attempt will be made the next time the task is run.
@@ -265,8 +279,7 @@ def remove_youtube_video(self, video_id):
         YouTubeApi().delete_video(video_id)
     except HttpError as error:
         if error.resp.status == 404:
-            log.info('Not found on Youtube, already deleted?',
-                     video_id=video_id)
+            log.info("Not found on Youtube, already deleted?", video_id=video_id)
         else:
             raise
 
@@ -311,11 +324,13 @@ def update_youtube_statuses(self):
             # Video might be a dupe or deleted, mark it as failed and continue to next one.
             yt_video.status = YouTubeStatus.FAILED
             yt_video.save()
-            log.exception('Status of YoutubeVideo not found.',
-                          youtubevideo_id=yt_video.id,
-                          youtubevideo_video_id=yt_video.video_id)
+            log.exception(
+                "Status of YoutubeVideo not found.",
+                youtubevideo_id=yt_video.id,
+                youtubevideo_video_id=yt_video.video_id,
+            )
         except HttpError as error:
-            if API_QUOTA_ERROR_MSG in error.content.decode('utf-8'):
+            if API_QUOTA_ERROR_MSG in error.content.decode("utf-8"):
                 # Don't raise the error, task will try on next run until daily quota is reset
                 break
             raise
@@ -333,13 +348,16 @@ def monitor_watch_bucket(self):
             process_watch_file(key.key)
         except ClientError as exc:
             # Log ClientError, raise later so other files can be processed.
-            log.exception("AWS error when ingesting file from watch bucket",
-                          s3_object_key=key.key,
-                          response=exc.response)
+            log.exception(
+                "AWS error when ingesting file from watch bucket",
+                s3_object_key=key.key,
+                response=exc.response,
+            )
         except Exception as exc:  # pylint: disable=broad-except
             # Log any other exception, raise later so other files can be processed.
-            log.exception("AWS error when ingesting file from watch bucket",
-                          s3_object_key=key.key)
+            log.exception(
+                "AWS error when ingesting file from watch bucket", s3_object_key=key.key
+            )
 
 
 def parse_content_metadata(response):
@@ -356,7 +374,7 @@ def parse_content_metadata(response):
     if content_disposition:
         result = CONTENT_DISPOSITION_RE.search(content_disposition)
         if result:
-            file_name = unquote(result.group('filename'))
+            file_name = unquote(result.group("filename"))
     if not file_name:
         file_name = unquote(os.path.basename(response.url))
 
@@ -377,34 +395,38 @@ def sort_transcoded_m3u8_files(self):
     for video in Video.objects.filter(videofile__encoding=EncodingNames.HLS).iterator():
         for transcoded_video in video.transcoded_videos:
             s3_filename = transcoded_video.s3_object_key
-            s3_client = boto3.client('s3')
+            s3_client = boto3.client("s3")
             try:
-                file = s3_client.get_object(Bucket=settings.VIDEO_S3_TRANSCODE_BUCKET, Key=s3_filename)
+                file = s3_client.get_object(
+                    Bucket=settings.VIDEO_S3_TRANSCODE_BUCKET, Key=s3_filename
+                )
             except ClientError:
                 log.error("Object not found on s3", video_id=video.id)
                 continue
 
-            file_content = file['Body'].read().decode()
+            file_content = file["Body"].read().decode()
 
-            delimiter = '#EXT-X-STREAM-INF:'
+            delimiter = "#EXT-X-STREAM-INF:"
             lines = file_content.split(delimiter)
             header = lines.pop(0)
 
             if str.strip(header) != "#EXTM3U":
-                log.error("Unexpected format for transcoded video file",
-                          video_id=video.id)
+                log.error(
+                    "Unexpected format for transcoded video file", video_id=video.id
+                )
                 continue
 
             try:
                 lines.sort(
                     key=lambda line: [
-                        -int(re.search(r'RESOLUTION=(\d+)', line).group(1)),
-                        -int(re.search(r'BANDWIDTH=(\d+)', line).group(1)),
+                        -int(re.search(r"RESOLUTION=(\d+)", line).group(1)),
+                        -int(re.search(r"BANDWIDTH=(\d+)", line).group(1)),
                     ]
                 )
             except AttributeError:
-                log.error("Unexpected format for transcoded video file",
-                          video_id=video.id)
+                log.error(
+                    "Unexpected format for transcoded video file", video_id=video.id
+                )
                 continue
 
             lines.insert(0, header)
@@ -414,4 +436,5 @@ def sort_transcoded_m3u8_files(self):
                 s3_client.put_object(
                     Body=str.encode(sorted_content),
                     Bucket=settings.VIDEO_S3_TRANSCODE_BUCKET,
-                    Key=s3_filename)
+                    Key=s3_filename,
+                )

@@ -25,11 +25,13 @@ def _get_recipients_for_video(video):
     """
     admin_lists = []
     moira_client = get_moira_client()
-    for mlist in video.collection.admin_lists.values_list('name', flat=True):
-        attributes = moira_client.client.service.getListAttributes(mlist, moira_client.proxy_id)
-        if attributes and attributes[0]['mailList']:
+    for mlist in video.collection.admin_lists.values_list("name", flat=True):
+        attributes = moira_client.client.service.getListAttributes(
+            mlist, moira_client.proxy_id
+        )
+        if attributes and attributes[0]["mailList"]:
             admin_lists.append(mlist)
-    recipients_list = ['{}@mit.edu'.format(alist) for alist in admin_lists]
+    recipients_list = ["{}@mit.edu".format(alist) for alist in admin_lists]
     owner = video.collection.owner
     if owner.email and not has_common_lists(owner, admin_lists):
         recipients_list.append(owner.email)
@@ -45,33 +47,43 @@ def send_notification_email(video):
         video (ui.models.Video): a video object
     """
     if video.status not in STATUS_TO_NOTIFICATION.keys():
-        log.error("Unexpected video status",
-                  video_hexkey=video.hexkey, video_status=video.status)
+        log.error(
+            "Unexpected video status",
+            video_hexkey=video.hexkey,
+            video_status=video.status,
+        )
         return
     # get the list of emails
     recipients = _get_recipients_for_video(video)
     if not recipients:
-        log.error("No email sent, no valid recipient emails",
-                  video_hexkey=video.hexkey, video_status=video.status)
+        log.error(
+            "No email sent, no valid recipient emails",
+            video_hexkey=video.hexkey,
+            video_status=video.status,
+        )
         return
     try:
         email_template = STATUS_TO_NOTIFICATION[video.status]
-        subject, text_body, html_body = render_email_templates(email_template, context_for_video(video))
+        subject, text_body, html_body = render_email_templates(
+            email_template, context_for_video(video)
+        )
         email_kwargs = {
-            'subject': subject,
-            'html_body': html_body,
-            'text_body': text_body,
-            'recipients': [(recipient, {}) for recipient in recipients],
-            'raise_for_status': True,
-            'sender_address': settings.EMAIL_SUPPORT
+            "subject": subject,
+            "html_body": html_body,
+            "text_body": text_body,
+            "recipients": [(recipient, {}) for recipient in recipients],
+            "raise_for_status": True,
+            "sender_address": settings.EMAIL_SUPPORT,
         }
         api.MailgunClient.send_batch(**email_kwargs)
         if video.status in STATUSES_THAT_TRIGGER_DEBUG_EMAIL:
             _send_debug_email(video=video, email_kwargs=email_kwargs)
     except:  # pylint: disable=bare-except
-        log.exception('Impossible to send notification',
-                      video_hexkey=video.hexkey,
-                      video_status=video.status)
+        log.exception(
+            "Impossible to send notification",
+            video_hexkey=video.hexkey,
+            video_status=video.status,
+        )
 
 
 @shared_task(bind=True)
@@ -81,11 +93,11 @@ def async_send_notification_email(self, video_id):  # pylint: disable=unused-arg
     """
     # import done here to avoid circular imports
     from ui.models import Video
+
     try:
         video = Video.objects.get(id=video_id)
     except Video.DoesNotExist:
-        log.error('Can not send notification for nonexistant video',
-                  video_id=video_id)
+        log.error("Can not send notification for nonexistant video", video_id=video_id)
         return
     send_notification_email(video)
 
@@ -95,10 +107,10 @@ def _send_debug_email(video=None, email_kwargs=None):
     Sends a debug email to the support email.
     """
     debug_email_kwargs = {
-        'subject': 'DEBUG:{}'.format(email_kwargs['subject']),
-        'html_body': None,
-        'text_body': _generate_debug_email_body(video=video, email_kwargs=email_kwargs),
-        'recipient': settings.EMAIL_SUPPORT,
+        "subject": "DEBUG:{}".format(email_kwargs["subject"]),
+        "html_body": None,
+        "text_body": _generate_debug_email_body(video=video, email_kwargs=email_kwargs),
+        "recipient": settings.EMAIL_SUPPORT,
     }
     api.MailgunClient.send_individual_email(**debug_email_kwargs)
 
@@ -132,7 +144,7 @@ def _generate_debug_email_body(video=None, email_kwargs=None):
         video=video,
         collection=video.collection,
         owner=video.collection.owner,
-        recipient=email_kwargs['recipients'],
-        subject=email_kwargs['subject'],
-        body=email_kwargs['text_body']
+        recipient=email_kwargs["recipients"],
+        subject=email_kwargs["subject"],
+        body=email_kwargs["text_body"],
     )

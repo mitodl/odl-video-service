@@ -9,24 +9,37 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0012_collection_default_created_at'),
+        ("ui", "0012_collection_default_created_at"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='VideoSubtitle',
+            name="VideoSubtitle",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('s3_object_key', models.TextField(unique=True)),
-                ('bucket_name', models.CharField(max_length=63)),
-                ('preset_id', models.CharField(blank=True, max_length=128, null=True)),
-                ('filename', models.CharField(blank=True, max_length=1024)),
-                ('language', models.CharField(blank=True, default='en', max_length=2)),
-                ('video', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ui.Video')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("s3_object_key", models.TextField(unique=True)),
+                ("bucket_name", models.CharField(max_length=63)),
+                ("preset_id", models.CharField(blank=True, max_length=128, null=True)),
+                ("filename", models.CharField(blank=True, max_length=1024)),
+                ("language", models.CharField(blank=True, default="en", max_length=2)),
+                (
+                    "video",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="ui.Video"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

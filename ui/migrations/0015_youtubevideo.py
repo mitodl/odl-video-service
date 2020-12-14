@@ -9,16 +9,24 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0014_video_permissions'),
+        ("ui", "0014_video_permissions"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='YouTubeVideo',
+            name="YouTubeVideo",
             fields=[
-                ('video', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, serialize=False, to='ui.Video')),
-                ('id', models.CharField(max_length=11, null=True)),
-                ('status', models.CharField(default='uploading', max_length=24)),
+                (
+                    "video",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        serialize=False,
+                        to="ui.Video",
+                    ),
+                ),
+                ("id", models.CharField(max_length=11, null=True)),
+                ("status", models.CharField(default="uploading", max_length=24)),
             ],
         ),
     ]

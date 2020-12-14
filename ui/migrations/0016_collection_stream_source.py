@@ -8,13 +8,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0015_youtubevideo'),
+        ("ui", "0015_youtubevideo"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collection',
-            name='stream_source',
-            field=models.CharField(blank=True, choices=[('Youtube', 'Youtube'), ('Cloudfront', 'Cloudfront')], max_length=10, null=True),
+            model_name="collection",
+            name="stream_source",
+            field=models.CharField(
+                blank=True,
+                choices=[("Youtube", "Youtube"), ("Cloudfront", "Cloudfront")],
+                max_length=10,
+                null=True,
+            ),
         ),
     ]

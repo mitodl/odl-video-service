@@ -17,15 +17,29 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Video',
+            name="Video",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('s3_object_key', models.TextField(unique=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('title', models.CharField(blank=True, max_length=250)),
-                ('description', models.TextField(blank=True)),
-                ('source_url', models.URLField()),
-                ('creator', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("s3_object_key", models.TextField(unique=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("title", models.CharField(blank=True, max_length=250)),
+                ("description", models.TextField(blank=True)),
+                ("source_url", models.URLField()),
+                (
+                    "creator",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

@@ -12,6 +12,7 @@ class TechTVCollectionFactory(DjangoModelFactory):
     """
     Factory for a TechTVCollection
     """
+
     id = FuzzyInteger(low=1)
     name = FuzzyText(prefix="TTV Collection")
     description = Faker("text")
@@ -26,6 +27,7 @@ class TechTVVideoFactory(DjangoModelFactory):
     """
     Factory for a TechTVVideo
     """
+
     ttv_id = FuzzyInteger(low=1)
     ttv_collection = SubFactory(TechTVCollectionFactory)
     title = FuzzyText(prefix="TTV Video ")

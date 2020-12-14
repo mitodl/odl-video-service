@@ -18,7 +18,7 @@ from odl_video import logging
 log = logging.getLogger(__name__)
 
 # Quota errors may contain either one of the following
-API_QUOTA_ERROR_MSG = 'dailyLimitExceeded'
+API_QUOTA_ERROR_MSG = "dailyLimitExceeded"
 
 
 class YouTubeUploadException(Exception):
@@ -49,8 +49,8 @@ def resumable_upload(request, max_retries=10):
     while response is None:
         try:
             _, response = request.next_chunk()
-            if response is not None and 'id' not in response:
-                raise YouTubeUploadException('YouTube upload failed: %s' % response)
+            if response is not None and "id" not in response:
+                raise YouTubeUploadException("YouTube upload failed: %s" % response)
         except HttpError as e:
             if e.resp.status in retry_statuses:
                 error = e
@@ -62,8 +62,10 @@ def resumable_upload(request, max_retries=10):
         if error is not None:
             retry += 1
             if retry > max_retries:
-                log.error('Final upload failure')
-                raise YouTubeUploadException('Retried YouTube upload 10x, giving up') from error
+                log.error("Final upload failure")
+                raise YouTubeUploadException(
+                    "Retried YouTube upload 10x, giving up"
+                ) from error
             sleep_time = 2 ** retry
             time.sleep(sleep_time)
 
@@ -80,7 +82,7 @@ def strip_bad_chars(txt):
     Returns:
         str: Text without bad characters
     """
-    return re.sub('<|>', '', txt)
+    return re.sub("<|>", "", txt)
 
 
 class YouTubeApi:
@@ -101,12 +103,13 @@ class YouTubeApi:
             settings.YT_CLIENT_SECRET,
             settings.YT_REFRESH_TOKEN,
             None,
-            'https://accounts.google.com/o/oauth2/token',
-            None)
+            "https://accounts.google.com/o/oauth2/token",
+            None,
+        )
         authorization = credentials.authorize(httplib2.Http())
         credentials.refresh(authorization)
-        self.client = build('youtube', 'v3', credentials=credentials)
-        self.s3 = boto3.client('s3')
+        self.client = build("youtube", "v3", credentials=credentials)
+        self.s3 = boto3.client("s3")
 
     def video_status(self, video_id):
         """
@@ -119,11 +122,8 @@ class YouTubeApi:
             str: status of the YouTube video
 
         """
-        results = self.client.videos().list(
-            part="status",
-            id=video_id
-        ).execute()
-        return results['items'][0]['status']['uploadStatus']
+        results = self.client.videos().list(part="status", id=video_id).execute()
+        return results["items"][0]["status"]["uploadStatus"]
 
     def list_captions(self, video_id):
         """
@@ -135,10 +135,9 @@ class YouTubeApi:
         Returns:
             dict: List of captions in JSON format
         """
-        results = self.client.captions().list(
-            part="snippet",
-            videoId=video_id
-        ).execute()
+        results = (
+            self.client.captions().list(part="snippet", videoId=video_id).execute()
+        )
 
         return {item["snippet"]["language"]: item["id"] for item in results["items"]}
 
@@ -156,10 +155,18 @@ class YouTubeApi:
         youtube_captions = self.list_captions(video_id)
         # YouTube API only seems to accept files or file-like objects, so download locally first
         with NamedTemporaryFile() as captionfile:
-            self.s3.download_file(settings.VIDEO_S3_SUBTITLE_BUCKET, caption.s3_object_key, captionfile.name)
-            media_body = MediaFileUpload(captionfile.name, mimetype='mime/vtt', chunksize=-1, resumable=True)
+            self.s3.download_file(
+                settings.VIDEO_S3_SUBTITLE_BUCKET,
+                caption.s3_object_key,
+                captionfile.name,
+            )
+            media_body = MediaFileUpload(
+                captionfile.name, mimetype="mime/vtt", chunksize=-1, resumable=True
+            )
             if caption.language in youtube_captions:
-                return self.update_caption(media_body, youtube_captions[caption.language])
+                return self.update_caption(
+                    media_body, youtube_captions[caption.language]
+                )
             return self.insert_caption(caption, media_body, video_id)
 
     def insert_caption(self, caption, media_body, video_id):
@@ -182,10 +189,10 @@ class YouTubeApi:
                     videoId=video_id,
                     language=caption.language,
                     name=caption.language_name,
-                    isDraft=False
+                    isDraft=False,
                 )
             ),
-            media_body=media_body
+            media_body=media_body,
         )
         return resumable_upload(request)
 
@@ -202,13 +209,8 @@ class YouTubeApi:
         """
         request = self.client.captions().update(
             part="snippet",
-            body=dict(
-                id=caption_id,
-                snippet=dict(
-                    isDraft=False
-                )
-            ),
-            media_body=media_body
+            body=dict(id=caption_id, snippet=dict(isDraft=False)),
+            media_body=media_body,
         )
         return resumable_upload(request)
 
@@ -224,7 +226,7 @@ class YouTubeApi:
         """
         return self.client.captions().delete(id=caption_id).execute()
 
-    def upload_video(self, video, privacy='unlisted'):
+    def upload_video(self, video, privacy="unlisted"):
         """
         Transfer the video's original video file from S3 to YouTube.
         The YT account must be validated for videos > 15 minutes long:
@@ -243,18 +245,20 @@ class YouTubeApi:
         request_body = dict(
             snippet=dict(
                 title=strip_bad_chars(video.title)[:100],
-                description=strip_bad_chars(video.description)[:5000]
+                description=strip_bad_chars(video.description)[:5000],
             ),
-            status=dict(
-                privacyStatus=privacy
-            )
+            status=dict(privacyStatus=privacy),
         )
 
-        with SeekableBufferedInputBase(videofile.bucket_name, videofile.s3_object_key) as s3_stream:
+        with SeekableBufferedInputBase(
+            videofile.bucket_name, videofile.s3_object_key
+        ) as s3_stream:
             request = self.client.videos().insert(
-                part=','.join(request_body.keys()),
+                part=",".join(request_body.keys()),
                 body=request_body,
-                media_body=MediaIoBaseUpload(s3_stream, mimetype='video/*', chunksize=-1, resumable=True)
+                media_body=MediaIoBaseUpload(
+                    s3_stream, mimetype="video/*", chunksize=-1, resumable=True
+                ),
             )
 
         response = resumable_upload(request)

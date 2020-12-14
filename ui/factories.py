@@ -27,8 +27,9 @@ FAKE = faker.Factory.create()
 
 class UserFactory(DjangoModelFactory):
     """Factory for User"""
+
     username = Sequence(lambda n: "user_%d" % n)
-    email = FuzzyText(suffix='@example.com')
+    email = FuzzyText(suffix="@example.com")
 
     class Meta:
         model = get_user_model()
@@ -36,6 +37,7 @@ class UserFactory(DjangoModelFactory):
 
 class EdxEndpointFactory(DjangoModelFactory):
     """Factory for EdxEndpoint model"""
+
     name = Faker("slug")
     base_url = Faker("url")
     access_token = Faker("sha1")
@@ -50,6 +52,7 @@ class CollectionFactory(DjangoModelFactory):
     """
     Factory for a Collection
     """
+
     title = FuzzyText(prefix="Collection ")
     description = FAKE.text()
     owner = SubFactory(UserFactory)
@@ -60,7 +63,9 @@ class CollectionFactory(DjangoModelFactory):
         model = models.Collection
 
     @post_generation
-    def admin_lists(self, create, extracted, **kwargs):  # pylint:disable=unused-argument
+    def admin_lists(
+        self, create, extracted, **kwargs
+    ):  # pylint:disable=unused-argument
         """Post-generation hook to handle admin_lists (if provided)"""
         if create and extracted:
             # An object was created and admin_lists were passed in
@@ -78,6 +83,7 @@ class CollectionFactory(DjangoModelFactory):
 
 class CollectionEdxEndpointFactory(DjangoModelFactory):
     """Factory for CollectionEdxEndpoint model"""
+
     collection = SubFactory(CollectionFactory)
     edx_endpoint = SubFactory(EdxEndpointFactory)
 
@@ -89,10 +95,13 @@ class VideoFactory(DjangoModelFactory):
     """
     Factory for a Video
     """
+
     collection = SubFactory(CollectionFactory)
     title = FuzzyText(prefix="Video ")
-    description = Faker('text')
-    source_url = '{url}{file_name}'.format(url=FAKE.url(), file_name=FAKE.file_name('video'))
+    description = Faker("text")
+    source_url = "{url}{file_name}".format(
+        url=FAKE.url(), file_name=FAKE.file_name("video")
+    )
     multiangle = False
     schedule_retranscode = False
 
@@ -101,9 +110,8 @@ class VideoFactory(DjangoModelFactory):
 
     class Params:
         """Params for the factory"""
-        unencoded = Trait(
-            status='Complete'
-        )
+
+        unencoded = Trait(status="Complete")
 
     @post_generation
     def view_lists(self, create, extracted, **kwargs):  # pylint:disable=unused-argument
@@ -118,6 +126,7 @@ class VideoFileFactory(DjangoModelFactory):
     """
     Factory for a VideoFile
     """
+
     video = SubFactory(VideoFactory)
     s3_object_key = LazyAttribute(lambda obj: obj.video.get_s3_key())
     bucket_name = settings.VIDEO_S3_BUCKET
@@ -128,20 +137,20 @@ class VideoFileFactory(DjangoModelFactory):
 
     class Params:
         """Params for the factory"""
-        unencoded = Trait(
-            video=SubFactory(VideoFactory, unencoded=True)
-        )
-        hls = Trait(
-            encoding=EncodingNames.HLS
-        )
+
+        unencoded = Trait(video=SubFactory(VideoFactory, unencoded=True))
+        hls = Trait(encoding=EncodingNames.HLS)
 
 
 class VideoThumbnailFactory(DjangoModelFactory):
     """
     Factory for a VideoThumbnail
     """
+
     video = SubFactory(VideoFactory)
-    s3_object_key = LazyAttribute(lambda obj: '{}/{}'.format(obj.video.hexkey, FAKE.file_name('image')))
+    s3_object_key = LazyAttribute(
+        lambda obj: "{}/{}".format(obj.video.hexkey, FAKE.file_name("image"))
+    )
     bucket_name = settings.VIDEO_S3_BUCKET
     max_width = FuzzyInteger(low=1)
     max_height = FuzzyInteger(low=1)
@@ -154,9 +163,14 @@ class VideoSubtitleFactory(DjangoModelFactory):
     """
     Factory for a VideoSubtitle
     """
+
     video = SubFactory(VideoFactory)
-    language = 'en'
-    s3_object_key = LazyAttribute(lambda obj: obj.video.subtitle_key(datetime.now(tz=pytz.UTC), language=obj.language))
+    language = "en"
+    s3_object_key = LazyAttribute(
+        lambda obj: obj.video.subtitle_key(
+            datetime.now(tz=pytz.UTC), language=obj.language
+        )
+    )
     bucket_name = settings.VIDEO_S3_SUBTITLE_BUCKET
     filename = FuzzyText()
 
@@ -168,6 +182,7 @@ class YouTubeVideoFactory(DjangoModelFactory):
     """
     Factory for a YouTubeVideo
     """
+
     video = SubFactory(VideoFactory)
     status = YouTubeStatus.SUCCEEDED
     id = FuzzyText(length=11)
@@ -180,20 +195,24 @@ class EncodeJobFactory(DjangoModelFactory):
     """
     Factory for a EncodeJob
     """
+
     video = SubFactory(VideoFactory)
     id = FuzzyText()
     object_id = LazyAttribute(lambda obj: obj.video.pk)
-    content_type = LazyAttribute(lambda obj: ContentType.objects.get_for_model(obj.video))
+    content_type = LazyAttribute(
+        lambda obj: ContentType.objects.get_for_model(obj.video)
+    )
 
     class Meta:
         model = EncodeJob
-        exclude = ('video',)
+        exclude = ("video",)
 
 
 class MoiraListFactory(DjangoModelFactory):
     """
     Factory for a MoiraList
     """
+
     name = FuzzyText()
 
     class Meta:

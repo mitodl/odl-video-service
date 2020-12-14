@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0016_collection_stream_source'),
+        ("ui", "0016_collection_stream_source"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='video',
-            name='title',
+            model_name="video",
+            name="title",
             field=models.CharField(max_length=250),
         ),
     ]

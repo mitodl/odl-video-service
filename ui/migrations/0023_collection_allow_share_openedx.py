@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0022_video_custom_order'),
+        ("ui", "0022_video_custom_order"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collection',
-            name='allow_share_openedx',
+            model_name="collection",
+            name="allow_share_openedx",
             field=models.BooleanField(default=False),
         ),
     ]

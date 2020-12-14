@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0024_add_collection_edx_course_id'),
+        ("ui", "0024_add_collection_edx_course_id"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='videofile',
-            name='preset_id',
+            model_name="videofile",
+            name="preset_id",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='videosubtitle',
-            name='preset_id',
+            model_name="videosubtitle",
+            name="preset_id",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='videothumbnail',
-            name='preset_id',
+            model_name="videothumbnail",
+            name="preset_id",
             field=models.TextField(blank=True, null=True),
         ),
     ]

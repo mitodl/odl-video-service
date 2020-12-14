@@ -29,16 +29,20 @@ class Command(BaseCommand):
                 "token_uri": "https://accounts.google.com/o/oauth2/token",
                 "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
                 "client_secret": settings.YT_CLIENT_SECRET,
-                "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob", "http://localhost"]
+                "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob", "http://localhost"],
             }
         }
         flow = InstalledAppFlow.from_client_config(
             oauth_config,
             [
-                'https://www.googleapis.com/auth/youtube',
-                'https://www.googleapis.com/auth/youtube.force-ssl',
-                'https://www.googleapis.com/auth/youtube.upload'
-            ])
+                "https://www.googleapis.com/auth/youtube",
+                "https://www.googleapis.com/auth/youtube.force-ssl",
+                "https://www.googleapis.com/auth/youtube.upload",
+            ],
+        )
         credentials = flow.run_console()
         self.stdout.write(
-            "YT_ACCESS_TOKEN={}\nYT_REFRESH_TOKEN={}\n".format(credentials.token, credentials.refresh_token))
+            "YT_ACCESS_TOKEN={}\nYT_REFRESH_TOKEN={}\n".format(
+                credentials.token, credentials.refresh_token
+            )
+        )

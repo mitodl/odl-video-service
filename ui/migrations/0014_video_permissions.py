@@ -8,23 +8,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0013_videosubtitle'),
+        ("ui", "0013_videosubtitle"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='video',
-            name='is_private',
+            model_name="video",
+            name="is_private",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='video',
-            name='is_public',
+            model_name="video",
+            name="is_public",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='video',
-            name='view_lists',
-            field=models.ManyToManyField(blank=True, related_name='video_view_lists', to='ui.MoiraList'),
+            model_name="video",
+            name="view_lists",
+            field=models.ManyToManyField(
+                blank=True, related_name="video_view_lists", to="ui.MoiraList"
+            ),
         ),
     ]

@@ -10,6 +10,7 @@ class VideoTranscoder(Transcoder):
     """
     Customized version of dj_elastictranscoder.transcoder
     """
+
     def create_job_for_object(self, obj):
         """
         Create an EncodeJob with the same message output as the Transcoder message
@@ -23,10 +24,12 @@ class VideoTranscoder(Transcoder):
         """
         content_type = ContentType.objects.get_for_model(obj)
         uuid = str(uuid4())
-        if not hasattr(self, 'message'):
-            self.message = {'Job': {'Status': 'Error', 'Id': uuid}}  # pylint:disable=attribute-defined-outside-init
+        if not hasattr(self, "message"):
+            self.message = {  # pylint:disable=attribute-defined-outside-init
+                "Job": {"Status": "Error", "Id": uuid}
+            }
         job = EncodeJob()
-        job.id = self.message['Job']['Id'] if 'Job' in self.message else uuid
+        job.id = self.message["Job"]["Id"] if "Job" in self.message else uuid
         job.message = self.message
         job.content_type = content_type
         job.object_id = obj.pk

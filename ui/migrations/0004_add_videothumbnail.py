@@ -9,24 +9,37 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ui', '0003_add_videofile'),
+        ("ui", "0003_add_videofile"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='VideoThumbnail',
+            name="VideoThumbnail",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('s3_object_key', models.TextField(unique=True)),
-                ('bucket_name', models.CharField(max_length=63)),
-                ('preset_id', models.CharField(blank=True, max_length=128, null=True)),
-                ('max_width', models.IntegerField(blank=True, null=True)),
-                ('max_height', models.IntegerField(blank=True, null=True)),
-                ('video', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='ui.Video')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("s3_object_key", models.TextField(unique=True)),
+                ("bucket_name", models.CharField(max_length=63)),
+                ("preset_id", models.CharField(blank=True, max_length=128, null=True)),
+                ("max_width", models.IntegerField(blank=True, null=True)),
+                ("max_height", models.IntegerField(blank=True, null=True)),
+                (
+                    "video",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="ui.Video"
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

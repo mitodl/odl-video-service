@@ -21,9 +21,9 @@ from odl_video import logging
 
 log = logging.getLogger(__name__)
 
-MoiraUser = namedtuple('MoiraUser', 'username type')
-MOIRA_CACHE_KEY = 'moira_lists_{user_id}'
-cache = caches['redis']
+MoiraUser = namedtuple("MoiraUser", "username type")
+MOIRA_CACHE_KEY = "moira_lists_{user_id}"
+cache = caches["redis"]
 
 
 @lru_cache(1)  # memoize this function
@@ -35,12 +35,15 @@ def get_moira_client():
         Moira: A moira client
     """
 
-    _check_files_exist([settings.MIT_WS_CERTIFICATE_FILE,
-                        settings.MIT_WS_PRIVATE_KEY_FILE])
+    _check_files_exist(
+        [settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE]
+    )
     try:
         return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
     except Exception as exc:  # pylint: disable=broad-except
-        raise MoiraException('Something went wrong with creating a moira client') from exc
+        raise MoiraException(
+            "Something went wrong with creating a moira client"
+        ) from exc
 
 
 def _check_files_exist(paths):
@@ -50,7 +53,7 @@ def _check_files_exist(paths):
         if not os.path.isfile(path):
             errors.append("File missing: expected path '{}'".format(path))
     if errors:
-        raise RuntimeError('\n'.join(errors))
+        raise RuntimeError("\n".join(errors))
 
 
 def get_moira_user(user):
@@ -65,9 +68,9 @@ def get_moira_user(user):
     Returns:
         MoiraUser: A namedtuple containing username and type
     """
-    if re.search(r'(@|\.)mit.edu$', user.email):
-        return MoiraUser(user.email.split('@')[0], 'USER')
-    return MoiraUser(user.email, 'STRING')
+    if re.search(r"(@|\.)mit.edu$", user.email):
+        return MoiraUser(user.email.split("@")[0], "USER")
+    return MoiraUser(user.email, "STRING")
 
 
 def delete_moira_cache(user):
@@ -93,14 +96,18 @@ def query_moira_lists(user):
     moira_user = get_moira_user(user)
     moira = get_moira_client()
     try:
-        list_infos = moira.user_list_membership(moira_user.username, moira_user.type, max_return_count=100000)
-        list_names = [list_info['listName'] for list_info in list_infos]
+        list_infos = moira.user_list_membership(
+            moira_user.username, moira_user.type, max_return_count=100000
+        )
+        list_names = [list_info["listName"] for list_info in list_infos]
         return list_names
     except Exception as exc:  # pylint: disable=broad-except
-        if 'java.lang.NullPointerException' in str(exc):
+        if "java.lang.NullPointerException" in str(exc):
             # User is not a member of any moira lists, so ignore exception and return empty list
             return []
-        raise MoiraException('Something went wrong with getting moira-lists for %s' % user.username) from exc
+        raise MoiraException(
+            "Something went wrong with getting moira-lists for %s" % user.username
+        ) from exc
 
 
 def user_moira_lists(user):
@@ -123,7 +130,7 @@ def user_moira_lists(user):
         cache.set(
             MOIRA_CACHE_KEY.format(user_id=user.id),
             list_names,
-            settings.MOIRA_CACHE_TIMEOUT
+            settings.MOIRA_CACHE_TIMEOUT,
         )
     return list_names
 
@@ -143,7 +150,9 @@ def list_members(list_name):
         list_users = moira.list_members(list_name)
         return list_users
     except Exception as exc:  # pylint: disable=broad-except
-        raise MoiraException('Something went wrong with getting moira-users for %s' % list_name) from exc
+        raise MoiraException(
+            "Something went wrong with getting moira-users for %s" % list_name
+        ) from exc
 
 
 def has_common_lists(user, list_names):
@@ -171,7 +180,7 @@ def get_et_job(job_id):
     """
     et = get_transcoder_client()
     job = et.read_job(Id=job_id)
-    return job['Job']
+    return job["Job"]
 
 
 def get_et_preset(preset_id):
@@ -184,7 +193,7 @@ def get_et_preset(preset_id):
         dict: Preset configuration
     """
     et = get_transcoder_client()
-    return et.read_preset(Id=preset_id)['Preset']
+    return et.read_preset(Id=preset_id)["Preset"]
 
 
 def get_bucket(bucket_name):
@@ -209,7 +218,7 @@ def get_transcoder_client():
         botocore.client.ElasticTranscoder:
             An ElasticTranscoder client object
     """
-    return boto3.client('elastictranscoder', settings.AWS_REGION)
+    return boto3.client("elastictranscoder", settings.AWS_REGION)
 
 
 def write_to_file(filename, contents):
@@ -223,7 +232,7 @@ def write_to_file(filename, contents):
     """
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
-    with open(filename, 'wb') as infile:
+    with open(filename, "wb") as infile:
         infile.write(contents)
 
 
@@ -236,13 +245,15 @@ def write_x509_files():
 def get_video_analytics(video):
     """Get video analytics data from Google Analytics."""
     ga_client = get_google_analytics_client()
-    ga_response = ga_client.reports().batchGet(
-        body=generate_google_analytics_query(video)).execute()
+    ga_response = (
+        ga_client.reports()
+        .batchGet(body=generate_google_analytics_query(video))
+        .execute()
+    )
     try:
         return parse_google_analytics_response(ga_response)
     except Exception as exc:
-        raise GoogleAnalyticsException(
-            'Could not parse analytics response') from exc
+        raise GoogleAnalyticsException("Could not parse analytics response") from exc
 
 
 def get_google_analytics_client():
@@ -253,13 +264,14 @@ def get_google_analytics_client():
     """
     try:
         credentials = ServiceAccountCredentials.from_json_keyfile_dict(
-            json.loads(settings.GA_KEYFILE_JSON))
-        analytics_client = build('analyticsreporting', 'v4',
-                                 credentials=credentials)
+            json.loads(settings.GA_KEYFILE_JSON)
+        )
+        analytics_client = build("analyticsreporting", "v4", credentials=credentials)
         return analytics_client
     except Exception as exc:  # pylint: disable=broad-except
-        raise GoogleAnalyticsException('Something went wrong with creating a'
-                                       'GoogleAnaltics client') from exc
+        raise GoogleAnalyticsException(
+            "Something went wrong with creating a" "GoogleAnaltics client"
+        ) from exc
 
 
 def generate_google_analytics_query(video):
@@ -270,35 +282,35 @@ def generate_google_analytics_query(video):
         analytics 'batchGet' request.
     """
     # https://developers.google.com/analytics/devguides/reporting/core/v3/reference
-    START_DATE = '2005-01-01'
-    END_DATE = '9999-01-01'
-    dimensions = [{'name': 'ga:eventAction'}]
+    START_DATE = "2005-01-01"
+    END_DATE = "9999-01-01"
+    dimensions = [{"name": "ga:eventAction"}]
     if video.multiangle:
         # [adorsk, 2018-03]
         # Achtung! Only use the camera angle dimension for multiangle.
         # Single-camera videos do not set a custom dimension for events
         # sent to GoogleAnalytics.
-        dimensions.append({'name': 'ga:' + settings.GA_DIMENSION_CAMERA})
+        dimensions.append({"name": "ga:" + settings.GA_DIMENSION_CAMERA})
     query = {
-        'reportRequests': [
+        "reportRequests": [
             {
-                'viewId': settings.GA_VIEW_ID,
-                'dateRanges': [{'startDate': START_DATE, 'endDate': END_DATE}],
-                'metrics': [{'expression': 'ga:totalEvents'}],
-                'dimensions': dimensions,
-                'dimensionFilterClauses': [
+                "viewId": settings.GA_VIEW_ID,
+                "dateRanges": [{"startDate": START_DATE, "endDate": END_DATE}],
+                "metrics": [{"expression": "ga:totalEvents"}],
+                "dimensions": dimensions,
+                "dimensionFilterClauses": [
                     {
-                        'filters': [
+                        "filters": [
                             {
-                                'dimensionName': 'ga:eventLabel',
-                                'operator': 'EXACT',
+                                "dimensionName": "ga:eventLabel",
+                                "operator": "EXACT",
                                 # 2018-03, dorsk
                                 # Achtung! We do video.hexkey.capitalize()
                                 # because GA has capitalized event data,
                                 # due to an unexpected side-effect of the
                                 # react-ga library.
                                 # See: https://github.com/mitodl/odl-video-service/pull/472
-                                'expressions': [video.hexkey.capitalize()]
+                                "expressions": [video.hexkey.capitalize()],
                             },
                         ],
                     }
@@ -332,31 +344,31 @@ def parse_google_analytics_response(ga_response):
     times = set()
     channels = set()
     views_at_times = {}
-    report = ga_response['reports'][0]
+    report = ga_response["reports"][0]
     # Check dimensions,
     # to account for singlecam/multicam query differences.
-    dimensions = report['columnHeader']['dimensions']
+    dimensions = report["columnHeader"]["dimensions"]
     is_multichannel = len(dimensions) == 2
-    rows = report['data'].get('rows', [])
+    rows = report["data"].get("rows", [])
     for row in rows:
-        m = re.match(r'T(\d{4})', row['dimensions'][0])
+        m = re.match(r"T(\d{4})", row["dimensions"][0])
         if not m:
             continue
         time_ = int(m.group(1))
         if is_multichannel:
-            channel = row['dimensions'][1]
+            channel = row["dimensions"][1]
         else:
-            channel = 'views'
-        if re.match(r'camera\d+|views', channel):
-            viewers = int(row['metrics'][0]['values'][0])
+            channel = "views"
+        if re.match(r"camera\d+|views", channel):
+            viewers = int(row["metrics"][0]["values"][0])
             views_at_times.setdefault(time_, {}).update({channel: viewers})
             times.add(time_)
             channels.add(channel)
     return {
-        'times': sorted(list(times)),
-        'channels': sorted(list(channels)),
-        'is_multichannel': is_multichannel,
-        'views_at_times': views_at_times,
+        "times": sorted(list(times)),
+        "channels": sorted(list(channels)),
+        "is_multichannel": is_multichannel,
+        "views_at_times": views_at_times,
     }
 
 
@@ -367,18 +379,15 @@ def generate_mock_video_analytics_data(n=24, seed=42):
     """
     local_random = random.Random(seed)
     times = [i for i in range(int(n))]
-    channels = ['camera%s' % (i + 1) for i in range(4)]
+    channels = ["camera%s" % (i + 1) for i in range(4)]
     views_at_times = {
-        t: {
-            channel: local_random.randint(0, 100)
-            for channel in channels
-        }
+        t: {channel: local_random.randint(0, 100) for channel in channels}
         for t in times
     }
     return {
-        'times': sorted(list(times)),
-        'channels': sorted(list(channels)),
-        'views_at_times': views_at_times,
+        "times": sorted(list(times)),
+        "channels": sorted(list(channels)),
+        "views_at_times": views_at_times,
     }
 
 

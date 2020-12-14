@@ -17,12 +17,16 @@ class CeleryTaskStatus(APIView):
         """
         result = AsyncResult(task_id)
         if isinstance(result.info, Exception):
-            return Response({
+            return Response(
+                {
+                    "status": result.state,
+                    "exception": result.info.__class__.__name__,
+                    "args": result.info.args,
+                }
+            )
+        return Response(
+            {
                 "status": result.state,
-                "exception": result.info.__class__.__name__,
-                "args": result.info.args,
-            })
-        return Response({
-            "status": result.state,
-            "info": result.info,
-        })
+                "info": result.info,
+            }
+        )
