@@ -117,6 +117,8 @@ def test_video_detail(logged_in_client, settings):
     settings.ENVIRONMENT = "test"
     settings.VERSION = "1.2.3"
     settings.ENABLE_VIDEO_PERMISSIONS = False
+    settings.USE_WEBPACK_DEV_SERVER = False
+
     videofileHLS = VideoFileFactory(hls=True, video__collection__owner=user)
     videofileHLS.video.status = "Complete"
     url = reverse("video-detail", kwargs={"video_key": videofileHLS.video.hexkey})
@@ -154,6 +156,8 @@ def test_video_embed(
     settings.ENVIRONMENT = "test"
     settings.VERSION = "1.2.3"
     settings.ENABLE_VIDEO_PERMISSIONS = False
+    settings.USE_WEBPACK_DEV_SERVER = False
+
     videofileHLS = VideoFileFactory(
         hls=True,
         video__collection__owner=user,
@@ -844,6 +848,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     settings.GA_DIMENSION_CAMERA = "camera1"
     settings.EMAIL_SUPPORT = "support"
     settings.ENABLE_VIDEO_PERMISSIONS = False
+    settings.USE_WEBPACK_DEV_SERVER = False
 
     client, user = logged_in_apiclient
     resp = client.get(url)
