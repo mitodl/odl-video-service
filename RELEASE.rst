@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.59.0
+Version 0.59.0 (Released December 15, 2020)
 --------------
 
 - Remove tox, use pytest instead (#922)
