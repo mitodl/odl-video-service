@@ -105,7 +105,7 @@ def post_hls_to_edx(video_file):
                     "duration": 0.0,
                 },
                 headers={
-                    "Authorization": "Bearer {}".format(edx_endpoint.access_token),
+                    "Authorization": "JWT {}".format(edx_endpoint.access_token),
                 },
             )
             resp.raise_for_status()
