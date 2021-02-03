@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.60.0
+--------------
+
+- API request to EDX: use JWT token (#928)
+- Bump lxml from 4.5.0 to 4.6.2 (#925)
+
 Version 0.59.1 (Released January 22, 2021)
 --------------
 
