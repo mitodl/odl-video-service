@@ -1,11 +1,14 @@
 """Utils for ui app"""
 import itertools
 import os
+import datetime
 from collections import namedtuple
 from functools import lru_cache
 import json
 import random
 import re
+import requests
+import pytz
 from urllib.parse import urljoin
 
 import boto3
@@ -457,3 +460,27 @@ def get_error_response_summary_dict(response):
     else:
         summary_dict = {"content": response.text}
     return {"code": response.status_code, "url": response.url, **summary_dict}
+
+def now_in_utc():
+    """
+    Get the current time in UTC
+
+    Returns:
+        datetime.datetime: A datetime object for the current time
+    """
+    return datetime.datetime.now(tz=pytz.UTC)
+
+
+def send_refresh_request(full_api_url):
+    access_token_url = urljoin(full_api_url, '/oauth2/access_token/')
+    data = {
+        "grant_type": "client_credentials",
+        "client_id": settings.EDXORG_CLIENT_ID,
+        "client_secret": settings.EDXORG_CLIENT_SECRET,
+        "token_type": "JWT",
+    }
+
+    resp = requests.post(access_token_url, data=data)
+
+    resp.raise_for_status()
+    return resp

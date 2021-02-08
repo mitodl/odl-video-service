@@ -5,6 +5,7 @@ import os
 from uuid import uuid4
 
 import boto3
+import pytz
 from celery import shared_task
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
@@ -12,14 +13,16 @@ from django.db import models
 from django.conf import settings
 from pycountry import languages
 from dj_elastictranscoder.models import EncodeJob
+from datetime import datetime, timedelta
 
 from odl_video.constants import DEFAULT_EDX_HLS_API_PATH
 from odl_video.models import TimestampedModel, TimestampedModelManager
 from mail import tasks
 from ui import utils
+from ui.utils import send_refresh_request
 from ui.constants import VideoStatus, YouTubeStatus, StreamSource
 from ui.encodings import EncodingNames
-from ui.utils import get_bucket, multi_urljoin
+from ui.utils import get_bucket, multi_urljoin, now_in_utc
 
 TRANSCODE_PREFIX = "transcoded"
 
@@ -73,12 +76,13 @@ class MoiraList(TimestampedModel):
         return "<MoiraList: {self.name!r}>".format(self=self)
 
 
-class EdxEndpoint(ValidateOnSaveMixin):
+class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
     """Model that represents an edX instance to which videos will be posted"""
 
     name = models.CharField(max_length=20, unique=True, blank=False, null=False)
     base_url = models.CharField(max_length=100, blank=False, null=False)
     access_token = models.CharField(max_length=2048)
+    expires_in = models.IntegerField(default=0)
     hls_api_path = models.CharField(max_length=100, default=DEFAULT_EDX_HLS_API_PATH)
     is_global_default = models.BooleanField(default=False)
     collections = models.ManyToManyField("Collection", through="CollectionEdxEndpoint")
@@ -91,6 +95,28 @@ class EdxEndpoint(ValidateOnSaveMixin):
             self.hls_api_path or DEFAULT_EDX_HLS_API_PATH,
             add_trailing_slash=True,
         )
+
+    def update_access_token(self, data):
+        """Saves new access token"""
+        self.access_token = data['access_token']
+        self.expires_in = data['expires_in']
+        self.save()
+
+    def refresh_access_token(self):
+        """
+        Checks if access token is expired, if so it sends a request to get new token
+        """
+        try:
+            last_update = datetime.fromtimestamp(self.updated_at, tz=pytz.UTC)
+            expires_in = timedelta(seconds=self.expires_in)
+        except TypeError:
+            response = send_refresh_request(self.base_url)
+            self.update_access_token(response.json())
+            return
+
+        if now_in_utc() - last_update >= expires_in:
+            response = send_refresh_request(self.base_url)
+            self.update_access_token(response.json())
 
     def clean(self):
         if self.is_global_default is True:
