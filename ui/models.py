@@ -4,9 +4,8 @@ Models for UI app
 import os
 from uuid import uuid4
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 import boto3
-import pytz
 from celery import shared_task
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
