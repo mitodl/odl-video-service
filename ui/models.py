@@ -4,6 +4,7 @@ Models for UI app
 import os
 from uuid import uuid4
 
+from datetime import datetime, timedelta
 import boto3
 import pytz
 from celery import shared_task
@@ -13,7 +14,6 @@ from django.db import models
 from django.conf import settings
 from pycountry import languages
 from dj_elastictranscoder.models import EncodeJob
-from datetime import datetime, timedelta
 
 from odl_video.constants import DEFAULT_EDX_HLS_API_PATH
 from odl_video.models import TimestampedModel, TimestampedModelManager

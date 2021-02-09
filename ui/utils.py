@@ -4,12 +4,12 @@ import os
 import datetime
 from collections import namedtuple
 from functools import lru_cache
+from urllib.parse import urljoin
 import json
 import random
 import re
 import requests
 import pytz
-from urllib.parse import urljoin
 
 import boto3
 from django.conf import settings
@@ -473,6 +473,14 @@ def now_in_utc():
 
 
 def send_refresh_request(full_api_url):
+    """
+    Send a request to edx for a new JWT access token
+
+    Args:
+        full_api_url (str): edx base url
+    Returns:
+        resp: response from edx with the new access token
+    """
     access_token_url = urljoin(full_api_url, "/oauth2/access_token/")
     data = {
         "grant_type": "client_credentials",
