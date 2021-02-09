@@ -531,5 +531,5 @@ HIJACK_LOGOUT_REDIRECT_URL = "/admin/auth/user"
 EDX_ACCESS_TOKEN = get_string("EDX_ACCESS_TOKEN", None)
 EDX_BASE_URL = get_string("EDX_BASE_URL", None)
 EDX_HLS_API_URL = get_string("EDX_HLS_API_URL", "/api/val/v0/videos/")
-EDXORG_CLIENT_ID = get_string('EDXORG_CLIENT_ID', '')
-EDXORG_CLIENT_SECRET = get_string('EDXORG_CLIENT_SECRET', '')
+EDXORG_CLIENT_ID = get_string("EDXORG_CLIENT_ID", "")
+EDXORG_CLIENT_SECRET = get_string("EDXORG_CLIENT_SECRET", "")

@@ -461,6 +461,7 @@ def get_error_response_summary_dict(response):
         summary_dict = {"content": response.text}
     return {"code": response.status_code, "url": response.url, **summary_dict}
 
+
 def now_in_utc():
     """
     Get the current time in UTC
@@ -472,7 +473,7 @@ def now_in_utc():
 
 
 def send_refresh_request(full_api_url):
-    access_token_url = urljoin(full_api_url, '/oauth2/access_token/')
+    access_token_url = urljoin(full_api_url, "/oauth2/access_token/")
     data = {
         "grant_type": "client_credentials",
         "client_id": settings.EDXORG_CLIENT_ID,

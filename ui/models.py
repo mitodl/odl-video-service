@@ -98,8 +98,8 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
 
     def update_access_token(self, data):
         """Saves new access token"""
-        self.access_token = data['access_token']
-        self.expires_in = data['expires_in']
+        self.access_token = data["access_token"]
+        self.expires_in = data["expires_in"]
         self.save()
 
     def refresh_access_token(self):
