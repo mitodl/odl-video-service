@@ -484,8 +484,8 @@ def send_refresh_request(full_api_url):
     access_token_url = urljoin(full_api_url, "/oauth2/access_token/")
     data = {
         "grant_type": "client_credentials",
-        "client_id": settings.EDXORG_CLIENT_ID,
-        "client_secret": settings.EDXORG_CLIENT_SECRET,
+        "client_id": settings.OPENEDX_API_CLIENT_ID,
+        "client_secret": settings.OPENEDX_API_CLIENT_SECRET,
         "token_type": "JWT",
     }
 

@@ -107,14 +107,13 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
         Checks if access token is expired, if so it sends a request to get new token
         """
         try:
-            last_update = datetime.fromtimestamp(self.updated_at, tz=pytz.UTC)
             expires_in = timedelta(seconds=self.expires_in)
         except TypeError:
             response = send_refresh_request(self.base_url)
             self.update_access_token(response.json())
             return
 
-        if now_in_utc() - last_update >= expires_in:
+        if now_in_utc() - self.updated_at >= expires_in:
             response = send_refresh_request(self.base_url)
             self.update_access_token(response.json())
 
