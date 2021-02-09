@@ -155,7 +155,7 @@ def test_post_hls_to_edx(mocker, reqmocker, edx_api_scenario):
 
     refresh_token_mock = mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
     api.post_hls_to_edx(edx_api_scenario.video_file)
-    refresh_token_mock.assert_called_once()
+    assert refresh_token_mock.call_count == 2
     for mocked_post in mocked_posts:
         assert mocked_post.call_count == 1
         request_body = mocked_post.last_request.json()
