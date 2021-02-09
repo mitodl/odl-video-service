@@ -221,12 +221,14 @@ def test_post_hls_to_edx_bad_resp(mocker, reqmocker, edx_api_scenario):
             "POST",
             collection_endpoint.full_api_url,
             headers={
-                "Authorization": "Bearer {}".format(collection_endpoint.access_token),
+                "Authorization": "JWT {}".format(collection_endpoint.access_token),
             },
             status_code=200,
         ),
     ]
+    refresh_token_mock = mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
     responses = api.post_hls_to_edx(edx_api_scenario.video_file)
+    assert refresh_token_mock.call_count == 2
     for mocked_post in mocked_posts:
         assert mocked_post.call_count == 1
     patched_log_error.assert_called_once()
