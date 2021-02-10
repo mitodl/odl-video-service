@@ -471,6 +471,10 @@ def test_get_error_response_summary(content, content_type, exp_summary_content):
 
 
 def test_send_refresh_request(mocker, settings):
+    """
+    send_refresh_request should send a post request with clint_id and client_secret
+    to get a new JWT access token
+    """
     client_secret = "secrets"
     client_id = "clientid"
     url = "http://test.url"
