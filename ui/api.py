@@ -87,6 +87,7 @@ def post_hls_to_edx(video_file):
     responses = {}
     for edx_endpoint in edx_endpoints:
         try:
+            edx_endpoint.refresh_access_token()
             resp = requests.post(
                 edx_endpoint.full_api_url,
                 json={

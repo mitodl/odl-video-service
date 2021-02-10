@@ -26,6 +26,7 @@ from ui.utils import (
     partition,
     partition_to_lists,
     get_error_response_summary_dict,
+    send_refresh_request,
 )
 
 # pylint: disable=unused-argument,too-many-arguments
@@ -467,3 +468,25 @@ def test_get_error_response_summary(content, content_type, exp_summary_content):
         "url": url,
         "code": status_code,
     }
+
+
+def test_send_refresh_request(mocker, settings):
+    """
+    send_refresh_request should send a post request with clint_id and client_secret
+    to get a new JWT access token
+    """
+    client_secret = "secrets"
+    client_id = "clientid"
+    url = "http://test.url"
+    settings.OPENEDX_API_CLIENT_ID = client_id
+    settings.OPENEDX_API_CLIENT_SECRET = client_secret
+    mock_post = mocker.patch("ui.utils.requests.post")
+    send_refresh_request(url)
+    expected_token_url = "{}/oauth2/access_token/".format(url)
+    expected_data = {
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "token_type": "JWT",
+    }
+    mock_post.assert_called_once_with(expected_token_url, data=expected_data)

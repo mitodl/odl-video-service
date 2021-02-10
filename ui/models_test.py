@@ -26,6 +26,7 @@ from ui.factories import (
     MoiraListFactory,
     VideoSubtitleFactory,
     YouTubeVideoFactory,
+    EdxEndpointFactory,
 )
 from ui.constants import VideoStatus, StreamSource, YouTubeStatus
 from ui.models import Collection
@@ -147,6 +148,29 @@ def test_video_update_status_email(video, mocker):
     # email is not sent for other statuses
     video.update_status(VideoStatus.TRANSCODING)
     assert mocked_send_email.delay.call_count == 0
+
+
+@pytest.mark.parametrize(
+    "token, current_expires_in, updated", [("token1", 0, True), ("token2", 1000, False)]
+)
+def test_edxendpoint_access_token_refresh(mocker, token, current_expires_in, updated):
+    """
+    Tests the logic to refresh access token
+    """
+    edx_endpoint = EdxEndpointFactory.create(expires_in=current_expires_in)
+    old_token = edx_endpoint.access_token
+    response = {"access_token": token, "expires_in": 1000}
+    mocked_send_refresh_request = mocker.patch(
+        "ui.models.send_refresh_request", return_value=response, autospec=True
+    )
+    edx_endpoint.refresh_access_token()
+
+    if updated:
+        assert edx_endpoint.access_token == token
+        assert mocked_send_refresh_request.call_count == 1
+    else:
+        assert edx_endpoint.access_token == old_token
+        assert mocked_send_refresh_request.call_count == 0
 
 
 def test_video_hexkey(video):

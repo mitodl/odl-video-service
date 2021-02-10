@@ -29,8 +29,12 @@
       "description": "Dropbox app key for uploads/downloads",
       "required": true
     },
-    "EDX_ACCESS_TOKEN": {
-      "description": "Access token value for an edX admin user",
+    "OPENEDX_API_CLIENT_ID": {
+      "description": "Client ID value for getting edX access_token",
+      "required": false
+    },
+    "OPENEDX_API_CLIENT_ID": {
+      "description": "Client secret value for getting edX access_token",
       "required": false
     },
     "EDX_BASE_URL": {
