@@ -109,12 +109,12 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
             expires_in = timedelta(seconds=self.expires_in)
         except TypeError:
             response = send_refresh_request(self.base_url)
-            self.update_access_token(response.json())
+            self.update_access_token(response)
             return
 
         if now_in_utc() - self.updated_at >= expires_in:
             response = send_refresh_request(self.base_url)
-            self.update_access_token(response.json())
+            self.update_access_token(response)
 
     def clean(self):
         if self.is_global_default is True:

@@ -492,4 +492,4 @@ def send_refresh_request(full_api_url):
     resp = requests.post(access_token_url, data=data)
 
     resp.raise_for_status()
-    return resp
+    return resp.json()
