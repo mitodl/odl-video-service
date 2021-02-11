@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.60.0
+Version 0.60.0 (Released February 11, 2021)
 --------------
 
 - Updating JWT access token for EdxEndpoint (#931)
