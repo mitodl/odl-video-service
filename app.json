@@ -169,6 +169,10 @@
     "PGBOUNCER_MIN_POOL_SIZE": {
       "value": "5"
     },
+    "REDIS_MAX_CONNECTIONS": {
+      "description": "Max number of connections to allow to redis",
+      "required": "false"
+    },
     "SCHEDULE_RETRANSCODE_FREQUENCY": {
       "description": "How often to check for scheduled retranscodes",
       "required": "false"
