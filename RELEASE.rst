@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.61.0
+Version 0.61.0 (Released March 02, 2021)
 --------------
 
 - Upgrade httplib2 (#934)
