@@ -436,7 +436,7 @@ REST_FRAMEWORK = {
 # Celery
 # http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
 REDIS_URL = get_string("REDIS_URL", None)
-REDIS_MAX_CONNECTIONS = get_int("REDIS_MAX_CONNECTIONS", 2147483648)
+REDIS_MAX_CONNECTIONS = get_int("REDIS_MAX_CONNECTIONS", 65000)
 USE_CELERY = True
 CELERY_BROKER_URL = get_string("CELERY_BROKER_URL", REDIS_URL)
 CELERY_RESULT_BACKEND = REDIS_URL
