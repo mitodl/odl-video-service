@@ -450,6 +450,7 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = "UTC"
+CELERY_REDIS_MAX_CONNECTIONS = REDIS_MAX_CONNECTIONS
 CELERY_BEAT_SCHEDULE = {
     "update-statuses": {
         "task": "cloudsync.tasks.update_video_statuses",
