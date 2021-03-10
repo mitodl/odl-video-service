@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.62.0
+--------------
+
+- Add CELERY_REDIS_MAX_CONNECTIONS (#938)
+- Limit number of redis connections if an env variable is set (#937)
+
 Version 0.61.0 (Released March 02, 2021)
 --------------
 
