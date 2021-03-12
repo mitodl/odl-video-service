@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.62.0
+Version 0.62.0 (Released March 12, 2021)
 --------------
 
 - Add CELERY_REDIS_MAX_CONNECTIONS (#938)
