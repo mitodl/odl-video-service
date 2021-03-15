@@ -758,6 +758,14 @@ def test_schedule_retranscodes(
     assert Collection.objects.get(id=collection.id).schedule_retranscode is False
 
 
+def test_no_scheduled_retranscodes(mocked_celery):
+    """
+    Test that schedule_retranscodes doesn't raise a replacement if no videos need a retranscode
+    """
+    schedule_retranscodes.delay()
+    assert mocked_celery.group.call_count == 0
+
+
 def test_schedule_retranscodes_error(mocker, mocked_celery):
     """
     Test that schedule_retranscodes logs an error if it occurs

@@ -184,20 +184,19 @@ def schedule_retranscodes(self):
     ).update(schedule_retranscode=False)
 
     # Run retranscodes on all videos with schedule_retranscode=True
-    try:
-        retranscode_tasks = group(
-            [
-                retranscode_video.si(video_id)
-                for video_id in Video.objects.filter(
-                    schedule_retranscode=True
-                ).values_list("id", flat=True)
-            ]
-        )
-    except:  # pylint: disable=bare-except
-        error = "schedule_retranscodes threw an error"
-        log.exception(error)
-        return error
-    raise self.replace(retranscode_tasks)
+    videos = Video.objects.filter(schedule_retranscode=True).values_list(
+        "id", flat=True
+    )
+    if videos:
+        try:
+            retranscode_tasks = group(
+                [retranscode_video.si(video_id) for video_id in videos]
+            )
+        except:  # pylint: disable=bare-except
+            error = "schedule_retranscodes threw an error"
+            log.exception(error)
+            return error
+        raise self.replace(retranscode_tasks)
 
 
 @shared_task(bind=True)
