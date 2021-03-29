@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.63.0
+--------------
+
+- The schedule_retranscodes task shouldn't replace itself if there's nothing to do. (#939)
+
 Version 0.62.0 (Released March 12, 2021)
 --------------
 
