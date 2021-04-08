@@ -4,104 +4,289 @@
 #
 #    pip-compile
 #
-amqp==2.5.2               # via kombu
-appdirs==1.4.3            # via zeep
-attrs==19.3.0             # via zeep
-backcall==0.1.0           # via ipython
-beautifulsoup4==4.9.0     # via -r requirements.in
-billiard==3.6.3.0         # via celery
-boto3==1.12.26            # via -r requirements.in, django-elastic-transcoder, smart-open
-boto==2.49.0              # via smart-open
-botocore==1.15.39         # via boto3, s3transfer
-bz2file==0.98             # via smart-open
-cached-property==1.5.1    # via zeep
-cachetools==4.1.0         # via google-auth
-celery-redbeat==0.13.0    # via -r requirements.in
-celery==4.3.0             # via -r requirements.in, celery-redbeat
-certifi==2020.4.5.1       # via requests, sentry-sdk
-cffi==1.14.0              # via cryptography
-chardet==3.0.4            # via requests
-cryptography==3.2         # via -r requirements.in, pyopenssl
-decorator==4.4.2          # via ipython, traitlets
-defusedxml==0.6.0         # via zeep
-dj-database-url==0.3.0    # via -r requirements.in
-dj-static==0.0.6          # via -r requirements.in
-django-compat==1.0.15     # via -r requirements.in, django-hijack, django-hijack-admin
-git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder==0.9.7  # via -r requirements.in
-django-hijack-admin==2.1.10  # via -r requirements.in
-django-hijack==2.1.10     # via -r requirements.in, django-hijack-admin
-django-redis==4.7.0       # via -r requirements.in
-django-server-status==0.7.3  # via -r requirements.in
-git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser==0.9  # via -r requirements.in
-django-webpack-loader==0.5.0  # via -r requirements.in
-django==2.2.13            # via -r requirements.in, django-elastic-transcoder, django-server-status, djangorestframework
-djangorestframework==3.11.0  # via -r requirements.in
-docutils==0.15.2          # via botocore
-factory-boy==2.12.0       # via -r requirements.in
-faker==4.0.3              # via -r requirements.in, factory-boy
-google-api-core==1.16.0   # via google-api-python-client
-google-api-python-client==1.8.0  # via -r requirements.in
-google-auth-httplib2==0.0.3  # via -r requirements.in, google-api-python-client
-google-auth-oauthlib==0.4.1  # via -r requirements.in
-google-auth==1.13.1       # via -r requirements.in, google-api-core, google-api-python-client, google-auth-httplib2, google-auth-oauthlib
-googleapis-common-protos==1.51.0  # via google-api-core
-html5lib==0.999999999     # via -r requirements.in
-httplib2==0.19.0          # via -r requirements.in, google-api-python-client, google-auth-httplib2, oauth2client
-idna==2.9                 # via requests
-importlib-metadata==3.3.0  # via kombu
-ipython-genutils==0.2.0   # via traitlets
-ipython==7.13.0           # via -r requirements.in
-isodate==0.6.0            # via zeep
-jedi==0.16.0              # via ipython
-jmespath==0.9.5           # via boto3, botocore
-kombu==4.6.8              # via celery
-lxml==4.6.2               # via zeep
-git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4  # via -r requirements.in
-newrelic==5.12.0.140      # via -r requirements.in
-oauth2client==3.0.0       # via -r requirements.in
-oauthlib==3.1.0           # via requests-oauthlib
-parso==0.7.0              # via jedi
-pexpect==4.8.0            # via ipython
-pickleshare==0.7.5        # via ipython
-prompt-toolkit==3.0.5     # via ipython
-protobuf==3.11.3          # via google-api-core, googleapis-common-protos
-psycopg2==2.7.3.2         # via -r requirements.in
-ptyprocess==0.6.0         # via pexpect
-pyasn1-modules==0.2.8     # via google-auth, oauth2client
-pyasn1==0.4.8             # via oauth2client, pyasn1-modules, rsa
-pycountry==19.8.18        # via -r requirements.in
-pycparser==2.20           # via cffi
-pygments==2.6.1           # via ipython
-pyopenssl==19.1.0         # via -r requirements.in
-pyparsing==2.4.7          # via httplib2
-python-dateutil==2.8.1    # via -r requirements.in, botocore, celery-redbeat, faker
-pytz==2019.3              # via -r requirements.in, celery, django, google-api-core, zeep
-redis==3.2.1              # via -r requirements.in, celery-redbeat, django-redis
-requests-oauthlib==1.3.0  # via google-auth-oauthlib
-requests-toolbelt==0.9.1  # via zeep
-requests==2.23.0          # via -r requirements.in, google-api-core, requests-oauthlib, requests-toolbelt, smart-open, zeep
-rsa==4.0                  # via google-auth, oauth2client
-s3transfer==0.3.3         # via boto3
-sentry-sdk==0.14.3        # via -r requirements.in, structlog-sentry
-six==1.14.0               # via cryptography, django-compat, google-api-core, google-api-python-client, google-auth, html5lib, isodate, oauth2client, protobuf, pyopenssl, python-dateutil, structlog, tenacity, traitlets, zeep
-smart_open==1.5.7         # via -r requirements.in
-soupsieve==2.0.1          # via beautifulsoup4
-sqlparse==0.3.1           # via django
-static3==0.7.0            # via dj-static
-structlog-sentry==1.2.2   # via -r requirements.in
-structlog==20.1.0         # via -r requirements.in
-tenacity==6.1.0           # via celery-redbeat
-text-unidecode==1.3       # via faker
-traitlets==4.3.3          # via ipython
-typing-extensions==3.7.4.3  # via importlib-metadata
-uritemplate==3.0.1        # via google-api-python-client
-urllib3==1.25.8           # via -r requirements.in, botocore, requests, sentry-sdk
-uwsgi==2.0.18             # via -r requirements.in
-vine==1.3.0               # via amqp, celery
-wcwidth==0.1.9            # via prompt-toolkit
-webencodings==0.5.1       # via html5lib
-zeep==3.4.0               # via mit-moira
-zipp==3.4.0               # via importlib-metadata
+amqp==2.5.2
+    # via kombu
+appdirs==1.4.3
+    # via zeep
+attrs==19.3.0
+    # via zeep
+backcall==0.1.0
+    # via ipython
+beautifulsoup4==4.9.0
+    # via -r requirements.in
+billiard==3.6.3.0
+    # via celery
+boto3==1.12.26
+    # via
+    #   -r requirements.in
+    #   django-elastic-transcoder
+    #   smart-open
+boto==2.49.0
+    # via smart-open
+botocore==1.15.39
+    # via
+    #   boto3
+    #   s3transfer
+bz2file==0.98
+    # via smart-open
+cached-property==1.5.1
+    # via zeep
+cachetools==4.1.0
+    # via google-auth
+celery-redbeat==0.13.0
+    # via -r requirements.in
+celery==4.3.0
+    # via
+    #   -r requirements.in
+    #   celery-redbeat
+certifi==2020.4.5.1
+    # via
+    #   requests
+    #   sentry-sdk
+cffi==1.14.0
+    # via cryptography
+chardet==3.0.4
+    # via requests
+cryptography==3.2
+    # via
+    #   -r requirements.in
+    #   pyopenssl
+decorator==4.4.2
+    # via
+    #   ipython
+    #   traitlets
+defusedxml==0.6.0
+    # via zeep
+dj-database-url==0.3.0
+    # via -r requirements.in
+dj-static==0.0.6
+    # via -r requirements.in
+django-compat==1.0.15
+    # via
+    #   -r requirements.in
+    #   django-hijack
+    #   django-hijack-admin
+git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder==0.9.7
+    # via -r requirements.in
+django-hijack-admin==2.1.10
+    # via -r requirements.in
+django-hijack==2.1.10
+    # via
+    #   -r requirements.in
+    #   django-hijack-admin
+django-redis==4.7.0
+    # via -r requirements.in
+django-server-status==0.7.3
+    # via -r requirements.in
+git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser==0.9
+    # via -r requirements.in
+django-webpack-loader==0.5.0
+    # via -r requirements.in
+django==2.2.20
+    # via
+    #   -r requirements.in
+    #   django-elastic-transcoder
+    #   django-server-status
+    #   djangorestframework
+djangorestframework==3.11.0
+    # via -r requirements.in
+docutils==0.15.2
+    # via botocore
+factory-boy==2.12.0
+    # via -r requirements.in
+faker==4.0.3
+    # via
+    #   -r requirements.in
+    #   factory-boy
+google-api-core==1.16.0
+    # via google-api-python-client
+google-api-python-client==1.8.0
+    # via -r requirements.in
+google-auth-httplib2==0.0.3
+    # via
+    #   -r requirements.in
+    #   google-api-python-client
+google-auth-oauthlib==0.4.1
+    # via -r requirements.in
+google-auth==1.13.1
+    # via
+    #   -r requirements.in
+    #   google-api-core
+    #   google-api-python-client
+    #   google-auth-httplib2
+    #   google-auth-oauthlib
+googleapis-common-protos==1.51.0
+    # via google-api-core
+html5lib==0.999999999
+    # via -r requirements.in
+httplib2==0.19.0
+    # via
+    #   -r requirements.in
+    #   google-api-python-client
+    #   google-auth-httplib2
+    #   oauth2client
+idna==2.9
+    # via requests
+importlib-metadata==3.3.0
+    # via kombu
+ipython-genutils==0.2.0
+    # via traitlets
+ipython==7.13.0
+    # via -r requirements.in
+isodate==0.6.0
+    # via zeep
+jedi==0.16.0
+    # via ipython
+jmespath==0.9.5
+    # via
+    #   boto3
+    #   botocore
+kombu==4.6.8
+    # via celery
+lxml==4.6.2
+    # via zeep
+git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4
+    # via -r requirements.in
+newrelic==5.12.0.140
+    # via -r requirements.in
+oauth2client==3.0.0
+    # via -r requirements.in
+oauthlib==3.1.0
+    # via requests-oauthlib
+parso==0.7.0
+    # via jedi
+pexpect==4.8.0
+    # via ipython
+pickleshare==0.7.5
+    # via ipython
+prompt-toolkit==3.0.5
+    # via ipython
+protobuf==3.11.3
+    # via
+    #   google-api-core
+    #   googleapis-common-protos
+psycopg2==2.7.3.2
+    # via -r requirements.in
+ptyprocess==0.6.0
+    # via pexpect
+pyasn1-modules==0.2.8
+    # via
+    #   google-auth
+    #   oauth2client
+pyasn1==0.4.8
+    # via
+    #   oauth2client
+    #   pyasn1-modules
+    #   rsa
+pycountry==19.8.18
+    # via -r requirements.in
+pycparser==2.20
+    # via cffi
+pygments==2.6.1
+    # via ipython
+pyopenssl==19.1.0
+    # via -r requirements.in
+pyparsing==2.4.7
+    # via httplib2
+python-dateutil==2.8.1
+    # via
+    #   -r requirements.in
+    #   botocore
+    #   celery-redbeat
+    #   faker
+pytz==2019.3
+    # via
+    #   -r requirements.in
+    #   celery
+    #   django
+    #   google-api-core
+    #   zeep
+redis==3.2.1
+    # via
+    #   -r requirements.in
+    #   celery-redbeat
+    #   django-redis
+requests-oauthlib==1.3.0
+    # via google-auth-oauthlib
+requests-toolbelt==0.9.1
+    # via zeep
+requests==2.23.0
+    # via
+    #   -r requirements.in
+    #   google-api-core
+    #   requests-oauthlib
+    #   requests-toolbelt
+    #   smart-open
+    #   zeep
+rsa==4.0
+    # via
+    #   google-auth
+    #   oauth2client
+s3transfer==0.3.3
+    # via boto3
+sentry-sdk==0.14.3
+    # via
+    #   -r requirements.in
+    #   structlog-sentry
+six==1.14.0
+    # via
+    #   cryptography
+    #   django-compat
+    #   google-api-core
+    #   google-api-python-client
+    #   google-auth
+    #   html5lib
+    #   isodate
+    #   oauth2client
+    #   protobuf
+    #   pyopenssl
+    #   python-dateutil
+    #   structlog
+    #   tenacity
+    #   traitlets
+    #   zeep
+smart_open==1.5.7
+    # via -r requirements.in
+soupsieve==2.0.1
+    # via beautifulsoup4
+sqlparse==0.3.1
+    # via django
+static3==0.7.0
+    # via dj-static
+structlog-sentry==1.2.2
+    # via -r requirements.in
+structlog==20.1.0
+    # via -r requirements.in
+tenacity==6.1.0
+    # via celery-redbeat
+text-unidecode==1.3
+    # via faker
+traitlets==4.3.3
+    # via ipython
+typing-extensions==3.7.4.3
+    # via importlib-metadata
+uritemplate==3.0.1
+    # via google-api-python-client
+urllib3==1.25.8
+    # via
+    #   -r requirements.in
+    #   botocore
+    #   requests
+    #   sentry-sdk
+uwsgi==2.0.18
+    # via -r requirements.in
+vine==1.3.0
+    # via
+    #   amqp
+    #   celery
+wcwidth==0.1.9
+    # via prompt-toolkit
+webencodings==0.5.1
+    # via html5lib
+zeep==3.4.0
+    # via mit-moira
+zipp==3.4.0
+    # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
