@@ -8,6 +8,7 @@ from rest_framework.settings import api_settings
 
 from ui import models, permissions as ui_permissions
 from ui.encodings import EncodingNames
+from ui.models import CollectionEdxEndpoint
 from ui.utils import get_moira_client, has_common_lists
 
 
@@ -220,6 +221,21 @@ class VideoSerializer(serializers.ModelSerializer):
         )
 
 
+class EdxEndpointSerializer(serializers.ModelSerializer):
+    """EdxEndpoint serializer"""
+
+    class Meta:
+        model = models.EdxEndpoint
+        fields = (
+            "id",
+            "name",
+        )
+        read_only_fields = (
+            "id",
+            "name",
+        )
+
+
 class SimpleVideoSerializer(VideoSerializer):
     """
     Simplified video serializer for Collection view
@@ -261,6 +277,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
     )
     is_admin = serializers.SerializerMethodField()
+    available_edx_endpoints = serializers.SerializerMethodField()
 
     def get_key(self, obj):
         """Custom getter for the key"""
@@ -286,6 +303,13 @@ class CollectionSerializer(serializers.ModelSerializer):
             videos = obj.videos.all()
         return [
             SimpleVideoSerializer(video, context=self.context).data for video in videos
+        ]
+
+    def get_available_edx_endpoints(self, obj):
+        """custom field for edx installation to select from"""
+        endpoints = obj.edxendpoint_set.all()
+        return [
+            EdxEndpointSerializer(endpoint, context=self.context).data for endpoint in endpoints
         ]
 
     def get_is_admin(self, obj):
@@ -331,6 +355,8 @@ class CollectionSerializer(serializers.ModelSerializer):
             "admin_lists",
             "is_logged_in_only",
             "edx_course_id",
+            "edx_endpoints",
+            "available_edx_endpoints",
             "is_admin",
         )
         read_only_fields = (

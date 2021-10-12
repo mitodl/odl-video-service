@@ -36,6 +36,9 @@ export const setEdxCourseId = createAction(SET_EDX_COURSE_ID)
 export const SET_SELECTED_VIDEO_KEY = qualifiedName("SET_SELECTED_VIDEO_KEY")
 export const setSelectedVideoKey = createAction(SET_SELECTED_VIDEO_KEY)
 
+export const SET_SELECTED_EDX_ENDPOINT = qualifiedName("SET_SELECTED_EDX_ENDPOINT")
+export const setSelectedEdxEndpoint = createAction(SET_SELECTED_EDX_ENDPOINT)
+
 export const SET_IS_NEW = qualifiedName("SET_IS_NEW")
 export const setIsNew = createAction(SET_IS_NEW)
 

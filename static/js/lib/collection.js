@@ -48,6 +48,7 @@ export function makeInitializedForm(
       admin_lists:       [],
       is_logged_in_only: false,
       edx_course_id:     "",
+      edx_endpoints:     [],
       video_count:       0
     }
   }
@@ -67,6 +68,7 @@ export function makeInitializedForm(
     adminChoice: adminChoice,
     adminLists:  _.join(collection.admin_lists, ","),
     edxCourseId: collection.edx_course_id,
+    edxEndpoint: collection.edx_endpoints[0],
     videoCount:  collection.video_count
   }
 }
