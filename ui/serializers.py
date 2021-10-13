@@ -309,7 +309,8 @@ class CollectionSerializer(serializers.ModelSerializer):
         """custom field for edx installation to select from"""
         endpoints = obj.edxendpoint_set.all()
         return [
-            EdxEndpointSerializer(endpoint, context=self.context).data for endpoint in endpoints
+            EdxEndpointSerializer(endpoint, context=self.context).data
+            for endpoint in endpoints
         ]
 
     def get_is_admin(self, obj):

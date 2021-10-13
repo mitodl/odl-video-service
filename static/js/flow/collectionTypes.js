@@ -11,14 +11,14 @@ export type CollectionListItem = {
   is_logged_in_only:  boolean,
   video_count:        number,
   edx_course_id:      ?string,
-  edx_endpoints:      Array<any>,
+  available_edx_endpoints: Array<any>,
+  edx_endpoints: Array<any>,
 };
 
 export type Collection = CollectionListItem & {
   videos:              Array<Video>,
   is_admin:            boolean,
   is_edx_course_admin: boolean,
-  available_edx_endpoints: Array<any>,
 };
 
 export type CollectionList = Array<CollectionListItem>;

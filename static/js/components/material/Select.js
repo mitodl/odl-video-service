@@ -1,7 +1,7 @@
 // @flow
 import React from "react"
 
-import {MDCSelect} from "@material/select/dist/mdc.select"
+import { MDCSelect } from "@material/select/dist/mdc.select"
 
 export default class Select extends React.Component<*, void> {
   select: null
@@ -10,10 +10,12 @@ export default class Select extends React.Component<*, void> {
   componentDidMount() {
     const { setSelectedEndpoint, selectedEndpoint } = this.props
     this.select = new MDCSelect(this.selectRoot)
-    this.select.listen('MDCSelect:change', () => {
-      setSelectedEndpoint(this.select.value)
+    this.select.listen("MDCSelect:change", () => {
+      if (this.select) {
+        setSelectedEndpoint(this.select.value)
+      }
     })
-    if (selectedEndpoint) {
+    if (this.select && selectedEndpoint) {
       this.select.value = selectedEndpoint
     }
   }
@@ -32,13 +34,21 @@ export default class Select extends React.Component<*, void> {
     }
 
     return (
-      <div className="mdc-select mdc-select--box" role="listbox" ref={div => (this.selectRoot = div)}>
+      <div
+        className="mdc-select mdc-select--box"
+        role="listbox"
+        ref={div => (this.selectRoot = div)}
+      >
         <div className="mdc-select__surface" tabIndex="0">
-          <div className={`mdc-select__label ${isSelected ? "mdc-select__label--float-above" : ""}`}>
+          <div
+            className={`mdc-select__label ${
+              isSelected ? "mdc-select__label--float-above" : ""
+            }`}
+          >
             Select Edx Endpoint
           </div>
-          <div className="mdc-select__selected-text"></div>
-          <div className="mdc-select__bottom-line"></div>
+          <div className="mdc-select__selected-text" />
+          <div className="mdc-select__bottom-line" />
         </div>
         <div className="mdc-menu mdc-select__menu">
           <ul className="mdc-list mdc-menu__items">

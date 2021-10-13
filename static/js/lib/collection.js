@@ -49,7 +49,8 @@ export function makeInitializedForm(
       is_logged_in_only: false,
       edx_course_id:     "",
       edx_endpoints:     [],
-      video_count:       0
+      video_count:       0,
+      available_edx_endpoints: [],
     }
   }
   const viewChoice =

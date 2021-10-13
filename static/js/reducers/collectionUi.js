@@ -14,7 +14,7 @@ import {
   SET_IS_NEW,
   CLEAR_COLLECTION_FORM,
   SET_COLLECTION_FORM_ERRORS,
-  SET_SELECTED_EDX_ENDPOINT,
+  SET_SELECTED_EDX_ENDPOINT
 } from "../actions/collectionUi"
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 import { getFormKey } from "../lib/collection"
@@ -30,14 +30,14 @@ export const INITIAL_COLLECTION_FORM_STATE = {
   adminChoice: PERM_CHOICE_NONE,
   adminLists:  null,
   edxCourseId: "",
-  edxEndpoint: "",
+  edxEndpoint: null
 }
 
 export const INITIAL_UI_STATE = {
   newCollectionForm:  INITIAL_COLLECTION_FORM_STATE,
   editCollectionForm: INITIAL_COLLECTION_FORM_STATE,
   isNew:              true,
-  selectedVideoKey:   null,
+  selectedVideoKey:   null
 }
 
 const updateCollectionForm = (

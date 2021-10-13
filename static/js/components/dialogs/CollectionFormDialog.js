@@ -22,7 +22,7 @@ import { makeCollectionUrl } from "../../lib/urls"
 import { calculateListPermissionValue } from "../../util/util"
 import {
   setCollectionFormErrors,
-  clearCollectionErrors,
+  clearCollectionErrors
 } from "../../actions/collectionUi"
 
 import type {
@@ -180,12 +180,13 @@ export class CollectionFormDialog extends React.Component<*, void> {
       collectionForm,
       collectionUi: { isNew, errors },
       isEdxCourseAdmin,
-      collection,
+      collection
     } = this.props
     const title = isNew ? "Create a New Collection" : "Edit Collection"
     const submitText = isNew ? "Create Collection" : "Save"
-    const menuItems = [{ label: "MIT xPRO", value: "edx_endpoint_name" }]
-    const availableEdxEndpoints = collection ? collection.available_edx_endpoints : []
+    const availableEdxEndpoints = collection ?
+      collection.available_edx_endpoints :
+      []
 
     return (
       <Dialog
