@@ -41,16 +41,16 @@ export function makeInitializedForm(
 ): CollectionFormState {
   if (!collection) {
     collection = {
-      key:               "",
-      title:             "",
-      description:       "",
-      view_lists:        [],
-      admin_lists:       [],
-      is_logged_in_only: false,
-      edx_course_id:     "",
-      edx_endpoints:     [],
-      video_count:       0,
-      available_edx_endpoints: [],
+      key:                     "",
+      title:                   "",
+      description:             "",
+      view_lists:              [],
+      admin_lists:             [],
+      is_logged_in_only:       false,
+      edx_course_id:           "",
+      edx_endpoints:           [],
+      video_count:             0,
+      available_edx_endpoints: []
     }
   }
   const viewChoice =
