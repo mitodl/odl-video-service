@@ -302,7 +302,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
             />,
             <Select
               key="edx-endpoint-select"
-              selectedEndpoint={collectionForm.edxEndpoint || ""}
+              selectedEndpoint={collectionForm.edxEndpoint || null}
               setSelectedEndpoint={this.setEdxEndpoint}
               menuItems={availableEdxEndpoints}
             />

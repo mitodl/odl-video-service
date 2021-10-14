@@ -59,6 +59,7 @@ export default class Select extends React.Component<*, void> {
                   className="mdc-list-item"
                   role="option"
                   tabIndex="0"
+                  id={item.id}
                 >
                   {item.name}
                 </li>

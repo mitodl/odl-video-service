@@ -8,7 +8,6 @@ from rest_framework.settings import api_settings
 
 from ui import models, permissions as ui_permissions
 from ui.encodings import EncodingNames
-from ui.models import CollectionEdxEndpoint
 from ui.utils import get_moira_client, has_common_lists
 
 
