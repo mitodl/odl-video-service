@@ -81,7 +81,7 @@ describe("collection library function", () => {
       viewLists:   "",
       edxCourseId: "",
       videoCount:  0,
-      edxEndpoint: undefined
+      edxEndpoint: -1
     })
   })
 
@@ -97,7 +97,7 @@ describe("collection library function", () => {
       viewLists:   collection.view_lists.join(","),
       edxCourseId: collection.edx_course_id,
       videoCount:  collection.video_count,
-      edxEndpoint: collection.edx_endpoints[0]
+      edxEndpoint: collection.edx_endpoint
     })
   })
 })

@@ -12,7 +12,7 @@ export type CollectionListItem = {
   video_count:        number,
   edx_course_id:      ?string,
   available_edx_endpoints: Array<any>,
-  edx_endpoints: Array<any>,
+  edx_endpoint: number,
 };
 
 export type Collection = CollectionListItem & {

@@ -29,7 +29,8 @@ import {
   showEditCollectionDialog,
   CLEAR_COLLECTION_FORM,
   SET_COLLECTION_FORM_ERRORS,
-  CLEAR_COLLECTION_ERRORS, setSelectedEdxEndpoint
+  CLEAR_COLLECTION_ERRORS,
+  setSelectedEdxEndpoint
 } from "../../actions/collectionUi"
 import * as toastActions from "../../actions/toast"
 import { INITIAL_UI_STATE } from "../../reducers/collectionUi"
@@ -146,7 +147,6 @@ describe("CollectionFormDialog", () => {
           // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
           wrapper.find("Dialog").prop("onAccept")()
         })
-
         assert.equal(store.getState().collectionUi.errors, expectedError)
       })
 
@@ -206,7 +206,7 @@ describe("CollectionFormDialog", () => {
           admin_lists:       expectedListRequestData,
           edx_course_id:     "edx-course-id",
           is_logged_in_only: false,
-          edx_endpoint:      1,
+          edx_endpoint:      1
         }
 
         if (isNew) {

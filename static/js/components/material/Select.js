@@ -40,7 +40,7 @@ export default class Select extends React.Component<*, void> {
 
   render() {
     const { menuItems, selectedEndpoint } = this.props
-    const isSelected = selectedEndpoint !== null
+    const isSelected = selectedEndpoint > 0
 
     return (
       <div

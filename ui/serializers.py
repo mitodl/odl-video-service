@@ -277,6 +277,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     )
     is_admin = serializers.SerializerMethodField()
     available_edx_endpoints = serializers.SerializerMethodField()
+    edx_endpoint = serializers.SerializerMethodField()
 
     def get_key(self, obj):
         """Custom getter for the key"""
@@ -311,6 +312,11 @@ class CollectionSerializer(serializers.ModelSerializer):
             EdxEndpointSerializer(endpoint, context=self.context).data
             for endpoint in endpoints
         ]
+
+    def get_edx_endpoint(self, obj):
+        """custom field for selected edx installation"""
+        edx_endpoint = obj.edx_endpoints.first()
+        return edx_endpoint.id if edx_endpoint is not None else -1
 
     def get_is_admin(self, obj):
         """Custom field to indicate whether or not the requesting user is an admin"""
@@ -355,7 +361,7 @@ class CollectionSerializer(serializers.ModelSerializer):
             "admin_lists",
             "is_logged_in_only",
             "edx_course_id",
-            "edx_endpoints",
+            "edx_endpoint",
             "available_edx_endpoints",
             "is_admin",
         )
