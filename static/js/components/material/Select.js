@@ -2,21 +2,33 @@
 import React from "react"
 
 import { MDCSelect } from "@material/select/dist/mdc.select"
+import type { MenuItem } from "../../flow/uiTypes"
+
+type SelectProps = {
+  open: boolean,
+  selectedEndpoint: number,
+  menuItems: Array<MenuItem>
+}
 
 export default class Select extends React.Component<*, void> {
   select: null
   selectRoot: ?HTMLElement
 
   componentDidMount() {
-    const { setSelectedEndpoint, selectedEndpoint } = this.props
+    const { setSelectedEndpoint } = this.props
     this.select = new MDCSelect(this.selectRoot)
     this.select.listen("MDCSelect:change", () => {
       if (this.select) {
         setSelectedEndpoint(this.select.value)
       }
     })
-    if (this.select && selectedEndpoint) {
-      this.select.value = selectedEndpoint
+  }
+  // eslint-disable-next-line react/no-deprecated
+  componentWillReceiveProps(nextProps: SelectProps) {
+    if (this.select && nextProps.selectedEndpoint) {
+      if (this.select.selectedIndex < 0) {
+        this.select.selectedIndex = nextProps.selectedEndpoint
+      }
     }
   }
 
@@ -27,11 +39,8 @@ export default class Select extends React.Component<*, void> {
   }
 
   render() {
-    const { menuItems } = this.props
-    let isSelected = false
-    if (this.select) {
-      isSelected = this.select.selectedIndex > 1
-    }
+    const { menuItems, selectedEndpoint } = this.props
+    const isSelected = selectedEndpoint !== null
 
     return (
       <div
@@ -57,6 +66,9 @@ export default class Select extends React.Component<*, void> {
                 <li
                   key={`${item.id}_item`}
                   className="mdc-list-item"
+                  aria-selected={
+                    selectedEndpoint && item.id === selectedEndpoint
+                  }
                   role="option"
                   tabIndex="0"
                   id={item.id}
