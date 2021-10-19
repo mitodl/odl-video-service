@@ -34,7 +34,7 @@ def test_collection_serializer():
         "is_admin": False,
         "edx_course_id": collection.edx_course_id,
         "available_edx_endpoints": [],
-        "edx_endpoints": [],
+        "edx_endpoint": -1,
     }
     expected["videos"].sort(key=lambda x: x["key"])
     serialized_data = serializers.CollectionSerializer(collection).data
