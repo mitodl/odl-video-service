@@ -184,9 +184,10 @@ export class CollectionFormDialog extends React.Component<*, void> {
     } = this.props
     const title = isNew ? "Create a New Collection" : "Edit Collection"
     const submitText = isNew ? "Create Collection" : "Save"
-    const availableEdxEndpoints = collection ?
-      collection.available_edx_endpoints :
-      []
+    const availableEdxEndpoints =
+      collection && collection.available_edx_endpoints ?
+        collection.available_edx_endpoints :
+        []
 
     return (
       <Dialog
