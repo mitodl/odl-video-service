@@ -10,8 +10,7 @@ import rootReducer from "../../reducers"
 import Select from "./Select"
 
 describe("Select", () => {
-  let sandbox,
-    store
+  let sandbox, store
   beforeEach(() => {
     sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
@@ -33,7 +32,7 @@ describe("Select", () => {
   it("select element is rendered with no selected edx endpoint", async () => {
     const wrapper = await renderSelect({
       selectedEndpoint: -1,
-      menuItems:        [],
+      menuItems:        []
     })
     const selectNode = wrapper.find(".mdc-select__label").at(0)
     assert.isTrue(selectNode.text().startsWith("Select Edx Endpoint"))
@@ -43,7 +42,7 @@ describe("Select", () => {
   it("select element is rendered with selected edx endpoint", async () => {
     const wrapper = await renderSelect({
       selectedEndpoint: 3,
-      menuItems:        [],
+      menuItems:        []
     })
     const selectNode = wrapper.find(".mdc-select__label").at(0)
     assert.isTrue(selectNode.hasClass("mdc-select__label--float-above"))
