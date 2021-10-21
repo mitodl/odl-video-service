@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "compat",
     "hijack",
     "hijack_admin",
+    "encrypted_model_fields",
 ]
 
 DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
@@ -153,6 +154,8 @@ else:
 DATABASES = {
     "default": DEFAULT_DATABASE_CONFIG,
 }
+
+FIELD_ENCRYPTION_KEY = get_string("FIELD_ENCRYPTION_KEY", "")
 
 # the full URL of the current application is mandatory
 ODL_VIDEO_BASE_URL = get_string("ODL_VIDEO_BASE_URL", None)
@@ -533,7 +536,5 @@ MOIRA_CACHE_TIMEOUT = get_int("MOIRA_CACHE_TIMEOUT", 10800)
 HIJACK_ALLOW_GET_REQUESTS = True
 HIJACK_LOGOUT_REDIRECT_URL = "/admin/auth/user"
 
-EDX_BASE_URL = get_string("EDX_BASE_URL", None)
-EDX_HLS_API_URL = get_string("EDX_HLS_API_URL", "/api/val/v0/videos/")
 OPENEDX_API_CLIENT_ID = get_string("OPENEDX_API_CLIENT_ID", "")
 OPENEDX_API_CLIENT_SECRET = get_string("OPENEDX_API_CLIENT_SECRET", "")

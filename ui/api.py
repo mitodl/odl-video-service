@@ -75,7 +75,6 @@ def post_hls_to_edx(video_file):
 
     edx_endpoints = models.EdxEndpoint.objects.filter(
         Q(collections__id__in=[video_file.video.collection_id])
-        | Q(is_global_default=True)
     )
     if not edx_endpoints.exists():
         log.error(

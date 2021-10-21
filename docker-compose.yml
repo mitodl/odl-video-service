@@ -44,6 +44,7 @@ services:
       WEBPACK_DEV_SERVER_HOST: ${WEBPACK_DEV_SERVER_HOST:-localhost}
       COVERAGE_DIR: htmlcov
       DOCKER_HOST: ${DOCKER_HOST:-missing}
+      FIELD_ENCRYPTION_KEY: jtma0CL1QMRLaJgjXNlJh3mtPNcgok0G5ajRCMZ_XNI=
     env_file: .env
 
 
