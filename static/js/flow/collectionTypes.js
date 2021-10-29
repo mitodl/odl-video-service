@@ -10,7 +10,9 @@ export type CollectionListItem = {
   admin_lists:        Array<string>,
   is_logged_in_only:  boolean,
   video_count:        number,
-  edx_course_id:      ?string
+  edx_course_id:      ?string,
+  available_edx_endpoints: Array<any>,
+  edx_endpoint: number,
 };
 
 export type Collection = CollectionListItem & {
@@ -30,6 +32,7 @@ export type CollectionFormState = {
   adminChoice: string,
   adminLists: ?string,
   edxCourseId: ?string,
+  edxEndpoint: ?number,
 };
 
 export type CollectionValidation = {
@@ -44,7 +47,7 @@ export type CollectionUiState = {
   editCollectionForm: CollectionFormState,
   isNew: boolean,
   selectedVideoKey: ?string,
-  errors?: CollectionValidation
+  errors?: CollectionValidation,
 };
 
 export type CollectionsPage = {

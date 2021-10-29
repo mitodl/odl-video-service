@@ -220,6 +220,21 @@ class VideoSerializer(serializers.ModelSerializer):
         )
 
 
+class EdxEndpointSerializer(serializers.ModelSerializer):
+    """EdxEndpoint serializer"""
+
+    class Meta:
+        model = models.EdxEndpoint
+        fields = (
+            "id",
+            "name",
+        )
+        read_only_fields = (
+            "id",
+            "name",
+        )
+
+
 class SimpleVideoSerializer(VideoSerializer):
     """
     Simplified video serializer for Collection view
@@ -261,6 +276,8 @@ class CollectionSerializer(serializers.ModelSerializer):
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
     )
     is_admin = serializers.SerializerMethodField()
+    available_edx_endpoints = serializers.SerializerMethodField()
+    edx_endpoint = serializers.SerializerMethodField()
 
     def get_key(self, obj):
         """Custom getter for the key"""
@@ -287,6 +304,19 @@ class CollectionSerializer(serializers.ModelSerializer):
         return [
             SimpleVideoSerializer(video, context=self.context).data for video in videos
         ]
+
+    def get_available_edx_endpoints(self, obj):
+        """custom field for edx installation to select from"""
+        endpoints = obj.edxendpoint_set.all()
+        return [
+            EdxEndpointSerializer(endpoint, context=self.context).data
+            for endpoint in endpoints
+        ]
+
+    def get_edx_endpoint(self, obj):
+        """custom field for selected edx installation"""
+        edx_endpoint = obj.edx_endpoints.first()
+        return edx_endpoint.id if edx_endpoint is not None else -1
 
     def get_is_admin(self, obj):
         """Custom field to indicate whether or not the requesting user is an admin"""
@@ -331,6 +361,8 @@ class CollectionSerializer(serializers.ModelSerializer):
             "admin_lists",
             "is_logged_in_only",
             "edx_course_id",
+            "edx_endpoint",
+            "available_edx_endpoints",
             "is_admin",
         )
         read_only_fields = (

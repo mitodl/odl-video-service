@@ -13,7 +13,8 @@ import {
   SET_SELECTED_VIDEO_KEY,
   SET_IS_NEW,
   CLEAR_COLLECTION_FORM,
-  SET_COLLECTION_FORM_ERRORS
+  SET_COLLECTION_FORM_ERRORS,
+  SET_SELECTED_EDX_ENDPOINT
 } from "../actions/collectionUi"
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 import { getFormKey } from "../lib/collection"
@@ -28,7 +29,8 @@ export const INITIAL_COLLECTION_FORM_STATE = {
   viewLists:   null,
   adminChoice: PERM_CHOICE_NONE,
   adminLists:  null,
-  edxCourseId: ""
+  edxCourseId: "",
+  edxEndpoint: null
 }
 
 export const INITIAL_UI_STATE = {
@@ -79,6 +81,8 @@ const reducer = (
     return updateCollectionForm(state, "edxCourseId", action.payload)
   case SET_SELECTED_VIDEO_KEY:
     return { ...state, selectedVideoKey: action.payload }
+  case SET_SELECTED_EDX_ENDPOINT:
+    return updateCollectionForm(state, "edxEndpoint", action.payload)
   case SET_IS_NEW:
     return { ...state, isNew: action.payload }
   case CLEAR_COLLECTION_FORM:

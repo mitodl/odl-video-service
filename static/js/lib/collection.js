@@ -41,14 +41,16 @@ export function makeInitializedForm(
 ): CollectionFormState {
   if (!collection) {
     collection = {
-      key:               "",
-      title:             "",
-      description:       "",
-      view_lists:        [],
-      admin_lists:       [],
-      is_logged_in_only: false,
-      edx_course_id:     "",
-      video_count:       0
+      key:                     "",
+      title:                   "",
+      description:             "",
+      view_lists:              [],
+      admin_lists:             [],
+      is_logged_in_only:       false,
+      edx_course_id:           "",
+      edx_endpoint:            -1,
+      video_count:             0,
+      available_edx_endpoints: []
     }
   }
   const viewChoice =
@@ -67,6 +69,7 @@ export function makeInitializedForm(
     adminChoice: adminChoice,
     adminLists:  _.join(collection.admin_lists, ","),
     edxCourseId: collection.edx_course_id,
+    edxEndpoint: collection.edx_endpoint,
     videoCount:  collection.video_count
   }
 }

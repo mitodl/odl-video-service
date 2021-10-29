@@ -6,6 +6,7 @@ import type { Dispatch } from "redux"
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
 import Textarea from "../material/Textarea"
+import Select from "../material/Select"
 
 import Dialog from "../material/Dialog"
 
@@ -38,7 +39,8 @@ type DialogProps = {
   collectionForm: CollectionFormState,
   open: boolean,
   hideDialog: Function,
-  isEdxCourseAdmin?: boolean
+  isEdxCourseAdmin?: boolean,
+  availableEdxEndpoints: Array<any>
 }
 
 export class CollectionFormDialog extends React.Component<*, void> {
@@ -90,6 +92,10 @@ export class CollectionFormDialog extends React.Component<*, void> {
     const { dispatch } = this.props
     dispatch(uiActions.setEdxCourseId(event.target.value))
   }
+  setEdxEndpoint = (value: Object) => {
+    const { dispatch } = this.props
+    dispatch(uiActions.setSelectedEdxEndpoint(value))
+  }
 
   submitForm = async () => {
     const {
@@ -115,6 +121,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
     }
     if (isEdxCourseAdmin) {
       payload.edx_course_id = collectionForm.edxCourseId
+      payload.edx_endpoint = collectionForm.edxEndpoint
     }
 
     try {
@@ -172,11 +179,15 @@ export class CollectionFormDialog extends React.Component<*, void> {
       hideDialog,
       collectionForm,
       collectionUi: { isNew, errors },
-      isEdxCourseAdmin
+      isEdxCourseAdmin,
+      collection
     } = this.props
-
     const title = isNew ? "Create a New Collection" : "Edit Collection"
     const submitText = isNew ? "Create Collection" : "Save"
+    const availableEdxEndpoints =
+      collection && collection.available_edx_endpoints ?
+        collection.available_edx_endpoints :
+        []
 
     return (
       <Dialog
@@ -280,16 +291,23 @@ export class CollectionFormDialog extends React.Component<*, void> {
             </Radio>
           </section>
 
-          {!!isEdxCourseAdmin && (
+          {!!isEdxCourseAdmin && [
             <Textfield
+              key="edx-course-id"
               label="edx Course ID"
               id="edx-course-id"
               onChange={this.setCollectionEdxCourseId}
               value={collectionForm.edxCourseId || ""}
               required={false}
               validationMessage={errors ? errors.edx_course_id : ""}
+            />,
+            <Select
+              key="edx-endpoint-select"
+              selectedEndpoint={collectionForm.edxEndpoint}
+              setSelectedEndpoint={this.setEdxEndpoint}
+              menuItems={availableEdxEndpoints}
             />
-          )}
+          ]}
         </div>
       </Dialog>
     )
@@ -297,12 +315,14 @@ export class CollectionFormDialog extends React.Component<*, void> {
 }
 
 export const mapStateToProps = (state: any) => {
-  const { collectionUi } = state
-
+  const { collectionUi, collections } = state
+  const collection =
+    collections.loaded && collections.data ? collections.data : null
   const collectionForm = getCollectionForm(collectionUi)
   return {
     collectionUi,
-    collectionForm
+    collectionForm,
+    collection
   }
 }
 
