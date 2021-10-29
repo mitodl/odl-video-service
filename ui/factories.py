@@ -43,6 +43,8 @@ class EdxEndpointFactory(DjangoModelFactory):
     access_token = Faker("sha1")
     hls_api_path = Faker("uri_path")
     is_global_default = False
+    client_id = Faker("slug")
+    secret_key = Faker("sha1")
 
     class Meta:
         model = models.EdxEndpoint

@@ -8,11 +8,11 @@ from datetime import timedelta
 import boto3
 from celery import shared_task
 from django.contrib.contenttypes.fields import GenericRelation
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
 from pycountry import languages
 from dj_elastictranscoder.models import EncodeJob
+from encrypted_model_fields.fields import EncryptedCharField
 
 from odl_video.constants import DEFAULT_EDX_HLS_API_PATH
 from odl_video.models import TimestampedModel, TimestampedModelManager
@@ -48,7 +48,7 @@ def delete_s3_objects(
 
 
 class ValidateOnSaveMixin(models.Model):
-    """Mixin that calls field/model validation methods before saving a model object"""
+    """Mixin that calls field/model v512alidation methods before saving a model object"""
 
     class Meta:
         abstract = True
@@ -86,6 +86,9 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
     is_global_default = models.BooleanField(default=False)
     collections = models.ManyToManyField("Collection", through="CollectionEdxEndpoint")
 
+    client_id = EncryptedCharField(max_length=100)
+    secret_key = EncryptedCharField(max_length=100)
+
     @property
     def full_api_url(self):
         """Returns the full URL of the edX API endpoint for posting videos"""
@@ -108,37 +111,26 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
         try:
             expires_in = timedelta(seconds=self.expires_in)
         except TypeError:
-            response = send_refresh_request(self.base_url)
+            response = send_refresh_request(
+                self.base_url, self.client_id, self.secret_key
+            )
             self.update_access_token(response)
             return
 
         if now_in_utc() - self.updated_at >= expires_in:
-            response = send_refresh_request(self.base_url)
-            self.update_access_token(response)
-
-    def clean(self):
-        if self.is_global_default is True:
-            existing_global_default_qset = EdxEndpoint.objects.filter(
-                is_global_default=True
+            response = send_refresh_request(
+                self.base_url, self.client_id, self.secret_key
             )
-            if self.pk:
-                existing_global_default_qset = existing_global_default_qset.exclude(
-                    pk=self.pk
-                )
-            if existing_global_default_qset.exists():
-                raise ValidationError(
-                    {
-                        "is_global_default": "Only one EdxEndpoint should be set as the global default (is_global_default=True)"
-                    }
-                )
+            self.update_access_token(response)
 
     def __str__(self):
         return "{} - {}".format(self.name, self.base_url)
 
     def __repr__(self):
         return (
-            '<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}", '
-            "is_global_default={self.is_global_default}>".format(self=self)
+            '<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}">'.format(
+                self=self
+            )
         )
 
 

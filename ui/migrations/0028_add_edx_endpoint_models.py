@@ -3,26 +3,27 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
-DEFAULT_EDX_HLS_API_PATH = "/api/val/v0/videos/"
-
-
-def create_edx_endpoint_from_settings(apps, schema_editor):
-    """
-    If edX Django settings exist, create an EdxEndpoint record from them and set it as the app default endpoint
-    """
-    from django.conf import settings
-
-    EdxEndpoint = apps.get_model("ui", "EdxEndpoint")
-    if settings.EDX_BASE_URL and settings.EDX_ACCESS_TOKEN:
-        EdxEndpoint.objects.get_or_create(
-            base_url=settings.EDX_BASE_URL,
-            access_token=settings.EDX_ACCESS_TOKEN,
-            hls_api_path=settings.EDX_HLS_API_URL or DEFAULT_EDX_HLS_API_PATH,
-            defaults=dict(
-                name="Default edX endpoint",
-                is_global_default=True,
-            ),
-        )
+#
+# DEFAULT_EDX_HLS_API_PATH = "/api/val/v0/videos/"
+#
+#
+# def create_edx_endpoint_from_settings(apps, schema_editor):
+#     """
+#     If edX Django settings exist, create an EdxEndpoint record from them and set it as the app default endpoint
+#     """
+#     from django.conf import settings
+#
+#     EdxEndpoint = apps.get_model("ui", "EdxEndpoint")
+#     if settings.EDX_BASE_URL and settings.EDX_ACCESS_TOKEN:
+#         EdxEndpoint.objects.get_or_create(
+#             base_url=settings.EDX_BASE_URL,
+#             access_token=settings.EDX_ACCESS_TOKEN,
+#             hls_api_path=settings.EDX_HLS_API_URL or DEFAULT_EDX_HLS_API_PATH,
+#             defaults=dict(
+#                 name="Default edX endpoint",
+#                 is_global_default=True,
+#             ),
+#         )
 
 
 class Migration(migrations.Migration):
@@ -97,7 +98,7 @@ class Migration(migrations.Migration):
                 through="ui.CollectionEdxEndpoint", to="ui.EdxEndpoint"
             ),
         ),
-        migrations.RunPython(
-            create_edx_endpoint_from_settings, migrations.RunPython.noop
-        ),
+        # migrations.RunPython(
+        #     create_edx_endpoint_from_settings, migrations.RunPython.noop
+        # ),
     ]

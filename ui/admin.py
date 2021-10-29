@@ -34,8 +34,8 @@ class EdxEndpointAdmin(admin.ModelAdmin):
     """EdxEndpoint admin"""
 
     model = models.EdxEndpoint
-    list_display = ("id", "name", "base_url", "is_global_default")
-    ordering = ["-is_global_default", "id"]
+    list_display = ("id", "name", "base_url")
+    exclude = ("is_global_default",)
 
 
 class CollectionEdxEndpointInlineAdmin(admin.StackedInline):
@@ -43,6 +43,8 @@ class CollectionEdxEndpointInlineAdmin(admin.StackedInline):
 
     model = models.CollectionEdxEndpoint
     extra = 1
+    # we're not going to associate a collection with more than 1 endpoint anything in the near future
+    max_num = 1
 
 
 class CollectionAdmin(admin.ModelAdmin):

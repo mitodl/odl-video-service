@@ -37,19 +37,13 @@
       "description": "Client secret value for getting edX access_token",
       "required": false
     },
-    "EDX_BASE_URL": {
-      "description": "Base URL for the edX API",
-      "required": false
-    },
-    "EDX_HLS_API_URL": {
-      "default": "/api/val/v0/videos/",
-      "description": "URL path for the HLS video endpoint on edX",
-      "required": false
-    },
     "FEATURE_RETRANSCODE_ENABLED": {
       "description": "Enable retranscoding of videos",
       "required": false
     },
+    "FIELD_ENCRYPTION_KEY": {
+      "description": "Base46 encoded encryption key for encrypted DB fields",
+    }
     "GA_DIMENSION_CAMERA": {
       "default": "",
       "description": "Google Analytics custom dimension number for tracking camera angle",

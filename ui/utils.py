@@ -472,20 +472,22 @@ def now_in_utc():
     return datetime.datetime.now(tz=pytz.UTC)
 
 
-def send_refresh_request(full_api_url):
+def send_refresh_request(base_api_url, client_id, client_secret):
     """
     Send a request to edx for a new JWT access token
 
     Args:
-        full_api_url (str): edx base url
+        base_api_url (str): edx base url
+        client_id (str): edx client id
+        client_secret (str): edx client secret
     Returns:
         resp: response from edx with the new access token
     """
-    access_token_url = urljoin(full_api_url, "/oauth2/access_token/")
+    access_token_url = urljoin(base_api_url, "/oauth2/access_token/")
     data = {
         "grant_type": "client_credentials",
-        "client_id": settings.OPENEDX_API_CLIENT_ID,
-        "client_secret": settings.OPENEDX_API_CLIENT_SECRET,
+        "client_id": client_id,
+        "client_secret": client_secret,
         "token_type": "JWT",
     }
 
