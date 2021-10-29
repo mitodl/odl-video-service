@@ -101,7 +101,7 @@
     "tar": "^2.2.2",
     "url-loader": "^4.1.0",
     "victory": "^0.25.6",
-    "video.js": "^7.6.6",
+    "video.js": "^7.14.3",
     "videojs-contrib-quality-levels": "^2.0.4",
     "videojs-hls-quality-selector": "^1.1.0",
     "videojs-hotkeys": "^0.2.25",
