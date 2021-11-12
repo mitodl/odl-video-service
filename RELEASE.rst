@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.64.0
+--------------
+
+- Increased encrypted char fields to text fields
+- Remove usage of global default edx endpoint (#966)
+
 Version 0.63.1 (Released May 20, 2021)
 --------------
 
