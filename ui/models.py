@@ -12,7 +12,7 @@ from django.db import models
 from django.conf import settings
 from pycountry import languages
 from dj_elastictranscoder.models import EncodeJob
-from encrypted_model_fields.fields import EncryptedCharField
+from encrypted_model_fields.fields import EncryptedTextField
 
 from odl_video.constants import DEFAULT_EDX_HLS_API_PATH
 from odl_video.models import TimestampedModel, TimestampedModelManager
@@ -86,8 +86,8 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
     is_global_default = models.BooleanField(default=False)
     collections = models.ManyToManyField("Collection", through="CollectionEdxEndpoint")
 
-    client_id = EncryptedCharField(max_length=100)
-    secret_key = EncryptedCharField(max_length=100)
+    client_id = EncryptedTextField()
+    secret_key = EncryptedTextField()
 
     @property
     def full_api_url(self):
