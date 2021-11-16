@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.64.0
+Version 0.64.0 (Released November 16, 2021)
 --------------
 
 - Increased encrypted char fields to text fields
