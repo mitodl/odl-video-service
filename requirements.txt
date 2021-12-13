@@ -74,7 +74,7 @@ django-compat==1.0.15
     #   -r requirements.in
     #   django-hijack
     #   django-hijack-admin
-git+https://github.com/mitodl/django-elastic-transcoder.git#egg=django-elastic-transcoder==0.9.7
+django-elastic-transcoder @ git+https://github.com/mitodl/django-elastic-transcoder.git
     # via -r requirements.in
 django-encrypted-model-fields==0.6.0
     # via -r requirements.in
@@ -88,7 +88,7 @@ django-redis==4.7.0
     # via -r requirements.in
 django-server-status==0.7.3
     # via -r requirements.in
-git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git#egg=django-shibboleth-remoteuser==0.9
+django-shibboleth-remoteuser @ git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git
     # via -r requirements.in
 django-webpack-loader==0.5.0
     # via -r requirements.in
@@ -141,9 +141,9 @@ jmespath==0.9.5
     #   botocore
 kombu==4.6.8
     # via celery
-lxml==4.6.2
+lxml==4.6.5
     # via zeep
-git+https://github.com/mitodl/mit-moira.git#egg=mit-moira==0.0.4
+mit-moira @ git+https://github.com/mitodl/mit-moira.git
     # via -r requirements.in
 newrelic==5.12.0.140
     # via -r requirements.in
