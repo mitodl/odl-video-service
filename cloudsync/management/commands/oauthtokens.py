@@ -4,10 +4,9 @@ Script for getting access and refresh tokens for YouTube API OAuth credentials
 
 import os
 
-from google_auth_oauthlib.flow import InstalledAppFlow
-
-from django.core.management import BaseCommand
 from django.conf import settings
+from django.core.management import BaseCommand
+from google_auth_oauthlib.flow import InstalledAppFlow
 
 script_path = os.path.dirname(os.path.realpath(__file__))
 

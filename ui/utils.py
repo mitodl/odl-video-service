@@ -1,26 +1,27 @@
 """Utils for ui app"""
-import itertools
-import os
 import datetime
+import itertools
+import json
+import os
+import random
+import re
 from collections import namedtuple
 from functools import lru_cache
 from urllib.parse import urljoin
-import json
-import random
-import re
-import requests
-import pytz
 
 import boto3
+import pytz
+import requests
 from django.conf import settings
 from django.core.cache import caches
-
+from google.oauth2.service_account import (
+    Credentials as ServiceAccountCredentials,  # pylint:disable=no-name-in-module
+)
 from googleapiclient.discovery import build
-from oauth2client.service_account import ServiceAccountCredentials
 from mit_moira import Moira
 
-from ui.exceptions import MoiraException, GoogleAnalyticsException
 from odl_video import logging
+from ui.exceptions import GoogleAnalyticsException, MoiraException
 
 log = logging.getLogger(__name__)
 
@@ -273,7 +274,7 @@ def get_google_analytics_client():
         return analytics_client
     except Exception as exc:  # pylint: disable=broad-except
         raise GoogleAnalyticsException(
-            "Something went wrong with creating a" "GoogleAnaltics client"
+            "Something went wrong with creating a GoogleAnaltics client"
         ) from exc
 
 
@@ -381,7 +382,7 @@ def generate_mock_video_analytics_data(n=24, seed=42):
     This can be useful for doing integration tests with the frontend.
     """
     local_random = random.Random(seed)
-    times = [i for i in range(int(n))]
+    times = list(range(int(n)))
     channels = ["camera%s" % (i + 1) for i in range(4)]
     views_at_times = {
         t: {channel: local_random.randint(0, 100) for channel in channels}

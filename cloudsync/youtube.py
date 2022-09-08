@@ -5,14 +5,13 @@ import time
 from tempfile import NamedTemporaryFile
 
 import boto3
-import httplib2
-import oauth2client
-
 from django.conf import settings
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 from smart_open.s3 import SeekableBufferedInputBase
+
 from odl_video import logging
 
 log = logging.getLogger(__name__)
@@ -66,7 +65,7 @@ def resumable_upload(request, max_retries=10):
                 raise YouTubeUploadException(
                     "Retried YouTube upload 10x, giving up"
                 ) from error
-            sleep_time = 2 ** retry
+            sleep_time = 2**retry
             time.sleep(sleep_time)
 
     return response
@@ -97,17 +96,13 @@ class YouTubeApi:
         """
         Generate an authorized YouTube API client and S3 client
         """
-        credentials = oauth2client.client.GoogleCredentials(
+        credentials = Credentials(
             settings.YT_ACCESS_TOKEN,
-            settings.YT_CLIENT_ID,
-            settings.YT_CLIENT_SECRET,
-            settings.YT_REFRESH_TOKEN,
-            None,
-            "https://accounts.google.com/o/oauth2/token",
-            None,
+            refresh_token=settings.YT_REFRESH_TOKEN,
+            client_id=settings.YT_CLIENT_ID,
+            client_secret=settings.YT_CLIENT_SECRET,
+            token_uri="https://accounts.google.com/o/oauth2/token",
         )
-        authorization = credentials.authorize(httplib2.Http())
-        credentials.refresh(authorization)
         self.client = build("youtube", "v3", credentials=credentials)
         self.s3 = boto3.client("s3")
 
