@@ -3,21 +3,21 @@ ui model signals
 """
 # pylint: disable=unused-argument
 from django.conf import settings
-from django.db.models.signals import pre_delete, post_save
-from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_out
+from django.db.models.signals import post_save, pre_delete
+from django.dispatch import receiver
 
-from cloudsync.tasks import remove_youtube_video, remove_youtube_caption
+from cloudsync.tasks import remove_youtube_caption, remove_youtube_video
+from ui import tasks as ovs_tasks
 from ui.constants import StreamSource, YouTubeStatus
 from ui.models import (
-    VideoFile,
-    VideoThumbnail,
-    VideoSubtitle,
-    Video,
-    YouTubeVideo,
     Collection,
+    Video,
+    VideoFile,
+    VideoSubtitle,
+    VideoThumbnail,
+    YouTubeVideo,
 )
-from ui import tasks as ovs_tasks
 from ui.utils import delete_moira_cache
 
 

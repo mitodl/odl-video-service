@@ -1,7 +1,7 @@
 """Tests for environment variable parsing functions"""
+import os
 from unittest.mock import patch
 
-import os
 import pytest
 
 from odl_video.envs import (
@@ -14,7 +14,6 @@ from odl_video.envs import (
     get_string,
     parse_env,
 )
-
 
 FAKE_ENVIRONS = {
     "true": "True",
@@ -163,10 +162,10 @@ def test_get_key():
 
 
 def test_parse_env():
-    """ensure that the parse_env function is properly processing env files """
+    """ensure that the parse_env function is properly processing env files"""
     try:
         testpath = "testenv.txt"
-        with open(testpath, "w") as testfile:
+        with open(testpath, "w", encoding="utf-8") as testfile:
             testfile.write("FOO_VAR=bar=var\nexport FOO_NUM=42\n")
         parse_env(testpath)
         assert get_string("FOO_VAR", "") == "bar=var"

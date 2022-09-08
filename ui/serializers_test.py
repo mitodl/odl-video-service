@@ -8,7 +8,7 @@ from rest_framework.serializers import DateTimeField, ValidationError
 
 from ui import factories, serializers
 from ui.encodings import EncodingNames
-from ui.factories import UserFactory, MoiraListFactory, VideoFactory
+from ui.factories import MoiraListFactory, UserFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -278,7 +278,7 @@ def test_dropbox_upload_serializer():
 
 
 def test_subtitle_upload_serializer():
-    """ Test for the VideoSubtitleUploadSerializer """
+    """Test for the VideoSubtitleUploadSerializer"""
 
     input_data = {
         "video": "9734262d30144b8cbedb94a872158581",

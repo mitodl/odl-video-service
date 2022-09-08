@@ -5,13 +5,10 @@ import json
 import string
 from unittest.mock import Mock, patch
 
-from ddt import ddt, data
+from ddt import data, ddt
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.test import (
-    override_settings,
-    TestCase,
-)
+from django.test import TestCase, override_settings
 from requests import Response
 from requests.exceptions import HTTPError
 from rest_framework.status import (
@@ -20,8 +17,8 @@ from rest_framework.status import (
     HTTP_401_UNAUTHORIZED,
 )
 
-from mail.exceptions import SendBatchException
 from mail.api import MailgunClient, context_for_video, render_email_templates
+from mail.exceptions import SendBatchException
 from ui.factories import VideoFactory
 
 
@@ -312,7 +309,7 @@ class MailAPITests(TestCase):
     @override_settings(MAILGUN_RECIPIENT_OVERRIDE=None)
     def test_send_batch_empty(self, mock_post):
         """If the recipient list is empty there should be no attempt to mail users"""
-        assert MailgunClient.send_batch("subject", "html", "text", []) == []
+        assert not MailgunClient.send_batch("subject", "html", "text", [])
         assert mock_post.called is False
 
     @override_settings(MAILGUN_RECIPIENT_OVERRIDE=None)

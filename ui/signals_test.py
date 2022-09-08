@@ -1,15 +1,15 @@
 """ Test model signals"""
-import pytest
 import factory
+import pytest
 
 from ui.constants import StreamSource, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
-    VideoFactory,
-    YouTubeVideoFactory,
-    VideoSubtitleFactory,
-    VideoFileFactory,
     CollectionFactory,
+    VideoFactory,
+    VideoFileFactory,
+    VideoSubtitleFactory,
+    YouTubeVideoFactory,
 )
 from ui.models import Video
 
@@ -20,7 +20,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture()
 def video_with_file():
-    """ Fixture to create a video with an original videofile """
+    """Fixture to create a video with an original videofile"""
     video_file = VideoFileFactory(
         video__is_public=True, encoding=EncodingNames.ORIGINAL
     )
@@ -28,7 +28,7 @@ def video_with_file():
 
 
 def test_youtube_video_delete_signal(mocker):
-    """ Tests that a video's YouTubeVideo object is deleted after changing from public to private"""
+    """Tests that a video's YouTubeVideo object is deleted after changing from public to private"""
     mock_task = mocker.patch("ui.signals.remove_youtube_video.delay")
     video = VideoFactory(is_public=True)
     yt_video = YouTubeVideoFactory(video=video)
@@ -39,7 +39,7 @@ def test_youtube_video_delete_signal(mocker):
 
 
 def test_youtube_video_permissions_signal(mocker):
-    """ Tests that a video's public permissions are removed if it's subtitle is deleted """
+    """Tests that a video's public permissions are removed if it's subtitle is deleted"""
     mock_delete_video = mocker.patch("ui.signals.remove_youtube_video.delay")
     mock_delete_caption = mocker.patch("ui.signals.remove_youtube_caption.delay")
     mocker.patch("ui.models.VideoSubtitle.delete_from_s3")

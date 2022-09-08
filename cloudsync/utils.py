@@ -1,9 +1,9 @@
 """Utility classes/methods for cloudsync"""
 from uuid import uuid4
 
-from django.contrib.contenttypes.models import ContentType
 from dj_elastictranscoder.models import EncodeJob
 from dj_elastictranscoder.transcoder import Transcoder
+from django.contrib.contenttypes.models import ContentType
 
 
 class VideoTranscoder(Transcoder):

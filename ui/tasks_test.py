@@ -1,7 +1,6 @@
 """Task tests"""
-import pytest
 import factory
-
+import pytest
 from django.db.models import signals
 
 from ui import tasks

@@ -6,7 +6,7 @@ from rest_framework.pagination import PageNumberPagination
 
 
 class OVSPaginationMixin:
-    """ Common defs for OVS pagination classes """
+    """Common defs for OVS pagination classes"""
 
     page_size_query_param = settings.PAGE_SIZE_QUERY_PARAM
     max_page_size = settings.PAGE_SIZE_MAXIMUM
@@ -21,12 +21,12 @@ class OVSPaginationMixin:
 
 
 class CollectionSetPagination(OVSPaginationMixin, PageNumberPagination):
-    """ Custom pagination class for collections """
+    """Custom pagination class for collections"""
 
     page_size = settings.PAGE_SIZE_COLLECTIONS
 
 
 class VideoSetPagination(OVSPaginationMixin, PageNumberPagination):
-    """ Custom pagination class for videos """
+    """Custom pagination class for videos"""
 
     page_size = settings.PAGE_SIZE_VIDEOS

@@ -11,10 +11,9 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 from cloudsync import tasks
+from odl_video import logging
 from ui import models
 from ui.utils import get_error_response_summary_dict
-from odl_video import logging
-
 
 log = logging.getLogger(__name__)
 

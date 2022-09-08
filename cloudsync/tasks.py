@@ -5,23 +5,23 @@ import os
 import re
 from urllib.parse import unquote
 
-import requests
 import boto3
+import requests
 from boto3.s3.transfer import TransferConfig
-from celery import shared_task, states, group, Task
 from botocore.exceptions import ClientError
+from celery import Task, group, shared_task, states
+from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from googleapiclient.errors import HttpError
-from dj_elastictranscoder.models import EncodeJob
 
-from cloudsync.api import refresh_status, process_watch_file, transcode_video
+from cloudsync.api import process_watch_file, refresh_status, transcode_video
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
-from cloudsync.youtube import YouTubeApi, API_QUOTA_ERROR_MSG
-from ui.models import Video, YouTubeVideo, VideoSubtitle, Collection
-from ui.constants import VideoStatus, YouTubeStatus, StreamSource
-from ui.utils import get_bucket
-from ui.encodings import EncodingNames
+from cloudsync.youtube import API_QUOTA_ERROR_MSG, YouTubeApi
 from odl_video import logging
+from ui.constants import StreamSource, VideoStatus, YouTubeStatus
+from ui.encodings import EncodingNames
+from ui.models import Collection, Video, VideoSubtitle, YouTubeVideo
+from ui.utils import get_bucket
 
 log = logging.getLogger(__name__)
 
@@ -352,7 +352,7 @@ def monitor_watch_bucket(self):
                 s3_object_key=key.key,
                 response=exc.response,
             )
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             # Log any other exception, raise later so other files can be processed.
             log.exception(
                 "AWS error when ingesting file from watch bucket", s3_object_key=key.key

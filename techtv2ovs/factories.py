@@ -1,11 +1,11 @@
 """ Factories for techtv2ovs """
 
-from factory import SubFactory, Faker
+from factory import Faker, SubFactory
 from factory.django import DjangoModelFactory
-from factory.fuzzy import FuzzyText, FuzzyInteger
+from factory.fuzzy import FuzzyInteger, FuzzyText
 
-from techtv2ovs.models import TechTVVideo, TechTVCollection
-from ui.factories import VideoFactory, CollectionFactory
+from techtv2ovs.models import TechTVCollection, TechTVVideo
+from ui.factories import CollectionFactory, VideoFactory
 
 
 class TechTVCollectionFactory(DjangoModelFactory):

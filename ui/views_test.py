@@ -7,8 +7,8 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import AnonymousUser
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponseRedirect
 from django.test import RequestFactory
 from rest_framework import status
@@ -19,11 +19,11 @@ from ui import factories
 from ui.constants import YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
-    UserFactory,
     CollectionFactory,
-    VideoFileFactory,
-    VideoFactory,
     MoiraListFactory,
+    UserFactory,
+    VideoFactory,
+    VideoFileFactory,
     VideoSubtitleFactory,
     YouTubeVideoFactory,
 )
@@ -32,9 +32,9 @@ from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import DropboxUploadSerializer, VideoSerializer
 from ui.views import (
     CollectionReactView,
+    HelpPageView,
     TechTVDetail,
     TechTVEmbed,
-    HelpPageView,
     TermsOfServicePageView,
 )
 
@@ -441,7 +441,7 @@ def test_collection_viewset_detail_404(logged_in_apiclient, collection_key, logg
 
 
 def test_collection_detail_anonymous(mocker, logged_in_apiclient, settings):
-    """ Test that anonymous users can see the collection detail page """
+    """Test that anonymous users can see the collection detail page"""
     mocker.patch("ui.serializers.get_moira_client")
     mocker.patch("ui.utils.get_moira_client")
     client, _ = logged_in_apiclient
@@ -590,7 +590,7 @@ def test_public_video_detail_anonymous(
 
 @pytest.mark.parametrize("is_public", [True, False])
 def test_video_download(logged_in_client, is_public, mocker):
-    """ Tests that a video can be downloaded if public, returns 404 otherwise """
+    """Tests that a video can be downloaded if public, returns 404 otherwise"""
     mock_redirect = mocker.patch(
         "ui.views.redirect", return_value=HttpResponseRedirect(redirect_to="/")
     )
@@ -608,7 +608,7 @@ def test_video_download(logged_in_client, is_public, mocker):
 
 @pytest.mark.parametrize("is_public", [True, False])
 def test_video_download_nofiles(logged_in_client, is_public, mocker):
-    """ Tests that a 404 is returned if no videofiles are available """
+    """Tests that a 404 is returned if no videofiles are available"""
     mocker.patch(
         "ui.views.redirect", return_value=HttpResponseRedirect(redirect_to="/")
     )
@@ -623,7 +623,7 @@ def test_video_download_nofiles(logged_in_client, is_public, mocker):
 
 @pytest.mark.parametrize("is_public", [True, False])
 def test_techtv_video_download(logged_in_client, is_public, mocker):
-    """ Tests that a TechTV video can be downloaded if public, returns 404 otherwise """
+    """Tests that a TechTV video can be downloaded if public, returns 404 otherwise"""
     mock_redirect = mocker.patch(
         "ui.views.redirect", return_value=HttpResponseRedirect(redirect_to="/")
     )
@@ -641,7 +641,7 @@ def test_techtv_video_download(logged_in_client, is_public, mocker):
 
 @pytest.mark.parametrize("is_public", [True, False])
 def test_techtv_video_download_nofiles(logged_in_client, is_public, mocker):
-    """ Tests that a 404 is returned if no videofiles are available for a TechTV video"""
+    """Tests that a 404 is returned if no videofiles are available for a TechTV video"""
     mocker.patch("ui.views.redirect")
     client, _ = logged_in_client
     client.logout()
@@ -833,7 +833,8 @@ def test_delete_subtitles_authentication(
         "/videos/baduuid/",
         "/videos/01234567890123456789012345678902/",
         "/videos/012345678901234567890123456789012/",
-        "/videos/baduuid/embed/" "/videos/01234567890123456789012345678901/embed/",
+        "/videos/baduuid/embed/",
+        "/videos/01234567890123456789012345678901/embed/",
         "/videos/012345678901234567890123456789012/embed/",
     ],
 )
@@ -1203,7 +1204,7 @@ def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
 
 
 def test_videos_default_ordering(mocker, logged_in_apiclient):
-    """ Verify that by default results are returned in the created_at descending order"""
+    """Verify that by default results are returned in the created_at descending order"""
     mocker.patch("ui.serializers.get_moira_client")
     mocker.patch("ui.utils.get_moira_client")
     VideoSetPagination.page_size = 5
@@ -1230,7 +1231,7 @@ def test_videos_default_ordering(mocker, logged_in_apiclient):
 
 @pytest.mark.parametrize("field", ["created_at", "title"])
 def test_videos_ordering(mocker, logged_in_apiclient, field):
-    """ Verify that results are returned in the appropriate order"""
+    """Verify that results are returned in the appropriate order"""
     mocker.patch("ui.serializers.get_moira_client")
     mocker.patch("ui.utils.get_moira_client")
     VideoSetPagination.page_size = 5
@@ -1280,7 +1281,7 @@ def test_collection_pagination(mocker, logged_in_apiclient):
 
 @pytest.mark.parametrize("field", ["created_at", "title"])
 def test_collection_ordering(mocker, logged_in_apiclient, field):
-    """ Verify that results are returned in the appropriate order"""
+    """Verify that results are returned in the appropriate order"""
     mocker.patch("ui.serializers.get_moira_client")
     mocker.patch("ui.utils.get_moira_client")
     CollectionSetPagination.page_size = 5

@@ -1,6 +1,6 @@
 """Sentry setup and configuration"""
-from celery.exceptions import WorkerLostError
 import sentry_sdk
+from celery.exceptions import WorkerLostError
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
@@ -37,7 +37,7 @@ def init_sentry(*, dsn, environment, version, log_level):
         version (str): the version of the application
         log_level (str): the sentry log level
     """
-    sentry_sdk.init(
+    sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
         dsn=dsn,
         environment=environment,
         release=version,

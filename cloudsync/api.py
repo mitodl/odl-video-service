@@ -4,8 +4,8 @@ from collections import namedtuple
 from datetime import datetime
 from urllib.parse import quote
 
-import pytz
 import boto3
+import pytz
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from django.conf import settings
@@ -13,19 +13,19 @@ from django.contrib.auth.models import User
 from django.db import transaction
 
 from cloudsync.utils import VideoTranscoder
+from odl_video import logging
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
 from ui.models import (
     TRANSCODE_PREFIX,
-    VideoFile,
-    VideoThumbnail,
     Collection,
     Video,
+    VideoFile,
     VideoSubtitle,
+    VideoThumbnail,
     delete_s3_objects,
 )
-from ui.utils import get_et_preset, get_bucket, get_et_job
-from odl_video import logging
+from ui.utils import get_bucket, get_et_job, get_et_preset
 
 log = logging.getLogger(__name__)
 

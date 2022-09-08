@@ -17,7 +17,6 @@ from mail.exceptions import SendBatchException
 from mail.utils import chunks
 from odl_video import logging
 
-
 log = logging.getLogger(__name__)
 
 
@@ -121,7 +120,9 @@ class MailgunClient:
         exception_pairs = []
 
         for chunk in chunks(recipients, chunk_size=chunk_size):
-            chunk_dict = {email: context for email, context in chunk}
+            chunk_dict = {  # pylint: disable=unnecessary-comprehension
+                email: context for email, context in chunk
+            }
             emails = list(chunk_dict.keys())
 
             params = {

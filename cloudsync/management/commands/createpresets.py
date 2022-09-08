@@ -2,8 +2,8 @@
 Script for creating OVS presets from a JSON file
 """
 
-import os
 import json
+import os
 
 import boto3
 from django.conf import settings
@@ -18,7 +18,7 @@ class Command(BaseCommand):
     """
 
     def add_arguments(self, parser):
-        """ Named (optional) arguments """
+        """Named (optional) arguments"""
         parser.add_argument(
             "--json",
             dest="filejson",
@@ -30,7 +30,7 @@ class Command(BaseCommand):
         """
         Run the command
         """
-        with open(options["filejson"]) as filejson:
+        with open(options["filejson"], encoding="utf-8") as filejson:
             presets = json.load(filejson)
 
         client = boto3.client(

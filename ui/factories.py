@@ -1,26 +1,19 @@
 """Factories for UI app"""
 from datetime import datetime
 
+import faker
 import pytz
+from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
-from factory import (
-    Faker,
-    Sequence,
-    SubFactory,
-    LazyAttribute,
-    Trait,
-    post_generation,
-)
+from factory import Faker, LazyAttribute, Sequence, SubFactory, Trait, post_generation
 from factory.django import DjangoModelFactory
-from factory.fuzzy import FuzzyText, FuzzyInteger
-import faker
-from dj_elastictranscoder.models import EncodeJob
+from factory.fuzzy import FuzzyInteger, FuzzyText
 
+from ui import models
 from ui.constants import YouTubeStatus
 from ui.encodings import EncodingNames
-from ui import models
 
 FAKE = faker.Factory.create()
 

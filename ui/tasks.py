@@ -2,10 +2,9 @@
 ui celery tasks
 """
 from odl_video import logging
-
 from odl_video.celery import app
-from ui.models import VideoFile
 from ui import api as ovs_api
+from ui.models import VideoFile
 
 log = logging.getLogger(__name__)
 

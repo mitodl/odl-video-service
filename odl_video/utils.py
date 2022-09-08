@@ -1,11 +1,9 @@
 """odl_video_service utilities"""
-from enum import (
-    auto,
-    Flag,
-)
-from django.conf import settings
-from odl_video import logging
+from enum import Flag, auto
 
+from django.conf import settings
+
+from odl_video import logging
 
 log = logging.getLogger(__name__)
 

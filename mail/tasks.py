@@ -1,14 +1,14 @@
 """Tasks for mail app"""
 import textwrap
 
-from django.conf import settings
 from celery import shared_task
+from django.conf import settings
 
 from mail import api
-from mail.api import render_email_templates, context_for_video
+from mail.api import context_for_video, render_email_templates
 from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
-from ui.utils import has_common_lists, get_moira_client
 from odl_video import logging
+from ui.utils import get_moira_client, has_common_lists
 
 log = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ def async_send_notification_email(self, video_id):  # pylint: disable=unused-arg
     Asynchronous call to the function to send notifications for video status update.
     """
     # import done here to avoid circular imports
-    from ui.models import Video
+    from ui.models import Video  # pylint: disable=import-outside-toplevel
 
     try:
         video = Video.objects.get(id=video_id)
