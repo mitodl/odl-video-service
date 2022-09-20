@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.65.0
+--------------
+
+- Update youtube oauth (and python, dependencies) (#990)
+
 Version 0.64.0 (Released November 16, 2021)
 --------------
 
