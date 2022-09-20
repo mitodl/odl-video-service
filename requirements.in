@@ -12,7 +12,7 @@ django-server-status==0.7.3
 django-webpack-loader==0.5.0
 django-encrypted-model-fields
 html5lib==0.999999999
-ipython==7.13.0
+ipython==7.16.3
 newrelic
 psycopg2==2.8.6
 pycountry
