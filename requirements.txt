@@ -136,7 +136,7 @@ jmespath==0.9.5
     #   botocore
 kombu==4.6.8
     # via celery
-lxml==4.6.2
+lxml==4.9.1
     # via zeep
 mit-moira @ git+https://github.com/mitodl/mit-moira.git
     # via -r requirements.in
