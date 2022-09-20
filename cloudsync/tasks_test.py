@@ -6,47 +6,47 @@ import os
 import random
 import string
 from types import SimpleNamespace
+from unittest.mock import PropertyMock, call
 
 import boto3
+import celery
 import pytest
 from botocore.exceptions import ClientError
-import celery
+from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.test import override_settings
 from googleapiclient.errors import HttpError, ResumableUploadError
-from mock import PropertyMock, call
 from moto import mock_s3
 from requests import HTTPError
-from dj_elastictranscoder.models import EncodeJob
 
 from cloudsync.conftest import MockBoto, MockHttpErrorResponse
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.tasks import (
     VideoTask,
-    stream_to_s3,
-    transcode_from_s3,
-    update_video_statuses,
     monitor_watch_bucket,
-    upload_youtube_videos,
-    upload_youtube_caption,
-    update_youtube_statuses,
-    remove_youtube_video,
     remove_youtube_caption,
+    remove_youtube_video,
     retranscode_video,
     schedule_retranscodes,
     sort_transcoded_m3u8_files,
+    stream_to_s3,
+    transcode_from_s3,
+    update_video_statuses,
+    update_youtube_statuses,
+    upload_youtube_caption,
+    upload_youtube_videos,
 )
 from cloudsync.youtube import API_QUOTA_ERROR_MSG
+from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.factories import (
+    CollectionFactory,
+    UserFactory,
     VideoFactory,
     VideoFileFactory,
-    UserFactory,
     VideoSubtitleFactory,
     YouTubeVideoFactory,
-    CollectionFactory,
 )
-from ui.models import Video, YouTubeVideo, Collection
-from ui.constants import VideoStatus, YouTubeStatus, StreamSource
+from ui.models import Collection, Video, YouTubeVideo
 
 pytestmark = pytest.mark.django_db
 
@@ -116,7 +116,7 @@ def mock_transcode(mocker):
 
 @pytest.fixture()
 def mock_failed_encode_job(mocker):
-    """ Mock everything required for a failed encode job"""
+    """Mock everything required for a failed encode job"""
     job_result = {
         "Job": {"Id": "1498220566931-qtmtcu", "Status": "Error"},
         "Error": {"Code": 200, "Message": "FAIL"},
@@ -288,7 +288,7 @@ def test_video_task_chain(mocker):
     """
 
     def ctx():
-        """ Return a mock context object """
+        """Return a mock context object"""
         return celery.app.task.Context(
             {
                 "lang": "py",
@@ -320,7 +320,7 @@ def test_video_task_bad_chain(mocker):
     """
 
     def ctx():
-        """ Return a mock context object """
+        """Return a mock context object"""
         return celery.app.task.Context(
             {
                 "lang": "py",
@@ -352,7 +352,7 @@ def test_video_task_no_chain(mocker):
     """
 
     def ctx():
-        """ Return a mock context object """
+        """Return a mock context object"""
         return celery.app.task.Context(
             {
                 "lang": "py",

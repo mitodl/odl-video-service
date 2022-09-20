@@ -1,13 +1,13 @@
 """
 Tests for api
 """
-import os
 import io
-from types import SimpleNamespace
+import os
 from datetime import datetime
+from types import SimpleNamespace
 
-import pytest
 import boto3
+import pytest
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -17,14 +17,14 @@ from django.test import override_settings
 from moto import mock_s3
 
 from cloudsync import api
-from cloudsync.api import RETRANSCODE_FOLDER, upload_subtitle_to_s3, move_s3_objects
-from cloudsync.conftest import MockClientET, MockBoto
+from cloudsync.api import RETRANSCODE_FOLDER, move_s3_objects, upload_subtitle_to_s3
+from cloudsync.conftest import MockBoto, MockClientET
 from ui.constants import VideoStatus
 from ui.factories import (
-    VideoFactory,
     EncodeJobFactory,
-    VideoFileFactory,
     UserFactory,
+    VideoFactory,
+    VideoFileFactory,
     VideoSubtitleFactory,
 )
 from ui.models import Video

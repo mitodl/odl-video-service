@@ -1,7 +1,9 @@
 """Configure structured logging for our application"""
 import logging
-from structlog_sentry import SentryJsonProcessor
+
 import structlog
+from structlog_sentry import SentryJsonProcessor
+
 from odl_video import settings
 
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL), format="%(message)s")

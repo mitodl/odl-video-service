@@ -4,13 +4,12 @@ Permissions for ui app
 import uuid
 
 from django.contrib.auth import get_user_model
-
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
+from odl_video import logging
 from ui.models import Collection
 from ui.utils import has_common_lists
-from odl_video import logging
 
 log = logging.getLogger(__name__)
 
@@ -148,7 +147,9 @@ class CanUploadToCollection(BasePermission):
             return False
         try:
             uuid.UUID(collection_key)
-        except ValueError:
-            raise ValidationError("wrong UUID format for {}".format(collection_key))
+        except ValueError as exc:
+            raise ValidationError(
+                "wrong UUID format for {}".format(collection_key)
+            ) from exc
         collection = Collection.objects.filter(key=collection_key)
         return len(collection) > 0 and has_admin_permission(collection.first(), request)

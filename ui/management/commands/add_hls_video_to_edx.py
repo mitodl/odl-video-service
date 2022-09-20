@@ -3,8 +3,8 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
 from ui.api import post_hls_to_edx
-from ui.models import VideoFile
 from ui.encodings import EncodingNames
+from ui.models import VideoFile
 from ui.utils import get_error_response_summary_dict
 
 User = get_user_model()

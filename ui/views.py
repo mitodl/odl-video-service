@@ -3,23 +3,17 @@ import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.views import LoginView as DjangoLoginView
+from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import HttpResponse, Http404
-from django.shortcuts import get_object_or_404, redirect, render, get_list_or_404
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
-from rest_framework import (
-    authentication,
-    permissions,
-    status,
-    viewsets,
-    mixins,
-)
+from rest_framework import authentication, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.parsers import MultiPartParser
@@ -29,22 +23,19 @@ from rest_framework.views import APIView
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
 from techtv2ovs.models import TechTVVideo
+from ui import api
+from ui import permissions as ui_permissions
+from ui import serializers
 from ui.constants import EDX_ADMIN_GROUP
+from ui.models import Collection, Video, VideoSubtitle
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
-from ui import api, serializers, permissions as ui_permissions
-from ui.models import (
-    Collection,
-    Video,
-    VideoSubtitle,
-)
-
 from ui.utils import (
-    get_video_analytics,
     generate_mock_video_analytics_data,
-    query_moira_lists,
+    get_video_analytics,
     list_members,
+    query_moira_lists,
 )
 
 
@@ -89,8 +80,7 @@ def conditional_response(view, video=None, **kwargs):
     if not ui_permissions.has_video_view_permission(video, view.request):
         if view.request.user.is_authenticated:
             raise PermissionDenied
-        else:
-            return redirect_to_login(view.request.get_full_path())
+        return redirect_to_login(view.request.get_full_path())
     context = view.get_context_data(video, **kwargs)
     return view.render_to_response(context)
 
@@ -297,8 +287,6 @@ class ModelDetailViewset(
     A viewset that provides default retrieve()`, `update()`,
     `partial_update()`, `destroy()` actions.
     """
-
-    pass
 
 
 class UploadVideosFromDropbox(APIView):
@@ -518,7 +506,7 @@ class LoginView(DjangoLoginView):
         return context
 
     def get(self, request, *args, **kwargs):
-        """ This is the Touchstone `login` page, so redirect if `next` is a URL parameter """
+        """This is the Touchstone `login` page, so redirect if `next` is a URL parameter"""
         if request.user.is_authenticated:
             next_redirect = request.GET.get("next")
             if next_redirect:

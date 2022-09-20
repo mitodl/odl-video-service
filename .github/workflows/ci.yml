@@ -17,7 +17,7 @@ jobs:
           --health-retries 5
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: postgres  # pragma: allowlist secret
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
@@ -36,7 +36,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.7"
+          python-version: "3.9.13"
 
       - id: cache
         uses: actions/cache@v1
@@ -62,7 +62,7 @@ jobs:
         env:
           DEBUG: 'False'
           NODE_ENV: 'production'
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres  # pragma: allowlist secret
           ODL_VIDEO_SECURE_SSL_REDIRECT: 'False'
           ODL_VIDEO_DB_DISABLE_SSL: 'True'
           CELERY_TASK_ALWAYS_EAGER: 'True'
@@ -93,14 +93,13 @@ jobs:
           YT_ACCESS_TOKEN: fake
           YT_REFRESH_TOKEN: fake
           YT_CLIENT_ID: fake
-          YT_CLIENT_SECRET: fakse
-          YT_PROJECT_ID: fake
-
+          YT_CLIENT_SECRET: fakse  # pragma: allowlist secret
+          YT_PROJECT_ID: fake  
+  
       - name: Upload coverage to CodeCov
         uses: codecov/codecov-action@v1
         with:
           file: ./coverage.xml
-          fail_ci_if_error: true
 
   javascript-tests:
     runs-on: ubuntu-latest

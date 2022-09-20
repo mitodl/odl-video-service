@@ -47,7 +47,7 @@ class YouTubeStatus:
 
 
 class StreamSource:
-    """ Simple class for public collection streaming sources """
+    """Simple class for public collection streaming sources"""
 
     YOUTUBE = "Youtube"
     CLOUDFRONT = "Cloudfront"

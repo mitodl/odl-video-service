@@ -7,28 +7,27 @@ import uuid
 from datetime import datetime
 
 import boto3
+import factory
 import pytest
 import pytz
-import factory
-
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.db.models import signals
 
 from mail import tasks
+from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
+    CollectionFactory,
+    EdxEndpointFactory,
+    MoiraListFactory,
+    UserFactory,
     VideoFactory,
     VideoFileFactory,
-    CollectionFactory,
-    UserFactory,
-    MoiraListFactory,
     VideoSubtitleFactory,
     YouTubeVideoFactory,
-    EdxEndpointFactory,
 )
-from ui.constants import VideoStatus, StreamSource, YouTubeStatus
 from ui.models import Collection
 
 pytestmark = pytest.mark.django_db
@@ -202,12 +201,12 @@ def test_collection_for_for_owner():
 
 
 def test_video_subtitle_language():
-    """ Tests that the correct language name for a code is returned"""
+    """Tests that the correct language name for a code is returned"""
     assert VideoSubtitleFactory(language="en").language_name == "English"
 
 
 def test_video_subtitle_key():
-    """ Tests that the correct subtitle key is returned for a language"""
+    """Tests that the correct subtitle key is returned for a language"""
     video = VideoFactory(key="8494dafc-3665-4960-8e00-9790574ec93a")
     now = datetime.now(tz=pytz.UTC)
     assert (
@@ -229,7 +228,7 @@ def test_video_subtitle_key():
     "youtube_status", [YouTubeStatus.UPLOADED, YouTubeStatus.PROCESSED, None]
 )
 def test_video_sources_youtube(youtube_status, is_public, stream_source):
-    """ Tests that a public video can play from cloudfront if a youtube video does not exist """
+    """Tests that a public video can play from cloudfront if a youtube video does not exist"""
     public_video = VideoFactory.create(
         key="8494dafc-3665-4960-8e00-9790574ec93a",
         is_public=is_public,
@@ -259,7 +258,7 @@ def test_video_sources_youtube(youtube_status, is_public, stream_source):
 
 
 def test_video_sources_hls():
-    """ Tests that the video sources property returns the expected result for HLS """
+    """Tests that the video sources property returns the expected result for HLS"""
     video = VideoFactory(key="8494dafc-3665-4960-8e00-9790574ec93a")
     videofile = VideoFileFactory(video=video, encoding=EncodingNames.HLS)
     assert video.sources == [
@@ -272,7 +271,7 @@ def test_video_sources_hls():
 
 
 def test_video_sources_mp4():
-    """ Tests that the video sources property returns the expected sorted results for MP4 """
+    """Tests that the video sources property returns the expected sorted results for MP4"""
     video = VideoFactory(key="8494dafc-3665-4960-8e00-9790574ec93a")
     videofiles = [
         VideoFileFactory(
@@ -321,7 +320,7 @@ def test_video_sources_mp4():
 
 
 def test_original_video():
-    """ Tests that the original_video property returns the VideoFile with 'original' encoding """
+    """Tests that the original_video property returns the VideoFile with 'original' encoding"""
     video = VideoFactory(key="8494dafc-3665-4960-8e00-9790574ec93a")
     videofiles = [
         VideoFileFactory(
@@ -335,7 +334,7 @@ def test_original_video():
 
 
 def test_transcoded_mp4_video():
-    """ Tests that Video.transcoded_videos returns transcoded MP4 videos in the correct order"""
+    """Tests that Video.transcoded_videos returns transcoded MP4 videos in the correct order"""
     video = VideoFactory()
     videofiles = [
         VideoFileFactory(
@@ -358,7 +357,7 @@ def test_transcoded_mp4_video():
 
 
 def test_transcoded_hls_video():
-    """ Tests that Video.transcoded_videos returns transcoded HLS videofile"""
+    """Tests that Video.transcoded_videos returns transcoded HLS videofile"""
     video = VideoFactory()
     videofiles = [
         VideoFileFactory(
@@ -391,7 +390,7 @@ def test_transcoded_hls_video():
     ],
 )
 def test_download_mp4(encodings, download):
-    """ Tests that video.download returns the most appropriate file for download """
+    """Tests that video.download returns the most appropriate file for download"""
     video = VideoFactory()
     for encoding in encodings:
         VideoFileFactory(
@@ -444,8 +443,8 @@ def test_video_ordering():
     for (idx, video) in enumerate(videos):
         if idx > len(videos) - 1:
             assert video.created_at >= videos[idx + 1].created_at
-        videos[idx].custom_order = len(videos) - idx - 1
-        videos[idx].save()
+        video.custom_order = len(videos) - idx - 1
+        video.save()
     # Should be sorted by custom_order
     resorted_videos = Collection.objects.get(id=collection.id).videos.all()
     for (idx, video) in enumerate(resorted_videos):

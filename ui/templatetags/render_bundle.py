@@ -4,11 +4,9 @@ from django import template
 from django.conf import settings
 from django.templatetags.static import static
 from django.utils.safestring import mark_safe
-
 from webpack_loader.utils import get_loader
 
 from odl_video.utils import webpack_dev_server_url
-
 
 register = template.Library()
 

@@ -3,9 +3,9 @@ conftest for pytest in this module
 """
 from io import BytesIO
 
-import pytest
 import botocore.session
-from botocore.stub import Stubber, ANY
+import pytest
+from botocore.stub import ANY, Stubber
 
 
 @pytest.fixture
@@ -55,7 +55,7 @@ def youtube_mock(mocker):
     Mocks calls for youtube api tests
     """
     mocker.patch("cloudsync.youtube.boto3")
-    mocker.patch("cloudsync.youtube.oauth2client")
+    mocker.patch("cloudsync.youtube.Credentials")
     mocker.patch("cloudsync.youtube.build")
     mocker.patch(
         "cloudsync.youtube.SeekableBufferedInputBase", return_value=BytesIO(b"123")

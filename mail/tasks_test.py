@@ -1,17 +1,17 @@
 """
 Tests for Task module
 """
-from collections import defaultdict
 import textwrap
+from collections import defaultdict
 
 import pytest
 from django.conf import settings
 
 from mail import tasks
-from mail.api import render_email_templates, context_for_video
+from mail.api import context_for_video, render_email_templates
 from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
 from ui.constants import VideoStatus
-from ui.factories import VideoFactory, MoiraListFactory
+from ui.factories import MoiraListFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
 

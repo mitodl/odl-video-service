@@ -1,27 +1,25 @@
 """
 Tests for ui/api.py
 """
+from types import SimpleNamespace
+
 # pylint: disable=unused-argument,redefined-outer-name
 from uuid import uuid4
-from types import SimpleNamespace
-import pytest
+
 import factory
-
+import pytest
 from django.core.exceptions import ValidationError
-from django.http import Http404
 from django.db.models import signals
+from django.http import Http404
 
-from ui import (
-    api,
-    models,
-)
+from odl_video.test_utils import any_instance_of
+from ui import api, models
+from ui.encodings import EncodingNames
 from ui.factories import (
+    CollectionEdxEndpointFactory,
     CollectionFactory,
     VideoFileFactory,
-    CollectionEdxEndpointFactory,
 )
-from ui.encodings import EncodingNames
-from odl_video.test_utils import any_instance_of
 
 pytestmark = pytest.mark.django_db
 
@@ -94,14 +92,13 @@ def test_process_dropbox_data_empty_link_list(mocker):
     mocked_transcode_from_s3 = mocker.patch("cloudsync.tasks.transcode_from_s3")
     collection = CollectionFactory()
 
-    assert (
+    assert not (
         api.process_dropbox_data(
             {
                 "collection": collection.hexkey,
                 "files": [],
             }
         )
-        == {}
     )
     assert mocked_chain.call_count == 0
     assert mocked_stream_to_s3.s.call_count == 0
@@ -182,7 +179,7 @@ def test_post_hls_to_edx_no_endpoints(mocker):
     )
     responses = api.post_hls_to_edx(video_file)
     patched_log_error.assert_called_once()
-    assert responses == {}
+    assert not responses
 
 
 def test_post_hls_to_edx_wrong_type(mocker):

@@ -2,26 +2,25 @@
 Models for UI app
 """
 import os
+from datetime import timedelta
 from uuid import uuid4
 
-from datetime import timedelta
 import boto3
 from celery import shared_task
+from dj_elastictranscoder.models import EncodeJob
+from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.conf import settings
-from pycountry import languages
-from dj_elastictranscoder.models import EncodeJob
 from encrypted_model_fields.fields import EncryptedTextField
+from pycountry import languages
 
+from mail import tasks
 from odl_video.constants import DEFAULT_EDX_HLS_API_PATH
 from odl_video.models import TimestampedModel, TimestampedModelManager
-from mail import tasks
 from ui import utils
-from ui.utils import send_refresh_request
-from ui.constants import VideoStatus, YouTubeStatus, StreamSource
+from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
-from ui.utils import get_bucket, multi_urljoin, now_in_utc
+from ui.utils import get_bucket, multi_urljoin, now_in_utc, send_refresh_request
 
 TRANSCODE_PREFIX = "transcoded"
 

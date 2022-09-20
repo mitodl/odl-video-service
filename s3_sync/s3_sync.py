@@ -19,8 +19,8 @@ from configparser import ConfigParser, ExtendedInterpolation
 try:
     import requests
     from logbook import Logger, RotatingFileHandler
-except ImportError as err:
-    print("Failed to import module: ", err)
+except ImportError as error:
+    print("Failed to import module: ", error)
     sys.exit("Make sure to pip install requests and logbook")
 
 # Instantiate argparse to get settings_file as argument
@@ -230,7 +230,7 @@ def move_files_to_synced_folder(
     if not os.path.exists(s3_sync_result_file):
         logger.warning("Could not find S3 sync results file", s3_sync_result_file)
         sys.exit("[-] Could not find S3 sync results file")
-    with open(s3_sync_result_file) as file_name:
+    with open(s3_sync_result_file, encoding="utf-8") as file_name:
         s3_sync_result_data = file_name.read()
     for file_name in re.findall(r"upload:\s(?:.*\\)(.*)to", s3_sync_result_data):
         try:

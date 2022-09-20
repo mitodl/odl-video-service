@@ -1,19 +1,13 @@
 """
 Tests for render_bundle
 """
-from unittest.mock import (
-    patch,
-    Mock,
-)
+from unittest.mock import Mock, patch
 
+from django.test import TestCase, override_settings
 from django.test.client import RequestFactory
-from django.test import (
-    override_settings,
-    TestCase,
-)
-from odl_video.utils import webpack_dev_server_url
-from ui.templatetags.render_bundle import render_bundle, public_path
 
+from odl_video.utils import webpack_dev_server_url
+from ui.templatetags.render_bundle import public_path, render_bundle
 
 FAKE_COMMON_BUNDLE = [
     {

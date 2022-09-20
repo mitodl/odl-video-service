@@ -1,6 +1,6 @@
 """Tests for utils methods"""
-from tempfile import NamedTemporaryFile
 import json
+from tempfile import NamedTemporaryFile
 
 import pytest
 from django.contrib.auth.models import AnonymousUser
@@ -8,25 +8,25 @@ from zeep.exceptions import Fault
 
 from odl_video.test_utils import MockResponse
 from ui import factories
-from ui.exceptions import MoiraException, GoogleAnalyticsException
+from ui.exceptions import GoogleAnalyticsException, MoiraException
 from ui.utils import (
-    write_to_file,
     MOIRA_CACHE_KEY,
-    get_moira_client,
-    query_moira_lists,
-    user_moira_lists,
-    has_common_lists,
-    get_video_analytics,
-    get_google_analytics_client,
     generate_google_analytics_query,
-    parse_google_analytics_response,
     generate_mock_video_analytics_data,
+    get_error_response_summary_dict,
+    get_google_analytics_client,
+    get_moira_client,
+    get_video_analytics,
+    has_common_lists,
     list_members,
     multi_urljoin,
+    parse_google_analytics_response,
     partition,
     partition_to_lists,
-    get_error_response_summary_dict,
+    query_moira_lists,
     send_refresh_request,
+    user_moira_lists,
+    write_to_file,
 )
 
 # pylint: disable=unused-argument,too-many-arguments

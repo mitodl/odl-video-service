@@ -6,7 +6,8 @@ from rest_framework import serializers
 from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
 
-from ui import models, permissions as ui_permissions
+from ui import models
+from ui import permissions as ui_permissions
 from ui.encodings import EncodingNames
 from ui.utils import get_moira_client, has_common_lists
 

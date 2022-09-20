@@ -3,13 +3,12 @@ Admin for UI app
 """
 from urllib.parse import urljoin
 
+from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.urls import reverse
 from django.utils.html import format_html
-
-from dj_elastictranscoder.models import EncodeJob
 
 from ui import models
 
@@ -51,7 +50,7 @@ class CollectionAdmin(admin.ModelAdmin):
     """Customized collection admin model"""
 
     def show_url(self, obj):
-        """ Display the collection URL"""
+        """Display the collection URL"""
         url = urljoin(
             settings.ODL_VIDEO_BASE_URL,
             reverse("collection-react-view", kwargs={"collection_key": obj.hexkey}),
@@ -59,7 +58,7 @@ class CollectionAdmin(admin.ModelAdmin):
         return format_html("<a href='{url}'>{url}</a>", url=url)
 
     def get_fields(self, request, obj=None):
-        """ Add show_url to the beginning of model fields"""
+        """Add show_url to the beginning of model fields"""
         return ["show_url"] + super().get_fields(request, obj)
 
     show_url.short_description = "URL"
@@ -149,7 +148,7 @@ class VideoAdmin(admin.ModelAdmin):
     """Customized Video admin model"""
 
     def show_url(self, obj):
-        """ Display the video URL"""
+        """Display the video URL"""
         url = urljoin(
             settings.ODL_VIDEO_BASE_URL,
             reverse("video-detail", kwargs={"video_key": obj.hexkey}),
@@ -157,7 +156,7 @@ class VideoAdmin(admin.ModelAdmin):
         return format_html("<a href='{url}'>{url}</a>", url=url)
 
     def get_fields(self, request, obj=None):
-        """ Add show_url to the beginning of model fields"""
+        """Add show_url to the beginning of model fields"""
         return ["show_url"] + super().get_fields(request, obj)
 
     show_url.short_description = "URL"

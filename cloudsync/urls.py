@@ -3,6 +3,7 @@ URLs for cloudsync app
 """
 
 from django.conf.urls import url
+
 from cloudsync import views
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
         views.CeleryTaskStatus.as_view(),
         name="celery-task-status",
     ),
+    url(r"api/v0/youtube-tokens/", views.YoutubeTokensView.as_view(), name="yt_tokens"),
 ]

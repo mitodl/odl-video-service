@@ -1,6 +1,6 @@
 """Functions reading and parsing environment variables"""
-from ast import literal_eval
 import os
+from ast import literal_eval
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -176,7 +176,7 @@ def parse_env(env_file):
 
     """
     try:
-        with open(env_file) as envsettings:
+        with open(env_file, encoding="utf-8") as envsettings:
             for line in envsettings:
                 k, v = line.rstrip("\n").lstrip("export ").split("=", maxsplit=1)
                 os.environ.setdefault(k, v)
