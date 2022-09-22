@@ -178,7 +178,10 @@ def parse_env(env_file):
     try:
         with open(env_file, encoding="utf-8") as envsettings:
             for line in envsettings:
-                k, v = line.rstrip("\n").lstrip("export ").split("=", maxsplit=1)
-                os.environ.setdefault(k, v)
+                try:
+                    k, v = line.rstrip("\n").lstrip("export ").split("=", maxsplit=1)
+                    os.environ.setdefault(k, v)
+                except ValueError:
+                    continue
     except FileNotFoundError:
         pass
