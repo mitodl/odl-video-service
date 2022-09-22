@@ -166,7 +166,7 @@ def test_parse_env():
     try:
         testpath = "testenv.txt"
         with open(testpath, "w", encoding="utf-8") as testfile:
-            testfile.write("FOO_VAR=bar=var\nexport FOO_NUM=42\n\nNULL_VAR=\n\n\n")
+            testfile.write("FOO_VAR=bar=var\n\nNULL_VAR=\n\n\nexport FOO_NUM=42\n")
         parse_env(testpath)
         assert get_string("FOO_VAR", "") == "bar=var"
         assert get_int("FOO_NUM", 0) == 42
