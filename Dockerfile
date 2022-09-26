@@ -40,8 +40,10 @@ ENV PORT 8089
 CMD uwsgi uwsgi.ini
 
 # Second stage build installs reqs needed only for develoment envs
-# Invoke 'requirements.txt' again because 'test_requirements.txt' doesn't 
-# like to run alone for some reason
+# Invoke 'requirements.txt' again because 'test_requirements.txt' doesn't
+# like to run alone for some reasont
 FROM production AS development
+USER root
 COPY test_requirements.txt /tmp/test_requirements.txt
-RUN pip install -r requirements.txt -r test_requirements.txt
+RUN pip install -r /tmp/requirements.txt -r /tmp/test_requirements.txt
+USER mitodl
