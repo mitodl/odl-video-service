@@ -46,4 +46,5 @@ FROM production AS development
 USER root
 COPY test_requirements.txt /tmp/test_requirements.txt
 RUN pip install -r /tmp/requirements.txt -r /tmp/test_requirements.txt
+RUN chown -R mitodl:mitodl /tmp/.cache
 USER mitodl
