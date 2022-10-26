@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.64.1
+--------------
+
+- Fixing a permissions issue with the linter.
+- Few tweaks so that the docker container continues to function like it used it.
+- Converted the docker file to a multistage build so we can create a smaller image for production.
+- Make env parsing forgiving of blank lines and unset vars (#995)
+- Update youtube oauth (and python, dependencies) (#990)
+
 Version 0.64.0 (Released November 16, 2021)
 --------------
 
