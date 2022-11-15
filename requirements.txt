@@ -37,7 +37,7 @@ celery==4.3.0
     # via
     #   -r requirements.in
     #   celery-redbeat
-celery-redbeat==0.13.0
+celery-redbeat==2.0.0
     # via -r requirements.in
 certifi==2020.4.5.1
     # via
