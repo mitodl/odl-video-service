@@ -437,13 +437,31 @@ REST_FRAMEWORK = {
 
 # Celery
 # http://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
+#
+# A note of REDIS_URL and CELERY_BROKER_URL formats for connections utilzing TLS
+#
+# For connections NOT utilzing TLS, setting JUST 'REDIS_URL' should be sufficient.
+#
+# For connections that DO utilize TLS, we need to make some special accomodations
+# for how two different methods of connecting to Redis are used.
+#
+# REDIS_URL Format (aka 'uppercase constant')
+# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=CERT_REQUIRED
+#
+# CELERY_BROKER_URL Format (aka 'lowercase literal')
+# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=required
+#
+# CACHES.REDIS.LOCATION= lowercase literal
+# CELERY_RESULT_BACKEND = uppercase constant
+# CELERY_REDBEAT_REDIS_URL = lowercase literal
+#
 REDIS_URL = get_string("REDIS_URL", None)
 REDIS_MAX_CONNECTIONS = get_int("REDIS_MAX_CONNECTIONS", 65000)
 USE_CELERY = True
 CELERY_BROKER_URL = get_string("CELERY_BROKER_URL", REDIS_URL)
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_BEAT_SCHEDULER = RedBeatScheduler
-CELERY_REDBEAT_REDIS_URL = REDIS_URL
+CELERY_REDBEAT_REDIS_URL = CELERY_BROKER_URL
 
 CELERY_TASK_ALWAYS_EAGER = get_bool("CELERY_TASK_ALWAYS_EAGER", False)
 CELERY_TASK_EAGER_PROPAGATES = get_bool("CELERY_TASK_EAGER_PROPAGATES", True)
@@ -480,7 +498,7 @@ CACHES = {
     },
     "redis": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
+        "LOCATION": CELERY_BROKER_URL,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {"max_connections": REDIS_MAX_CONNECTIONS},
