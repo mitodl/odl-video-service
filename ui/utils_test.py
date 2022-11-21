@@ -196,10 +196,10 @@ def test_get_google_analytics_client_success(ga_client_mocks, settings):
     settings.GA_KEYFILE_JSON = '{"some": "json"}'
     result = get_google_analytics_client()
     assert (
-        ga_client_mocks["ServiceAccountCredentials"].from_json_keyfile_dict
+        ga_client_mocks["ServiceAccountCredentials"].from_service_account_info
     ).called_once_with(json.loads(settings.GA_KEYFILE_JSON))
     assert ga_client_mocks["build"].called_once_with(
-        ga_client_mocks["ServiceAccountCredentials"].from_json_keyfile_dict.return_value
+        ga_client_mocks["ServiceAccountCredentials"].from_service_account_info.return_value
     )
     assert result is ga_client_mocks["build"].return_value
 
