@@ -443,7 +443,7 @@ class Video(TimestampedModel):
         Get the S3 key for a video playlist file
 
         Args:
-            encoding(str): The encoding preset to use (should be one included in settings.ET_PRESET_IDS)
+            encoding(str): The encoding preset to use (should be one included in settings.ET_HLS_PRESET_IDS)
 
         Returns:
             str: The S3 key to used for the encoded file.

@@ -140,7 +140,7 @@ def refresh_status(video, encode_job=None):
         encode_job.save()
 
 
-def transcode_video(video, video_file):
+def transcode_video(video, video_file, generate_mp4_videofile=False):
     """
     Start a transcode job for a video
 
@@ -165,14 +165,14 @@ def transcode_video(video, video_file):
     else:
         prefix = ""
 
-    # Generate an output video file for each encoding (assumed to be HLS)
+    # Generate an output video file for each HLS encoding
     outputs = [
         {
             "Key": f"{prefix}{video.transcode_key(preset)}",
             "PresetId": preset,
             "SegmentDuration": "10.0",
         }
-        for preset in settings.ET_PRESET_IDS
+        for preset in settings.ET_HLS_PRESET_IDS
     ]
 
     playlists = [
@@ -182,6 +182,14 @@ def transcode_video(video, video_file):
             "OutputKeys": [output["Key"] for output in outputs],
         }
     ]
+
+    if generate_mp4_videofile:
+        outputs.append(
+            {
+                "Key": f"{prefix}{video.transcode_key(settings.ET_MP4_PRESET_ID)}",
+                "PresetId": settings.ET_MP4_PRESET_ID,
+            }
+        )
 
     # Generate thumbnails for the 1st encoding (no point in doing so for each).
     if video.status != VideoStatus.RETRANSCODE_SCHEDULED:
