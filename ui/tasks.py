@@ -10,17 +10,15 @@ log = logging.getLogger(__name__)
 
 
 @app.task
-def post_hls_to_edx(video_file_id):
+def post_video_to_edx(video_id):
     """Loads a VideoFile and calls our API method to add it to edX"""
-    video_file = (
-        VideoFile.objects.filter(id=video_file_id)
-        .select_related("video__collection")
-        .first()
+    video_files = list(
+        VideoFile.objects.filter(video=video_id).select_related("video__collection")
     )
-    if not video_file:
-        log.error("VideoFile doesn't exist", videofile_id=video_file_id)
+    if not video_files:
+        log.error("Video doesn't exist", video_id=video_id)
         return
-    response_dict = ovs_api.post_hls_to_edx(video_file)
+    response_dict = ovs_api.post_video_to_edx(video_files)
     return [
         (endpoint.full_api_url, getattr(resp, "status_code", None))
         for endpoint, resp in response_dict.items()

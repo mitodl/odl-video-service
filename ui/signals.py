@@ -9,7 +9,7 @@ from django.dispatch import receiver
 
 from cloudsync.tasks import remove_youtube_caption, remove_youtube_video
 from ui import tasks as ovs_tasks
-from ui.constants import StreamSource, YouTubeStatus
+from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.models import (
     Collection,
     Video,
@@ -88,13 +88,13 @@ def update_video_youtube(sender, **kwargs):
     sync_youtube(kwargs["instance"])
 
 
-@receiver(post_save, sender=VideoFile)
-def add_hls_to_edx(sender, instance, created, **kwargs):
+@receiver(post_save, sender=Video)
+def add_video_to_edx(sender, instance, created, **kwargs):
     """
-    If an HLS VideoFile was created and is of the right type, kick off a task to add this video to edX via API.
+    If a Video was updated with a status of COMPLETE, we can now upload the related VideoFiles.
     """
-    if created and instance.can_add_to_edx:
-        ovs_tasks.post_hls_to_edx.delay(instance.id)
+    if instance.status == VideoStatus.COMPLETE:
+        ovs_tasks.post_video_to_edx.delay(instance.id)
 
 
 def sync_youtube(video):
