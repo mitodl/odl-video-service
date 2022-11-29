@@ -249,7 +249,7 @@ def test_process_transcode_results(mocker, status):
     }
     mocker.patch("ui.utils.get_transcoder_client", return_value=MockClientET())
     api.process_transcode_results(video, job)
-    assert len(video.videofile_set.all()) == 2
+    assert len(video.videofile_set.all()) == 3
     assert len(video.videothumbnail_set.all()) == 1
     assert mock_move_s3_objects.call_count == (
         1 if status == VideoStatus.RETRANSCODING else 0

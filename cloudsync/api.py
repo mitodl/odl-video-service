@@ -64,12 +64,29 @@ def process_transcode_results(video, job):
                 "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
                 "encoding": EncodingNames.HLS,
                 "preset_id": ",".join(
-                    [output["PresetId"] for output in job["Outputs"]]
+                    [
+                        output["PresetId"]
+                        for output in job["Outputs"]
+                        if output["PresetId"] != settings.ET_MP4_PRESET_ID
+                    ]
                 ),
             },
         )
     for output in job["Outputs"]:
         if "ThumbnailPattern" not in output:
+            if output["PresetId"] != settings.ET_MP4_PRESET_ID:
+                VideoFile.objects.update_or_create(
+                    # This assumes MP4 encoding
+                    s3_object_key="{}.mp4".format(
+                        playlist["Name"].replace(RETRANSCODE_FOLDER, "")
+                    ),
+                    defaults={
+                        "video": video,
+                        "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
+                        "encoding": EncodingNames.MP4,
+                        "preset_id": settings.ET_MP4_PRESET_ID,
+                    },
+                )
             continue
         thumbnail_pattern = output["ThumbnailPattern"].replace("{count}", "")
         preset = get_et_preset(output["PresetId"])
