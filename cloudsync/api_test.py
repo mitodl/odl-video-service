@@ -218,6 +218,14 @@ def test_process_transcode_results(mocker, status):
                 "Watermarks": [],
                 "Width": 640,
             },
+            {
+                "Id": "5",
+                "Key": f"{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700649488-h4j2k",
+                "PresetId": "1498700649488-h4j2k",
+                "Status": "Complete",
+                "Watermarks": [],
+                "Width": 1280,
+            },
         ],
         "PipelineId": "1497455687488-evsuze",
         "Playlists": [
