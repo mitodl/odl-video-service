@@ -83,7 +83,7 @@ def process_transcode_results(video, job):
                     defaults={
                         "video": video,
                         "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
-                        "encoding": EncodingNames.MP4,
+                        "encoding": EncodingNames.BASIC,
                         "preset_id": settings.ET_MP4_PRESET_ID,
                     },
                 )

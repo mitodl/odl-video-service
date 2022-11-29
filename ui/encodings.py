@@ -13,4 +13,4 @@ class EncodingNames:
     MEDIUM = "medium"
     LARGE = "large"
     HD = "HD"
-    MP4 = "MP4"
+    MP4 = [HD, LARGE, MEDIUM, BASIC, SMALL]
