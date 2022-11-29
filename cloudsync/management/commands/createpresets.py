@@ -22,7 +22,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--json",
             dest="filejson",
-            default=os.path.join(script_path, "../../../config/et_presets.json"),
+            default=os.path.join(script_path, "../../../config/et_hls_presets.json"),
             help="Path to file containing presets in JSON format",
         )
 
@@ -42,7 +42,7 @@ class Command(BaseCommand):
         for preset in presets:
             preset["created"] = client.create_preset(**preset)
         self.stdout.write(
-            "ET_PRESET_IDS={}".format(
+            "ET_HLS_PRESET_IDS={}".format(
                 ",".join([preset["created"]["Preset"]["Id"] for preset in presets])
             )
         )

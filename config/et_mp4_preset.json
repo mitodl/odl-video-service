@@ -1,0 +1,43 @@
+[
+  {
+    "Name": "MP4",
+    "Description": "Standard quality MP4 for download",
+    "Container": "MP4",
+    "Video": {
+      "BitRate": "1800",
+      "Codec": "H.264",
+      "CodecOptions": {
+        "ColorSpaceConversionMode": "None",
+        "InterlacedMode": "Progressive",
+        "Level": "3.1",
+        "MaxReferenceFrames": "1",
+        "Profile": "main"
+      },
+      "DisplayAspectRatio": "auto",
+      "FixedGOP": "true",
+      "FrameRate": "30",
+      "KeyframesMaxDist": "90",
+      "MaxHeight": "720",
+      "MaxWidth": "1280",
+      "PaddingPolicy": "NoPad",
+      "SizingPolicy": "Fit"
+    },
+    "Audio": {
+      "BitRate": "96",
+      "Channels": "1",
+      "Codec": "AAC",
+      "CodecOptions": {
+        "Profile": "AAC-LC"
+      },
+      "SampleRate": "44100"
+    },
+    "Thumbnails": {
+      "Format": "jpg",
+      "Interval": "300",
+      "MaxHeight": "338",
+      "MaxWidth": "600",
+      "PaddingPolicy": "NoPad",
+      "SizingPolicy": "Fit"
+    }
+  }
+]
