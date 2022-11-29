@@ -267,14 +267,14 @@ def get_google_analytics_client():
         analytics_client: An analytics client
     """
     try:
-        credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+        credentials = ServiceAccountCredentials.from_service_account_info(
             json.loads(settings.GA_KEYFILE_JSON)
         )
         analytics_client = build("analyticsreporting", "v4", credentials=credentials)
         return analytics_client
     except Exception as exc:  # pylint: disable=broad-except
         raise GoogleAnalyticsException(
-            "Something went wrong with creating a GoogleAnaltics client"
+            "Something went wrong with creating a GoogleAnalytics client"
         ) from exc
 
 
