@@ -15,7 +15,9 @@ log = logging.getLogger(__name__)
 def post_video_to_edx(video_id):
     """Loads a VideoFile and calls our API method to add it to edX"""
     video_files = list(
-        VideoFile.objects.filter(~Q(encoding=EncodingNames.ORIGINAL),video=video_id).select_related("video__collection")
+        VideoFile.objects.filter(
+            ~Q(encoding=EncodingNames.ORIGINAL), video=video_id
+        ).select_related("video__collection")
     )
     if not video_files:
         log.error("Video doesn't exist", video_id=video_id)

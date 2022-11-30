@@ -600,7 +600,10 @@ class VideoFile(VideoS3):
             bool:
         """
         return bool(
-            (self.encoding == EncodingNames.HLS or self.encoding == EncodingNames.DESKTOP_MP4)
+            (
+                self.encoding == EncodingNames.HLS
+                or self.encoding == EncodingNames.DESKTOP_MP4
+            )
             and self.cloudfront_url
             and self.video.collection.edx_course_id
         )
