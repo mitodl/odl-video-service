@@ -455,7 +455,7 @@ def test_video_ordering():
     "encoding,edx_course_id,expected",
     [
         (EncodingNames.HLS, "course-v1", True),
-        (EncodingNames.BASIC, "course-v1", True),
+        (EncodingNames.DESKTOP_MP4, "course-v1", True),
         (EncodingNames.HLS, None, False),
         (EncodingNames.ORIGINAL, "course-v1", False),
     ],

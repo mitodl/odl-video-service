@@ -100,7 +100,7 @@ def test_edx_video_file_signal(mocker):
     video_files = VideoFileFactory.create_batch(
         3,
         encoding=factory.Iterator(
-            [EncodingNames.HLS, EncodingNames.HLS, EncodingNames.BASIC]
+            [EncodingNames.HLS, EncodingNames.HLS, EncodingNames.DESKTOP_MP4]
         ),
         s3_object_key=factory.Iterator([1, 2, 3]),
         video=video,

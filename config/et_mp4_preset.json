@@ -2,7 +2,7 @@
   {
     "Name": "MP4",
     "Description": "Standard quality MP4 for download",
-    "Container": "MP4",
+    "Container": "mp4",
     "Video": {
       "BitRate": "1800",
       "Codec": "H.264",
