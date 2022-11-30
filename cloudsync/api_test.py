@@ -218,14 +218,6 @@ def test_process_transcode_results(mocker, status):
                 "Watermarks": [],
                 "Width": 640,
             },
-            {
-                "Id": "5",
-                "Key": f"{p}transcoded/1/05a06f21-7625-4c20-b416-ae161f31722a/lastjedi_1498700649488-h4j2k",
-                "PresetId": "1498700649488-h4j2k",
-                "Status": "Complete",
-                "Watermarks": [],
-                "Width": 1280,
-            },
         ],
         "PipelineId": "1497455687488-evsuze",
         "Playlists": [
@@ -249,7 +241,7 @@ def test_process_transcode_results(mocker, status):
     }
     mocker.patch("ui.utils.get_transcoder_client", return_value=MockClientET())
     api.process_transcode_results(video, job)
-    assert len(video.videofile_set.all()) == 3
+    assert len(video.videofile_set.all()) == 2
     assert len(video.videothumbnail_set.all()) == 1
     assert mock_move_s3_objects.call_count == (
         1 if status == VideoStatus.RETRANSCODING else 0
@@ -476,8 +468,7 @@ def test_lecture_video_title():
         [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODING],
     ],
 )
-@pytest.mark.parametrize("generate_mp4_videofile", [True, False])
-def test_transcode_job(mocker, status, expected_status, generate_mp4_videofile):
+def test_transcode_job(mocker, status, expected_status):
     """
     Test that video status is updated properly after a transcode job is successfully created
     """
@@ -498,10 +489,6 @@ def test_transcode_job(mocker, status, expected_status, generate_mp4_videofile):
         "PresetId": hls_preset_id_2,
         "SegmentDuration": "10.0",
     }
-    mp4_preset = {
-        "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000060",
-        "PresetId": mp4_preset_id,
-    }
     if status != VideoStatus.RETRANSCODE_SCHEDULED:
         hls_preset_1["ThumbnailPattern"] = (
             "thumbnails/" + video.hexkey + "/video_thumbnail_{count}"
@@ -519,49 +506,26 @@ def test_transcode_job(mocker, status, expected_status, generate_mp4_videofile):
     mock_delete_objects = mocker.patch("cloudsync.api.delete_s3_objects")
     mocker.patch("ui.models.tasks")
 
-    api.transcode_video(
-        video, videofile, generate_mp4_videofile
-    )  # pylint: disable=no-value-for-parameter
-    if generate_mp4_videofile:
-        mock_encoder.assert_called_once_with(
-            {"Key": videofile.s3_object_key},
-            [hls_preset_1, hls_preset_2, mp4_preset],
-            Playlists=[
-                {
-                    "Format": "HLSv3",
-                    "Name": f"{prefix}transcoded/" + video.hexkey + "/video__index",
-                    "OutputKeys": [
-                        f"{prefix}transcoded/"
-                        + video.hexkey
-                        + "/video_1351620000001-000040",
-                        f"{prefix}transcoded/"
-                        + video.hexkey
-                        + "/video_1351620000001-000020",
-                    ],
-                }
-            ],
-            UserMetadata={"pipeline": "odl-video-service-test"},
-        )
-    else:
-        mock_encoder.assert_called_once_with(
-            {"Key": videofile.s3_object_key},
-            [hls_preset_1, hls_preset_2],
-            Playlists=[
-                {
-                    "Format": "HLSv3",
-                    "Name": f"{prefix}transcoded/" + video.hexkey + "/video__index",
-                    "OutputKeys": [
-                        f"{prefix}transcoded/"
-                        + video.hexkey
-                        + "/video_1351620000001-000040",
-                        f"{prefix}transcoded/"
-                        + video.hexkey
-                        + "/video_1351620000001-000020",
-                    ],
-                }
-            ],
-            UserMetadata={"pipeline": "odl-video-service-test"},
-        )
+    api.transcode_video(video, videofile)  # pylint: disable=no-value-for-parameter
+    mock_encoder.assert_called_once_with(
+        {"Key": videofile.s3_object_key},
+        [hls_preset_1, hls_preset_2],
+        Playlists=[
+            {
+                "Format": "HLSv3",
+                "Name": f"{prefix}transcoded/" + video.hexkey + "/video__index",
+                "OutputKeys": [
+                    f"{prefix}transcoded/"
+                    + video.hexkey
+                    + "/video_1351620000001-000040",
+                    f"{prefix}transcoded/"
+                    + video.hexkey
+                    + "/video_1351620000001-000020",
+                ],
+            }
+        ],
+        UserMetadata={"pipeline": "odl-video-service-test"},
+    )
     assert len(video.encode_jobs.all()) == 1
     assert mock_delete_objects.call_count == (
         1 if status == VideoStatus.RETRANSCODE_SCHEDULED else 0

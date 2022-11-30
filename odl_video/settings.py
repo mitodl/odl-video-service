@@ -361,7 +361,7 @@ ET_MP4_PRESET_ID = get_string("ET_MP4_PRESET_ID", "1351620000001-200010")
 
 if ET_HLS_PRESET_IDS == [""] or ET_MP4_PRESET_ID == [
     ""
-]:  # This may happen if `ET_PRESET_IDS=` is in .env file.
+]:  # This may happen if `ET_HLS_PRESET_IDS=` or `ET_MP4_PRESET_ID=` is in .env file.
     raise ImproperlyConfigured(
         "ET_HLS_PRESET_IDS and ET_MP4_PRESET_ID cannot be blank, please check your settings & environment"
     )
