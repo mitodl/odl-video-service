@@ -15,7 +15,7 @@ from encrypted_model_fields.fields import EncryptedTextField
 from pycountry import languages
 
 from mail import tasks
-from odl_video.constants import DEFAULT_EDX_HLS_API_PATH
+from odl_video.constants import DEFAULT_EDX_VIDEO_API_PATH
 from odl_video.models import TimestampedModel, TimestampedModelManager
 from ui import utils
 from ui.constants import StreamSource, VideoStatus, YouTubeStatus
@@ -81,7 +81,9 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
     base_url = models.CharField(max_length=100, blank=False, null=False)
     access_token = models.CharField(max_length=2048)
     expires_in = models.IntegerField(default=0)
-    hls_api_path = models.CharField(max_length=100, default=DEFAULT_EDX_HLS_API_PATH)
+    edx_video_api_path = models.CharField(
+        max_length=100, default=DEFAULT_EDX_VIDEO_API_PATH
+    )
     is_global_default = models.BooleanField(default=False)
     collections = models.ManyToManyField("Collection", through="CollectionEdxEndpoint")
 
@@ -93,7 +95,7 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
         """Returns the full URL of the edX API endpoint for posting videos"""
         return multi_urljoin(
             self.base_url,
-            self.hls_api_path or DEFAULT_EDX_HLS_API_PATH,
+            self.edx_video_api_path or DEFAULT_EDX_VIDEO_API_PATH,
             add_trailing_slash=True,
         )
 
