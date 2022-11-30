@@ -82,13 +82,13 @@ def post_video_to_edx(video_files):
             }
         )
     edx_endpoints = models.EdxEndpoint.objects.filter(
-        Q(collections__id__in=[video_file[0].video.collection_id])
+        Q(collections__id__in=[video_files[0].video.collection_id])
     )
     if not edx_endpoints.exists():
         log.error(
             "Trying to post video to edX endpoints, but no endpoints exist",
-            videofile_id=video_file[0].pk,
-            videofile=video_file[0],
+            videofile_id=video_files[0].pk,
+            videofile=video_files[0],
         )
 
     responses = {}
@@ -98,10 +98,10 @@ def post_video_to_edx(video_files):
             resp = requests.post(
                 edx_endpoint.full_api_url,
                 json={
-                    "client_video_id": video_file.video.title,
+                    "client_video_id": video_files[0].video.title,
                     "edx_video_id": str(uuid4()),
                     "encoded_videos": encoded_videos,
-                    "courses": [{video_file.video.collection.edx_course_id: None}],
+                    "courses": [{video_files[0].video.collection.edx_course_id: None}],
                     "status": "file_complete",
                     "duration": 0.0,
                 },
@@ -121,7 +121,7 @@ def post_video_to_edx(video_files):
                 response_summary_dict = {"exception": str(exc)}
             log.error(
                 "Can not add video to edX",
-                videofile_id=video_file.pk,
+                videofile_id=video_files[0].pk,
                 response=str(response_summary_dict),
             )
             resp = exc.response
