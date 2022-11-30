@@ -82,13 +82,13 @@ def post_video_to_edx(video_files):
             }
         )
     edx_endpoints = models.EdxEndpoint.objects.filter(
-        Q(collections__id__in=[video_file.video.collection_id])
+        Q(collections__id__in=[video_file[0].video.collection_id])
     )
     if not edx_endpoints.exists():
         log.error(
             "Trying to post video to edX endpoints, but no endpoints exist",
-            videofile_id=video_file.pk,
-            videofile=video_file,
+            videofile_id=video_file[0].pk,
+            videofile=video_file[0],
         )
 
     responses = {}

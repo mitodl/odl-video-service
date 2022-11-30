@@ -5,7 +5,6 @@ import pytest
 from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
-    CollectionFactory,
     VideoFactory,
     VideoFileFactory,
     VideoSubtitleFactory,
@@ -97,7 +96,7 @@ def test_edx_video_file_signal(mocker):
     patched_edx_task = mocker.patch("ui.signals.ovs_tasks.post_video_to_edx.delay")
 
     video = VideoFactory(status=VideoStatus.CREATED)
-    video_files = VideoFileFactory.create_batch(
+    VideoFileFactory.create_batch(
         3,
         encoding=factory.Iterator(
             [EncodingNames.HLS, EncodingNames.HLS, EncodingNames.DESKTOP_MP4]
