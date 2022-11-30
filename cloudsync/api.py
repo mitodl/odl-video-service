@@ -74,16 +74,16 @@ def process_transcode_results(video, job):
         )
     for output in job["Outputs"]:
         if "ThumbnailPattern" not in output:
-            if output["PresetId"] != settings.ET_MP4_PRESET_ID:
+            if output["PresetId"] == settings.ET_MP4_PRESET_ID:
                 VideoFile.objects.update_or_create(
                     # This assumes MP4 encoding
-                    s3_object_key="{}.mp4".format(
-                        playlist["Name"].replace(RETRANSCODE_FOLDER, "")
+                    s3_object_key="{}".format(
+                        output["Key"].replace(RETRANSCODE_FOLDER, "")
                     ),
                     defaults={
                         "video": video,
                         "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
-                        "encoding": EncodingNames.BASIC,
+                        "encoding": EncodingNames.DESKTOP_MP4,
                         "preset_id": settings.ET_MP4_PRESET_ID,
                     },
                 )
