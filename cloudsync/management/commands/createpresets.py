@@ -42,7 +42,7 @@ class Command(BaseCommand):
         for preset in presets:
             preset["created"] = client.create_preset(**preset)
         self.stdout.write(
-            "ET_HLS_PRESET_IDS={}".format(
+            "ET_PRESET_IDS={}".format(
                 ",".join([preset["created"]["Preset"]["Id"] for preset in presets])
             )
         )
