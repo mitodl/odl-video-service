@@ -200,10 +200,11 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
         }
     ]
 
+    # Generate an mp4 output video file when generate_mp4_videofile is set to True.
     if generate_mp4_videofile:
         outputs.append(
             {
-                "Key": f"{prefix}{video.transcode_key(settings.ET_MP4_PRESET_ID)}",
+                "Key": f"{prefix}{video.transcode_key(settings.ET_MP4_PRESET_ID)}.mp4",
                 "PresetId": settings.ET_MP4_PRESET_ID,
             }
         )
