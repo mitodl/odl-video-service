@@ -109,8 +109,8 @@ serving static files for the web application. If you want to do this, set the
 CloudFront distribution ID as the ``STATIC_CLOUDFRONT_DIST`` environment
 variable, using the ``.env`` file.
 
-This app expects the transcoding to use HLS, and the ``PRESET_IDS`` environment variable
-should be a comma-delimited list of Video HLS presets for AWS ElasticTranscode.  The defaults
+This app expects the transcoding to use HLS or MP4, and the ``ET_HLS_PRESET_IDS`` and ``ET_MP4_PRESET_ID``environment variables, respectively.
+``ET_HLS_PRESET_IDS`` should be a comma-delimited list of Video HLS presets for AWS ElasticTranscode.  The defaults
 are standard presets (2M, 1M, 600K).
 
 Dropbox

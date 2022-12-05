@@ -59,27 +59,36 @@ def process_dropbox_data(dropbox_upload_data):
     return response_data
 
 
-def post_hls_to_edx(video_file):
+def post_video_to_edx(video_files):
     """
-    Posts an HLS video to all configured edX endpoints via API using attributes from a video file
+    Posts a video to all configured edX endpoints via API using attributes from a video file
 
     Args:
-        video_file (ui.models.VideoFile): An HLS-encoded video file
+        video_files [ui.models.VideoFile]: An array of video files
 
     Returns:
         Dict[EdxEndpoint, requests.models.Response]: Each configured edX endpoint mapped to the response from the
             request to post the video file to that endpoint.
     """
-    assert video_file.can_add_to_edx, "This video file cannot be added to edX"
-
+    encoded_videos = []
+    for video_file in video_files:
+        assert video_file.can_add_to_edx, "This video file cannot be added to edX"
+        encoded_videos.append(
+            {
+                "url": video_file.cloudfront_url,
+                "file_size": 0,
+                "bitrate": 0,
+                "profile": video_file.encoding,
+            }
+        )
     edx_endpoints = models.EdxEndpoint.objects.filter(
-        Q(collections__id__in=[video_file.video.collection_id])
+        Q(collections__id__in=[video_files[0].video.collection_id])
     )
     if not edx_endpoints.exists():
         log.error(
-            "Trying to post HLS to edX endpoints, but no endpoints exist",
-            videofile_id=video_file.pk,
-            videofile=video_file,
+            "Trying to post video to edX endpoints, but no endpoints exist",
+            videofile_id=video_files[0].pk,
+            videofile=video_files[0],
         )
 
     responses = {}
@@ -89,17 +98,10 @@ def post_hls_to_edx(video_file):
             resp = requests.post(
                 edx_endpoint.full_api_url,
                 json={
-                    "client_video_id": video_file.video.title,
+                    "client_video_id": video_files[0].video.title,
                     "edx_video_id": str(uuid4()),
-                    "encoded_videos": [
-                        {
-                            "url": video_file.cloudfront_url,
-                            "file_size": 0,
-                            "bitrate": 0,
-                            "profile": "hls",
-                        }
-                    ],
-                    "courses": [{video_file.video.collection.edx_course_id: None}],
+                    "encoded_videos": encoded_videos,
+                    "courses": [{video_files[0].video.collection.edx_course_id: None}],
                     "status": "file_complete",
                     "duration": 0.0,
                 },
@@ -118,8 +120,8 @@ def post_hls_to_edx(video_file):
             else:
                 response_summary_dict = {"exception": str(exc)}
             log.error(
-                "Can not add HLS video to edX",
-                videofile_id=video_file.pk,
+                "Can not add video to edX",
+                videofile_id=video_files[0].pk,
                 response=str(response_summary_dict),
             )
             resp = exc.response

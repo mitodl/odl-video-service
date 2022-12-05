@@ -138,7 +138,7 @@ def transcode_from_s3(self, video_id):
     video_file = video.videofile_set.get(encoding="original")
 
     try:
-        transcode_video(video, video_file)
+        transcode_video(video, video_file, True)
     except ClientError:
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise
@@ -165,7 +165,7 @@ def retranscode_video(self, video_id):
 
     try:
         video.update_status(VideoStatus.RETRANSCODE_SCHEDULED)
-        transcode_video(video, video_file)
+        transcode_video(video, video_file, True)
     except ClientError:
         self.update_state(task_id=task_id, state=states.FAILURE)
         video.update_status(VideoStatus.RETRANSCODE_FAILED)

@@ -2,10 +2,9 @@
 import factory
 import pytest
 
-from ui.constants import StreamSource, YouTubeStatus
+from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
-    CollectionFactory,
     VideoFactory,
     VideoFileFactory,
     VideoSubtitleFactory,
@@ -93,20 +92,21 @@ def test_youtube_sync_redo_failed(mocker, video_with_file, status):
 
 
 def test_edx_video_file_signal(mocker):
-    """When a VideoFile is created with the right properties, a task to add the video to edX should be called"""
-    patched_edx_task = mocker.patch("ui.signals.ovs_tasks.post_hls_to_edx.delay")
+    """When a Video is saved with the status of COMPLETE, a task to add the video to edX should be called"""
+    patched_edx_task = mocker.patch("ui.signals.ovs_tasks.post_video_to_edx.delay")
 
-    collections = CollectionFactory.create_batch(
-        3, edx_course_id=factory.Iterator(["courseid", None, "courseid"])
-    )
-    video_files = VideoFileFactory.create_batch(
+    video = VideoFactory(status=VideoStatus.CREATED)
+    VideoFileFactory.create_batch(
         3,
         encoding=factory.Iterator(
-            [EncodingNames.HLS, EncodingNames.HLS, "other-encoding"]
+            [EncodingNames.HLS, EncodingNames.HLS, EncodingNames.DESKTOP_MP4]
         ),
-        video__collection=factory.Iterator(collections),
+        s3_object_key=factory.Iterator([1, 2, 3]),
+        video=video,
     )
-    patched_edx_task.assert_called_once_with(video_files[0].id)
+    video.status = VideoStatus.COMPLETE
+    video.save()
+    patched_edx_task.assert_called_once_with(video.id)
 
 
 @pytest.mark.parametrize("retranscode_enabled", [True, False])

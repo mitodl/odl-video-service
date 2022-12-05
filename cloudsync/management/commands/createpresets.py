@@ -22,7 +22,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--json",
             dest="filejson",
-            default=os.path.join(script_path, "../../../config/et_presets.json"),
+            default=os.path.join(script_path, "../../../config/et_hls_presets.json"),
             help="Path to file containing presets in JSON format",
         )
 

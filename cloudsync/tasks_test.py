@@ -98,7 +98,7 @@ def mock_transcode(mocker):
     """Mock everything required for a  transcode"""
     mocker.patch.multiple(
         "cloudsync.tasks.settings",
-        ET_PRESET_IDS=(
+        ET_HLS_PRESET_IDS=(
             "1351620000001-000061",
             "1351620000001-000040",
             "1351620000001-000020",
@@ -422,7 +422,7 @@ def test_monitor_watch(mocker, user):
     UserFactory(username="admin")
     mocker.patch.multiple(
         "cloudsync.tasks.settings",
-        ET_PRESET_IDS=("1351620000001-000061",),
+        ET_HLS_PRESET_IDS=("1351620000001-000061",),
         ENVIRONMENT="test",
         AWS_REGION="us-east-1",
         ET_PIPELINE_ID="foo",
@@ -485,7 +485,7 @@ def test_monitor_watch_badname(mocker, filename, unsorted):
     user = UserFactory(username="admin")
     mocker.patch.multiple(
         "cloudsync.tasks.settings",
-        ET_PRESET_IDS=(
+        ET_HLS_PRESET_IDS=(
             "1351620000001-000061",
             "1351620000001-000040",
             "1351620000001-000020",

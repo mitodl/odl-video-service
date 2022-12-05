@@ -355,7 +355,7 @@ def test_process_watch(mocker):
     """Test that a file with valid filename is processed"""
     mocker.patch.multiple(
         "cloudsync.tasks.settings",
-        ET_PRESET_IDS=(
+        ET_HLS_PRESET_IDS=(
             "1351620000001-000061",
             "1351620000001-000040",
             "1351620000001-000020",
@@ -476,19 +476,28 @@ def test_transcode_job(mocker, status, expected_status):
     videofile = VideoFileFactory.create(video=video)
 
     prefix = RETRANSCODE_FOLDER if status == VideoStatus.RETRANSCODE_SCHEDULED else ""
-    preset = {
+    hls_preset_id_1 = "1351620000001-000040"
+    hls_preset_id_2 = "1351620000001-000020"
+    mp4_preset_id = "1351620000001-000060"
+    hls_preset_1 = {
         "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000040",
-        "PresetId": "1351620000001-000040",
+        "PresetId": hls_preset_id_1,
+        "SegmentDuration": "10.0",
+    }
+    hls_preset_2 = {
+        "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020",
+        "PresetId": hls_preset_id_2,
         "SegmentDuration": "10.0",
     }
     if status != VideoStatus.RETRANSCODE_SCHEDULED:
-        preset["ThumbnailPattern"] = (
+        hls_preset_1["ThumbnailPattern"] = (
             "thumbnails/" + video.hexkey + "/video_thumbnail_{count}"
         )
 
     mocker.patch.multiple(
         "cloudsync.tasks.settings",
-        ET_PRESET_IDS=("1351620000001-000040", "1351620000001-000020"),
+        ET_HLS_PRESET_IDS=(hls_preset_id_1, hls_preset_id_2),
+        ET_MP4_PRESET_ID=mp4_preset_id,
         AWS_REGION="us-east-1",
         ET_PIPELINE_ID="foo",
         ENVIRONMENT="test",
@@ -500,16 +509,7 @@ def test_transcode_job(mocker, status, expected_status):
     api.transcode_video(video, videofile)  # pylint: disable=no-value-for-parameter
     mock_encoder.assert_called_once_with(
         {"Key": videofile.s3_object_key},
-        [
-            preset,
-            {
-                "Key": f"{prefix}transcoded/"
-                + video.hexkey
-                + "/video_1351620000001-000020",
-                "PresetId": "1351620000001-000020",
-                "SegmentDuration": "10.0",
-            },
-        ],
+        [hls_preset_1, hls_preset_2],
         Playlists=[
             {
                 "Format": "HLSv3",
@@ -554,7 +554,7 @@ def test_transcode_job_failure(mocker, status, error_status):
     }
     mocker.patch.multiple(
         "cloudsync.tasks.settings",
-        ET_PRESET_IDS=("1351620000001-000020",),
+        ET_HLS_PRESET_IDS=("1351620000001-000020",),
         AWS_REGION="us-east-1",
         ET_PIPELINE_ID="foo",
         ENVIRONMENT="test",
