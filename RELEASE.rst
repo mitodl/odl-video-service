@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.64.1
+Version 0.64.1 (Released December 13, 2022)
 --------------
 
 - Fixing a permissions issue with the linter.
