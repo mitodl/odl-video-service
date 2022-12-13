@@ -1,6 +1,32 @@
 Release Notes
 =============
 
+Version 0.65.0
+--------------
+
+- Fix test
+- Format migration
+- Update model field name to remove HLS
+- Repair some tests.  Update some document
+- lint but be better
+- lint
+- Fix: Format
+- Add mp4 file extension
+- Bug fix
+- Only upload transcoded videos
+- Use edx default video profile
+- Add more generic output from createpresets
+- Use from_service_account_info instead of from_json_keyfile_dict for google credentials (#1008)
+- Upload MP4 to edx
+- Update can_add_to_edx
+- Use existing MP4 array and use BASIC
+- Update process_transcode_results
+- Create MP4 from dropbox workflow only
+- Allows the developer to choose MP4 encoding
+- Add additional MP4 preset
+- Tweaking the application settings to allow celery and redbeat to use TLS when connecting to Redis/Elasticache.
+- Swtiching the production uwsgi.ini configuration to use a standard TCP socket rather than a unix socket. Part of docker migration.
+
 Version 0.64.1 (Released December 13, 2022)
 --------------
 
