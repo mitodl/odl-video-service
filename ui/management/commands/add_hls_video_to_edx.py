@@ -64,7 +64,7 @@ class Command(BaseCommand):
 
         self.stdout.write("Attempting to post video(s) to edX...")
         for video_file in video_files:
-            response_dict = post_video_to_edx(video_file)
+            response_dict = post_video_to_edx([video_file])
             good_responses = {
                 endpoint: resp
                 for endpoint, resp in response_dict.items()
