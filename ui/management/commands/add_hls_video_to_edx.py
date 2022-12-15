@@ -2,7 +2,7 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
-from ui.api import post_hls_to_edx
+from ui.api import post_video_to_edx
 from ui.encodings import EncodingNames
 from ui.models import VideoFile
 from ui.utils import get_error_response_summary_dict
@@ -64,7 +64,7 @@ class Command(BaseCommand):
 
         self.stdout.write("Attempting to post video(s) to edX...")
         for video_file in video_files:
-            response_dict = post_hls_to_edx(video_file)
+            response_dict = post_video_to_edx([video_file])
             good_responses = {
                 endpoint: resp
                 for endpoint, resp in response_dict.items()
