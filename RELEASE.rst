@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.65.1
+--------------
+
+- Convert to array
+- Update add_hls_video_to_edx
+
 Version 0.65.0 (Released December 13, 2022)
 --------------
 
