@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.65.1
+Version 0.65.1 (Released December 15, 2022)
 --------------
 
 - Convert to array
