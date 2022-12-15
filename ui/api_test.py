@@ -167,7 +167,7 @@ def test_post_video_to_edx(mocker, reqmocker, edx_api_scenario):
                     "url": edx_api_scenario.video_file_hls.cloudfront_url,
                     "file_size": 0,
                     "bitrate": 0,
-                    "profile": "HLS",
+                    "profile": "hls",
                 },
                 {
                     "url": edx_api_scenario.video_file_mp4.cloudfront_url,
