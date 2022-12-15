@@ -78,7 +78,7 @@ def post_video_to_edx(video_files):
                 "url": video_file.cloudfront_url,
                 "file_size": 0,
                 "bitrate": 0,
-                "profile": video_file.encoding,
+                "profile": video_file.encoding.lower(),
             }
         )
     edx_endpoints = models.EdxEndpoint.objects.filter(
