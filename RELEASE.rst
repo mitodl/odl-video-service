@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.65.2
+--------------
+
+- Fix
+
 Version 0.65.1 (Released December 15, 2022)
 --------------
 
