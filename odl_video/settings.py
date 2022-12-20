@@ -433,6 +433,10 @@ MANDATORY_SETTINGS = [
     "YT_CLIENT_SECRET",
 ]
 
+# We want to be able to optionally disable mandatory settings. e.g. when running
+# collectstatic
+ENFORCE_MANDATORY_SETTINGS = get_bool("ENFORCE_MANDATORY_SETTINGS", True)
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework.authentication.BasicAuthentication",

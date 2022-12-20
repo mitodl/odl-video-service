@@ -25,7 +25,7 @@ class UIConfig(AppConfig):
                 "",
             ):
                 missing_settings.append(setting_name)
-        if missing_settings:
+        if missing_settings and settings.ENFORCE_MANDATORY_SETTINGS:
             raise ImproperlyConfigured(
                 "The following settings are missing: {}".format(
                     ", ".join(missing_settings)
