@@ -109,7 +109,7 @@ def test_edx_video_file_signal(mocker, edx_course_id):
     )
     video.status = VideoStatus.COMPLETE
     video.save()
-    if edx_course_id is None:
+    if edx_course_id is '':
         patched_edx_task.assert_not_called()
     else:
         patched_edx_task.assert_called_once_with(video.id)
