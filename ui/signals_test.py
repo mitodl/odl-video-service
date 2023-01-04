@@ -5,6 +5,7 @@ import pytest
 from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
+    CollectionFactory,
     VideoFactory,
     VideoFileFactory,
     VideoSubtitleFactory,
@@ -91,11 +92,13 @@ def test_youtube_sync_redo_failed(mocker, video_with_file, status):
     assert mock_delete.call_count == expected_count
 
 
-def test_edx_video_file_signal(mocker):
+@pytest.mark.parametrize("edx_course_id", ["123", "", None])
+def test_edx_video_file_signal(mocker, edx_course_id):
     """When a Video is saved with the status of COMPLETE, a task to add the video to edX should be called"""
     patched_edx_task = mocker.patch("ui.signals.ovs_tasks.post_video_to_edx.delay")
 
-    video = VideoFactory(status=VideoStatus.CREATED)
+    collection = CollectionFactory(edx_course_id=edx_course_id)
+    video = VideoFactory(status=VideoStatus.CREATED, collection=collection)
     VideoFileFactory.create_batch(
         3,
         encoding=factory.Iterator(
@@ -106,7 +109,10 @@ def test_edx_video_file_signal(mocker):
     )
     video.status = VideoStatus.COMPLETE
     video.save()
-    patched_edx_task.assert_called_once_with(video.id)
+    if not edx_course_id:
+        patched_edx_task.assert_not_called()
+    else:
+        patched_edx_task.assert_called_once_with(video.id)
 
 
 @pytest.mark.parametrize("retranscode_enabled", [True, False])
