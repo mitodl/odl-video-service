@@ -92,7 +92,7 @@ def test_youtube_sync_redo_failed(mocker, video_with_file, status):
     assert mock_delete.call_count == expected_count
 
 
-@pytest.mark.parametrize("edx_course_id", ["123", ""])
+@pytest.mark.parametrize("edx_course_id", ["123", "", None])
 def test_edx_video_file_signal(mocker, edx_course_id):
     """When a Video is saved with the status of COMPLETE, a task to add the video to edX should be called"""
     patched_edx_task = mocker.patch("ui.signals.ovs_tasks.post_video_to_edx.delay")
@@ -109,7 +109,7 @@ def test_edx_video_file_signal(mocker, edx_course_id):
     )
     video.status = VideoStatus.COMPLETE
     video.save()
-    if edx_course_id == "":
+    if edx_course_id:
         patched_edx_task.assert_not_called()
     else:
         patched_edx_task.assert_called_once_with(video.id)
