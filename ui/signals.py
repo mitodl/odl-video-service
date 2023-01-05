@@ -85,8 +85,7 @@ def update_video_youtube(sender, instance, **kwargs):
     """
     If a video's is_public field is changed, sync associated YoutubeVideo object
     """
-    if instance.status == VideoStatus.COMPLETE:
-        sync_youtube(instance)
+    sync_youtube(instance)
 
 
 @receiver(post_save, sender=Video)
