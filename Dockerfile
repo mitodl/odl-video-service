@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install libelf1 -y
 
 COPY . /src
 WORKDIR /src
-RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline
+RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline && node node_modules/webpack/bin/webpack.js --config  webpack.config.prod.js --bail
 
 FROM base AS production
 LABEL maintainer "ODL DevOps <mitx-devops@mit.edu>"
