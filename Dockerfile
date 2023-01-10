@@ -50,6 +50,9 @@ FROM base AS production
 LABEL maintainer "ODL DevOps <mitx-devops@mit.edu>"
 ENV DEBUG=False PYTHONUNBUFFERED=true
 COPY --from=node /src/static /src/
+USER root
+RUN mv /src/bundles /src/static
+USER mitodl
 RUN ENFORCE_MANDATORY_SETTINGS=false SECRET_KEY=notarealsecretkey FIELD_ENCRYPTION_KEY=XSZQYhGEoQJPu-gNmuaha8By20yLmZ9gco9zbrvL2i0= python manage.py collectstatic --noinput  # pragma: allowlist secret
 USER mitodl
 
