@@ -4,7 +4,7 @@ API methods
 from uuid import uuid4
 
 import requests
-from celery import chain
+from celery import chain, group
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
@@ -32,6 +32,7 @@ def process_dropbox_data(dropbox_upload_data):
     dropbox_links_list = dropbox_upload_data["files"]
     collection = get_object_or_404(models.Collection, key=collection_key)
     response_data = {}
+    chain_list = []
     for dropbox_link in dropbox_links_list:
         with transaction.atomic():
             video = models.Video.objects.create(
@@ -47,14 +48,16 @@ def process_dropbox_data(dropbox_upload_data):
                 bucket_name=settings.VIDEO_S3_BUCKET,
             )
         # Kick off chained async celery tasks to transfer file to S3, then start a transcode job
-        chain(
+        chain_list.append(chain(
             tasks.stream_to_s3.s(video.id), tasks.transcode_from_s3.si(video.id)
-        ).delay()
+        ))
 
         response_data[video.hexkey] = {
             "s3key": video.get_s3_key(),
             "title": video.title,
         }
+    gp = group(*chain_list)
+    gp.delay()
     return response_data
 
 
