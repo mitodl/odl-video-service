@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.66.0
+--------------
+
+- Hotfix for the dockerfile.
+- Updated the dockerfile with a missing step to generate the bundles from/for node.
+- call the celery task as async (#1030)
+- Only upload videos to edx if the collection defines course ID (#1028)
+- Update production dockerfile build with static asset compilation
+
 Version 0.65.2 (Released January 10, 2023)
 --------------
 
