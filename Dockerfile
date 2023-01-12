@@ -1,5 +1,12 @@
-FROM python:3.9.13 AS base
+FROM node:13.13.0 as node
+ENV NODE_ENV=production
+RUN apt-get update && apt-get install libelf1 -y
+COPY . /src
+WORKDIR /src
+RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline && \
+    node node_modules/webpack/bin/webpack.js --config  webpack.config.prod.js --bail
 
+FROM python:3.9.13 AS base
 # Add package files, install updated node and pip
 WORKDIR /tmp
 
@@ -28,7 +35,6 @@ RUN pip install -r requirements.txt
 COPY . /src
 WORKDIR /src
 RUN chown -R mitodl:mitodl /src
-
 USER mitodl
 
 # Set pip cache folder, as it is breaking pip when it is on a shared volume
@@ -38,22 +44,11 @@ EXPOSE 8089
 ENV PORT 8089
 CMD uwsgi uwsgi.ini
 
-FROM node:13.13.0 as node
-ENV NODE_ENV=production
-RUN apt-get update && apt-get install libelf1 -y
-
-COPY . /src
-WORKDIR /src
-RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline && node node_modules/webpack/bin/webpack.js --config  webpack.config.prod.js --bail
-
 FROM base AS production
 LABEL maintainer "ODL DevOps <mitx-devops@mit.edu>"
 ENV DEBUG=False PYTHONUNBUFFERED=true
-COPY --from=node /src/static /src/
-USER root
-RUN mv /src/bundles /src/static
-USER mitodl
-RUN ENFORCE_MANDATORY_SETTINGS=false SECRET_KEY=notarealsecretkey FIELD_ENCRYPTION_KEY=XSZQYhGEoQJPu-gNmuaha8By20yLmZ9gco9zbrvL2i0= python manage.py collectstatic --noinput  # pragma: allowlist secret
+COPY --from=node --chown=mitodl:mitodl /src/static /src/static
+COPY --from=node --chown=mitodl:mitodl /src/webpack-stats.json /src
 USER mitodl
 
 # Second stage build installs reqs needed only for develoment envs
