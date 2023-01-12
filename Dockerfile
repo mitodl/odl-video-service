@@ -1,5 +1,5 @@
 FROM node:13.13.0 as node
-ENV NODE_ENV=development
+ENV NODE_ENV=production
 RUN apt-get update && apt-get install libelf1 -y
 COPY . /src
 WORKDIR /src
