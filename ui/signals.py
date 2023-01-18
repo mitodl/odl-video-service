@@ -81,19 +81,19 @@ def update_collection_retranscodes(sender, **kwargs):
 
 
 @receiver(post_save, sender=Video)
-def update_video_youtube(sender, instance, **kwargs):
+def update_video_youtube(sender, **kwargs):
     """
     If a video's is_public field is changed, sync associated YoutubeVideo object
     """
-    sync_youtube(instance)
+    sync_youtube(kwargs["instance"])
 
 
 @receiver(post_save, sender=Video)
 def add_video_to_edx(sender, instance, created, **kwargs):
     """
-    If a Video was updated with a status of COMPLETE, we can now post the video to edx if configured.
+    If a Video was updated with a status of COMPLETE, we can now upload the related VideoFiles.
     """
-    if instance.status == VideoStatus.COMPLETE and instance.collection.edx_course_id:
+    if instance.status == VideoStatus.COMPLETE:
         ovs_tasks.post_video_to_edx.delay(instance.id)
 
 

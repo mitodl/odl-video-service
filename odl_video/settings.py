@@ -13,7 +13,7 @@ from redbeat import RedBeatScheduler
 from odl_video.envs import get_any, get_bool, get_int, get_key, get_string, parse_env
 from odl_video.sentry import init_sentry
 
-VERSION = "0.66.0"
+VERSION = "0.65.2"
 
 ENVIRONMENT = get_string("ODL_VIDEO_ENVIRONMENT", "dev")
 
@@ -432,10 +432,6 @@ MANDATORY_SETTINGS = [
     "YT_CLIENT_ID",
     "YT_CLIENT_SECRET",
 ]
-
-# We want to be able to optionally disable mandatory settings. e.g. when running
-# collectstatic
-ENFORCE_MANDATORY_SETTINGS = get_bool("ENFORCE_MANDATORY_SETTINGS", True)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

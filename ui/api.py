@@ -47,13 +47,14 @@ def process_dropbox_data(dropbox_upload_data):
                 bucket_name=settings.VIDEO_S3_BUCKET,
             )
         # Kick off chained async celery tasks to transfer file to S3, then start a transcode job
-        chain(
+        task_result = chain(
             tasks.stream_to_s3.s(video.id), tasks.transcode_from_s3.si(video.id)
-        ).delay()
+        )()
 
         response_data[video.hexkey] = {
             "s3key": video.get_s3_key(),
             "title": video.title,
+            "task": task_result.id,
         }
     return response_data
 
