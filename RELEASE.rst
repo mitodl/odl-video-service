@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.67.0
+--------------
+
+- Empty-Commit (#1037)
+
 Version 0.66.0 (Released January 17, 2023)
 --------------
 
