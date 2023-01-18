@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.66.0
+Version 0.66.0 (Released January 17, 2023)
 --------------
 
 - Fixing NODE_ENV to be production in the dockerfile.
