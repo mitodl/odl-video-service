@@ -15,7 +15,6 @@ STATUS_TO_NOTIFICATION = {
 STATUSES_THAT_TRIGGER_DEBUG_EMAIL = set(
     [
         VideoStatus.TRANSCODE_FAILED_INTERNAL,
-        VideoStatus.TRANSCODE_FAILED_VIDEO,
         VideoStatus.UPLOAD_FAILED,
     ]
 )
