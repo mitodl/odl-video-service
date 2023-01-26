@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.68.0
+--------------
+
+- Fix (#1041)
+
 Version 0.67.0 (Released January 18, 2023)
 --------------
 
