@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.69.0
+Version 0.69.0 (Released February 02, 2023)
 --------------
 
 - Multiple JS & Python upgrades (#991)
