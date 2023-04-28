@@ -68,7 +68,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "server_status",
     "compat",
     "hijack",
     "hijack_admin",
@@ -455,10 +454,10 @@ REST_FRAMEWORK = {
 # for how two different methods of connecting to Redis are used.
 #
 # REDIS_URL Format (aka 'uppercase constant')
-# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=CERT_REQUIRED
+# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=CERT_REQUIRED  #pragma: allowlist secret
 #
 # CELERY_BROKER_URL Format (aka 'lowercase literal')
-# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=required
+# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=required  #pragma: allowlist secret
 #
 # CACHES.REDIS.LOCATION= lowercase literal
 # CELERY_RESULT_BACKEND = uppercase constant
