@@ -3,12 +3,11 @@ beautifulsoup4==4.9.0
 boto3==1.12.26
 celery==5.2.2
 celery-redbeat==2.0.0
-cryptography~=3.4
+cryptography~=39.0
 dj-database-url==0.3.0
 dj-static==0.0.6
 django-redis==5.2.0
-djangorestframework==3.11.0
-django-server-status==0.7.3
+djangorestframework==3.11.2
 django-webpack-loader==0.5.0
 django-encrypted-model-fields
 html5lib==0.999999999
@@ -16,10 +15,9 @@ ipython==7.16.3
 newrelic
 psycopg2==2.8.6
 pycountry
-pyopenssl==19.1.0
 python-dateutil==2.8.1
 pytz
-redis==3.5.3
+redis==4.4.4
 requests>=2.20.0
 sentry-sdk==0.14.3
 structlog==20.1.0
