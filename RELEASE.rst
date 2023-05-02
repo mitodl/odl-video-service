@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.70.0
+--------------
+
+- Multiple dependabot PR's, remove pyopenssl and django-server-status (#1052)
+
 Version 0.69.0 (Released February 02, 2023)
 --------------
 
