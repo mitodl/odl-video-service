@@ -10,9 +10,7 @@
       "matchPackagePatterns": [
         "*"
       ],
-      "matchDepTypes": [
-        "devDependencies"
-      ],
+      "matchPaths": ["test*requirement*.txt", "dev*requirement*.txt", "tst*require*.txt"],
       "matchUpdateTypes": [
         "minor",
         "patch"
