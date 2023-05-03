@@ -10,7 +10,9 @@
       "matchPackagePatterns": [
         "*"
       ],
-      "matchPackageTypes": ["devDepencies"],
+      "matchDepTypes": [
+        "devDependencies"
+      ],
       "matchUpdateTypes": [
         "minor",
         "patch"
