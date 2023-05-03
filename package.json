@@ -63,13 +63,13 @@
     "jsdom": "^16.7.0",
     "jsdom-global": "^3.0.2",
     "lodash": "^4.17.21",
-    "mini-css-extract-plugin": "^0.9.0",
+    "mini-css-extract-plugin": "^2.7.5",
     "mocha": "^7.1.1",
     "moment": "^2.29.4",
-    "node-sass": "^4.14.1",
+    "node-sass": "^7.0.0",
     "nyc": "^15.1.0",
     "object.entries": "^1.1.1",
-    "postcss-loader": "^3.0.0",
+    "postcss-loader": "^4.2.0",
     "prettier-eslint-cli": "^5.0.0",
     "prop-types": "^15.5.10",
     "ramda": "^0.24.1",
@@ -95,7 +95,7 @@
     "rmwc": "^1.4.1",
     "sanitize-filename": "^1.6.1",
     "sass-lint": "^1.10.2",
-    "sass-loader": "^8.0.2",
+    "sass-loader": "^10",
     "sinon": "^9.0.2",
     "style-loader": "^0.18.2",
     "tar": "^4.4.19",
@@ -113,8 +113,8 @@
     "webpack-hot-middleware": "2.25.0"
   },
   "engines": {
-    "node": "13.13.0",
-    "yarn": "1.22.4"
+    "node": "16.15.0",
+    "yarn": "1.22.18"
   },
   "resolutions": {
     "**/acorn": "^7.1.1",
