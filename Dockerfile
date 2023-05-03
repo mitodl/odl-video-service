@@ -6,7 +6,7 @@ WORKDIR /src
 RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline && \
     node node_modules/webpack/bin/webpack.js --config  webpack.config.prod.js --bail
 
-FROM python:3.9.13 AS base
+FROM python:3.9-bullseye AS base
 # Add package files, install updated node and pip
 WORKDIR /tmp
 
