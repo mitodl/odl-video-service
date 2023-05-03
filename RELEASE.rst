@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.70.0
+--------------
+
+- Bump node version in multi-stage dockerfile
+- Upgrade node and various JS dependencies (#1057)
+- config: Update base docker image to use 3.9-bullseye
+- Multiple dependabot PR's, remove pyopenssl and django-server-status (#1052)
+
 Version 0.69.0 (Released February 02, 2023)
 --------------
 
