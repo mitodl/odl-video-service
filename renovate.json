@@ -2,5 +2,19 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>mitodl/.github:renovate-config"
+  ],
+    "packageRules": [
+    {
+      "groupName": "all non-major dev-dependencies",
+      "groupSlug": "all-minor-dev-patch",
+      "matchPackagePatterns": [
+        "*"
+      ],
+      "matchPackageTypes": ["devDepencies"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ]
+    }
   ]
 }
