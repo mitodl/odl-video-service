@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.70.0
+Version 0.70.0 (Released May 08, 2023)
 --------------
 
 - Bump node version in multi-stage dockerfile
