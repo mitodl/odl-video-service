@@ -4,4 +4,4 @@ repos:
     hooks:
     -   id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
-        exclude: .*_test.*|.*\.rst
+        exclude: .*_test.*|.*\.rst|poetry.lock

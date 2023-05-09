@@ -20,3 +20,81 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
+
+[tool.poetry]
+name = "odl-video-service"
+version = "0.70.0"
+description = "building blocks for a basic video service for ODL"
+authors = ["Your Name <you@example.com>"]
+license = "BSD-3"
+readme = "README.md"
+packages = [{include = "odl_video_service"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+beautifulsoup4 = "4.9.0"
+boto3 = "1.12.26"
+celery = "5.2.2"
+celery-redbeat = "2.0.0"
+cryptography = ">=39.0,<40.0"
+dj-database-url = "0.3.0"
+dj-static = "0.0.6"
+django = "2.2.28"
+django-compat = "1.0.15"
+django-elastic-transcoder = {git = "https://github.com/mitodl/django-elastic-transcoder", tag = "v0.9.7"}
+django-encrypted-model-fields = "^0.6.5"
+django-hijack = "2.1.10"
+django-hijack-admin = "2.1.10"
+django-redis = "5.2.0"
+django-shibboleth-remoteuser = {git = "https://github.com/Brown-University-Library/django-shibboleth-remoteuser", tag = "v0.9"}
+django-webpack-loader = "0.5.0"
+djangorestframework = "3.11.2"
+google-api-python-client = ">=2.58.0"
+google-auth = ">=2.11.0"
+google-auth-oauthlib = ">=0.5.2"
+html5lib = "0.999999999"
+httplib2 = "^0.22.0"
+ipython = "7.16.3"
+mit-moira = {git = "https://github.com/mitodl/mit-moira", tag = "v0.0.4"}
+newrelic = "^8.8.0"
+psycopg2 = "2.8.6"
+pycountry = "^22.3.5"
+python-dateutil = "2.8.1"
+pytz = "^2023.3"
+redis = "4.4.4"
+requests = ">=2.20.0"
+sentry-sdk = "0.14.3"
+smart-open = "1.5.7"
+structlog = "20.1.0"
+structlog-sentry = "1.2.2"
+urllib3 = ">=1.24.2"
+uwsgi = "2.0.18"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "22.8.0"
+bpython = "^0.24"
+ddt = "^1.6.0"
+django-debug-toolbar = "<4"
+factory-boy = "^3.2.1"
+faker = "^18.7.0"
+ipdb = "<0.13"
+isort = "5.10.1"
+moto = "1.3.16"
+nplusone = "^1.0.0"
+pdbpp = "^0.10.3"
+pylint = "2.14.4"
+pylint-django = "2.5.3"
+pytest = "^7.3.1"
+pytest-cov = "^4.0.0"
+pytest-django = "^4.5.2"
+pytest-env = "0.6.2"
+pytest-mock = "^3.10.0"
+pytest-pep8 = "^1.0.6"
+pytest-pylint = "^0.19.0"
+requests-mock = "^1.10.0"
+semantic-version = "^2.10.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
