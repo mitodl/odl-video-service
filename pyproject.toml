@@ -68,7 +68,7 @@ smart-open = "1.5.7"
 structlog = "20.1.0"
 structlog-sentry = "1.2.2"
 urllib3 = ">=1.24.2"
-uwsgi = "2.0.18"
+uwsgi = "2.0.21"
 
 
 [tool.poetry.group.dev.dependencies]
