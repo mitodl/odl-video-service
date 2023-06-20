@@ -28,7 +28,7 @@ description = "building blocks for a basic video service for ODL"
 authors = ["Your Name <you@example.com>"]
 license = "BSD-3"
 readme = "README.md"
-packages = [{include = "odl_video_service"}]
+packages = []
 
 [tool.poetry.dependencies]
 python = "^3.9"

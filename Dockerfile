@@ -22,23 +22,43 @@ RUN apt-get update && \
 # Install pip
 RUN curl --silent --location https://bootstrap.pypa.io/get-pip.py | python3 -
 
+
 # Add, and run as, non-root user.
 RUN mkdir /src
 RUN adduser --disabled-password --gecos "" mitodl
 RUN mkdir /var/media && chown -R mitodl:mitodl /var/media
 
-# Install project packages
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install -r requirements.txt
-
 # Add project
 COPY . /src
 WORKDIR /src
+
+
+# Install poetry
+ENV POETRY_VERSION=1.5.1
+ENV POETRY_HOME=/opt/poetry
+ENV POETRY_VENV=/opt/poetry-venv
+
+# Tell Poetry where to place its cache and virtual environment
+ENV POETRY_CACHE_DIR=/opt/.cache
+
+# Creating a virtual environment just for poetry and install it with pip
+RUN python3 -m venv $POETRY_VENV \
+    && $POETRY_VENV/bin/pip install -U pip setuptools \
+    && $POETRY_VENV/bin/pip install poetry==${POETRY_VERSION}
+
+
+# Add Poetry to PATH
+ENV PATH="${PATH}:${POETRY_VENV}/bin"
+
+# Install project packages
+RUN poetry install --no-dev
+
+
 RUN chown -R mitodl:mitodl /src
 USER mitodl
 
-# Set pip cache folder, as it is breaking pip when it is on a shared volume
-ENV XDG_CACHE_HOME /tmp/.cache
+
+
 
 EXPOSE 8089
 ENV PORT 8089
@@ -56,7 +76,5 @@ USER mitodl
 # like to run alone for some reasont
 FROM base AS development
 USER root
-COPY test_requirements.txt /tmp/test_requirements.txt
-RUN pip install -r /tmp/requirements.txt -r /tmp/test_requirements.txt
-RUN chown -R mitodl:mitodl /tmp/.cache
-USER mitodl
+RUN poetry install
+
