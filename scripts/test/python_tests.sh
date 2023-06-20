@@ -8,8 +8,9 @@ echohighlight() {
 
 
 function run_test {
+    echo $PATH
     echohighlight "[TEST SUITE] $@"  
-    "poetry run $@"
+    poetry run $@
     local test_status=$?
     if [ $test_status -ne 0 ]; then
         status=$test_status
@@ -18,8 +19,8 @@ function run_test {
     return $status
 }
 
-run_test black --check .
-run_test pytest
+run_test  black --check .
+run_test  pytest
 run_test ./scripts/test/detect_missing_migrations.sh
 run_test ./scripts/test/no_auto_migrations.sh
 
