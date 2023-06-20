@@ -25,7 +25,9 @@ def test_post_video_to_edx(mocker):
     )
     tasks.post_video_to_edx.delay(video.id)
     # using 1:3 in order to remove the original video from those being posted to edx.
-    patched_api_method.assert_called_once_with(list(reversed(video_files[1:3])))
+    patched_api_method.assert_called_once_with(
+        sorted(list(reversed(video_files[1:3])), key=lambda vf: vf.id)
+    )
 
 
 @pytest.mark.django_db
