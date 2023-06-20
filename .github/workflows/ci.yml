@@ -36,6 +36,15 @@ jobs:
       - name: Install poetry
         run: pip install poetry==1.5.1
 
+      - name: Cache Poetry virtualenv
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.virtualenvs
+          key: poetry-$
+          restore-keys: |
+            poetry-$        
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
