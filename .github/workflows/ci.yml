@@ -34,7 +34,7 @@ jobs:
         run: cat Aptfile | sudo xargs apt-get install
 
       - name: Install poetry
-        run: pipx install poetry
+        run: pip install poetry==1.5.1
 
       - name: Set up Python
         uses: actions/setup-python@v4
