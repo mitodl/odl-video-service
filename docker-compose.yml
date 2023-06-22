@@ -54,9 +54,9 @@ services:
     command: >
       /bin/bash -c '
       sleep 3 &&
-      poetry run python3 manage.py collectstatic --noinput &&
-      poetry run python3 manage.py migrate --noinput &&
-      poetry run uwsgi uwsgi.ini'
+      python3 manage.py collectstatic --noinput &&
+      python3 manage.py migrate --noinput &&
+      uwsgi uwsgi.ini'
     ports:
       - "8087:8087"
     links:
@@ -88,7 +88,7 @@ services:
     command: >
       /bin/bash -c '
       sleep 3;
-      poetry run celery -A odl_video worker -B -l ${ODL_VIDEO_LOG_LEVEL:-INFO}'
+      celery -A odl_video worker -B -l ${ODL_VIDEO_LOG_LEVEL:-INFO}'
     links:
       - db
       - redis

@@ -22,43 +22,31 @@ RUN apt-get update && \
 # Install pip
 RUN curl --silent --location https://bootstrap.pypa.io/get-pip.py | python3 -
 
-
 # Add, and run as, non-root user.
 RUN mkdir /src
 RUN adduser --disabled-password --gecos "" mitodl
 RUN mkdir /var/media && chown -R mitodl:mitodl /var/media
 
-# Add project
-COPY . /src
-WORKDIR /src
-
+# Poetry env configuration
+ENV  \
+  # poetry:
+  POETRY_VERSION=1.5.1 \
+  POETRY_VIRTUALENVS_CREATE=false \
+  POETRY_CACHE_DIR='/tmp/cache/poetry'
 
 # Install poetry
-ENV POETRY_VERSION=1.5.1
-ENV POETRY_HOME=/opt/poetry
-ENV POETRY_VENV=/opt/poetry-venv
-
-# Tell Poetry where to place its cache and virtual environment
-ENV POETRY_CACHE_DIR=/opt/.cache
-
-# Creating a virtual environment just for poetry and install it with pip
-RUN python3 -m venv $POETRY_VENV \
-    && $POETRY_VENV/bin/pip install -U pip setuptools \
-    && $POETRY_VENV/bin/pip install poetry==${POETRY_VERSION}
-
-
-# Add Poetry to PATH
-ENV PATH="${PATH}:${POETRY_VENV}/bin"
+RUN pip install "poetry==$POETRY_VERSION"
 
 # Install project packages
+COPY pyproject.toml /src
+COPY poetry.lock /src
+WORKDIR /src
 RUN poetry install --no-dev
 
-
+# Add project
+COPY . /src
 RUN chown -R mitodl:mitodl /src
 USER mitodl
-
-
-
 
 EXPOSE 8089
 ENV PORT 8089
@@ -77,4 +65,4 @@ USER mitodl
 FROM base AS development
 USER root
 RUN poetry install
-
+USER mitodl
