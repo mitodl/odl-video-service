@@ -24,7 +24,11 @@ def warnings_as_errors():
             message="'async' and 'await' will become reserved keywords in Python 3.7",
             category=DeprecationWarning,
         )
-
+        warnings.filterwarnings(
+            "ignore",
+            message="stream argument is deprecated. Use stream parameter in request directly",
+            category=DeprecationWarning,
+        )
         yield
     finally:
         warnings.resetwarnings()
