@@ -8,9 +8,8 @@ echohighlight() {
 
 
 function run_test {
-    echo $PATH
     echohighlight "[TEST SUITE] $@"  
-    poetry run $@
+    "$@"
     local test_status=$?
     if [ $test_status -ne 0 ]; then
         status=$test_status
