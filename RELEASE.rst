@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.71.0
+--------------
+
+- Convert to use Poetry for Python dependency management (#1060)
+
 Version 0.70.0 (Released May 08, 2023)
 --------------
 
