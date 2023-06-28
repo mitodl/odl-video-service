@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.71.0
+--------------
+
+- fix,version: Update version constraints for Poetry to be more accurate
+- Remove PR template
+- Convert to use Poetry for Python dependency management (#1060)
+
 Version 0.70.0 (Released May 08, 2023)
 --------------
 
