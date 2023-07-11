@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.71.0
+Version 0.71.0 (Released July 11, 2023)
 --------------
 
 - fix,version: Update version constraints for Poetry to be more accurate
