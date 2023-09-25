@@ -9878,10 +9878,10 @@ victory@^0.25.6:
     videojs-vtt.js "0.12.5"
     xhr "2.4.0"
 
-"video.js@^5.6.0 || ^6.2.8 || ^7.0.2", "video.js@^6 || ^7", video.js@^7.15.0, video.js@^7.5.5:
-  version "7.15.0"
-  resolved "https://registry.yarnpkg.com/video.js/-/video.js-7.15.0.tgz#fa187eb85d93f1626287b2f46fda1a89da204124"
-  integrity sha512-ynUcjmbcfHfCqwqwAXAMGCcBeRgWBuqIW1PxomK6jfVhS8Vii+hckSBCVETpDPvVH6UmlsFLgJxADskyKdXj8A==
+"video.js@^5.6.0 || ^6.2.8 || ^7.0.2", "video.js@^6 || ^7", video.js@^7.15.1, video.js@^7.5.5:
+  version "7.15.1"
+  resolved "https://registry.yarnpkg.com/video.js/-/video.js-7.15.1.tgz#4cd52493274cd318c3440a6cc3bc7ec21b8e6cf0"
+  integrity sha512-yUlpjiahDevhs6gAclh31PmOUUKm4Pi6VCVZJccGu+okPlyqrcnpbB9T36G4wN829qk8Kh66p9htj3yVHGLjSw==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@videojs/http-streaming" "2.10.0"
