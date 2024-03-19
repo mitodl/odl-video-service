@@ -31,9 +31,12 @@ cache = caches["redis"]
 
 
 @lru_cache(1)  # memoize this function
-def get_moira_client():
+def get_moira_client(retries=settings.MOIRA_RETRIES):
     """
     Gets a moira client.
+
+    Args:
+        retries (int): Number of retries to attempt if the client cannot be created.
 
     Returns:
         Moira: A moira client
@@ -42,12 +45,14 @@ def get_moira_client():
     _check_files_exist(
         [settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE]
     )
-    try:
-        return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
-    except Exception as exc:  # pylint: disable=broad-except
-        raise MoiraException(
-            "Something went wrong with creating a moira client"
-        ) from exc
+    for idx in range(retries):
+        try:
+            return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
+        except Exception as exc:  # pylint: disable=broad-except
+            if idx == retries - 1:
+                raise MoiraException(
+                    "Something went wrong with creating a moira client"
+                ) from exc
 
 
 def _check_files_exist(paths):
