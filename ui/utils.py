@@ -47,7 +47,9 @@ def get_moira_client(retries=settings.MOIRA_RETRIES):
     )
     for idx in range(retries):
         try:
-            return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
+            return Moira(
+                settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE
+            )
         except Exception as exc:  # pylint: disable=broad-except
             if idx == retries - 1:
                 raise MoiraException(

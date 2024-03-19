@@ -70,16 +70,16 @@ def test_get_moira_client_success(mock_moira, settings):
         settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE
     )
 
-@pytest.mark.parametrize("retries, raise_error", [
-    [3, False],
-    [2, True]
-])
+
+@pytest.mark.parametrize("retries, raise_error", [[3, False], [2, True]])
 def test_get_moira_client_retries(settings, mocker, retries, raise_error):
     """Test that the expected # retries are made to get a moira client"""
     tempfile1, tempfile2 = (NamedTemporaryFile(), NamedTemporaryFile())
     settings.MIT_WS_PRIVATE_KEY_FILE = tempfile1.name
     settings.MIT_WS_CERTIFICATE_FILE = tempfile2.name
-    mocked_moira = mocker.patch("ui.utils.Moira", side_effect=[Exception, Exception, Mock()])
+    mocked_moira = mocker.patch(
+        "ui.utils.Moira", side_effect=[Exception, Exception, Mock()]
+    )
     if raise_error:
         with pytest.raises(MoiraException):
             get_moira_client(retries=retries)
