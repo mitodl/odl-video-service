@@ -38,8 +38,8 @@ def process_dropbox_data(dropbox_upload_data):
             video = models.Video.objects.create(
                 source_url=dropbox_link["link"],
                 title=dropbox_link["name"][
-                      : models.Video._meta.get_field("title").max_length
-                      ],
+                    : models.Video._meta.get_field("title").max_length
+                ],
                 collection=collection,
             )
             models.VideoFile.objects.create(
@@ -95,10 +95,14 @@ def post_video_to_edx(video_files):
     for edx_endpoint in edx_endpoints:
         try:
             edx_endpoint.refresh_access_token()
-            submitted_encode_job = video_files[0].video.encode_jobs.filter(state='Submitted').first()
+            submitted_encode_job = (
+                video_files[0].video.encode_jobs.filter(state="Submitted").first()
+            )
             duration = 0.0
             if submitted_encode_job:
-                duration = json.loads(submitted_encode_job.message)['Output'].get('Duration')
+                duration = json.loads(submitted_encode_job.message)["Output"].get(
+                    "Duration"
+                )
             resp = requests.post(
                 edx_endpoint.full_api_url,
                 json={
@@ -107,7 +111,7 @@ def post_video_to_edx(video_files):
                     "encoded_videos": encoded_videos,
                     "courses": [{video_files[0].video.collection.edx_course_id: None}],
                     "status": "file_complete",
-                    "duration": duration
+                    "duration": duration,
                 },
                 headers={
                     "Authorization": "JWT {}".format(edx_endpoint.access_token),
