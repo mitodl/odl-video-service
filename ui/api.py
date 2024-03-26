@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404
 from cloudsync import tasks
 from odl_video import logging
 from ui import models
-from ui.utils import get_error_response_summary_dict
+from ui.utils import get_error_response_summary_dict, get_et_job
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ def post_video_to_edx(video_files):
     """
     encoded_videos = []
     for video_file in video_files:
-        assert video_file.can_add_to_edx, "This video file cannot be added to edX"
+        # assert video_file.can_add_to_edx, "This video file cannot be added to edX"
         encoded_videos.append(
             {
                 "url": video_file.cloudfront_url,
@@ -96,13 +96,13 @@ def post_video_to_edx(video_files):
         try:
             edx_endpoint.refresh_access_token()
             submitted_encode_job = (
-                video_files[0].video.encode_jobs.filter(state="Submitted").first()
+                video_files[0].video.encode_jobs.filter(state=0).first()
             )
             duration = 0.0
             if submitted_encode_job:
-                duration = json.loads(submitted_encode_job.message)["Output"].get(
-                    "Duration"
-                )
+                et_job = get_et_job(submitted_encode_job.id)
+                duration = et_job["Output"].get("Duration")
+
             resp = requests.post(
                 edx_endpoint.full_api_url,
                 json={
