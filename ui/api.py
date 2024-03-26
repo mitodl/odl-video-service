@@ -1,6 +1,7 @@
 """
 API methods
 """
+from ast import literal_eval
 from uuid import uuid4
 
 import requests
@@ -13,7 +14,7 @@ from django.shortcuts import get_object_or_404
 from cloudsync import tasks
 from odl_video import logging
 from ui import models
-from ui.utils import get_error_response_summary_dict, get_et_job
+from ui.utils import get_error_response_summary_dict
 
 log = logging.getLogger(__name__)
 
@@ -99,8 +100,12 @@ def post_video_to_edx(video_files):
             )
             duration = 0.0
             if submitted_encode_job:
-                et_job = get_et_job(submitted_encode_job.id)
-                duration = et_job["Output"].get("Duration")
+                duration = (
+                    literal_eval(submitted_encode_job.message)
+                    .get("Output", {})
+                    .get("Duration", 0.0)
+                    or 0.0
+                )
 
             resp = requests.post(
                 edx_endpoint.full_api_url,
