@@ -3,7 +3,6 @@ API methods
 """
 from uuid import uuid4
 
-import json
 import requests
 from celery import chain
 from django.conf import settings
@@ -72,7 +71,7 @@ def post_video_to_edx(video_files):
     """
     encoded_videos = []
     for video_file in video_files:
-        # assert video_file.can_add_to_edx, "This video file cannot be added to edX"
+        assert video_file.can_add_to_edx, "This video file cannot be added to edX"
         encoded_videos.append(
             {
                 "url": video_file.cloudfront_url,
