@@ -1,6 +1,19 @@
 Release Notes
 =============
 
+Version 0.72.0 (Released April 03, 2024)
+--------------
+
+- code review feedback
+- uncomment debug
+- changes
+- format
+- extract duration from EncodeJob when posting video to edx
+- Update renovate.json
+- Update renovate.json
+- Update renovate.json
+- Add renovate.json
+
 Version 0.71.0 (Released July 11, 2023)
 --------------
 
