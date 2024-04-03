@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.72.0
+Version 0.72.0 (Released April 03, 2024)
 --------------
 
 - code review feedback
