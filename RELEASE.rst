@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.73.0
+--------------
+
+- Fix: add nubbins for celery monitoring
+- Update redis Docker tag to v3.2.12
+- Migrate config renovate.json
+- Update dependency express to v4.19.2 [SECURITY]
+
 Version 0.72.0 (Released April 03, 2024)
 --------------
 
