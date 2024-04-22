@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.73.0
+Version 0.73.0 (Released April 22, 2024)
 --------------
 
 - Fix: add nubbins for celery monitoring
