@@ -42,7 +42,6 @@ services:
       REDIS_URL: redis://redis:6379/4
       DOCKER_HOST: ${DOCKER_HOST:-missing}
       WEBPACK_DEV_SERVER_HOST: ${WEBPACK_DEV_SERVER_HOST:-localhost}
-      DOCKER_HOST: ${DOCKER_HOST:-missing}
       FIELD_ENCRYPTION_KEY: jtma0CL1QMRLaJgjXNlJh3mtPNcgok0G5ajRCMZ_XNI=  # pragma: allowlist secret
     env_file: .env
 
