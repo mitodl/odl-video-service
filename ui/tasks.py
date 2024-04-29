@@ -2,9 +2,13 @@
 ui celery tasks
 """
 from django.db.models import Q
+
+import celery
+from mail.utils import chunks
 from odl_video import logging
 from odl_video.celery import app
 from ui import api as ovs_api
+from ui.api import update_video_on_edx
 from ui.encodings import EncodingNames
 from ui.models import VideoFile
 
@@ -30,3 +34,42 @@ def post_video_to_edx(video_id):
         (endpoint.full_api_url, getattr(resp, "status_code", None))
         for endpoint, resp in response_dict.items()
     ]
+
+
+@app.task
+def batch_update_video_on_edx(video_keys, chunk_size=1000):
+    """
+    batch update videos on their associated edX endpoints
+
+    Args:
+        video_keys(list): A list of video UUID keys
+        chunk_size(int): the chunk size in a batch API call
+    """
+    return celery.group(
+        [
+            batch_update_video_on_edx_chunked(chunk)
+            for chunk in chunks(
+                video_keys,
+                chunk_size=chunk_size,
+            )
+        ]
+    )
+
+
+@app.task
+def batch_update_video_on_edx_chunked(video_keys):
+    """
+    batch update videos on their associated edX endpoints in chunks
+
+    Args:
+        video_keys(list): A list of video UUID keys
+    """
+    response = {}
+    for video_key in video_keys:
+        response_dict = update_video_on_edx(video_key)
+        for endpoint, resp in response_dict.items():
+            if getattr(resp, "ok", None):
+                response[endpoint] = "succeed"
+            else:
+                response[endpoint] = "failed"
+    return response

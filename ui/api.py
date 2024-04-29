@@ -98,14 +98,7 @@ def post_video_to_edx(video_files):
             submitted_encode_job = (
                 video_files[0].video.encode_jobs.filter(state=0).first()
             )
-            duration = 0.0
-            if submitted_encode_job:
-                duration = (
-                    literal_eval(submitted_encode_job.message)
-                    .get("Output", {})
-                    .get("Duration", 0.0)
-                    or 0.0
-                )
+            duration = get_duration_from_encode_job(submitted_encode_job)
 
             resp = requests.post(
                 edx_endpoint.full_api_url,
@@ -139,3 +132,62 @@ def post_video_to_edx(video_files):
             resp = exc.response
         responses[edx_endpoint] = resp
     return responses
+
+
+def update_video_on_edx(video_key):
+    """
+    Update a video to their configured edX endpoints by making PATCH request to api/val/v0/videos/{edx_video_id}
+
+    Args:
+        video_key(str): video UUID key
+    Returns:
+        Dict[EdxEndpoint, requests.models.Response]: Each configured edX endpoint mapped to the response from the
+            request to update the video to that endpoint.
+    """
+    video = models.Video.objects.filter(key=video_key).first()
+    edx_endpoints = models.EdxEndpoint.objects.filter(
+        collections__id__in=[video.collection.id]
+    ).all()
+    responses = {}
+    for edx_endpoint in edx_endpoints:
+        video_partial_update_url = edx_endpoint.full_api_url + str(video.key)
+        try:
+            edx_endpoint.refresh_access_token()
+            resp = requests.patch(
+                video_partial_update_url,
+                json={
+                    "edx_video_id": str(video.key),
+                    "client_video_id": video.title,
+                    "duration": get_duration_from_encode_job(
+                        video.encode_jobs.filter(state=0).first()
+                    ),
+                    "status": "updated",
+                },
+                headers={
+                    "Authorization": "JWT {}".format(edx_endpoint.access_token),
+                },
+            )
+            resp.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            log.exception("Can not update video to edX")
+            resp = exc.response
+        responses[video_partial_update_url] = resp
+    return responses
+
+
+def get_duration_from_encode_job(encode_job):
+    """
+    Get video's duration from EncodeJob
+
+    Args:
+        encode_job: EncodeJob object
+    Returns:
+        duration: float
+    """
+    duration = 0.0
+    if encode_job:
+        duration = (
+            literal_eval(encode_job.message).get("Output", {}).get("Duration", 0.0)
+            or 0.0
+        )
+    return duration
