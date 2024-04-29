@@ -39,3 +39,18 @@ def test_post_video_to_edx_missing(mocker):
     patched_log_error.assert_called_once()
     assert "doesn't exist" in patched_log_error.call_args[0][0]
     patched_api_method.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_batch_update_video_on_edx(mocker):
+    """
+    batch_update_video_on_edx should call batch_update_video_on_edx_chunked for each chunk of video keys
+    """
+    mock_batch = mocker.patch("ui.tasks.batch_update_video_on_edx_chunked")
+    group_mock = mocker.patch("ui.tasks.celery.group", autospec=True)
+    all_ids = list(range(1, 101))
+    tasks.batch_update_video_on_edx(all_ids, chunk_size=10)
+
+    assert group_mock.call_count == 1
+    for i in list(range(10)):
+        mock_batch.assert_any_call(all_ids[i * 10 : i * 10 + 10])

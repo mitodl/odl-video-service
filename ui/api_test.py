@@ -19,6 +19,8 @@ from ui.factories import (
     CollectionEdxEndpointFactory,
     CollectionFactory,
     VideoFileFactory,
+    VideoFactory,
+    EncodeJobFactory,
 )
 
 pytestmark = pytest.mark.django_db
@@ -225,3 +227,86 @@ def test_post_video_to_edx_bad_resp(mocker, reqmocker, edx_api_scenario):
     patched_log_error.assert_called_once()
     assert "Can not add video to edX" in patched_log_error.call_args[0][0]
     assert len(responses) == 1
+
+
+def test_update_video_on_edx(mocker, reqmocker, edx_api_scenario):
+    """
+    update_video_on_edx should make PATCH requests to all edX API endpoints that are configured
+    for a video's collection
+    """
+    mocked_requests = [
+        reqmocker.register_uri(
+            "PATCH",
+            edx_endpoint.full_api_url + str(edx_api_scenario.video_file_hls.video.key),
+            headers={
+                "Authorization": "JWT {}".format(edx_endpoint.access_token),
+            },
+            status_code=200,
+        )
+        for edx_endpoint in [
+            edx_api_scenario.collection_endpoint,
+        ]
+    ]
+
+    refresh_token_mock = mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    api.update_video_on_edx(edx_api_scenario.video_file_hls.video.key)
+    assert refresh_token_mock.call_count == 1
+    for mocked_request in mocked_requests:
+        assert mocked_request.call_count == 1
+        request_body = mocked_request.last_request.json()
+        assert request_body == {
+            "edx_video_id": str(edx_api_scenario.video_file_hls.video.key),
+            "client_video_id": edx_api_scenario.video_file_hls.video.title,
+            "status": "updated",
+            "duration": 0.0,
+        }
+
+
+def test_update_video_on_edx_bad_response(mocker, reqmocker, edx_api_scenario):
+    """
+    update_video_on_edx should return response if an edX API PATCH request does not return a 200 status code
+    """
+    patched_log_exception = mocker.patch("ui.api.log.exception")
+    video_partial_update_url = edx_api_scenario.collection_endpoint.full_api_url + str(
+        edx_api_scenario.video_file_hls.video.key
+    )
+    mocked_requests = reqmocker.register_uri(
+        "PATCH",
+        video_partial_update_url,
+        headers={
+            "Authorization": "JWT {}".format(edx_api_scenario.collection_endpoint),
+        },
+        status_code=403,
+    )
+    refresh_token_mock = mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    response = api.update_video_on_edx(edx_api_scenario.video_file_hls.video.key)
+    assert refresh_token_mock.call_count == 1
+    assert mocked_requests.call_count == 1
+    patched_log_exception.assert_called_once()
+    assert "Can not update video to edX" == patched_log_exception.call_args[0][0]
+    assert list(response.keys())[0] == video_partial_update_url
+    assert getattr(list(response.values())[0], "ok") is False
+
+
+def test_get_duration_from_encode_job():
+    """
+    get_duration_from_encode_job should return duration from video's encode_jobs message body
+    """
+    video = VideoFactory(status="Complete")
+    encode_job = EncodeJobFactory(video=video)
+    encode_job.message = str(
+        {
+            "id": "1711563064503-e5qdnh",
+            "Output": {
+                "id": "1",
+                "Status": "Complete",
+                "Duration": 10.0,
+            },
+        }
+    )
+    duration = api.get_duration_from_encode_job(encode_job)
+    assert duration == 10.0
+
+    encode_job = {}
+    duration = api.get_duration_from_encode_job(encode_job)
+    assert duration == 0.0
