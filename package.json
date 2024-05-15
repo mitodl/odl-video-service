@@ -113,7 +113,7 @@
     "webpack-hot-middleware": "2.25.0"
   },
   "engines": {
-    "node": "16.15.0",
+    "node": "16.20.2",
     "yarn": "1.22.18"
   },
   "resolutions": {
