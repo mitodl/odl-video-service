@@ -11,7 +11,7 @@ services:
       - "6379"
 
   nginx:
-    image: nginx:1.9.5
+    image: nginx:1.26.0
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/web.conf
       - ./:/src
