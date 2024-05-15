@@ -54,7 +54,7 @@ google-auth = "^2.11.0"
 google-auth-oauthlib = "^0.5.2"
 html5lib = "^0.999999999"
 httplib2 = "^0.22.0"
-ipython = "^7.16.3"
+ipython = "^8.10.0"
 mit-moira = {git = "https://github.com/mitodl/mit-moira", tag = "v0.0.4"}
 newrelic = "^8.8.0"
 psycopg2 = "2.8.6"
