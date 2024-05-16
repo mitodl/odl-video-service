@@ -58,9 +58,7 @@ def youtube_mock(mocker):  # noqa: PT004
     mocker.patch("cloudsync.youtube.boto3")
     mocker.patch("cloudsync.youtube.Credentials")
     mocker.patch("cloudsync.youtube.build")
-    mocker.patch(
-        "cloudsync.youtube.SeekableBufferedInputBase", return_value=BytesIO(b"123")
-    )
+    mocker.patch("cloudsync.youtube.Reader", return_value=BytesIO(b"123"))
 
 
 class MockClientET:

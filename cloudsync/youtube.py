@@ -11,7 +11,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
-from smart_open.s3 import SeekableBufferedInputBase
+from smart_open.s3 import Reader
 
 from odl_video import logging
 
@@ -246,9 +246,7 @@ class YouTubeApi:
             status=dict(privacyStatus=privacy),  # noqa: C408
         )
 
-        with SeekableBufferedInputBase(
-            videofile.bucket_name, videofile.s3_object_key
-        ) as s3_stream:
+        with Reader(videofile.bucket_name, videofile.s3_object_key) as s3_stream:
             request = self.client.videos().insert(
                 part=",".join(request_body.keys()),
                 body=request_body,
