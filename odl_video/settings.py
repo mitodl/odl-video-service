@@ -69,9 +69,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "compat",
     "hijack",
-    "hijack_admin",
+    "hijack.contrib.admin",
     "encrypted_model_fields",
 ]
 
@@ -87,6 +86,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "hijack.middleware.HijackUserMiddleware",
 ]
 
 # enable the nplusone profiler only in debug mode

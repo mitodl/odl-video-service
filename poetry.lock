@@ -815,19 +815,6 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
-name = "django-compat"
-version = "1.0.15"
-description = "For- and backwards compatibility layer for Django 1.4, 1.7, 1.8, 1.9, 1.10, and 1.11"
-optional = false
-python-versions = "*"
-files = [
-    {file = "django-compat-1.0.15.tar.gz", hash = "sha256:3ac9a3bedc56b9365d9eb241bc5157d0c193769bf995f9a78dc1bc24e7c2331b"},
-]
-
-[package.dependencies]
-six = ">=1.10.0"
-
-[[package]]
 name = "django-debug-toolbar"
 version = "4.3.0"
 description = "A configurable set of panels that display various debug information about the current request/response."
@@ -892,23 +879,6 @@ django = ">=3.2"
 
 [package.extras]
 test = ["pytest", "pytest-cov", "pytest-django"]
-
-[[package]]
-name = "django-hijack-admin"
-version = "2.1.10"
-description = "Django admin integration for Django Hijack (https://github.com/arteria/django-hijack/)"
-optional = false
-python-versions = "*"
-files = [
-    {file = "django-hijack-admin-2.1.10.tar.gz", hash = "sha256:330f9be331ada831248c9cee5a21202aea70fb9911b443249ce4c28d57d9e2e3"},
-]
-
-[package.dependencies]
-django-compat = ">=1.0.13"
-django-hijack = ">=2.1.5"
-
-[package.extras]
-dev = ["flake8"]
 
 [[package]]
 name = "django-redis"
@@ -2215,16 +2185,20 @@ testing = ["Django", "django-configurations (>=2.0)"]
 
 [[package]]
 name = "pytest-env"
-version = "0.6.2"
-description = "py.test plugin that allows you to add environment variables."
+version = "1.1.3"
+description = "pytest plugin that allows you to add environment variables."
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 files = [
-    {file = "pytest-env-0.6.2.tar.gz", hash = "sha256:7e94956aef7f2764f3c147d216ce066bf6c42948bb9e293169b1b1c880a580c2"},
+    {file = "pytest_env-1.1.3-py3-none-any.whl", hash = "sha256:aada77e6d09fcfb04540a6e462c58533c37df35fa853da78707b17ec04d17dfc"},
+    {file = "pytest_env-1.1.3.tar.gz", hash = "sha256:fcd7dc23bb71efd3d35632bde1bbe5ee8c8dc4489d6617fb010674880d96216b"},
 ]
 
 [package.dependencies]
-pytest = ">=2.6.0"
+pytest = ">=7.4.3"
+
+[package.extras]
+test = ["covdefaults (>=2.3)", "coverage (>=7.3.2)", "pytest-mock (>=3.12)"]
 
 [[package]]
 name = "pytest-mock"
@@ -2908,4 +2882,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "871c79ed5e272b65e40c577175a833b7d78e62cda084525c66bd19f7d79b9884"
+content-hash = "0776b2b787870577d2f94f4f158f7658a27d4dd89700d37962037b953c56d6ea"
