@@ -40,7 +40,7 @@ from ui.utils import (
 
 
 def default_js_settings(request):
-    """Default JS settings for views"""
+    """Default JS settings for views"""  # noqa: D401
     return {
         "gaTrackingID": settings.GA_TRACKING_ID,
         "environment": settings.ENVIRONMENT,
@@ -304,7 +304,7 @@ class UploadVideosFromDropbox(APIView):
         """
         Creates entries for each submitted file in dropbox in the specific model and submits async tasks
         for uploading the file to S3
-        """  # noqa: E501
+        """  # noqa: D401, E501
         serializer = serializers.DropboxUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         response_data = api.process_dropbox_data(serializer.validated_data)
@@ -365,7 +365,7 @@ class CollectionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Custom get_queryset to filter collections.
-        """
+        """  # noqa: D401
         if self.kwargs.get("key") is not None:
             return Collection.objects.all()
         return Collection.objects.all_viewable(self.request.user)
@@ -374,7 +374,7 @@ class CollectionViewSet(viewsets.ModelViewSet):
         """
         Custom get_serializer_class to handle the different serializer class
         for the list method
-        """
+        """  # noqa: D401
         # the collection key is not None in the detail view
         if self.kwargs.get("key") is not None:
             return serializers.CollectionSerializer
@@ -413,7 +413,7 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
 
     @action(detail=True)
     def analytics(self, request, key=None):  # noqa: ARG002
-        """get video analytics data"""
+        """Get video analytics data"""
 
         if "throw" in request.GET:
             return HttpResponse(status=500)
@@ -452,7 +452,7 @@ class VideoSubtitleViewSet(ModelDetailViewset):
 def _handle_error_view(request, status_code):
     """
     Handles a 403, 404 or 500 response
-    """
+    """  # noqa: D401
     return render(
         request,
         "error.html",
@@ -471,21 +471,21 @@ def _handle_error_view(request, status_code):
 def permission_denied_403_view(request, *args, **kwargs):  # noqa: ARG001
     """
     Handles a 403 response
-    """
+    """  # noqa: D401
     return _handle_error_view(request, status.HTTP_403_FORBIDDEN)
 
 
 def page_not_found_404_view(request, *args, **kwargs):  # noqa: ARG001
     """
     Handles a 404 response
-    """
+    """  # noqa: D401
     return _handle_error_view(request, status.HTTP_404_NOT_FOUND)
 
 
 def error_500_view(request, *args, **kwargs):  # noqa: ARG001
     """
     Handles a 500 response
-    """
+    """  # noqa: D401
     return _handle_error_view(request, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -502,7 +502,7 @@ class LoginView(DjangoLoginView):
         return context
 
     def get(self, request, *args, **kwargs):
-        """This is the Touchstone `login` page, so redirect if `next` is a URL parameter"""  # noqa: E501
+        """This is the Touchstone `login` page, so redirect if `next` is a URL parameter"""  # noqa: D401, E501
         if request.user.is_authenticated:
             next_redirect = request.GET.get("next")
             if next_redirect:

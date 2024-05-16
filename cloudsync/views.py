@@ -23,7 +23,7 @@ class CeleryTaskStatus(APIView):
     def get(self, request, task_id):  # noqa: ARG002
         """
         Returns the status of a task
-        """
+        """  # noqa: D401
         result = AsyncResult(task_id)
         if isinstance(result.info, Exception):
             return Response(

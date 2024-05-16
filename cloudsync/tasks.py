@@ -93,7 +93,7 @@ def stream_to_s3(self, video_id):
     def callback(bytes_uploaded):
         """
         Callback function after upload
-        """
+        """  # noqa: D401
         nonlocal total_bytes_uploaded
         total_bytes_uploaded += bytes_uploaded
         data = {

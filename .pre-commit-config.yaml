@@ -2,63 +2,77 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
-    hooks:
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-        exclude: ".hbs$"
-      - id: check-yaml
-      - id: check-added-large-files
-      - id: check-merge-conflict
-      - id: check-toml
-      - id: debug-statements
-  - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.8.0-1
-    hooks:
-      - id: shfmt
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.35.1
-    hooks:
-      - id: yamllint
-        args: [--format, parsable, -d, relaxed]
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.4.0
-    hooks:
-      - id: detect-secrets
-        args:
-          - --baseline
-          - .secrets.baseline
-          - --exclude-files
-          - .yarn/
-          - --exclude-files
-          - ".*_test.py"
-          - --exclude-files
-          - "test_.*.py"
-          - --exclude-files
-          - poetry.lock
-          - --exclude-files
-          - yarn.lock
-          - --exclude-files
-          - compliance/test_data/cybersource/
-          - --exclude-files
-          - ".*_test.js"
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.4.1"
-    hooks:
-      - id: ruff-format
-      - id: ruff
-        args:
-          - --extend-ignore=D1
-          - --fix
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
-        args: ["--severity=warning"]
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.6.27
-    hooks:
-      - id: actionlint
-        name: actionlint
-        description: Runs actionlint to lint GitHub Actions workflow files
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.6.0
+  hooks:
+  - id: trailing-whitespace
+  - id: end-of-file-fixer
+    exclude: ".hbs$"
+  - id: check-yaml
+  - id: check-added-large-files
+  - id: check-merge-conflict
+  - id: check-toml
+  - id: debug-statements
+- repo: https://github.com/scop/pre-commit-shfmt
+  rev: v3.8.0-1
+  hooks:
+  - id: shfmt
+- repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
+  rev: 0.2.3
+  hooks:
+  - id: yamlfmt
+    args:
+    - --mapping
+    - '2'
+    - --sequence
+    - '2'
+    - --offset
+    - '0'
+    - --width
+    - '80'
+    - --preserve-quotes
+- repo: https://github.com/adrienverge/yamllint.git
+  rev: v1.35.1
+  hooks:
+  - id: yamllint
+    args: [--format, parsable, -d, relaxed]
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.5.0
+  hooks:
+  - id: detect-secrets
+    args:
+    - --baseline
+    - .secrets.baseline
+    - --exclude-files
+    - .yarn/
+    - --exclude-files
+    - ".*_test.py"
+    - --exclude-files
+    - "test_.*.py"
+    - --exclude-files
+    - poetry.lock
+    - --exclude-files
+    - yarn.lock
+    - --exclude-files
+    - compliance/test_data/cybersource/
+    - --exclude-files
+    - ".*_test.js"
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: "v0.4.4"
+  hooks:
+  - id: ruff-format
+  - id: ruff
+    args:
+    - --extend-ignore=D1
+    - --fix
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.10.0.1
+  hooks:
+  - id: shellcheck
+    args: ["--severity=warning"]
+- repo: https://github.com/rhysd/actionlint
+  rev: v1.7.0
+  hooks:
+  - id: actionlint
+    name: actionlint
+    description: Runs actionlint to lint GitHub Actions workflow files

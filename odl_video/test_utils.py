@@ -13,7 +13,7 @@ def any_instance_of(*cls):
 
     Returns:
         AnyInstanceOf: dynamic class type with the desired equality
-    """
+    """  # noqa: D401
 
     class AnyInstanceOf(metaclass=abc.ABCMeta):  # noqa: B024
         """Dynamic class type for __eq__ in terms of isinstance"""

@@ -12,7 +12,7 @@ register = template.Library()
 
 
 def ensure_trailing_slash(url):
-    """ensure a url has a trailing slash"""
+    """Ensure a url has a trailing slash"""
     return url if url.endswith("/") else url + "/"
 
 
@@ -82,7 +82,7 @@ def _render_tags(bundle):
 
     Returns:
         django.utils.safestring.SafeText: HTML for rendering bundles
-    """  # noqa: E501
+    """  # noqa: D401, E501
 
     tags = []
     for chunk in bundle:

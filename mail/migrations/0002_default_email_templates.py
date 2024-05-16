@@ -5,7 +5,7 @@ from django.db import migrations
 def forwards_func(apps, schema_editor):
     """
     It adds default email templates
-    """
+    """  # noqa: D401
     NotificationEmail = apps.get_model("mail", "NotificationEmail")
     db_alias = schema_editor.connection.alias
 
@@ -46,7 +46,7 @@ Someone on the engineering team has been notified and will contact you shortly.
 def reverse_func(apps, schema_editor):
     """
     It deletes all the default email templates
-    """
+    """  # noqa: D401
     NotificationEmail = apps.get_model("mail", "NotificationEmail")
     db_alias = schema_editor.connection.alias
     NotificationEmail.objects.using(db_alias).delete()

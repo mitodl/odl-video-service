@@ -110,7 +110,10 @@ def verify_s3_bucket_exists(s3_bucket_name):
     ls_s3_bucket_cmd = f"aws s3api head-bucket --bucket {s3_bucket_name}"
     try:
         subprocess.run(  # noqa: UP022
-            ls_s3_bucket_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE  # noqa: S603
+            ls_s3_bucket_cmd,  # noqa: S603
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
     except subprocess.SubprocessError:
         logger.exception("Failed to list specified s3 bucket: {}", s3_bucket_name)  # noqa: PLE1205

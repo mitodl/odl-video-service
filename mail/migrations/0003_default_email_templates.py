@@ -5,7 +5,7 @@ from django.db import migrations
 def forwards_func(apps, schema_editor):
     """
     It modifies 'Success' template.
-    """
+    """  # noqa: D401
     NotificationEmail = apps.get_model("mail", "NotificationEmail")
     db_alias = schema_editor.connection.alias
 
@@ -25,7 +25,7 @@ You can view it and change settings at the following URL:
 def reverse_func(apps, schema_editor):
     """
     It reverts to previous templates.
-    """
+    """  # noqa: D401
     NotificationEmail = apps.get_model("mail", "NotificationEmail")
     db_alias = schema_editor.connection.alias
     NotificationEmail.objects.using(db_alias).filter(

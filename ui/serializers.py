@@ -147,7 +147,7 @@ class VideoSerializer(serializers.ModelSerializer):
     collection_view_lists = serializers.SerializerMethodField()
 
     def get_key(self, obj):
-        """Custom getter for the key"""
+        """Custom getter for the key"""  # noqa: D401
         return obj.hexkey
 
     def get_collection_key(self, obj):
@@ -171,7 +171,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
         Returns:
             (list of MoiraList) List of moira lists
-        """
+        """  # noqa: D401
         return validate_moira_lists(value)
 
     def get_cloudfront_url(self, obj):
@@ -265,15 +265,15 @@ class CollectionSerializer(serializers.ModelSerializer):
     is_admin = serializers.SerializerMethodField()
 
     def get_key(self, obj):
-        """Custom getter for the key"""
+        """Custom getter for the key"""  # noqa: D401
         return obj.hexkey
 
     def get_video_count(self, obj):
-        """Custom getter for video count"""
+        """Custom getter for video count"""  # noqa: D401
         return obj.videos.count()
 
     def get_videos(self, obj):
-        """Custom getter for videos"""
+        """Custom getter for videos"""  # noqa: D401
         if self.context.get("request"):
             user = self.context.get("request").user
             if user.is_anonymous:
@@ -291,7 +291,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         ]
 
     def get_is_admin(self, obj):
-        """Custom field to indicate whether or not the requesting user is an admin"""
+        """Custom field to indicate whether or not the requesting user is an admin"""  # noqa: D401
         if self.context.get("request"):
             return ui_permissions.has_admin_permission(obj, self.context["request"])
         return False
@@ -305,7 +305,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
         Returns:
             (list of MoiraList) List of moira lists
-        """
+        """  # noqa: D401
         return validate_moira_lists(value)
 
     def validate_admin_lists(self, value):
@@ -317,7 +317,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
         Returns:
             (list of MoiraList) List of moira lists
-        """
+        """  # noqa: D401
         return validate_moira_lists(value)
 
     class Meta:
@@ -362,19 +362,19 @@ class CollectionListSerializer(serializers.ModelSerializer):
         return super().create({**validated_data, "owner": self.context["request"].user})
 
     def get_key(self, obj):
-        """Custom getter for the key"""
+        """Custom getter for the key"""  # noqa: D401
         return obj.hexkey
 
     def get_video_count(self, obj):
-        """Custom getter for video count"""
+        """Custom getter for video count"""  # noqa: D401
         return obj.videos.count()
 
     def validate_view_lists(self, value):
-        """Validation for view-only moira lists"""
+        """Validation for view-only moira lists"""  # noqa: D401
         return validate_moira_lists(value)
 
     def validate_admin_lists(self, value):
-        """Validation for admin moira lists"""
+        """Validation for admin moira lists"""  # noqa: D401
         return validate_moira_lists(value)
 
     class Meta:

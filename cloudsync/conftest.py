@@ -11,7 +11,7 @@ from botocore.stub import ANY, Stubber
 
 @pytest.fixture()
 def mock_video_headers():
-    """mocks video headers"""
+    """Mocks video headers"""  # noqa: D401
     disp = "inline; filename=video.mp4; filename*=UTF-8''video.mp4"
     return {
         "Content-Type": "video/mp4",
@@ -24,7 +24,7 @@ def mock_video_headers():
 def mocked_video_request(
     reqmocker, mock_video_url, mock_video_headers, mock_video_file
 ):
-    """Mocks video request"""
+    """Mocks video request"""  # noqa: D401
     reqmocker.get(
         mock_video_url,
         headers=mock_video_headers,
@@ -35,7 +35,7 @@ def mocked_video_request(
 
 @pytest.fixture()
 def stub_aws_upload():
-    """Mocks upload to AWS"""
+    """Mocks upload to AWS"""  # noqa: D401
     s3 = botocore.session.get_session().create_client("s3")
     stubber = Stubber(s3)
     expected_params = {
@@ -54,7 +54,7 @@ def stub_aws_upload():
 def youtube_mock(mocker):  # noqa: PT004
     """
     Mocks calls for youtube api tests
-    """
+    """  # noqa: D401
     mocker.patch("cloudsync.youtube.boto3")
     mocker.patch("cloudsync.youtube.Credentials")
     mocker.patch("cloudsync.youtube.build")

@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 @app.task
 def post_video_to_edx(video_id):
-    """Loads a VideoFile and calls our API method to add it to edX"""
+    """Loads a VideoFile and calls our API method to add it to edX"""  # noqa: D401
     video_files = sorted(  # noqa: C414
         list(
             VideoFile.objects.filter(

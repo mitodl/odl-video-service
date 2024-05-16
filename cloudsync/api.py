@@ -114,7 +114,7 @@ def get_error_type_from_et_error(et_error):
 
     Returns:
         ui.constants.VideoStatus: a string representing the video status
-    """  # noqa: E501
+    """  # noqa: D401, E501
     if not et_error:
         log.error("Elastic transcoder did not return an error string")
         return VideoStatus.TRANSCODE_FAILED_INTERNAL
@@ -223,9 +223,7 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):  # noqa: F
         settings.AWS_SECRET_ACCESS_KEY,
     )
 
-    user_meta = {
-        "pipeline": f"odl-video-service-{settings.ENVIRONMENT}".lower()
-    }
+    user_meta = {"pipeline": f"odl-video-service-{settings.ENVIRONMENT}".lower()}
 
     try:
         transcoder.encode(
@@ -280,9 +278,7 @@ def create_lecture_video_title(video_attributes):
         else video_attributes.record_date.strftime("%B %d, %Y")
     )
     return (
-        f"Lecture - {video_title_date}"
-        if video_title_date
-        else video_attributes.name
+        f"Lecture - {video_title_date}" if video_title_date else video_attributes.name
     )
 
 
@@ -352,7 +348,7 @@ def parse_lecture_video_filename(filename):
 
     Returns:
         ParsedVideoAttributes: A named tuple of information extracted from the video file name
-    """  # noqa: E501
+    """  # noqa: D401, E501
     rx = (
         r"(.+)-lec-mit-0000-"  # prefix to be used as the start of the collection name
         r"(\w+)"  # Recording date (required)
@@ -395,7 +391,7 @@ def upload_subtitle_to_s3(caption_data, file_data):
 
     Returns:
         VideoSubtitle or None: New or updated VideoSubtitle (or None)
-    """
+    """  # noqa: D401
     video_key = caption_data.get("video")
     filename = caption_data.get("filename")
     language = caption_data.get("language", "en")
@@ -455,7 +451,7 @@ def move_s3_objects(bucket_name, from_prefix, to_prefix):
         bucket_name (str): The bucket name
         from_prefix(str): The subfolder to copy from
         to_prefix(str): The subfolder to copy to
-    """
+    """  # noqa: D401
     bucket = get_bucket(bucket_name)
     for obj in bucket.objects.filter(Prefix=from_prefix):
         copy_src = {"Bucket": bucket_name, "Key": obj.key}

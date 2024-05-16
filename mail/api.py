@@ -36,12 +36,17 @@ class MailgunClient:
 
         Returns:
             dict: A dict of default parameters for the Mailgun API
-        """  # noqa: E501
+        """  # noqa: D401, E501
         return {"from": settings.EMAIL_SUPPORT}
 
     @classmethod
     def _mailgun_request(  # noqa: PLR0913
-        cls, request_func, endpoint, params, sender_name=None, raise_for_status=True  # noqa: FBT002
+        cls,
+        request_func,
+        endpoint,
+        params,
+        sender_name=None,
+        raise_for_status=True,  # noqa: FBT002
     ):
         """
         Sends a request to the Mailgun API
@@ -53,7 +58,7 @@ class MailgunClient:
             raise_for_status (bool): If true, check the status and raise for non-2xx statuses
         Returns:
             requests.Response: HTTP response
-        """  # noqa: E501
+        """  # noqa: D401, E501
         mailgun_url = f"{settings.MAILGUN_URL}/{endpoint}"
         email_params = cls.default_params()
         email_params.update(params)
@@ -109,7 +114,7 @@ class MailgunClient:
             SendBatchException:
                If there is at least one exception, this exception is raised with all other exceptions in a list
                along with recipients we failed to send to.
-        """  # noqa: E501
+        """  # noqa: D401, E501
         # Convert null contexts to empty dicts
         recipients = ((email, context or {}) for email, context in recipients)
 
@@ -181,7 +186,7 @@ class MailgunClient:
 
         Returns:
             requests.Response: response from Mailgun
-        """  # noqa: E501
+        """  # noqa: D401, E501
         # Since .send_batch() returns a list, we need to return the first in the list
         responses = cls.send_batch(
             subject,
@@ -205,10 +210,8 @@ def render_email_templates(template_name, context):
 
     Returns:
         (str, str, str): tuple of the templates for subject, text_body, html_body
-    """  # noqa: E501
-    subject_text = render_to_string(
-        f"{template_name}/subject.txt", context
-    ).rstrip()
+    """  # noqa: D401, E501
+    subject_text = render_to_string(f"{template_name}/subject.txt", context).rstrip()
 
     context.update({"subject": subject_text})
     html_text = render_to_string(f"{template_name}/body.html", context)
@@ -243,7 +246,7 @@ def context_for_video(video):
 
     Returns:
         dict: the context for this user
-    """
+    """  # noqa: D401
 
     context = {
         "video_url": urljoin(

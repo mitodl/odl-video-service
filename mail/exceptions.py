@@ -13,7 +13,7 @@ class SendBatchException(Exception):  # noqa: N818
 
         Args:
             exception_pairs (list): A list of (list of recipients, exception)
-        """
+        """  # noqa: D401
         super().__init__(exception_pairs)
         self.exception_pairs = exception_pairs
 

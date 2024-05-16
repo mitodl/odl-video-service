@@ -117,7 +117,7 @@ class YouTubeApi:
         Returns:
             str: status of the YouTube video
 
-        """
+        """  # noqa: D401
         results = self.client.videos().list(part="status", id=video_id).execute()
         return results["items"][0]["status"]["uploadStatus"]
 

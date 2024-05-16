@@ -68,9 +68,7 @@ def test_collection_serializer_validation_fake_view_lists(mocker):
         serializers.CollectionSerializer(data=serialized_data).is_valid(
             raise_exception=True
         )
-    assert exc.match(
-        f"Moira list does not exist: {collection.view_lists.first().name}"
-    )
+    assert exc.match(f"Moira list does not exist: {collection.view_lists.first().name}")
 
 
 def test_collection_serializer_validate_title(mocker):
@@ -98,7 +96,8 @@ def test_collection_serializer_admin_flag(mocker, has_permission):
     mocked_request = mocker.MagicMock()
     collection = factories.CollectionFactory()
     serialized_data = serializers.CollectionSerializer(
-        collection, context=dict(request=mocked_request)  # noqa: C408
+        collection,
+        context=dict(request=mocked_request),  # noqa: C408
     ).data
     mocked_admin_permission.assert_called_with(collection, mocked_request)
     assert serialized_data["is_admin"] is has_permission
@@ -122,7 +121,8 @@ def test_collection_serializer_private_video(mocker, is_admin, is_superuser):
     VideoFactory.create(is_private=True, collection=collection)
 
     serialized_data = serializers.CollectionSerializer(
-        collection, context=dict(request=mocked_request)  # noqa: C408
+        collection,
+        context=dict(request=mocked_request),  # noqa: C408
     ).data
 
     assert len(serialized_data["videos"]) == (2 if has_permission else 1)
@@ -150,7 +150,7 @@ def test_collection_list_serializer():
 def get_expected_result(video):
     """
     Expected result for VideoSerializer
-    """
+    """  # noqa: D401
     return {
         "key": video.hexkey,
         "collection_key": video.collection.hexkey,

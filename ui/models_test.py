@@ -109,9 +109,10 @@ def test_video_transcode_key(videofile):
     Test that the Video.transcode_key method returns expected results
     """
     preset = "pre01"
-    assert videofile.video.transcode_key(
-        preset
-    ) == f"transcoded/{videofile.video.hexkey!s}/video_{preset}"
+    assert (
+        videofile.video.transcode_key(preset)
+        == f"transcoded/{videofile.video.hexkey!s}/video_{preset}"
+    )
 
 
 def test_video_status(video):
@@ -144,7 +145,8 @@ def test_video_update_status_email(video, mocker):
 
 
 @pytest.mark.parametrize(
-    "token, current_expires_in, updated", [("token1", 0, True), ("token2", 1000, False)]  # noqa: PT006
+    "token, current_expires_in, updated",  # noqa: PT006
+    [("token1", 0, True), ("token2", 1000, False)],
 )
 def test_edxendpoint_access_token_refresh(mocker, token, current_expires_in, updated):
     """

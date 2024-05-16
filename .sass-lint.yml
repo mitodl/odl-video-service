@@ -1,3 +1,4 @@
+---
 options:
   merge-default-rules: false
 files:
@@ -24,16 +25,13 @@ rules:
   space-after-colon: 2
   space-before-bang: 2
   hex-notation:
-    - 2
-    -
-      style: lowercase
+  - 2
+  - style: lowercase
   indentation:
-    - 2
-    -
-      size: 2
+  - 2
+  - size: 2
   brace-style:
-    - 2
-    -
-      allow-single-line: false
+  - 2
+  - allow-single-line: false
   empty-line-between-blocks: 2
   space-before-brace: 2

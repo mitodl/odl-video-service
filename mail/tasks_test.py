@@ -21,7 +21,7 @@ pytestmark = pytest.mark.django_db
 def mocker_defaults(mocker):  # noqa: PT004
     """
     Sets default settings to safe defaults
-    """
+    """  # noqa: D401
     mocker.patch("mail.tasks.has_common_lists", return_value=False)
     mocker.patch("mail.tasks.get_moira_client")
 

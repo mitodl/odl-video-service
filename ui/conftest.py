@@ -10,7 +10,7 @@ from rest_framework.test import APIClient
 def apiclient():
     """
     Special client for rest requests
-    """
+    """  # noqa: D401
     return APIClient()
 
 

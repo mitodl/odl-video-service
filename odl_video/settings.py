@@ -140,7 +140,8 @@ WSGI_APPLICATION = "odl_video.wsgi.application"
 # https://github.com/kennethreitz/dj-database-url
 DEFAULT_DATABASE_CONFIG = dj_database_url.parse(
     get_string(
-        "DATABASE_URL", "sqlite:///{0}".format(os.path.join(BASE_DIR, "db.sqlite3"))  # noqa: PTH118, UP030
+        "DATABASE_URL",
+        "sqlite:///{0}".format(os.path.join(BASE_DIR, "db.sqlite3")),  # noqa: PTH118, UP030
     )
 )
 DEFAULT_DATABASE_CONFIG["CONN_MAX_AGE"] = get_int("ODL_VIDEO_DB_CONN_MAX_AGE", 0)
@@ -318,9 +319,7 @@ VIDEO_CLOUDFRONT_BASE_URL = get_string(
 
 CLOUDFRONT_DIST = get_string("STATIC_CLOUDFRONT_DIST", None)
 if CLOUDFRONT_DIST:
-    STATIC_URL = urljoin(
-        f"https://{CLOUDFRONT_DIST}.cloudfront.net", STATIC_URL
-    )
+    STATIC_URL = urljoin(f"https://{CLOUDFRONT_DIST}.cloudfront.net", STATIC_URL)
     AWS_S3_CUSTOM_DOMAIN = f"{CLOUDFRONT_DIST}.cloudfront.net"
 
 AWS_ACCESS_KEY_ID = get_string("AWS_ACCESS_KEY_ID", "")
@@ -359,9 +358,9 @@ ET_HLS_PRESET_IDS = get_string(
 
 ET_MP4_PRESET_ID = get_string("ET_MP4_PRESET_ID", "1351620000001-200010")
 
-if [""] == ET_HLS_PRESET_IDS or [
-    ""
-] == ET_MP4_PRESET_ID:  # This may happen if `ET_HLS_PRESET_IDS=` or `ET_MP4_PRESET_ID=` is in .env file.  # noqa: E501
+if (
+    [""] == ET_HLS_PRESET_IDS or [""] == ET_MP4_PRESET_ID
+):  # This may happen if `ET_HLS_PRESET_IDS=` or `ET_MP4_PRESET_ID=` is in .env file.  # noqa: E501
     raise ImproperlyConfigured(  # noqa: TRY003
         "ET_HLS_PRESET_IDS and ET_MP4_PRESET_ID cannot be blank, please check your settings & environment"  # noqa: EM101, E501
     )
@@ -521,7 +520,7 @@ CACHES = {
 
 # features flags
 def get_all_config_keys():
-    """Returns all the configuration keys from both environment and configuration files"""  # noqa: E501
+    """Returns all the configuration keys from both environment and configuration files"""  # noqa: D401, E501
     return list(os.environ.keys())
 
 

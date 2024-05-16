@@ -29,7 +29,7 @@ class TimestampedModelQuerySet(QuerySet):
         Automatically update updated_at timestamp when .update(). This is because .update()
         does not go through .save(), thus will not auto_now, because it happens on the
         database level without loading objects into memory.
-        """  # noqa: E501
+        """  # noqa: D402, E501
         if "updated_at" not in kwargs:
             kwargs["updated_at"] = now_in_utc()
         return super().update(**kwargs)
@@ -43,13 +43,13 @@ class TimestampedModelManager(Manager):
     def update(self, **kwargs):
         """
         Allows access to TimestampedModelQuerySet's update method on the manager
-        """
+        """  # noqa: D401
         return self.get_queryset().update(**kwargs)
 
     def get_queryset(self):
         """
         Returns custom queryset
-        """
+        """  # noqa: D401
         return TimestampedModelQuerySet(self.model, using=self._db)
 
 

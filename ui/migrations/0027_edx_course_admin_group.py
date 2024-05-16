@@ -9,7 +9,7 @@ EDX_ADMIN_GROUP = "edX Course Admin"
 def create_edx_course_admin_group(*args, **kwargs):
     """
     Ensures that an auth group exists for users that can edit edX course info
-    """
+    """  # noqa: D401
     Group.objects.get_or_create(name=EDX_ADMIN_GROUP)
 
 

@@ -29,7 +29,7 @@ def process_dropbox_data(dropbox_upload_data):
 
     Returns:
         list: A list of dictionaries containing informations about the videos
-    """  # noqa: E501
+    """  # noqa: D401, E501
     collection_key = dropbox_upload_data["collection"]
     dropbox_links_list = dropbox_upload_data["files"]
     collection = get_object_or_404(models.Collection, key=collection_key)
@@ -39,7 +39,9 @@ def process_dropbox_data(dropbox_upload_data):
             video = models.Video.objects.create(
                 source_url=dropbox_link["link"],
                 title=dropbox_link["name"][
-                    : models.Video._meta.get_field("title").max_length  # noqa: SLF001
+                    : models.Video._meta.get_field(  # noqa: SLF001
+                        "title"
+                    ).max_length
                 ],
                 collection=collection,
             )
@@ -70,7 +72,7 @@ def post_video_to_edx(video_files):
     Returns:
         Dict[EdxEndpoint, requests.models.Response]: Each configured edX endpoint mapped to the response from the
             request to post the video file to that endpoint.
-    """  # noqa: E501
+    """  # noqa: D401, E501
     encoded_videos = []
     for video_file in video_files:
         assert video_file.can_add_to_edx, "This video file cannot be added to edX"  # noqa: S101

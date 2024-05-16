@@ -24,7 +24,7 @@ from ui.factories import VideoFactory
 
 
 def mocked_json(return_data=None):
-    """Mocked version of the json method for the Response class"""
+    """Mocked version of the json method for the Response class"""  # noqa: D401
     if return_data is None:
         return_data = {}
 

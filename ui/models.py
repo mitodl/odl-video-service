@@ -97,7 +97,7 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
         )
 
     def update_access_token(self, data):
-        """Saves new access token"""
+        """Saves new access token"""  # noqa: D401
         self.access_token = data["access_token"]
         self.expires_in = data["expires_in"]
         self.save()
@@ -105,7 +105,7 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
     def refresh_access_token(self):
         """
         Checks if access token is expired, if so it sends a request to get new token
-        """
+        """  # noqa: D401
         try:
             expires_in = timedelta(seconds=self.expires_in)
         except TypeError:
@@ -125,9 +125,7 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
         return f"{self.name} - {self.base_url}"
 
     def __repr__(self):
-        return (
-            f'<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}">'
-        )
+        return f'<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}">'
 
 
 class CollectionManager(TimestampedModelManager):
@@ -236,7 +234,7 @@ class Collection(TimestampedModel):
     def for_owner(cls, owner):
         """
         Returns a queryset of all the objects filtered by owner
-        """
+        """  # noqa: D401
         return cls.objects.filter(owner=owner)
 
 
@@ -462,7 +460,7 @@ class Video(TimestampedModel):
 
         Returns:
             str: S3 object key
-        """
+        """  # noqa: D401
         return "{prefix}/{key}/subtitles_{key}_{dt}_{lang}.vtt".format(
             prefix=prefix,
             key=self.hexkey,
@@ -528,7 +526,9 @@ class VideoS3(TimestampedModel):
         Returns:
             str: URL
         """
-        return f"https://{settings.AWS_S3_DOMAIN}/{self.bucket_name}/{self.s3_object_key}"
+        return (
+            f"https://{settings.AWS_S3_DOMAIN}/{self.bucket_name}/{self.s3_object_key}"
+        )
 
     @property
     def s3_basename(self):
@@ -653,7 +653,9 @@ class YouTubeVideo(TimestampedModel):
     )
 
     def __repr__(self):
-        return f"<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >"  # noqa: E501
+        return (
+            f"<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >"
+        )
 
     def __str__(self):
         return f"{self.id}: {self.video.title}: {self.video.hexkey}"

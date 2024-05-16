@@ -18,12 +18,12 @@ from django.db import migrations, models
 #         EdxEndpoint.objects.get_or_create(
 #             base_url=settings.EDX_BASE_URL,  # noqa: ERA001
 #             access_token=settings.EDX_ACCESS_TOKEN,  # noqa: ERA001
-#             hls_api_path=settings.EDX_HLS_API_URL or DEFAULT_EDX_HLS_API_PATH,  # noqa: ERA001
-#             defaults=dict(  # noqa: ERA001
+#             hls_api_path=settings.EDX_HLS_API_URL or DEFAULT_EDX_HLS_API_PATH,  # noqa: E501, ERA001
+#             defaults=dict(  # noqa: ERA001, RUF100
 #                 name="Default edX endpoint",  # noqa: ERA001
 #                 is_global_default=True,  # noqa: ERA001
 #             ),
-#         )  # noqa: ERA001
+#         )  # noqa: ERA001, RUF100
 
 
 class Migration(migrations.Migration):

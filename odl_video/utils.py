@@ -31,4 +31,6 @@ def webpack_dev_server_url(request):
     """
     Get the full URL where the webpack dev server should be running
     """
-    return f"http://{webpack_dev_server_host(request)}:{settings.WEBPACK_DEV_SERVER_PORT}"
+    return (
+        f"http://{webpack_dev_server_host(request)}:{settings.WEBPACK_DEV_SERVER_PORT}"
+    )

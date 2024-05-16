@@ -21,7 +21,7 @@ pytestmark = pytest.mark.django_db
 def collection_owner_permission():
     """
     Returns an instance of IsCollectionOwner
-    """
+    """  # noqa: D401
     return permissions.IsCollectionOwner()
 
 
@@ -29,7 +29,7 @@ def collection_owner_permission():
 def collection_permission():
     """
     Returns an instance of HasCollectionPermissions
-    """
+    """  # noqa: D401
     return permissions.HasCollectionPermissions()
 
 
@@ -37,7 +37,7 @@ def collection_permission():
 def video_permission():
     """
     Returns an instance of HasVideoPermissions
-    """
+    """  # noqa: D401
     return permissions.HasVideoPermissions()
 
 
@@ -45,7 +45,7 @@ def video_permission():
 def subtitle_permission():
     """
     Returns an instance of HasVideoPermissions
-    """
+    """  # noqa: D401
     return permissions.HasVideoSubtitlePermissions()
 
 
@@ -53,7 +53,7 @@ def subtitle_permission():
 def collection():
     """
     Returns an instance of Collection
-    """
+    """  # noqa: D401
     return factories.CollectionFactory()
 
 
@@ -61,7 +61,7 @@ def collection():
 def moira_list():
     """
     Returns an instance of MoiraList
-    """
+    """  # noqa: D401
     return factories.MoiraListFactory()
 
 
@@ -69,7 +69,7 @@ def moira_list():
 def video():
     """
     Returns an instance of Video
-    """
+    """  # noqa: D401
     return factories.VideoFactory()
 
 
@@ -77,7 +77,7 @@ def video():
 def subtitle():
     """
     Returns an instance of Video
-    """
+    """  # noqa: D401
     return factories.VideoSubtitleFactory()
 
 
@@ -130,7 +130,7 @@ def alt_moira_data():
 def can_upload_to_collection_permission():
     """
     Returns an instance of CanUploadToCollection
-    """
+    """  # noqa: D401
     return permissions.CanUploadToCollection()
 
 

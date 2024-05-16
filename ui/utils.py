@@ -38,7 +38,7 @@ def get_moira_client():
 
     Returns:
         Moira: A moira client
-    """
+    """  # noqa: D401
 
     _check_files_exist(
         [settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE]
@@ -52,7 +52,7 @@ def get_moira_client():
 
 
 def _check_files_exist(paths):
-    """Checks that files exist at given paths."""
+    """Checks that files exist at given paths."""  # noqa: D401
     errors = []
     for path in paths:
         if not os.path.isfile(path):  # noqa: PTH113
@@ -266,7 +266,7 @@ def get_google_analytics_client():
 
     Returns:
         analytics_client: An analytics client
-    """
+    """  # noqa: D401
     try:
         credentials = ServiceAccountCredentials.from_service_account_info(
             json.loads(settings.GA_KEYFILE_JSON)
@@ -285,7 +285,7 @@ def generate_google_analytics_query(video):
     Returns:
         analytics_query: a query dict suitable to use as the body of an
         analytics 'batchGet' request.
-    """
+    """  # noqa: D401
     # https://developers.google.com/analytics/devguides/reporting/core/v3/reference
     START_DATE = "2005-01-01"
     END_DATE = "9999-01-01"
@@ -408,7 +408,7 @@ def multi_urljoin(url_base, *url_parts, add_trailing_slash=False):
 
     Returns:
         str: Valid slash-separated URL
-    """  # noqa: E501
+    """  # noqa: D401, E501
     stripped_url_parts = map(lambda part: part.strip("/"), url_parts)  # noqa: C417
     url_path = "/".join(stripped_url_parts)
     if add_trailing_slash or (url_parts and url_parts[-1].endswith("/")):
@@ -455,7 +455,7 @@ def get_error_response_summary_dict(response):
 
     Returns:
         dict: A summary of the error response
-    """  # noqa: E501
+    """  # noqa: D401, E501
     # If the response is an HTML document, include the URL in the summary but not the raw HTML  # noqa: E501
     if "text/html" in response.headers.get("Content-Type", ""):
         summary_dict = {"content": "(HTML body ignored)"}

@@ -23,7 +23,7 @@ def _get_recipients_for_video(video):
 
     Returns:
         list: a list of strings representing emails
-    """
+    """  # noqa: D401
     admin_lists = []
     moira_client = get_moira_client()
     for mlist in video.collection.admin_lists.values_list("name", flat=True):
@@ -46,7 +46,7 @@ def send_notification_email(video):
 
     Args:
         video (ui.models.Video): a video object
-    """
+    """  # noqa: D401
     if video.status not in STATUS_TO_NOTIFICATION.keys():  # noqa: SIM118
         log.error(
             "Unexpected video status",
@@ -106,7 +106,7 @@ def async_send_notification_email(self, video_id):  # noqa: ARG001
 def _send_debug_email(video=None, email_kwargs=None):
     """
     Sends a debug email to the support email.
-    """
+    """  # noqa: D401
     debug_email_kwargs = {
         "subject": "DEBUG:{}".format(email_kwargs["subject"]),
         "html_body": None,
@@ -119,7 +119,7 @@ def _send_debug_email(video=None, email_kwargs=None):
 def _generate_debug_email_body(video=None, email_kwargs=None):
     """
     Generates body of debug email.
-    """
+    """  # noqa: D401
     return textwrap.dedent(
         """
         --- DEBUG INFO ---
