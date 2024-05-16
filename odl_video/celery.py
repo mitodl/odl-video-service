@@ -8,7 +8,7 @@ from celery import Celery
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "odl_video.settings")
 
-from django.conf import (  # pylint: disable=wrong-import-order,wrong-import-position
+from django.conf import (  
     settings,
 )
 

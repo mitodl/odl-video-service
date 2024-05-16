@@ -50,7 +50,7 @@ from ui.models import Collection, Video, YouTubeVideo
 
 pytestmark = pytest.mark.django_db
 
-# pylint: disable=redefined-outer-name,unused-argument,no-value-for-parameter,unused-variable,redefined-outer-name
+
 
 
 @pytest.fixture()
@@ -779,7 +779,7 @@ def test_schedule_retranscodes_error(mocker, mocked_celery):
 
 @mock_s3
 def test_sort_transcoded_m3u8_files(mocker):
-    # pylint: disable=too-many-locals
+    
     """
     Test that sort_transcoded_m3u8_files changes the m3u8 file on s3 if it needs to be sorted
     """

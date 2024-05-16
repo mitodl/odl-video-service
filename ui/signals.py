@@ -1,7 +1,7 @@
 """
 ui model signals
 """
-# pylint: disable=unused-argument
+
 from django.conf import settings
 from django.contrib.auth.signals import user_logged_out
 from django.db.models.signals import post_save, pre_delete

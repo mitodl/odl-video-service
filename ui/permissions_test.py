@@ -16,7 +16,7 @@ from ui.models import Collection
 pytestmark = pytest.mark.django_db
 
 
-# pylint: disable=redefined-outer-name,too-many-arguments,unused-argument
+
 
 
 @pytest.fixture(scope="module")

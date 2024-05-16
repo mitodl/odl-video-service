@@ -37,7 +37,7 @@ def init_sentry(*, dsn, environment, version, log_level):
         version (str): the version of the application
         log_level (str): the sentry log level
     """
-    sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
+    sentry_sdk.init(  
         dsn=dsn,
         environment=environment,
         release=version,

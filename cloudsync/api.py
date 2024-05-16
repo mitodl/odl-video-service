@@ -173,7 +173,7 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
         prefix = RETRANSCODE_FOLDER
-        # pylint:disable=no-value-for-parameter
+        
         delete_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
             f"{prefix}{TRANSCODE_PREFIX}/{video.hexkey}",

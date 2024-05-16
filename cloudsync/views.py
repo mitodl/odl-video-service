@@ -19,7 +19,7 @@ class CeleryTaskStatus(APIView):
     Class based view for checking status of celery tasks.
     """
 
-    def get(self, request, task_id):  # pylint: disable=unused-argument
+    def get(self, request, task_id):  
         """
         Returns the status of a task
         """
@@ -45,7 +45,7 @@ class YoutubeTokensView(GenericAPIView):
 
     permission_classes = (IsAdminUser,)
 
-    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  
         """Return Youtube credential info"""
         token_url = urljoin(settings.ODL_VIDEO_BASE_URL, reverse("yt_tokens"))
         oauth_config = {

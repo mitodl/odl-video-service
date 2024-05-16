@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from ui.factories import UserFactory
 
-# pylint:disable=redefined-outer-name
+
 pytestmark = pytest.mark.django_db
 
 

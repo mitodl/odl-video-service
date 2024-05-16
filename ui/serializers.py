@@ -58,7 +58,7 @@ class SingleAttrRelatedField(RelatedField):
         )
         kwargs.pop("many", None)
         self.allow_empty = kwargs.pop("allow_empty", False)
-        super(RelatedField, self).__init__(**kwargs)  # pylint: disable=bad-super-call
+        super(RelatedField, self).__init__(**kwargs)  
 
     def to_internal_value(self, data):
         kwargs = {self.attribute: data}

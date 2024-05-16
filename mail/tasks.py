@@ -78,7 +78,7 @@ def send_notification_email(video):
         api.MailgunClient.send_batch(**email_kwargs)
         if video.status in STATUSES_THAT_TRIGGER_DEBUG_EMAIL:
             _send_debug_email(video=video, email_kwargs=email_kwargs)
-    except:  # pylint: disable=bare-except
+    except:  
         log.exception(
             "Impossible to send notification",
             video_hexkey=video.hexkey,
@@ -87,12 +87,12 @@ def send_notification_email(video):
 
 
 @shared_task(bind=True)
-def async_send_notification_email(self, video_id):  # pylint: disable=unused-argument
+def async_send_notification_email(self, video_id):  
     """
     Asynchronous call to the function to send notifications for video status update.
     """
     # import done here to avoid circular imports
-    from ui.models import Video  # pylint: disable=import-outside-toplevel
+    from ui.models import Video  
 
     try:
         video = Video.objects.get(id=video_id)

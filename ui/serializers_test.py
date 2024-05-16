@@ -12,7 +12,7 @@ from ui.factories import MoiraListFactory, UserFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
 
-# pylint: disable=redefined-outer-name
+
 
 
 def test_collection_serializer():

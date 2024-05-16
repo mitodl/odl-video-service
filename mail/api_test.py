@@ -29,7 +29,7 @@ def mocked_json(return_data=None):
 
     def json(
         *args, **kwargs
-    ):  # pylint:disable=unused-argument, missing-docstring, redefined-outer-name
+    ):  
         return return_data
 
     return json

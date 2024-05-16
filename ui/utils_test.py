@@ -29,7 +29,7 @@ from ui.utils import (
     write_to_file,
 )
 
-# pylint: disable=unused-argument,too-many-arguments
+
 
 pytestmark = pytest.mark.django_db
 
