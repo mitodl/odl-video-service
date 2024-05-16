@@ -31,7 +31,7 @@ readme = "README.md"
 packages = []
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.12"
 beautifulsoup4 = "^4.9.0"
 boto3 = "^1.12.26"
 celery = "^5.2.2"
@@ -68,7 +68,7 @@ smart-open = "^1.5.7"
 structlog = "^20.1.0"
 structlog-sentry = "^1.2.2"
 urllib3 = "^1.24.2"
-uwsgi = "2.0.22"
+uwsgi = "2.0.25"
 
 
 [tool.poetry.group.dev.dependencies]

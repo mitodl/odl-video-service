@@ -15,7 +15,7 @@ COPY apt.txt /tmp/apt.txt
 RUN apt-get update && \
     apt-get install -y $(grep -vE "^\s*#" apt.txt  | tr "\n" " ") && \
     apt-get update && \
-    apt-get install libpq-dev postgresql-client -y && \
+    apt-get install libpq-dev postgresql-client libxml2-dev -y && \
     apt-get clean && \
     apt-get purge
 
