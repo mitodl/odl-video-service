@@ -4,32 +4,32 @@ services:
   db:
     image: postgres:15.7
     ports:
-      - "5432"
+    - "5432"
     environment:
-      - POSTGRES_PASSWORD=postgres  # pragma: allowlist secret
+    - POSTGRES_PASSWORD=postgres    # pragma: allowlist secret
 
   redis:
     image: redis:3.2.12@sha256:7b0a40301bc1567205e6461c5bf94c38e1e1ad0169709e49132cafc47f6b51f3
     ports:
-      - "6379"
+    - "6379"
 
   nginx:
     image: nginx:1.26.0
     volumes:
-      - ./config/nginx.conf:/etc/nginx/conf.d/web.conf
-      - ./:/src
+    - ./config/nginx.conf:/etc/nginx/conf.d/web.conf
+    - ./:/src
     ports:
-      - "8089:8089"
+    - "8089:8089"
     links:
-      - web
-      - watch
+    - web
+    - watch
 
   python:
     build: .
     command: /bin/true
     volumes:
-      - .:/src
-      - django_media:/var/media
+    - .:/src
+    - django_media:/var/media
     environment:
       DEBUG: ${DEBUG:-True}
       DEV_ENV: 'True'
@@ -60,10 +60,10 @@ services:
       python3 manage.py migrate --noinput &&
       uwsgi uwsgi.ini'
     ports:
-      - "8087:8087"
+    - "8087:8087"
     links:
-      - db
-      - redis
+    - db
+    - redis
 
   watch:
     build:
@@ -73,10 +73,10 @@ services:
     command: >
       /bin/bash -c './webpack_dev_server.sh --install'
     ports:
-      - "8082:8082"
+    - "8082:8082"
     volumes:
-      - .:/src
-      - yarn-cache:/home/node/.cache/yarn
+    - .:/src
+    - yarn-cache:/home/node/.cache/yarn
     environment:
       NODE_ENV: 'development'
       DOCKER_HOST: ${DOCKER_HOST:-missing}
@@ -92,8 +92,8 @@ services:
       sleep 3;
       celery -A odl_video worker -B -l ${ODL_VIDEO_LOG_LEVEL:-INFO}'
     links:
-      - db
-      - redis
+    - db
+    - redis
 
 volumes:
   django_media: {}
