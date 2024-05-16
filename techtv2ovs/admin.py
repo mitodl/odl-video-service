@@ -5,6 +5,7 @@ from django.contrib import admin
 from techtv2ovs.models import TechTVCollection, TechTVVideo
 
 
+@admin.register(TechTVCollection)
 class TechTVCollectionAdmin(admin.ModelAdmin):
     """Customized collection admin model"""
 
@@ -18,6 +19,7 @@ class TechTVCollectionAdmin(admin.ModelAdmin):
     )
 
 
+@admin.register(TechTVVideo)
 class TechTVVideoAdmin(admin.ModelAdmin):
     """Customized Video admin model"""
 
@@ -44,7 +46,3 @@ class TechTVVideoAdmin(admin.ModelAdmin):
         "title",
         "ttv_collection__name",
     )
-
-
-admin.site.register(TechTVCollection, TechTVCollectionAdmin)
-admin.site.register(TechTVVideo, TechTVVideoAdmin)

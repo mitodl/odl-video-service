@@ -50,6 +50,7 @@ class CollectionEdxEndpointInlineAdmin(admin.StackedInline):
 class CollectionAdmin(admin.ModelAdmin):
     """Customized collection admin model"""
 
+    @admin.display(description="URL")
     def show_url(self, obj):
         """Display the collection URL"""
         url = urljoin(
@@ -62,7 +63,6 @@ class CollectionAdmin(admin.ModelAdmin):
         """Add show_url to the beginning of model fields"""
         return ["show_url"] + super().get_fields(request, obj)  # noqa: RUF005
 
-    show_url.short_description = "URL"
     show_url.mark_safe = True
 
     date_hierarchy = "created_at"
@@ -88,17 +88,19 @@ class CollectionEdxEndpointAdmin(admin.ModelAdmin):
     model = models.CollectionEdxEndpoint
     list_display = ("id", "get_edx_endpoint_str", "get_collection_title")
 
+    @admin.display(
+        description="EdX Endpoint",
+        ordering="edx_endpoint__name",
+    )
     def get_edx_endpoint_str(self, obj):
         return f"{obj.edx_endpoint.name} - {obj.edx_endpoint.base_url}"
 
-    get_edx_endpoint_str.short_description = "EdX Endpoint"
-    get_edx_endpoint_str.admin_order_field = "edx_endpoint__name"
-
+    @admin.display(
+        description="Collection",
+        ordering="collection__title",
+    )
     def get_collection_title(self, obj):
         return obj.collection.title
-
-    get_collection_title.short_description = "Collection"
-    get_collection_title.admin_order_field = "collection__title"
 
 
 class VideoFilesInline(admin.TabularInline):
@@ -148,6 +150,7 @@ class VideoEncodeJobsInline(GenericTabularInline):
 class VideoAdmin(admin.ModelAdmin):
     """Customized Video admin model"""
 
+    @admin.display(description="URL")
     def show_url(self, obj):
         """Display the video URL"""
         url = urljoin(
@@ -160,7 +163,6 @@ class VideoAdmin(admin.ModelAdmin):
         """Add show_url to the beginning of model fields"""
         return ["show_url"] + super().get_fields(request, obj)  # noqa: RUF005
 
-    show_url.short_description = "URL"
     show_url.mark_safe = True
 
     model = models.Video
