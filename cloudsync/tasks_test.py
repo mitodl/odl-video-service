@@ -17,7 +17,7 @@ from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.test import override_settings
 from googleapiclient.errors import HttpError, ResumableUploadError
-from moto import mock_s3
+from moto import mock_aws
 from requests import HTTPError
 
 from cloudsync.conftest import MockBoto, MockHttpErrorResponse
@@ -414,7 +414,7 @@ def test_stream_to_s3_no_video():
         stream_to_s3(999999)
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_monitor_watch(mocker, user):
     """Test the Watch bucket monitor task"""
@@ -466,7 +466,7 @@ def test_monitor_watch(mocker, user):
         s3c.get_object(Bucket=bucket.name, Key=filename)
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 @pytest.mark.parametrize(
     "filename,unsorted",  # noqa: PT006
@@ -776,7 +776,7 @@ def test_schedule_retranscodes_error(mocker, mocked_celery):
     mock_error_log.assert_called_with("schedule_retranscodes threw an error")
 
 
-@mock_s3
+@mock_aws
 def test_sort_transcoded_m3u8_files(mocker):
     """
     Test that sort_transcoded_m3u8_files changes the m3u8 file on s3 if it needs to be sorted
