@@ -1,4 +1,5 @@
-""" YouTube API interface"""
+"""YouTube API interface"""
+
 import http
 import re
 import time
@@ -20,7 +21,7 @@ log = logging.getLogger(__name__)
 API_QUOTA_ERROR_MSG = "dailyLimitExceeded"
 
 
-class YouTubeUploadException(Exception):
+class YouTubeUploadException(Exception):  # noqa: N818
     """Custom exception for YouTube uploads"""
 
 
@@ -37,7 +38,7 @@ def resumable_upload(request, max_retries=10):
 
     Returns:
         dict: The YouTube API response
-    """
+    """  # noqa: E501
     response = None
     error = None
 
@@ -49,7 +50,7 @@ def resumable_upload(request, max_retries=10):
         try:
             _, response = request.next_chunk()
             if response is not None and "id" not in response:
-                raise YouTubeUploadException("YouTube upload failed: %s" % response)
+                raise YouTubeUploadException("YouTube upload failed: %s" % response)  # noqa: UP031
         except HttpError as e:
             if e.resp.status in retry_statuses:
                 error = e
@@ -62,8 +63,8 @@ def resumable_upload(request, max_retries=10):
             retry += 1
             if retry > max_retries:
                 log.error("Final upload failure")
-                raise YouTubeUploadException(
-                    "Retried YouTube upload 10x, giving up"
+                raise YouTubeUploadException(  # noqa: TRY003
+                    "Retried YouTube upload 10x, giving up"  # noqa: EM101
                 ) from error
             sleep_time = 2**retry
             time.sleep(sleep_time)
@@ -101,7 +102,7 @@ class YouTubeApi:
             refresh_token=settings.YT_REFRESH_TOKEN,
             client_id=settings.YT_CLIENT_ID,
             client_secret=settings.YT_CLIENT_SECRET,
-            token_uri="https://accounts.google.com/o/oauth2/token",
+            token_uri="https://accounts.google.com/o/oauth2/token",  # noqa: S106
         )
         self.client = build("youtube", "v3", credentials=credentials)
         self.s3 = boto3.client("s3")
@@ -146,9 +147,9 @@ class YouTubeApi:
 
         Returns:
             dict: YouTube API response
-        """
+        """  # noqa: E501
         youtube_captions = self.list_captions(video_id)
-        # YouTube API only seems to accept files or file-like objects, so download locally first
+        # YouTube API only seems to accept files or file-like objects, so download locally first  # noqa: E501
         with NamedTemporaryFile() as captionfile:
             self.s3.download_file(
                 settings.VIDEO_S3_SUBTITLE_BUCKET,
@@ -179,8 +180,8 @@ class YouTubeApi:
         """
         request = self.client.captions().insert(
             part="snippet",
-            body=dict(
-                snippet=dict(
+            body=dict(  # noqa: C408
+                snippet=dict(  # noqa: C408
                     videoId=video_id,
                     language=caption.language,
                     name=caption.language_name,
@@ -204,7 +205,7 @@ class YouTubeApi:
         """
         request = self.client.captions().update(
             part="snippet",
-            body=dict(id=caption_id, snippet=dict(isDraft=False)),
+            body=dict(id=caption_id, snippet=dict(isDraft=False)),  # noqa: C408
             media_body=media_body,
         )
         return resumable_upload(request)
@@ -237,12 +238,12 @@ class YouTubeApi:
         """
         videofile = video.original_video or video.transcoded_videos[0]
 
-        request_body = dict(
-            snippet=dict(
+        request_body = dict(  # noqa: C408
+            snippet=dict(  # noqa: C408
                 title=strip_bad_chars(video.title)[:100],
                 description=strip_bad_chars(video.description)[:5000],
             ),
-            status=dict(privacyStatus=privacy),
+            status=dict(privacyStatus=privacy),  # noqa: C408
         )
 
         with SeekableBufferedInputBase(
@@ -257,7 +258,7 @@ class YouTubeApi:
             )
 
         response = resumable_upload(request)
-        return response
+        return response  # noqa: RET504
 
     def delete_video(self, video_id):
         """

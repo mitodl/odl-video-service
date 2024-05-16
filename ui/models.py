@@ -1,6 +1,7 @@
 """
 Models for UI app
 """
+
 import os
 from datetime import timedelta
 from uuid import uuid4
@@ -26,9 +27,7 @@ TRANSCODE_PREFIX = "transcoded"
 
 
 @shared_task(bind=True)
-def delete_s3_objects(
-    self, bucket_name, key, as_filter=False
-):  
+def delete_s3_objects(self, bucket_name, key, as_filter=False):  # noqa: FBT002, ARG001
     """
     Delete objects from an S3 bucket
 
@@ -37,7 +36,7 @@ def delete_s3_objects(
         key(str): S3 key or key prefix
         as_filter(bool): Filter the bucket by the key
     """
-    print("BUCKET NAME {}".format(bucket_name))
+    print(f"BUCKET NAME {bucket_name}")  # noqa: T201
     bucket = get_bucket(bucket_name)
     if not as_filter:
         bucket.delete_objects(Delete={"Objects": [{"Key": key}]})
@@ -47,14 +46,12 @@ def delete_s3_objects(
 
 
 class ValidateOnSaveMixin(models.Model):
-    """Mixin that calls field/model v512alidation methods before saving a model object"""
+    """Mixin that calls field/model v512alidation methods before saving a model object"""  # noqa: E501
 
     class Meta:
         abstract = True
 
-    def save(
-        self, force_insert=False, force_update=False, **kwargs
-    ):  
+    def save(self, force_insert=False, force_update=False, **kwargs):  # noqa: FBT002
         if not (force_insert or force_update):
             self.full_clean()
         super().save(force_insert=force_insert, force_update=force_update, **kwargs)
@@ -71,7 +68,7 @@ class MoiraList(TimestampedModel):
         return self.name
 
     def __repr__(self):
-        return "<MoiraList: {self.name!r}>".format(self=self)
+        return f"<MoiraList: {self.name!r}>"
 
 
 class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
@@ -124,14 +121,12 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
             )
             self.update_access_token(response)
 
-    def __str__(self):
-        return "{} - {}".format(self.name, self.base_url)
+    def __str__(self):  # noqa: DJ012
+        return f"{self.name} - {self.base_url}"
 
     def __repr__(self):
         return (
-            '<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}">'.format(
-                self=self
-            )
+            f'<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}">'
         )
 
 
@@ -150,7 +145,7 @@ class CollectionManager(TimestampedModelManager):
 
         Returns:
             A list of collections the user has view access to.
-        """
+        """  # noqa: E501
         if user.is_superuser:
             return self.all()
         if user.is_anonymous:
@@ -194,8 +189,8 @@ class Collection(TimestampedModel):
 
     key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     title = models.TextField()
-    slug = models.TextField(null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
+    slug = models.TextField(null=True, blank=True)  # noqa: DJ001
+    description = models.TextField(null=True, blank=True)  # noqa: DJ001
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     view_lists = models.ManyToManyField(
         MoiraList, blank=True, related_name="view_lists"
@@ -205,13 +200,13 @@ class Collection(TimestampedModel):
     )
     is_logged_in_only = models.BooleanField(null=False, default=False)
     allow_share_openedx = models.BooleanField(null=False, default=False)
-    stream_source = models.CharField(
+    stream_source = models.CharField(  # noqa: DJ001
         null=True,
         blank=True,
         choices=[(status, status) for status in StreamSource.ALL_SOURCES],
         max_length=10,
     )
-    edx_course_id = models.CharField(null=True, blank=True, max_length=150)
+    edx_course_id = models.CharField(null=True, blank=True, max_length=150)  # noqa: DJ001
     edx_endpoints = models.ManyToManyField(
         "EdxEndpoint", through="CollectionEdxEndpoint"
     )
@@ -228,9 +223,7 @@ class Collection(TimestampedModel):
         return self.title
 
     def __repr__(self):
-        return '<Collection: title="{self.title!r}", owner={self.owner.username!r}>'.format(
-            self=self
-        )
+        return f'<Collection: title="{self.title!r}", owner={self.owner.username!r}>'
 
     @property
     def hexkey(self):
@@ -247,7 +240,7 @@ class Collection(TimestampedModel):
         return cls.objects.filter(owner=owner)
 
 
-class CollectionEdxEndpoint(models.Model):
+class CollectionEdxEndpoint(models.Model):  # noqa: DJ008
     """Model for a mapping table between Collections and EdxEndpoints"""
 
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
@@ -298,7 +291,7 @@ class Video(TimestampedModel):
     """
     Represents an uploaded video, primarily in terms of metadata (source url, title, etc).
     The actual video files (original and encoded) are represented by the VideoFile model.
-    """
+    """  # noqa: E501
 
     key = models.UUIDField(unique=True, null=False, blank=False, default=uuid4)
     collection = models.ForeignKey(
@@ -355,7 +348,7 @@ class Video(TimestampedModel):
             youtube_video = self.youtubevideo
             if youtube_video.status == YouTubeStatus.PROCESSED:
                 return youtube_video.id
-            return None
+            return None  # noqa: TRY300
         except YouTubeVideo.DoesNotExist:
             return None
 
@@ -373,7 +366,7 @@ class Video(TimestampedModel):
 
         Returns:
             list: sorted list of transcoded VideoFile objects, from highest to lowest resolution
-        """
+        """  # noqa: E501
         return sorted(
             self.videofile_set.exclude(encoding=EncodingNames.ORIGINAL),
             key=lambda x: EncodingNames.MP4.index(x.encoding)
@@ -388,7 +381,7 @@ class Video(TimestampedModel):
 
         Returns:
             VideoFile: The videofile most appropriate for download (highest quality MP4 transcode or original upload)
-        """
+        """  # noqa: E501
         files = sorted(
             self.videofile_set.exclude(encoding=EncodingNames.HLS),
             key=lambda x: EncodingNames.MP4.index(x.encoding)
@@ -423,7 +416,7 @@ class Video(TimestampedModel):
             }
             for file in self.transcoded_videos
         ]
-        return sources
+        return sources  # noqa: RET504
 
     def get_s3_key(self):
         """
@@ -436,9 +429,9 @@ class Video(TimestampedModel):
         Returns:
             str: A unique S3 key including the user id as a virtual subfolder
         """
-        _, extension = os.path.splitext(self.source_url.split("/")[-1])
-        newkey = "{uuid}/video{ext}".format(uuid=str(self.hexkey), ext=extension)
-        return newkey
+        _, extension = os.path.splitext(self.source_url.split("/")[-1])  # noqa: PTH122
+        newkey = f"{self.hexkey!s}/video{extension}"
+        return newkey  # noqa: RET504
 
     def transcode_key(self, preset=None):
         """
@@ -449,12 +442,12 @@ class Video(TimestampedModel):
 
         Returns:
             str: The S3 key to used for the encoded file.
-        """
+        """  # noqa: E501
         original_s3_key = self.videofile_set.get(encoding="original").s3_object_key
         if not preset:
             return original_s3_key
         output_template = "{prefix}/{s3key}_{preset}"
-        basename, _ = os.path.splitext(original_s3_key)
+        basename, _ = os.path.splitext(original_s3_key)  # noqa: PTH122
         return output_template.format(
             prefix=TRANSCODE_PREFIX, s3key=basename, preset=preset
         )
@@ -489,10 +482,10 @@ class Video(TimestampedModel):
         if status == VideoStatus.RETRANSCODE_SCHEDULED:
             self.schedule_retranscode = False
         self.save()
-        if status in tasks.STATUS_TO_NOTIFICATION.keys():
+        if status in tasks.STATUS_TO_NOTIFICATION.keys():  # noqa: SIM118
             tasks.async_send_notification_email.delay(self.id)
 
-    def save(self, *args, **kwargs):  
+    def save(self, *args, **kwargs):
         """
         Overridden method to run a preventive validation before saving the object.
         """
@@ -503,18 +496,18 @@ class Video(TimestampedModel):
         return self.title or "<untitled video>"
 
     def __repr__(self):
-        return "<Video: {self.title!r} {self.key!r}>".format(self=self)
+        return f"<Video: {self.title!r} {self.key!r}>"
 
 
 class VideoS3(TimestampedModel):
     """
     Abstract class with methods/properties common to both VideoFile and VideoThumbnail models
-    """
+    """  # noqa: E501
 
     s3_object_key = models.TextField(unique=True, blank=False, null=False)
     bucket_name = models.CharField(max_length=63, blank=False, null=False)
     video = models.ForeignKey(Video, on_delete=models.CASCADE)
-    preset_id = models.TextField(blank=True, null=True)
+    preset_id = models.TextField(blank=True, null=True)  # noqa: DJ001
 
     @property
     def s3_object(self):
@@ -535,11 +528,7 @@ class VideoS3(TimestampedModel):
         Returns:
             str: URL
         """
-        return "https://{domain}/{bucket}/{key}".format(
-            domain=settings.AWS_S3_DOMAIN,
-            bucket=self.bucket_name,
-            key=self.s3_object_key,
-        )
+        return f"https://{settings.AWS_S3_DOMAIN}/{self.bucket_name}/{self.s3_object_key}"
 
     @property
     def s3_basename(self):
@@ -549,7 +538,7 @@ class VideoS3(TimestampedModel):
         Returns:
             str: S3 base key name
         """
-        return os.path.splitext(self.s3_object_key)[0]
+        return os.path.splitext(self.s3_object_key)[0]  # noqa: PTH122
 
     @property
     def cloudfront_url(self):
@@ -561,10 +550,8 @@ class VideoS3(TimestampedModel):
         """
         distribution = settings.VIDEO_CLOUDFRONT_DIST
         if not distribution:
-            raise RuntimeError("Missing required setting: VIDEO_CLOUDFRONT_DIST")
-        return "https://{dist}.cloudfront.net/{key}".format(
-            dist=distribution, key=self.s3_object_key
-        )
+            raise RuntimeError("Missing required setting: VIDEO_CLOUDFRONT_DIST")  # noqa: EM101, TRY003
+        return f"https://{distribution}.cloudfront.net/{self.s3_object_key}"
 
     def delete_from_s3(self):
         """
@@ -579,7 +566,7 @@ class VideoS3(TimestampedModel):
 class VideoFile(VideoS3):
     """
     A file associated with a Video object, either the original upload or a transcoded file.
-    """
+    """  # noqa: E501
 
     encoding = models.CharField(max_length=128, default=EncodingNames.ORIGINAL)
 
@@ -588,7 +575,7 @@ class VideoFile(VideoS3):
         HLS encoding creates multiple S3 objects, use this method to delete them all.
         """
         if self.encoding == EncodingNames.HLS:
-            key = os.path.dirname(self.s3_object_key)
+            key = os.path.dirname(self.s3_object_key)  # noqa: PTH120
             delete_s3_objects.delay(self.bucket_name, key, as_filter=True)
         else:
             super().delete_from_s3()
@@ -608,12 +595,10 @@ class VideoFile(VideoS3):
         )
 
     def __str__(self):
-        return "{}: {} encoding".format(self.video.title, self.encoding)
+        return f"{self.video.title}: {self.encoding} encoding"
 
     def __repr__(self):
-        return "<VideoFile: {self.video.title!r} {self.s3_object_key!r} {self.encoding!r}>".format(
-            self=self
-        )
+        return f"<VideoFile: {self.video.title!r} {self.s3_object_key!r} {self.encoding!r}>"  # noqa: E501
 
 
 class VideoThumbnail(VideoS3):
@@ -626,12 +611,10 @@ class VideoThumbnail(VideoS3):
     max_height = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
-        return "{}: {}".format(self.video.title, self.s3_object_key)
+        return f"{self.video.title}: {self.s3_object_key}"
 
     def __repr__(self):
-        return "<VideoThumbnail: {self.s3_object_key!r} {self.max_width!r} {self.max_height!r}>".format(
-            self=self
-        )
+        return f"<VideoThumbnail: {self.s3_object_key!r} {self.max_width!r} {self.max_height!r}>"  # noqa: E501
 
 
 class VideoSubtitle(VideoS3):
@@ -654,27 +637,23 @@ class VideoSubtitle(VideoS3):
         return languages.get(alpha_2=self.language).name
 
     def __str__(self):
-        return "{}: {}: {}".format(self.video.title, self.s3_object_key, self.language)
+        return f"{self.video.title}: {self.s3_object_key}: {self.language}"
 
     def __repr__(self):
-        return "<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >".format(
-            self=self
-        )
+        return f"<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >"
 
 
 class YouTubeVideo(TimestampedModel):
     """A YouTube version of the video"""
 
     video = models.OneToOneField(Video, on_delete=models.CASCADE, primary_key=True)
-    id = models.CharField(max_length=11, null=True)
+    id = models.CharField(max_length=11, null=True)  # noqa: DJ001
     status = models.CharField(
         null=False, default=YouTubeStatus.UPLOADING, max_length=24
     )
 
     def __repr__(self):
-        return "<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >".format(
-            self=self
-        )
+        return f"<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >"  # noqa: E501
 
     def __str__(self):
-        return "{}: {}: {}".format(self.id, self.video.title, self.video.hexkey)
+        return f"{self.id}: {self.video.title}: {self.video.hexkey}"

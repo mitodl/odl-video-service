@@ -1,6 +1,7 @@
 """
 serializers for ui
 """
+
 from django.utils.translation import ugettext_lazy
 from rest_framework import serializers
 from rest_framework.relations import RelatedField
@@ -21,15 +22,15 @@ def validate_moira_lists(lists):
 
     Returns:
         (list of MoiraList) List of moira lists
-    """
+    """  # noqa: E501
     bad_lists = []
     moira_client = get_moira_client()
     for mlist in lists:
         if not moira_client.list_exists(mlist.name):
-            bad_lists.append(mlist.name)
+            bad_lists.append(mlist.name)  # noqa: PERF401
     if bad_lists:
         raise serializers.ValidationError(
-            "Moira list does not exist: {}".format(",".join(bad_lists))
+            "Moira list does not exist: {}".format(",".join(bad_lists))  # noqa: EM103
         )
     return lists
 
@@ -43,7 +44,7 @@ class SingleAttrRelatedField(RelatedField):
         self.model = model
         self.attribute = attribute
         # It would be nice to do this:
-        #   super(SingleAttrRelatedField, self).__init__(**kwargs)
+        #   super(SingleAttrRelatedField, self).__init__(**kwargs)  # noqa: ERA001
         # ...but unfortunately, that __init__() checks for a queryset,
         # and throws an exception if it's not there. Since this field doesn't
         # need a queryset, instead I'm reproducing the relevant code from that
@@ -58,7 +59,7 @@ class SingleAttrRelatedField(RelatedField):
         )
         kwargs.pop("many", None)
         self.allow_empty = kwargs.pop("allow_empty", False)
-        super(RelatedField, self).__init__(**kwargs)  
+        super(RelatedField, self).__init__(**kwargs)
 
     def to_internal_value(self, data):
         kwargs = {self.attribute: data}
@@ -402,8 +403,8 @@ class DropboxFileSerializer(serializers.Serializer):
     link = serializers.URLField()
     bytes = serializers.IntegerField(min_value=0)
     icon = serializers.URLField()
-    thumbnailLink = serializers.URLField()
-    isDir = serializers.BooleanField()
+    thumbnailLink = serializers.URLField()  # noqa: N815
+    isDir = serializers.BooleanField()  # noqa: N815
 
 
 class DropboxUploadSerializer(serializers.Serializer):

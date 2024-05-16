@@ -9,7 +9,7 @@ import boto3
 from django.conf import settings
 from django.core.management import BaseCommand
 
-script_path = os.path.dirname(os.path.realpath(__file__))
+script_path = os.path.dirname(os.path.realpath(__file__))  # noqa: PTH120
 
 
 class Command(BaseCommand):
@@ -22,15 +22,15 @@ class Command(BaseCommand):
         parser.add_argument(
             "--json",
             dest="filejson",
-            default=os.path.join(script_path, "../../../config/et_hls_presets.json"),
+            default=os.path.join(script_path, "../../../config/et_hls_presets.json"),  # noqa: PTH118
             help="Path to file containing presets in JSON format",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002
         """
         Run the command
         """
-        with open(options["filejson"], encoding="utf-8") as filejson:
+        with open(options["filejson"], encoding="utf-8") as filejson:  # noqa: PTH123
             presets = json.load(filejson)
 
         client = boto3.client(

@@ -1,6 +1,7 @@
 """
 Classes related to models for ODL Video
 """
+
 import datetime
 
 import pytz
@@ -28,7 +29,7 @@ class TimestampedModelQuerySet(QuerySet):
         Automatically update updated_at timestamp when .update(). This is because .update()
         does not go through .save(), thus will not auto_now, because it happens on the
         database level without loading objects into memory.
-        """
+        """  # noqa: E501
         if "updated_at" not in kwargs:
             kwargs["updated_at"] = now_in_utc()
         return super().update(**kwargs)
@@ -58,7 +59,7 @@ class TimestampedModel(Model):
     """
 
     objects = TimestampedModelManager()
-    created_at = DateTimeField(auto_now_add=True)  # UTC
+    created_at = DateTimeField(auto_now_add=True)  # UTC  # noqa: DJ012
     updated_at = DateTimeField(auto_now=True)  # UTC
 
     class Meta:

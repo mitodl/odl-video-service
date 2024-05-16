@@ -1,6 +1,7 @@
 """
 Permissions for ui app
 """
+
 import uuid
 
 from django.contrib.auth import get_user_model
@@ -29,8 +30,7 @@ def is_staff_or_superuser(user):
     return user.is_superuser or user.is_staff
 
 
-
-def has_video_view_permission(obj, request):
+def has_video_view_permission(obj, request):  # noqa: PLR0911
     """
     Determine if a user can view a video
 
@@ -92,13 +92,13 @@ class HasCollectionPermissions(BasePermission):
     Creation currently limited to staff or superusers
     """
 
-    def has_permission(self, request, view):
-        if request.method == "POST":
+    def has_permission(self, request, view):  # noqa: ARG002
+        if request.method == "POST":  # noqa: SIM102
             if not is_staff_or_superuser(request.user):
                 return False
         return True
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj):  # noqa: ARG002
         if request.method in SAFE_METHODS:
             return True
         return has_admin_permission(obj, request)
@@ -107,7 +107,7 @@ class HasCollectionPermissions(BasePermission):
 class HasVideoPermissions(BasePermission):
     """Permission to view a video, based on its collection"""
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj):  # noqa: ARG002
         if request.method in SAFE_METHODS:
             return has_video_view_permission(obj, request)
         return has_admin_permission(obj.collection, request)
@@ -116,7 +116,7 @@ class HasVideoPermissions(BasePermission):
 class HasVideoSubtitlePermissions(BasePermission):
     """Permission to view/edit a video videoSubtitle"""
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj):  # noqa: ARG002
         if request.method in SAFE_METHODS:
             return has_video_view_permission(obj.video, request)
         return has_admin_permission(obj.video.collection, request)
@@ -127,7 +127,7 @@ class IsCollectionOwner(BasePermission):
     Permission to check if user is owner of the collection
     """
 
-    def has_object_permission(self, request, view, obj):
+    def has_object_permission(self, request, view, obj):  # noqa: ARG002
         if request.user == obj.owner or request.user.is_superuser:
             return True
         # this should check for moira lists as well
@@ -137,9 +137,9 @@ class IsCollectionOwner(BasePermission):
 class CanUploadToCollection(BasePermission):
     """
     Permission that checks for a collection in the request.data and verifies that the user can post to it
-    """
+    """  # noqa: E501
 
-    def has_permission(self, request, view):
+    def has_permission(self, request, view):  # noqa: ARG002
         if request.user.is_superuser:
             return True
         collection_key = request.data.get("collection")
@@ -148,8 +148,8 @@ class CanUploadToCollection(BasePermission):
         try:
             uuid.UUID(collection_key)
         except ValueError as exc:
-            raise ValidationError(
-                "wrong UUID format for {}".format(collection_key)
+            raise ValidationError(  # noqa: TRY003
+                f"wrong UUID format for {collection_key}"  # noqa: EM102
             ) from exc
         collection = Collection.objects.filter(key=collection_key)
         return len(collection) > 0 and has_admin_permission(collection.first(), request)

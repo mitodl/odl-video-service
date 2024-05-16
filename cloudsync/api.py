@@ -1,4 +1,5 @@
 """APIs for coudsync app"""
+
 import re
 from collections import namedtuple
 from datetime import datetime
@@ -31,7 +32,7 @@ log = logging.getLogger(__name__)
 
 THUMBNAIL_PATTERN = "thumbnails/{}_thumbnail_{{count}}"
 RETRANSCODE_FOLDER = "retranscode/"
-ParsedVideoAttributes = namedtuple(
+ParsedVideoAttributes = namedtuple(  # noqa: PYI024
     "ParsedVideoAttributes",
     ["prefix", "session", "record_date", "record_date_str", "name"],
 )
@@ -113,7 +114,7 @@ def get_error_type_from_et_error(et_error):
 
     Returns:
         ui.constants.VideoStatus: a string representing the video status
-    """
+    """  # noqa: E501
     if not et_error:
         log.error("Elastic transcoder did not return an error string")
         return VideoStatus.TRANSCODE_FAILED_INTERNAL
@@ -121,9 +122,9 @@ def get_error_type_from_et_error(et_error):
     try:
         error_code = int(error_code)
     except ValueError:
-        log.error("Elastic transcoder did not return an expected error string")
+        log.error("Elastic transcoder did not return an expected error string")  # noqa: TRY400
         return VideoStatus.TRANSCODE_FAILED_INTERNAL
-    if 4000 <= error_code < 5000:
+    if 4000 <= error_code < 5000:  # noqa: PLR2004
         return VideoStatus.TRANSCODE_FAILED_VIDEO
     return VideoStatus.TRANSCODE_FAILED_INTERNAL
 
@@ -135,7 +136,7 @@ def refresh_status(video, encode_job=None):
     Args:
         video(ui.models.Video): Video object to refresh status of.
         encode_job(dj_elastictranscoder.models.EncodeJob): EncodeJob associated with Video
-    """
+    """  # noqa: E501
     if video.status in (VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING):
         if not encode_job:
             encode_job = video.encode_jobs.latest("created_at")
@@ -157,7 +158,7 @@ def refresh_status(video, encode_job=None):
         encode_job.save()
 
 
-def transcode_video(video, video_file, generate_mp4_videofile=False):
+def transcode_video(video, video_file, generate_mp4_videofile=False):  # noqa: FBT002
     """
     Start a transcode job for a video
 
@@ -173,7 +174,7 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
         prefix = RETRANSCODE_FOLDER
-        
+
         delete_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
             f"{prefix}{TRANSCODE_PREFIX}/{video.hexkey}",
@@ -211,9 +212,9 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
 
     # Generate thumbnails for the 1st encoding (no point in doing so for each).
     if video.status != VideoStatus.RETRANSCODE_SCHEDULED:
-        outputs[0][
-            "ThumbnailPattern"
-        ] = f"{prefix}{THUMBNAIL_PATTERN.format(video_file.s3_basename)}"
+        outputs[0]["ThumbnailPattern"] = (
+            f"{prefix}{THUMBNAIL_PATTERN.format(video_file.s3_basename)}"
+        )
 
     transcoder = VideoTranscoder(
         settings.ET_PIPELINE_ID,
@@ -223,7 +224,7 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
     )
 
     user_meta = {
-        "pipeline": "odl-video-service-{}".format(settings.ENVIRONMENT).lower()
+        "pipeline": f"odl-video-service-{settings.ENVIRONMENT}".lower()
     }
 
     try:
@@ -231,7 +232,7 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
             video_input, outputs, Playlists=playlists, UserMetadata=user_meta
         )
     except ClientError as exc:
-        log.error("Transcode job creation failed", video_id=video.id)
+        log.error("Transcode job creation failed", video_id=video.id)  # noqa: TRY400
         if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
             video.status = VideoStatus.RETRANSCODE_FAILED
         else:
@@ -258,11 +259,11 @@ def create_lecture_collection_slug(video_attributes):
 
     Args:
         video_attributes (ParsedVideoAttributes): Named tuple of lecture video info
-    """
+    """  # noqa: E501
     return (
         video_attributes.prefix
         if not video_attributes.session
-        else "{}-{}".format(video_attributes.prefix, video_attributes.session)
+        else f"{video_attributes.prefix}-{video_attributes.session}"
     )
 
 
@@ -279,7 +280,7 @@ def create_lecture_video_title(video_attributes):
         else video_attributes.record_date.strftime("%B %d, %Y")
     )
     return (
-        "Lecture - {}".format(video_title_date)
+        f"Lecture - {video_title_date}"
         if video_title_date
         else video_attributes.name
     )
@@ -292,7 +293,7 @@ def process_watch_file(s3_filename):
 
     Args:
         s3_filename (str): S3 object key (i.e.: a filename)
-    """
+    """  # noqa: E501
     watch_bucket = get_bucket(settings.VIDEO_S3_WATCH_BUCKET)
     video_attributes = parse_lecture_video_filename(s3_filename)
 
@@ -304,11 +305,7 @@ def process_watch_file(s3_filename):
     )
     with transaction.atomic():
         video = Video.objects.create(
-            source_url="https://{}/{}/{}".format(
-                settings.AWS_S3_DOMAIN,
-                settings.VIDEO_S3_WATCH_BUCKET,
-                quote(s3_filename),
-            ),
+            source_url=f"https://{settings.AWS_S3_DOMAIN}/{settings.VIDEO_S3_WATCH_BUCKET}/{quote(s3_filename)}",
             collection=collection,
             title=create_lecture_video_title(video_attributes),
             multiangle=True,  # Assume all videos in watch bucket are multi-angle
@@ -328,7 +325,7 @@ def process_watch_file(s3_filename):
         try:
             video.delete()
         except:
-            log.error(
+            log.error(  # noqa: TRY400
                 "Failed to delete video after failed S3 file copy",
                 video_hexkey=video.hexkey,
             )
@@ -339,7 +336,7 @@ def process_watch_file(s3_filename):
     try:
         s3_client.delete_object(Bucket=settings.VIDEO_S3_WATCH_BUCKET, Key=s3_filename)
     except ClientError:
-        log.error("Failed to delete from watch bucket", s3_object_key=s3_filename)
+        log.error("Failed to delete from watch bucket", s3_object_key=s3_filename)  # noqa: TRY400
 
     # Start a transcode job for the video
     transcode_video(video, video_file)
@@ -355,7 +352,7 @@ def parse_lecture_video_filename(filename):
 
     Returns:
         ParsedVideoAttributes: A named tuple of information extracted from the video file name
-    """
+    """  # noqa: E501
     rx = (
         r"(.+)-lec-mit-0000-"  # prefix to be used as the start of the collection name
         r"(\w+)"  # Recording date (required)
@@ -364,7 +361,7 @@ def parse_lecture_video_filename(filename):
         r".*\.\w"
     )  # Rest of filename including extension (required)
     matches = re.search(rx, filename)
-    if not matches or len(matches.groups()) != 5:
+    if not matches or len(matches.groups()) != 5:  # noqa: PLR2004
         log.exception(
             "No matches found for filename %s with regex %s",
             positional_args=(filename, rx),
@@ -377,7 +374,7 @@ def parse_lecture_video_filename(filename):
     else:
         prefix, recording_date_str, _, _, session = matches.groups()
         try:
-            record_date = datetime.strptime(recording_date_str, "%Y%b%d")
+            record_date = datetime.strptime(recording_date_str, "%Y%b%d")  # noqa: DTZ007
         except ValueError:
             record_date = None
     return ParsedVideoAttributes(
@@ -407,7 +404,7 @@ def upload_subtitle_to_s3(caption_data, file_data):
     try:
         video = Video.objects.get(key=video_key)
     except Video.DoesNotExist:
-        log.error(
+        log.error(  # noqa: TRY400
             "Attempted to upload subtitle to Video that does not exist",
             video_key=video_key,
         )
@@ -427,7 +424,7 @@ def upload_subtitle_to_s3(caption_data, file_data):
             Config=config,
         )
     except Exception:
-        log.error("An error occurred uploading caption file", video_key=video_key)
+        log.error("An error occurred uploading caption file", video_key=video_key)  # noqa: TRY400
         raise
 
     vt, created = VideoSubtitle.objects.get_or_create(

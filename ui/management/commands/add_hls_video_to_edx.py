@@ -1,4 +1,5 @@
-"""Management command to attempt to add an HLS video to edX via API call"""
+"""Management command to attempt to add an HLS video to edX via API call"""  # noqa: INP001
+
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
@@ -16,7 +17,6 @@ class Command(BaseCommand):
     help = __doc__
 
     def add_arguments(self, parser):
-
         group = parser.add_mutually_exclusive_group()
         group.add_argument(
             "--video-file-id",
@@ -26,7 +26,7 @@ class Command(BaseCommand):
         group.add_argument(
             "--edx-course-id",
             type=str,
-            help="The edx_course_id value for the Collection that the video file belongs to",
+            help="The edx_course_id value for the Collection that the video file belongs to",  # noqa: E501
         )
         parser.add_argument(
             "--video-title",
@@ -34,19 +34,19 @@ class Command(BaseCommand):
             help="The video title of the video file you want to add to edX",
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002
         if not options["video_file_id"] and not any(
             (options["edx_course_id"], options["video_title"])
         ):
-            raise CommandError(
-                "Please provide --video-file-id or at least one of --edx-course-id and --video-title"
+            raise CommandError(  # noqa: TRY003
+                "Please provide --video-file-id or at least one of --edx-course-id and --video-title"  # noqa: EM101, E501
             )
         if options["video_file_id"] and options["video_title"]:
-            raise CommandError(
-                "Please provide --video-file-id or --video-title, not both"
+            raise CommandError(  # noqa: TRY003
+                "Please provide --video-file-id or --video-title, not both"  # noqa: EM101
             )
 
-        filters = dict(encoding=EncodingNames.HLS)
+        filters = dict(encoding=EncodingNames.HLS)  # noqa: C408
         if options["video_file_id"]:
             filters["pk"] = options["video_file_id"]
         else:
@@ -56,10 +56,8 @@ class Command(BaseCommand):
                 filters["video__title"] = options["video_title"]
         video_files = list(VideoFile.objects.filter(**filters).all())
         if not video_files:
-            raise CommandError(
-                "No HLS-encoded VideoFiles found that match the given parameters ({})".format(
-                    filters
-                )
+            raise CommandError(  # noqa: TRY003
+                f"No HLS-encoded VideoFiles found that match the given parameters ({filters})"  # noqa: EM102, E501
             )
 
         self.stdout.write("Attempting to post video(s) to edX...")
@@ -75,14 +73,10 @@ class Command(BaseCommand):
                 for endpoint, resp in response_dict.items()
                 if endpoint not in good_responses
             }
-            for _, resp in good_responses.items():
+            for _, resp in good_responses.items():  # noqa: PERF102
                 self.stdout.write(
                     self.style.SUCCESS(
-                        "Video successfully added to edX – VideoFile: {} ({}), edX url: {}".format(
-                            video_file.video.title,
-                            video_file.pk,
-                            resp.url,
-                        )
+                        f"Video successfully added to edX – VideoFile: {video_file.video.title} ({video_file.pk}), edX url: {resp.url}"  # noqa: E501, RUF001
                     )
                 )
             for edx_endpoint, resp in bad_responses.items():
@@ -91,12 +85,7 @@ class Command(BaseCommand):
                 )
                 self.stdout.write(
                     self.style.ERROR(
-                        "Request to add HLS video to edX failed – "
-                        "VideoFile: {} ({}), edX url: {}, API response: {}".format(
-                            video_file.video.title,
-                            video_file.pk,
-                            edx_endpoint.full_api_url,
-                            resp_summary,
-                        )
+                        "Request to add HLS video to edX failed – "  # noqa: RUF001
+                        f"VideoFile: {video_file.video.title} ({video_file.pk}), edX url: {edx_endpoint.full_api_url}, API response: {resp_summary}"  # noqa: E501
                     )
                 )

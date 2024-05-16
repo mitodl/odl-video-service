@@ -1,6 +1,7 @@
 """
 Tests for tasks
 """
+
 import io
 import os
 import random
@@ -51,8 +52,6 @@ from ui.models import Collection, Video, YouTubeVideo
 pytestmark = pytest.mark.django_db
 
 
-
-
 @pytest.fixture()
 def video():
     """Fixture to create a video"""
@@ -86,7 +85,7 @@ def mocked_celery(mocker):
     )
     group_mock = mocker.patch("cloudsync.tasks.group", autospec=True)
 
-    yield SimpleNamespace(
+    return SimpleNamespace(
         replace=replace_mock,
         group=group_mock,
         replace_exception_class=exception_class,
@@ -94,7 +93,7 @@ def mocked_celery(mocker):
 
 
 @pytest.fixture()
-def mock_transcode(mocker):
+def mock_transcode(mocker):  # noqa: PT004
     """Mock everything required for a  transcode"""
     mocker.patch.multiple(
         "cloudsync.tasks.settings",
@@ -115,7 +114,7 @@ def mock_transcode(mocker):
 
 
 @pytest.fixture()
-def mock_failed_encode_job(mocker):
+def mock_failed_encode_job(mocker):  # noqa: PT004
     """Mock everything required for a failed encode job"""
     job_result = {
         "Job": {"Id": "1498220566931-qtmtcu", "Status": "Error"},
@@ -129,7 +128,7 @@ def mock_failed_encode_job(mocker):
 
 
 @pytest.fixture()
-def mock_successful_encode_job(mocker):
+def mock_successful_encode_job(mocker):  # noqa: PT004
     """Mock everything required for a successful transcode"""
     mocker.patch("cloudsync.api.VideoTranscoder.encode")
     mocker.patch(
@@ -371,10 +370,10 @@ def test_video_task_no_chain(mocker):
 
 
 @pytest.mark.parametrize(
-    "status, error_status",
+    "status, error_status",  # noqa: PT006
     [
-        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
-        [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED],
+        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],  # noqa: PT007
+        [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED],  # noqa: PT007
     ],
 )
 def test_update_video_statuses_nojob(mocker, video, status, error_status):
@@ -387,10 +386,10 @@ def test_update_video_statuses_nojob(mocker, video, status, error_status):
 
 
 @pytest.mark.parametrize(
-    "status, error_status",
+    "status, error_status",  # noqa: PT006
     [
-        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
-        [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED],
+        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],  # noqa: PT007
+        [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED],  # noqa: PT007
     ],
 )
 def test_update_video_statuses_clienterror(mocker, video, status, error_status):
@@ -470,11 +469,11 @@ def test_monitor_watch(mocker, user):
 @mock_s3
 @override_settings(LECTURE_CAPTURE_USER="admin")
 @pytest.mark.parametrize(
-    "filename,unsorted",
+    "filename,unsorted",  # noqa: PT006
     [
-        ["MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4", False],
-        ["Bad Name.mp4", True],
-        ["MIT-6.046-lec-mit-0000-2017apr06-0404.mp4", False],
+        ["MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4", False],  # noqa: PT007
+        ["Bad Name.mp4", True],  # noqa: PT007
+        ["MIT-6.046-lec-mit-0000-2017apr06-0404.mp4", False],  # noqa: PT007
     ],
 )
 def test_monitor_watch_badname(mocker, filename, unsorted):
@@ -530,7 +529,7 @@ def test_upload_youtube_videos(mocker, source, max_uploads):
     mock_uploader = mocker.patch(
         "cloudsync.tasks.YouTubeApi.upload_video",
         return_value={
-            "id": "".join([random.choice(string.ascii_lowercase) for n in range(8)]),
+            "id": "".join([random.choice(string.ascii_lowercase) for n in range(8)]),  # noqa: S311
             "status": {"uploadStatus": "uploaded"},
         },
     )
@@ -779,7 +778,6 @@ def test_schedule_retranscodes_error(mocker, mocked_celery):
 
 @mock_s3
 def test_sort_transcoded_m3u8_files(mocker):
-    
     """
     Test that sort_transcoded_m3u8_files changes the m3u8 file on s3 if it needs to be sorted
     """
@@ -788,7 +786,7 @@ def test_sort_transcoded_m3u8_files(mocker):
 
     bucket_name = "MYBUCKET"
     s3c.create_bucket(Bucket=bucket_name)
-    bucket = s3.Bucket(bucket_name)
+    bucket = s3.Bucket(bucket_name)  # noqa: F841
     mocker.patch("cloudsync.tasks.settings.VIDEO_S3_TRANSCODE_BUCKET", bucket_name)
 
     file_key = "key"

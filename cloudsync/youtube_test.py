@@ -1,6 +1,7 @@
 """
 Tests for youtube api
 """
+
 import random
 import string
 
@@ -15,16 +16,14 @@ from ui.factories import VideoFactory, VideoFileFactory, VideoSubtitleFactory
 pytestmark = pytest.mark.django_db
 
 
-
-
 def test_youtube_settings(mocker, settings):
     """
     Test that Youtube object creation uses YT_* settings for credentials
     """
-    settings.YT_ACCESS_TOKEN = "yt_access_token"
+    settings.YT_ACCESS_TOKEN = "yt_access_token"  # noqa: S105
     settings.YT_CLIENT_ID = "yt_client_id"
-    settings.YT_CLIENT_SECRET = "yt_secret"
-    settings.YT_REFRESH_TOKEN = "yt_refresh"
+    settings.YT_CLIENT_SECRET = "yt_secret"  # noqa: S105
+    settings.YT_REFRESH_TOKEN = "yt_refresh"  # noqa: S105
     mock_oauth = mocker.patch("cloudsync.youtube.Credentials")
     YouTubeApi()
     mock_oauth.assert_called_with(
@@ -32,7 +31,7 @@ def test_youtube_settings(mocker, settings):
         refresh_token=settings.YT_REFRESH_TOKEN,
         client_id=settings.YT_CLIENT_ID,
         client_secret=settings.YT_CLIENT_SECRET,
-        token_uri="https://accounts.google.com/o/oauth2/token",
+        token_uri="https://accounts.google.com/o/oauth2/token",  # noqa: S106
     )
 
 
@@ -72,12 +71,12 @@ def test_upload_video_no_id(mocker):
 
 
 @pytest.mark.parametrize(
-    ["error", "retryable"],
+    ["error", "retryable"],  # noqa: PT006
     [
-        [HttpError(MockHttpErrorResponse(500), b""), True],
-        [HttpError(MockHttpErrorResponse(403), b""), False],
-        [OSError, True],
-        [IndexError, False],
+        [HttpError(MockHttpErrorResponse(500), b""), True],  # noqa: PT007
+        [HttpError(MockHttpErrorResponse(403), b""), False],  # noqa: PT007
+        [OSError, True],  # noqa: PT007
+        [IndexError, False],  # noqa: PT007
     ],
 )
 def test_upload_errors_retryable(mocker, error, retryable):
@@ -90,7 +89,7 @@ def test_upload_errors_retryable(mocker, error, retryable):
     youtube_mocker().videos.return_value.insert.return_value.next_chunk.side_effect = (
         error
     )
-    with pytest.raises(Exception) as exc:
+    with pytest.raises(Exception) as exc:  # noqa: PT011
         YouTubeApi().upload_video(videofile.video)
     assert str(exc.value).startswith("Retried YouTube upload 10x") == retryable
 
@@ -99,8 +98,8 @@ def test_upload_video_long_fields(mocker):
     """
     Test that the upload_youtube_video task truncates title and description if too long
     """
-    title = "".join(random.choice(string.ascii_lowercase) for c in range(105))
-    desc = "".join(random.choice(string.ascii_lowercase) for c in range(5005))
+    title = "".join(random.choice(string.ascii_lowercase) for c in range(105))  # noqa: S311
+    desc = "".join(random.choice(string.ascii_lowercase) for c in range(5005))  # noqa: S311
     video = VideoFactory.create(
         title=title, description=desc, is_public=True, status=VideoStatus.COMPLETE
     )

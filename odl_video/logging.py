@@ -1,4 +1,5 @@
 """Configure structured logging for our application"""
+
 import logging
 
 import structlog
@@ -56,7 +57,7 @@ structlog.configure(
 )
 
 
-def getLogger(name):
+def getLogger(name):  # noqa: N802
     """Return a logger with the given name"""
     logger = structlog.get_logger(name)
     if settings.LOG_FILE:

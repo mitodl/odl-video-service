@@ -1,10 +1,9 @@
 """
 Django App
 """
+
 from django.apps import AppConfig
 from django.core.exceptions import ImproperlyConfigured
-
-
 
 
 class UIConfig(AppConfig):
@@ -24,10 +23,10 @@ class UIConfig(AppConfig):
                 None,
                 "",
             ):
-                missing_settings.append(setting_name)
+                missing_settings.append(setting_name)  # noqa: PERF401
         if missing_settings and settings.ENFORCE_MANDATORY_SETTINGS:
             raise ImproperlyConfigured(
-                "The following settings are missing: {}".format(
+                "The following settings are missing: {}".format(  # noqa: EM103
                     ", ".join(missing_settings)
                 )
             )

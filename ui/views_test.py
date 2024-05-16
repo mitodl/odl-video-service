@@ -1,7 +1,7 @@
-
 """
 Tests for views
 """
+
 import json
 from types import SimpleNamespace
 from uuid import uuid4
@@ -41,8 +41,6 @@ from ui.views import (
 pytestmark = pytest.mark.django_db
 
 
-
-
 @pytest.fixture()
 def logged_in_client(client):
     """
@@ -53,7 +51,7 @@ def logged_in_client(client):
     return client, user
 
 
-@pytest.fixture
+@pytest.fixture()
 def logged_in_apiclient(apiclient):
     """
     Fixture for a Django client that is logged in for the test user
@@ -63,7 +61,7 @@ def logged_in_apiclient(apiclient):
     return apiclient, user
 
 
-@pytest.fixture
+@pytest.fixture()
 def user_view_list_data():
     """
     Fixture for testing VideoDetail view permissions with a collection view_list
@@ -75,7 +73,7 @@ def user_view_list_data():
     return SimpleNamespace(video=video, moira_list=moira_list, collection=collection)
 
 
-@pytest.fixture
+@pytest.fixture()
 def user_admin_list_data():
     """
     Fixture for testing VideoDetail view permissions with a collection admin_list
@@ -87,7 +85,7 @@ def user_admin_list_data():
     return SimpleNamespace(video=video, moira_list=moira_list, collection=collection)
 
 
-@pytest.fixture
+@pytest.fixture()
 def post_data(logged_in_apiclient):
     """Fixture for testing collection creation using valid post data"""
     _, user = logged_in_apiclient
@@ -98,7 +96,7 @@ def post_data(logged_in_apiclient):
         "view_lists": [],
         "admin_lists": [],
     }
-    return input_data
+    return input_data  # noqa: RET504
 
 
 def test_index(logged_in_client):
@@ -146,9 +144,7 @@ def test_video_detail(logged_in_client, settings):
     }
 
 
-def test_video_embed(
-    logged_in_client, settings
-):  
+def test_video_embed(logged_in_client, settings):
     """Test video embed page"""
     client, user = logged_in_client
     settings.GA_DIMENSION_CAMERA = "camera1"
@@ -436,7 +432,7 @@ def test_collection_viewset_detail_404(logged_in_apiclient, collection_key, logg
     client, _ = logged_in_apiclient
     if not logged_in:
         client.logout()
-    response = client.get("/collections/{}".format(collection_key))
+    response = client.get(f"/collections/{collection_key}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -897,7 +893,7 @@ def test_video_viewset_analytics(mocker, logged_in_apiclient):
     url = reverse("models-api:video-analytics", kwargs={"key": video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
-    assert mock_get_video_analytics.called_once_with(video)
+    assert mock_get_video_analytics.called_once_with(video)  # noqa: PGH005
     assert result.data["data"] == mock_get_video_analytics.return_value
 
 
@@ -921,7 +917,7 @@ def test_video_viewset_analytics_mock_data(mocker, logged_in_apiclient):
     n = 2
     result = client.get(url, {"mock": 1, "seed": seed, "n": n})
     assert result.status_code == status.HTTP_200_OK
-    assert mock_generate_mock_video_analytics_data.called_once_with(seed=seed, n=n)
+    assert mock_generate_mock_video_analytics_data.called_once_with(seed=seed, n=n)  # noqa: PGH005
     assert result.data["data"] == mock_generate_mock_video_analytics_data.return_value
 
 
@@ -940,7 +936,6 @@ def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
 
 
 def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
-    
     """
     Tests the list of videos for a user.
 
@@ -999,7 +994,7 @@ def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
         *[
             VideoFactory(
                 title=(
-                    "matching view_lists, is_public=True," " in unviewable collections"
+                    "matching view_lists, is_public=True, in unviewable collections"
                 ),
                 view_lists=[view_list],
                 is_public=True,
@@ -1045,7 +1040,7 @@ def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
     expected_prohibited_videos = [
         *[
             VideoFactory(
-                title=("no view_lists, is_public=False," " in unviewable collections"),
+                title=("no view_lists, is_public=False, in unviewable collections"),
                 view_lists=[],
                 is_public=False,
                 collection=collection,
@@ -1110,7 +1105,6 @@ def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
     assert result.data["start_index"] == 1
     assert result.data["end_index"] == len(expected_viewable_videos)
     assert result.data["count"] == len(expected_viewable_key_titles)
-    
 
 
 def test_video_viewset_list_anonymous(logged_in_apiclient):
@@ -1169,7 +1163,7 @@ def test_videos_pagination(mocker, logged_in_apiclient):
     result = client.get(url)
     assert len(result.data["results"]) == min(page_size, len(videos))
     for i in range(1, 3):
-        paged_url = url + "?page={}".format(i)
+        paged_url = url + f"?page={i}"
         result = client.get(paged_url)
         assert len(result.data["results"]) == min(
             page_size, max(0, len(videos) - page_size * (i - 1))
@@ -1196,7 +1190,7 @@ def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
     expected_videos = videos_by_collection_key[target_collection.hexkey]
     assert len(result.data["results"]) == min(page_size, len(expected_videos))
     for i in range(1, 3):
-        paged_url = url + "?page={}".format(i)
+        paged_url = url + f"?page={i}"
         result = client.get(paged_url)
         assert len(result.data["results"]) == min(
             page_size, max(0, len(expected_videos) - page_size * (i - 1))
@@ -1212,14 +1206,14 @@ def test_videos_default_ordering(mocker, logged_in_apiclient):
     collection = CollectionFactory(owner=user)
     VideoFactory.create_batch(10, collection=collection)
     url = reverse("models-api:video-list")
-    p1_response = client.get("{}?page=1".format(url))
+    p1_response = client.get(f"{url}?page=1")
     assert len(p1_response.data["results"]) == 5
     for i in range(4):
         current_video_date = p1_response.data["results"][i]["created_at"]
         next_video_date = p1_response.data["results"][i + 1]["created_at"]
         assert current_video_date >= next_video_date
 
-    p2_response = client.get("{}?page=2".format(url))
+    p2_response = client.get(f"{url}?page=2")
     last_entry_data = p1_response.data["results"][-1]["created_at"]
     first_entry_data = p2_response.data["results"][0]["created_at"]
     assert last_entry_data >= first_entry_data
@@ -1239,14 +1233,14 @@ def test_videos_ordering(mocker, logged_in_apiclient, field):
     collection = CollectionFactory(owner=user)
     VideoFactory.create_batch(10, collection=collection)
     url = reverse("models-api:video-list")
-    p1_response = client.get("{}?page=1&ordering={}".format(url, field))
+    p1_response = client.get(f"{url}?page=1&ordering={field}")
     assert len(p1_response.data["results"]) == 5
     for i in range(4):
         assert (
             p1_response.data["results"][i][field].lower()
             <= p1_response.data["results"][i + 1][field].lower()
         )
-    p2_response = client.get("{}?page=2&ordering={}".format(url, field))
+    p2_response = client.get(f"{url}?page=2&ordering={field}")
     assert (
         p1_response.data["results"][-1][field].lower()
         <= p2_response.data["results"][0][field].lower()
@@ -1272,7 +1266,7 @@ def test_collection_pagination(mocker, logged_in_apiclient):
     result = client.get(url)
     assert len(result.data["results"]) == min(page_size, len(collections))
     for i in range(1, 3):
-        paged_url = url + "?page={}".format(i)
+        paged_url = url + f"?page={i}"
         result = client.get(paged_url)
         assert len(result.data["results"]) == min(
             page_size, max(0, len(collections) - page_size * (i - 1))
@@ -1288,14 +1282,14 @@ def test_collection_ordering(mocker, logged_in_apiclient, field):
     client, user = logged_in_apiclient
     CollectionFactory.create_batch(10, owner=user)
     url = reverse("models-api:collection-list")
-    p1_response = client.get("{}?page=1&ordering={}".format(url, field))
+    p1_response = client.get(f"{url}?page=1&ordering={field}")
     assert len(p1_response.data["results"]) == 5
     for i in range(4):
         assert (
             p1_response.data["results"][i][field].lower()
             <= p1_response.data["results"][i + 1][field].lower()
         )
-    p2_response = client.get("{}?page=2&ordering={}".format(url, field))
+    p2_response = client.get(f"{url}?page=2&ordering={field}")
     assert (
         p1_response.data["results"][-1][field].lower()
         <= p2_response.data["results"][0][field].lower()

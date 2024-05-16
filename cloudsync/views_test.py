@@ -1,15 +1,15 @@
 """tests for cloudsync views"""
+
 import pytest
 from django.test import Client
 from django.urls import reverse
 
 from ui.factories import UserFactory
 
-
 pytestmark = pytest.mark.django_db
 
 
-@pytest.fixture
+@pytest.fixture()
 def client():
     """DRF API anonymous test client"""
     return Client()
@@ -21,7 +21,7 @@ def test_youtube_token_initial_get(mocker, client):
     mock_flow = mocker.patch(
         "cloudsync.views.InstalledAppFlow.from_client_config",
         return_value=mocker.Mock(
-            credentials=mocker.Mock(token="a", refresh_token="b"),
+            credentials=mocker.Mock(token="a", refresh_token="b"),  # noqa: S106
             authorization_url=mocker.Mock(return_value=("https://fake.edu", "")),
         ),
     )
@@ -33,7 +33,7 @@ def test_youtube_token_callback(mocker, client):
     """User should receive access and refresh tokens"""
     mock_flow = mocker.patch(
         "cloudsync.views.InstalledAppFlow.from_client_config",
-        return_value=mocker.Mock(credentials=mocker.Mock(token="a", refresh_token="b")),
+        return_value=mocker.Mock(credentials=mocker.Mock(token="a", refresh_token="b")),  # noqa: S106
     )
     client.force_login(UserFactory.create(is_staff=True))
     response = client.get(f"{reverse('yt_tokens')}?code=abcdef")

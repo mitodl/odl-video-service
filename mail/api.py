@@ -1,6 +1,7 @@
 """
 Provides functions for sending and retrieving data about in-app email
 """
+
 import json
 import re
 from urllib.parse import urljoin
@@ -35,12 +36,12 @@ class MailgunClient:
 
         Returns:
             dict: A dict of default parameters for the Mailgun API
-        """
+        """  # noqa: E501
         return {"from": settings.EMAIL_SUPPORT}
 
     @classmethod
-    def _mailgun_request(  
-        cls, request_func, endpoint, params, sender_name=None, raise_for_status=True
+    def _mailgun_request(  # noqa: PLR0913
+        cls, request_func, endpoint, params, sender_name=None, raise_for_status=True  # noqa: FBT002
     ):
         """
         Sends a request to the Mailgun API
@@ -52,8 +53,8 @@ class MailgunClient:
             raise_for_status (bool): If true, check the status and raise for non-2xx statuses
         Returns:
             requests.Response: HTTP response
-        """
-        mailgun_url = "{}/{}".format(settings.MAILGUN_URL, endpoint)
+        """  # noqa: E501
+        mailgun_url = f"{settings.MAILGUN_URL}/{endpoint}"
         email_params = cls.default_params()
         email_params.update(params)
         # Update 'from' address if sender_name was specified
@@ -73,7 +74,7 @@ class MailgunClient:
         return response
 
     @classmethod
-    def send_batch(  
+    def send_batch(  # noqa: PLR0913
         cls,
         subject,
         html_body,
@@ -82,7 +83,7 @@ class MailgunClient:
         sender_address=None,
         sender_name=None,
         chunk_size=settings.MAILGUN_BATCH_CHUNK_SIZE,
-        raise_for_status=True,
+        raise_for_status=True,  # noqa: FBT002
     ):
         """
         Sends a text email to a list of recipients (one email per recipient) via batch.
@@ -108,7 +109,7 @@ class MailgunClient:
             SendBatchException:
                If there is at least one exception, this exception is raised with all other exceptions in a list
                along with recipients we failed to send to.
-        """
+        """  # noqa: E501
         # Convert null contexts to empty dicts
         recipients = ((email, context or {}) for email, context in recipients)
 
@@ -120,9 +121,7 @@ class MailgunClient:
         exception_pairs = []
 
         for chunk in chunks(recipients, chunk_size=chunk_size):
-            chunk_dict = {  
-                email: context for email, context in chunk
-            }
+            chunk_dict = {email: context for email, context in chunk}  # noqa: C416
             emails = list(chunk_dict.keys())
 
             params = {
@@ -147,7 +146,7 @@ class MailgunClient:
                 responses.append(response)
             except ImproperlyConfigured:
                 raise
-            except Exception as exception:  
+            except Exception as exception:  # noqa: BLE001
                 exception_pairs.append((emails, exception))
 
         if exception_pairs:
@@ -156,7 +155,7 @@ class MailgunClient:
         return responses
 
     @classmethod
-    def send_individual_email(  
+    def send_individual_email(  # noqa: PLR0913
         cls,
         subject,
         html_body,
@@ -165,7 +164,7 @@ class MailgunClient:
         recipient_variables=None,
         sender_address=None,
         sender_name=None,
-        raise_for_status=True,
+        raise_for_status=True,  # noqa: FBT002
     ):
         """
         Sends a text email to a single recipient.
@@ -182,7 +181,7 @@ class MailgunClient:
 
         Returns:
             requests.Response: response from Mailgun
-        """
+        """  # noqa: E501
         # Since .send_batch() returns a list, we need to return the first in the list
         responses = cls.send_batch(
             subject,
@@ -206,15 +205,15 @@ def render_email_templates(template_name, context):
 
     Returns:
         (str, str, str): tuple of the templates for subject, text_body, html_body
-    """
+    """  # noqa: E501
     subject_text = render_to_string(
-        "{}/subject.txt".format(template_name), context
+        f"{template_name}/subject.txt", context
     ).rstrip()
 
     context.update({"subject": subject_text})
-    html_text = render_to_string("{}/body.html".format(template_name), context)
+    html_text = render_to_string(f"{template_name}/body.html", context)
 
-    # pynliner internally uses bs4, which we can now modify the inlined version into a plaintext version
+    # pynliner internally uses bs4, which we can now modify the inlined version into a plaintext version  # noqa: E501
     # this avoids parsing the body twice in bs4
     soup = BeautifulSoup(html_text, "html5lib")
     for link in soup.find_all("a"):
@@ -263,4 +262,4 @@ def context_for_video(video):
         "support_email": settings.EMAIL_SUPPORT,
         "static_url": urljoin(settings.ODL_VIDEO_BASE_URL, settings.STATIC_URL),
     }
-    return context
+    return context  # noqa: RET504

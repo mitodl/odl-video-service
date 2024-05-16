@@ -1,6 +1,7 @@
 """
 Tasks for cloudsync app
 """
+
 import os
 import re
 from urllib.parse import unquote
@@ -29,8 +30,6 @@ log = logging.getLogger(__name__)
 CONTENT_DISPOSITION_RE = re.compile(r"filename\*=UTF-8''(?P<filename>[^ ]+)")
 
 
-
-
 class VideoTask(Task):
     """
     Custom Celery Task class for video uploads and transcodes
@@ -55,8 +54,8 @@ class VideoTask(Task):
             ):
                 # Log the error and continue, using self.request.id instead
                 # The worst that will happen is that progress bar won't work.
-                log.error("Could not find task_id in chain")
-                return
+                log.error("Could not find task_id in chain")  # noqa: TRY400
+                return None
         return self.request.id
 
 
@@ -71,7 +70,7 @@ def stream_to_s3(self, video_id):
     try:
         video = Video.objects.get(id=video_id)
     except (Video.DoesNotExist, Video.MultipleObjectsReturned):
-        log.error("Exception retrieving video", video_id=video_id)
+        log.error("Exception retrieving video", video_id=video_id)  # noqa: TRY400
         raise
     video.update_status(VideoStatus.UPLOADING)
 
@@ -125,7 +124,7 @@ def transcode_from_s3(self, video_id):
 
     Args:
         video_id(int): The video primary key
-    """
+    """  # noqa: E501
     try:
         video = Video.objects.get(id=video_id)
     except Video.DoesNotExist as exc:
@@ -138,7 +137,7 @@ def transcode_from_s3(self, video_id):
     video_file = video.videofile_set.get(encoding="original")
 
     try:
-        transcode_video(video, video_file, True)
+        transcode_video(video, video_file, True)  # noqa: FBT003
     except ClientError:
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise
@@ -165,7 +164,7 @@ def retranscode_video(self, video_id):
 
     try:
         video.update_status(VideoStatus.RETRANSCODE_SCHEDULED)
-        transcode_video(video, video_file, True)
+        transcode_video(video, video_file, True)  # noqa: FBT003
     except ClientError:
         self.update_state(task_id=task_id, state=states.FAILURE)
         video.update_status(VideoStatus.RETRANSCODE_FAILED)
@@ -187,12 +186,12 @@ def schedule_retranscodes(self):
     videos = Video.objects.filter(schedule_retranscode=True).values_list(
         "id", flat=True
     )
-    if videos:
+    if videos:  # noqa: RET503
         try:
             retranscode_tasks = group(
                 [retranscode_video.si(video_id) for video_id in videos]
             )
-        except:  
+        except:  # noqa: E722
             error = "schedule_retranscodes threw an error"
             log.exception(error)
             return error
@@ -200,7 +199,7 @@ def schedule_retranscodes(self):
 
 
 @shared_task(bind=True)
-def update_video_statuses(self):
+def update_video_statuses(self):  # noqa: ARG001
     """
     Check on statuses of all transcoding videos and update their status if appropriate
     """
@@ -232,7 +231,7 @@ def update_video_statuses(self):
 def upload_youtube_videos():
     """
     Upload public videos one at a time to YouTube (if not already there) until the daily maximum is reached.
-    """
+    """  # noqa: E501
     yt_queue = (
         Video.objects.filter(is_public=True)
         .filter(status=VideoStatus.COMPLETE)
@@ -256,7 +255,7 @@ def upload_youtube_videos():
             )
             if API_QUOTA_ERROR_MSG in error.content.decode("utf-8"):
                 break
-        except:  
+        except:  # noqa: E722
             log.exception(
                 "Error uploading video to Youtube",
                 video_hexkey=video.hexkey,
@@ -270,21 +269,21 @@ def upload_youtube_videos():
 
 
 @shared_task(bind=True)
-def remove_youtube_video(self, video_id):
+def remove_youtube_video(self, video_id):  # noqa: ARG001
     """
     Delete a video from Youtube
     """
     try:
         YouTubeApi().delete_video(video_id)
     except HttpError as error:
-        if error.resp.status == 404:
+        if error.resp.status == 404:  # noqa: PLR2004
             log.info("Not found on Youtube, already deleted?", video_id=video_id)
         else:
             raise
 
 
 @shared_task(bind=True)
-def upload_youtube_caption(self, caption_id):
+def upload_youtube_caption(self, caption_id):  # noqa: ARG001
     """
     Upload a video caption file to YouTube
     """
@@ -295,21 +294,21 @@ def upload_youtube_caption(self, caption_id):
 
 
 @shared_task(bind=True)
-def remove_youtube_caption(self, video_id, language):
+def remove_youtube_caption(self, video_id, language):  # noqa: ARG001
     """
     Remove Youtube captions not matching a video's subtitle language)
     """
     video = Video.objects.get(id=video_id)
     captions = YouTubeApi().list_captions(video.youtube_id)
-    if language in captions.keys():
+    if language in captions.keys():  # noqa: SIM118
         YouTubeApi().delete_caption(captions[language])
 
 
 @shared_task(bind=True)
-def update_youtube_statuses(self):
+def update_youtube_statuses(self):  # noqa: ARG001
     """
     Update the status of recently uploaded YouTube videos and upload captions if complete
-    """
+    """  # noqa: E501
     youtube = YouTubeApi()
     videos_processing = YouTubeVideo.objects.filter(status=YouTubeStatus.UPLOADED)
     for yt_video in videos_processing:
@@ -320,7 +319,7 @@ def update_youtube_statuses(self):
                 for subtitle in yt_video.video.videosubtitle_set.all():
                     youtube.upload_caption(subtitle, yt_video.id)
         except IndexError:
-            # Video might be a dupe or deleted, mark it as failed and continue to next one.
+            # Video might be a dupe or deleted, mark it as failed and continue to next one.  # noqa: E501
             yt_video.status = YouTubeStatus.FAILED
             yt_video.save()
             log.exception(
@@ -330,17 +329,17 @@ def update_youtube_statuses(self):
             )
         except HttpError as error:
             if API_QUOTA_ERROR_MSG in error.content.decode("utf-8"):
-                # Don't raise the error, task will try on next run until daily quota is reset
+                # Don't raise the error, task will try on next run until daily quota is reset  # noqa: E501
                 break
             raise
 
 
 @shared_task(bind=True)
-def monitor_watch_bucket(self):
+def monitor_watch_bucket(self):  # noqa: ARG001
     """
     Check the watch bucket for any files and import them if found. All files found in the
     S3 bucket indicated by 'VIDEO_S3_WATCH_BUCKET' is assumed to be a lecture capture video.
-    """
+    """  # noqa: E501
     watch_bucket = get_bucket(settings.VIDEO_S3_WATCH_BUCKET)
     for key in watch_bucket.objects.all():
         try:
@@ -352,7 +351,7 @@ def monitor_watch_bucket(self):
                 s3_object_key=key.key,
                 response=exc.response,
             )
-        except Exception:  
+        except Exception:
             # Log any other exception, raise later so other files can be processed.
             log.exception(
                 "AWS error when ingesting file from watch bucket", s3_object_key=key.key
@@ -375,7 +374,7 @@ def parse_content_metadata(response):
         if result:
             file_name = unquote(result.group("filename"))
     if not file_name:
-        file_name = unquote(os.path.basename(response.url))
+        file_name = unquote(os.path.basename(response.url))  # noqa: PTH119
 
     content_type = response.headers["Content-Type"]
 
@@ -387,7 +386,7 @@ def parse_content_metadata(response):
 
 
 @shared_task(bind=True)
-def sort_transcoded_m3u8_files(self):
+def sort_transcoded_m3u8_files(self):  # noqa: ARG001
     """
     Sort files with highest resolution first in trancoded video playlist
     """
@@ -400,7 +399,7 @@ def sort_transcoded_m3u8_files(self):
                     Bucket=settings.VIDEO_S3_TRANSCODE_BUCKET, Key=s3_filename
                 )
             except ClientError:
-                log.error("Object not found on s3", video_id=video.id)
+                log.error("Object not found on s3", video_id=video.id)  # noqa: TRY400
                 continue
 
             file_content = file["Body"].read().decode()
@@ -423,7 +422,7 @@ def sort_transcoded_m3u8_files(self):
                     ]
                 )
             except AttributeError:
-                log.error(
+                log.error(  # noqa: TRY400
                     "Unexpected format for transcoded video file", video_id=video.id
                 )
                 continue

@@ -1,4 +1,5 @@
-""" Test model signals"""
+"""Test model signals"""
+
 import factory
 import pytest
 
@@ -14,8 +15,6 @@ from ui.factories import (
 from ui.models import Video
 
 pytestmark = pytest.mark.django_db
-
-
 
 
 @pytest.fixture()
@@ -63,8 +62,8 @@ def test_youtube_video_permissions_signal(mocker):
 
 
 @pytest.mark.parametrize(
-    ["is_public", "on_youtube", "delete_count"],
-    [[True, True, 0], [True, False, 0], [False, True, 1], [False, False, 0]],
+    ["is_public", "on_youtube", "delete_count"],  # noqa: PT006
+    [[True, True, 0], [True, False, 0], [False, True, 1], [False, False, 0]],  # noqa: PT007
 )
 def test_youtube_sync_signal(
     mocker, is_public, on_youtube, delete_count, video_with_file

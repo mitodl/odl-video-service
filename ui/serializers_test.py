@@ -1,6 +1,7 @@
 """
 Tests for serialisers module
 """
+
 import uuid
 
 import pytest
@@ -11,8 +12,6 @@ from ui.encodings import EncodingNames
 from ui.factories import MoiraListFactory, UserFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
-
-
 
 
 def test_collection_serializer():
@@ -53,7 +52,7 @@ def test_collection_serializer_validation_fake_admin_lists(mocker):
             raise_exception=True
         )
     assert exc.match(
-        "Moira list does not exist: {}".format(collection.admin_lists.first().name)
+        f"Moira list does not exist: {collection.admin_lists.first().name}"
     )
 
 
@@ -70,7 +69,7 @@ def test_collection_serializer_validation_fake_view_lists(mocker):
             raise_exception=True
         )
     assert exc.match(
-        "Moira list does not exist: {}".format(collection.view_lists.first().name)
+        f"Moira list does not exist: {collection.view_lists.first().name}"
     )
 
 
@@ -99,7 +98,7 @@ def test_collection_serializer_admin_flag(mocker, has_permission):
     mocked_request = mocker.MagicMock()
     collection = factories.CollectionFactory()
     serialized_data = serializers.CollectionSerializer(
-        collection, context=dict(request=mocked_request)
+        collection, context=dict(request=mocked_request)  # noqa: C408
     ).data
     mocked_admin_permission.assert_called_with(collection, mocked_request)
     assert serialized_data["is_admin"] is has_permission
@@ -123,7 +122,7 @@ def test_collection_serializer_private_video(mocker, is_admin, is_superuser):
     VideoFactory.create(is_private=True, collection=collection)
 
     serialized_data = serializers.CollectionSerializer(
-        collection, context=dict(request=mocked_request)
+        collection, context=dict(request=mocked_request)  # noqa: C408
     ).data
 
     assert len(serialized_data["videos"]) == (2 if has_permission else 1)

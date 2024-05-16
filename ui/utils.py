@@ -1,4 +1,5 @@
 """Utils for ui app"""
+
 import datetime
 import itertools
 import json
@@ -15,7 +16,7 @@ import requests
 from django.conf import settings
 from django.core.cache import caches
 from google.oauth2.service_account import (
-    Credentials as ServiceAccountCredentials,  
+    Credentials as ServiceAccountCredentials,
 )
 from googleapiclient.discovery import build
 from mit_moira import Moira
@@ -25,7 +26,7 @@ from ui.exceptions import GoogleAnalyticsException, MoiraException
 
 log = logging.getLogger(__name__)
 
-MoiraUser = namedtuple("MoiraUser", "username type")
+MoiraUser = namedtuple("MoiraUser", "username type")  # noqa: PYI024
 MOIRA_CACHE_KEY = "moira_lists_{user_id}"
 cache = caches["redis"]
 
@@ -44,9 +45,9 @@ def get_moira_client():
     )
     try:
         return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
-    except Exception as exc:  
-        raise MoiraException(
-            "Something went wrong with creating a moira client"
+    except Exception as exc:
+        raise MoiraException(  # noqa: TRY003
+            "Something went wrong with creating a moira client"  # noqa: EM101
         ) from exc
 
 
@@ -54,8 +55,8 @@ def _check_files_exist(paths):
     """Checks that files exist at given paths."""
     errors = []
     for path in paths:
-        if not os.path.isfile(path):
-            errors.append("File missing: expected path '{}'".format(path))
+        if not os.path.isfile(path):  # noqa: PTH113
+            errors.append(f"File missing: expected path '{path}'")  # noqa: PERF401
     if errors:
         raise RuntimeError("\n".join(errors))
 
@@ -71,7 +72,7 @@ def get_moira_user(user):
 
     Returns:
         MoiraUser: A namedtuple containing username and type
-    """
+    """  # noqa: E501
     if re.search(r"(@|\.)mit.edu$", user.email):
         return MoiraUser(user.email.split("@")[0], "USER")
     return MoiraUser(user.email, "STRING")
@@ -96,7 +97,7 @@ def query_moira_lists(user):
 
     Returns:
         List[str]: A list of names of moira lists which contain the user as a member.
-    """
+    """  # noqa: E501
     moira_user = get_moira_user(user)
     moira = get_moira_client()
     try:
@@ -104,13 +105,13 @@ def query_moira_lists(user):
             moira_user.username, moira_user.type, max_return_count=100000
         )
         list_names = [list_info["listName"] for list_info in list_infos]
-        return list_names
-    except Exception as exc:  
+        return list_names  # noqa: RET504, TRY300
+    except Exception as exc:
         if "java.lang.NullPointerException" in str(exc):
-            # User is not a member of any moira lists, so ignore exception and return empty list
+            # User is not a member of any moira lists, so ignore exception and return empty list  # noqa: E501
             return []
         raise MoiraException(
-            "Something went wrong with getting moira-lists for %s" % user.username
+            "Something went wrong with getting moira-lists for %s" % user.username  # noqa: UP031
         ) from exc
 
 
@@ -152,10 +153,10 @@ def list_members(list_name):
     moira = get_moira_client()
     try:
         list_users = moira.list_members(list_name)
-        return list_users
-    except Exception as exc:  
+        return list_users  # noqa: RET504, TRY300
+    except Exception as exc:
         raise MoiraException(
-            "Something went wrong with getting moira-users for %s" % list_name
+            "Something went wrong with getting moira-users for %s" % list_name  # noqa: UP031
         ) from exc
 
 
@@ -165,7 +166,7 @@ def has_common_lists(user, list_names):
 
     Returns:
         bool: True if there is any name in list_names which is in the user's moira lists
-    """
+    """  # noqa: E501
     if user.is_anonymous:
         return False
     user_lists = user_moira_lists(user)
@@ -234,9 +235,9 @@ def write_to_file(filename, contents):
         contents (bytes): What to write to the file.
 
     """
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
-    with open(filename, "wb") as infile:
+    if not os.path.exists(os.path.dirname(filename)):  # noqa: PTH110, PTH120
+        os.makedirs(os.path.dirname(filename))  # noqa: PTH103, PTH120
+    with open(filename, "wb") as infile:  # noqa: PTH123
         infile.write(contents)
 
 
@@ -257,7 +258,7 @@ def get_video_analytics(video):
     try:
         return parse_google_analytics_response(ga_response)
     except Exception as exc:
-        raise GoogleAnalyticsException("Could not parse analytics response") from exc
+        raise GoogleAnalyticsException("Could not parse analytics response") from exc  # noqa: EM101, TRY003
 
 
 def get_google_analytics_client():
@@ -271,10 +272,10 @@ def get_google_analytics_client():
             json.loads(settings.GA_KEYFILE_JSON)
         )
         analytics_client = build("analyticsreporting", "v4", credentials=credentials)
-        return analytics_client
-    except Exception as exc:  
-        raise GoogleAnalyticsException(
-            "Something went wrong with creating a GoogleAnalytics client"
+        return analytics_client  # noqa: RET504, TRY300
+    except Exception as exc:
+        raise GoogleAnalyticsException(  # noqa: TRY003
+            "Something went wrong with creating a GoogleAnalytics client"  # noqa: EM101
         ) from exc
 
 
@@ -322,7 +323,7 @@ def generate_google_analytics_query(video):
             },
         ],
     }
-    return query
+    return query  # noqa: RET504
 
 
 def parse_google_analytics_response(ga_response):
@@ -352,14 +353,14 @@ def parse_google_analytics_response(ga_response):
     # Check dimensions,
     # to account for singlecam/multicam query differences.
     dimensions = report["columnHeader"]["dimensions"]
-    is_multichannel = len(dimensions) == 2
+    is_multichannel = len(dimensions) == 2  # noqa: PLR2004
     rows = report["data"].get("rows", [])
     for row in rows:
         m = re.match(r"T(\d{4})", row["dimensions"][0])
         if not m:
             continue
         time_ = int(m.group(1))
-        if is_multichannel:
+        if is_multichannel:  # noqa: SIM108
             channel = row["dimensions"][1]
         else:
             channel = "views"
@@ -369,8 +370,8 @@ def parse_google_analytics_response(ga_response):
             times.add(time_)
             channels.add(channel)
     return {
-        "times": sorted(list(times)),
-        "channels": sorted(list(channels)),
+        "times": sorted(list(times)),  # noqa: C414
+        "channels": sorted(list(channels)),  # noqa: C414
         "is_multichannel": is_multichannel,
         "views_at_times": views_at_times,
     }
@@ -381,7 +382,7 @@ def generate_mock_video_analytics_data(n=24, seed=42):
 
     This can be useful for doing integration tests with the frontend.
     """
-    local_random = random.Random(seed)
+    local_random = random.Random(seed)  # noqa: S311
     times = list(range(int(n)))
     channels = ["camera%s" % (i + 1) for i in range(4)]
     views_at_times = {
@@ -389,8 +390,8 @@ def generate_mock_video_analytics_data(n=24, seed=42):
         for t in times
     }
     return {
-        "times": sorted(list(times)),
-        "channels": sorted(list(channels)),
+        "times": sorted(list(times)),  # noqa: C414
+        "channels": sorted(list(channels)),  # noqa: C414
         "views_at_times": views_at_times,
     }
 
@@ -407,11 +408,11 @@ def multi_urljoin(url_base, *url_parts, add_trailing_slash=False):
 
     Returns:
         str: Valid slash-separated URL
-    """
-    stripped_url_parts = map(lambda part: part.strip("/"), url_parts)
+    """  # noqa: E501
+    stripped_url_parts = map(lambda part: part.strip("/"), url_parts)  # noqa: C417
     url_path = "/".join(stripped_url_parts)
     if add_trailing_slash or (url_parts and url_parts[-1].endswith("/")):
-        url_path = "".join((url_path, "/"))
+        url_path = "".join((url_path, "/"))  # noqa: FLY002
     return urljoin(url_base, url_path)
 
 
@@ -425,7 +426,7 @@ def partition(items, predicate=bool):
         predicate (function): A function that takes each item and returns True or False
     Returns:
         tuple of iterables: An iterable of non-matching items, paired with an iterable of matching items
-    """
+    """  # noqa: E501
     a, b = itertools.tee((predicate(item), item) for item in items)
     return (item for pred, item in a if not pred), (item for pred, item in b if pred)
 
@@ -440,7 +441,7 @@ def partition_to_lists(items, predicate=bool):
         predicate (function): A function that takes each item and returns True or False
     Returns:
         tuple of lists: A list of non-matching items, paired with a list of matching items
-    """
+    """  # noqa: E501
     a, b = partition(items, predicate=predicate)
     return list(a), list(b)
 
@@ -454,8 +455,8 @@ def get_error_response_summary_dict(response):
 
     Returns:
         dict: A summary of the error response
-    """
-    # If the response is an HTML document, include the URL in the summary but not the raw HTML
+    """  # noqa: E501
+    # If the response is an HTML document, include the URL in the summary but not the raw HTML  # noqa: E501
     if "text/html" in response.headers.get("Content-Type", ""):
         summary_dict = {"content": "(HTML body ignored)"}
     else:
@@ -492,7 +493,7 @@ def send_refresh_request(base_api_url, client_id, client_secret):
         "token_type": "JWT",
     }
 
-    resp = requests.post(access_token_url, data=data)
+    resp = requests.post(access_token_url, data=data)  # noqa: S113
 
     resp.raise_for_status()
     return resp.json()

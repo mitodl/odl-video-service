@@ -1,4 +1,5 @@
 """Tests for utils methods"""
+
 import json
 from tempfile import NamedTemporaryFile
 
@@ -29,13 +30,11 @@ from ui.utils import (
     write_to_file,
 )
 
-
-
 pytestmark = pytest.mark.django_db
 
 
 @pytest.mark.parametrize(
-    "key_file, cert_file",
+    "key_file, cert_file",  # noqa: PT006
     [
         (NamedTemporaryFile(), None),
         (None, NamedTemporaryFile()),
@@ -50,7 +49,7 @@ def test_get_moira_client_missing_secrets(mock_moira, settings, key_file, cert_f
     settings.MIT_WS_CERTIFICATE_FILE = (
         "bad/file/path" if not cert_file else cert_file.name
     )
-    with pytest.raises(RuntimeError) as err:
+    with pytest.raises(RuntimeError) as err:  # noqa: PT012
         get_moira_client()
         assert not mock_moira.called
         if key_file is None:
@@ -65,7 +64,7 @@ def test_get_moira_client_success(mock_moira, settings):
     settings.MIT_WS_PRIVATE_KEY_FILE = tempfile1.name
     settings.MIT_WS_CERTIFICATE_FILE = tempfile2.name
     get_moira_client()
-    assert mock_moira.called_once_with(
+    assert mock_moira.called_once_with(  # noqa: PGH005
         settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE
     )
 
@@ -75,7 +74,7 @@ def test_write_to_file():
     content = b"-----BEGIN CERTIFICATE-----\nMIID5DCCA02gAwIBAgIRTUTVwsj4Vy+l6+XTYjnIQ==\n-----END CERTIFICATE-----"
     with NamedTemporaryFile() as outfile:
         write_to_file(outfile.name, content)
-        with open(outfile.name, "rb") as infile:
+        with open(outfile.name, "rb") as infile:  # noqa: PTH123
             assert infile.read() == content
 
 
@@ -119,7 +118,7 @@ def test_user_moira_lists_cache_hit(mocker):
     """
     mock_cache = mocker.patch("ui.utils.cache")
     mock_query_moira_lists = mocker.patch("ui.utils.query_moira_lists")
-    cached_list_names = set(["some_list"])
+    cached_list_names = set(["some_list"])  # noqa: C405
     mock_cache.get.return_value = cached_list_names
     result = user_moira_lists(factories.UserFactory())
     assert result == cached_list_names
@@ -139,8 +138,8 @@ def test_user_moira_lists_cache_miss(mocker, settings):
     result = user_moira_lists(user)
     expected_result = set(mock_query_moira_lists.return_value)
     assert result == expected_result
-    assert mock_query_moira_lists.called_once_with(user)
-    assert mock_cache.set.called_once_with(
+    assert mock_query_moira_lists.called_once_with(user)  # noqa: PGH005
+    assert mock_cache.set.called_once_with(  # noqa: PGH005
         MOIRA_CACHE_KEY.format(user_id=user.id),
         expected_result,
         settings.MOIRA_CACHE_TIMEOUT,
@@ -159,7 +158,7 @@ def test_has_common_lists(mocker):
     Test that has_common_lists returns the correct boolean value
     """
     mock_user_moira_lists = mocker.patch("ui.utils.user_moira_lists")
-    mock_user_moira_lists.return_value = set(["a", "b"])
+    mock_user_moira_lists.return_value = set(["a", "b"])  # noqa: C405
     user = factories.UserFactory()
     assert has_common_lists(user, ["b", "c"]) is True
     assert has_common_lists(user, ["c"]) is False
@@ -175,8 +174,8 @@ def test_get_video_analytics(mocker):
     expected_ga_client = mock_get_ga_client.return_value
     expected_batchGet_call = expected_ga_client.reports.return_value.batchGet
     expected_ga_query = mock_generate_ga_query.return_value
-    assert expected_batchGet_call.called_once_with(body=expected_ga_query)
-    assert mock_parse_ga_response.called_once_with(expected_batchGet_call.return_value)
+    assert expected_batchGet_call.called_once_with(body=expected_ga_query)  # noqa: PGH005
+    assert mock_parse_ga_response.called_once_with(expected_batchGet_call.return_value)  # noqa: PGH005
     assert result is mock_parse_ga_response.return_value
 
 
@@ -195,10 +194,10 @@ def test_get_google_analytics_client_success(ga_client_mocks, settings):
     """Test that a client is returned from get_ga_client"""
     settings.GA_KEYFILE_JSON = '{"some": "json"}'
     result = get_google_analytics_client()
-    assert (
+    assert (  # noqa: PGH005
         ga_client_mocks["ServiceAccountCredentials"].from_service_account_info
     ).called_once_with(json.loads(settings.GA_KEYFILE_JSON))
-    assert ga_client_mocks["build"].called_once_with(
+    assert ga_client_mocks["build"].called_once_with(  # noqa: PGH005
         ga_client_mocks[
             "ServiceAccountCredentials"
         ].from_service_account_info.return_value
@@ -362,7 +361,7 @@ def test_parse_google_analytics_response_singlecam():
 
 
 @pytest.mark.parametrize(
-    "n, seed, expected",
+    "n, seed, expected",  # noqa: PT006
     [
         (
             1,
@@ -405,7 +404,7 @@ def test_list_members_exception(mock_moira_client):
 
 
 @pytest.mark.parametrize(
-    "url_base,url_parts,trailing,expected",
+    "url_base,url_parts,trailing,expected",  # noqa: PT006
     [
         ("http://mit.edu", ["a", "b"], False, "http://mit.edu/a/b"),
         ("http://mit.edu", ["a", "b/c/d", "e"], False, "http://mit.edu/a/b/c/d/e"),
@@ -448,11 +447,11 @@ def test_partition_to_lists():
 
 
 @pytest.mark.parametrize(
-    "content,content_type,exp_summary_content",
+    "content,content_type,exp_summary_content",  # noqa: PT006
     [
-        ['{"bad": "response"}', "application/json", '{"bad": "response"}'],
-        ["plain text", "text/plain", "plain text"],
-        ["<div>HTML content</div>", "text/html; charset=utf-8", "(HTML body ignored)"],
+        ['{"bad": "response"}', "application/json", '{"bad": "response"}'],  # noqa: PT007
+        ["plain text", "text/plain", "plain text"],  # noqa: PT007
+        ["<div>HTML content</div>", "text/html; charset=utf-8", "(HTML body ignored)"],  # noqa: PT007
     ],
 )
 def test_get_error_response_summary(content, content_type, exp_summary_content):
@@ -477,12 +476,12 @@ def test_send_refresh_request(mocker):
     send_refresh_request should send a post request with clint_id and client_secret
     to get a new JWT access token
     """
-    client_secret = "secrets"
+    client_secret = "secrets"  # noqa: S105
     client_id = "clientid"
     url = "http://test.url"
     mock_post = mocker.patch("ui.utils.requests.post")
     send_refresh_request(url, client_id, client_secret)
-    expected_token_url = "{}/oauth2/access_token/".format(url)
+    expected_token_url = f"{url}/oauth2/access_token/"
     expected_data = {
         "grant_type": "client_credentials",
         "client_id": client_id,

@@ -4,30 +4,29 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 #
-# DEFAULT_EDX_HLS_API_PATH = "/api/val/v0/videos/"
+# DEFAULT_EDX_HLS_API_PATH = "/api/val/v0/videos/"  # noqa: ERA001
 #
 #
 # def create_edx_endpoint_from_settings(apps, schema_editor):
 #     """
-#     If edX Django settings exist, create an EdxEndpoint record from them and set it as the app default endpoint
+#     If edX Django settings exist, create an EdxEndpoint record from them and set it as the app default endpoint  # noqa: E501
 #     """
-#     from django.conf import settings
+#     from django.conf import settings  # noqa: ERA001
 #
-#     EdxEndpoint = apps.get_model("ui", "EdxEndpoint")
+#     EdxEndpoint = apps.get_model("ui", "EdxEndpoint")  # noqa: ERA001
 #     if settings.EDX_BASE_URL and settings.EDX_ACCESS_TOKEN:
 #         EdxEndpoint.objects.get_or_create(
-#             base_url=settings.EDX_BASE_URL,
-#             access_token=settings.EDX_ACCESS_TOKEN,
-#             hls_api_path=settings.EDX_HLS_API_URL or DEFAULT_EDX_HLS_API_PATH,
-#             defaults=dict(
-#                 name="Default edX endpoint",
-#                 is_global_default=True,
+#             base_url=settings.EDX_BASE_URL,  # noqa: ERA001
+#             access_token=settings.EDX_ACCESS_TOKEN,  # noqa: ERA001
+#             hls_api_path=settings.EDX_HLS_API_URL or DEFAULT_EDX_HLS_API_PATH,  # noqa: ERA001
+#             defaults=dict(  # noqa: ERA001
+#                 name="Default edX endpoint",  # noqa: ERA001
+#                 is_global_default=True,  # noqa: ERA001
 #             ),
-#         )
+#         )  # noqa: ERA001
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ui", "0027_edx_course_admin_group"),
     ]

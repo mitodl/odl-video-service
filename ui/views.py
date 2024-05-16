@@ -1,4 +1,5 @@
 """Views for ui app"""
+
 import json
 
 from django.conf import settings
@@ -23,9 +24,8 @@ from rest_framework.views import APIView
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
 from techtv2ovs.models import TechTVVideo
-from ui import api
+from ui import api, serializers
 from ui import permissions as ui_permissions
-from ui import serializers
 from ui.constants import EDX_ADMIN_GROUP
 from ui.models import Collection, Video, VideoSubtitle
 from ui.pagination import CollectionSetPagination, VideoSetPagination
@@ -85,7 +85,7 @@ def conditional_response(view, video=None, **kwargs):
     return view.render_to_response(context)
 
 
-def index(request):  
+def index(request):  # noqa: ARG001
     """Index"""
     return redirect("collection-react-view")
 
@@ -96,7 +96,7 @@ class CollectionReactView(TemplateView):
 
     template_name = "ui/collections.html"
 
-    def get_context_data(self, **kwargs):  
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["js_settings_json"] = json.dumps(
             {
@@ -128,12 +128,12 @@ class VideoDetail(TemplateView):
 
     template_name = "ui/video_detail.html"
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         video = get_object_or_404(Video, key=kwargs["video_key"])
         self.get_context_data(video, **kwargs)
         return conditional_response(self, video, *args, **kwargs)
 
-    def get_context_data(self, video, **kwargs):  
+    def get_context_data(self, video, **kwargs):
         context = super().get_context_data(**kwargs)
         context["js_settings_json"] = json.dumps(
             {
@@ -154,11 +154,11 @@ class VideoEmbed(TemplateView):
 
     template_name = "ui/video_embed.html"
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         video = get_object_or_404(Video, key=kwargs["video_key"])
         return conditional_response(self, video, *args, **kwargs)
 
-    def get_context_data(self, video, **kwargs):  
+    def get_context_data(self, video, **kwargs):
         context = super().get_context_data(**kwargs)
         context["video"] = video
         context["js_settings_json"] = json.dumps(
@@ -187,10 +187,10 @@ class VideoDownload(View):
         """
         video_file = video.download
         if not video_file:
-            raise Http404()
+            raise Http404()  # noqa: RSE102
         return redirect(video_file.cloudfront_url)
 
-    def get(self, request, *args, **kwargs):  
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         """
         Respond to a GET request.
 
@@ -206,7 +206,7 @@ class TechTVDetail(VideoDetail):
     Video detail page for a TechTV-based URL
     """
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         ttv_videos = get_list_or_404(
             TechTVVideo.objects.filter(ttv_id=kwargs["video_key"])
         )
@@ -218,7 +218,7 @@ class TechTVPrivateDetail(VideoDetail):
     Video detail page for a TechTV-based private URL
     """
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         ttv_videos = get_list_or_404(
             TechTVVideo.objects.filter(private_token=kwargs["video_key"])
         )
@@ -231,7 +231,7 @@ class TechTVEmbed(VideoEmbed):
     Video embed page for a TechTV-based URL
     """
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         ttv_videos = get_list_or_404(
             TechTVVideo.objects.filter(ttv_id=kwargs["video_key"])
         )
@@ -243,7 +243,7 @@ class TechTVDownload(VideoDownload):
     Public video download for a TechTV-based URL
     """
 
-    def get(self, request, *args, **kwargs):  
+    def get(self, request, *args, **kwargs):  # noqa: ARG002
         ttv_videos = get_list_or_404(
             Video.objects.filter(techtvvideo__ttv_id=kwargs["video_key"]).filter(
                 is_public=True
@@ -304,7 +304,7 @@ class UploadVideosFromDropbox(APIView):
         """
         Creates entries for each submitted file in dropbox in the specific model and submits async tasks
         for uploading the file to S3
-        """
+        """  # noqa: E501
         serializer = serializers.DropboxUploadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         response_data = api.process_dropbox_data(serializer.validated_data)
@@ -412,9 +412,9 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
         return queryset
 
     @action(detail=True)
-    def analytics(self, request, key=None):
+    def analytics(self, request, key=None):  # noqa: ARG002
         """get video analytics data"""
-        
+
         if "throw" in request.GET:
             return HttpResponse(status=500)
         if "mock" in request.GET:
@@ -468,25 +468,21 @@ def _handle_error_view(request, status_code):
     )
 
 
-def permission_denied_403_view(
-    request, *args, **kwargs
-):  
+def permission_denied_403_view(request, *args, **kwargs):  # noqa: ARG001
     """
     Handles a 403 response
     """
     return _handle_error_view(request, status.HTTP_403_FORBIDDEN)
 
 
-def page_not_found_404_view(
-    request, *args, **kwargs
-):  
+def page_not_found_404_view(request, *args, **kwargs):  # noqa: ARG001
     """
     Handles a 404 response
     """
     return _handle_error_view(request, status.HTTP_404_NOT_FOUND)
 
 
-def error_500_view(request, *args, **kwargs):  
+def error_500_view(request, *args, **kwargs):  # noqa: ARG001
     """
     Handles a 500 response
     """
@@ -496,7 +492,7 @@ def error_500_view(request, *args, **kwargs):
 class LoginView(DjangoLoginView):
     """Login"""
 
-    def get_context_data(self, **kwargs):  
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["js_settings_json"] = json.dumps(
             {
@@ -506,7 +502,7 @@ class LoginView(DjangoLoginView):
         return context
 
     def get(self, request, *args, **kwargs):
-        """This is the Touchstone `login` page, so redirect if `next` is a URL parameter"""
+        """This is the Touchstone `login` page, so redirect if `next` is a URL parameter"""  # noqa: E501
         if request.user.is_authenticated:
             next_redirect = request.GET.get("next")
             if next_redirect:
@@ -524,12 +520,12 @@ class MoiraListsForUser(APIView):
     authentication_classes = (authentication.SessionAuthentication,)
     permission_classes = (permissions.IsAdminUser,)
 
-    def get(self, request, username_or_email):
+    def get(self, request, username_or_email):  # noqa: ARG002
         """Get and return the list names"""
 
         email = username_or_email
         if "@" not in email:
-            email = "{username}@mit.edu".format(username=username_or_email)
+            email = f"{username_or_email}@mit.edu"
 
         try:
             user = User.objects.get(Q(username=username_or_email) | Q(email=email))
@@ -548,6 +544,6 @@ class UsersForMoiraList(APIView):
     authentication_classes = (authentication.SessionAuthentication,)
     permission_classes = (permissions.IsAdminUser,)
 
-    def get(self, request, list_name):
+    def get(self, request, list_name):  # noqa: ARG002
         """Get and return the users"""
         return Response(data={"users": list_members(list_name)})

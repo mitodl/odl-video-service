@@ -9,6 +9,7 @@ Use:
 python s3_sync.py -i <settings_file.ini>
 
 """
+
 import argparse
 import os
 import re
@@ -20,7 +21,7 @@ try:
     import requests
     from logbook import Logger, RotatingFileHandler
 except ImportError as error:
-    print("Failed to import module: ", error)
+    print("Failed to import module: ", error)  # noqa: T201
     sys.exit("Make sure to pip install requests and logbook")
 
 # Instantiate argparse to get settings_file as argument
@@ -39,7 +40,7 @@ settings_file = args.settings_file
 config = ConfigParser(interpolation=ExtendedInterpolation())
 try:
     config.read(settings_file)
-except IOError:
+except OSError:
     sys.exit("[-] Failed to read settings file")
 
 # Configure logbook logging
@@ -62,7 +63,7 @@ def set_environment_variables():
     """
     os.environ["AWS_ACCESS_KEY_ID"] = config["AWS"]["AWS_ACCESS_KEY_ID"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = config["AWS"]["AWS_SECRET_ACCESS_KEY"]
-    os.environ["slack_webhook_url"] = config["Slack"]["webhook_url"]
+    os.environ["slack_webhook_url"] = config["Slack"]["webhook_url"]  # noqa: SIM112
 
 
 def verify_local_folders_exist():
@@ -73,8 +74,8 @@ def verify_local_folders_exist():
       If folders exist return None, and if not, logs error and exit.
     """
     for folder in config["Paths"].values():
-        if not os.path.exists(folder):
-            logger.error("Missing folder: ", folder)
+        if not os.path.exists(folder):  # noqa: PTH110
+            logger.error("Missing folder: ", folder)  # noqa: PLE1205
             sys.exit("[-] Missing folder: ", folder)
 
 
@@ -89,7 +90,7 @@ def verify_aws_cli_installed(aws_cli_binary):
       If file exists, return None, else log error and exit.
 
     """
-    if not os.path.exists(aws_cli_binary):
+    if not os.path.exists(aws_cli_binary):  # noqa: PTH110
         logger.error("Could not find AWS CLI executable")
         sys.exit("[-] Could not find AWS CLI executable")
 
@@ -106,13 +107,13 @@ def verify_s3_bucket_exists(s3_bucket_name):
         objects in bucket otherwise error and exit on any issues trying
         to list objects in bucket.
     """
-    ls_s3_bucket_cmd = "aws s3api head-bucket --bucket {}".format(s3_bucket_name)
+    ls_s3_bucket_cmd = f"aws s3api head-bucket --bucket {s3_bucket_name}"
     try:
-        subprocess.run(
-            ls_s3_bucket_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        subprocess.run(  # noqa: UP022
+            ls_s3_bucket_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE  # noqa: S603
         )
     except subprocess.SubprocessError:
-        logger.exception("Failed to list specified s3 bucket: {}", s3_bucket_name)
+        logger.exception("Failed to list specified s3 bucket: {}", s3_bucket_name)  # noqa: PLE1205
         sys.exit("[-] Failed to list specified s3 bucket")
 
 
@@ -137,8 +138,8 @@ def check_if_file_already_synced(
         simultaneously.
     """
     for file_name in os.listdir(local_video_records_done_folder):
-        if os.path.isfile(local_video_records_synced_folder + "/" + file_name):
-            os.replace(
+        if os.path.isfile(local_video_records_synced_folder + "/" + file_name):  # noqa: PTH113
+            os.replace(  # noqa: PTH105
                 f"{local_video_records_done_folder}/{file_name}",
                 f"{local_video_records_conflict_folder}/{file_name}",
             )
@@ -157,8 +158,8 @@ def notify_slack_channel(slack_message):
       slack_message (str): message to send to slack
     """
     try:
-        requests.post(
-            os.environ.get("slack_webhook_url"),
+        requests.post(  # noqa: S113
+            os.environ.get("slack_webhook_url"),  # noqa: SIM112
             json={
                 "text": slack_message,
                 "username": config["Slack"]["bot_username"],
@@ -166,7 +167,7 @@ def notify_slack_channel(slack_message):
             },
         )
     except (requests.exceptions.RequestException, NameError) as err:
-        logger.warn("Failed to notify slack channel with following error: {}", err)
+        logger.warning("Failed to notify slack channel with following error: {}", err)  # noqa: PLE1205
 
 
 def sync_local_to_s3(
@@ -181,21 +182,19 @@ def sync_local_to_s3(
       s3_bucket_name (str): s3 bucket name
     """
     if not os.listdir(local_video_records_done_folder):
-        logger.info("Nothing to sync. {} folder empty", local_video_records_done_folder)
+        logger.info("Nothing to sync. {} folder empty", local_video_records_done_folder)  # noqa: PLE1205
         notify_slack_channel(
             f"No videos in done folder to to sync "
             f"to S3 on the following lecture capture "
             f"computer: *{computer_name}*"
         )
         sys.exit("[-] Nothing to sync. Folder empty")
-    s3_sync_cmd = 'aws s3 sync {} s3://{} > "{}"'.format(
-        local_video_records_done_folder, s3_bucket_name, s3_sync_result_file
-    )
+    s3_sync_cmd = f'aws s3 sync {local_video_records_done_folder} s3://{s3_bucket_name} > "{s3_sync_result_file}"'  # noqa: E501
     try:
-        cmd_output = subprocess.run(
+        cmd_output = subprocess.run(  # noqa: UP022
             s3_sync_cmd,
             check=True,
-            shell=True,
+            shell=True,  # noqa: S602
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -207,7 +206,7 @@ def sync_local_to_s3(
             f"computer: *{computer_name}* \n `{err}`"
         )
         sys.exit("[-] Failed to sync local files to s3 bucket")
-    logger.info("S3 sync successfully ran: {}", cmd_output)
+    logger.info("S3 sync successfully ran: {}", cmd_output)  # noqa: PLE1205
 
 
 def move_files_to_synced_folder(
@@ -227,14 +226,14 @@ def move_files_to_synced_folder(
       s3_sync_result_file (str): local file containing result of s3 sync
         operation.
     """
-    if not os.path.exists(s3_sync_result_file):
-        logger.warning("Could not find S3 sync results file", s3_sync_result_file)
+    if not os.path.exists(s3_sync_result_file):  # noqa: PTH110
+        logger.warning("Could not find S3 sync results file", s3_sync_result_file)  # noqa: PLE1205
         sys.exit("[-] Could not find S3 sync results file")
-    with open(s3_sync_result_file, encoding="utf-8") as file_name:
+    with open(s3_sync_result_file, encoding="utf-8") as file_name:  # noqa: PTH123
         s3_sync_result_data = file_name.read()
     for file_name in re.findall(r"upload:\s(?:.*\\)(.*)to", s3_sync_result_data):
         try:
-            os.rename(
+            os.rename(  # noqa: PTH104
                 f"{local_video_records_done_folder}/{file_name}",
                 f"{local_video_records_synced_folder}/{file_name}",
             )
@@ -244,7 +243,7 @@ def move_files_to_synced_folder(
                 f"`{file_name}`"
             )
         except OSError as err:
-            logger.exception("Failed to copy or remove local file", err)
+            logger.exception("Failed to copy or remove local file", err)  # noqa: PLE1205, TRY401
 
 
 def main():

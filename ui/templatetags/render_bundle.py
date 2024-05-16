@@ -38,7 +38,7 @@ def _get_bundle(request, bundle_name):
         iterable of dict:
             The chunks of the bundle. Usually there's only one but I suppose you could have
             CSS and JS chunks for one bundle for example
-    """
+    """  # noqa: E501
     if not settings.DISABLE_WEBPACK_LOADER_STATS:
         for chunk in get_loader("DEFAULT").get_bundle(bundle_name):
             chunk_copy = dict(chunk)
@@ -63,13 +63,13 @@ def render_bundle(context, bundle_name):
 
     Returns:
         django.utils.safestring.SafeText: The tags for JS and CSS
-    """
+    """  # noqa: E501
     try:
         bundle = _get_bundle(context["request"], bundle_name)
         return _render_tags(bundle)
     except OSError:
         # webpack-stats.json doesn't exist
-        return mark_safe("")
+        return mark_safe("")  # noqa: S308
 
 
 def _render_tags(bundle):
@@ -82,7 +82,7 @@ def _render_tags(bundle):
 
     Returns:
         django.utils.safestring.SafeText: HTML for rendering bundles
-    """
+    """  # noqa: E501
 
     tags = []
     for chunk in bundle:
@@ -98,4 +98,4 @@ def _render_tags(bundle):
                     chunk["url"]
                 )
             )
-    return mark_safe("\n".join(tags))
+    return mark_safe("\n".join(tags))  # noqa: S308

@@ -1,6 +1,7 @@
 """
 Celery configuration
 """
+
 import os
 
 from celery import Celery
@@ -8,7 +9,7 @@ from celery import Celery
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "odl_video.settings")
 
-from django.conf import (  
+from django.conf import (  # noqa: E402
     settings,
 )
 
@@ -27,4 +28,4 @@ def debug_task(self):
     """
     Task for debugging purposes
     """
-    print("Request: {0!r}".format(self.request))
+    print(f"Request: {self.request!r}")  # noqa: T201

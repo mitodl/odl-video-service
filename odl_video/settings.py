@@ -1,6 +1,7 @@
 """
 Django settings for odl_video.
 """
+
 import logging
 import os
 import platform
@@ -25,7 +26,7 @@ init_sentry(
 )
 
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # noqa: PTH100, PTH120
 parse_env(f"{BASE_DIR}/.env")
 
 # Quick-start development settings - unsuitable for production
@@ -35,17 +36,17 @@ parse_env(f"{BASE_DIR}/.env")
 SECRET_KEY = get_string("SECRET_KEY", None)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_bool("DEBUG", False)
+DEBUG = get_bool("DEBUG", False)  # noqa: FBT003
 
 ALLOWED_HOSTS = ["*"]
 
-SECURE_SSL_REDIRECT = get_bool("ODL_VIDEO_SECURE_SSL_REDIRECT", True)
+SECURE_SSL_REDIRECT = get_bool("ODL_VIDEO_SECURE_SSL_REDIRECT", True)  # noqa: FBT003
 
 WEBPACK_LOADER = {
     "DEFAULT": {
         "CACHE": not DEBUG,
         "BUNDLE_DIR_NAME": "bundles/",
-        "STATS_FILE": os.path.join(BASE_DIR, "webpack-stats.json"),
+        "STATS_FILE": os.path.join(BASE_DIR, "webpack-stats.json"),  # noqa: PTH118
         "POLL_INTERVAL": 0.1,
         "TIMEOUT": None,
         "IGNORE": [r".+\.hot-update\.+", r".+\.js\.map"],
@@ -74,7 +75,7 @@ INSTALLED_APPS = [
     "encrypted_model_fields",
 ]
 
-DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
+DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)  # noqa: FBT003
 if not DISABLE_WEBPACK_LOADER_STATS:
     INSTALLED_APPS += ("webpack_loader",)
 
@@ -96,7 +97,7 @@ if DEBUG:
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
 LOGIN_REDIRECT_URL = "/"
-if get_bool("USE_SHIBBOLETH", False):
+if get_bool("USE_SHIBBOLETH", False):  # noqa: FBT003
     # TOUCHSTONE
     MIDDLEWARE.append("shibboleth.middleware.ShibbolethRemoteUserMiddleware")
     SHIBBOLETH_ATTRIBUTE_MAP = {
@@ -139,12 +140,12 @@ WSGI_APPLICATION = "odl_video.wsgi.application"
 # https://github.com/kennethreitz/dj-database-url
 DEFAULT_DATABASE_CONFIG = dj_database_url.parse(
     get_string(
-        "DATABASE_URL", "sqlite:///{0}".format(os.path.join(BASE_DIR, "db.sqlite3"))
+        "DATABASE_URL", "sqlite:///{0}".format(os.path.join(BASE_DIR, "db.sqlite3"))  # noqa: PTH118, UP030
     )
 )
 DEFAULT_DATABASE_CONFIG["CONN_MAX_AGE"] = get_int("ODL_VIDEO_DB_CONN_MAX_AGE", 0)
 
-if get_bool("ODL_VIDEO_DB_DISABLE_SSL", False):
+if get_bool("ODL_VIDEO_DB_DISABLE_SSL", False):  # noqa: FBT003
     DEFAULT_DATABASE_CONFIG["OPTIONS"] = {}
 else:
     DEFAULT_DATABASE_CONFIG["OPTIONS"] = {"sslmode": "require"}
@@ -177,11 +178,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # noqa: PTH118
+STATICFILES_DIRS = (os.path.join(BASE_DIR, "static"),)  # noqa: PTH118
 
 # Request files from the webpack dev server
-USE_WEBPACK_DEV_SERVER = get_bool("ODL_VIDEO_USE_WEBPACK_DEV_SERVER", False)
+USE_WEBPACK_DEV_SERVER = get_bool("ODL_VIDEO_USE_WEBPACK_DEV_SERVER", False)  # noqa: FBT003
 WEBPACK_DEV_SERVER_HOST = get_string("WEBPACK_DEV_SERVER_HOST", "")
 WEBPACK_DEV_SERVER_PORT = get_int("WEBPACK_DEV_SERVER_PORT", 8082)
 
@@ -196,7 +197,7 @@ EMAIL_HOST = get_string("ODL_VIDEO_EMAIL_HOST", "localhost")
 EMAIL_PORT = get_int("ODL_VIDEO_EMAIL_PORT", 25)
 EMAIL_HOST_USER = get_string("ODL_VIDEO_EMAIL_USER", "")
 EMAIL_HOST_PASSWORD = get_string("ODL_VIDEO_EMAIL_PASSWORD", "")
-EMAIL_USE_TLS = get_bool("ODL_VIDEO_EMAIL_TLS", False)
+EMAIL_USE_TLS = get_bool("ODL_VIDEO_EMAIL_TLS", False)  # noqa: FBT003
 EMAIL_SUPPORT = get_string("ODL_VIDEO_SUPPORT_EMAIL", "support@example.com")
 DEFAULT_FROM_EMAIL = get_string("ODL_VIDEO_FROM_EMAIL", "webmaster@localhost")
 
@@ -210,7 +211,7 @@ MAILGUN_BCC_TO_EMAIL = get_string("MAILGUN_BCC_TO_EMAIL", "no-reply@example.com"
 
 # e-mail configurable admins
 ADMIN_EMAIL = get_string("ODL_VIDEO_ADMIN_EMAIL", "")
-if ADMIN_EMAIL != "":
+if ADMIN_EMAIL != "":  # noqa: SIM108
     ADMINS = (("Admins", ADMIN_EMAIL),)
 else:
     ADMINS = ()
@@ -243,8 +244,8 @@ LOGGING = {
             "format": (
                 "[%(asctime)s] %(levelname)s %(process)d [%(name)s] "
                 "%(filename)s:%(lineno)d - "
-                "[{hostname}] - %(message)s"
-            ).format(hostname=HOSTNAME),
+                f"[{HOSTNAME}] - %(message)s"
+            ),
             "datefmt": "%Y-%m-%d %H:%M:%S",
         }
     },
@@ -294,14 +295,14 @@ MIT_WS_CERTIFICATE = get_key("MIT_WS_CERTIFICATE", "")
 MIT_WS_PRIVATE_KEY = get_key("MIT_WS_PRIVATE_KEY", "")
 
 # x509 filenames
-MIT_WS_CERTIFICATE_FILE = os.path.join(STATIC_ROOT, "mit_x509.cert")
-MIT_WS_PRIVATE_KEY_FILE = os.path.join(STATIC_ROOT, "mit_x509.key")
+MIT_WS_CERTIFICATE_FILE = os.path.join(STATIC_ROOT, "mit_x509.cert")  # noqa: PTH118
+MIT_WS_PRIVATE_KEY_FILE = os.path.join(STATIC_ROOT, "mit_x509.key")  # noqa: PTH118
 
 # Dropbox key
 DROPBOX_KEY = get_string("DROPBOX_KEY", "")
 
 # AWS S3 upload settings
-# the defaults values come from the default configuration in boto3.s3.transfer.TransferConfig
+# the defaults values come from the default configuration in boto3.s3.transfer.TransferConfig  # noqa: E501
 # apart from the first 2
 KB = 1024
 MB = KB * KB
@@ -312,15 +313,15 @@ CLOUDFRONT_KEY_ID = get_string("CLOUDFRONT_KEY_ID", "")
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CLOUDFRONT_BASE_URL = get_string(
     "VIDEO_CLOUDFRONT_BASE_URL",
-    "https://{}.cloudfront.net/".format(VIDEO_CLOUDFRONT_DIST),
+    f"https://{VIDEO_CLOUDFRONT_DIST}.cloudfront.net/",
 )
 
 CLOUDFRONT_DIST = get_string("STATIC_CLOUDFRONT_DIST", None)
 if CLOUDFRONT_DIST:
     STATIC_URL = urljoin(
-        "https://{dist}.cloudfront.net".format(dist=CLOUDFRONT_DIST), STATIC_URL
+        f"https://{CLOUDFRONT_DIST}.cloudfront.net", STATIC_URL
     )
-    AWS_S3_CUSTOM_DOMAIN = "{dist}.cloudfront.net".format(dist=CLOUDFRONT_DIST)
+    AWS_S3_CUSTOM_DOMAIN = f"{CLOUDFRONT_DIST}.cloudfront.net"
 
 AWS_ACCESS_KEY_ID = get_string("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = get_string("AWS_SECRET_ACCESS_KEY", "")
@@ -337,9 +338,9 @@ AWS_S3_UPLOAD_MAX_CONCURRENCY = get_int("AWS_S3_UPLOAD_MAX_CONCURRENCY", 10)
 AWS_S3_UPLOAD_NUM_DOWNLOAD_ATTEMPTS = get_int("AWS_S3_UPLOAD_NUM_DOWNLOAD_ATTEMPTS", 5)
 AWS_S3_UPLOAD_MAX_IO_QUEUE = get_int("AWS_S3_UPLOAD_MAX_IO_QUEUE", 100)
 AWS_S3_UPLOAD_IO_CHUNKSIZE_KB = get_int("AWS_S3_UPLOAD_IO_CHUNKSIZE_KB", 256)
-AWS_S3_UPLOAD_USE_THREADS = get_bool("AWS_S3_UPLOAD_USE_THREADS", True)
+AWS_S3_UPLOAD_USE_THREADS = get_bool("AWS_S3_UPLOAD_USE_THREADS", True)  # noqa: FBT003
 
-AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
+AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(  # noqa: C408
     multipart_threshold=AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB * MB,
     multipart_chunksize=AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB * MB,
     max_concurrency=AWS_S3_UPLOAD_MAX_CONCURRENCY,
@@ -358,11 +359,11 @@ ET_HLS_PRESET_IDS = get_string(
 
 ET_MP4_PRESET_ID = get_string("ET_MP4_PRESET_ID", "1351620000001-200010")
 
-if ET_HLS_PRESET_IDS == [""] or ET_MP4_PRESET_ID == [
+if [""] == ET_HLS_PRESET_IDS or [
     ""
-]:  # This may happen if `ET_HLS_PRESET_IDS=` or `ET_MP4_PRESET_ID=` is in .env file.
-    raise ImproperlyConfigured(
-        "ET_HLS_PRESET_IDS and ET_MP4_PRESET_ID cannot be blank, please check your settings & environment"
+] == ET_MP4_PRESET_ID:  # This may happen if `ET_HLS_PRESET_IDS=` or `ET_MP4_PRESET_ID=` is in .env file.  # noqa: E501
+    raise ImproperlyConfigured(  # noqa: TRY003
+        "ET_HLS_PRESET_IDS and ET_MP4_PRESET_ID cannot be blank, please check your settings & environment"  # noqa: EM101, E501
     )
 
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
@@ -381,7 +382,7 @@ GA_DIMENSION_CAMERA = get_string("GA_DIMENSION_CAMERA", "")
 GA_KEYFILE_JSON = get_string("GA_KEYFILE_JSON", "")
 GA_TRACKING_ID = get_string("GA_TRACKING_ID", "")
 GA_VIEW_ID = get_string("GA_VIEW_ID", "")
-REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
+REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)  # noqa: FBT003
 GA_KEYFILE_JSON = get_string("GA_KEYFILE_JSON", "")
 GA_VIEW_ID = get_string("GA_VIEW_ID", "")
 
@@ -395,7 +396,7 @@ YT_UPLOAD_LIMIT = get_int("YT_UPLOAD_LIMIT", 4)
 LECTURE_CAPTURE_USER = get_string("LECTURE_CAPTURE_USER", "")
 UNSORTED_COLLECTION = get_string("UNSORTED_COLLECTION", "Unsorted")
 
-ENABLE_VIDEO_PERMISSIONS = get_bool("ENABLE_VIDEO_PERMISSIONS", False)
+ENABLE_VIDEO_PERMISSIONS = get_bool("ENABLE_VIDEO_PERMISSIONS", False)  # noqa: FBT003
 
 # List of mandatory settings. If any of these is not set, the app will not start
 # and will raise an ImproperlyConfigured exception
@@ -434,7 +435,7 @@ MANDATORY_SETTINGS = [
 
 # We want to be able to optionally disable mandatory settings. e.g. when running
 # collectstatic
-ENFORCE_MANDATORY_SETTINGS = get_bool("ENFORCE_MANDATORY_SETTINGS", True)
+ENFORCE_MANDATORY_SETTINGS = get_bool("ENFORCE_MANDATORY_SETTINGS", True)  # noqa: FBT003
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -454,10 +455,10 @@ REST_FRAMEWORK = {
 # for how two different methods of connecting to Redis are used.
 #
 # REDIS_URL Format (aka 'uppercase constant')
-# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=CERT_REQUIRED  #pragma: allowlist secret
+# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=CERT_REQUIRED  #pragma: allowlist secret  # noqa: E501
 #
 # CELERY_BROKER_URL Format (aka 'lowercase literal')
-# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=required  #pragma: allowlist secret
+# rediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=required  #pragma: allowlist secret  # noqa: E501
 #
 # CACHES.REDIS.LOCATION= lowercase literal
 # CELERY_RESULT_BACKEND = uppercase constant
@@ -471,8 +472,8 @@ CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_BEAT_SCHEDULER = RedBeatScheduler
 CELERY_REDBEAT_REDIS_URL = CELERY_BROKER_URL
 
-CELERY_TASK_ALWAYS_EAGER = get_bool("CELERY_TASK_ALWAYS_EAGER", False)
-CELERY_TASK_EAGER_PROPAGATES = get_bool("CELERY_TASK_EAGER_PROPAGATES", True)
+CELERY_TASK_ALWAYS_EAGER = get_bool("CELERY_TASK_ALWAYS_EAGER", False)  # noqa: FBT003
+CELERY_TASK_EAGER_PROPAGATES = get_bool("CELERY_TASK_EAGER_PROPAGATES", True)  # noqa: FBT003
 
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_SEND_SENT_EVENT = True
@@ -520,7 +521,7 @@ CACHES = {
 
 # features flags
 def get_all_config_keys():
-    """Returns all the configuration keys from both environment and configuration files"""
+    """Returns all the configuration keys from both environment and configuration files"""  # noqa: E501
     return list(os.environ.keys())
 
 
@@ -549,7 +550,7 @@ MIDDLEWARE_FEATURE_FLAG_COOKIE_MAX_AGE_SECONDS = get_int(
 )
 
 if MIDDLEWARE_FEATURE_FLAG_QS_PREFIX:
-    MIDDLEWARE = MIDDLEWARE + (
+    MIDDLEWARE = MIDDLEWARE + (  # noqa: RUF005
         "odl_video.middleware.QueryStringFeatureFlagMiddleware",
         "odl_video.middleware.CookieFeatureFlagMiddleware",
     )

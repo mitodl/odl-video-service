@@ -1,6 +1,7 @@
 """
 Tests for Task module
 """
+
 import textwrap
 from collections import defaultdict
 
@@ -16,11 +17,8 @@ from ui.factories import MoiraListFactory, VideoFactory
 pytestmark = pytest.mark.django_db
 
 
-
-
-
 @pytest.fixture(autouse=True)
-def mocker_defaults(mocker):
+def mocker_defaults(mocker):  # noqa: PT004
     """
     Sets default settings to safe defaults
     """
@@ -36,15 +34,15 @@ def test_get_recipients_for_video(mocker):
     lists = MoiraListFactory.create_batch(3)
     video = VideoFactory(collection__admin_lists=lists)
     list_attributes = [[{"mailList": False}], [{"mailList": True}], None]
-    list_emails = ["{}@mit.edu".format(lists[1].name)]
+    list_emails = [f"{lists[1].name}@mit.edu"]
     mocker.patch("mail.tasks.has_common_lists", return_value=False)
     mock_client().client.service.getListAttributes.side_effect = list_attributes
-    assert tasks._get_recipients_for_video(video) == list_emails + [
+    assert tasks._get_recipients_for_video(video) == list_emails + [  # noqa: SLF001, RUF005
         video.collection.owner.email
     ]
     mocker.patch("mail.tasks.has_common_lists", return_value=True)
     mock_client().client.service.getListAttributes.side_effect = list_attributes
-    assert tasks._get_recipients_for_video(video) == list_emails
+    assert tasks._get_recipients_for_video(video) == list_emails  # noqa: SLF001
 
 
 def test_send_notification_email_wrong_status(mocker):
@@ -167,7 +165,7 @@ def test_send_debug_email(mocker):
     )
     mock_email_kwargs = defaultdict(mocker.MagicMock)
     video = VideoFactory()
-    tasks._send_debug_email(video=video, email_kwargs=mock_email_kwargs)
+    tasks._send_debug_email(video=video, email_kwargs=mock_email_kwargs)  # noqa: SLF001
     mocked_generate_debug_email_body.assert_called_once_with(
         video=video, email_kwargs=mock_email_kwargs
     )
@@ -216,7 +214,7 @@ def test_generate_debug_email_body(mocker):
         subject=email_kwargs["subject"],
         body=email_kwargs["text_body"],
     )
-    actual_body = tasks._generate_debug_email_body(
+    actual_body = tasks._generate_debug_email_body(  # noqa: SLF001
         video=video, email_kwargs=email_kwargs
     )
     assert actual_body == expected_body

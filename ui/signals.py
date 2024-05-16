@@ -24,7 +24,7 @@ from ui.utils import delete_moira_cache
 @receiver(pre_delete, sender=VideoFile)
 @receiver(pre_delete, sender=VideoThumbnail)
 @receiver(pre_delete, sender=VideoSubtitle)
-def delete_s3_files(sender, **kwargs):
+def delete_s3_files(sender, **kwargs):  # noqa: ARG001
     """
     Make sure S3 files are deleted along with associated video file/thumbnail object
     """
@@ -32,11 +32,11 @@ def delete_s3_files(sender, **kwargs):
 
 
 @receiver(pre_delete, sender=VideoSubtitle)
-def update_video_permissions(sender, **kwargs):
+def update_video_permissions(sender, **kwargs):  # noqa: ARG001
     """
     Remove public video permissions if the subtitle is about to be deleted and no other subtitles exist.
     Otherwise just delete the subtitle from Youtube.
-    """
+    """  # noqa: E501
     video = kwargs["instance"].video
     if video.is_public:
         if (
@@ -50,7 +50,7 @@ def update_video_permissions(sender, **kwargs):
 
 
 @receiver(pre_delete, sender=YouTubeVideo)
-def delete_youtube_video(sender, **kwargs):
+def delete_youtube_video(sender, **kwargs):  # noqa: ARG001
     """
     Call the YouTube API to delete a video
     """
@@ -60,16 +60,16 @@ def delete_youtube_video(sender, **kwargs):
 
 
 @receiver(post_save, sender=Collection)
-def update_collection_youtube(sender, **kwargs):
+def update_collection_youtube(sender, **kwargs):  # noqa: ARG001
     """
     If a collection's stream source is changed, sync YoutubeVideo objects for public Videos
-    """
+    """  # noqa: E501
     for video in kwargs["instance"].videos.filter(is_public=True):
         sync_youtube(video)
 
 
 @receiver(post_save, sender=Collection)
-def update_collection_retranscodes(sender, **kwargs):
+def update_collection_retranscodes(sender, **kwargs):  # noqa: ARG001
     """
     Sync schedule_retranscode value for all videos in the collection
     """
@@ -81,7 +81,7 @@ def update_collection_retranscodes(sender, **kwargs):
 
 
 @receiver(post_save, sender=Video)
-def update_video_youtube(sender, instance, **kwargs):
+def update_video_youtube(sender, instance, **kwargs):  # noqa: ARG001
     """
     If a video's is_public field is changed, sync associated YoutubeVideo object
     """
@@ -89,10 +89,10 @@ def update_video_youtube(sender, instance, **kwargs):
 
 
 @receiver(post_save, sender=Video)
-def add_video_to_edx(sender, instance, created, **kwargs):
+def add_video_to_edx(sender, instance, created, **kwargs):  # noqa: ARG001
     """
     If a Video was updated with a status of COMPLETE, we can now post the video to edx if configured.
-    """
+    """  # noqa: E501
     if instance.status == VideoStatus.COMPLETE and instance.collection.edx_course_id:
         ovs_tasks.post_video_to_edx.delay(instance.id)
 
@@ -103,9 +103,9 @@ def sync_youtube(video):
 
     Args:
         video(ui.models.Video): The video that should be uploaded or deleted from Youtube.
-    """
+    """  # noqa: E501
     yt_video = video.youtubevideo if hasattr(video, "youtubevideo") else None
-    if yt_video is not None:
+    if yt_video is not None:  # noqa: SIM102
         if (
             video.is_public is False
             or video.collection.stream_source == StreamSource.CLOUDFRONT
@@ -114,7 +114,7 @@ def sync_youtube(video):
             YouTubeVideo.objects.get(id=yt_video.id).delete()
 
 
-def reset_moira(sender, user, request, **kwargs):
+def reset_moira(sender, user, request, **kwargs):  # noqa: ARG001
     """
     Clear out the user's cached moira lists
 

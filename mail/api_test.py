@@ -1,6 +1,7 @@
 """
 Test cases for email API
 """
+
 import json
 import string
 from unittest.mock import Mock, patch
@@ -27,9 +28,7 @@ def mocked_json(return_data=None):
     if return_data is None:
         return_data = {}
 
-    def json(
-        *args, **kwargs
-    ):  
+    def json(*args, **kwargs):
         return return_data
 
     return json
@@ -65,7 +64,7 @@ class MailAPITests(TestCase):
         )
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
-        assert list(called_args)[0] == "{}/{}".format(settings.MAILGUN_URL, "messages")
+        assert list(called_args)[0] == "{}/{}".format(settings.MAILGUN_URL, "messages")  # noqa: RUF015
         assert called_kwargs["auth"] == ("api", settings.MAILGUN_KEY)
         assert called_kwargs["data"]["html"].startswith("html")
         assert called_kwargs["data"]["text"].startswith("text")
@@ -80,14 +79,12 @@ class MailAPITests(TestCase):
             }
         )
         if sender_name is not None:
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 called_kwargs["data"]["from"],
-                "{sender_name} <{email}>".format(
-                    sender_name=sender_name, email=settings.EMAIL_SUPPORT
-                ),
+                f"{sender_name} <{settings.EMAIL_SUPPORT}>",
             )
         else:
-            self.assertEqual(called_kwargs["data"]["from"], settings.EMAIL_SUPPORT)
+            self.assertEqual(called_kwargs["data"]["from"], settings.EMAIL_SUPPORT)  # noqa: PT009
 
     @override_settings(
         MAILGUN_RECIPIENT_OVERRIDE="recipient@override.com",
@@ -102,7 +99,7 @@ class MailAPITests(TestCase):
         )
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
-        assert list(called_args)[0] == "{}/{}".format(settings.MAILGUN_URL, "messages")
+        assert list(called_args)[0] == "{}/{}".format(settings.MAILGUN_URL, "messages")  # noqa: RUF015
         assert called_kwargs["auth"] == ("api", settings.MAILGUN_KEY)
         assert called_kwargs["data"]["html"] == "html"
         assert called_kwargs["data"]["subject"] == "subject"
@@ -112,7 +109,7 @@ class MailAPITests(TestCase):
                 "recipient@override.com": {},
             }
         )
-        self.assertEqual(called_kwargs["data"]["from"], "sender <support@example.com>")
+        self.assertEqual(called_kwargs["data"]["from"], "sender <support@example.com>")  # noqa: PT009
 
     @override_settings(MAILGUN_RECIPIENT_OVERRIDE=None)
     def test_send_batch_chunk(self, mock_post):
@@ -121,7 +118,7 @@ class MailAPITests(TestCase):
         """
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         chunked_emails_to = [
             recipient_tuples[i : i + chunk_size]
@@ -135,7 +132,7 @@ class MailAPITests(TestCase):
         assert mock_post.call_count == 6
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
-            assert list(called_args)[0] == "{}/{}".format(
+            assert list(called_args)[0] == "{}/{}".format(  # noqa: RUF015
                 settings.MAILGUN_URL, "messages"
             )
             assert called_kwargs["data"]["html"].startswith("html")
@@ -161,7 +158,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), {"letter": letter})
+            (f"{letter}@example.com", {"letter": letter})
             for letter in string.ascii_letters
         ]
         chunked_emails_to = [
@@ -169,9 +166,12 @@ class MailAPITests(TestCase):
             for i in range(0, len(recipient_tuples), chunk_size)
         ]
         assert len(recipient_tuples) == 52
-        with override_settings(
-            MAILGUN_RECIPIENT_OVERRIDE=recipient_override,
-        ), self.assertRaises(SendBatchException) as send_batch_exception:
+        with (
+            override_settings(
+                MAILGUN_RECIPIENT_OVERRIDE=recipient_override,
+            ),
+            self.assertRaises(SendBatchException) as send_batch_exception,  # noqa: PT027
+        ):
             MailgunClient.send_batch(
                 "email subject", "html", "text", recipient_tuples, chunk_size=chunk_size
             )
@@ -184,7 +184,7 @@ class MailAPITests(TestCase):
 
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
-            assert list(called_args)[0] == "{}/{}".format(
+            assert list(called_args)[0] == "{}/{}".format(  # noqa: RUF015
                 settings.MAILGUN_URL, "messages"
             )
             assert called_kwargs["data"]["html"].startswith("html")
@@ -220,7 +220,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         assert len(recipient_tuples) == 52
         with override_settings(
@@ -250,14 +250,14 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         chunked_emails_to = [
             recipient_tuples[i : i + chunk_size]
             for i in range(0, len(recipient_tuples), chunk_size)
         ]
         assert len(recipient_tuples) == 52
-        with self.assertRaises(SendBatchException) as send_batch_exception:
+        with self.assertRaises(SendBatchException) as send_batch_exception:  # noqa: PT027
             MailgunClient.send_batch(
                 "email subject", "html", "text", recipient_tuples, chunk_size=chunk_size
             )
@@ -265,7 +265,7 @@ class MailAPITests(TestCase):
         assert mock_post.call_count == 6
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
-            assert list(called_args)[0] == "{}/{}".format(
+            assert list(called_args)[0] == "{}/{}".format(  # noqa: RUF015
                 settings.MAILGUN_URL, "messages"
             )
             assert called_kwargs["data"]["html"].startswith("html")
@@ -298,9 +298,9 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_pairs = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
-        with self.assertRaises(ImproperlyConfigured) as ex:
+        with self.assertRaises(ImproperlyConfigured) as ex:  # noqa: PT027
             MailgunClient.send_batch(
                 "email subject", "html", "text", recipient_pairs, chunk_size=chunk_size
             )
@@ -330,7 +330,7 @@ class MailAPITests(TestCase):
         assert response.status_code == HTTP_200_OK
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
-        assert list(called_args)[0] == "{}/{}".format(settings.MAILGUN_URL, "messages")
+        assert list(called_args)[0] == "{}/{}".format(settings.MAILGUN_URL, "messages")  # noqa: RUF015
         assert called_kwargs["auth"] == ("api", settings.MAILGUN_KEY)
         assert called_kwargs["data"]["html"].startswith("html")
         assert called_kwargs["data"]["text"].startswith("text")
@@ -340,16 +340,14 @@ class MailAPITests(TestCase):
             {"a@example.com": context}
         )
         if sender_name is not None:
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 called_kwargs["data"]["from"],
-                "{sender_name} <{email}>".format(
-                    sender_name=sender_name, email=settings.EMAIL_SUPPORT
-                ),
+                f"{sender_name} <{settings.EMAIL_SUPPORT}>",
             )
         else:
-            self.assertEqual(called_kwargs["data"]["from"], settings.EMAIL_SUPPORT)
+            self.assertEqual(called_kwargs["data"]["from"], settings.EMAIL_SUPPORT)  # noqa: PT009
 
-    @data(True, False)
+    @data(True, False)  # noqa: FBT003
     def test_send_individual_email_error(self, raise_for_status, mock_post):
         """
         Test handling of errors for send_individual_email
@@ -395,7 +393,7 @@ class MailAPITests(TestCase):
             _, called_kwargs = args
             assert called_kwargs["data"]["from"] == sender_address
 
-    def test_render_email_templates(self, _):
+    def test_render_email_templates(self, _):  # noqa: PT019
         """Test render_email_templates"""
         video = VideoFactory.create()
         context = context_for_video(video)

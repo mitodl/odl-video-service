@@ -1,4 +1,5 @@
 """Tasks for mail app"""
+
 import textwrap
 
 from celery import shared_task
@@ -31,7 +32,7 @@ def _get_recipients_for_video(video):
         )
         if attributes and attributes[0]["mailList"]:
             admin_lists.append(mlist)
-    recipients_list = ["{}@mit.edu".format(alist) for alist in admin_lists]
+    recipients_list = [f"{alist}@mit.edu" for alist in admin_lists]
     owner = video.collection.owner
     if owner.email and not has_common_lists(owner, admin_lists):
         recipients_list.append(owner.email)
@@ -46,7 +47,7 @@ def send_notification_email(video):
     Args:
         video (ui.models.Video): a video object
     """
-    if video.status not in STATUS_TO_NOTIFICATION.keys():
+    if video.status not in STATUS_TO_NOTIFICATION.keys():  # noqa: SIM118
         log.error(
             "Unexpected video status",
             video_hexkey=video.hexkey,
@@ -78,7 +79,7 @@ def send_notification_email(video):
         api.MailgunClient.send_batch(**email_kwargs)
         if video.status in STATUSES_THAT_TRIGGER_DEBUG_EMAIL:
             _send_debug_email(video=video, email_kwargs=email_kwargs)
-    except:  
+    except:  # noqa: E722
         log.exception(
             "Impossible to send notification",
             video_hexkey=video.hexkey,
@@ -87,17 +88,17 @@ def send_notification_email(video):
 
 
 @shared_task(bind=True)
-def async_send_notification_email(self, video_id):  
+def async_send_notification_email(self, video_id):  # noqa: ARG001
     """
     Asynchronous call to the function to send notifications for video status update.
     """
     # import done here to avoid circular imports
-    from ui.models import Video  
+    from ui.models import Video
 
     try:
         video = Video.objects.get(id=video_id)
     except Video.DoesNotExist:
-        log.error("Can not send notification for nonexistant video", video_id=video_id)
+        log.error("Can not send notification for nonexistant video", video_id=video_id)  # noqa: TRY400
         return
     send_notification_email(video)
 

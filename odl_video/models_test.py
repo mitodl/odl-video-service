@@ -1,6 +1,7 @@
 """
 Tests for odl_video.models
 """
+
 import pytest
 
 from odl_video.models import TimestampedModelQuerySet

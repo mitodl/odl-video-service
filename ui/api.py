@@ -1,6 +1,7 @@
 """
 API methods
 """
+
 from ast import literal_eval
 from uuid import uuid4
 
@@ -28,7 +29,7 @@ def process_dropbox_data(dropbox_upload_data):
 
     Returns:
         list: A list of dictionaries containing informations about the videos
-    """
+    """  # noqa: E501
     collection_key = dropbox_upload_data["collection"]
     dropbox_links_list = dropbox_upload_data["files"]
     collection = get_object_or_404(models.Collection, key=collection_key)
@@ -38,7 +39,7 @@ def process_dropbox_data(dropbox_upload_data):
             video = models.Video.objects.create(
                 source_url=dropbox_link["link"],
                 title=dropbox_link["name"][
-                    : models.Video._meta.get_field("title").max_length
+                    : models.Video._meta.get_field("title").max_length  # noqa: SLF001
                 ],
                 collection=collection,
             )
@@ -47,7 +48,7 @@ def process_dropbox_data(dropbox_upload_data):
                 video_id=video.id,
                 bucket_name=settings.VIDEO_S3_BUCKET,
             )
-        # Kick off chained async celery tasks to transfer file to S3, then start a transcode job
+        # Kick off chained async celery tasks to transfer file to S3, then start a transcode job  # noqa: E501
         chain(
             tasks.stream_to_s3.s(video.id), tasks.transcode_from_s3.si(video.id)
         ).delay()
@@ -69,10 +70,10 @@ def post_video_to_edx(video_files):
     Returns:
         Dict[EdxEndpoint, requests.models.Response]: Each configured edX endpoint mapped to the response from the
             request to post the video file to that endpoint.
-    """
+    """  # noqa: E501
     encoded_videos = []
     for video_file in video_files:
-        assert video_file.can_add_to_edx, "This video file cannot be added to edX"
+        assert video_file.can_add_to_edx, "This video file cannot be added to edX"  # noqa: S101
         encoded_videos.append(
             {
                 "url": video_file.cloudfront_url,
@@ -100,7 +101,7 @@ def post_video_to_edx(video_files):
             )
             duration = get_duration_from_encode_job(submitted_encode_job)
 
-            resp = requests.post(
+            resp = requests.post(  # noqa: S113
                 edx_endpoint.full_api_url,
                 json={
                     "client_video_id": video_files[0].video.title,
@@ -111,7 +112,7 @@ def post_video_to_edx(video_files):
                     "duration": duration,
                 },
                 headers={
-                    "Authorization": "JWT {}".format(edx_endpoint.access_token),
+                    "Authorization": f"JWT {edx_endpoint.access_token}",
                 },
             )
             resp.raise_for_status()
@@ -124,7 +125,7 @@ def post_video_to_edx(video_files):
                 }
             else:
                 response_summary_dict = {"exception": str(exc)}
-            log.error(
+            log.error(  # noqa: TRY400
                 "Can not add video to edX",
                 videofile_id=video_files[0].pk,
                 response=str(response_summary_dict),
@@ -143,7 +144,7 @@ def update_video_on_edx(video_key):
     Returns:
         Dict[EdxEndpoint, requests.models.Response]: Each configured edX endpoint mapped to the response from the
             request to update the video to that endpoint.
-    """
+    """  # noqa: E501
     video = models.Video.objects.filter(key=video_key).first()
     edx_endpoints = models.EdxEndpoint.objects.filter(
         collections__id__in=[video.collection.id]
@@ -153,7 +154,7 @@ def update_video_on_edx(video_key):
         video_partial_update_url = edx_endpoint.full_api_url + str(video.key)
         try:
             edx_endpoint.refresh_access_token()
-            resp = requests.patch(
+            resp = requests.patch(  # noqa: S113
                 video_partial_update_url,
                 json={
                     "edx_video_id": str(video.key),
@@ -164,7 +165,7 @@ def update_video_on_edx(video_key):
                     "status": "updated",
                 },
                 headers={
-                    "Authorization": "JWT {}".format(edx_endpoint.access_token),
+                    "Authorization": f"JWT {edx_endpoint.access_token}",
                 },
             )
             resp.raise_for_status()

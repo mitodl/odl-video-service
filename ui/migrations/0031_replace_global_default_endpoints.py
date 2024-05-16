@@ -7,7 +7,7 @@ from encrypted_model_fields.fields import EncryptedCharField
 def assign_collection_endpoints_from_global_default(apps, schema_editor):
     """
     If a default endpoint exists, assign that explicitly to configured collections and then remove it as the default
-    """
+    """  # noqa: E501
     EdxEndpoint = apps.get_model("ui", "EdxEndpoint")
     Collection = apps.get_model("ui", "Collection")
 
@@ -36,7 +36,6 @@ def set_client_id_and_secret_key(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ui", "0030_edxendpoint_expires_in"),
     ]

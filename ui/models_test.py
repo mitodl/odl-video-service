@@ -1,6 +1,7 @@
 """
 Tests for the UI models
 """
+
 import os
 import re
 import uuid
@@ -42,28 +43,25 @@ FAKE_RSA = b"""O\xd3\x91\x01\xf0\x14\xfe\xbf\x12\xb7\xde\xfe\xd83\xf2\x08\xf5x\x
 \xff3\xbe\x8f\xbf\x91\xdc\xcb\x1c"""
 
 
-
-
-
-@pytest.fixture
+@pytest.fixture()
 def video():
     """Fixture to create a video"""
     return VideoFactory()
 
 
-@pytest.fixture
+@pytest.fixture()
 def videofile():
     """Fixture to create a video file"""
     return VideoFileFactory()
 
 
-@pytest.fixture
+@pytest.fixture()
 def videosubtitle():
     """Fixture to create a video subtitle"""
     return VideoSubtitleFactory()
 
 
-@pytest.fixture
+@pytest.fixture()
 def moiralist():
     """Fixture to create a moira list"""
     return MoiraListFactory()
@@ -87,10 +85,8 @@ def test_video_model_s3keys(video):
     assert isinstance(video.key, uuid.UUID)
     s3key = video.get_s3_key()
     assert s3key is not None
-    _, extension = os.path.splitext(video.source_url.split("/")[-1])
-    assert s3key == "{uuid}/video{extension}".format(
-        uuid=video.hexkey, extension=extension
-    )
+    _, extension = os.path.splitext(video.source_url.split("/")[-1])  # noqa: PTH122
+    assert s3key == f"{video.hexkey}/video{extension}"
 
 
 def test_video_aws_integration(videofile):
@@ -102,7 +98,7 @@ def test_video_aws_integration(videofile):
     assert s3_obj.key == videofile.s3_object_key
     s3_url = videofile.s3_url
     assert isinstance(s3_url, str)
-    assert s3_url.startswith("https://{}/".format(settings.AWS_S3_DOMAIN))
+    assert s3_url.startswith(f"https://{settings.AWS_S3_DOMAIN}/")
     cf_url = videofile.cloudfront_url
     assert isinstance(cf_url, str)
     assert cf_url.startswith("https://video-cf.cloudfront.net/")
@@ -115,9 +111,7 @@ def test_video_transcode_key(videofile):
     preset = "pre01"
     assert videofile.video.transcode_key(
         preset
-    ) == "transcoded/{uuid}/video_{preset}".format(
-        uuid=str(videofile.video.hexkey), preset=preset
-    )
+    ) == f"transcoded/{videofile.video.hexkey!s}/video_{preset}"
 
 
 def test_video_status(video):
@@ -127,7 +121,7 @@ def test_video_status(video):
     for status in VideoStatus.ALL_STATUSES:
         video.status = status
         video.save()
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValidationError):  # noqa: PT012
         video.status = "foostatus"
         video.save()
 
@@ -150,7 +144,7 @@ def test_video_update_status_email(video, mocker):
 
 
 @pytest.mark.parametrize(
-    "token, current_expires_in, updated", [("token1", 0, True), ("token2", 1000, False)]
+    "token, current_expires_in, updated", [("token1", 0, True), ("token2", 1000, False)]  # noqa: PT006
 )
 def test_edxendpoint_access_token_refresh(mocker, token, current_expires_in, updated):
     """
@@ -372,9 +366,9 @@ def test_transcoded_hls_video():
 
 
 @pytest.mark.parametrize(
-    "encodings,download",
+    "encodings,download",  # noqa: PT006
     [
-        [
+        [  # noqa: PT007
             [
                 EncodingNames.ORIGINAL,
                 EncodingNames.SMALL,
@@ -383,10 +377,10 @@ def test_transcoded_hls_video():
             ],
             EncodingNames.HD,
         ],
-        [[EncodingNames.ORIGINAL, EncodingNames.HLS], EncodingNames.ORIGINAL],
-        [[EncodingNames.ORIGINAL, EncodingNames.LARGE], EncodingNames.LARGE],
-        [[EncodingNames.SMALL, EncodingNames.HD], EncodingNames.HD],
-        [[], None],
+        [[EncodingNames.ORIGINAL, EncodingNames.HLS], EncodingNames.ORIGINAL],  # noqa: PT007
+        [[EncodingNames.ORIGINAL, EncodingNames.LARGE], EncodingNames.LARGE],  # noqa: PT007
+        [[EncodingNames.SMALL, EncodingNames.HD], EncodingNames.HD],  # noqa: PT007
+        [[], None],  # noqa: PT007
     ],
 )
 def test_download_mp4(encodings, download):
@@ -394,7 +388,7 @@ def test_download_mp4(encodings, download):
     video = VideoFactory()
     for encoding in encodings:
         VideoFileFactory(
-            video=video, s3_object_key="{}.mp4".format(encoding), encoding=encoding
+            video=video, s3_object_key=f"{encoding}.mp4", encoding=encoding
         )
     if not download:
         assert video.download is None
@@ -440,19 +434,19 @@ def test_video_ordering():
     VideoFactory.create_batch(10, collection=collection)
     # Should be sorted by reverse creation date
     videos = collection.videos.all()
-    for (idx, video) in enumerate(videos):
+    for idx, video in enumerate(videos):
         if idx > len(videos) - 1:
             assert video.created_at >= videos[idx + 1].created_at
         video.custom_order = len(videos) - idx - 1
         video.save()
     # Should be sorted by custom_order
     resorted_videos = Collection.objects.get(id=collection.id).videos.all()
-    for (idx, video) in enumerate(resorted_videos):
+    for idx, video in enumerate(resorted_videos):
         assert video.custom_order == idx
 
 
 @pytest.mark.parametrize(
-    "encoding,edx_course_id,expected",
+    "encoding,edx_course_id,expected",  # noqa: PT006
     [
         (EncodingNames.HLS, "course-v1", True),
         (EncodingNames.DESKTOP_MP4, "course-v1", True),
