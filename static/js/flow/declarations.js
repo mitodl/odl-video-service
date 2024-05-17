@@ -39,4 +39,3 @@ declare var module: {
 }
 
 declare var videojs: Function;
-

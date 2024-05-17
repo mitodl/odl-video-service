@@ -1,4 +1,5 @@
 """Tests for environment variable parsing functions"""
+
 import os
 from unittest.mock import patch
 
@@ -93,11 +94,8 @@ def test_get_int():
             if key not in ("positive", "negative", "zero"):
                 with pytest.raises(EnvironmentVariableParseException) as ex:
                     get_int(key, 1234)
-                assert ex.value.args[
-                    0
-                ] == "Expected value in {key}={value} to be an int".format(
-                    key=key,
-                    value=value,
+                assert (
+                    ex.value.args[0] == f"Expected value in {key}={value} to be an int"
                 )
 
         assert get_int("missing", "default") == "default"
@@ -115,11 +113,9 @@ def test_get_bool():
             if key not in ("true", "false"):
                 with pytest.raises(EnvironmentVariableParseException) as ex:
                     get_bool(key, 1234)
-                assert ex.value.args[
-                    0
-                ] == "Expected value in {key}={value} to be a boolean".format(
-                    key=key,
-                    value=value,
+                assert (
+                    ex.value.args[0]
+                    == f"Expected value in {key}={value} to be a boolean"
                 )
 
         assert get_int("missing", "default") == "default"
@@ -136,11 +132,9 @@ def test_get_list_of_str():
             if key != "list_of_str":
                 with pytest.raises(EnvironmentVariableParseException) as ex:
                     get_list_of_str(key, ["noth", "ing"])
-                assert ex.value.args[
-                    0
-                ] == "Expected value in {key}={value} to be a list of str".format(
-                    key=key,
-                    value=value,
+                assert (
+                    ex.value.args[0]
+                    == f"Expected value in {key}={value} to be a list of str"
                 )
 
         assert get_list_of_str("missing", "default") == "default"
@@ -162,13 +156,13 @@ def test_get_key():
 
 
 def test_parse_env():
-    """ensure that the parse_env function is properly processing env files"""
+    """Ensure that the parse_env function is properly processing env files"""
     try:
         testpath = "testenv.txt"
-        with open(testpath, "w", encoding="utf-8") as testfile:
+        with open(testpath, "w", encoding="utf-8") as testfile:  # noqa: PTH123
             testfile.write("FOO_VAR=bar=var\n\nNULL_VAR=\n\n\nexport FOO_NUM=42\n")
         parse_env(testpath)
         assert get_string("FOO_VAR", "") == "bar=var"
         assert get_int("FOO_NUM", 0) == 42
     finally:
-        os.remove(testpath)
+        os.remove(testpath)  # noqa: PTH107

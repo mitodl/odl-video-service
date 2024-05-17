@@ -1,7 +1,8 @@
 """
 serializers for ui
 """
-from django.utils.translation import ugettext_lazy
+
+from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
@@ -21,15 +22,15 @@ def validate_moira_lists(lists):
 
     Returns:
         (list of MoiraList) List of moira lists
-    """
+    """  # noqa: E501
     bad_lists = []
     moira_client = get_moira_client()
     for mlist in lists:
         if not moira_client.list_exists(mlist.name):
-            bad_lists.append(mlist.name)
+            bad_lists.append(mlist.name)  # noqa: PERF401
     if bad_lists:
         raise serializers.ValidationError(
-            "Moira list does not exist: {}".format(",".join(bad_lists))
+            "Moira list does not exist: {}".format(",".join(bad_lists))  # noqa: EM103
         )
     return lists
 
@@ -43,7 +44,7 @@ class SingleAttrRelatedField(RelatedField):
         self.model = model
         self.attribute = attribute
         # It would be nice to do this:
-        #   super(SingleAttrRelatedField, self).__init__(**kwargs)
+        #   super(SingleAttrRelatedField, self).__init__(**kwargs)  # noqa: ERA001
         # ...but unfortunately, that __init__() checks for a queryset,
         # and throws an exception if it's not there. Since this field doesn't
         # need a queryset, instead I'm reproducing the relevant code from that
@@ -53,12 +54,11 @@ class SingleAttrRelatedField(RelatedField):
         )
         self.html_cutoff_text = kwargs.pop(
             "html_cutoff_text",
-            self.html_cutoff_text
-            or ugettext_lazy(api_settings.HTML_SELECT_CUTOFF_TEXT),
+            self.html_cutoff_text or gettext_lazy(api_settings.HTML_SELECT_CUTOFF_TEXT),
         )
         kwargs.pop("many", None)
         self.allow_empty = kwargs.pop("allow_empty", False)
-        super(RelatedField, self).__init__(**kwargs)  # pylint: disable=bad-super-call
+        super(RelatedField, self).__init__(**kwargs)
 
     def to_internal_value(self, data):
         kwargs = {self.attribute: data}
@@ -146,7 +146,7 @@ class VideoSerializer(serializers.ModelSerializer):
     collection_view_lists = serializers.SerializerMethodField()
 
     def get_key(self, obj):
-        """Custom getter for the key"""
+        """Custom getter for the key"""  # noqa: D401
         return obj.hexkey
 
     def get_collection_key(self, obj):
@@ -170,7 +170,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
         Returns:
             (list of MoiraList) List of moira lists
-        """
+        """  # noqa: D401
         return validate_moira_lists(value)
 
     def get_cloudfront_url(self, obj):
@@ -264,15 +264,15 @@ class CollectionSerializer(serializers.ModelSerializer):
     is_admin = serializers.SerializerMethodField()
 
     def get_key(self, obj):
-        """Custom getter for the key"""
+        """Custom getter for the key"""  # noqa: D401
         return obj.hexkey
 
     def get_video_count(self, obj):
-        """Custom getter for video count"""
+        """Custom getter for video count"""  # noqa: D401
         return obj.videos.count()
 
     def get_videos(self, obj):
-        """Custom getter for videos"""
+        """Custom getter for videos"""  # noqa: D401
         if self.context.get("request"):
             user = self.context.get("request").user
             if user.is_anonymous:
@@ -290,7 +290,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         ]
 
     def get_is_admin(self, obj):
-        """Custom field to indicate whether or not the requesting user is an admin"""
+        """Custom field to indicate whether or not the requesting user is an admin"""  # noqa: D401
         if self.context.get("request"):
             return ui_permissions.has_admin_permission(obj, self.context["request"])
         return False
@@ -304,7 +304,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
         Returns:
             (list of MoiraList) List of moira lists
-        """
+        """  # noqa: D401
         return validate_moira_lists(value)
 
     def validate_admin_lists(self, value):
@@ -316,7 +316,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
         Returns:
             (list of MoiraList) List of moira lists
-        """
+        """  # noqa: D401
         return validate_moira_lists(value)
 
     class Meta:
@@ -361,19 +361,19 @@ class CollectionListSerializer(serializers.ModelSerializer):
         return super().create({**validated_data, "owner": self.context["request"].user})
 
     def get_key(self, obj):
-        """Custom getter for the key"""
+        """Custom getter for the key"""  # noqa: D401
         return obj.hexkey
 
     def get_video_count(self, obj):
-        """Custom getter for video count"""
+        """Custom getter for video count"""  # noqa: D401
         return obj.videos.count()
 
     def validate_view_lists(self, value):
-        """Validation for view-only moira lists"""
+        """Validation for view-only moira lists"""  # noqa: D401
         return validate_moira_lists(value)
 
     def validate_admin_lists(self, value):
-        """Validation for admin moira lists"""
+        """Validation for admin moira lists"""  # noqa: D401
         return validate_moira_lists(value)
 
     class Meta:
@@ -402,8 +402,8 @@ class DropboxFileSerializer(serializers.Serializer):
     link = serializers.URLField()
     bytes = serializers.IntegerField(min_value=0)
     icon = serializers.URLField()
-    thumbnailLink = serializers.URLField()
-    isDir = serializers.BooleanField()
+    thumbnailLink = serializers.URLField()  # noqa: N815
+    isDir = serializers.BooleanField()  # noqa: N815
 
 
 class DropboxUploadSerializer(serializers.Serializer):

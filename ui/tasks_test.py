@@ -1,4 +1,5 @@
 """Task tests"""
+
 import factory
 import pytest
 from django.db.models import signals
@@ -9,7 +10,7 @@ from ui.encodings import EncodingNames
 from ui.factories import VideoFactory, VideoFileFactory
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db()
 @factory.django.mute_signals(signals.post_save)
 def test_post_video_to_edx(mocker):
     """post_video_to_edx task should load a Video and call an internal API function to post to edX"""
@@ -26,11 +27,11 @@ def test_post_video_to_edx(mocker):
     tasks.post_video_to_edx.delay(video.id)
     # using 1:3 in order to remove the original video from those being posted to edx.
     patched_api_method.assert_called_once_with(
-        sorted(list(reversed(video_files[1:3])), key=lambda vf: vf.id)
+        sorted(list(reversed(video_files[1:3])), key=lambda vf: vf.id)  # noqa: C414
     )
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db()
 def test_post_video_to_edx_missing(mocker):
     """post_video_to_edx task should log an error if a Video doesn't exist with the given id"""
     patched_api_method = mocker.patch("ui.tasks.ovs_api.post_video_to_edx")
@@ -41,7 +42,7 @@ def test_post_video_to_edx_missing(mocker):
     patched_api_method.assert_not_called()
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db()
 def test_batch_update_video_on_edx(mocker):
     """
     batch_update_video_on_edx should call batch_update_video_on_edx_chunked for each chunk of video keys

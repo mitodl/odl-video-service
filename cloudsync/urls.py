@@ -2,15 +2,17 @@
 URLs for cloudsync app
 """
 
-from django.conf.urls import url
+from django.urls import path, re_path
 
 from cloudsync import views
 
 urlpatterns = [
-    url(
-        r"^api/v0/tasks/(?P<task_id>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$",
+    path(
+        "api/v0/tasks/<uuid:task_id>",
         views.CeleryTaskStatus.as_view(),
         name="celery-task-status",
     ),
-    url(r"api/v0/youtube-tokens/", views.YoutubeTokensView.as_view(), name="yt_tokens"),
+    re_path(
+        r"api/v0/youtube-tokens/", views.YoutubeTokensView.as_view(), name="yt_tokens"
+    ),
 ]

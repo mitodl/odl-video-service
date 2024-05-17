@@ -1,6 +1,7 @@
 """
 Tests for api
 """
+
 import io
 import os
 from datetime import datetime
@@ -14,7 +15,7 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from django.test import override_settings
-from moto import mock_s3
+from moto import mock_aws
 
 from cloudsync import api
 from cloudsync.api import RETRANSCODE_FOLDER, move_s3_objects, upload_subtitle_to_s3
@@ -31,8 +32,6 @@ from ui.models import Video
 
 pytestmark = pytest.mark.django_db
 
-# pylint: disable=redefined-outer-name
-
 
 @pytest.fixture()
 def video():
@@ -46,7 +45,7 @@ def videofile():
     return VideoFileFactory()
 
 
-@pytest.fixture
+@pytest.fixture()
 def file_object():
     """
     Fixture for tests requiring a file object
@@ -86,10 +85,10 @@ def test_get_error_type_from_et_erro():
 
 
 @pytest.mark.parametrize(
-    "prior_status, error_status",
+    "prior_status, error_status",  # noqa: PT006
     [
-        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_VIDEO],
-        [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED],
+        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_VIDEO],  # noqa: PT007
+        [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED],  # noqa: PT007
     ],
 )
 def test_refresh_status_video_job_status_error(mocker, prior_status, error_status):
@@ -144,11 +143,11 @@ def test_refresh_status_video_job_othererror(mocker, status):
     mocker.patch(
         "ui.utils.get_transcoder_client", return_value=MockClientET(error=error)
     )
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017, PT011
         api.refresh_status(video)
 
 
-@mock_s3
+@mock_aws
 @pytest.mark.parametrize("status", [VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING])
 def test_process_transcode_results(mocker, status):
     """
@@ -249,13 +248,13 @@ def test_process_transcode_results(mocker, status):
 
 
 @pytest.mark.parametrize(
-    "course_prefix, session, date_str, expected_record_date",
+    "course_prefix, session, date_str, expected_record_date",  # noqa: PT006
     [
-        ("MIT-6.046-2017-Spring", "L01", "2017apr06", datetime(2017, 4, 6)),
-        ("abcdefg", "L01", "2017apr06", datetime(2017, 4, 6)),
-        ("MIT-6.046-2017-Spring", None, "2017apr06", datetime(2017, 4, 6)),
-        ("MIT-6.046-2017-Spring", "2-190", "2017apr06", datetime(2017, 4, 6)),
-        ("/&*3:<>俺正和", None, "2017apr06", datetime(2017, 4, 6)),
+        ("MIT-6.046-2017-Spring", "L01", "2017apr06", datetime(2017, 4, 6)),  # noqa: DTZ001
+        ("abcdefg", "L01", "2017apr06", datetime(2017, 4, 6)),  # noqa: DTZ001
+        ("MIT-6.046-2017-Spring", None, "2017apr06", datetime(2017, 4, 6)),  # noqa: DTZ001
+        ("MIT-6.046-2017-Spring", "2-190", "2017apr06", datetime(2017, 4, 6)),  # noqa: DTZ001
+        ("/&*3:<>俺正和", None, "2017apr06", datetime(2017, 4, 6)),  # noqa: DTZ001
         ("abcdefg", None, "2017badmonthvalue06", None),
     ],
 )
@@ -266,7 +265,7 @@ def test_parse_lecture_video_filename(
     Test that a tuple of video attributes title is correctly parsed for a video file.
     """
     filename = "{}-lec-mit-0000-{}-0404{}.mp4".format(
-        course_prefix, date_str, "" if not session else "-{}".format(session)
+        course_prefix, date_str, "" if not session else f"-{session}"
     )
     expected_parsed_attrs = api.ParsedVideoAttributes(
         prefix=course_prefix,
@@ -296,7 +295,7 @@ def test_parse_lecture_video_filename_failure(filename):
     assert attributes.record_date is None
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_watch_nouser():
     """
@@ -313,24 +312,24 @@ def test_watch_nouser():
     assert not Video.objects.filter(title=filename).exists()
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_watch_s3_error():
     """Test that an AWS S3 ClientError is correctly handled"""
-    UserFactory(username="admin")  # pylint: disable=unused-variable
+    UserFactory(username="admin")
     s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
     filename = "MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4"
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
     bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
-    with transaction.atomic():
+    with transaction.atomic():  # noqa: SIM117
         with pytest.raises(ClientError):
             api.process_watch_file(filename)
     assert not Video.objects.filter(title=filename).exists()
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_watch_filename_error(mocker):
     """Test that a video with a bad filename is moved to the 'Unsorted' collection"""
@@ -349,7 +348,7 @@ def test_watch_filename_error(mocker):
     assert video.collection.title == settings.UNSORTED_COLLECTION
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_process_watch(mocker):
     """Test that a file with valid filename is processed"""
@@ -369,7 +368,7 @@ def test_process_watch(mocker):
         "cloudsync.api.create_lecture_collection_slug", return_value="COLLECTION TITLE"
     )
     mocker.patch("cloudsync.api.create_lecture_video_title", return_value="VIDEO TITLE")
-    UserFactory(username="admin")  # pylint: disable=unused-variable
+    UserFactory(username="admin")
     s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
     filename = "MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4"
@@ -444,7 +443,7 @@ def test_lecture_collection_slug():
 def test_lecture_video_title():
     """Tests for create_lecture_video_slug"""
     video_attrs = api.ParsedVideoAttributes(
-        record_date=datetime(2017, 1, 1),
+        record_date=datetime(2017, 1, 1),  # noqa: DTZ001
         record_date_str="2017jan01",
         prefix="Prefix",
         session="Session",
@@ -462,10 +461,10 @@ def test_lecture_video_title():
 
 
 @pytest.mark.parametrize(
-    "status,expected_status",
+    "status,expected_status",  # noqa: PT006
     [
-        [VideoStatus.UPLOADING, VideoStatus.TRANSCODING],
-        [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODING],
+        [VideoStatus.UPLOADING, VideoStatus.TRANSCODING],  # noqa: PT007
+        [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODING],  # noqa: PT007
     ],
 )
 def test_transcode_job(mocker, status, expected_status):
@@ -506,7 +505,7 @@ def test_transcode_job(mocker, status, expected_status):
     mock_delete_objects = mocker.patch("cloudsync.api.delete_s3_objects")
     mocker.patch("ui.models.tasks")
 
-    api.transcode_video(video, videofile)  # pylint: disable=no-value-for-parameter
+    api.transcode_video(video, videofile)
     mock_encoder.assert_called_once_with(
         {"Key": videofile.s3_object_key},
         [hls_preset_1, hls_preset_2],
@@ -534,10 +533,10 @@ def test_transcode_job(mocker, status, expected_status):
 
 
 @pytest.mark.parametrize(
-    "status,error_status",
+    "status,error_status",  # noqa: PT006
     [
-        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
-        [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODE_FAILED],
+        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],  # noqa: PT007
+        [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODE_FAILED],  # noqa: PT007
     ],
 )
 def test_transcode_job_failure(mocker, status, error_status):
@@ -655,7 +654,7 @@ def test_upload_subtitle_to_s3_bad_video(mocker, file_object):
         upload_subtitle_to_s3(subtitle_data, file_object.data)
 
 
-@mock_s3
+@mock_aws
 def test_move_s3_objects():
     """
     Test that move_s3_objects changes the S3 object keys to expected values

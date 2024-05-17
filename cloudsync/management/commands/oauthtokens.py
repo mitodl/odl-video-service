@@ -8,15 +8,15 @@ from django.conf import settings
 from django.core.management import BaseCommand
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-script_path = os.path.dirname(os.path.realpath(__file__))
+script_path = os.path.dirname(os.path.realpath(__file__))  # noqa: PTH120
 
 
 class Command(BaseCommand):
     """
     Interactive command to get YT_ACCESS_TOKEN, YT_REFRESH_TOKEN settings values required for YouTube uploads
-    """
+    """  # noqa: E501
 
-    def handle(self, *args, **options):
+    def handle(self, *args, **options):  # noqa: ARG002
         """
         Run the command
         """
@@ -41,7 +41,5 @@ class Command(BaseCommand):
         )
         credentials = flow.run_console()
         self.stdout.write(
-            "YT_ACCESS_TOKEN={}\nYT_REFRESH_TOKEN={}\n".format(
-                credentials.token, credentials.refresh_token
-            )
+            f"YT_ACCESS_TOKEN={credentials.token}\nYT_REFRESH_TOKEN={credentials.refresh_token}\n"
         )

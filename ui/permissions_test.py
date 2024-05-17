@@ -1,6 +1,7 @@
 """
 Tests for permission module
 """
+
 from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import uuid4
@@ -16,14 +17,11 @@ from ui.models import Collection
 pytestmark = pytest.mark.django_db
 
 
-# pylint: disable=redefined-outer-name,too-many-arguments,unused-argument
-
-
 @pytest.fixture(scope="module")
 def collection_owner_permission():
     """
     Returns an instance of IsCollectionOwner
-    """
+    """  # noqa: D401
     return permissions.IsCollectionOwner()
 
 
@@ -31,7 +29,7 @@ def collection_owner_permission():
 def collection_permission():
     """
     Returns an instance of HasCollectionPermissions
-    """
+    """  # noqa: D401
     return permissions.HasCollectionPermissions()
 
 
@@ -39,7 +37,7 @@ def collection_permission():
 def video_permission():
     """
     Returns an instance of HasVideoPermissions
-    """
+    """  # noqa: D401
     return permissions.HasVideoPermissions()
 
 
@@ -47,43 +45,43 @@ def video_permission():
 def subtitle_permission():
     """
     Returns an instance of HasVideoPermissions
-    """
+    """  # noqa: D401
     return permissions.HasVideoSubtitlePermissions()
 
 
-@pytest.fixture
+@pytest.fixture()
 def collection():
     """
     Returns an instance of Collection
-    """
+    """  # noqa: D401
     return factories.CollectionFactory()
 
 
-@pytest.fixture
+@pytest.fixture()
 def moira_list():
     """
     Returns an instance of MoiraList
-    """
+    """  # noqa: D401
     return factories.MoiraListFactory()
 
 
-@pytest.fixture
+@pytest.fixture()
 def video():
     """
     Returns an instance of Video
-    """
+    """  # noqa: D401
     return factories.VideoFactory()
 
 
-@pytest.fixture
+@pytest.fixture()
 def subtitle():
     """
     Returns an instance of Video
-    """
+    """  # noqa: D401
     return factories.VideoSubtitleFactory()
 
 
-@pytest.fixture
+@pytest.fixture()
 def request_data():
     """
     Fixture for tests requiring a user, request, and view
@@ -94,7 +92,7 @@ def request_data():
     return SimpleNamespace(user=user, request=request, view=view)
 
 
-@pytest.fixture
+@pytest.fixture()
 def request_data_su():
     """
     Fixture for tests requiring a superuser, request, and view
@@ -105,7 +103,7 @@ def request_data_su():
     return SimpleNamespace(user=user, request=request, view=view)
 
 
-@pytest.fixture
+@pytest.fixture()
 def request_data_anon():
     """
     Fixture for tests requiring an anonymous user, request, and view
@@ -115,7 +113,7 @@ def request_data_anon():
     return SimpleNamespace(request=request, view=view)
 
 
-@pytest.fixture
+@pytest.fixture()
 def alt_moira_data():
     """
     Fixture for tests requiring a moira list, collection, and user
@@ -132,7 +130,7 @@ def alt_moira_data():
 def can_upload_to_collection_permission():
     """
     Returns an instance of CanUploadToCollection
-    """
+    """  # noqa: D401
     return permissions.CanUploadToCollection()
 
 
@@ -701,7 +699,7 @@ def test_override_video_logged_in_collection_view_lists(
     )
 
 
-def test_override_video_logged_in_collection_private(
+def test_override_video_logged_in_collection_private(  # noqa: PLR0913
     mock_user_moira_lists,
     moira_list,
     video_permission,

@@ -1,6 +1,7 @@
 """
 General bootcamp utility functions
 """
+
 from itertools import islice
 
 from odl_video import logging
@@ -18,7 +19,7 @@ def chunks(iterable, chunk_size=20):
 
     Yields:
         list: List containing a slice of list_to_chunk
-    """
+    """  # noqa: D401
     chunk_size = max(1, chunk_size)
     iterable = iter(iterable)
     chunk = list(islice(iterable, chunk_size))

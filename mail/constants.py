@@ -1,4 +1,5 @@
-""" Constants for mail """
+"""Constants for mail"""
+
 from ui.constants import VideoStatus
 
 EMAIL_SUCCESS = "success"
@@ -12,7 +13,7 @@ STATUS_TO_NOTIFICATION = {
     VideoStatus.UPLOAD_FAILED: EMAIL_OTHER_ERROR,
 }
 
-STATUSES_THAT_TRIGGER_DEBUG_EMAIL = set(
+STATUSES_THAT_TRIGGER_DEBUG_EMAIL = set(  # noqa: C405
     [
         VideoStatus.TRANSCODE_FAILED_INTERNAL,
         VideoStatus.UPLOAD_FAILED,

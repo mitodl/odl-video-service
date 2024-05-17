@@ -15,7 +15,7 @@ COPY apt.txt /tmp/apt.txt
 RUN apt-get update && \
     apt-get install -y $(grep -vE "^\s*#" apt.txt  | tr "\n" " ") && \
     apt-get update && \
-    apt-get install libpq-dev postgresql-client -y && \
+    apt-get install libpq-dev postgresql-client libxml2-dev -y && \
     apt-get clean && \
     apt-get purge
 
@@ -30,7 +30,7 @@ RUN mkdir /var/media && chown -R mitodl:mitodl /var/media
 # Poetry env configuration
 ENV  \
   # poetry:
-  POETRY_VERSION=1.5.1 \
+  POETRY_VERSION=1.8.3 \
   POETRY_VIRTUALENVS_CREATE=false \
   POETRY_CACHE_DIR='/tmp/cache/poetry'
 

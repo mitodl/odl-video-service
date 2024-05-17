@@ -1,6 +1,7 @@
 """
 Tests for the utils module
 """
+
 import unittest
 from math import ceil
 
@@ -40,7 +41,7 @@ class UtilTests(unittest.TestCase):
         input_range = range(count)
         chunk_output = []
         for chunk in chunks(input_range, chunk_size=10):
-            chunk_output.append(chunk)
+            chunk_output.append(chunk)  # noqa: PERF402
         assert len(chunk_output) == ceil(113 / 10)
 
         range_list = []
