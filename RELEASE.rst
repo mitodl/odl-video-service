@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.74.0
+Version 0.74.0 (Released May 22, 2024)
 --------------
 
 - Create management command to backfill video duration on edx (#1096)
