@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.74.0 (Released May 22, 2024)
+--------------
+
+- Create management command to backfill video duration on edx (#1096)
+- fix codecov for python (#1098)
+- Bump python version and codecov action (#1097)
+
 Version 0.73.0 (Released April 22, 2024)
 --------------
 
