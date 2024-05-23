@@ -1,6 +1,28 @@
 Release Notes
 =============
 
+Version 0.75.0 (Released May 23, 2024)
+--------------
+
+- Update dependency pytest-env to ^0.8.0
+- Update dependency ipdb to <0.14
+- Update dependency google-auth-oauthlib to ^0.8.0
+- Update dependency flow-bin to v0.236.0
+- Update dependency django-webpack-loader to ^0.7.0
+- Update dependency dj-database-url to ^0.5.0
+- Update dependency uwsgi to v2.0.25.1
+- Revert "Update python Docker tag to v3.12.3" (#1107)
+- Delete .github/ISSUE_TEMPLATE directory
+- Upgrade nginx and postgres (#1105)
+- Update python Docker tag to v3.12.3
+- Update dependency tar to v6 [SECURITY] (#1089)
+- Update postgres Docker tag to v11.16
+- Update nginx Docker tag to v1.26.0
+- Update dependency @sentry/browser to v5.30.0
+- Update Node.js to v16.20.2
+- Update dependency uwsgi to v2.0.22 [SECURITY]
+- Update yelp in precommit config file (#1099)
+
 Version 0.74.0 (Released May 22, 2024)
 --------------
 
