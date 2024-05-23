@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.75.0
+Version 0.75.0 (Released May 23, 2024)
 --------------
 
 - Update dependency pytest-env to ^0.8.0
