@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.75.1
+Version 0.75.1 (Released May 29, 2024)
 --------------
 
 - Update dependency react-dropbox-chooser to ^0.0.5 (#1077)
