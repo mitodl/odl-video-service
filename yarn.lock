@@ -7996,9 +7996,10 @@ react-dom@^15.6.1:
     object-assign "^4.1.0"
     prop-types "^15.5.10"
 
-react-dropbox-chooser@^0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/react-dropbox-chooser/-/react-dropbox-chooser-0.0.3.tgz#3b8b609af2b1d770a8e49e4ed86bef96a1ba1364"
+react-dropbox-chooser@^0.0.5:
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/react-dropbox-chooser/-/react-dropbox-chooser-0.0.5.tgz#0df0c5792bb1641b559d323c13c33711ece784a2"
+  integrity sha512-AhxXtT3fht67NNO2YSKPoMYFh/WkbJDd9/0s+qjz3D4LEq7qTgGw/dG0X32wBJBIIJomJ9eUHAx7QNiQPw9ndg==
   dependencies:
     load-script "^1.0.0"
 
