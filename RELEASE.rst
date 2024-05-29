@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.75.1
+--------------
+
+- Update dependency react-dropbox-chooser to ^0.0.5 (#1077)
+- Update dependency redux-asserts to ^0.0.12 (#1078)
+- Update dependency webpack-dev-middleware to v5 [SECURITY] (#1085)
+- [pre-commit.ci] auto fixes from pre-commit.com hooks
+- [pre-commit.ci] pre-commit autoupdate
+
 Version 0.75.0 (Released May 23, 2024)
 --------------
 
