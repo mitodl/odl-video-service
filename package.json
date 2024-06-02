@@ -110,7 +110,7 @@
     "webpack-bundle-tracker": "^0.4.3",
     "webpack-cli": "^3.3.11",
     "webpack-dev-middleware": "^5.0.0",
-    "webpack-hot-middleware": "2.25.0"
+    "webpack-hot-middleware": "2.26.1"
   },
   "engines": {
     "node": "16.20.2",
