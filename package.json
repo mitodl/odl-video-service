@@ -100,7 +100,7 @@
     "style-loader": "^0.23.0",
     "tar": "^6.0.0",
     "url-loader": "^4.1.0",
-    "victory": "^0.25.6",
+    "victory": "^0.27.0",
     "video.js": "^7.15.0",
     "videojs-contrib-quality-levels": "^2.0.4",
     "videojs-hls-quality-selector": "^1.1.0",

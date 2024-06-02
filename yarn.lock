@@ -6192,7 +6192,7 @@ lodash.unescape@4.0.1:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/lodash.unescape/-/lodash.unescape-4.0.1.tgz#bf2249886ce514cda112fae9218cdc065211fc9c"
 
-lodash@^4.0.0, lodash@^4.13.1, lodash@^4.15.0, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.16, lodash@^4.17.19, lodash@^4.17.21, lodash@^4.17.4, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0, lodash@^4.6.1, lodash@^4.7.0, lodash@~4.17.4:
+lodash@^4.0.0, lodash@^4.13.1, lodash@^4.15.0, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.16, lodash@^4.17.19, lodash@^4.17.21, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0, lodash@^4.6.1, lodash@^4.7.0, lodash@~4.17.4:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
@@ -7985,6 +7985,11 @@ react-dropbox-chooser@^0.0.5:
   integrity sha512-AhxXtT3fht67NNO2YSKPoMYFh/WkbJDd9/0s+qjz3D4LEq7qTgGw/dG0X32wBJBIIJomJ9eUHAx7QNiQPw9ndg==
   dependencies:
     load-script "^1.0.0"
+
+react-fast-compare@^2.0.0:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/react-fast-compare/-/react-fast-compare-2.0.4.tgz#e84b4d455b0fec113e0402c329352715196f81f9"
+  integrity sha512-suNP+J1VU1MWFKcyt7RtjiSWUjvidmQSlqu+eHslq+342xCbGTYmC0mEhPCOHxlW0CywylOC1u2DFAT+bv4dBw==
 
 react-ga@^2.2.0:
   version "2.2.0"
@@ -9953,40 +9958,46 @@ verror@1.10.0:
     core-util-is "1.0.2"
     extsprintf "^1.2.0"
 
-victory-chart@^25.1.1:
-  version "25.1.1"
-  resolved "https://registry.yarnpkg.com/victory-chart/-/victory-chart-25.1.1.tgz#5b5d9bde802eea774f1105af6fb723d478717532"
+victory-chart@^27.1.0:
+  version "27.1.1"
+  resolved "https://registry.yarnpkg.com/victory-chart/-/victory-chart-27.1.1.tgz#db7337c0dba1353d6a08e7116df1988edea785b0"
+  integrity sha512-6QLtfDLQQdtzNfLkFIR5QR9SmWwkre0yLz0auanth9XnBdwKoMf+g+l06tsKvNfHxNw8ZaG0C/J+KwtU/5ChPg==
   dependencies:
     d3-voronoi "^1.1.2"
-    lodash "^4.17.4"
-    victory-core "^21.0.4"
+    lodash "^4.17.5"
+    react-fast-compare "^2.0.0"
+    victory-core "^24.0.0"
 
-victory-core@^21.0.2, victory-core@^21.0.4:
-  version "21.0.4"
-  resolved "https://registry.yarnpkg.com/victory-core/-/victory-core-21.0.4.tgz#5ac6d495a43e5d95249c56973290b182ec607b4a"
+victory-core@^24.0.0:
+  version "24.0.1"
+  resolved "https://registry.yarnpkg.com/victory-core/-/victory-core-24.0.1.tgz#a0b377821fe62be8dfcb0d7c35a628fee4e16616"
+  integrity sha512-loC+UafBR8nMnLkQ3suSkjMTVMlLsUaI7BiBmFYYFjy1eqEkPwA+Pa51Tbu0KIunR/1alpEjOxP1MBz1Vc1FFg==
   dependencies:
     d3-ease "^1.0.0"
     d3-interpolate "^1.1.1"
     d3-scale "^1.0.0"
     d3-shape "^1.2.0"
     d3-timer "^1.0.0"
-    lodash "^4.17.4"
+    lodash "^4.17.5"
+    react-fast-compare "^2.0.0"
 
-victory-pie@^14.0.1:
-  version "14.0.1"
-  resolved "https://registry.yarnpkg.com/victory-pie/-/victory-pie-14.0.1.tgz#53dff9e81696253c3da00f347d908d3ac1241c66"
+victory-pie@^16.1.0:
+  version "16.1.0"
+  resolved "https://registry.yarnpkg.com/victory-pie/-/victory-pie-16.1.0.tgz#12216935bef911c427f3316c80b15b9ca6563252"
+  integrity sha512-OV1C2e7KGkGjrPUf7Hr68PWuDzxsFqQkdC9E/dZ2HGQKqaYZ9bdkLC0lZYEr7mKsUs6D8iPe4RTWXyEfX84nMA==
   dependencies:
     d3-shape "^1.0.0"
-    lodash "^4.17.4"
-    victory-core "^21.0.2"
+    lodash "^4.17.5"
+    victory-core "^24.0.0"
 
-victory@^0.25.6:
-  version "0.25.6"
-  resolved "https://registry.yarnpkg.com/victory/-/victory-0.25.6.tgz#3b5b0a1d2a773caf75cc916e6ace9ad3d7d75024"
+victory@^0.27.0:
+  version "0.27.2"
+  resolved "https://registry.yarnpkg.com/victory/-/victory-0.27.2.tgz#1e6cdef88b29466befea194f26788549befa0ea3"
+  integrity sha512-/yxEJbaxmA4OJn2Zn6n8mAxzgUoOfJDElKnGhAphgtdFg++iWUFlwXtG2IOMqBZ+8olb1gJMqNC3mPTJ/7bUkw==
   dependencies:
-    victory-chart "^25.1.1"
-    victory-core "^21.0.4"
-    victory-pie "^14.0.1"
+    victory-chart "^27.1.0"
+    victory-core "^24.0.0"
+    victory-pie "^16.1.0"
 
 "video.js@^5.10.1 || ^6.2.0":
   version "6.7.3"
