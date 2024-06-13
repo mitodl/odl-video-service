@@ -1,5 +1,5 @@
 // @flow
-import R from "ramda"
+import * as R from "ramda"
 
 export const PERM_CHOICE_NONE: string = "none"
 export const PERM_CHOICE_PUBLIC: string = "public"
