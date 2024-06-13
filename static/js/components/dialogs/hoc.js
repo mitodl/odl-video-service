@@ -1,6 +1,6 @@
 // @flow
 import React from "react"
-import R from "ramda"
+import * as R from "ramda"
 import type { Dispatch } from "redux"
 
 import * as commonUiActions from "../../actions/commonUi"

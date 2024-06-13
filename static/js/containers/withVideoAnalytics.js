@@ -1,6 +1,6 @@
 import React from "react"
 import _ from "lodash"
-import R from "ramda"
+import * as R from "ramda"
 import { connect } from "react-redux"
 import type { Dispatch } from "redux"
 

@@ -1,7 +1,7 @@
 // @flow
 /* global SETTINGS:false */
 import ga from "react-ga"
-import R from "ramda"
+import * as R from "ramda"
 
 const makeGAEvent = (category, action, label, value) => ({
   category: category,

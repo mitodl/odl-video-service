@@ -4,7 +4,7 @@ import { assert } from "chai"
 import { mount } from "enzyme"
 import { Provider } from "react-redux"
 import configureTestStore from "redux-asserts"
-import R from "ramda"
+import * as R from "ramda"
 import { connect } from "react-redux"
 
 import Dialog from "../material/Dialog"
