@@ -1,6 +1,22 @@
 Release Notes
 =============
 
+Version 0.76.0
+--------------
+
+- Revert "Update python Docker tag to v3.12.4"
+- Update python Docker tag to v3.12.4
+- Update nginx Docker tag to v1.27.0
+- Update dependency flow-bin to v0.237.2
+- Update dependency ramda to ^0.30.0 (#1125)
+- Update dependency webpack-hot-middleware to v2.26.1
+- Update dependency webpack to v4.47.0
+- Update dependency victory to ^0.27.0
+- Update dependency style-loader to ^0.23.0
+- Update dependency sentry-sdk to ^0.20.0
+- Update dependency flow-bin to v0.237.1
+- Update dependency uwsgi to v2.0.26
+
 Version 0.75.1 (Released May 29, 2024)
 --------------
 
