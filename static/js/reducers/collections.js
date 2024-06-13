@@ -1,6 +1,6 @@
 // @flow
 import { GET, PATCH, POST, INITIAL_STATE } from "redux-hammock/constants"
-import R from "ramda"
+import * as R from "ramda"
 
 import * as api from "../lib/api"
 import type { Collection, CollectionList } from "../flow/collectionTypes"
