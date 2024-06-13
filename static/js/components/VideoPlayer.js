@@ -2,7 +2,7 @@
 /* global videojs: true */
 /* global SETTINGS: false */
 import React from "react"
-import R from "ramda"
+import * as R from "ramda"
 import _ from "lodash"
 import type { Dispatch } from "redux"
 import { makeVideoSubtitleUrl } from "../lib/urls"

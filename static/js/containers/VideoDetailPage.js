@@ -4,7 +4,7 @@ import React from "react"
 import { connect } from "react-redux"
 import moment from "moment"
 import type { Dispatch } from "redux"
-import R from "ramda"
+import * as R from "ramda"
 import _ from "lodash"
 import DocumentTitle from "react-document-title"
 

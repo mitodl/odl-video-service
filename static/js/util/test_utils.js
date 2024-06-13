@@ -2,7 +2,7 @@
 // @flow
 import { assert } from "chai"
 import _ from "lodash"
-import R from "ramda"
+import * as R from "ramda"
 
 import type { Action } from "../flow/reduxTypes"
 import type { Store } from "redux"

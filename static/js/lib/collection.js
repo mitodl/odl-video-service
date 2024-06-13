@@ -1,5 +1,5 @@
 // @flow
-import R from "ramda"
+import * as R from "ramda"
 import _ from "lodash"
 
 import {
@@ -24,7 +24,7 @@ export const getActiveCollectionDetail = (state: {
     null
 
 export const getVideoWithKey = (collection: Collection, key: string) =>
-  R.compose(R.find(R.propEq("key", key)), R.defaultTo([]))(collection.videos)
+  R.compose(R.find(R.propEq(key, "key")), R.defaultTo([]))(collection.videos)
 
 export const getFormKey = (isNew: boolean): string =>
   isNew ? "newCollectionForm" : "editCollectionForm"

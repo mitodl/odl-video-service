@@ -63,12 +63,12 @@ python-dateutil = "^2.8.1"
 pytz = "^2023.3"
 redis = "^4.4.4"
 requests = "^2.20.0"
-sentry-sdk = "^0.14.3"
+sentry-sdk = "^0.20.0"
 smart-open = "^1.5.7"
 structlog = "^20.1.0"
 structlog-sentry = "^1.2.2"
 urllib3 = "^1.24.2"
-uwsgi = "2.0.25.1"
+uwsgi = "2.0.26"
 
 
 [tool.poetry.group.dev.dependencies]

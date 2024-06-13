@@ -1,6 +1,6 @@
 // @flow
 /* global SETTINGS: false */
-import R from "ramda"
+import * as R from "ramda"
 
 import {
   VIDEO_STATUS_CREATED,
@@ -44,7 +44,7 @@ export const getHLSEncodedUrl = (video: Video): string | null => {
 }
 
 export const videoIsProcessing = R.compose(
-  R.contains(R.__, [
+  R.includes(R.__, [
     VIDEO_STATUS_CREATED,
     VIDEO_STATUS_UPLOADING,
     VIDEO_STATUS_TRANSCODING
@@ -53,7 +53,7 @@ export const videoIsProcessing = R.compose(
 )
 
 export const videoHasError = R.compose(
-  R.contains(R.__, [
+  R.includes(R.__, [
     VIDEO_STATUS_UPLOAD_FAILED,
     VIDEO_STATUS_TRANSCODE_FAILED_INTERNAL,
     VIDEO_STATUS_TRANSCODE_FAILED_VIDEO,
