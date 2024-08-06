@@ -7,9 +7,6 @@
     {
       "groupName": "all non-major dev-dependencies",
       "groupSlug": "all-minor-dev-patch",
-      "matchPackagePatterns": [
-        "*"
-      ],
       "matchFileNames": [
         "test*requirement*.txt",
         "dev*requirement*.txt",
@@ -18,6 +15,9 @@
       "matchUpdateTypes": [
         "minor",
         "patch"
+      ],
+      "matchPackageNames": [
+        "*"
       ]
     }
   ]
