@@ -91,7 +91,7 @@ pytest-django = "^4.5.2"
 pytest-env = "^0.8.0"
 pytest-mock = "^3.10.0"
 pytest-pep8 = "^1.0.6"
-pytest-pylint = "^0.19.0"
+pytest-pylint = "^0.21.0"
 requests-mock = "^1.10.0"
 semantic-version = "^2.10.0"
 
