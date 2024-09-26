@@ -1010,18 +1010,21 @@ Django = ">=2.2"
 
 [[package]]
 name = "django-hijack"
-version = "2.3.0"
+version = "3.4.4"
 description = "django-hijack allows superusers to hijack (=login as) and work on behalf of another user."
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "django-hijack-2.3.0.tar.gz", hash = "sha256:216de6ff863b5f48314795083e96267ff0829ff7f7180c26ca3c17d8a134e1cf"},
-    {file = "django_hijack-2.3.0-py3-none-any.whl", hash = "sha256:8b820b6fe605cf2f3b50817985d7245285a18c027b7e3eb424d18b7908ecd2e1"},
+    {file = "django-hijack-3.4.4.tar.gz", hash = "sha256:272a0121f8adb4411b3219903b2042b885bccc90e23a8a260976dc7c8b6fd2c7"},
+    {file = "django_hijack-3.4.4-py3-none-any.whl", hash = "sha256:c78dd661a414f8b33ef5ff044d1d240eb4162fa6554c7ef17aec6262a4c60fae"},
 ]
 
 [package.dependencies]
 django = ">=2.2"
+
+[package.extras]
+test = ["pytest", "pytest-cov", "pytest-django"]
 
 [[package]]
 name = "django-hijack-admin"
@@ -3829,4 +3832,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "985bdeef4aadc4b9a4bcd930a59ddad0f5e2937ae063c6ae06f5de810acf1a1b"
+content-hash = "56be3c320e872edcd09df8d4489f3ac8bf36ff4381121950ad1f48a955dffeb4"
