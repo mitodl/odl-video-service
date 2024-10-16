@@ -57,7 +57,7 @@ httplib2 = "^0.22.0"
 ipython = "^7.16.3"
 mit-moira = {git = "https://github.com/mitodl/mit-moira", tag = "v0.0.4"}
 newrelic = "^8.8.0"
-psycopg2 = "2.8.6"
+psycopg2 = "2.9.10"
 pycountry = "^22.3.5"
 python-dateutil = "^2.8.1"
 pytz = "^2023.3"
