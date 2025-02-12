@@ -68,9 +68,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "compat",
     "hijack",
-    "hijack_admin",
+    "hijack.contrib.admin",
     "encrypted_model_fields",
 ]
 
@@ -84,6 +83,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "hijack.middleware.HijackUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -566,3 +566,8 @@ HIJACK_LOGOUT_REDIRECT_URL = "/admin/auth/user"
 
 OPENEDX_API_CLIENT_ID = get_string("OPENEDX_API_CLIENT_ID", "")
 OPENEDX_API_CLIENT_SECRET = get_string("OPENEDX_API_CLIENT_SECRET", "")
+
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+# Hijack
+HIJACK_INSERT_BEFORE = "</body>"

@@ -1,7 +1,7 @@
 """
 serializers for ui
 """
-from django.utils.translation import ugettext_lazy
+from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.relations import RelatedField
 from rest_framework.settings import api_settings
@@ -53,8 +53,7 @@ class SingleAttrRelatedField(RelatedField):
         )
         self.html_cutoff_text = kwargs.pop(
             "html_cutoff_text",
-            self.html_cutoff_text
-            or ugettext_lazy(api_settings.HTML_SELECT_CUTOFF_TEXT),
+            self.html_cutoff_text or gettext_lazy(api_settings.HTML_SELECT_CUTOFF_TEXT),
         )
         kwargs.pop("many", None)
         self.allow_empty = kwargs.pop("allow_empty", False)
