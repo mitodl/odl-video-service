@@ -99,7 +99,8 @@ def test_collection_serializer_admin_flag(mocker, has_permission):
     mocked_request = mocker.MagicMock()
     collection = factories.CollectionFactory()
     serialized_data = serializers.CollectionSerializer(
-        collection, context=dict(request=mocked_request)
+        collection,
+        context=dict(request=mocked_request),  # pylint: disable=use-dict-literal
     ).data
     mocked_admin_permission.assert_called_with(collection, mocked_request)
     assert serialized_data["is_admin"] is has_permission
@@ -123,7 +124,8 @@ def test_collection_serializer_private_video(mocker, is_admin, is_superuser):
     VideoFactory.create(is_private=True, collection=collection)
 
     serialized_data = serializers.CollectionSerializer(
-        collection, context=dict(request=mocked_request)
+        collection,
+        context=dict(request=mocked_request),  # pylint: disable=use-dict-literal
     ).data
 
     assert len(serialized_data["videos"]) == (2 if has_permission else 1)

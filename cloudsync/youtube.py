@@ -10,7 +10,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
-from smart_open.s3 import SeekableBufferedInputBase
+from smart_open.http import SeekableBufferedInputBase
 
 from odl_video import logging
 
@@ -179,8 +179,8 @@ class YouTubeApi:
         """
         request = self.client.captions().insert(
             part="snippet",
-            body=dict(
-                snippet=dict(
+            body=dict(  # pylint: disable=use-dict-literal
+                snippet=dict(  # pylint: disable=use-dict-literal
                     videoId=video_id,
                     language=caption.language,
                     name=caption.language_name,
@@ -204,7 +204,10 @@ class YouTubeApi:
         """
         request = self.client.captions().update(
             part="snippet",
-            body=dict(id=caption_id, snippet=dict(isDraft=False)),
+            body=dict(  # pylint: disable=use-dict-literal
+                id=caption_id,
+                snippet=dict(isDraft=False),  # pylint: disable=use-dict-literal
+            ),
             media_body=media_body,
         )
         return resumable_upload(request)
@@ -237,12 +240,12 @@ class YouTubeApi:
         """
         videofile = video.original_video or video.transcoded_videos[0]
 
-        request_body = dict(
-            snippet=dict(
+        request_body = dict(  # pylint: disable=use-dict-literal
+            snippet=dict(  # pylint: disable=use-dict-literal
                 title=strip_bad_chars(video.title)[:100],
                 description=strip_bad_chars(video.description)[:5000],
             ),
-            status=dict(privacyStatus=privacy),
+            status=dict(privacyStatus=privacy),  # pylint: disable=use-dict-literal
         )
 
         with SeekableBufferedInputBase(
