@@ -897,7 +897,7 @@ def test_video_viewset_analytics(mocker, logged_in_apiclient):
     url = reverse("models-api:video-analytics", kwargs={"key": video.hexkey})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
-    assert mock_get_video_analytics.called_once_with(video)
+    mock_get_video_analytics.assert_called_once_with(video)
     assert result.data["data"] == mock_get_video_analytics.return_value
 
 
@@ -921,7 +921,7 @@ def test_video_viewset_analytics_mock_data(mocker, logged_in_apiclient):
     n = 2
     result = client.get(url, {"mock": 1, "seed": seed, "n": n})
     assert result.status_code == status.HTTP_200_OK
-    assert mock_generate_mock_video_analytics_data.called_once_with(seed=seed, n=n)
+    mock_generate_mock_video_analytics_data.assert_called_once_with(seed=seed, n=str(n))
     assert result.data["data"] == mock_generate_mock_video_analytics_data.return_value
 
 
