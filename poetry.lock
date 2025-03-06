@@ -186,17 +186,17 @@ files = [
 
 [[package]]
 name = "boto3"
-version = "1.36.21"
+version = "1.37.7"
 description = "The AWS SDK for Python"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "boto3-1.36.21-py3-none-any.whl", hash = "sha256:f94faa7cf932d781f474d87f8b4c14a033af95ac1460136b40d75e7a30086ef0"},
-    {file = "boto3-1.36.21.tar.gz", hash = "sha256:41eb2b73eb612d300e629e3328b83f1ffea0fc6633e75c241a72a76746c1db26"},
+    {file = "boto3-1.37.7-py3-none-any.whl", hash = "sha256:9758429ebc11ed391249a16406af7175c94140fe99956e319a191805a625b383"},
+    {file = "boto3-1.37.7.tar.gz", hash = "sha256:ac2e022edcd6a94a2adbb21f0ad373a16557ec14a8910366bee0bbc7138fc72a"},
 ]
 
 [package.dependencies]
-botocore = ">=1.36.21,<1.37.0"
+botocore = ">=1.37.7,<1.38.0"
 jmespath = ">=0.7.1,<2.0.0"
 s3transfer = ">=0.11.0,<0.12.0"
 
@@ -205,13 +205,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.36.21"
+version = "1.37.7"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.36.21-py3-none-any.whl", hash = "sha256:24a7052e792639dc2726001bd474cd0aaa959c1e18ddd92c17f3adc6efa1b132"},
-    {file = "botocore-1.36.21.tar.gz", hash = "sha256:da746240e2ad64fd4997f7f3664a0a8e303d18075fc1d473727cb6375080ea16"},
+    {file = "botocore-1.37.7-py3-none-any.whl", hash = "sha256:047b8a27035832607fd368464dcce58026005d3d7630fcd1d703051370abcb26"},
+    {file = "botocore-1.37.7.tar.gz", hash = "sha256:2faeac11766db912bc444669b04359080b7b83b2f57a3906c77c8105b70ce1e8"},
 ]
 
 [package.dependencies]
@@ -249,13 +249,13 @@ watch = ["watchdog"]
 
 [[package]]
 name = "cachetools"
-version = "5.5.1"
+version = "5.5.2"
 description = "Extensible memoizing collections and decorators"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "cachetools-5.5.1-py3-none-any.whl", hash = "sha256:b76651fdc3b24ead3c648bbdeeb940c1b04d365b38b4af66788f9ec4a81d42bb"},
-    {file = "cachetools-5.5.1.tar.gz", hash = "sha256:70f238fbba50383ef62e55c6aff6d9673175fe59f7c6782c7a0b9e38f4a9df95"},
+    {file = "cachetools-5.5.2-py3-none-any.whl", hash = "sha256:d26a22bcc62eb95c3beabd9f1ee5e820d3d2704fe2967cbe350e20c8ffcd3f0a"},
+    {file = "cachetools-5.5.2.tar.gz", hash = "sha256:1a661caa9175d26759571b2e19580f9d6393969e5dfca11fdb1f947a23e640d4"},
 ]
 
 [[package]]
@@ -316,12 +316,13 @@ zstd = ["zstandard (==0.22.0)"]
 
 [[package]]
 name = "celery-redbeat"
-version = "2.2.0"
+version = "2.3.2"
 description = "A Celery Beat Scheduler using Redis for persistent storage"
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 files = [
-    {file = "celery-redbeat-2.2.0.tar.gz", hash = "sha256:71104729380d4eaefd91a9b7d270ba7851bfff9ad55a43ac8365acbb0c608b77"},
+    {file = "celery_redbeat-2.3.2-py2.py3-none-any.whl", hash = "sha256:9d61ab6e29f59d676621a846c778a347d5acad22e90fb4386343a4852d4f7ac3"},
+    {file = "celery_redbeat-2.3.2.tar.gz", hash = "sha256:7d6e41e4b807fafba5d88b98e3d3863f0df95ac3ed1692d70b134c079b936b8b"},
 ]
 
 [package.dependencies]
@@ -788,13 +789,13 @@ files = [
 
 [[package]]
 name = "decorator"
-version = "5.1.1"
+version = "5.2.1"
 description = "Decorators for Humans"
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.8"
 files = [
-    {file = "decorator-5.1.1-py3-none-any.whl", hash = "sha256:b8c3f85900b9dc423225913c5aace94729fe1fa9763b38939a95226f02d37186"},
-    {file = "decorator-5.1.1.tar.gz", hash = "sha256:637996211036b6385ef91435e4fae22989472f9d571faba8927ba8253acbc330"},
+    {file = "decorator-5.2.1-py3-none-any.whl", hash = "sha256:d316bb415a2d9e2d2b3abcc4084c6502fc09240e292cd76a76afc106a1c8e04a"},
+    {file = "decorator-5.2.1.tar.gz", hash = "sha256:65f266143752f734b0a7cc83c46f4618af75b8c5911b00ccb61d0ac9b6da0360"},
 ]
 
 [[package]]
@@ -1072,13 +1073,13 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2,<1.0.dev0)"]
 
 [[package]]
 name = "google-api-python-client"
-version = "2.161.0"
+version = "2.163.0"
 description = "Google API Client Library for Python"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google_api_python_client-2.161.0-py2.py3-none-any.whl", hash = "sha256:9476a5a4f200bae368140453df40f9cda36be53fa7d0e9a9aac4cdb859a26448"},
-    {file = "google_api_python_client-2.161.0.tar.gz", hash = "sha256:324c0cce73e9ea0a0d2afd5937e01b7c2d6a4d7e2579cdb6c384f9699d6c9f37"},
+    {file = "google_api_python_client-2.163.0-py2.py3-none-any.whl", hash = "sha256:080e8bc0669cb4c1fb8efb8da2f5b91a2625d8f0e7796cfad978f33f7016c6c4"},
+    {file = "google_api_python_client-2.163.0.tar.gz", hash = "sha256:88dee87553a2d82176e2224648bf89272d536c8f04dcdda37ef0a71473886dd7"},
 ]
 
 [package.dependencies]
@@ -1147,13 +1148,13 @@ tool = ["click (>=6.0.0)"]
 
 [[package]]
 name = "googleapis-common-protos"
-version = "1.67.0"
+version = "1.69.0"
 description = "Common protobufs used in Google APIs"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "googleapis_common_protos-1.67.0-py2.py3-none-any.whl", hash = "sha256:579de760800d13616f51cf8be00c876f00a9f146d3e6510e19d1f4111758b741"},
-    {file = "googleapis_common_protos-1.67.0.tar.gz", hash = "sha256:21398025365f138be356d5923e9168737d94d46a72aefee4a6110a1f23463c86"},
+    {file = "googleapis_common_protos-1.69.0-py2.py3-none-any.whl", hash = "sha256:17835fdc4fa8da1d61cfe2d4d5d57becf7c61d4112f8d81c67eaa9d7ce43042d"},
+    {file = "googleapis_common_protos-1.69.0.tar.gz", hash = "sha256:5a46d58af72846f59009b9c4710425b9af2139555c71837081706b213b298187"},
 ]
 
 [package.dependencies]
@@ -1405,13 +1406,13 @@ testing = ["Django", "attrs", "colorama", "docopt", "pytest (<9.0.0)"]
 
 [[package]]
 name = "jinja2"
-version = "3.1.5"
+version = "3.1.6"
 description = "A very fast and expressive template engine."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "jinja2-3.1.5-py3-none-any.whl", hash = "sha256:aba0f4dc9ed8013c424088f68a5c226f7d6097ed89b246d7749c2ec4175c6adb"},
-    {file = "jinja2-3.1.5.tar.gz", hash = "sha256:8fefff8dc3034e27bb80d67c671eb8a9bc424c0ef4c0826edbff304cceff43bb"},
+    {file = "jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67"},
+    {file = "jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"},
 ]
 
 [package.dependencies]
@@ -1747,13 +1748,13 @@ resolved_reference = "0b73483f2bad49327b77a3eb94a4a9a602ef26ce"
 
 [[package]]
 name = "moto"
-version = "5.0.28"
+version = "5.1.1"
 description = "A library that allows you to easily mock out tests based on AWS infrastructure"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "moto-5.0.28-py3-none-any.whl", hash = "sha256:2dfbea1afe3b593e13192059a1a7fc4b3cf7fdf92e432070c22346efa45aa0f0"},
-    {file = "moto-5.0.28.tar.gz", hash = "sha256:4d3437693411ec943c13c77de5b0b520c4b0a9ac850fead4ba2a54709e086e8b"},
+    {file = "moto-5.1.1-py3-none-any.whl", hash = "sha256:615904d6210431950a59a2bdec365d60e791eacbe3dd07a3a5d742c88ef847dd"},
+    {file = "moto-5.1.1.tar.gz", hash = "sha256:5b25dbc62cccd9f36ef062c870db49d976b241129024fab049e2d3d1296e2a57"},
 ]
 
 [package.dependencies]
@@ -1768,7 +1769,7 @@ werkzeug = ">=0.5,<2.2.0 || >2.2.0,<2.2.1 || >2.2.1"
 xmltodict = "*"
 
 [package.extras]
-all = ["PyYAML (>=5.1)", "antlr4-python3-runtime", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "graphql-core", "joserfc (>=0.9.0)", "jsonpath-ng", "jsonschema", "multipart", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.6.1)", "pyparsing (>=3.0.7)", "setuptools"]
+all = ["PyYAML (>=5.1)", "antlr4-python3-runtime", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "graphql-core", "joserfc (>=0.9.0)", "jsonpath_ng", "jsonschema", "multipart", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.6.1)", "pyparsing (>=3.0.7)", "setuptools"]
 apigateway = ["PyYAML (>=5.1)", "joserfc (>=0.9.0)", "openapi-spec-validator (>=0.5.0)"]
 apigatewayv2 = ["PyYAML (>=5.1)", "openapi-spec-validator (>=0.5.0)"]
 appsync = ["graphql-core"]
@@ -1778,16 +1779,16 @@ cloudformation = ["PyYAML (>=5.1)", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>
 cognitoidp = ["joserfc (>=0.9.0)"]
 dynamodb = ["docker (>=3.0.0)", "py-partiql-parser (==0.6.1)"]
 dynamodbstreams = ["docker (>=3.0.0)", "py-partiql-parser (==0.6.1)"]
-events = ["jsonpath-ng"]
+events = ["jsonpath_ng"]
 glue = ["pyparsing (>=3.0.7)"]
-proxy = ["PyYAML (>=5.1)", "antlr4-python3-runtime", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=2.5.1)", "graphql-core", "joserfc (>=0.9.0)", "jsonpath-ng", "multipart", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.6.1)", "pyparsing (>=3.0.7)", "setuptools"]
+proxy = ["PyYAML (>=5.1)", "antlr4-python3-runtime", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=2.5.1)", "graphql-core", "joserfc (>=0.9.0)", "jsonpath_ng", "multipart", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.6.1)", "pyparsing (>=3.0.7)", "setuptools"]
 quicksight = ["jsonschema"]
 resourcegroupstaggingapi = ["PyYAML (>=5.1)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "graphql-core", "joserfc (>=0.9.0)", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.6.1)", "pyparsing (>=3.0.7)"]
 s3 = ["PyYAML (>=5.1)", "py-partiql-parser (==0.6.1)"]
 s3crc32c = ["PyYAML (>=5.1)", "crc32c", "py-partiql-parser (==0.6.1)"]
-server = ["PyYAML (>=5.1)", "antlr4-python3-runtime", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "flask (!=2.2.0,!=2.2.1)", "flask-cors", "graphql-core", "joserfc (>=0.9.0)", "jsonpath-ng", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.6.1)", "pyparsing (>=3.0.7)", "setuptools"]
+server = ["PyYAML (>=5.1)", "antlr4-python3-runtime", "aws-xray-sdk (>=0.93,!=0.96)", "cfn-lint (>=0.40.0)", "docker (>=3.0.0)", "flask (!=2.2.0,!=2.2.1)", "flask-cors", "graphql-core", "joserfc (>=0.9.0)", "jsonpath_ng", "openapi-spec-validator (>=0.5.0)", "py-partiql-parser (==0.6.1)", "pyparsing (>=3.0.7)", "setuptools"]
 ssm = ["PyYAML (>=5.1)"]
-stepfunctions = ["antlr4-python3-runtime", "jsonpath-ng"]
+stepfunctions = ["antlr4-python3-runtime", "jsonpath_ng"]
 xray = ["aws-xray-sdk (>=0.93,!=0.96)", "setuptools"]
 
 [[package]]
@@ -2583,20 +2584,20 @@ pyasn1 = ">=0.1.3"
 
 [[package]]
 name = "s3transfer"
-version = "0.11.2"
+version = "0.11.4"
 description = "An Amazon S3 Transfer Manager"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "s3transfer-0.11.2-py3-none-any.whl", hash = "sha256:be6ecb39fadd986ef1701097771f87e4d2f821f27f6071c872143884d2950fbc"},
-    {file = "s3transfer-0.11.2.tar.gz", hash = "sha256:3b39185cb72f5acc77db1a58b6e25b977f28d20496b6e58d6813d75f464d632f"},
+    {file = "s3transfer-0.11.4-py3-none-any.whl", hash = "sha256:ac265fa68318763a03bf2dc4f39d5cbd6a9e178d81cc9483ad27da33637e320d"},
+    {file = "s3transfer-0.11.4.tar.gz", hash = "sha256:559f161658e1cf0a911f45940552c696735f5c74e64362e515f333ebed87d679"},
 ]
 
 [package.dependencies]
-botocore = ">=1.36.0,<2.0a.0"
+botocore = ">=1.37.4,<2.0a.0"
 
 [package.extras]
-crt = ["botocore[crt] (>=1.36.0,<2.0a.0)"]
+crt = ["botocore[crt] (>=1.37.4,<2.0a.0)"]
 
 [[package]]
 name = "semantic-version"
@@ -2646,13 +2647,13 @@ tornado = ["tornado (>=5)"]
 
 [[package]]
 name = "setuptools"
-version = "75.8.0"
+version = "75.8.2"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "setuptools-75.8.0-py3-none-any.whl", hash = "sha256:e3982f444617239225d675215d51f6ba05f845d4eec313da4418fdbb56fb27e3"},
-    {file = "setuptools-75.8.0.tar.gz", hash = "sha256:c5afc8f407c626b8313a86e10311dd3f661c6cd9c09d4bf8c15c0e11f9f2b0e6"},
+    {file = "setuptools-75.8.2-py3-none-any.whl", hash = "sha256:558e47c15f1811c1fa7adbd0096669bf76c1d3f433f58324df69f3f5ecac4e8f"},
+    {file = "setuptools-75.8.2.tar.gz", hash = "sha256:4880473a969e5f23f2a2be3646b2dfd84af9028716d398e46192f84bc36900d2"},
 ]
 
 [package.extras]
