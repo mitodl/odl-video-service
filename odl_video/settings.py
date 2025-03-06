@@ -68,9 +68,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "compat",
     "hijack",
-    "hijack_admin",
+    "hijack.contrib.admin",
     "encrypted_model_fields",
 ]
 
@@ -84,6 +83,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "hijack.middleware.HijackUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -339,7 +339,7 @@ AWS_S3_UPLOAD_MAX_IO_QUEUE = get_int("AWS_S3_UPLOAD_MAX_IO_QUEUE", 100)
 AWS_S3_UPLOAD_IO_CHUNKSIZE_KB = get_int("AWS_S3_UPLOAD_IO_CHUNKSIZE_KB", 256)
 AWS_S3_UPLOAD_USE_THREADS = get_bool("AWS_S3_UPLOAD_USE_THREADS", True)
 
-AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
+AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(  # pylint: disable=use-dict-literal
     multipart_threshold=AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB * MB,
     multipart_chunksize=AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB * MB,
     max_concurrency=AWS_S3_UPLOAD_MAX_CONCURRENCY,
@@ -566,3 +566,8 @@ HIJACK_LOGOUT_REDIRECT_URL = "/admin/auth/user"
 
 OPENEDX_API_CLIENT_ID = get_string("OPENEDX_API_CLIENT_ID", "")
 OPENEDX_API_CLIENT_SECRET = get_string("OPENEDX_API_CLIENT_SECRET", "")
+
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
+# Hijack
+HIJACK_INSERT_BEFORE = "</body>"

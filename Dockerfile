@@ -1,4 +1,4 @@
-FROM node:16.20.2 as node
+FROM node:16.20.2 AS node
 ENV NODE_ENV=production
 RUN apt-get update && apt-get install libelf1 -y
 COPY . /src
@@ -6,7 +6,7 @@ WORKDIR /src
 RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline && \
     node node_modules/webpack/bin/webpack.js --config  webpack.config.prod.js --bail
 
-FROM python:3.9.19-bullseye AS base
+FROM python:3.12.3-bullseye AS base
 # Add package files, install updated node and pip
 WORKDIR /tmp
 
@@ -30,7 +30,7 @@ RUN mkdir /var/media && chown -R mitodl:mitodl /var/media
 # Poetry env configuration
 ENV  \
   # poetry:
-  POETRY_VERSION=1.5.1 \
+  POETRY_VERSION=1.8.3 \
   POETRY_VIRTUALENVS_CREATE=false \
   POETRY_CACHE_DIR='/tmp/cache/poetry'
 

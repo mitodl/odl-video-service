@@ -14,7 +14,7 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from django.test import override_settings
-from moto import mock_s3
+from moto import mock_aws
 
 from cloudsync import api
 from cloudsync.api import RETRANSCODE_FOLDER, move_s3_objects, upload_subtitle_to_s3
@@ -148,7 +148,7 @@ def test_refresh_status_video_job_othererror(mocker, status):
         api.refresh_status(video)
 
 
-@mock_s3
+@mock_aws
 @pytest.mark.parametrize("status", [VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING])
 def test_process_transcode_results(mocker, status):
     """
@@ -296,7 +296,7 @@ def test_parse_lecture_video_filename_failure(filename):
     assert attributes.record_date is None
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_watch_nouser():
     """
@@ -313,7 +313,7 @@ def test_watch_nouser():
     assert not Video.objects.filter(title=filename).exists()
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_watch_s3_error():
     """Test that an AWS S3 ClientError is correctly handled"""
@@ -330,7 +330,7 @@ def test_watch_s3_error():
     assert not Video.objects.filter(title=filename).exists()
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_watch_filename_error(mocker):
     """Test that a video with a bad filename is moved to the 'Unsorted' collection"""
@@ -349,7 +349,7 @@ def test_watch_filename_error(mocker):
     assert video.collection.title == settings.UNSORTED_COLLECTION
 
 
-@mock_s3
+@mock_aws
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_process_watch(mocker):
     """Test that a file with valid filename is processed"""
@@ -655,7 +655,7 @@ def test_upload_subtitle_to_s3_bad_video(mocker, file_object):
         upload_subtitle_to_s3(subtitle_data, file_object.data)
 
 
-@mock_s3
+@mock_aws
 def test_move_s3_objects():
     """
     Test that move_s3_objects changes the S3 object keys to expected values

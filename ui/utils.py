@@ -492,7 +492,7 @@ def send_refresh_request(base_api_url, client_id, client_secret):
         "token_type": "JWT",
     }
 
-    resp = requests.post(access_token_url, data=data)
+    resp = requests.post(access_token_url, data=data)  # pylint: disable=missing-timeout
 
     resp.raise_for_status()
     return resp.json()

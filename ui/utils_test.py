@@ -65,7 +65,7 @@ def test_get_moira_client_success(mock_moira, settings):
     settings.MIT_WS_PRIVATE_KEY_FILE = tempfile1.name
     settings.MIT_WS_CERTIFICATE_FILE = tempfile2.name
     get_moira_client()
-    assert mock_moira.called_once_with(
+    mock_moira.assert_called_once_with(
         settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE
     )
 
@@ -139,8 +139,8 @@ def test_user_moira_lists_cache_miss(mocker, settings):
     result = user_moira_lists(user)
     expected_result = set(mock_query_moira_lists.return_value)
     assert result == expected_result
-    assert mock_query_moira_lists.called_once_with(user)
-    assert mock_cache.set.called_once_with(
+    mock_query_moira_lists.assert_called_once_with(user)
+    mock_cache.set.assert_called_once_with(
         MOIRA_CACHE_KEY.format(user_id=user.id),
         expected_result,
         settings.MOIRA_CACHE_TIMEOUT,
@@ -175,8 +175,10 @@ def test_get_video_analytics(mocker):
     expected_ga_client = mock_get_ga_client.return_value
     expected_batchGet_call = expected_ga_client.reports.return_value.batchGet
     expected_ga_query = mock_generate_ga_query.return_value
-    assert expected_batchGet_call.called_once_with(body=expected_ga_query)
-    assert mock_parse_ga_response.called_once_with(expected_batchGet_call.return_value)
+    expected_batchGet_call.assert_called_once_with(body=expected_ga_query)
+    mock_parse_ga_response.assert_called_once_with(
+        expected_batchGet_call.return_value.execute()
+    )
     assert result is mock_parse_ga_response.return_value
 
 
@@ -195,13 +197,17 @@ def test_get_google_analytics_client_success(ga_client_mocks, settings):
     """Test that a client is returned from get_ga_client"""
     settings.GA_KEYFILE_JSON = '{"some": "json"}'
     result = get_google_analytics_client()
-    assert (
-        ga_client_mocks["ServiceAccountCredentials"].from_service_account_info
-    ).called_once_with(json.loads(settings.GA_KEYFILE_JSON))
-    assert ga_client_mocks["build"].called_once_with(
-        ga_client_mocks[
+    ga_client_mocks[
+        "ServiceAccountCredentials"
+    ].from_service_account_info.assert_called_once_with(
+        json.loads(settings.GA_KEYFILE_JSON)
+    )
+    ga_client_mocks["build"].assert_called_once_with(
+        "analyticsreporting",
+        "v4",
+        credentials=ga_client_mocks[
             "ServiceAccountCredentials"
-        ].from_service_account_info.return_value
+        ].from_service_account_info.return_value,
     )
     assert result is ga_client_mocks["build"].return_value
 
