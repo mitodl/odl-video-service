@@ -45,7 +45,7 @@ django-encrypted-model-fields = "^0.6.5"
 django-hijack = "^3.7.1"
 django-redis = "^5.2.0"
 django-shibboleth-remoteuser = {git = "https://github.com/Brown-University-Library/django-shibboleth-remoteuser", tag = "v0.12"}
-django-webpack-loader = "^0.7.0"
+django-webpack-loader = "^3.0.0"
 djangorestframework = "^3.11.2"
 google-api-python-client = "^2.58.0"
 google-auth = "^2.11.0"
