@@ -62,7 +62,7 @@ module.exports = Object.assign(prodConfig, {
       'typeof global': JSON.stringify('undefined')
     }),
     new BundleTracker({
-      filename: './webpack-stats.json'
+      filename: 'webpack-stats.json'
     }),
     new webpack.LoaderOptionsPlugin({
       minimize: true

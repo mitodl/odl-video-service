@@ -27,7 +27,7 @@ const devConfig = Object.assign({}, config, {
       }
     }),
     new webpack.HotModuleReplacementPlugin(),
-    new BundleTracker({ path: __dirname, filename: "./webpack-stats.json" })
+    new BundleTracker({ path: __dirname, filename: "webpack-stats.json" })
   ],
   devtool: 'source-map',
   optimization: {
