@@ -2,7 +2,6 @@
 API methods
 """
 from ast import literal_eval
-from uuid import uuid4
 
 import requests
 from celery import chain
@@ -99,12 +98,12 @@ def post_video_to_edx(video_files):
                 video_files[0].video.encode_jobs.filter(state=0).first()
             )
             duration = get_duration_from_encode_job(submitted_encode_job)
-
+            video_key = str(video_files[0].video.key)
             resp = requests.post(  # pylint: disable=missing-timeout
                 edx_endpoint.full_api_url,
                 json={
                     "client_video_id": video_files[0].video.title,
-                    "edx_video_id": str(uuid4()),
+                    "edx_video_id": video_key,
                     "encoded_videos": encoded_videos,
                     "courses": [{video_files[0].video.collection.edx_course_id: None}],
                     "status": "file_complete",
@@ -114,7 +113,14 @@ def post_video_to_edx(video_files):
                     "Authorization": "JWT {}".format(edx_endpoint.access_token),
                 },
             )
-            resp.raise_for_status()
+            if resp.status_code == 400:
+                log.info(
+                    "Video already exists on edX, updating instead",
+                )
+                update_resp = update_video_on_edx(video_key, encoded_videos)
+                responses[edx_endpoint] = list(update_resp.values())[0]
+            else:
+                resp.raise_for_status()
         except requests.exceptions.RequestException as exc:
             if exc is not None and exc.response is not None:
                 response_summary_dict = get_error_response_summary_dict(exc.response)
@@ -134,7 +140,7 @@ def post_video_to_edx(video_files):
     return responses
 
 
-def update_video_on_edx(video_key):
+def update_video_on_edx(video_key, encoded_videos=None):
     """
     Update a video to their configured edX endpoints by making PATCH request to api/val/v0/videos/{edx_video_id}
 
@@ -153,16 +159,19 @@ def update_video_on_edx(video_key):
         video_partial_update_url = edx_endpoint.full_api_url + str(video.key)
         try:
             edx_endpoint.refresh_access_token()
+            payload = {
+                "edx_video_id": str(video.key),
+                "client_video_id": video.title,
+                "duration": get_duration_from_encode_job(
+                    video.encode_jobs.filter(state=0).first()
+                ),
+                "status": "updated",
+            }
+            if encoded_videos:
+                payload["encoded_videos"] = encoded_videos
             resp = requests.patch(  # pylint: disable=missing-timeout
                 video_partial_update_url,
-                json={
-                    "edx_video_id": str(video.key),
-                    "client_video_id": video.title,
-                    "duration": get_duration_from_encode_job(
-                        video.encode_jobs.filter(state=0).first()
-                    ),
-                    "status": "updated",
-                },
+                json=payload,
                 headers={
                     "Authorization": "JWT {}".format(edx_endpoint.access_token),
                 },

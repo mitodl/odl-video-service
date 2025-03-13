@@ -185,6 +185,69 @@ def test_post_video_to_edx(mocker, reqmocker, edx_api_scenario):
         assert len(request_body["edx_video_id"]) == 36
 
 
+def test_post_same_video_to_edx(mocker, reqmocker, edx_api_scenario):
+    """
+    post_video_to_edx should make update request if the video is already posted to edX
+    """
+    mocked_posts = [
+        reqmocker.register_uri(
+            "POST",
+            edx_endpoint.full_api_url,
+            headers={
+                "Authorization": "JWT {}".format(edx_endpoint.access_token),
+            },
+            status_code=400,
+        )
+        for edx_endpoint in [
+            edx_api_scenario.collection_endpoint,
+        ]
+    ]
+    mocked_requests = [
+        reqmocker.register_uri(
+            "PATCH",
+            edx_endpoint.full_api_url + str(edx_api_scenario.video_file_hls.video.key),
+            headers={
+                "Authorization": "JWT {}".format(edx_endpoint.access_token),
+            },
+            status_code=200,
+        )
+        for edx_endpoint in [
+            edx_api_scenario.collection_endpoint,
+        ]
+    ]
+    refresh_token_mock = mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    api.post_video_to_edx(
+        [edx_api_scenario.video_file_hls, edx_api_scenario.video_file_mp4]
+    )
+    assert refresh_token_mock.call_count == 2
+    for mock_post in mocked_posts:
+        assert mock_post.call_count == 1
+    for mock_request in mocked_requests:
+        assert mock_request.call_count == 1
+        request_body = mock_request.last_request.json()
+        assert request_body == {
+            "client_video_id": edx_api_scenario.video_file_hls.video.title,
+            "edx_video_id": str(edx_api_scenario.video_file_hls.video.key),
+            "encoded_videos": [
+                {
+                    "url": edx_api_scenario.video_file_hls.cloudfront_url,
+                    "file_size": 0,
+                    "bitrate": 0,
+                    "profile": "hls",
+                },
+                {
+                    "url": edx_api_scenario.video_file_mp4.cloudfront_url,
+                    "file_size": 0,
+                    "bitrate": 0,
+                    "profile": "desktop_mp4",
+                },
+            ],
+            "status": "updated",
+            "duration": 0.0,
+        }
+        assert len(request_body["edx_video_id"]) == 36
+
+
 @factory.django.mute_signals(signals.post_save)
 def test_post_video_to_edx_no_endpoints(mocker):
     """post_video_to_edx should log an error if no endpoints are configured for some video's collection"""
@@ -229,7 +292,10 @@ def test_post_video_to_edx_bad_resp(mocker, reqmocker, edx_api_scenario):
     assert len(responses) == 1
 
 
-def test_update_video_on_edx(mocker, reqmocker, edx_api_scenario):
+@pytest.mark.parametrize("attach_encoded_videos", [True, False])
+def test_update_video_on_edx(
+    mocker, reqmocker, edx_api_scenario, attach_encoded_videos
+):
     """
     update_video_on_edx should make PATCH requests to all edX API endpoints that are configured
     for a video's collection
@@ -247,19 +313,39 @@ def test_update_video_on_edx(mocker, reqmocker, edx_api_scenario):
             edx_api_scenario.collection_endpoint,
         ]
     ]
+    encoded_videos = None
+    if attach_encoded_videos:
+        encoded_videos = [
+            {
+                "url": edx_api_scenario.video_file_hls.cloudfront_url,
+                "file_size": 0,
+                "bitrate": 0,
+                "profile": "hls",
+            },
+            {
+                "url": edx_api_scenario.video_file_mp4.cloudfront_url,
+                "file_size": 0,
+                "bitrate": 0,
+                "profile": "desktop_mp4",
+            },
+        ]
 
     refresh_token_mock = mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
-    api.update_video_on_edx(edx_api_scenario.video_file_hls.video.key)
+    api.update_video_on_edx(edx_api_scenario.video_file_hls.video.key, encoded_videos)
     assert refresh_token_mock.call_count == 1
     for mocked_request in mocked_requests:
         assert mocked_request.call_count == 1
         request_body = mocked_request.last_request.json()
-        assert request_body == {
+        mock_body = {
             "edx_video_id": str(edx_api_scenario.video_file_hls.video.key),
             "client_video_id": edx_api_scenario.video_file_hls.video.title,
             "status": "updated",
             "duration": 0.0,
         }
+        if encoded_videos:
+            mock_body["encoded_videos"] = encoded_videos
+
+        assert request_body == mock_body
 
 
 def test_update_video_on_edx_bad_response(mocker, reqmocker, edx_api_scenario):
