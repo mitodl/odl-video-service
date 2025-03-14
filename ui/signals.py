@@ -1,6 +1,7 @@
 """
 ui model signals
 """
+
 # pylint: disable=unused-argument
 from django.conf import settings
 from django.contrib.auth.signals import user_logged_out

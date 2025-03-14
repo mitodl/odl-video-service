@@ -1,6 +1,7 @@
 """
 Tests for Task module
 """
+
 import textwrap
 from collections import defaultdict
 

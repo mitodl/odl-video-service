@@ -1,4 +1,5 @@
 """Utility classes/methods for cloudsync"""
+
 from uuid import uuid4
 
 from dj_elastictranscoder.models import EncodeJob

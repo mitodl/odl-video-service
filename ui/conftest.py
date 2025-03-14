@@ -1,6 +1,7 @@
 """
 conftest for pytest in this module
 """
+
 import pytest
 from rest_framework.test import APIClient
 

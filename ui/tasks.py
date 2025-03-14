@@ -1,6 +1,7 @@
 """
 ui celery tasks
 """
+
 from django.db.models import Q
 
 import celery

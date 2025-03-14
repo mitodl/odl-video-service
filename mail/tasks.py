@@ -1,4 +1,5 @@
 """Tasks for mail app"""
+
 import textwrap
 
 from celery import shared_task

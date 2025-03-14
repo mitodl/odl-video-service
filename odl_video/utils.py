@@ -1,4 +1,5 @@
 """odl_video_service utilities"""
+
 from enum import Flag, auto
 
 from django.conf import settings

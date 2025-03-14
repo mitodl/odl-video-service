@@ -1,6 +1,7 @@
 """
 Models for UI app
 """
+
 import os
 from datetime import timedelta
 from uuid import uuid4
@@ -376,9 +377,11 @@ class Video(TimestampedModel):
         """
         return sorted(
             self.videofile_set.exclude(encoding=EncodingNames.ORIGINAL),
-            key=lambda x: EncodingNames.MP4.index(x.encoding)
-            if x.encoding in EncodingNames.MP4
-            else 0,
+            key=lambda x: (
+                EncodingNames.MP4.index(x.encoding)
+                if x.encoding in EncodingNames.MP4
+                else 0
+            ),
         )
 
     @property
@@ -391,9 +394,11 @@ class Video(TimestampedModel):
         """
         files = sorted(
             self.videofile_set.exclude(encoding=EncodingNames.HLS),
-            key=lambda x: EncodingNames.MP4.index(x.encoding)
-            if x.encoding in EncodingNames.MP4
-            else len(EncodingNames.MP4),
+            key=lambda x: (
+                EncodingNames.MP4.index(x.encoding)
+                if x.encoding in EncodingNames.MP4
+                else len(EncodingNames.MP4)
+            ),
         )
         if files:
             return files[0]
@@ -417,9 +422,11 @@ class Video(TimestampedModel):
             {
                 "src": file.cloudfront_url,
                 "label": file.encoding,
-                "type": "application/x-mpegURL"
-                if file.encoding == EncodingNames.HLS
-                else "video/mp4",
+                "type": (
+                    "application/x-mpegURL"
+                    if file.encoding == EncodingNames.HLS
+                    else "video/mp4"
+                ),
             }
             for file in self.transcoded_videos
         ]

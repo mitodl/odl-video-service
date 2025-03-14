@@ -1,6 +1,7 @@
 """
 Admin for UI app
 """
+
 from urllib.parse import urljoin
 
 from dj_elastictranscoder.models import EncodeJob

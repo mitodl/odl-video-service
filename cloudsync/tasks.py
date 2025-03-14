@@ -1,6 +1,7 @@
 """
 Tasks for cloudsync app
 """
+
 import os
 import re
 from urllib.parse import unquote
