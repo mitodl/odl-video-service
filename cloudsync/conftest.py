@@ -1,6 +1,7 @@
 """
 conftest for pytest in this module
 """
+
 from io import BytesIO
 
 import botocore.session

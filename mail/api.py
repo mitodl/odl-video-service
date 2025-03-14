@@ -1,6 +1,7 @@
 """
 Provides functions for sending and retrieving data about in-app email
 """
+
 import json
 import re
 from urllib.parse import urljoin

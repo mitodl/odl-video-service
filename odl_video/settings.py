@@ -1,6 +1,7 @@
 """
 Django settings for odl_video.
 """
+
 import logging
 import os
 import platform

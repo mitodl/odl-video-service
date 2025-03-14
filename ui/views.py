@@ -1,4 +1,5 @@
 """Views for ui app"""
+
 import json
 
 from django.conf import settings

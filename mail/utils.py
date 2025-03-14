@@ -1,6 +1,7 @@
 """
 General bootcamp utility functions
 """
+
 from itertools import islice
 
 from odl_video import logging

@@ -1,6 +1,7 @@
 """
 Tests for permission module
 """
+
 from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import uuid4

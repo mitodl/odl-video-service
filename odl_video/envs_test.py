@@ -1,4 +1,5 @@
 """Tests for environment variable parsing functions"""
+
 import os
 from unittest.mock import patch
 

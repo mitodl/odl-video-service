@@ -1,4 +1,5 @@
 """Factories for UI app"""
+
 from datetime import datetime
 
 import faker
