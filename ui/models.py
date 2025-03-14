@@ -253,6 +253,9 @@ class CollectionEdxEndpoint(models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     edx_endpoint = models.ForeignKey(EdxEndpoint, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ("collection", "edx_endpoint")
+
 
 class VideoManager(TimestampedModelManager):
     """
