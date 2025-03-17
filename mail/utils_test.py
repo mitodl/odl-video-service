@@ -1,6 +1,7 @@
 """
 Tests for the utils module
 """
+
 import unittest
 from math import ceil
 

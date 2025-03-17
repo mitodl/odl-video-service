@@ -1,6 +1,7 @@
 """
 Tests for ui/api.py
 """
+
 from types import SimpleNamespace
 
 # pylint: disable=unused-argument,redefined-outer-name

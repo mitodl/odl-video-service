@@ -1,4 +1,5 @@
 """Utils for ui app"""
+
 import datetime
 import itertools
 import json

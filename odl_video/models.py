@@ -1,6 +1,7 @@
 """
 Classes related to models for ODL Video
 """
+
 import datetime
 
 import pytz

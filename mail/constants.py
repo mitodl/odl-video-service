@@ -1,4 +1,5 @@
 """ Constants for mail """
+
 from ui.constants import VideoStatus
 
 EMAIL_SUCCESS = "success"

@@ -1,6 +1,7 @@
 """
 Views for cloudsync app
 """
+
 from urllib.parse import urljoin
 
 from celery.result import AsyncResult

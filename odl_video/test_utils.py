@@ -1,4 +1,5 @@
 """Test suite utilities"""
+
 import abc
 import json
 

@@ -1,4 +1,5 @@
 """Tests for utils methods"""
+
 import json
 from tempfile import NamedTemporaryFile
 

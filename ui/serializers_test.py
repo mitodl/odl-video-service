@@ -1,6 +1,7 @@
 """
 Tests for serialisers module
 """
+
 import uuid
 
 import pytest
