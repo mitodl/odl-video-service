@@ -1,4 +1,5 @@
 """Management command to sync video keys with edX"""
+
 from urllib.parse import urlencode
 import requests
 from django.core.management.base import BaseCommand
