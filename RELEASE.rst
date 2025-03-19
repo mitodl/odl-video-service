@@ -1,6 +1,40 @@
 Release Notes
 =============
 
+Version 0.76.0
+--------------
+
+- fix: formatting (#1165)
+- fix: re-transcoding fixed for duplicate videos on edX (#1163)
+- Migrate config renovate.json (#1147)
+- fix(deps): update dependency dj-database-url to v2 (#1149)
+- fix(deps): update dependency ipython to v8 [security] (#1145)
+- Update dependency black to v24 [SECURITY] (#1142)
+- fix: unique_together constrain added for collectionEdxEndpoint bridge table (#1162)
+- Update dependency cryptography to v44 [SECURITY] (#1164)
+- Update dependency cryptography to v43 [SECURITY] (#1143)
+- Update dependency sentry-sdk to v2 [SECURITY] (#1146)
+- Update dependency @sentry/browser to v7 [SECURITY] (#1158)
+- Update dependency django-webpack-loader to v3 (#1152)
+- Update dependency django to v4.2.20 [SECURITY] (#1153)
+- Upgrade python to 3.12 & Django to 4.2.19 (#1161)
+- Update dependency requests to v2.32.2 [SECURITY]
+- Update dependency express to v4.20.0 [SECURITY]
+- Update dependency urllib3 to v1.26.19 [SECURITY]
+- Fix how Ramda imports are being made based on usage >0.25
+- Revert "Update python Docker tag to v3.12.4"
+- Update python Docker tag to v3.12.4
+- Update nginx Docker tag to v1.27.0
+- Update dependency flow-bin to v0.237.2
+- Update dependency ramda to ^0.30.0 (#1125)
+- Update dependency webpack-hot-middleware to v2.26.1
+- Update dependency webpack to v4.47.0
+- Update dependency victory to ^0.27.0
+- Update dependency style-loader to ^0.23.0
+- Update dependency sentry-sdk to ^0.20.0
+- Update dependency flow-bin to v0.237.1
+- Update dependency uwsgi to v2.0.26
+
 Version 0.75.1 (Released May 29, 2024)
 --------------
 
