@@ -1,6 +1,7 @@
 """
 Tests for permission module
 """
+
 from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import uuid4
@@ -701,7 +702,7 @@ def test_override_video_logged_in_collection_view_lists(
     )
 
 
-def test_override_video_logged_in_collection_private(
+def test_override_video_logged_in_collection_private(  # pylint: disable=too-many-positional-arguments
     mock_user_moira_lists,
     moira_list,
     video_permission,

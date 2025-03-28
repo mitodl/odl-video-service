@@ -1,4 +1,5 @@
 """ Test model signals"""
+
 import factory
 import pytest
 

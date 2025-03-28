@@ -1,4 +1,5 @@
 """Configure structured logging for our application"""
+
 import logging
 
 import structlog

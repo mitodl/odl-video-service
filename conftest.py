@@ -1,6 +1,7 @@
 """
 Pytest configuration file for the entire application
 """
+
 # pylint: disable=redefined-outer-name
 import warnings
 
@@ -19,16 +20,8 @@ def warnings_as_errors():
         warnings.simplefilter("error")
         # For celery
         warnings.simplefilter("ignore", category=ImportWarning)
-        warnings.filterwarnings(
-            "ignore",
-            message="'async' and 'await' will become reserved keywords in Python 3.7",
-            category=DeprecationWarning,
-        )
-        warnings.filterwarnings(
-            "ignore",
-            message="stream argument is deprecated. Use stream parameter in request directly",
-            category=DeprecationWarning,
-        )
+        # For deprecated functions
+        warnings.simplefilter("ignore", category=DeprecationWarning)
         yield
     finally:
         warnings.resetwarnings()
