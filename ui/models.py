@@ -9,7 +9,7 @@ from uuid import uuid4
 import boto3
 from celery import shared_task
 from django.conf import settings
-from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from encrypted_model_fields.fields import EncryptedTextField
@@ -305,12 +305,13 @@ class EncodeJob(models.Model):
     """
     A job created when a video is transcoded
     """
+
     STATE_CHOICES = (
-        (0, 'Submitted'),
-        (1, 'Progressing'),
-        (2, 'Error'),
-        (3, 'Warning'),
-        (4, 'Complete'),
+        (0, "Submitted"),
+        (1, "Progressing"),
+        (2, "Error"),
+        (3, "Warning"),
+        (4, "Complete"),
     )
     id = models.CharField(max_length=100, primary_key=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
