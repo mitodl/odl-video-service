@@ -11,7 +11,8 @@ import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from redbeat import RedBeatScheduler
 
-from odl_video.envs import get_any, get_bool, get_int, get_key, get_string, parse_env
+from odl_video.envs import get_any, get_key, parse_env, get_bool, get_int, get_string
+from mitol.common.envs import import_settings_modules
 from odl_video.sentry import init_sentry
 
 VERSION = "0.77.2"
@@ -25,6 +26,9 @@ init_sentry(
     dsn=SENTRY_DSN, environment=ENVIRONMENT, version=VERSION, log_level=SENTRY_LOG_LEVEL
 )
 
+import_settings_modules(
+    "mitol.transcoding.settings.job",
+)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 parse_env(f"{BASE_DIR}/.env")
@@ -398,13 +402,22 @@ UNSORTED_COLLECTION = get_string("UNSORTED_COLLECTION", "Unsorted")
 
 ENABLE_VIDEO_PERMISSIONS = get_bool("ENABLE_VIDEO_PERMISSIONS", False)
 
+AWS_ACCOUNT_ID = get_string("AWS_ACCOUNT_ID", "")
+AWS_TRANSCODE_BUCKET_NAME = get_string("AWS_TRANSCODE_BUCKET_NAME", "")
+AWS_ROLE_NAME = get_string("AWS_ROLE_NAME", "")
+VIDEO_S3_TRANSCODE_PREFIX = get_string(
+    "VIDEO_S3_TRANSCODE_PREFIX", "transcoded"
+)
 # List of mandatory settings. If any of these is not set, the app will not start
 # and will raise an ImproperlyConfigured exception
 MANDATORY_SETTINGS = [
     "AWS_ACCESS_KEY_ID",
     "AWS_REGION",
+    "AWS_ACCOUNT_ID",
     "AWS_S3_DOMAIN",
     "AWS_SECRET_ACCESS_KEY",
+    "AWS_TRANSCODE_BUCKET_NAME",
+    "AWS_ROLE_NAME",
     "CLOUDFRONT_KEY_ID",
     "CLOUDFRONT_PRIVATE_KEY",
     "DROPBOX_KEY",
@@ -426,6 +439,7 @@ MANDATORY_SETTINGS = [
     "VIDEO_S3_THUMBNAIL_BUCKET",
     "VIDEO_S3_SUBTITLE_BUCKET",
     "VIDEO_S3_WATCH_BUCKET",
+    "VIDEO_S3_TRANSCODE_PREFIX",
     "ENABLE_VIDEO_PERMISSIONS",
     "YT_ACCESS_TOKEN",
     "YT_REFRESH_TOKEN",

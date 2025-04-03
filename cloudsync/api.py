@@ -1,6 +1,7 @@
 """APIs for coudsync app"""
 
 import re
+import os
 from collections import namedtuple
 from datetime import datetime
 from urllib.parse import quote
@@ -12,8 +13,8 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
+from mitol.transcoding.api import media_convert_job
 
-from cloudsync.utils import VideoTranscoder
 from odl_video import logging
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
@@ -22,6 +23,7 @@ from ui.models import (
     Collection,
     Video,
     VideoFile,
+    EncodeJob,
     VideoSubtitle,
     VideoThumbnail,
     delete_s3_objects,
@@ -38,14 +40,21 @@ ParsedVideoAttributes = namedtuple(
 )
 
 
-def process_transcode_results(video, job):
+def process_transcode_results(results: dict):
     """
-    Create VideoFile and VideoThumbnail objects for a Video based on AWS ET job output
+    Create VideoFile and VideoThumbnail objects for a Video based on AWS MediaConvert job output.
 
     Args:
-        video(Video): Video object to which files and thumbnails belong
-        job(JSON): JSON representation of AWS ET job output
+        results (dict): The MediaConvert job results from the callback.
     """
+    video_job = EncodeJob.objects.get(id=results.get("jobId"))
+    video = Video.objects.get(id=video_job.object_id)
+
+    # Update job state
+    video_job.state = VideoStatus.COMPLETE
+    video_job.message = results
+    video_job.save()
+
     if video.status == VideoStatus.RETRANSCODING:
         # Overwrite old playlists/files with new transcoding output
         move_s3_objects(
@@ -54,55 +63,69 @@ def process_transcode_results(video, job):
             f"{TRANSCODE_PREFIX}/{video.hexkey}",
         )
 
-    for playlist in job["Playlists"]:
-        VideoFile.objects.update_or_create(
-            # This assumes HLS encoding
-            s3_object_key="{}.m3u8".format(
-                playlist["Name"].replace(RETRANSCODE_FOLDER, "")
-            ),
-            defaults={
-                "video": video,
-                "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
-                "encoding": EncodingNames.HLS,
-                "preset_id": ",".join(
-                    [
-                        output["PresetId"]
-                        for output in job["Outputs"]
-                        if output["PresetId"] != settings.ET_MP4_PRESET_ID
-                    ]
-                ),
-            },
-        )
-    for output in job["Outputs"]:
-        if "ThumbnailPattern" not in output:
-            if output["PresetId"] == settings.ET_MP4_PRESET_ID:
-                VideoFile.objects.update_or_create(
-                    # This assumes MP4 encoding
-                    s3_object_key="{}".format(
-                        output["Key"].replace(RETRANSCODE_FOLDER, "")
-                    ),
-                    defaults={
-                        "video": video,
-                        "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
-                        "encoding": EncodingNames.DESKTOP_MP4,
-                        "preset_id": settings.ET_MP4_PRESET_ID,
-                    },
-                )
-            continue
-        thumbnail_pattern = output["ThumbnailPattern"].replace("{count}", "")
-        preset = get_et_preset(output["PresetId"])
-        bucket = get_bucket(settings.VIDEO_S3_THUMBNAIL_BUCKET)
-        for thumb in bucket.objects.filter(Prefix=thumbnail_pattern):
-            VideoThumbnail.objects.update_or_create(
-                s3_object_key=thumb.key.replace(RETRANSCODE_FOLDER, ""),
+    job_outputs = results.get("outputs", [])
+    hls_playlists = [output for output in job_outputs if output.get("container") == "HLS"]
+    mp4_outputs = [output for output in job_outputs if output.get("container") == "MP4"]
+    thumbnail_outputs = [output for output in job_outputs if output.get("type") == "THUMBNAIL"]
+
+    # Process HLS playlist outputs
+    for playlist in hls_playlists:
+        playlist_path = playlist.get("outputFilePaths", [""])[0]
+        if playlist_path:
+            playlist_key = playlist_path.split(settings.VIDEO_S3_TRANSCODE_BUCKET + "/")[-1]
+            
+            VideoFile.objects.update_or_create(
+                s3_object_key=playlist_key.replace(RETRANSCODE_FOLDER, ""),
                 defaults={
                     "video": video,
-                    "bucket_name": settings.VIDEO_S3_THUMBNAIL_BUCKET,
-                    "preset_id": output["PresetId"],
-                    "max_height": int(preset["Thumbnails"]["MaxHeight"]),
-                    "max_width": int(preset["Thumbnails"]["MaxWidth"]),
-                },
+                    "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
+                    "encoding": EncodingNames.HLS,
+                    "preset_id": playlist.get("presetId", ""),
+                }
             )
+
+    # Process MP4 outputs
+    for mp4_output in mp4_outputs:
+        output_path = mp4_output.get("outputFilePaths", [""])[0]
+        if output_path:
+            mp4_key = output_path.split(settings.VIDEO_S3_TRANSCODE_BUCKET + "/")[-1]
+            
+            VideoFile.objects.update_or_create(
+                s3_object_key=mp4_key.replace(RETRANSCODE_FOLDER, ""),
+                defaults={
+                    "video": video,
+                    "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
+                    "encoding": EncodingNames.DESKTOP_MP4,
+                    "preset_id": mp4_output.get("presetId", settings.ET_MP4_PRESET_ID),
+                }
+            )
+
+    # Process thumbnail outputs
+    for thumbnail_output in thumbnail_outputs:
+        thumbnail_pattern = thumbnail_output.get("outputFilePaths", [])
+        preset_id = thumbnail_output.get("presetId", "")
+        
+        if thumbnail_pattern:
+            bucket = get_bucket(settings.VIDEO_S3_THUMBNAIL_BUCKET)
+            # Get the thumbnail base pattern without the {count} placeholder
+            base_pattern = os.path.dirname(thumbnail_pattern[0])
+            
+            for thumb in bucket.objects.filter(Prefix=base_pattern):
+                # Only process actual image files, not directories
+                if thumb.key.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    VideoThumbnail.objects.update_or_create(
+                        s3_object_key=thumb.key.replace(RETRANSCODE_FOLDER, ""),
+                        defaults={
+                            "video": video,
+                            "bucket_name": settings.VIDEO_S3_THUMBNAIL_BUCKET,
+                            "preset_id": preset_id,
+                            "max_height": thumbnail_output.get("height", 0),
+                            "max_width": thumbnail_output.get("width", 0),
+                        }
+                    )
+
+    # Update video status
+    video.update_status(VideoStatus.COMPLETE)
 
 
 def get_error_type_from_et_error(et_error):
@@ -129,33 +152,33 @@ def get_error_type_from_et_error(et_error):
     return VideoStatus.TRANSCODE_FAILED_INTERNAL
 
 
-def refresh_status(video, encode_job=None):
-    """
-    Check the encode job status & if not complete, update the status via a query to AWS.
+# def refresh_status(video, encode_job=None):
+#     """
+#     Check the encode job status & if not complete, update the status via a query to AWS.
 
-    Args:
-        video(ui.models.Video): Video object to refresh status of.
-        encode_job(dj_elastictranscoder.models.EncodeJob): EncodeJob associated with Video
-    """
-    if video.status in (VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING):
-        if not encode_job:
-            encode_job = video.encode_jobs.latest("created_at")
-        et_job = get_et_job(encode_job.id)
-        if et_job["Status"] == VideoStatus.COMPLETE:
-            process_transcode_results(video, et_job)
-            video.update_status(VideoStatus.COMPLETE)
-        elif et_job["Status"] == VideoStatus.ERROR:
-            if video.status == VideoStatus.RETRANSCODING:
-                video.update_status(VideoStatus.RETRANSCODE_FAILED)
-            else:
-                video.update_status(
-                    get_error_type_from_et_error(
-                        et_job.get("Output", {}).get("StatusDetail")
-                    )
-                )
-            log.error("Transcoding failed", video_id=video.id)
-        encode_job.message = et_job
-        encode_job.save()
+#     Args:
+#         video(ui.models.Video): Video object to refresh status of.
+#         encode_job(dj_elastictranscoder.models.EncodeJob): EncodeJob associated with Video
+#     """
+#     if video.status in (VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING):
+#         if not encode_job:
+#             encode_job = video.encode_jobs.latest("created_at")
+#         et_job = get_et_job(encode_job.id)
+#         if et_job["Status"] == VideoStatus.COMPLETE:
+#             process_transcode_results(video, et_job)
+#             video.update_status(VideoStatus.COMPLETE)
+#         elif et_job["Status"] == VideoStatus.ERROR:
+#             if video.status == VideoStatus.RETRANSCODING:
+#                 video.update_status(VideoStatus.RETRANSCODE_FAILED)
+#             else:
+#                 video.update_status(
+#                     get_error_type_from_et_error(
+#                         et_job.get("Output", {}).get("StatusDetail")
+#                     )
+#                 )
+#             log.error("Transcoding failed", video_id=video.id)
+#         encode_job.message = et_job
+#         encode_job.save()
 
 
 def transcode_video(video, video_file, generate_mp4_videofile=False):
@@ -167,10 +190,6 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
         video_file(ui.models.Videofile): the s3 file to use for transcoding
     """
 
-    video_input = {
-        "Key": video_file.s3_object_key,
-    }
-
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
         prefix = RETRANSCODE_FOLDER
@@ -181,68 +200,15 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
             as_filter=True,
         )
     else:
-        prefix = ""
-
-    # Generate an output video file for each HLS encoding
-    outputs = [
-        {
-            "Key": f"{prefix}{video.transcode_key(preset)}",
-            "PresetId": preset,
-            "SegmentDuration": "10.0",
-        }
-        for preset in settings.ET_HLS_PRESET_IDS
-    ]
-
-    playlists = [
-        {
-            "Format": "HLSv3",
-            "Name": f"{prefix}{video.transcode_key('_index')}",
-            "OutputKeys": [output["Key"] for output in outputs],
-        }
-    ]
-
-    # Generate an mp4 output video file when generate_mp4_videofile is set to True.
-    if generate_mp4_videofile:
-        outputs.append(
-            {
-                "Key": f"{prefix}{video.transcode_key(settings.ET_MP4_PRESET_ID)}.mp4",
-                "PresetId": settings.ET_MP4_PRESET_ID,
-            }
-        )
-
-    # Generate thumbnails for the 1st encoding (no point in doing so for each).
-    if video.status != VideoStatus.RETRANSCODE_SCHEDULED:
-        outputs[0][
-            "ThumbnailPattern"
-        ] = f"{prefix}{THUMBNAIL_PATTERN.format(video_file.s3_basename)}"
-
-    transcoder = VideoTranscoder(
-        settings.ET_PIPELINE_ID,
-        settings.AWS_REGION,
-        settings.AWS_ACCESS_KEY_ID,
-        settings.AWS_SECRET_ACCESS_KEY,
-    )
-
-    user_meta = {
-        "pipeline": "odl-video-service-{}".format(settings.ENVIRONMENT).lower()
-    }
+        prefix = TRANSCODE_PREFIX
 
     try:
-        transcoder.encode(
-            video_input, outputs, Playlists=playlists, UserMetadata=user_meta
-        )
-    except ClientError as exc:
-        log.error("Transcode job creation failed", video_id=video.id)
-        if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
-            video.status = VideoStatus.RETRANSCODE_FAILED
-        else:
-            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
+        job = media_convert_job(
+            video_file.s3_object_key, destination_prefix=prefix)
+        EncodeJob.objects.get_or_create(object_id=video.pk, id=job["Job"]["Id"])
+        video.status = VideoStatus.TRANSCODING
         video.save()
-        if hasattr(exc, "response"):
-            transcoder.message = exc.response
-        raise
-    finally:
-        transcoder.create_job_for_object(video)
+
         if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
             video.update_status(VideoStatus.RETRANSCODING)
         elif video.status not in (
@@ -251,6 +217,14 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
             VideoStatus.RETRANSCODE_FAILED,
         ):
             video.update_status(VideoStatus.TRANSCODING)
+
+    except ClientError:
+        log.error("Transcode job creation failed", video_id=video.id)
+        if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
+            video.status = VideoStatus.RETRANSCODE_FAILED
+        else:
+            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
+        video.save()
 
 
 def create_lecture_collection_slug(video_attributes):

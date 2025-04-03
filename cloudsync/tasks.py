@@ -200,33 +200,33 @@ def schedule_retranscodes(self):
         raise self.replace(retranscode_tasks)
 
 
-@shared_task(bind=True)
-def update_video_statuses(self):
-    """
-    Check on statuses of all transcoding videos and update their status if appropriate
-    """
-    transcoding_videos = Video.objects.filter(
-        status__in=(VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING)
-    )
-    for video in transcoding_videos:
-        if video.status == VideoStatus.RETRANSCODING:
-            error = VideoStatus.RETRANSCODE_FAILED
-        else:
-            error = VideoStatus.TRANSCODE_FAILED_INTERNAL
-        try:
-            refresh_status(video)
-        except EncodeJob.DoesNotExist:
-            # Log the exception but don't raise it so other videos can be checked.
-            log.exception("No EncodeJob object exists for video", video_id=video.id)
-            video.update_status(error)
-        except ClientError as exc:
-            # Log the exception but don't raise it so other videos can be checked.
-            log.exception(
-                "AWS error when refreshing job status",
-                video_id=video.id,
-                response=exc.response,
-            )
-            video.update_status(error)
+# @shared_task(bind=True)
+# def update_video_statuses(self):
+#     """
+#     Check on statuses of all transcoding videos and update their status if appropriate
+#     """
+#     transcoding_videos = Video.objects.filter(
+#         status__in=(VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING)
+#     )
+#     for video in transcoding_videos:
+#         if video.status == VideoStatus.RETRANSCODING:
+#             error = VideoStatus.RETRANSCODE_FAILED
+#         else:
+#             error = VideoStatus.TRANSCODE_FAILED_INTERNAL
+#         try:
+#             refresh_status(video)
+#         except EncodeJob.DoesNotExist:
+#             # Log the exception but don't raise it so other videos can be checked.
+#             log.exception("No EncodeJob object exists for video", video_id=video.id)
+#             video.update_status(error)
+#         except ClientError as exc:
+#             # Log the exception but don't raise it so other videos can be checked.
+#             log.exception(
+#                 "AWS error when refreshing job status",
+#                 video_id=video.id,
+#                 response=exc.response,
+#             )
+#             video.update_status(error)
 
 
 @shared_task()

@@ -22,6 +22,7 @@ urlpatterns = [
     path("", include("ui.urls")),
     path("", include("cloudsync.urls")),
     path("hijack/", include("hijack.urls", namespace="hijack")),
+    path("api/", include("mitol.transcoding.urls")),
 ]
 
 handler403 = "ui.views.permission_denied_403_view"
