@@ -43,7 +43,7 @@ django = "4.2.20"
 django-elastic-transcoder = {git = "https://github.com/mitodl/django-elastic-transcoder", tag = "v0.9.7"}
 django-encrypted-model-fields = "^0.6.5"
 django-hijack = "^3.7.1"
-django-redis = "^5.2.0"
+django-redis = ">=5.0.0,<5.1.0"
 django-shibboleth-remoteuser = {git = "https://github.com/Brown-University-Library/django-shibboleth-remoteuser", tag = "v0.12"}
 django-webpack-loader = "^3.0.0"
 djangorestframework = "^3.11.2"
@@ -67,6 +67,7 @@ structlog = "^20.1.0"
 structlog-sentry = "^1.2.2"
 urllib3 = "^1.24.2"
 uwsgi = "2.0.28"
+mitol-django-transcoding = "^2025.3.17"
 
 
 [tool.poetry.group.dev.dependencies]
