@@ -17,7 +17,6 @@
             "OutputSelection": "MANIFESTS_AND_SEGMENTS",
             "AdditionalManifests": [
               {
-                "ManifestNameModifier": "__index",
                 "SelectedOutputs": ["_HLS2M", "_HLS1.5M", "_HLS400k"]
               }
            ]
@@ -42,9 +41,8 @@
                   "InterlaceMode": "PROGRESSIVE"
                 }
               },
-              "FrameCaptureSettings": {
-                "FramerateNumerator": 1,
-                "FramerateDenominator": 30
+              "ThumbnailSettings": {
+                "Timestamp": "00:00:00"
               }
             },
             "AudioDescriptions": [
