@@ -103,7 +103,7 @@ def process_hls_outputs(outputs: list, video: Video):
                         "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
                         "encoding": EncodingNames.HLS,
                         "preset_id": "",
-                    }
+                    },
                 )
 
 
@@ -114,7 +114,7 @@ def process_mp4_outputs(outputs: list, video: Video):
         outputs (list): List of MP4 output details.
         video (Video): The video object to associate with the outputs.
     """
-    
+
     # Process MP4 outputs
     for playlist in outputs:
         playlist_key = ""
@@ -129,10 +129,8 @@ def process_mp4_outputs(outputs: list, video: Video):
                         "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
                         "encoding": EncodingNames.MP4,
                         "preset_id": "",
-                    }
+                    },
                 )
-
-
 
 
 def get_error_type_from_et_error(et_error):
@@ -181,7 +179,11 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
         prefix = TRANSCODE_PREFIX
 
     try:
-        job = media_convert_job(video_file.s3_object_key, destination_prefix=prefix)
+        job = media_convert_job(
+            video_file.s3_object_key,
+            destination_prefix=prefix,
+            group_settings={"exclude_mp4": not generate_mp4_videofile},
+        )
         EncodeJob.objects.get_or_create(object_id=video.pk, id=job["Job"]["Id"])
         video.status = VideoStatus.TRANSCODING
         video.save()
