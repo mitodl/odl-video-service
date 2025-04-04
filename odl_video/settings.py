@@ -405,9 +405,7 @@ ENABLE_VIDEO_PERMISSIONS = get_bool("ENABLE_VIDEO_PERMISSIONS", False)
 AWS_ACCOUNT_ID = get_string("AWS_ACCOUNT_ID", "")
 AWS_TRANSCODE_BUCKET_NAME = get_string("AWS_TRANSCODE_BUCKET_NAME", "")
 AWS_ROLE_NAME = get_string("AWS_ROLE_NAME", "")
-VIDEO_S3_TRANSCODE_PREFIX = get_string(
-    "VIDEO_S3_TRANSCODE_PREFIX", "transcoded"
-)
+VIDEO_S3_TRANSCODE_PREFIX = get_string("VIDEO_S3_TRANSCODE_PREFIX", "transcoded")
 # List of mandatory settings. If any of these is not set, the app will not start
 # and will raise an ImproperlyConfigured exception
 MANDATORY_SETTINGS = [
