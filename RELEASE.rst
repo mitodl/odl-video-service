@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.76.0
+Version 0.76.0 (Released April 08, 2025)
 --------------
 
 - Fix how Ramda imports are being made based on usage >0.25
@@ -867,5 +867,3 @@ Version 0.2.0 (Released September 25, 2017)
 
 Version 0.1.0 (Released July 27, 2017)
 -------------
-
-
