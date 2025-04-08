@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.76.0
+Version 0.76.0 (Released Jun 13, 2024)
 --------------
 
 - Fix how Ramda imports are being made based on usage >0.25
