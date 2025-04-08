@@ -1,6 +1,7 @@
 """
 Tests for the UI models
 """
+
 import os
 import re
 import uuid
@@ -414,7 +415,9 @@ def test_video_youtube_id(status, video):
     if status is not None:
         youtube_video = YouTubeVideoFactory.create(video=video, status=status)
     assert video.youtube_id == (
-        None if status != YouTubeStatus.PROCESSED else youtube_video.id
+        None
+        if status != YouTubeStatus.PROCESSED
+        else youtube_video.id  # pylint: disable=possibly-used-before-assignment
     )
 
 
@@ -440,14 +443,14 @@ def test_video_ordering():
     VideoFactory.create_batch(10, collection=collection)
     # Should be sorted by reverse creation date
     videos = collection.videos.all()
-    for (idx, video) in enumerate(videos):
+    for idx, video in enumerate(videos):
         if idx > len(videos) - 1:
             assert video.created_at >= videos[idx + 1].created_at
         video.custom_order = len(videos) - idx - 1
         video.save()
     # Should be sorted by custom_order
     resorted_videos = Collection.objects.get(id=collection.id).videos.all()
-    for (idx, video) in enumerate(resorted_videos):
+    for idx, video in enumerate(resorted_videos):
         assert video.custom_order == idx
 
 

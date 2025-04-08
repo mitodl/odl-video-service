@@ -1,6 +1,37 @@
 Release Notes
 =============
 
+Version 0.77.0
+--------------
+
+- fix(deps): update dependency flow-bin to v0.266.0 (#1179)
+- chore(deps): pin dependencies
+- fix: add the path param for current dir (#1177)
+- fix(deps): update dependency flow-bin to v0.265.3 (#1174)
+- fix(deps): update dependency @sentry/browser to v7.120.3 (#1173)
+- chore(deps): update python docker tag to v3.13.2 (#1172)
+- chore(deps): update postgres docker tag to v15.12 (#1171)
+- fix(deps): update dependency uwsgi to v2.0.28 (#1170)
+- chore(deps): update nginx docker tag to v1.27.4 (#1169)
+- chore(deps): update dependency pylint to v3.3.6 (#1168)
+- fix: formatting (#1165)
+- fix: re-transcoding fixed for duplicate videos on edX (#1163)
+- Migrate config renovate.json (#1147)
+- fix(deps): update dependency dj-database-url to v2 (#1149)
+- fix(deps): update dependency ipython to v8 [security] (#1145)
+- Update dependency black to v24 [SECURITY] (#1142)
+- fix: unique_together constrain added for collectionEdxEndpoint bridge table (#1162)
+- Update dependency cryptography to v44 [SECURITY] (#1164)
+- Update dependency cryptography to v43 [SECURITY] (#1143)
+- Update dependency sentry-sdk to v2 [SECURITY] (#1146)
+- Update dependency @sentry/browser to v7 [SECURITY] (#1158)
+- Update dependency django-webpack-loader to v3 (#1152)
+- Update dependency django to v4.2.20 [SECURITY] (#1153)
+- Upgrade python to 3.12 & Django to 4.2.19 (#1161)
+- Update dependency requests to v2.32.2 [SECURITY]
+- Update dependency express to v4.20.0 [SECURITY]
+- Update dependency urllib3 to v1.26.19 [SECURITY]
+
 Version 0.76.0 (Released Jun 13, 2024)
 --------------
 

@@ -1,6 +1,7 @@
 """
 conftest for pytest in this module
 """
+
 from io import BytesIO
 
 import botocore.session
@@ -94,7 +95,9 @@ class MockBoto:
     Mock boto3 class for returning mock elastictranscoder client
     """
 
-    def client(*args, **kwargs):  # pylint: disable=unused-argument,no-method-argument
+    def client(
+        *args, **kwargs
+    ):  # pylint: disable=unused-argument,no-method-argument,no-self-argument
         """Return a mock client"""
         if args[0] == "elastictranscoder":
             return MockClientET()

@@ -1,6 +1,7 @@
 """
 Provides functions for sending and retrieving data about in-app email
 """
+
 import json
 import re
 from urllib.parse import urljoin
@@ -39,7 +40,7 @@ class MailgunClient:
         return {"from": settings.EMAIL_SUPPORT}
 
     @classmethod
-    def _mailgun_request(  # pylint: disable=too-many-arguments
+    def _mailgun_request(  # pylint: disable=too-many-arguments, too-many-positional-arguments
         cls, request_func, endpoint, params, sender_name=None, raise_for_status=True
     ):
         """
@@ -73,7 +74,7 @@ class MailgunClient:
         return response
 
     @classmethod
-    def send_batch(  # pylint:disable=too-many-arguments,too-many-locals
+    def send_batch(  # pylint: disable=too-many-arguments,too-many-locals, too-many-positional-arguments
         cls,
         subject,
         html_body,
@@ -156,7 +157,7 @@ class MailgunClient:
         return responses
 
     @classmethod
-    def send_individual_email(  # pylint:disable=too-many-arguments
+    def send_individual_email(  # pylint:disable=too-many-arguments, too-many-positional-arguments
         cls,
         subject,
         html_body,

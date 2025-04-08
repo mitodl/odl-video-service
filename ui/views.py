@@ -1,4 +1,5 @@
 """Views for ui app"""
+
 import json
 
 from django.conf import settings
@@ -111,7 +112,7 @@ class CollectionReactView(TemplateView):
         return context
 
     def get(self, request, *args, **kwargs):
-        collection_key = kwargs["collection_key"]
+        collection_key = kwargs.get("collection_key")
         if collection_key:
             get_object_or_404(Collection, key=collection_key)
             return super().get(request, *args, **kwargs)
