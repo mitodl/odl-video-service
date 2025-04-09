@@ -11,7 +11,6 @@ import requests
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from celery import Task, group, shared_task, states
-from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from googleapiclient.errors import HttpError
 

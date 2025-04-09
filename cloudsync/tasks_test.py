@@ -13,7 +13,6 @@ import boto3
 import celery
 import pytest
 from botocore.exceptions import ClientError
-from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.test import override_settings
 from googleapiclient.errors import HttpError, ResumableUploadError

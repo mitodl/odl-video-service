@@ -65,7 +65,6 @@ urlpatterns = [
         views.TechTVEmbed.as_view(),
         name="techtv-embed",
     ),
-    # path("transcode/", include("dj_elastictranscoder.urls")),
     path(
         "api/v0/upload_videos/",
         views.UploadVideosFromDropbox.as_view(),

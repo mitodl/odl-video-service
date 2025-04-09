@@ -65,7 +65,6 @@ INSTALLED_APPS = [
     "cloudsync.apps.CloudSyncConfig",
     "techtv2ovs",
     "mail.apps.MailConfig",
-    "dj_elastictranscoder",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -371,7 +370,7 @@ if ET_HLS_PRESET_IDS == [""] or ET_MP4_PRESET_ID == [
     )
 
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
-VIDEO_S3_BUCKET = get_string("VIDEO_S3_BUCKET", "")
+VIDEO_S3_BUCKET = AWS_STORAGE_BUCKET_NAME = get_string("VIDEO_S3_BUCKET", "")
 VIDEO_S3_TRANSCODE_BUCKET = get_string("VIDEO_S3_TRANSCODE_BUCKET", "")
 VIDEO_S3_THUMBNAIL_BUCKET = get_string("VIDEO_S3_THUMBNAIL_BUCKET", "")
 VIDEO_S3_SUBTITLE_BUCKET = get_string("VIDEO_S3_SUBTITLE_BUCKET", "")
@@ -496,10 +495,6 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = "UTC"
 CELERY_REDIS_MAX_CONNECTIONS = REDIS_MAX_CONNECTIONS
 CELERY_BEAT_SCHEDULE = {
-    "update-statuses": {
-        "task": "cloudsync.tasks.update_video_statuses",
-        "schedule": get_int("VIDEO_STATUS_UPDATE_FREQUENCY", 60),
-    },
     "update-youtube-statuses": {
         "task": "cloudsync.tasks.update_youtube_statuses",
         "schedule": get_int("VIDEO_STATUS_UPDATE_FREQUENCY", 60),

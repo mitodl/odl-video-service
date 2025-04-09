@@ -14,7 +14,6 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
 from mitol.transcoding.api import media_convert_job
-from mitol.transcoding.constants import GroupSettings
 
 from odl_video import logging
 from ui.constants import VideoStatus
