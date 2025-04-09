@@ -1838,20 +1838,20 @@ typing-extensions = "*"
 
 [[package]]
 name = "mitol-django-transcoding"
-version = "2025.3.17"
+version = "2025.4.8"
 description = "MIT Open Learning Django app extension for Transcoding jobs"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "mitol_django_transcoding-2025.3.17-py3-none-any.whl", hash = "sha256:522b8eae66b1c4c03c11227beac81a9af86c96c0c9acad6450e01a19708c0f89"},
-    {file = "mitol_django_transcoding-2025.3.17.tar.gz", hash = "sha256:a9087284aa2416225f36c4aa81def7574fcd03980591d41bff374dd06af22aeb"},
+    {file = "mitol_django_transcoding-2025.4.8-py3-none-any.whl", hash = "sha256:8718de2aa68fd2a1bf87bcb5769b0bfb6d9a1c441f583b805e3c61768b3065c5"},
+    {file = "mitol_django_transcoding-2025.4.8.tar.gz", hash = "sha256:ce339d92d5d308f4356b40450c8871cfd54a42c3b1c708a43b2d90d3e64237b9"},
 ]
 
 [package.dependencies]
 boto3 = "1.37.11"
 django = ">=3.0"
 django-stubs = ">=1.13.1"
-mitol-django-common = "2023.12.19"
+mitol-django-common = "*"
 
 [[package]]
 name = "moto"
