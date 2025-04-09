@@ -12,6 +12,7 @@ from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from mitol.transcoding.api import media_convert_job
 
@@ -45,7 +46,7 @@ def process_transcode_results(results: dict):
     Create VideoFile and VideoThumbnail objects for a Video based on AWS MediaConvert job output.
 
     Args:
-        results (dict): The MediaConvert job results from the SNS callback.
+        results (dict): The MediaConvert job results from the callback.
     """
     # Fetch job details
     video_job = EncodeJob.objects.get(id=results.get("jobId"))
@@ -78,6 +79,12 @@ def process_transcode_results(results: dict):
 
     # Update video status
     video.update_status(VideoStatus.COMPLETE)
+
+    # Ensure content_type and object_id are set for the EncodeJob
+    content_type = ContentType.objects.get_for_model(video)
+    video_job.content_type = content_type
+    video_job.object_id = video.id
+    video_job.save()
 
 
 def process_hls_outputs(outputs: list, video: Video):
@@ -158,13 +165,13 @@ def get_error_type_from_et_error(et_error):
 
 def transcode_video(video, video_file, generate_mp4_videofile=False):
     """
-    Start a transcode job for a video
+    Start a transcode job for a video.
 
     Args:
-        video(ui.models.Video): the video to transcode
-        video_file(ui.models.Videofile): the s3 file to use for transcoding
+        video (ui.models.Video): The video to transcode.
+        video_file (ui.models.VideoFile): The S3 file to use for transcoding.
+        generate_mp4_videofile (bool): Whether to generate an MP4 video file.
     """
-
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
         prefix = RETRANSCODE_FOLDER
@@ -178,12 +185,27 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
         prefix = TRANSCODE_PREFIX
 
     try:
+        # Start the MediaConvert job
         job = media_convert_job(
             video_file.s3_object_key,
             destination_prefix=prefix,
             group_settings={"exclude_mp4": not generate_mp4_videofile},
         )
-        EncodeJob.objects.get_or_create(object_id=video.pk, id=job["Job"]["Id"])
+
+        # Get the content type for the Video model
+        content_type = ContentType.objects.get_for_model(video)
+
+        # Create or update the EncodeJob instance
+        EncodeJob.objects.get_or_create(
+            id=job["Job"]["Id"],
+            defaults={
+                "content_type": content_type,
+                "object_id": video.pk,
+                "message": "",
+            },
+        )
+
+        # Update the video status
         video.status = VideoStatus.TRANSCODING
         video.save()
 
