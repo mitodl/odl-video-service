@@ -39,10 +39,13 @@
                   "GopSize": 90,
                   "GopSizeUnits": "FRAMES",
                   "InterlaceMode": "PROGRESSIVE"
+                },
+                "FrameCaptureSettings": {
+                  "FramerateNumerator": 1,
+                  "FramerateDenominator": 1,
+                  "MaxCaptures": 1,
+                  "Quality": 80
                 }
-              },
-              "ThumbnailSettings": {
-                "Timestamp": "00:00:00"
               }
             },
             "AudioDescriptions": [
