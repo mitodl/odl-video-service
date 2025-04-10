@@ -1,4 +1,4 @@
-""" TechTV constants """
+"""TechTV constants"""
 
 TTV_VIDEO_BUCKET = "ttv_videos"
 TTV_THUMB_BUCKET = "ttv_static"
