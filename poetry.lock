@@ -892,25 +892,6 @@ django = ">=3.2.4"
 sqlparse = ">=0.2"
 
 [[package]]
-name = "django-elastic-transcoder"
-version = "0.9.7"
-description = "Django with AWS elastic transcoder"
-optional = false
-python-versions = "*"
-files = []
-develop = false
-
-[package.dependencies]
-boto3 = ">=1.1"
-django = ">=1.8"
-
-[package.source]
-type = "git"
-url = "https://github.com/mitodl/django-elastic-transcoder"
-reference = "v0.9.7"
-resolved_reference = "8d97d5760eb687ac7fb879a9c1ff1c02e5ae6f6f"
-
-[[package]]
 name = "django-encrypted-model-fields"
 version = "0.6.5"
 description = "A set of fields that wrap standard Django fields with encryption provided by the python cryptography library."
@@ -1816,35 +1797,35 @@ resolved_reference = "0b73483f2bad49327b77a3eb94a4a9a602ef26ce"
 
 [[package]]
 name = "mitol-django-common"
-version = "2023.12.19"
+version = "2025.4.2"
 description = "MIT Open Learning django app extensions for common utilities"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 files = [
-    {file = "mitol-django-common-2023.12.19.tar.gz", hash = "sha256:b7df5f57fcc06d822e7465470e2279ff4ee5c3b9a108513dc10a6979dd92fdda"},
-    {file = "mitol_django_common-2023.12.19-py3-none-any.whl", hash = "sha256:5dd54a632dfdb5391287ac573758e19fa55e73e2c853eaaf60e5c8a4143e7776"},
+    {file = "mitol_django_common-2025.4.2-py3-none-any.whl", hash = "sha256:9f7986a3a09431fc7b6f45b2de7f189ee9dc6e12f0a630e017c37146c1e48e75"},
+    {file = "mitol_django_common-2025.4.2.tar.gz", hash = "sha256:ba70a6b5be1e2cbfe721951090974ddd1409e5b6ad38af977087fa6e866901a4"},
 ]
 
 [package.dependencies]
 django = ">=3.0"
-django-redis = ">=5.0.0,<5.1.0"
+django-redis = ">=5.0,<6.0"
+django-stubs = ">=1.13.1"
 django-webpack-loader = ">=0.7.0"
 factory-boy = ">=3.2,<4.0"
-pytest = ">=7.0.0"
+pytest = ">=7,<9"
 pytz = ">=2020.4"
 requests = ">=2.20.0"
-setuptools = "*"
 typing-extensions = "*"
 
 [[package]]
 name = "mitol-django-transcoding"
-version = "2025.4.8"
+version = "2025.4.10"
 description = "MIT Open Learning Django app extension for Transcoding jobs"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "mitol_django_transcoding-2025.4.8-py3-none-any.whl", hash = "sha256:8718de2aa68fd2a1bf87bcb5769b0bfb6d9a1c441f583b805e3c61768b3065c5"},
-    {file = "mitol_django_transcoding-2025.4.8.tar.gz", hash = "sha256:ce339d92d5d308f4356b40450c8871cfd54a42c3b1c708a43b2d90d3e64237b9"},
+    {file = "mitol_django_transcoding-2025.4.10-py3-none-any.whl", hash = "sha256:728921f0508f59a4d7277a9cf3a9d6bb1231aa7ffb37f29b30197c8aa2b062d1"},
+    {file = "mitol_django_transcoding-2025.4.10.tar.gz", hash = "sha256:a0daa465e54dfd6fd6128255343fe680f7dfc43d523e1b27dce086061aa493a1"},
 ]
 
 [package.dependencies]
@@ -2968,13 +2949,13 @@ test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,
 
 [[package]]
 name = "types-pyyaml"
-version = "6.0.12.20250326"
+version = "6.0.12.20250402"
 description = "Typing stubs for PyYAML"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "types_pyyaml-6.0.12.20250326-py3-none-any.whl", hash = "sha256:961871cfbdc1ad8ae3cb6ae3f13007262bcfc168adc513119755a6e4d5d7ed65"},
-    {file = "types_pyyaml-6.0.12.20250326.tar.gz", hash = "sha256:5e2d86d8706697803f361ba0b8188eef2999e1c372cd4faee4ebb0844b8a4190"},
+    {file = "types_pyyaml-6.0.12.20250402-py3-none-any.whl", hash = "sha256:652348fa9e7a203d4b0d21066dfb00760d3cbd5a15ebb7cf8d33c88a49546681"},
+    {file = "types_pyyaml-6.0.12.20250402.tar.gz", hash = "sha256:d7c13c3e6d335b6af4b0122a01ff1d270aba84ab96d1a1a1063ecba3e13ec075"},
 ]
 
 [[package]]
@@ -3232,4 +3213,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "2326aa730cee2cd06c46aafebf64e2c474b361676c0b898d95c6f8c824bed9a0"
+content-hash = "68004b0e6b775afac98cdabb3aa0c491c158a1311d076005b7ed106d37ed8f1d"
