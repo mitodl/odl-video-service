@@ -1,4 +1,4 @@
-""" Custom exceptions"""
+"""Custom exceptions"""
 
 
 class MoiraException(Exception):
