@@ -39,12 +39,6 @@
                   "GopSize": 90,
                   "GopSizeUnits": "FRAMES",
                   "InterlaceMode": "PROGRESSIVE"
-                },
-                "FrameCaptureSettings": {
-                  "FramerateNumerator": 1,
-                  "FramerateDenominator": 1,
-                  "MaxCaptures": 1,
-                  "Quality": 80
                 }
               }
             },
@@ -163,6 +157,33 @@
               }
             ],
             "NameModifier": "_custom"
+          }
+        ],
+        "OutputGroupSettings": {
+          "Type": "FILE_GROUP_SETTINGS",
+          "FileGroupSettings": {
+            "Destination": null
+          }
+        }
+      },
+      {
+        "Name": "Thumbnail Group",
+        "Outputs": [
+          {
+            "ContainerSettings": {
+              "Container": "RAW"
+            },
+            "VideoDescription": {
+              "CodecSettings": {
+                "Codec": "FRAME_CAPTURE",
+                "FrameCaptureSettings": {
+                  "FramerateNumerator": 1,
+                  "FramerateDenominator": 1,
+                  "MaxCaptures": 1,
+                  "Quality": 80
+                }
+              }
+            }
           }
         ],
         "OutputGroupSettings": {
