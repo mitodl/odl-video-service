@@ -267,13 +267,16 @@ class VideoThumbnailAdmin(admin.ModelAdmin):
         "video__title",
     )
 
+
 class EncodeJobAdmin(admin.ModelAdmin):
     """EncodeJob admin"""
+
     model = EncodeJob
-    list_display = ('id', 'state', 'message')
-    list_filters = ('state',)
-    search_fields = ('id', 'message')
-    readonly_fields = ('created_at',)
+    list_display = ("id", "state", "message")
+    list_filters = ("state",)
+    search_fields = ("id", "message")
+    readonly_fields = ("created_at",)
+
 
 admin.site.register(models.EdxEndpoint, EdxEndpointAdmin)
 admin.site.register(models.Collection, CollectionAdmin)

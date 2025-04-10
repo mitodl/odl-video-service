@@ -370,8 +370,6 @@ def test_video_task_no_chain(mocker):
     assert task.get_task_id() == task.request.id
 
 
-
-
 @pytest.mark.parametrize(
     "status, error_status",
     [
