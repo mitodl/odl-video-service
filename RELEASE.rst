@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.77.0
+Version 0.77.0 (Released April 14, 2025)
 --------------
 
 - fix(deps): update dependency flow-bin to v0.266.0 (#1179)
