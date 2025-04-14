@@ -3,7 +3,7 @@ services:
   db:
     image: postgres:15.12
     ports:
-      - "5432"
+      - "5432:5432"
     environment:
       - POSTGRES_PASSWORD=postgres  # pragma: allowlist secret
 
