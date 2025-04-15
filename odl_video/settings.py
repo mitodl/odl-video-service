@@ -9,10 +9,10 @@ from urllib.parse import urljoin
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from mitol.common.envs import import_settings_modules
 from redbeat import RedBeatScheduler
 
-from odl_video.envs import get_any, get_key, parse_env, get_bool, get_int, get_string
-from mitol.common.envs import import_settings_modules
+from odl_video.envs import get_any, get_bool, get_int, get_key, get_string, parse_env
 from odl_video.sentry import init_sentry
 
 VERSION = "0.77.2"
