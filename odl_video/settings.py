@@ -572,7 +572,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = get_string(
     "SECURE_CROSS_ORIGIN_OPENER_POLICY",
-    "same-origin",
+    "same-origin-allow-popups",
 )
 
 # Hijack
