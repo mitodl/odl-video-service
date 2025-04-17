@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.77.1
+--------------
+
+- SECURE_CROSS_ORIGIN_OPENER_POLICY setting added (#1184)
+
 Version 0.77.0 (Released April 14, 2025)
 --------------
 
