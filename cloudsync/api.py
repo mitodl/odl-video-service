@@ -100,7 +100,7 @@ def process_hls_outputs(file_paths: list, video: Video):
                 s3_object_key=file_path.replace(RETRANSCODE_FOLDER, ""),
                 defaults={
                     "video": video,
-                    "bucket_name": ,
+                    "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
                     "encoding": EncodingNames.HLS,
                     "preset_id": "",
                 },
