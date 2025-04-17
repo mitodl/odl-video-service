@@ -4,7 +4,6 @@ from datetime import datetime
 
 import faker
 import pytz
-from ui.models import EncodeJob
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
@@ -15,6 +14,7 @@ from factory.fuzzy import FuzzyInteger, FuzzyText
 from ui import models
 from ui.constants import YouTubeStatus
 from ui.encodings import EncodingNames
+from ui.models import EncodeJob
 
 FAKE = faker.Factory.create()
 
@@ -59,9 +59,7 @@ class CollectionFactory(DjangoModelFactory):
         model = models.Collection
 
     @post_generation
-    def admin_lists(
-        self, create, extracted, **kwargs
-    ):  # pylint:disable=unused-argument
+    def admin_lists(self, create, extracted, **kwargs):  # pylint:disable=unused-argument
         """Post-generation hook to handle admin_lists (if provided)"""
         if create and extracted:
             # An object was created and admin_lists were passed in

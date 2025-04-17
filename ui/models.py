@@ -22,8 +22,6 @@ from ui import utils
 from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.utils import get_bucket, multi_urljoin, now_in_utc, send_refresh_request
-from django.db import models
-
 
 TRANSCODE_PREFIX = "transcoded"
 

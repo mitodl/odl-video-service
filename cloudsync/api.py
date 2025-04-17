@@ -1,7 +1,6 @@
 """APIs for coudsync app"""
 
 import re
-import os
 from collections import namedtuple
 from datetime import datetime
 from urllib.parse import quote
@@ -22,14 +21,14 @@ from ui.encodings import EncodingNames
 from ui.models import (
     TRANSCODE_PREFIX,
     Collection,
+    EncodeJob,
     Video,
     VideoFile,
-    EncodeJob,
     VideoSubtitle,
     VideoThumbnail,
     delete_s3_objects,
 )
-from ui.utils import get_bucket, get_et_job, get_et_preset
+from ui.utils import get_bucket
 
 log = logging.getLogger(__name__)
 
@@ -70,12 +69,11 @@ def process_transcode_results(results: dict):
 
     for group in output_groups:
         group_type = group.get("type")
-        outputs = group.get("outputDetails", [])
 
         if "HLS_GROUP" in group_type:
-            process_hls_outputs(outputs, video)
+            process_hls_outputs(group.get("playlistFilePaths", []), video)
         elif "FILE_GROUP" in group_type:
-            process_mp4_outputs(outputs, video)
+            process_mp4_outputs(group.get("outputDetails", []), video)
 
     # Update video status
     video.update_status(VideoStatus.COMPLETE)
@@ -87,7 +85,7 @@ def process_transcode_results(results: dict):
     video_job.save()
 
 
-def process_hls_outputs(outputs: list, video: Video):
+def process_hls_outputs(file_paths: list, video: Video):
     """
     Process HLS outputs and create VideoFile objects.
     Args:
@@ -96,21 +94,17 @@ def process_hls_outputs(outputs: list, video: Video):
     """
 
     # Process HLS playlists
-    for playlist in outputs:
-        playlist_key = ""
-        for file_path in playlist.get("outputFilePaths", []):
-            if file_path.endswith("__index.m3u8"):
-                playlist_key = file_path
-
-                VideoFile.objects.update_or_create(
-                    s3_object_key=playlist_key.replace(RETRANSCODE_FOLDER, ""),
-                    defaults={
-                        "video": video,
-                        "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
-                        "encoding": EncodingNames.HLS,
-                        "preset_id": "",
-                    },
-                )
+    for file_path in file_paths:
+        if file_path.endswith("__index.m3u8"):
+            VideoFile.objects.update_or_create(
+                s3_object_key=file_path.replace(RETRANSCODE_FOLDER, ""),
+                defaults={
+                    "video": video,
+                    "bucket_name": ,
+                    "encoding": EncodingNames.HLS,
+                    "preset_id": "",
+                },
+            )
 
 
 def process_mp4_outputs(outputs: list, video: Video):
@@ -123,13 +117,10 @@ def process_mp4_outputs(outputs: list, video: Video):
 
     # Process MP4 outputs
     for playlist in outputs:
-        playlist_key = ""
         for file_path in playlist.get("outputFilePaths", []):
             if file_path.endswith(".mp4"):
-                playlist_key = file_path
-
                 VideoFile.objects.update_or_create(
-                    s3_object_key=playlist_key.replace(RETRANSCODE_FOLDER, ""),
+                    s3_object_key=file_path.replace(RETRANSCODE_FOLDER, ""),
                     defaults={
                         "video": video,
                         "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
@@ -137,6 +128,15 @@ def process_mp4_outputs(outputs: list, video: Video):
                         "preset_id": "",
                     },
                 )
+            elif file_path.endswith(".jpg"):
+                VideoThumbnail.objects.update_or_create(
+                s3_object_key=file_path.key.replace(RETRANSCODE_FOLDER, ""),
+                defaults={
+                    "video": video,
+                    "bucket_name": settings.VIDEO_S3_THUMBNAIL_BUCKET,
+                    "preset_id": "",
+                },
+            )
 
 
 def get_error_type_from_et_error(et_error):
