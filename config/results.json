@@ -89,7 +89,7 @@
                         "averageBitrate": 914280
                     },
                     "outputFilePaths": [
-                        "s3://<VIDEO_S3_THUMBNAIL_BUCKET>/<VIDEO_S3_THUMBNAIL_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>.0000000.jpg"
+                        "s3://<VIDEO_S3_THUMBNAIL_BUCKET>/<VIDEO_S3_THUMBNAIL_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_thumbnail.0000000.jpg"
                     ]
                 }
             ]

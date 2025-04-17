@@ -1824,7 +1824,7 @@ description = "MIT Open Learning Django app extension for Transcoding jobs"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "mitol_django_transcoding-2025.4.10.tar.gz", hash = "sha256:fe9ab9f189a57b8295a768f6de2762af748ec85f99cb9ed79e68bb4f8f49951c"},
+    {file = "mitol_django_transcoding-2025.4.10.tar.gz", hash = "sha256:f627e42377e1ee4ee102b9d93fe0eb3ab7f79bff223c47fad4c6bc33faacc399"},
 ]
 
 [package.dependencies]
