@@ -1,5 +1,6 @@
 """APIs for coudsync app"""
 
+import json
 import re
 from collections import namedtuple
 from datetime import datetime
@@ -52,7 +53,7 @@ def process_transcode_results(results: dict):
     video = Video.objects.get(id=video_job.object_id)
 
     # Update job state
-    video_job.state = VideoStatus.COMPLETE
+    video_job.state = 4
     video_job.message = results
     video_job.save()
 
@@ -130,13 +131,13 @@ def process_mp4_outputs(outputs: list, video: Video):
                 )
             elif file_path.endswith(".jpg"):
                 VideoThumbnail.objects.update_or_create(
-                s3_object_key=file_path.key.replace(RETRANSCODE_FOLDER, ""),
-                defaults={
-                    "video": video,
-                    "bucket_name": settings.VIDEO_S3_THUMBNAIL_BUCKET,
-                    "preset_id": "",
-                },
-            )
+                    s3_object_key=file_path.replace(RETRANSCODE_FOLDER, ""),
+                    defaults={
+                        "video": video,
+                        "bucket_name": settings.VIDEO_S3_THUMBNAIL_BUCKET,
+                        "preset_id": "",
+                    },
+                )
 
 
 def get_error_type_from_et_error(et_error):
@@ -161,6 +162,90 @@ def get_error_type_from_et_error(et_error):
     if 4000 <= error_code < 5000:
         return VideoStatus.TRANSCODE_FAILED_VIDEO
     return VideoStatus.TRANSCODE_FAILED_INTERNAL
+
+
+def refresh_status(video: Video, encode_job=None):
+    """
+    Check the encode job status & if not complete, update the status via a query to AWS.
+    Args:
+        video(ui.models.Video): Video object to refresh status of.
+        encode_job(dj_elastictranscoder.models.EncodeJob): EncodeJob associated with Video
+    """
+    if video.status in (VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING):
+        if not encode_job:
+            encode_job = video.encode_jobs.latest("created_at")
+        mc_job = get_media_convert_job(encode_job.id)
+        if mc_job["Job"]["Status"].lower() == VideoStatus.COMPLETE.lower():
+            with open("./config/results.json") as f:
+                results = prepare_results(video, encode_job, f.read())
+            process_transcode_results(results)
+            video.update_status(VideoStatus.COMPLETE)
+        elif mc_job["Job"]["Status"].lower() == VideoStatus.ERROR.lower():
+            if video.status == VideoStatus.RETRANSCODING:
+                video.update_status(VideoStatus.RETRANSCODE_FAILED)
+            else:
+                video.update_status(VideoStatus.TRANSCODE_FAILED_VIDEO)
+            log.error("Transcoding failed", video_id=video.id)
+        encode_job.message = mc_job
+        encode_job.save()
+
+
+def get_media_convert_job(job_id):
+    """
+    Get the MediaConvert job details.
+    Args:
+        job_id (str): The MediaConvert job ID.
+    Returns:
+        dict: The MediaConvert job details.
+    """
+    client = boto3.client(
+        "mediaconvert",
+        region_name=settings.AWS_REGION,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        endpoint_url=settings.VIDEO_S3_TRANSCODE_ENDPOINT,
+    )
+    results = client.get_job(Id=job_id)
+    return results
+
+
+def prepare_results(video: Video, job: EncodeJob, results: str):
+    """
+    Prepares the results from the MediaConvert job.
+    Args:
+        results (str): The MediaConvert job results.
+    Returns:
+        dict: The prepared results.
+    """
+    # Load the results from the JSON file
+
+    results = results.replace("<JOB_ID>", job.id)
+
+    for key in [
+        "AWS_ACCOUNT_ID",
+        "AWS_REGION",
+        "VIDEO_TRANSCODE_QUEUE",
+        "AWS_TRANSCODE_BUCKET",
+        "VIDEO_S3_TRANSCODE_PREFIX",
+        "VIDEO_S3_THUMBNAIL_BUCKET",
+        "VIDEO_S3_THUMBNAIL_PREFIX",
+    ]:
+        results = results.replace(f"<{key}>", getattr(settings, key, ""))
+
+    results = results.replace("<VIDEO_KEY>", video.key.hex).replace(
+        "<VIDEO_NAME>", "video"
+    )
+
+    # for key, model_key in [("VIDEO_KEY", "key"), ("VIDEO_NAME", "title")]:
+    #     results = results.replace(f"<{key}>", str(getattr(video, model_key, "")).lower())
+
+    # Decode the JSON string
+    try:
+        results = json.loads(results)
+    except json.JSONDecodeError:
+        log.error("Failed to decode MediaConvert job results")
+        return {}
+    return results
 
 
 def transcode_video(video, video_file, generate_mp4_videofile=False):

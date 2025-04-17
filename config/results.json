@@ -1,0 +1,98 @@
+{
+    "jobId": "<JOB_ID>",
+    "queue": "arn:aws:mediaconvert:<AWS_REGION>:<AWS_ACCOUNT_ID>:queues/<VIDEO_TRANSCODE_QUEUE>",
+    "status": "COMPLETE",
+    "warnings": [
+        {
+            "code": 230001,
+            "count": 1
+        },
+        {
+            "code": 230005,
+            "count": 1
+        }
+    ],
+    "accountId": "<AWS_ACCOUNT_ID>",
+    "timestamp": 1744859690632,
+    "userMetadata": {
+        "filter": "<VIDEO_TRANSCODE_QUEUE>"
+    },
+    "paddingInserted": 0,
+    "blackVideoDetected": 0,
+    "outputGroupDetails": [
+        {
+            "type": "HLS_GROUP",
+            "outputDetails": [
+                {
+                    "durationInMs": 5280,
+                    "videoDetails": {
+                        "widthInPx": 1024,
+                        "heightInPx": 768,
+                        "averageBitrate": 2148515
+                    },
+                    "outputFilePaths": [
+                        "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_HLS2M.m3u8"
+                    ]
+                },
+                {
+                    "durationInMs": 5280,
+                    "videoDetails": {
+                        "widthInPx": 854,
+                        "heightInPx": 480,
+                        "averageBitrate": 1687472
+                    },
+                    "outputFilePaths": [
+                        "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_HLS1.5M.m3u8"
+                    ]
+                },
+                {
+                    "durationInMs": 5280,
+                    "videoDetails": {
+                        "widthInPx": 640,
+                        "heightInPx": 360,
+                        "averageBitrate": 478263
+                    },
+                    "outputFilePaths": [
+                        "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_HLS400k.m3u8"
+                    ]
+                }
+            ],
+            "playlistFilePaths": [
+                "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>.m3u8",
+                "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>__index.m3u8"
+            ]
+        },
+        {
+            "type": "FILE_GROUP",
+            "outputDetails": [
+                {
+                    "durationInMs": 5280,
+                    "videoDetails": {
+                        "widthInPx": 1280,
+                        "heightInPx": 720,
+                        "averageBitrate": 2026268
+                    },
+                    "outputFilePaths": [
+                        "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_custom.mp4"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "FILE_GROUP",
+            "outputDetails": [
+                {
+                    "durationInMs": 1000,
+                    "videoDetails": {
+                        "widthInPx": 1280,
+                        "heightInPx": 720,
+                        "averageBitrate": 914280
+                    },
+                    "outputFilePaths": [
+                        "s3://<VIDEO_S3_THUMBNAIL_BUCKET>/<VIDEO_S3_THUMBNAIL_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>.0000000.jpg"
+                    ]
+                }
+            ]
+        }
+    ]
+}
