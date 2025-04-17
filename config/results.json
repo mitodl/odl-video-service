@@ -31,7 +31,7 @@
                         "averageBitrate": 2148515
                     },
                     "outputFilePaths": [
-                        "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_HLS2M.m3u8"
+                        "s3://<VIDEO_S3_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_HLS2M.m3u8"
                     ]
                 },
                 {
@@ -42,7 +42,7 @@
                         "averageBitrate": 1687472
                     },
                     "outputFilePaths": [
-                        "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_HLS1.5M.m3u8"
+                        "s3://<VIDEO_S3_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_HLS1.5M.m3u8"
                     ]
                 },
                 {
@@ -53,13 +53,13 @@
                         "averageBitrate": 478263
                     },
                     "outputFilePaths": [
-                        "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_HLS400k.m3u8"
+                        "s3://<VIDEO_S3_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_HLS400k.m3u8"
                     ]
                 }
             ],
             "playlistFilePaths": [
-                "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>.m3u8",
-                "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>__index.m3u8"
+                "s3://<VIDEO_S3_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>.m3u8",
+                "s3://<VIDEO_S3_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>__index.m3u8"
             ]
         },
         {
@@ -73,7 +73,7 @@
                         "averageBitrate": 2026268
                     },
                     "outputFilePaths": [
-                        "s3://<AWS_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_custom.mp4"
+                        "s3://<VIDEO_S3_TRANSCODE_BUCKET>/<VIDEO_S3_TRANSCODE_PREFIX>/<VIDEO_KEY>/<VIDEO_NAME>_custom.mp4"
                     ]
                 }
             ]
