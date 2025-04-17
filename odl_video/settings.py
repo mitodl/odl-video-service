@@ -510,6 +510,12 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+if ENVIRONMENT == "dev":
+    CELERY_BEAT_SCHEDULE["update-statuses"] = {
+        "task": "cloudsync.tasks.update_video_statuses",
+        "schedule": get_int("VIDEO_STATUS_UPDATE_FREQUENCY", 10),
+    }
+
 # django cache back-ends
 CACHES = {
     "default": {
