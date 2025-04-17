@@ -1,6 +1,7 @@
 """APIs for coudsync app"""
 
 import json
+from pathlib import Path
 import re
 from collections import namedtuple
 from datetime import datetime
@@ -97,11 +98,14 @@ def process_hls_outputs(file_paths: list, video: Video):
     # Process HLS playlists
     for file_path in file_paths:
         if file_path.endswith("__index.m3u8"):
+            file_path = Path(file_path)
+            bucket_name = file_path.parts[1]
+            s3_path = str(Path(*file_path.parts[2:])).replace(RETRANSCODE_FOLDER, "")
             VideoFile.objects.update_or_create(
-                s3_object_key=file_path.replace(RETRANSCODE_FOLDER, ""),
+                s3_object_key=s3_path,
                 defaults={
                     "video": video,
-                    "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
+                    "bucket_name": bucket_name,
                     "encoding": EncodingNames.HLS,
                     "preset_id": "",
                 },
@@ -119,22 +123,25 @@ def process_mp4_outputs(outputs: list, video: Video):
     # Process MP4 outputs
     for playlist in outputs:
         for file_path in playlist.get("outputFilePaths", []):
-            if file_path.endswith(".mp4"):
+            file_path = Path(file_path)
+            bucket_name = file_path.parts[1]
+            s3_path = str(Path(*file_path.parts[2:])).replace(RETRANSCODE_FOLDER, "")
+            if file_path.name.endswith(".mp4"):
                 VideoFile.objects.update_or_create(
-                    s3_object_key=file_path.replace(RETRANSCODE_FOLDER, ""),
+                    s3_object_key=s3_path,
                     defaults={
                         "video": video,
-                        "bucket_name": settings.VIDEO_S3_TRANSCODE_BUCKET,
-                        "encoding": EncodingNames.MP4,
+                        "bucket_name": bucket_name,
+                        "encoding": EncodingNames.DESKTOP_MP4,
                         "preset_id": "",
                     },
                 )
-            elif file_path.endswith(".jpg"):
+            elif file_path.name.endswith(".jpg"):
                 VideoThumbnail.objects.update_or_create(
-                    s3_object_key=file_path.replace(RETRANSCODE_FOLDER, ""),
+                    s3_object_key=s3_path,
                     defaults={
                         "video": video,
-                        "bucket_name": settings.VIDEO_S3_THUMBNAIL_BUCKET,
+                        "bucket_name": bucket_name,
                         "preset_id": "",
                     },
                 )
@@ -225,7 +232,7 @@ def prepare_results(video: Video, job: EncodeJob, results: str):
         "AWS_ACCOUNT_ID",
         "AWS_REGION",
         "VIDEO_TRANSCODE_QUEUE",
-        "AWS_TRANSCODE_BUCKET",
+        "VIDEO_S3_TRANSCODE_BUCKET",
         "VIDEO_S3_TRANSCODE_PREFIX",
         "VIDEO_S3_THUMBNAIL_BUCKET",
         "VIDEO_S3_THUMBNAIL_PREFIX",
