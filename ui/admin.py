@@ -4,7 +4,6 @@ Admin for UI app
 
 from urllib.parse import urljoin
 
-from ui.models import EncodeJob
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
@@ -12,6 +11,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from ui import models
+from ui.models import EncodeJob
 
 
 class ViewListsInline(admin.TabularInline):

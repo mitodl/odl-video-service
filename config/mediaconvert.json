@@ -170,6 +170,7 @@
         "Name": "Thumbnail Group",
         "Outputs": [
           {
+            "NameModifier": "_thumbnail",
             "ContainerSettings": {
               "Container": "RAW"
             },
