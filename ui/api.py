@@ -2,7 +2,6 @@
 API methods
 """
 
-from ast import literal_eval
 
 import requests
 from celery import chain
@@ -95,10 +94,8 @@ def post_video_to_edx(video_files):
     for edx_endpoint in edx_endpoints:
         try:
             edx_endpoint.refresh_access_token()
-            submitted_encode_job = (
-                video_files[0].video.encode_jobs.filter(state=0).first()
-            )
-            duration = get_duration_from_encode_job(submitted_encode_job)
+            encode_job = video_files[0].video.encode_jobs.filter(state=4).first()
+            duration = get_duration_from_encode_job(encode_job)
             video_key = str(video_files[0].video.key)
             resp = requests.post(  # pylint: disable=missing-timeout
                 edx_endpoint.full_api_url,
@@ -195,9 +192,18 @@ def get_duration_from_encode_job(encode_job):
         duration: float
     """
     duration = 0.0
-    if encode_job:
-        duration = (
-            literal_eval(encode_job.message).get("Output", {}).get("Duration", 0.0)
-            or 0.0
-        )
+    if encode_job and encode_job.message:
+        output_groups = encode_job.message.get("outputGroupDetails", [])
+        if output_groups:
+            # Get the first output group
+            output_group = output_groups[0]
+            outputs = output_group.get("outputDetails", [])
+
+            if outputs:
+                # Get the first output
+                output = outputs[0]
+                duration_in_ms = output.get("durationInMs", 0)
+                # Convert milliseconds to seconds
+                duration = duration_in_ms / 1000.0
+
     return duration

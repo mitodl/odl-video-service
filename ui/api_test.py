@@ -19,9 +19,9 @@ from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionEdxEndpointFactory,
     CollectionFactory,
-    VideoFileFactory,
-    VideoFactory,
     EncodeJobFactory,
+    VideoFactory,
+    VideoFileFactory,
 )
 
 pytestmark = pytest.mark.django_db

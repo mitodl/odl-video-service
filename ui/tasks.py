@@ -2,9 +2,9 @@
 ui celery tasks
 """
 
+import celery
 from django.db.models import Q
 
-import celery
 from mail.utils import chunks
 from odl_video import logging
 from odl_video.celery import app

@@ -1,4 +1,4 @@
-""" Statuses for Video objects """
+"""Statuses for Video objects"""
 
 EDX_ADMIN_GROUP = "edX Course Admin"
 
