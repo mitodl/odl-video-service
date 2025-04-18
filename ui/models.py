@@ -315,7 +315,7 @@ class EncodeJob(models.Model):
     object_id = models.PositiveIntegerField()
     state = models.PositiveIntegerField(choices=STATE_CHOICES, default=0, db_index=True)
     content_object = GenericForeignKey()
-    message = models.TextField()
+    message = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
 

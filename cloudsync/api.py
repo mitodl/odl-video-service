@@ -193,8 +193,6 @@ def refresh_status(video: Video, encode_job=None):
             else:
                 video.update_status(VideoStatus.TRANSCODE_FAILED_VIDEO)
             log.error("Transcoding failed", video_id=video.id)
-        encode_job.message = mc_job
-        encode_job.save()
 
 
 def get_media_convert_job(job_id):
@@ -242,9 +240,6 @@ def prepare_results(video: Video, job: EncodeJob, results: str):
     results = results.replace("<VIDEO_KEY>", video.key.hex).replace(
         "<VIDEO_NAME>", "video"
     )
-
-    # for key, model_key in [("VIDEO_KEY", "key"), ("VIDEO_NAME", "title")]:
-    #     results = results.replace(f"<{key}>", str(getattr(video, model_key, "")).lower())
 
     # Decode the JSON string
     try:
