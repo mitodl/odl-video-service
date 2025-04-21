@@ -30,7 +30,7 @@
             },
             "VideoDescription": {
               "Width": 1024,
-              "Height": 768,
+              "Height": 576,
               "CodecSettings": {
                 "Codec": "H_264",
                 "H264Settings": {
@@ -61,8 +61,8 @@
               "Container": "M3U8"
             },
             "VideoDescription": {
-              "Width": 854,
-              "Height": 480,
+              "Width": 960,
+              "Height": 540,
               "CodecSettings": {
                 "Codec": "H_264",
                 "H264Settings": {
@@ -93,8 +93,8 @@
               "Container": "M3U8"
             },
             "VideoDescription": {
-              "Width": 640,
-              "Height": 360,
+              "Width": 400,
+              "Height": 224,
               "CodecSettings": {
                 "Codec": "H_264",
                 "H264Settings": {
