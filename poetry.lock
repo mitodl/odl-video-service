@@ -209,13 +209,13 @@ crt = ["botocore[crt] (>=1.21.0,<2.0a0)"]
 
 [[package]]
 name = "botocore"
-version = "1.37.20"
+version = "1.37.38"
 description = "Low-level, data-driven core of boto 3."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "botocore-1.37.20-py3-none-any.whl", hash = "sha256:c34f4f25fda7c4f726adf5a948590bd6bd7892c05278d31e344b5908e7b43301"},
-    {file = "botocore-1.37.20.tar.gz", hash = "sha256:9295385740f9d30f9b679f76ee51f49b80ae73183d84d499c1c3f1d54d820f54"},
+    {file = "botocore-1.37.38-py3-none-any.whl", hash = "sha256:23b4097780e156a4dcaadfc1ed156ce25cb95b6087d010c4bb7f7f5d9bc9d219"},
+    {file = "botocore-1.37.38.tar.gz", hash = "sha256:c3ea386177171f2259b284db6afc971c959ec103fa2115911c4368bea7cbbc5d"},
 ]
 
 [package.dependencies]
@@ -892,6 +892,25 @@ django = ">=3.2.4"
 sqlparse = ">=0.2"
 
 [[package]]
+name = "django-elastic-transcoder"
+version = "0.9.7"
+description = "Django with AWS elastic transcoder"
+optional = false
+python-versions = "*"
+files = []
+develop = false
+
+[package.dependencies]
+boto3 = ">=1.1"
+django = ">=1.8"
+
+[package.source]
+type = "git"
+url = "https://github.com/mitodl/django-elastic-transcoder"
+reference = "v0.9.7"
+resolved_reference = "8d97d5760eb687ac7fb879a9c1ff1c02e5ae6f6f"
+
+[[package]]
 name = "django-encrypted-model-fields"
 version = "0.6.5"
 description = "A set of fields that wrap standard Django fields with encryption provided by the python cryptography library."
@@ -927,18 +946,21 @@ test = ["pytest", "pytest-cov", "pytest-django"]
 
 [[package]]
 name = "django-redis"
-version = "5.0.0"
+version = "5.4.0"
 description = "Full featured redis cache backend for Django."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "django-redis-5.0.0.tar.gz", hash = "sha256:048f665bbe27f8ff2edebae6aa9c534ab137f1e8fa7234147ef470df3f3aa9b8"},
-    {file = "django_redis-5.0.0-py3-none-any.whl", hash = "sha256:97739ca9de3f964c51412d1d7d8aecdfd86737bb197fce6e1ff12620c63c97ee"},
+    {file = "django-redis-5.4.0.tar.gz", hash = "sha256:6a02abaa34b0fea8bf9b707d2c363ab6adc7409950b2db93602e6cb292818c42"},
+    {file = "django_redis-5.4.0-py3-none-any.whl", hash = "sha256:ebc88df7da810732e2af9987f7f426c96204bf89319df4c6da6ca9a2942edd5b"},
 ]
 
 [package.dependencies]
-Django = ">=2.2"
-redis = ">=3.0.0"
+Django = ">=3.2"
+redis = ">=3,<4.0.0 || >4.0.0,<4.0.1 || >4.0.1"
+
+[package.extras]
+hiredis = ["redis[hiredis] (>=3,!=4.0.0,!=4.0.1)"]
 
 [[package]]
 name = "django-shibboleth-remoteuser"
@@ -1824,7 +1846,7 @@ description = "MIT Open Learning Django app extension for Transcoding jobs"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "mitol_django_transcoding-2025.4.10.tar.gz", hash = "sha256:f627e42377e1ee4ee102b9d93fe0eb3ab7f79bff223c47fad4c6bc33faacc399"},
+    {file = "mitol_django_transcoding-2025.4.10.tar.gz", hash = "sha256:ad9eda07544cdbd1410b0246c283164042853c664f73b4453fcad825567599c4"},
 ]
 
 [package.dependencies]
@@ -3216,4 +3238,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "aa97bbac431d2b52f2fe66cbd1fd7bfc7ffd93bf0df96d2cc286c2eb65a351f3"
+content-hash = "9c79e45fba7863566404ea284058f37c130509f8dc9c095e039cd83043ae786b"
