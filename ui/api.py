@@ -93,7 +93,11 @@ def post_video_to_edx(video_files):
     for edx_endpoint in edx_endpoints:
         try:
             edx_endpoint.refresh_access_token()
-            encode_job = video_files[0].video.encode_jobs.filter(state=4).first()
+            encode_job = (
+                video_files[0]
+                .video.encode_jobs.filter(state=models.EncodeJob.State.COMPLETED)
+                .first()
+            )
             duration = get_duration_from_encode_job(encode_job)
             video_key = str(video_files[0].video.key)
             resp = requests.post(  # pylint: disable=missing-timeout
@@ -160,7 +164,9 @@ def update_video_on_edx(video_key, encoded_videos=None):
                 "edx_video_id": str(video.key),
                 "client_video_id": video.title,
                 "duration": get_duration_from_encode_job(
-                    video.encode_jobs.filter(state=0).first()
+                    video.encode_jobs.filter(
+                        state=models.EncodeJob.State.SUBMITTED
+                    ).first()
                 ),
                 "status": "updated",
             }

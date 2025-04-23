@@ -27,9 +27,7 @@ TRANSCODE_PREFIX = "transcoded"
 
 
 @shared_task(bind=True)
-def delete_s3_objects(
-    self, bucket_name, key, as_filter=False
-):  # pylint:disable=unused-argument
+def delete_s3_objects(self, bucket_name, key, as_filter=False):  # pylint:disable=unused-argument
     """
     Delete objects from an S3 bucket
 
@@ -53,9 +51,7 @@ class ValidateOnSaveMixin(models.Model):
     class Meta:
         abstract = True
 
-    def save(
-        self, force_insert=False, force_update=False, **kwargs
-    ):  # pylint: disable=arguments-differ
+    def save(self, force_insert=False, force_update=False, **kwargs):  # pylint: disable=arguments-differ
         if not (force_insert or force_update):
             self.full_clean()
         super().save(force_insert=force_insert, force_update=force_update, **kwargs)
@@ -303,17 +299,23 @@ class EncodeJob(models.Model):
     A job created when a video is transcoded
     """
 
-    STATE_CHOICES = (
-        (0, "Submitted"),
-        (1, "Progressing"),
-        (2, "Error"),
-        (3, "Warning"),
-        (4, "Complete"),
-    )
+    class State(models.IntegerChoices):
+        """
+        The state of the encode job
+        """
+
+        SUBMITTED = 0, "Submitted"
+        PROGRESSING = 1, "Progressing"
+        ERROR = 2, "Error"
+        WARNING = 3, "Warning"
+        COMPLETED = 4, "Complete"
+
     id = models.CharField(max_length=100, primary_key=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
-    state = models.PositiveIntegerField(choices=STATE_CHOICES, default=0, db_index=True)
+    state = models.PositiveIntegerField(
+        choices=State.choices, default=State.SUBMITTED, db_index=True
+    )
     content_object = GenericForeignKey()
     message = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
