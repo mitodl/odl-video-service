@@ -42,7 +42,7 @@ ParsedVideoAttributes = namedtuple(
 )
 
 
-def process_transcode_results(results: dict):
+def process_transcode_results(results: dict) -> None:
     """
     Create VideoFile and VideoThumbnail objects for a Video based on AWS MediaConvert job output.
 
@@ -87,7 +87,7 @@ def process_transcode_results(results: dict):
     video_job.save()
 
 
-def process_hls_outputs(file_paths: list, video: Video):
+def process_hls_outputs(file_paths: list, video: Video) -> None:
     """
     Process HLS outputs and create VideoFile objects.
     Args:
@@ -112,7 +112,7 @@ def process_hls_outputs(file_paths: list, video: Video):
             )
 
 
-def process_mp4_outputs(outputs: list, video: Video):
+def process_mp4_outputs(outputs: list, video: Video) -> None:
     """
     Process MP4 outputs and create VideoFile objects.
     Args:
@@ -171,7 +171,7 @@ def get_error_type_from_et_error(et_error):
     return VideoStatus.TRANSCODE_FAILED_INTERNAL
 
 
-def refresh_status(video: Video, encode_job=None):
+def refresh_status(video: Video, encode_job: EncodeJob = None) -> None:
     """
     Check the encode job status & if not complete, update the status via a query to AWS.
     Args:
@@ -195,7 +195,7 @@ def refresh_status(video: Video, encode_job=None):
             log.error("Transcoding failed", video_id=video.id)
 
 
-def get_media_convert_job(job_id):
+def get_media_convert_job(job_id: str) -> dict:
     """
     Get the MediaConvert job details.
     Args:
@@ -214,7 +214,7 @@ def get_media_convert_job(job_id):
     return results
 
 
-def prepare_results(video: Video, job: EncodeJob, results: str):
+def prepare_results(video: Video, job: EncodeJob, results: str) -> dict:
     """
     Prepares the results from the MediaConvert job.
     Args:
@@ -250,7 +250,9 @@ def prepare_results(video: Video, job: EncodeJob, results: str):
     return results
 
 
-def transcode_video(video, video_file, generate_mp4_videofile=False):
+def transcode_video(
+    video: Video, video_file: VideoFile, generate_mp4_videofile: bool = False
+) -> None:
     """
     Start a transcode job for a video.
 
