@@ -165,7 +165,7 @@ def update_video_on_edx(video_key, encoded_videos=None):
                 "client_video_id": video.title,
                 "duration": get_duration_from_encode_job(
                     video.encode_jobs.filter(
-                        state=models.EncodeJob.State.SUBMITTED
+                        state=models.EncodeJob.State.COMPLETED
                     ).first()
                 ),
                 "status": "updated",

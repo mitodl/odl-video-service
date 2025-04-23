@@ -54,7 +54,7 @@ def process_transcode_results(results: dict) -> None:
     video = Video.objects.get(id=video_job.object_id)
 
     # Update job state
-    video_job.state = 4
+    video_job.state = EncodeJob.State.COMPLETED
     video_job.message = results
     video_job.save()
 
