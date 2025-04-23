@@ -2,7 +2,6 @@
 API methods
 """
 
-
 import requests
 from celery import chain
 from django.conf import settings
@@ -193,13 +192,10 @@ def get_duration_from_encode_job(encode_job):
     """
     duration = 0.0
     if encode_job and encode_job.message:
-        output_groups = encode_job.message.get("outputGroupDetails", [])
-        if output_groups:
+        if output_groups := encode_job.message.get("outputGroupDetails", []):
             # Get the first output group
             output_group = output_groups[0]
-            outputs = output_group.get("outputDetails", [])
-
-            if outputs:
+            if outputs := output_group.get("outputDetails", []):
                 # Get the first output
                 output = outputs[0]
                 duration_in_ms = output.get("durationInMs", 0)

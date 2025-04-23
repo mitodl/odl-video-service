@@ -60,7 +60,6 @@ class VideoTask(Task):
         return self.request.id
 
 
-
 @shared_task(bind=True)
 def update_video_statuses(self):
     """
@@ -71,10 +70,12 @@ def update_video_statuses(self):
     )
     for video in transcoding_videos:
         log.info("Checking video status", video_id=video.id)
-        if video.status == VideoStatus.RETRANSCODING:
-            error = VideoStatus.RETRANSCODE_FAILED
-        else:
-            error = VideoStatus.TRANSCODE_FAILED_INTERNAL
+        error = (
+            VideoStatus.RETRANSCODE_FAILED
+            if video.status == VideoStatus.RETRANSCODING
+            else VideoStatus.TRANSCODE_FAILED_INTERNAL
+        )
+
         try:
             refresh_status(video)
         except EncodeJob.DoesNotExist:

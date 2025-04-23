@@ -509,7 +509,7 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-if ENVIRONMENT == "dev":
+if ENVIRONMENT.lower() == "dev":
     CELERY_BEAT_SCHEDULE["update-statuses"] = {
         "task": "cloudsync.tasks.update_video_statuses",
         "schedule": get_int("VIDEO_STATUS_UPDATE_FREQUENCY", 10),

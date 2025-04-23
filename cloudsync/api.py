@@ -176,7 +176,7 @@ def refresh_status(video: Video, encode_job: EncodeJob = None) -> None:
     Check the encode job status & if not complete, update the status via a query to AWS.
     Args:
         video(ui.models.Video): Video object to refresh status of.
-        encode_job(dj_elastictranscoder.models.EncodeJob): EncodeJob associated with Video
+        encode_job(ui.models.EncodeJob): EncodeJob associated with Video
     """
     if video.status in (VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING):
         if not encode_job:
@@ -186,7 +186,6 @@ def refresh_status(video: Video, encode_job: EncodeJob = None) -> None:
             with open("./config/results.json") as f:
                 results = prepare_results(video, encode_job, f.read())
             process_transcode_results(results)
-            video.update_status(VideoStatus.COMPLETE)
         elif mc_job["Job"]["Status"].lower() == VideoStatus.ERROR.lower():
             if video.status == VideoStatus.RETRANSCODING:
                 video.update_status(VideoStatus.RETRANSCODE_FAILED)
@@ -294,10 +293,7 @@ def transcode_video(
             },
         )
 
-        # Update the video status
-        video.status = VideoStatus.TRANSCODING
-        video.save()
-
+        # Update video status
         if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
             video.update_status(VideoStatus.RETRANSCODING)
         elif video.status not in (
@@ -310,10 +306,9 @@ def transcode_video(
     except ClientError:
         log.error("Transcode job creation failed", video_id=video.id)
         if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
-            video.status = VideoStatus.RETRANSCODE_FAILED
+            video.update_status(VideoStatus.RETRANSCODE_FAILED)
         else:
             video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
-        video.save()
 
 
 def create_lecture_collection_slug(video_attributes):
