@@ -82,7 +82,7 @@
     "react-hot-loader": "next",
     "react-load-script": "^0.0.6",
     "react-redux": "^5.0.5",
-    "react-router": "^4.2.0",
+    "react-router": "^7.0.0",
     "react-router-dom": "^4.2.2",
     "react-test-renderer": "^15.6.1",
     "react-transition-group": "^2.3.1",
