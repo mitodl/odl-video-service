@@ -170,9 +170,12 @@ class MailAPITests(TestCase):
             for i in range(0, len(recipient_tuples), chunk_size)
         ]
         assert len(recipient_tuples) == 52
-        with override_settings(
-            MAILGUN_RECIPIENT_OVERRIDE=recipient_override,
-        ), self.assertRaises(SendBatchException) as send_batch_exception:
+        with (
+            override_settings(
+                MAILGUN_RECIPIENT_OVERRIDE=recipient_override,
+            ),
+            self.assertRaises(SendBatchException) as send_batch_exception,
+        ):
             MailgunClient.send_batch(
                 "email subject", "html", "text", recipient_tuples, chunk_size=chunk_size
             )

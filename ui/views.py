@@ -28,7 +28,13 @@ from ui import api
 from ui import permissions as ui_permissions
 from ui import serializers
 from ui.constants import EDX_ADMIN_GROUP
-from ui.models import Collection, CollectionEdxEndpoint, EdxEndpoint, Video, VideoSubtitle
+from ui.models import (
+    Collection,
+    CollectionEdxEndpoint,
+    EdxEndpoint,
+    Video,
+    VideoSubtitle,
+)
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
@@ -384,15 +390,17 @@ class CollectionViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         raw_data = request.data.copy()
         collection_resp = super().create(request, *args, **kwargs)
-        collection = Collection.objects.get(key=collection_resp.data.get('key', ''))
+        collection = Collection.objects.get(key=collection_resp.data.get("key", ""))
         endpoint = None
-        if endpoint_info := raw_data.get('title', '').split('-')[-1].strip():
-            endpoint = EdxEndpoint.objects.filter(base_url__icontains=endpoint_info).first()
+        if "-" in raw_data.get("title", ""):
+            endpoint_info = raw_data.get("title").split("-")[-1].strip()
+            endpoint = EdxEndpoint.objects.filter(
+                base_url__icontains=endpoint_info
+            ).first()
 
         if endpoint:
             CollectionEdxEndpoint.objects.create(
-                collection=collection,
-                edx_endpoint=endpoint
+                collection=collection, edx_endpoint=endpoint
             )
 
         return collection_resp
