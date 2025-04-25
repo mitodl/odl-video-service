@@ -158,7 +158,7 @@ def notify_slack_channel(slack_message):
       slack_message (str): message to send to slack
     """
     try:
-        requests.post(  # pylint: disable=missing-timeout
+        requests.post(
             os.environ.get("slack_webhook_url"),
             json={
                 "text": slack_message,

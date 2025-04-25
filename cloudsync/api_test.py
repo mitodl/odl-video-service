@@ -33,8 +33,6 @@ from ui.models import TRANSCODE_PREFIX, Video
 
 pytestmark = pytest.mark.django_db
 
-# pylint: disable=redefined-outer-name
-
 
 @pytest.fixture()
 def video():
@@ -216,7 +214,7 @@ def test_watch_nouser():
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_watch_s3_error():
     """Test that an AWS S3 ClientError is correctly handled"""
-    UserFactory(username="admin")  # pylint: disable=unused-variable
+    UserFactory(username="admin")
     s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
     filename = "MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4"

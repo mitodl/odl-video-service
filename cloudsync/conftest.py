@@ -23,7 +23,7 @@ def mock_video_headers():
 @pytest.fixture
 def mocked_video_request(
     reqmocker, mock_video_url, mock_video_headers, mock_video_file
-):  # pylint: disable=redefined-outer-name
+):
     """Mocks video request"""
     reqmocker.get(
         mock_video_url,
@@ -72,7 +72,7 @@ class MockClientMC:
     preset = None
     error = None
 
-    def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
+    def __init__(self, *args, **kwargs):
         """Mock __init__"""
         if "error" in kwargs:
             self.error = kwargs["error"]
@@ -89,7 +89,7 @@ class MockBoto:
     Mock boto3 class for returning mock elastictranscoder client
     """
 
-    def client(*args, **kwargs):  # pylint: disable=unused-argument,no-method-argument,no-self-argument
+    def client(*args, **kwargs):
         """Return a mock client"""
         if args[0] == "mediaconvert":
             return MockClientMC()

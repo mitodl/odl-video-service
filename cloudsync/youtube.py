@@ -180,8 +180,8 @@ class YouTubeApi:
         """
         request = self.client.captions().insert(
             part="snippet",
-            body=dict(  # pylint: disable=use-dict-literal
-                snippet=dict(  # pylint: disable=use-dict-literal
+            body=dict(
+                snippet=dict(
                     videoId=video_id,
                     language=caption.language,
                     name=caption.language_name,
@@ -205,9 +205,9 @@ class YouTubeApi:
         """
         request = self.client.captions().update(
             part="snippet",
-            body=dict(  # pylint: disable=use-dict-literal
+            body=dict(
                 id=caption_id,
-                snippet=dict(isDraft=False),  # pylint: disable=use-dict-literal
+                snippet=dict(isDraft=False),
             ),
             media_body=media_body,
         )
@@ -241,12 +241,12 @@ class YouTubeApi:
         """
         videofile = video.original_video or video.transcoded_videos[0]
 
-        request_body = dict(  # pylint: disable=use-dict-literal
-            snippet=dict(  # pylint: disable=use-dict-literal
+        request_body = dict(
+            snippet=dict(
                 title=strip_bad_chars(video.title)[:100],
                 description=strip_bad_chars(video.description)[:5000],
             ),
-            status=dict(privacyStatus=privacy),  # pylint: disable=use-dict-literal
+            status=dict(privacyStatus=privacy),
         )
 
         with SeekableBufferedInputBase(

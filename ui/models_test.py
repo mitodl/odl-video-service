@@ -43,9 +43,6 @@ FAKE_RSA = b"""O\xd3\x91\x01\xf0\x14\xfe\xbf\x12\xb7\xde\xfe\xd83\xf2\x08\xf5x\x
 \xff3\xbe\x8f\xbf\x91\xdc\xcb\x1c"""
 
 
-# pylint: disable=redefined-outer-name
-
-
 @pytest.fixture
 def video():
     """Fixture to create a video"""
@@ -415,7 +412,7 @@ def test_video_youtube_id(status, video):
     if status is not None:
         youtube_video = YouTubeVideoFactory.create(video=video, status=status)
     assert video.youtube_id == (
-        None if status != YouTubeStatus.PROCESSED else youtube_video.id  # pylint: disable=possibly-used-before-assignment
+        None if status != YouTubeStatus.PROCESSED else youtube_video.id
     )
 
 
