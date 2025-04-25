@@ -415,9 +415,7 @@ def test_video_youtube_id(status, video):
     if status is not None:
         youtube_video = YouTubeVideoFactory.create(video=video, status=status)
     assert video.youtube_id == (
-        None
-        if status != YouTubeStatus.PROCESSED
-        else youtube_video.id  # pylint: disable=possibly-used-before-assignment
+        None if status != YouTubeStatus.PROCESSED else youtube_video.id  # pylint: disable=possibly-used-before-assignment
     )
 
 

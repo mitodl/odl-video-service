@@ -9,6 +9,7 @@ Use:
 python s3_sync.py -i <settings_file.ini>
 
 """
+
 import argparse
 import os
 import re

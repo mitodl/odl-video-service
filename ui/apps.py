@@ -17,8 +17,6 @@ class UIConfig(AppConfig):
         # check for missing configurations
         from django.conf import settings
 
-        import ui.signals  # pylint:disable=unused-import
-
         missing_settings = []
         for setting_name in settings.MANDATORY_SETTINGS:
             if getattr(settings, setting_name, None) in (

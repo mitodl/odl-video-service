@@ -17,7 +17,6 @@ class Command(BaseCommand):
     help = __doc__
 
     def add_arguments(self, parser):
-
         group = parser.add_mutually_exclusive_group()
         group.add_argument(
             "--video-file-id",
