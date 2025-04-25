@@ -2,6 +2,7 @@
 """
 Tests for views
 """
+
 import json
 from types import SimpleNamespace
 from uuid import uuid4
@@ -146,9 +147,7 @@ def test_video_detail(logged_in_client, settings):
     }
 
 
-def test_video_embed(
-    logged_in_client, settings
-):  # pylint: disable=redefined-outer-name
+def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-outer-name
     """Test video embed page"""
     client, user = logged_in_client
     settings.GA_DIMENSION_CAMERA = "camera1"
@@ -999,7 +998,7 @@ def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
         *[
             VideoFactory(
                 title=(
-                    "matching view_lists, is_public=True," " in unviewable collections"
+                    "matching view_lists, is_public=True, in unviewable collections"
                 ),
                 view_lists=[view_list],
                 is_public=True,
@@ -1010,8 +1009,7 @@ def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
         *[
             VideoFactory(
                 title=(
-                    "non-matching view_lists, is_public=True,"
-                    " in unviewable collections"
+                    "non-matching view_lists, is_public=True, in unviewable collections"
                 ),
                 view_lists=[non_matching_list],
                 is_public=True,
@@ -1045,7 +1043,7 @@ def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
     expected_prohibited_videos = [
         *[
             VideoFactory(
-                title=("no view_lists, is_public=False," " in unviewable collections"),
+                title=("no view_lists, is_public=False, in unviewable collections"),
                 view_lists=[],
                 is_public=False,
                 collection=collection,

@@ -67,9 +67,7 @@ class CollectionFactory(DjangoModelFactory):
         model = models.Collection
 
     @post_generation
-    def admin_lists(
-        self, create, extracted, **kwargs
-    ):  # pylint:disable=unused-argument
+    def admin_lists(self, create, extracted, **kwargs):  # pylint:disable=unused-argument
         """Post-generation hook to handle admin_lists (if provided)"""
         if create and extracted:
             # An object was created and admin_lists were passed in

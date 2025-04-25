@@ -500,18 +500,14 @@ def _handle_error_view(request, status_code):
     )
 
 
-def permission_denied_403_view(
-    request, *args, **kwargs
-):  # pylint: disable=unused-argument
+def permission_denied_403_view(request, *args, **kwargs):  # pylint: disable=unused-argument
     """
     Handles a 403 response
     """
     return _handle_error_view(request, status.HTTP_403_FORBIDDEN)
 
 
-def page_not_found_404_view(
-    request, *args, **kwargs
-):  # pylint: disable=unused-argument
+def page_not_found_404_view(request, *args, **kwargs):  # pylint: disable=unused-argument
     """
     Handles a 404 response
     """

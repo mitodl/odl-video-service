@@ -53,7 +53,10 @@ repos:
     rev: "v0.11.6"
     hooks:
       - id: ruff-format
+        exclude: migrations/
       - id: ruff
+        exclude: migrations/
+        types_or: [python, pyi]
         args:
           - --extend-ignore=D1
           - --fix
