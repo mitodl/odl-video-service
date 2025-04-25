@@ -51,8 +51,6 @@ from ui.models import Collection, Video, YouTubeVideo
 
 pytestmark = pytest.mark.django_db
 
-# pylint: disable=redefined-outer-name,unused-argument,no-value-for-parameter,unused-variable,redefined-outer-name
-
 
 @pytest.fixture()
 def video():
@@ -780,16 +778,13 @@ def test_schedule_retranscodes_error(mocker, mocked_celery):
 
 @mock_aws
 def test_sort_transcoded_m3u8_files(mocker):
-    # pylint: disable=too-many-locals
     """
     Test that sort_transcoded_m3u8_files changes the m3u8 file on s3 if it needs to be sorted
     """
-    s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
 
     bucket_name = "MYBUCKET"
     s3c.create_bucket(Bucket=bucket_name)
-    bucket = s3.Bucket(bucket_name)
     mocker.patch("cloudsync.tasks.settings.VIDEO_S3_TRANSCODE_BUCKET", bucket_name)
 
     file_key = "key"

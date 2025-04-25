@@ -1,4 +1,3 @@
-# pylint: disable-msg=too-many-lines
 """
 Tests for views
 """
@@ -40,8 +39,6 @@ from ui.views import (
 )
 
 pytestmark = pytest.mark.django_db
-
-# pylint: disable=redefined-outer-name,unused-argument
 
 
 @pytest.fixture()
@@ -147,7 +144,7 @@ def test_video_detail(logged_in_client, settings):
     }
 
 
-def test_video_embed(logged_in_client, settings):  # pylint: disable=redefined-outer-name
+def test_video_embed(logged_in_client, settings):
     """Test video embed page"""
     client, user = logged_in_client
     settings.GA_DIMENSION_CAMERA = "camera1"
@@ -939,7 +936,6 @@ def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
 
 
 def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
-    # pylint: disable-msg=too-many-locals
     """
     Tests the list of videos for a user.
 
@@ -1108,7 +1104,6 @@ def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
     assert result.data["start_index"] == 1
     assert result.data["end_index"] == len(expected_viewable_videos)
     assert result.data["count"] == len(expected_viewable_key_titles)
-    # pylint: enable-msg=too-many-locals
 
 
 def test_video_viewset_list_anonymous(logged_in_apiclient):

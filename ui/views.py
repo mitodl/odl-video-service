@@ -92,7 +92,7 @@ def conditional_response(view, video=None, **kwargs):
     return view.render_to_response(context)
 
 
-def index(request):  # pylint: disable=unused-argument
+def index(request):
     """Index"""
     return redirect("collection-react-view")
 
@@ -103,7 +103,7 @@ class CollectionReactView(TemplateView):
 
     template_name = "ui/collections.html"
 
-    def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["js_settings_json"] = json.dumps(
             {
@@ -140,7 +140,7 @@ class VideoDetail(TemplateView):
         self.get_context_data(video, **kwargs)
         return conditional_response(self, video, *args, **kwargs)
 
-    def get_context_data(self, video, **kwargs):  # pylint: disable=arguments-differ
+    def get_context_data(self, video, **kwargs):
         context = super().get_context_data(**kwargs)
         context["js_settings_json"] = json.dumps(
             {
@@ -165,7 +165,7 @@ class VideoEmbed(TemplateView):
         video = get_object_or_404(Video, key=kwargs["video_key"])
         return conditional_response(self, video, *args, **kwargs)
 
-    def get_context_data(self, video, **kwargs):  # pylint: disable=arguments-differ
+    def get_context_data(self, video, **kwargs):
         context = super().get_context_data(**kwargs)
         context["video"] = video
         context["js_settings_json"] = json.dumps(
@@ -197,7 +197,7 @@ class VideoDownload(View):
             raise Http404()
         return redirect(video_file.cloudfront_url)
 
-    def get(self, request, *args, **kwargs):  # pylint:disable=unused-argument
+    def get(self, request, *args, **kwargs):
         """
         Respond to a GET request.
 
@@ -250,7 +250,7 @@ class TechTVDownload(VideoDownload):
     Public video download for a TechTV-based URL
     """
 
-    def get(self, request, *args, **kwargs):  # pylint:disable=unused-argument
+    def get(self, request, *args, **kwargs):
         ttv_videos = get_list_or_404(
             Video.objects.filter(techtvvideo__ttv_id=kwargs["video_key"]).filter(
                 is_public=True
@@ -446,7 +446,7 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
     @action(detail=True)
     def analytics(self, request, key=None):
         """get video analytics data"""
-        # pylint: disable=unused-argument
+
         if "throw" in request.GET:
             return HttpResponse(status=500)
         if "mock" in request.GET:
@@ -500,21 +500,21 @@ def _handle_error_view(request, status_code):
     )
 
 
-def permission_denied_403_view(request, *args, **kwargs):  # pylint: disable=unused-argument
+def permission_denied_403_view(request, *args, **kwargs):
     """
     Handles a 403 response
     """
     return _handle_error_view(request, status.HTTP_403_FORBIDDEN)
 
 
-def page_not_found_404_view(request, *args, **kwargs):  # pylint: disable=unused-argument
+def page_not_found_404_view(request, *args, **kwargs):
     """
     Handles a 404 response
     """
     return _handle_error_view(request, status.HTTP_404_NOT_FOUND)
 
 
-def error_500_view(request, *args, **kwargs):  # pylint: disable=unused-argument
+def error_500_view(request, *args, **kwargs):
     """
     Handles a 500 response
     """
@@ -524,7 +524,7 @@ def error_500_view(request, *args, **kwargs):  # pylint: disable=unused-argument
 class LoginView(DjangoLoginView):
     """Login"""
 
-    def get_context_data(self, **kwargs):  # pylint: disable=arguments-differ
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["js_settings_json"] = json.dumps(
             {

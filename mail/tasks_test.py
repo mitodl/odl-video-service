@@ -17,9 +17,6 @@ from ui.factories import MoiraListFactory, VideoFactory
 pytestmark = pytest.mark.django_db
 
 
-# pylint: disable=protected-access
-
-
 @pytest.fixture(autouse=True)
 def mocker_defaults(mocker):
     """

@@ -5,8 +5,6 @@ Django App
 from django.apps import AppConfig
 from django.core.exceptions import ImproperlyConfigured
 
-# pylint:disable=import-outside-toplevel
-
 
 class UIConfig(AppConfig):
     """AppConfig for ui"""

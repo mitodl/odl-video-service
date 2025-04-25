@@ -50,10 +50,7 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Code formatting
-        run: poetry run ruff format --check .
-
-      - name: Lint
-        run: poetry run pylint ./**/*.py
+        run: poetry run ruff format --check . --exclude '*/migrations/'
 
       - name: Tests
         run: |

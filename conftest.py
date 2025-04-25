@@ -2,7 +2,6 @@
 Pytest configuration file for the entire application
 """
 
-# pylint: disable=redefined-outer-name
 import warnings
 
 import pytest

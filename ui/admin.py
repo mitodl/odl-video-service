@@ -88,13 +88,13 @@ class CollectionEdxEndpointAdmin(admin.ModelAdmin):
     model = models.CollectionEdxEndpoint
     list_display = ("id", "get_edx_endpoint_str", "get_collection_title")
 
-    def get_edx_endpoint_str(self, obj):  # pylint:disable=missing-docstring
+    def get_edx_endpoint_str(self, obj):
         return "{} - {}".format(obj.edx_endpoint.name, obj.edx_endpoint.base_url)
 
     get_edx_endpoint_str.short_description = "EdX Endpoint"
     get_edx_endpoint_str.admin_order_field = "edx_endpoint__name"
 
-    def get_collection_title(self, obj):  # pylint:disable=missing-docstring
+    def get_collection_title(self, obj):
         return obj.collection.title
 
     get_collection_title.short_description = "Collection"
