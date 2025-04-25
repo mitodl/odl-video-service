@@ -387,23 +387,26 @@ class CollectionViewSet(viewsets.ModelViewSet):
             return serializers.CollectionSerializer
         return serializers.CollectionListSerializer
 
-    def create(self, request, *args, **kwargs):
-        raw_data = request.data.copy()
-        collection_resp = super().create(request, *args, **kwargs)
-        collection = Collection.objects.get(key=collection_resp.data.get("key", ""))
-        endpoint = None
-        if "-" in raw_data.get("title", ""):
-            endpoint_info = raw_data.get("title").split("-")[-1].strip()
-            endpoint = EdxEndpoint.objects.filter(
-                base_url__icontains=endpoint_info
-            ).first()
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        edx_course_id = request.data.get("edx_course_id", "").lower()
+        instance = self.get_object()
+        if edx_course_id and not instance.edx_endpoints.exists():
+            endpoint = None
+            if ":xpro+" in edx_course_id:
+                endpoint = EdxEndpoint.objects.filter(
+                    base_url__icontains=".xpro."
+                ).first()
+            elif ":mitxt+" in edx_course_id:
+                endpoint = EdxEndpoint.objects.filter(
+                    base_url__icontains=".mitxonline."
+                ).first()
 
-        if endpoint:
-            CollectionEdxEndpoint.objects.create(
-                collection=collection, edx_endpoint=endpoint
-            )
-
-        return collection_resp
+            if endpoint:
+                CollectionEdxEndpoint.objects.create(
+                    collection=instance, edx_endpoint=endpoint
+                )
+        return response
 
 
 class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
