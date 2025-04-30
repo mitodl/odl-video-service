@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.77.2
+--------------
+
+- Assign endpoint to newly created collection from course_id (#1186)
+
 Version 0.77.1 (Released April 17, 2025)
 --------------
 
