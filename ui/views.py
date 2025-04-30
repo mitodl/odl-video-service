@@ -28,7 +28,13 @@ from ui import api
 from ui import permissions as ui_permissions
 from ui import serializers
 from ui.constants import EDX_ADMIN_GROUP
-from ui.models import Collection, Video, VideoSubtitle
+from ui.models import (
+    Collection,
+    CollectionEdxEndpoint,
+    EdxEndpoint,
+    Video,
+    VideoSubtitle,
+)
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
@@ -380,6 +386,31 @@ class CollectionViewSet(viewsets.ModelViewSet):
         if self.kwargs.get("key") is not None:
             return serializers.CollectionSerializer
         return serializers.CollectionListSerializer
+
+    def update(self, request, *args, **kwargs):
+        """
+        Adds EdxEndpoint to the collection if the edx_course_id is present in the request data
+        and the collection does not have any EdxEndpoint.
+        """
+        response = super().update(request, *args, **kwargs)
+        edx_course_id = request.data.get("edx_course_id", "").lower()
+        instance = self.get_object()
+        if edx_course_id and not instance.edx_endpoints.exists():
+            endpoint = None
+            if ":xpro+" in edx_course_id:
+                endpoint = EdxEndpoint.objects.filter(
+                    base_url__icontains=".xpro."
+                ).first()
+            elif ":mitxt+" in edx_course_id:
+                endpoint = EdxEndpoint.objects.filter(
+                    base_url__icontains=".mitxonline."
+                ).first()
+
+            if endpoint:
+                CollectionEdxEndpoint.objects.create(
+                    collection=instance, edx_endpoint=endpoint
+                )
+        return response
 
 
 class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
