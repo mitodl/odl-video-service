@@ -61,8 +61,14 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(str(exc)))
 
             for vid in course_videos:
-                Video.objects.filter(title=vid.get("client_video_id")).update(
-                    key=vid.get("edx_video_id")
+                vid_key = (
+                    vid.get("encoded_videos", [{}])[0].get("url", "").split("/")[-2]
+                )
+                Video.objects.filter(
+                    title=vid.get("client_video_id"), key=vid_key
+                ).update(key=vid.get("edx_video_id"))
+                self.stdout.write(
+                    f"Updated video key for {vid.get('client_video_id')} to {vid.get('edx_video_id')}"
                 )
 
             self.stdout.write(
