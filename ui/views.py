@@ -388,6 +388,10 @@ class CollectionViewSet(viewsets.ModelViewSet):
         return serializers.CollectionListSerializer
 
     def update(self, request, *args, **kwargs):
+        """
+        Adds EdxEndpoint to the collection if the edx_course_id is present in the request data
+        and the collection does not have any EdxEndpoint.
+        """
         response = super().update(request, *args, **kwargs)
         edx_course_id = request.data.get("edx_course_id", "").lower()
         instance = self.get_object()
