@@ -60,10 +60,17 @@ class Command(BaseCommand):
                     )
                     self.stdout.write(self.style.ERROR(str(exc)))
 
-            for vid in course_videos:
-                vid_key = (
-                    vid.get("encoded_videos", [{}])[0].get("url", "").split("/")[-2]
-                )
+            group_by_key = {}
+            for video in course_videos:
+                key = video.get("encoded_videos", [{}])[0].get("url", "").split("/")[-2]
+                group_by_key.setdefault(key, []).append(video)
+
+            latest_videos_by_created_at = {
+                key: max(videos, key=lambda x: x.get("created", "1970-01-01"))
+                for key, videos in group_by_key.items()
+            }
+
+            for vid_key, vid in latest_videos_by_created_at.items():
                 Video.objects.filter(
                     title=vid.get("client_video_id"), key=vid_key
                 ).update(key=vid.get("edx_video_id"))
