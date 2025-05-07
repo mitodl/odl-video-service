@@ -1,0 +1,216 @@
+{
+  "UserMetadata": {},
+  "Settings": {
+    "OutputGroups": [
+      {
+        "Name": "Apple HLS",
+        "OutputGroupSettings": {
+          "Type": "HLS_GROUP_SETTINGS",
+          "HlsGroupSettings": {
+            "MinSegmentLength": 0,
+            "ManifestDurationFormat": "INTEGER",
+            "CodecSpecification": "RFC_4281",
+            "DirectoryStructure": "SINGLE_DIRECTORY",
+            "ManifestCompression": "NONE",
+            "CaptionLanguageSetting": "OMIT",
+            "ImageBasedTrickPlay": "NONE",
+            "OutputSelection": "MANIFESTS_AND_SEGMENTS",
+            "AdditionalManifests": [
+              {
+                "SelectedOutputs": ["_HLS2M", "_HLS1.5M", "_HLS400k"]
+              }
+           ]
+          }
+        },
+        "Outputs": [
+          {
+            "NameModifier": "_HLS2M",
+            "ContainerSettings": {
+              "Container": "M3U8"
+            },
+            "VideoDescription": {
+              "Width": 1024,
+              "Height": 576,
+              "CodecSettings": {
+                "Codec": "H_264",
+                "H264Settings": {
+                  "Bitrate": 1872000,
+                  "RateControlMode": "CBR",
+                  "GopSize": 90,
+                  "GopSizeUnits": "FRAMES",
+                  "InterlaceMode": "PROGRESSIVE"
+                }
+              }
+            },
+            "AudioDescriptions": [
+              {
+                "CodecSettings": {
+                  "Codec": "AAC",
+                  "AacSettings": {
+                    "Bitrate": 128000,
+                    "CodingMode": "CODING_MODE_2_0",
+                    "SampleRate": 44100
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "NameModifier": "_HLS1.5M",
+            "ContainerSettings": {
+              "Container": "M3U8"
+            },
+            "VideoDescription": {
+              "Width": 960,
+              "Height": 540,
+              "CodecSettings": {
+                "Codec": "H_264",
+                "H264Settings": {
+                  "Bitrate": 1500000,
+                  "RateControlMode": "CBR",
+                  "GopSize": 90,
+                  "GopSizeUnits": "FRAMES",
+                  "InterlaceMode": "PROGRESSIVE"
+                }
+              }
+            },
+            "AudioDescriptions": [
+              {
+                "CodecSettings": {
+                  "Codec": "AAC",
+                  "AacSettings": {
+                    "Bitrate": 128000,
+                    "CodingMode": "CODING_MODE_2_0",
+                    "SampleRate": 44100
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "NameModifier": "_HLS400k",
+            "ContainerSettings": {
+              "Container": "M3U8"
+            },
+            "VideoDescription": {
+              "Width": 400,
+              "Height": 224,
+              "CodecSettings": {
+                "Codec": "H_264",
+                "H264Settings": {
+                  "Bitrate": 400000,
+                  "RateControlMode": "CBR",
+                  "GopSize": 90,
+                  "GopSizeUnits": "FRAMES",
+                  "InterlaceMode": "PROGRESSIVE"
+                }
+              }
+            },
+            "AudioDescriptions": [
+              {
+                "CodecSettings": {
+                  "Codec": "AAC",
+                  "AacSettings": {
+                    "Bitrate": 96000,
+                    "CodingMode": "CODING_MODE_2_0",
+                    "SampleRate": 44100
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "File Group",
+        "Outputs": [
+          {
+            "ContainerSettings": {
+              "Container": "MP4",
+              "Mp4Settings": {}
+            },
+            "VideoDescription": {
+              "Width": 1280,
+              "Height": 720,
+              "ScalingBehavior": "DEFAULT",
+              "CodecSettings": {
+                "Codec": "H_264",
+                "H264Settings": {
+                  "FramerateDenominator": 1,
+                  "FramerateNumerator": 30,
+                  "Bitrate": 1800000,
+                  "InterlaceMode": "PROGRESSIVE",
+                  "RateControlMode": "CBR"
+                }
+              }
+            },
+            "AudioDescriptions": [
+              {
+                "CodecSettings": {
+                  "Codec": "AAC",
+                  "AacSettings": {
+                    "Bitrate": 96000,
+                    "CodingMode": "CODING_MODE_1_0",
+                    "SampleRate": 44100
+                  }
+                }
+              }
+            ],
+            "NameModifier": "_custom"
+          }
+        ],
+        "OutputGroupSettings": {
+          "Type": "FILE_GROUP_SETTINGS",
+          "FileGroupSettings": {
+            "Destination": null
+          }
+        }
+      },
+      {
+        "Name": "Thumbnail Group",
+        "Outputs": [
+          {
+            "NameModifier": "_thumbnail",
+            "ContainerSettings": {
+              "Container": "RAW"
+            },
+            "VideoDescription": {
+              "CodecSettings": {
+                "Codec": "FRAME_CAPTURE",
+                "FrameCaptureSettings": {
+                  "FramerateNumerator": 1,
+                  "FramerateDenominator": 1,
+                  "MaxCaptures": 1,
+                  "Quality": 80
+                }
+              }
+            }
+          }
+        ],
+        "OutputGroupSettings": {
+          "Type": "FILE_GROUP_SETTINGS",
+          "FileGroupSettings": {
+            "Destination": null
+          }
+        }
+      }
+    ],
+    "Inputs": [
+      {
+        "AudioSelectors": {
+          "Audio Selector 1": {
+            "DefaultSelection": "DEFAULT"
+          }
+        },
+        "VideoSelector": {},
+        "TimecodeSource": "ZEROBASED",
+        "FileInput": null
+      }
+    ]
+  },
+  "AccelerationSettings": {
+    "Mode": "DISABLED"
+  },
+  "StatusUpdateInterval": "SECONDS_60",
+  "Priority": 0
+}

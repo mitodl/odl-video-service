@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from mitol.common.envs import import_settings_modules
 from redbeat import RedBeatScheduler
 
 from odl_video.envs import get_any, get_bool, get_int, get_key, get_string, parse_env
@@ -25,6 +26,9 @@ init_sentry(
     dsn=SENTRY_DSN, environment=ENVIRONMENT, version=VERSION, log_level=SENTRY_LOG_LEVEL
 )
 
+import_settings_modules(
+    "mitol.transcoding.settings.job",
+)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 parse_env(f"{BASE_DIR}/.env")
@@ -61,7 +65,6 @@ INSTALLED_APPS = [
     "cloudsync.apps.CloudSyncConfig",
     "techtv2ovs",
     "mail.apps.MailConfig",
-    "dj_elastictranscoder",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -367,7 +370,7 @@ if ET_HLS_PRESET_IDS == [""] or ET_MP4_PRESET_ID == [
     )
 
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
-VIDEO_S3_BUCKET = get_string("VIDEO_S3_BUCKET", "")
+VIDEO_S3_BUCKET = AWS_STORAGE_BUCKET_NAME = get_string("VIDEO_S3_BUCKET", "")
 VIDEO_S3_TRANSCODE_BUCKET = get_string("VIDEO_S3_TRANSCODE_BUCKET", "")
 VIDEO_S3_THUMBNAIL_BUCKET = get_string("VIDEO_S3_THUMBNAIL_BUCKET", "")
 VIDEO_S3_SUBTITLE_BUCKET = get_string("VIDEO_S3_SUBTITLE_BUCKET", "")
@@ -398,13 +401,20 @@ UNSORTED_COLLECTION = get_string("UNSORTED_COLLECTION", "Unsorted")
 
 ENABLE_VIDEO_PERMISSIONS = get_bool("ENABLE_VIDEO_PERMISSIONS", False)
 
+AWS_ACCOUNT_ID = get_string("AWS_ACCOUNT_ID", "")
+AWS_TRANSCODE_BUCKET_NAME = get_string("AWS_TRANSCODE_BUCKET_NAME", "")
+AWS_ROLE_NAME = get_string("AWS_ROLE_NAME", "")
+VIDEO_S3_TRANSCODE_PREFIX = get_string("VIDEO_S3_TRANSCODE_PREFIX", "transcoded")
 # List of mandatory settings. If any of these is not set, the app will not start
 # and will raise an ImproperlyConfigured exception
 MANDATORY_SETTINGS = [
     "AWS_ACCESS_KEY_ID",
     "AWS_REGION",
+    "AWS_ACCOUNT_ID",
     "AWS_S3_DOMAIN",
     "AWS_SECRET_ACCESS_KEY",
+    "AWS_STORAGE_BUCKET_NAME",
+    "AWS_ROLE_NAME",
     "CLOUDFRONT_KEY_ID",
     "CLOUDFRONT_PRIVATE_KEY",
     "DROPBOX_KEY",
@@ -426,6 +436,7 @@ MANDATORY_SETTINGS = [
     "VIDEO_S3_THUMBNAIL_BUCKET",
     "VIDEO_S3_SUBTITLE_BUCKET",
     "VIDEO_S3_WATCH_BUCKET",
+    "VIDEO_S3_TRANSCODE_PREFIX",
     "ENABLE_VIDEO_PERMISSIONS",
     "YT_ACCESS_TOKEN",
     "YT_REFRESH_TOKEN",
@@ -484,10 +495,6 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = "UTC"
 CELERY_REDIS_MAX_CONNECTIONS = REDIS_MAX_CONNECTIONS
 CELERY_BEAT_SCHEDULE = {
-    "update-statuses": {
-        "task": "cloudsync.tasks.update_video_statuses",
-        "schedule": get_int("VIDEO_STATUS_UPDATE_FREQUENCY", 60),
-    },
     "update-youtube-statuses": {
         "task": "cloudsync.tasks.update_youtube_statuses",
         "schedule": get_int("VIDEO_STATUS_UPDATE_FREQUENCY", 60),
@@ -501,6 +508,12 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": get_int("YT_UPLOAD_FREQUENCY", 3600),
     },
 }
+
+if ENVIRONMENT.lower() == "dev":
+    CELERY_BEAT_SCHEDULE["update-statuses"] = {
+        "task": "cloudsync.tasks.update_video_statuses",
+        "schedule": get_int("VIDEO_STATUS_UPDATE_FREQUENCY", 10),
+    }
 
 # django cache back-ends
 CACHES = {

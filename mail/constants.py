@@ -1,4 +1,4 @@
-""" Constants for mail """
+"""Constants for mail"""
 
 from ui.constants import VideoStatus
 

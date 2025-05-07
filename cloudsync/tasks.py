@@ -11,7 +11,6 @@ import requests
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from celery import Task, group, shared_task, states
-from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from googleapiclient.errors import HttpError
 
@@ -21,7 +20,7 @@ from cloudsync.youtube import API_QUOTA_ERROR_MSG, YouTubeApi
 from odl_video import logging
 from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
-from ui.models import Collection, Video, VideoSubtitle, YouTubeVideo
+from ui.models import Collection, EncodeJob, Video, VideoSubtitle, YouTubeVideo
 from ui.utils import get_bucket
 
 log = logging.getLogger(__name__)
@@ -59,6 +58,38 @@ class VideoTask(Task):
                 log.error("Could not find task_id in chain")
                 return
         return self.request.id
+
+
+@shared_task(bind=True)
+def update_video_statuses(self):
+    """
+    Check on statuses of all transcoding videos and update their status if appropriate
+    """
+    transcoding_videos = Video.objects.filter(
+        status__in=(VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING)
+    )
+    for video in transcoding_videos:
+        log.info("Checking video status", video_id=video.id)
+        error = (
+            VideoStatus.RETRANSCODE_FAILED
+            if video.status == VideoStatus.RETRANSCODING
+            else VideoStatus.TRANSCODE_FAILED_INTERNAL
+        )
+
+        try:
+            refresh_status(video)
+        except EncodeJob.DoesNotExist:
+            # Log the exception but don't raise it so other videos can be checked.
+            log.exception("No EncodeJob object exists for video", video_id=video.id)
+            video.update_status(error)
+        except ClientError as exc:
+            # Log the exception but don't raise it so other videos can be checked.
+            log.exception(
+                "AWS error when refreshing job status",
+                video_id=video.id,
+                response=exc.response,
+            )
+            video.update_status(error)
 
 
 @shared_task(bind=True, base=VideoTask)
@@ -198,35 +229,6 @@ def schedule_retranscodes(self):
             log.exception(error)
             return error
         raise self.replace(retranscode_tasks)
-
-
-@shared_task(bind=True)
-def update_video_statuses(self):
-    """
-    Check on statuses of all transcoding videos and update their status if appropriate
-    """
-    transcoding_videos = Video.objects.filter(
-        status__in=(VideoStatus.TRANSCODING, VideoStatus.RETRANSCODING)
-    )
-    for video in transcoding_videos:
-        if video.status == VideoStatus.RETRANSCODING:
-            error = VideoStatus.RETRANSCODE_FAILED
-        else:
-            error = VideoStatus.TRANSCODE_FAILED_INTERNAL
-        try:
-            refresh_status(video)
-        except EncodeJob.DoesNotExist:
-            # Log the exception but don't raise it so other videos can be checked.
-            log.exception("No EncodeJob object exists for video", video_id=video.id)
-            video.update_status(error)
-        except ClientError as exc:
-            # Log the exception but don't raise it so other videos can be checked.
-            log.exception(
-                "AWS error when refreshing job status",
-                video_id=video.id,
-                response=exc.response,
-            )
-            video.update_status(error)
 
 
 @shared_task()

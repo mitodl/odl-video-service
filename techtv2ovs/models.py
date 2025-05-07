@@ -1,4 +1,4 @@
-""" Models for techtv2ovs """
+"""Models for techtv2ovs"""
 
 from django.db import models
 from django.db.models import IntegerField

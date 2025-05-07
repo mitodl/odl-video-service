@@ -4,7 +4,6 @@ Admin for UI app
 
 from urllib.parse import urljoin
 
-from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
@@ -12,6 +11,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from ui import models
+from ui.models import EncodeJob
 
 
 class ViewListsInline(admin.TabularInline):
@@ -268,6 +268,16 @@ class VideoThumbnailAdmin(admin.ModelAdmin):
     )
 
 
+class EncodeJobAdmin(admin.ModelAdmin):
+    """EncodeJob admin"""
+
+    model = EncodeJob
+    list_display = ("id", "state", "message")
+    list_filters = ("state",)
+    search_fields = ("id", "message")
+    readonly_fields = ("created_at",)
+
+
 admin.site.register(models.EdxEndpoint, EdxEndpointAdmin)
 admin.site.register(models.Collection, CollectionAdmin)
 admin.site.register(models.CollectionEdxEndpoint, CollectionEdxEndpointAdmin)
@@ -277,3 +287,4 @@ admin.site.register(models.VideoFile, VideoFileAdmin)
 admin.site.register(models.VideoThumbnail, VideoThumbnailAdmin)
 admin.site.register(models.VideoSubtitle, VideoSubtitleAdmin)
 admin.site.register(models.YouTubeVideo, YouTubeVideoAdmin)
+admin.site.register(EncodeJob, EncodeJobAdmin)

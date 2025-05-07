@@ -2,8 +2,6 @@
 API methods
 """
 
-from ast import literal_eval
-
 import requests
 from celery import chain
 from django.conf import settings
@@ -95,10 +93,12 @@ def post_video_to_edx(video_files):
     for edx_endpoint in edx_endpoints:
         try:
             edx_endpoint.refresh_access_token()
-            submitted_encode_job = (
-                video_files[0].video.encode_jobs.filter(state=0).first()
+            encode_job = (
+                video_files[0]
+                .video.encode_jobs.filter(state=models.EncodeJob.State.COMPLETED)
+                .first()
             )
-            duration = get_duration_from_encode_job(submitted_encode_job)
+            duration = get_duration_from_encode_job(encode_job)
             video_key = str(video_files[0].video.key)
             resp = requests.post(  # pylint: disable=missing-timeout
                 edx_endpoint.full_api_url,
@@ -164,7 +164,9 @@ def update_video_on_edx(video_key, encoded_videos=None):
                 "edx_video_id": str(video.key),
                 "client_video_id": video.title,
                 "duration": get_duration_from_encode_job(
-                    video.encode_jobs.filter(state=0).first()
+                    video.encode_jobs.filter(
+                        state=models.EncodeJob.State.COMPLETED
+                    ).first()
                 ),
                 "status": "updated",
             }
@@ -195,9 +197,15 @@ def get_duration_from_encode_job(encode_job):
         duration: float
     """
     duration = 0.0
-    if encode_job:
-        duration = (
-            literal_eval(encode_job.message).get("Output", {}).get("Duration", 0.0)
-            or 0.0
-        )
+    if encode_job and encode_job.message:
+        if output_groups := encode_job.message.get("outputGroupDetails", []):
+            # Get the first output group
+            output_group = output_groups[0]
+            if outputs := output_group.get("outputDetails", []):
+                # Get the first output
+                output = outputs[0]
+                duration_in_ms = output.get("durationInMs", 0)
+                # Convert milliseconds to seconds
+                duration = duration_in_ms / 1000.0
+
     return duration
