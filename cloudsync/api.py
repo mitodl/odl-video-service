@@ -183,7 +183,7 @@ def refresh_status(video: Video, encode_job: EncodeJob = None) -> None:
             encode_job = video.encode_jobs.latest("created_at")
         mc_job = get_media_convert_job(encode_job.id)
         if mc_job["Job"]["Status"].lower() == VideoStatus.COMPLETE.lower():
-            with open("./config/results.json") as f:
+            with open("./config/results.json", encoding="utf-8") as f:
                 results = prepare_results(video, encode_job, f.read())
             process_transcode_results(results)
         elif mc_job["Job"]["Status"].lower() == VideoStatus.ERROR.lower():

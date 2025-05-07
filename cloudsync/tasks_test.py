@@ -31,7 +31,6 @@ from cloudsync.tasks import (
     sort_transcoded_m3u8_files,
     stream_to_s3,
     transcode_from_s3,
-    update_video_statuses,
     update_youtube_statuses,
     upload_youtube_caption,
     upload_youtube_videos,
