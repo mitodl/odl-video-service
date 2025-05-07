@@ -72,6 +72,8 @@ jobs:
           AWS_ACCESS_KEY_ID: fakeawskey
           AWS_SECRET_ACCESS_KEY: fakeawssecret
           AWS_REGION: us-east-1
+          AWS_ACCOUNT_ID: fakeawsaccountid
+          AWS_ROLE_NAME: fakeawsrolename
           CLOUDFRONT_KEY_ID: cfkeyid
           DROPBOX_KEY: foo_dropbox_key
           ET_PIPELINE_ID: foo_et_pipeline_id
