@@ -59,9 +59,7 @@ class CollectionFactory(DjangoModelFactory):
         model = models.Collection
 
     @post_generation
-    def admin_lists(
-        self, create, extracted, **kwargs
-    ):  # pylint:disable=unused-argument
+    def admin_lists(self, create, extracted, **kwargs):
         """Post-generation hook to handle admin_lists (if provided)"""
         if create and extracted:
             # An object was created and admin_lists were passed in
@@ -69,7 +67,7 @@ class CollectionFactory(DjangoModelFactory):
                 self.admin_lists.add(moira_list)
 
     @post_generation
-    def view_lists(self, create, extracted, **kwargs):  # pylint:disable=unused-argument
+    def view_lists(self, create, extracted, **kwargs):
         """Post-generation hook to handle admin_lists (if provided)"""
         if create and extracted:
             # An object was created and view_lists were passed in
@@ -110,7 +108,7 @@ class VideoFactory(DjangoModelFactory):
         unencoded = Trait(status="Complete")
 
     @post_generation
-    def view_lists(self, create, extracted, **kwargs):  # pylint:disable=unused-argument
+    def view_lists(self, create, extracted, **kwargs):
         """Post-generation hook to handle admin_lists (if provided)"""
         if create and extracted:
             # An object was created and view_lists were passed in

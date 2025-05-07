@@ -5,8 +5,6 @@ Django App
 from django.apps import AppConfig
 from django.core.exceptions import ImproperlyConfigured
 
-# pylint:disable=import-outside-toplevel
-
 
 class UIConfig(AppConfig):
     """AppConfig for ui"""
@@ -16,8 +14,6 @@ class UIConfig(AppConfig):
     def ready(self):
         # check for missing configurations
         from django.conf import settings
-
-        import ui.signals  # pylint:disable=unused-import
 
         missing_settings = []
         for setting_name in settings.MANDATORY_SETTINGS:

@@ -174,7 +174,6 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
         prefix = RETRANSCODE_FOLDER
-        # pylint:disable=no-value-for-parameter
         delete_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
             f"{prefix}{TRANSCODE_PREFIX}/{video.hexkey}",
@@ -212,9 +211,9 @@ def transcode_video(video, video_file, generate_mp4_videofile=False):
 
     # Generate thumbnails for the 1st encoding (no point in doing so for each).
     if video.status != VideoStatus.RETRANSCODE_SCHEDULED:
-        outputs[0][
-            "ThumbnailPattern"
-        ] = f"{prefix}{THUMBNAIL_PATTERN.format(video_file.s3_basename)}"
+        outputs[0]["ThumbnailPattern"] = (
+            f"{prefix}{THUMBNAIL_PATTERN.format(video_file.s3_basename)}"
+        )
 
     transcoder = VideoTranscoder(
         settings.ET_PIPELINE_ID,

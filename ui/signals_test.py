@@ -1,4 +1,4 @@
-""" Test model signals"""
+"""Test model signals"""
 
 import factory
 import pytest
@@ -15,8 +15,6 @@ from ui.factories import (
 from ui.models import Video
 
 pytestmark = pytest.mark.django_db
-
-# pylint: disable=redefined-outer-name,too-many-arguments,unused-argument
 
 
 @pytest.fixture()
