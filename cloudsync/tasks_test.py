@@ -369,13 +369,6 @@ def test_video_task_no_chain(mocker):
     assert task.get_task_id() == task.request.id
 
 
-@pytest.mark.parametrize(
-    "status, error_status",
-    [
-        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
-        [VideoStatus.RETRANSCODING, VideoStatus.RETRANSCODE_FAILED],
-    ],
-)
 def test_stream_to_s3_no_video():
     """Test DoesNotExistError"""
     with pytest.raises(Video.DoesNotExist):
