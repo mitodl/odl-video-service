@@ -262,11 +262,11 @@ def transcode_video(
     """
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
-        prefix = RETRANSCODE_FOLDER
+        prefix = RETRANSCODE_FOLDER + TRANSCODE_PREFIX
         # pylint:disable=no-value-for-parameter
         delete_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
-            f"{prefix}{TRANSCODE_PREFIX}/{video.hexkey}",
+            f"{prefix}/{video.hexkey}",
             as_filter=True,
         )
     else:
