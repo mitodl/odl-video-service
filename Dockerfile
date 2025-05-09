@@ -41,7 +41,6 @@ RUN pip install "poetry==$POETRY_VERSION"
 COPY pyproject.toml /src
 COPY poetry.lock /src
 WORKDIR /src
-COPY mitol_django_transcoding-2025.4.23.tar.gz /src/mitol_django_transcoding-2025.4.23.tar.gz
 RUN poetry install --only main
 
 # Add project
