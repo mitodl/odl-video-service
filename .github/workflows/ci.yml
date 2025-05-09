@@ -43,7 +43,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5
         with:
-          python-version: "3.13.2"
+          python-version: "3.13.3"
           cache: poetry
 
       - name: Install dependencies
@@ -72,6 +72,8 @@ jobs:
           AWS_ACCESS_KEY_ID: fakeawskey
           AWS_SECRET_ACCESS_KEY: fakeawssecret
           AWS_REGION: us-east-1
+          AWS_ACCOUNT_ID: fakeawsaccountid
+          AWS_ROLE_NAME: fakeawsrolename
           CLOUDFRONT_KEY_ID: cfkeyid
           DROPBOX_KEY: foo_dropbox_key
           ET_PIPELINE_ID: foo_et_pipeline_id
@@ -97,7 +99,7 @@ jobs:
           YT_PROJECT_ID: fake
 
       - name: Upload coverage to CodeCov
-        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3
+        uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5
         with:
           file: ./coverage.xml
 
@@ -107,7 +109,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Set up NodeJS
-        uses: actions/setup-node@7c12f8017d5436eb855f1ed4399f037a36fbd9e8 # v2
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 16.20.2
 
@@ -142,6 +144,6 @@ jobs:
         run: node node_modules/webpack/bin/webpack.js --config webpack.config.prod.js --bail
 
       - name: Upload test coverage to CodeCov
-        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3
+        uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5
         with:
           file: coverage/lcov.info

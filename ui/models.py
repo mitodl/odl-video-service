@@ -8,9 +8,9 @@ from uuid import uuid4
 
 import boto3
 from celery import shared_task
-from dj_elastictranscoder.models import EncodeJob
 from django.conf import settings
-from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from encrypted_model_fields.fields import EncryptedTextField
 from pycountry import languages
@@ -296,6 +296,34 @@ class VideoManager(TimestampedModelManager):
                 )
             )
         ).distinct()
+
+
+class EncodeJob(models.Model):
+    """
+    A job created when a video is transcoded
+    """
+
+    class State(models.IntegerChoices):
+        """
+        The state of the encode job
+        """
+
+        SUBMITTED = 0, "Submitted"
+        PROGRESSING = 1, "Progressing"
+        ERROR = 2, "Error"
+        WARNING = 3, "Warning"
+        COMPLETED = 4, "Complete"
+
+    id = models.CharField(max_length=100, primary_key=True)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    state = models.PositiveIntegerField(
+        choices=State.choices, default=State.SUBMITTED, db_index=True
+    )
+    content_object = GenericForeignKey()
+    message = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_modified = models.DateTimeField(auto_now=True)
 
 
 class Video(TimestampedModel):

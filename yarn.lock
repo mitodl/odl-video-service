@@ -1173,10 +1173,10 @@ acorn-walk@^7.1.1:
   resolved "https://registry.yarnpkg.com/acorn-walk/-/acorn-walk-7.2.0.tgz#0de889a601203909b0fbe07b8938dc21d2e967bc"
   integrity sha512-OPdCF6GsMIP+Az+aWfAAOEt2/+iVDKE7oy6lJ098aoe59oAmK76qV6Gw60SbZ8jHuG2wH058GF4pLFbYamYrVA==
 
-acorn@^3.0.4, acorn@^5.2.1, acorn@^6.0.7, acorn@^6.4.1, acorn@^7.1.1, acorn@^8.2.4:
-  version "7.3.1"
-  resolved "https://registry.yarnpkg.com/acorn/-/acorn-7.3.1.tgz#85010754db53c3fbaf3b9ea3e083aa5c5d147ffd"
-  integrity sha512-tLc0wSnatxAQHVHUapaHdz72pi9KUyHjq5KyHjGg9Y8Ifdc79pTh2XvI6I1/chZbnM7QtNKzh66ooDogPZSleA==
+acorn@^3.0.4, acorn@^5.2.1, acorn@^6.0.7, acorn@^6.4.1, acorn@^7.1.1, acorn@^8.0.0, acorn@^8.2.4:
+  version "8.14.1"
+  resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.14.1.tgz#721d5dc10f7d5b5609a891773d47731796935dfb"
+  integrity sha512-OvQ/2pUDKmgfCg++xsTX1wGxfTaszcHVcTctW4UJB4hibJx2HXxxO5UmVgyjMa+ZDsiaf5wWLXYpRWMmBI0QHg==
 
 aes-decrypter@3.1.2:
   version "3.1.2"
@@ -4529,10 +4529,10 @@ flatted@^2.0.0:
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-2.0.2.tgz#4575b21e2bcee7434aa9be662f4b7b5f9c2b5138"
   integrity sha512-r5wGx7YeOwNWNlCA0wQ86zKyDLMQr+/RB8xy74M4hTphfmjlijTSSXGuH8rnvKZnfT9i+75zmd8jcKdMR4O6jA==
 
-flow-bin@0.266.0:
-  version "0.266.0"
-  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.266.0.tgz#0829ea93ff9670f014695c7c272a1c36fc93d634"
-  integrity sha512-2icyk/Z4Q0UtcEg9vRuPafUBNup3qlz01nZFw1SuixoTh3SUTrzsrVBaMJLlq/NQMZCKaf+uQczbwvuKQ/jyzQ==
+flow-bin@0.269.1:
+  version "0.269.1"
+  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.269.1.tgz#35396a95b769171e56d493b3a0cca9ade9944011"
+  integrity sha512-k5Ja91KVNVtGxyGuEm21lqf2TeVWXriiwlVHU95k8ArJwEZQ+KVza9ZSvJYgwMnpp7/Q9nuSdWJ9MJdEbvl2QQ==
 
 flush-write-stream@^1.0.0:
   version "1.1.1"

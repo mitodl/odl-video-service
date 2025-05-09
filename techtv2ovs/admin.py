@@ -1,4 +1,4 @@
-""" Admin for techtv2ovs """
+"""Admin for techtv2ovs"""
 
 from django.contrib import admin
 

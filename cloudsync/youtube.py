@@ -1,4 +1,4 @@
-""" YouTube API interface"""
+"""YouTube API interface"""
 
 import http
 import re

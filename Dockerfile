@@ -6,7 +6,7 @@ WORKDIR /src
 RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline && \
     node node_modules/webpack/bin/webpack.js --config  webpack.config.prod.js --bail
 
-FROM python:3.13.2-bullseye AS base
+FROM python:3.13.3-bullseye AS base
 # Add package files, install updated node and pip
 WORKDIR /tmp
 
@@ -30,7 +30,7 @@ RUN mkdir /var/media && chown -R mitodl:mitodl /var/media
 # Poetry env configuration
 ENV  \
   # poetry:
-  POETRY_VERSION=1.8.3 \
+  POETRY_VERSION=2.1.3 \
   POETRY_VIRTUALENVS_CREATE=false \
   POETRY_CACHE_DIR='/tmp/cache/poetry'
 
@@ -41,7 +41,7 @@ RUN pip install "poetry==$POETRY_VERSION"
 COPY pyproject.toml /src
 COPY poetry.lock /src
 WORKDIR /src
-RUN poetry install --no-dev
+RUN poetry install --only main
 
 # Add project
 COPY . /src
