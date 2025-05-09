@@ -549,7 +549,7 @@ FEATURES = {
 if FEATURES.get("RETRANSCODE_ENABLED", False):
     CELERY_BEAT_SCHEDULE["schedule_retranscodes"] = {
         "task": "cloudsync.tasks.schedule_retranscodes",
-        "schedule": get_int("SCHEDULE_RETRANSCODE_FREQUENCY", 10),
+        "schedule": get_int("SCHEDULE_RETRANSCODE_FREQUENCY", 600),
     }
 
 MIDDLEWARE_FEATURE_FLAG_QS_PREFIX = get_string(
