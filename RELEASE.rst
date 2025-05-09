@@ -1,6 +1,20 @@
 Release Notes
 =============
 
+Version 0.78.0
+--------------
+
+- fixed path issue in retranscoding (#1200)
+- Umar/6792 refactor add transcoding app in ovs (#1181)
+- fix(deps): update dependency flow-bin to v0.269.1 (#1196)
+- chore(deps): update nginx docker tag to v1.28.0 (#1195)
+- chore(deps): update dependency pdbpp to ^0.11.0 (#1194)
+- fix(deps): update dependency uwsgi to v2.0.29 (#1193)
+- chore(deps): update python docker tag to v3.13.3 (#1192)
+- chore(deps): update actions/setup-node action to v4 (#1175)
+- chore(deps): update codecov/codecov-action action to v5 (#1176)
+- chore(deps): update dependency acorn to v8 (#1180)
+
 Version 0.77.2 (Released May 06, 2025)
 --------------
 
