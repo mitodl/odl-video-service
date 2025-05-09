@@ -242,12 +242,14 @@ def prepare_results(video: Video, job: EncodeJob, results: str) -> dict:
     ]:
         results = results.replace(
             f"<{key}>",
-            RETRANSCODE_FOLDER + getattr(settings, key, "")
-            if (
-                key == "VIDEO_S3_TRANSCODE_PREFIX"
-                and video.status == VideoStatus.RETRANSCODING
-            )
-            else getattr(settings, key, ""),
+            (
+                RETRANSCODE_FOLDER + getattr(settings, key, "")
+                if (
+                    key == "VIDEO_S3_TRANSCODE_PREFIX"
+                    and video.status == VideoStatus.RETRANSCODING
+                )
+                else getattr(settings, key, "")
+            ),
         )
 
     results = results.replace("<VIDEO_KEY>", video.key.hex).replace(
