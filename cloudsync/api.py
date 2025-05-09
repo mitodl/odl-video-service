@@ -143,8 +143,12 @@ def process_mp4_outputs(outputs: list, video: Video) -> None:
                         "video": video,
                         "bucket_name": bucket_name,
                         "preset_id": "",
-                        "max_width": playlist.get("videoDetails", {}).get("widthInPx", 0),
-                        "max_height": playlist.get("videoDetails", {}).get("heightInPx", 0),
+                        "max_width": playlist.get("videoDetails", {}).get(
+                            "widthInPx", 0
+                        ),
+                        "max_height": playlist.get("videoDetails", {}).get(
+                            "heightInPx", 0
+                        ),
                     },
                 )
 
@@ -236,7 +240,15 @@ def prepare_results(video: Video, job: EncodeJob, results: str) -> dict:
         "VIDEO_S3_THUMBNAIL_BUCKET",
         "VIDEO_S3_THUMBNAIL_PREFIX",
     ]:
-        results = results.replace(f"<{key}>", getattr(settings, key, ""))
+        results = results.replace(
+            f"<{key}>",
+            RETRANSCODE_FOLDER + getattr(settings, key, "")
+            if (
+                key == "VIDEO_S3_TRANSCODE_PREFIX"
+                and video.status == VideoStatus.RETRANSCODING
+            )
+            else getattr(settings, key, ""),
+        )
 
     results = results.replace("<VIDEO_KEY>", video.key.hex).replace(
         "<VIDEO_NAME>", "video"
