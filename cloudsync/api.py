@@ -260,6 +260,7 @@ def transcode_video(
         video_file (ui.models.VideoFile): The S3 file to use for transcoding.
         generate_mp4_videofile (bool): Whether to generate an MP4 video file.
     """
+    exclude_thumbnail = False
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
         prefix = RETRANSCODE_FOLDER + TRANSCODE_PREFIX
@@ -269,6 +270,7 @@ def transcode_video(
             f"{prefix}/{video.hexkey}",
             as_filter=True,
         )
+        exclude_thumbnail = True
     else:
         prefix = TRANSCODE_PREFIX
 
@@ -277,7 +279,10 @@ def transcode_video(
         job = media_convert_job(
             video_file.s3_object_key,
             destination_prefix=prefix,
-            group_settings={"exclude_mp4": not generate_mp4_videofile},
+            group_settings={
+                "exclude_mp4": not generate_mp4_videofile,
+                "exclude_thumbnail": exclude_thumbnail,
+            },
         )
 
         # Get the content type for the Video model
