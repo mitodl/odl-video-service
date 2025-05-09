@@ -1902,18 +1902,18 @@ typing-extensions = "*"
 
 [[package]]
 name = "mitol-django-transcoding"
-version = "2025.4.23"
+version = "2025.5.9"
 description = "MIT Open Learning Django app extension for Transcoding jobs"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "mitol_django_transcoding-2025.4.23-py3-none-any.whl", hash = "sha256:be56f66cee7b41196d1c7ea7f27fb7b6e4f6267a3aa0d1c2bf99582a26f6e1cb"},
-    {file = "mitol_django_transcoding-2025.4.23.tar.gz", hash = "sha256:91a0eb522b288f18d397390ffb032f8816173fefd0b31ff379f0f3d4286c1015"},
+    {file = "mitol_django_transcoding-2025.5.9-py3-none-any.whl", hash = "sha256:b437eddc193c97968e600a75f8fcc10ff0cb49db6c43ef7a9437ede801c9aa38"},
+    {file = "mitol_django_transcoding-2025.5.9.tar.gz", hash = "sha256:af2529703472547f2fcc1672e266761667e01d6896ca2edd3ee782befa210d7d"},
 ]
 
 [package.dependencies]
-boto3 = "1.37.11"
+boto3 = ">=1.37.11,<2.0"
 django = ">=3.0"
 django-stubs = ">=1.13.1"
 mitol-django-common = "*"
@@ -3371,4 +3371,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "f535b70259baf2a5ac3af84c3f7245782fa7af1b7054a8323bd09ba784c404af"
+content-hash = "0da5a179dac707e3d0b79e1bfc8024ea150cc8f070249bdeaca1499ae7496ac4"

@@ -143,6 +143,12 @@ def process_mp4_outputs(outputs: list, video: Video) -> None:
                         "video": video,
                         "bucket_name": bucket_name,
                         "preset_id": "",
+                        "max_width": playlist.get("videoDetails", {}).get(
+                            "widthInPx", 0
+                        ),
+                        "max_height": playlist.get("videoDetails", {}).get(
+                            "heightInPx", 0
+                        ),
                     },
                 )
 
@@ -234,7 +240,17 @@ def prepare_results(video: Video, job: EncodeJob, results: str) -> dict:
         "VIDEO_S3_THUMBNAIL_BUCKET",
         "VIDEO_S3_THUMBNAIL_PREFIX",
     ]:
-        results = results.replace(f"<{key}>", getattr(settings, key, ""))
+        results = results.replace(
+            f"<{key}>",
+            (
+                RETRANSCODE_FOLDER + getattr(settings, key, "")
+                if (
+                    key == "VIDEO_S3_TRANSCODE_PREFIX"
+                    and video.status == VideoStatus.RETRANSCODING
+                )
+                else getattr(settings, key, "")
+            ),
+        )
 
     results = results.replace("<VIDEO_KEY>", video.key.hex).replace(
         "<VIDEO_NAME>", "video"
@@ -243,6 +259,10 @@ def prepare_results(video: Video, job: EncodeJob, results: str) -> dict:
     # Decode the JSON string
     try:
         results = json.loads(results)
+
+        if video.status == VideoStatus.RETRANSCODING:
+            results["outputGroupDetails"] = results.get("outputGroupDetails", [])[:-1]
+
     except json.JSONDecodeError:
         log.error("Failed to decode MediaConvert job results")
         return {}
@@ -260,15 +280,17 @@ def transcode_video(
         video_file (ui.models.VideoFile): The S3 file to use for transcoding.
         generate_mp4_videofile (bool): Whether to generate an MP4 video file.
     """
+    exclude_thumbnail = False
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
-        prefix = RETRANSCODE_FOLDER
+        prefix = RETRANSCODE_FOLDER + TRANSCODE_PREFIX
         # pylint:disable=no-value-for-parameter
         delete_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
-            f"{prefix}{TRANSCODE_PREFIX}/{video.hexkey}",
+            f"{prefix}/{video.hexkey}",
             as_filter=True,
         )
+        exclude_thumbnail = True
     else:
         prefix = TRANSCODE_PREFIX
 
@@ -277,7 +299,10 @@ def transcode_video(
         job = media_convert_job(
             video_file.s3_object_key,
             destination_prefix=prefix,
-            group_settings={"exclude_mp4": not generate_mp4_videofile},
+            group_settings={
+                "exclude_mp4": not generate_mp4_videofile,
+                "exclude_thumbnail": exclude_thumbnail,
+            },
         )
 
         # Get the content type for the Video model
