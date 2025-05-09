@@ -67,7 +67,7 @@ structlog = "^20.1.0"
 structlog-sentry = "^1.2.2"
 urllib3 = "^1.24.2"
 uwsgi = "2.0.29"
-mitol-django-transcoding = "2025.4.23"
+mitol-django-transcoding = {path = "mitol_django_transcoding-2025.4.23.tar.gz"}
 
 
 [tool.poetry.group.dev.dependencies]

@@ -243,6 +243,10 @@ def prepare_results(video: Video, job: EncodeJob, results: str) -> dict:
     # Decode the JSON string
     try:
         results = json.loads(results)
+
+        if video.status == VideoStatus.RETRANSCODING:
+            results["outputGroupDetails"] = results.get("outputGroupDetails", [])[:-1]
+
     except json.JSONDecodeError:
         log.error("Failed to decode MediaConvert job results")
         return {}
