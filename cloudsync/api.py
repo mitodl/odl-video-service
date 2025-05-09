@@ -143,6 +143,8 @@ def process_mp4_outputs(outputs: list, video: Video) -> None:
                         "video": video,
                         "bucket_name": bucket_name,
                         "preset_id": "",
+                        "max_width": playlist.get("videoDetails", {}).get("widthInPx", 0),
+                        "max_height": playlist.get("videoDetails", {}).get("heightInPx", 0),
                     },
                 )
 
