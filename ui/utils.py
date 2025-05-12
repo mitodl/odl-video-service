@@ -173,34 +173,6 @@ def has_common_lists(user, list_names):
     return not user_lists.isdisjoint(list_names)
 
 
-def get_et_job(job_id):
-    """
-    Get the status of an ElasticTranscode job
-
-    Args:
-        job_id (str): ID of ElasticTranscode Job
-
-    Returns:
-        dict: JSON representation of job status/details
-    """
-    et = get_transcoder_client()
-    job = et.read_job(Id=job_id)
-    return job["Job"]
-
-
-def get_et_preset(preset_id):
-    """
-    Get the JSON configuration of an ElasticTranscode preset
-    Args:
-        preset_id (str): A preset id
-
-    Returns:
-        dict: Preset configuration
-    """
-    et = get_transcoder_client()
-    return et.read_preset(Id=preset_id)["Preset"]
-
-
 def get_bucket(bucket_name):
     """
     Get an S3 bucket by name
@@ -213,17 +185,6 @@ def get_bucket(bucket_name):
     """
     s3 = boto3.resource("s3")
     return s3.Bucket(bucket_name)
-
-
-def get_transcoder_client():
-    """
-    Get an ElasticTranscoder client object
-
-    Returns:
-        botocore.client.ElasticTranscoder:
-            An ElasticTranscoder client object
-    """
-    return boto3.client("elastictranscoder", settings.AWS_REGION)
 
 
 def write_to_file(filename, contents):

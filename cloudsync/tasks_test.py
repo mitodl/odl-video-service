@@ -124,15 +124,14 @@ def mock_failed_encode_job(mocker):
         "cloudsync.api.VideoTranscoder.encode",
         side_effect=ClientError(error_response=job_result, operation_name="ReadJob"),
     )
-    mocker.patch("cloudsync.api.get_et_job", return_value=job_result["Job"])
+    mocker.patch("cloudsync.api.media_convert_job", return_value=job_result["Job"])
 
 
 @pytest.fixture()
 def mock_successful_encode_job(mocker):
     """Mock everything required for a successful transcode"""
-    mocker.patch("cloudsync.api.VideoTranscoder.encode")
     mocker.patch(
-        "cloudsync.api.get_et_job",
+        "cloudsync.api.media_convert_job",
         return_value={"Id": "1498220566931-qtmtcu", "Status": "Complete"},
     )
 

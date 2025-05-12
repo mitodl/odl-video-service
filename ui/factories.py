@@ -7,7 +7,15 @@ import pytz
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
-from factory import Faker, LazyAttribute, Sequence, SubFactory, Trait, post_generation
+from factory import (
+    Faker,
+    LazyAttribute,
+    LazyFunction,
+    Sequence,
+    SubFactory,
+    Trait,
+    post_generation,
+)
 from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyInteger, FuzzyText
 
@@ -198,6 +206,7 @@ class EncodeJobFactory(DjangoModelFactory):
     content_type = LazyAttribute(
         lambda obj: ContentType.objects.get_for_model(obj.video)
     )
+    message = LazyFunction(lambda: {})
 
     class Meta:
         model = EncodeJob

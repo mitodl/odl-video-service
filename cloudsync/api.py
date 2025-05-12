@@ -77,9 +77,6 @@ def process_transcode_results(results: dict) -> None:
         elif "FILE_GROUP" in group_type:
             process_mp4_outputs(group.get("outputDetails", []), video)
 
-    # Update video status
-    video.update_status(VideoStatus.COMPLETE)
-
     # Ensure content_type and object_id are set for the EncodeJob
     content_type = ContentType.objects.get_for_model(video)
     video_job.content_type = content_type
@@ -192,6 +189,7 @@ def refresh_status(video: Video, encode_job: EncodeJob = None) -> None:
             with open("./config/results.json", encoding="utf-8") as f:
                 results = prepare_results(video, encode_job, f.read())
             process_transcode_results(results)
+            video.update_status(VideoStatus.COMPLETE)
         elif mc_job["Job"]["Status"].lower() == VideoStatus.ERROR.lower():
             if video.status == VideoStatus.RETRANSCODING:
                 video.update_status(VideoStatus.RETRANSCODE_FAILED)
@@ -294,6 +292,7 @@ def transcode_video(
     else:
         prefix = TRANSCODE_PREFIX
 
+    job = {}
     try:
         # Start the MediaConvert job
         job = media_convert_job(
@@ -304,17 +303,25 @@ def transcode_video(
                 "exclude_thumbnail": exclude_thumbnail,
             },
         )
-
+    except ClientError:
+        log.error("Transcode job creation failed", video_id=video.id)
+        if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
+            video.update_status(VideoStatus.RETRANSCODE_FAILED)
+        else:
+            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
+        raise
+    finally:
         # Get the content type for the Video model
         content_type = ContentType.objects.get_for_model(video)
-
+        job_id = job.get("Job", {}).get("Id", None)
         # Create or update the EncodeJob instance
         EncodeJob.objects.get_or_create(
-            id=job["Job"]["Id"],
+            id=job_id,
             defaults={
+                "id": None,
                 "content_type": content_type,
                 "object_id": video.pk,
-                "message": "",
+                "message": {},
             },
         )
 
@@ -327,13 +334,6 @@ def transcode_video(
             VideoStatus.RETRANSCODE_FAILED,
         ):
             video.update_status(VideoStatus.TRANSCODING)
-
-    except ClientError:
-        log.error("Transcode job creation failed", video_id=video.id)
-        if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
-            video.update_status(VideoStatus.RETRANSCODE_FAILED)
-        else:
-            video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
 
 
 def create_lecture_collection_slug(video_attributes):
