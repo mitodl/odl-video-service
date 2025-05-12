@@ -45,7 +45,7 @@ from ui.factories import (
     VideoSubtitleFactory,
     YouTubeVideoFactory,
 )
-from ui.models import Collection, Video, YouTubeVideo
+from ui.models import TRANSCODE_PREFIX, Collection, Video, YouTubeVideo
 
 pytestmark = pytest.mark.django_db
 
@@ -95,20 +95,9 @@ def mocked_celery(mocker):
 @pytest.fixture()
 def mock_transcode(mocker):
     """Mock everything required for a  transcode"""
-    mocker.patch.multiple(
-        "cloudsync.tasks.settings",
-        ET_HLS_PRESET_IDS=(
-            "1351620000001-000061",
-            "1351620000001-000040",
-            "1351620000001-000020",
-        ),
-        AWS_REGION="us-east-1",
-        ET_PIPELINE_ID="foo",
-    )
-    mocker.patch("dj_elastictranscoder.transcoder.Session")
     mocker.patch("celery.app.task.Task.update_state")
     mocker.patch("cloudsync.api.process_transcode_results")
-    mocker.patch("ui.utils.boto3", MockBoto)
+    mocker.patch("cloudsync.api.boto3", MockBoto)
     mocker.patch("cloudsync.api.delete_s3_objects")
     mocker.patch("ui.models.tasks")
 
@@ -121,10 +110,9 @@ def mock_failed_encode_job(mocker):
         "Error": {"Code": 200, "Message": "FAIL"},
     }
     mocker.patch(
-        "cloudsync.api.VideoTranscoder.encode",
-        side_effect=ClientError(error_response=job_result, operation_name="ReadJob"),
+        "cloudsync.api.media_convert_job",
+        side_effect=ClientError(error_response=job_result, operation_name="job"),
     )
-    mocker.patch("cloudsync.api.media_convert_job", return_value=job_result["Job"])
 
 
 @pytest.fixture()
@@ -379,14 +367,7 @@ def test_stream_to_s3_no_video():
 def test_monitor_watch(mocker, user):
     """Test the Watch bucket monitor task"""
     UserFactory(username="admin")
-    mocker.patch.multiple(
-        "cloudsync.tasks.settings",
-        ET_HLS_PRESET_IDS=("1351620000001-000061",),
-        ENVIRONMENT="test",
-        AWS_REGION="us-east-1",
-        ET_PIPELINE_ID="foo",
-    )
-    mock_encoder = mocker.patch("cloudsync.api.VideoTranscoder.encode")
+    mock_encoder = mocker.patch("cloudsync.api.media_convert_job")
     s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
     filename = "MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4"
@@ -399,27 +380,12 @@ def test_monitor_watch(mocker, user):
     new_video = Video.objects.get(source_url__endswith=filename)
     new_videofile = new_video.original_video
     mock_encoder.assert_called_once_with(
-        {"Key": new_videofile.s3_object_key},
-        [
-            {
-                "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000061",
-                "PresetId": "1351620000001-000061",
-                "SegmentDuration": "10.0",
-                "ThumbnailPattern": "thumbnails/"
-                + new_video.hexkey
-                + "/video_thumbnail_{count}",
-            }
-        ],
-        Playlists=[
-            {
-                "Format": "HLSv3",
-                "Name": "transcoded/" + new_video.hexkey + "/video__index",
-                "OutputKeys": [
-                    "transcoded/" + new_video.hexkey + "/video_1351620000001-000061"
-                ],
-            }
-        ],
-        UserMetadata={"pipeline": "odl-video-service-test"},
+        new_videofile.s3_object_key,
+        destination_prefix=TRANSCODE_PREFIX,
+        group_settings={
+            "exclude_mp4": True,
+            "exclude_thumbnail": False,
+        },
     )
     assert new_videofile.bucket_name == settings.VIDEO_S3_BUCKET
     with pytest.raises(ClientError):
@@ -442,17 +408,7 @@ def test_monitor_watch_badname(mocker, filename, unsorted):
     """
     settings.UNSORTED_COLLECTION = "Unsorted"
     user = UserFactory(username="admin")
-    mocker.patch.multiple(
-        "cloudsync.tasks.settings",
-        ET_HLS_PRESET_IDS=(
-            "1351620000001-000061",
-            "1351620000001-000040",
-            "1351620000001-000020",
-        ),
-        AWS_REGION="us-east-1",
-        ET_PIPELINE_ID="foo",
-    )
-    mock_encoder = mocker.patch("cloudsync.api.VideoTranscoder.encode")
+    mock_encoder = mocker.patch("cloudsync.api.media_convert_job")
     s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
