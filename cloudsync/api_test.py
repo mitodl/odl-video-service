@@ -6,6 +6,7 @@ import io
 import os
 from datetime import datetime
 from types import SimpleNamespace
+import uuid
 
 import boto3
 import pytest
@@ -120,7 +121,10 @@ def test_refresh_status_video_job_status_complete(mocker, status):
     encodejob = EncodeJobFactory(video=video)
     MockClientMC.job = {"Job": {"Id": "1498220566931-qtmtcu", "Status": "Complete"}}
     mocker.patch("cloudsync.api.boto3", MockBoto)
-    mocker.patch("cloudsync.api.process_transcode_results")
+    mocker.patch(
+        "cloudsync.api.process_transcode_results",
+        side_effect=lambda results: video.update_status(VideoStatus.COMPLETE),
+    )
     mocker.patch("ui.models.tasks")
     api.refresh_status(video, encodejob)
     assert video.status == VideoStatus.COMPLETE
@@ -230,7 +234,9 @@ def test_watch_s3_error():
 def test_watch_filename_error(mocker):
     """Test that a video with a bad filename is moved to the 'Unsorted' collection"""
     settings.UNSORTED_COLLECTION = "Unsorted"
-    mocker.patch("cloudsync.api.media_convert_job")
+    # Mock media_convert_job to return a dict with Job ID
+    mock_job = {"Job": {"Id": str(uuid.uuid4())}}
+    mocker.patch("cloudsync.api.media_convert_job", return_value=mock_job)
     UserFactory(username="admin")
     s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
@@ -248,23 +254,16 @@ def test_watch_filename_error(mocker):
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_process_watch(mocker):
     """Test that a file with valid filename is processed"""
-    mocker.patch.multiple(
-        "cloudsync.tasks.settings",
-        ET_HLS_PRESET_IDS=(
-            "1351620000001-000061",
-            "1351620000001-000040",
-            "1351620000001-000020",
-        ),
-        AWS_REGION="us-east-1",
-        ET_PIPELINE_ID="foo",
-        ENVIRONMENT="test",
+    # Mock media_convert_job to return a dict with Job ID
+    mock_job = {"Job": {"Id": str(uuid.uuid4())}}
+    mock_encoder = mocker.patch(
+        "cloudsync.api.media_convert_job", return_value=mock_job
     )
-    mock_encoder = mocker.patch("cloudsync.api.media_convert_job")
     mocker.patch(
         "cloudsync.api.create_lecture_collection_slug", return_value="COLLECTION TITLE"
     )
     mocker.patch("cloudsync.api.create_lecture_video_title", return_value="VIDEO TITLE")
-    UserFactory(username="admin")  # pylint: disable=unused-variable
+    UserFactory(username="admin")
     s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
     filename = "MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4"
@@ -349,11 +348,15 @@ def test_transcode_job(mocker, status, expected_status, exclude_thumbnail):
         else TRANSCODE_PREFIX
     )
 
-    mock_encoder = mocker.patch("cloudsync.api.media_convert_job")
+    # Mock media_convert_job to return a dict with Job ID
+    mock_job = {"Job": {"Id": str(uuid.uuid4())}}
+    mock_encoder = mocker.patch(
+        "cloudsync.api.media_convert_job", return_value=mock_job
+    )
     mock_delete_objects = mocker.patch("cloudsync.api.delete_s3_objects")
     mocker.patch("ui.models.tasks")
 
-    api.transcode_video(video, videofile)  # pylint: disable=no-value-for-parameter
+    api.transcode_video(video, videofile)
     mock_encoder.assert_called_once_with(
         videofile.s3_object_key,
         destination_prefix=prefix,
@@ -491,3 +494,45 @@ def test_move_s3_objects():
     bucket_keys = [obj.key for obj in bucket.objects.all()]
     assert f"{from_prefix}{filename}" not in bucket_keys
     assert f"{to_prefix}{filename}" in bucket_keys
+
+
+@mock_aws
+def test_transcode_video_client_error_no_job_id(mocker):
+    """
+    Test that when ClientError is raised without a job ID in response,
+    the job_id used is the one we generated with uuid4
+    """
+
+    video = VideoFactory.create(status=VideoStatus.UPLOADING)
+    video_file = VideoFileFactory.create(video=video)
+
+    # Mock uuid4 to return a known value
+    mock_uuid = "test-uuid-1234"
+    mocker.patch("cloudsync.api.uuid4", return_value=mock_uuid)
+    mocker.patch("cloudsync.api.delete_s3_objects")
+    mocker.patch("ui.models.tasks")
+
+    # Create a ClientError without Job ID in response
+    error_response = {
+        "Error": {"Code": "InvalidParameter", "Message": "Invalid parameter value"}
+    }
+    mock_client_error = ClientError(
+        error_response=error_response, operation_name="CreateJob"
+    )
+    # Mock media_convert_job to raise our ClientError
+    mocker.patch("cloudsync.api.media_convert_job", side_effect=mock_client_error)
+
+    # Execute the function and catch the expected exception
+    with pytest.raises(ClientError):
+        api.transcode_video(video, video_file)
+
+    # Verify that an EncodeJob was created with our uuid
+    assert len(video.encode_jobs.all()) == 1
+    encode_job = video.encode_jobs.first()
+    assert encode_job.id == mock_uuid
+    assert encode_job.object_id == video.pk
+    assert encode_job.message == error_response
+
+    # Verify video status was updated
+    video.refresh_from_db()
+    assert video.status == VideoStatus.TRANSCODE_FAILED_INTERNAL
