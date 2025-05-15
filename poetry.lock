@@ -947,6 +947,21 @@ cryptography = ">=3.4"
 Django = ">=2.2"
 
 [[package]]
+name = "django-filter"
+version = "25.1"
+description = "Django-filter is a reusable Django application for allowing users to filter querysets dynamically."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "django_filter-25.1-py3-none-any.whl", hash = "sha256:4fa48677cf5857b9b1347fed23e355ea792464e0fe07244d1fdfb8a806215b80"},
+    {file = "django_filter-25.1.tar.gz", hash = "sha256:1ec9eef48fa8da1c0ac9b411744b16c3f4c31176c867886e4c48da369c407153"},
+]
+
+[package.dependencies]
+Django = ">=4.2"
+
+[[package]]
 name = "django-hijack"
 version = "3.7.1"
 description = "Enable users to hijack (=login as) and work on behalf of another user."
@@ -3371,4 +3386,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "fe27f2d99451911b81f9577907d06869218a6776cfa974465d3b76b73ba42eb0"
+content-hash = "bac65d048e815dea4f21e64d31cfc7d797aa4c2e938cb3c5c9c5d93c00e180f7"
