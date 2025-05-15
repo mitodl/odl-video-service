@@ -63,12 +63,16 @@ class Command(BaseCommand):
 
             latest_videos_by_created_at = {}
             for video in course_videos:
-                key = video.get("encoded_videos", [{}])[0].get("url", "").split("/")[-2]
+                key = (
+                    video.get("encoded_videos", [{}])[0].get("url", "/").split("/")[-2]
+                )
                 created = datetime.fromisoformat(video.get("created", "1970-01-01"))
-                if (
-                    key and key not in latest_videos_by_created_at
-                ) or created > datetime.fromisoformat(
-                    latest_videos_by_created_at[key].get("created", "1970-01-01")
+                if key and (
+                    key not in latest_videos_by_created_at
+                    or created
+                    > datetime.fromisoformat(
+                        latest_videos_by_created_at[key].get("created", "1970-01-01")
+                    )
                 ):
                     latest_videos_by_created_at[key] = video
 
