@@ -25,14 +25,17 @@ class CollectionFilter(django_filters.FilterSet):
 
     def search_filter(self, queryset, name, value):  # pylint: disable=unused-argument
         """
-        Search filter that looks across title, description and edx_course_id
+        Search filter that looks across collection fields (title, description, edx_course_id, slug)
+        and video fields (title, description)
         """
         return queryset.filter(
             Q(title__icontains=value)
             | Q(description__icontains=value)
             | Q(edx_course_id__icontains=value)
             | Q(slug__icontains=value)
-        )
+            | Q(videos__title__icontains=value)
+            | Q(videos__description__icontains=value)
+        ).distinct()
 
     class Meta:
         model = Collection
