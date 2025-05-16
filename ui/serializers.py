@@ -429,5 +429,10 @@ class EdxEndpointSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "name",
+            "base_url",
+            "edx_video_api_path",
+            "is_global_default",
+            "created_at",
+            "updated_at",
         )
-        read_only_fields = ("id", "name")
+        read_only_fields = ("id", "created_at", "updated_at")
