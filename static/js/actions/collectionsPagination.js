@@ -20,12 +20,25 @@ actionCreators.receiveGetPageFailure = createAction(
   constants.RECEIVE_GET_PAGE_FAILURE
 )
 
+constants.RESET_PAGES = qualifiedName("RESET_PAGES")
+actionCreators.resetPages = createAction(constants.RESET_PAGES)
+
 actionCreators.getPage = (opts: { page: number }) => {
   const { page } = opts
   const thunk = async (dispatch: Dispatch) => {
+    // Get filters from URL parameters
+    const params = new URLSearchParams(window.location.search)
+    const searchQuery = params.get('search')
+    const edxEndpointId = params.get('edx_endpoint')
+
+    // Construct query parameters
+    const queryParams = { page }
+    if (searchQuery) queryParams.search = searchQuery
+    if (edxEndpointId) queryParams.edx_endpoint = edxEndpointId
+
     dispatch(actionCreators.requestGetPage({ page }))
     try {
-      const response = await api.getCollections({ pagination: { page } })
+      const response = await api.getCollections({ pagination: queryParams })
       // @TODO: ideally we would dispatch an action here to save collections to
       // a single place in state (e.g. state.collections).
       // However, it take a non-trivial refactor to implement this schema
