@@ -1,7 +1,8 @@
 // @flow
 import type { Action } from "../flow/reduxTypes"
 import { constants } from "../actions/edxEndpoints"
-import type { EdxEndpointList } from "../flow/collectionTypes"
+import type { EdxEndpointList } from "../flow/edxEndpointTypes"
+
 
 export type EdxEndpointsState = {
   data:   ?EdxEndpointList,

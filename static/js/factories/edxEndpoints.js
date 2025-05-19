@@ -1,7 +1,8 @@
 // @flow
 import casual from "casual-browserify"
 
-import type { EdxEndpoint, EdxEndpointList } from "../flow/collectionTypes"
+import type { EdxEndpoint, EdxEndpointList } from "../flow/edxEndpointTypes"
+
 
 export const makeEdxEndpoint = (): EdxEndpoint => {
   const id = casual.integer(1, 100)
