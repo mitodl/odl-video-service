@@ -27,7 +27,7 @@ describe("edxEndpoints actions", () => {
       const endpoints = makeEdxEndpointList()
       const getEndpointsStub = sandbox
         .stub(api, "getEdxEndpoints")
-        .returns(Promise.resolve( endpoints ))
+        .returns(Promise.resolve(endpoints))
 
       const { data } = await dispatchThen(actions.edxEndpoints.getEndpoints(), [
         edxEndpointActions.constants.REQUEST_GET_ENDPOINTS,
