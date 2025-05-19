@@ -5,7 +5,7 @@ import type { EdxEndpoint, EdxEndpointList } from "../flow/edxEndpointTypes"
 
 
 export const makeEdxEndpoint = (): EdxEndpoint => {
-  const id = casual.integer(1, 100)
+  const id = casual.integer(1, 1000)
   return {
     id,
     name:               `EdX Endpoint ${id}`,
