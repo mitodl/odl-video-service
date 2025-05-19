@@ -7,6 +7,7 @@ import { actions } from "../actions"
 import { makeEdxEndpointList } from "../factories/edxEndpoints"
 import * as sinon from "sinon"
 import configureTestStore from "redux-asserts"
+import * as edxEndpointActions from "../actions/edxEndpoints"
 
 describe("edxEndpoints reducer", () => {
   let sandbox, store, dispatchThen, getEdxEndpointsStub, endpointList
@@ -16,7 +17,7 @@ describe("edxEndpoints reducer", () => {
     endpointList = makeEdxEndpointList()
     getEdxEndpointsStub = sandbox
       .stub(api, "getEdxEndpoints")
-      .returns(Promise.resolve({ results: endpointList }))
+      .returns(Promise.resolve( endpointList ))
     store = configureTestStore(edxEndpoints)
     dispatchThen = store.createDispatchThen(state => state)
   })
@@ -34,7 +35,10 @@ describe("edxEndpoints reducer", () => {
   })
 
   it("should let you fetch edX endpoints", async () => {
-    const { data } = await dispatchThen(actions.edxEndpoints.getEndpoints())
+    const { data } = await dispatchThen(actions.edxEndpoints.getEndpoints(), [
+        edxEndpointActions.constants.REQUEST_GET_ENDPOINTS,
+        edxEndpointActions.constants.RECEIVE_GET_ENDPOINTS_SUCCESS
+      ])
     assert.deepEqual(data, endpointList)
     sinon.assert.calledWith(getEdxEndpointsStub)
   })

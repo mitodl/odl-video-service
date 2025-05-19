@@ -7,6 +7,7 @@ import rootReducer from "../reducers"
 import { actions } from "../actions"
 import * as api from "../lib/api"
 import { makeEdxEndpointList } from "../factories/edxEndpoints"
+import * as edxEndpointActions from "./edxEndpoints"
 
 describe("edxEndpoints actions", () => {
   let sandbox, store, dispatchThen
@@ -26,9 +27,12 @@ describe("edxEndpoints actions", () => {
       const endpoints = makeEdxEndpointList()
       const getEndpointsStub = sandbox
         .stub(api, "getEdxEndpoints")
-        .returns(Promise.resolve({ results: endpoints }))
+        .returns(Promise.resolve( endpoints ))
 
-      const { data } = await dispatchThen(actions.edxEndpoints.getEndpoints())
+      const { data } = await dispatchThen(actions.edxEndpoints.getEndpoints(), [
+        edxEndpointActions.constants.REQUEST_GET_ENDPOINTS,
+        edxEndpointActions.constants.RECEIVE_GET_ENDPOINTS_SUCCESS
+      ])
       assert.deepEqual(data, endpoints)
       sinon.assert.calledWith(getEndpointsStub)
     })
@@ -40,7 +44,8 @@ describe("edxEndpoints actions", () => {
         .returns(Promise.reject(new Error(errorMessage)))
 
       const { error } = await dispatchThen(actions.edxEndpoints.getEndpoints(), [
-        actions.edxEndpoints.constants.RECEIVE_GET_ENDPOINTS_FAILURE
+        edxEndpointActions.constants.REQUEST_GET_ENDPOINTS,
+        edxEndpointActions.constants.RECEIVE_GET_ENDPOINTS_FAILURE
       ])
       assert.equal(error.message, errorMessage)
     })
