@@ -1,5 +1,6 @@
 """Management command to sync video keys with edX"""
 
+from datetime import datetime
 from urllib.parse import urlencode
 import requests
 from django.core.management.base import BaseCommand
@@ -60,9 +61,27 @@ class Command(BaseCommand):
                     )
                     self.stdout.write(self.style.ERROR(str(exc)))
 
-            for vid in course_videos:
-                Video.objects.filter(title=vid.get("client_video_id")).update(
-                    key=vid.get("edx_video_id")
+            latest_videos_by_created_at = {}
+            for video in course_videos:
+                key = (
+                    video.get("encoded_videos", [{}])[0].get("url", "/").split("/")[-2]
+                )
+                created = datetime.fromisoformat(video.get("created", "1970-01-01"))
+                if key and (
+                    key not in latest_videos_by_created_at
+                    or created
+                    > datetime.fromisoformat(
+                        latest_videos_by_created_at[key].get("created", "1970-01-01")
+                    )
+                ):
+                    latest_videos_by_created_at[key] = video
+
+            for vid_key, vid in latest_videos_by_created_at.items():
+                Video.objects.filter(
+                    title=vid.get("client_video_id"), key=vid_key
+                ).update(key=vid.get("edx_video_id"))
+                self.stdout.write(
+                    f"Updated video key for {vid.get('client_video_id')} to {vid.get('edx_video_id')}"
                 )
 
             self.stdout.write(
