@@ -381,16 +381,18 @@ def test_get_duration_from_encode_job():
     """
     video = VideoFactory(status="Complete")
     encode_job = EncodeJobFactory(video=video)
-    encode_job.message = str(
-        {
-            "id": "1711563064503-e5qdnh",
-            "Output": {
-                "id": "1",
-                "Status": "Complete",
-                "Duration": 10.0,
-            },
-        }
-    )
+    encode_job.message = {
+        "id": "1711563064503-e5qdnh",
+        "outputGroupDetails": [
+            {
+                "outputDetails": [
+                    {
+                        "durationInMs": 10000.0,
+                    }
+                ]
+            }
+        ],
+    }
     duration = api.get_duration_from_encode_job(encode_job)
     assert duration == 10.0
 

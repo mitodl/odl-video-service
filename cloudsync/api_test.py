@@ -6,6 +6,7 @@ import io
 import os
 from datetime import datetime
 from types import SimpleNamespace
+import uuid
 
 import boto3
 import pytest
@@ -19,7 +20,7 @@ from moto import mock_aws
 
 from cloudsync import api
 from cloudsync.api import RETRANSCODE_FOLDER, move_s3_objects, upload_subtitle_to_s3
-from cloudsync.conftest import MockBoto, MockClientET
+from cloudsync.conftest import MockBoto, MockClientMC
 from ui.constants import VideoStatus
 from ui.factories import (
     EncodeJobFactory,
@@ -28,7 +29,7 @@ from ui.factories import (
     VideoFileFactory,
     VideoSubtitleFactory,
 )
-from ui.models import Video
+from ui.models import TRANSCODE_PREFIX, Video
 
 pytestmark = pytest.mark.django_db
 
@@ -99,19 +100,13 @@ def test_refresh_status_video_job_status_error(mocker, prior_status, error_statu
     """
     video = VideoFactory(status=prior_status)
     encodejob = EncodeJobFactory(video=video)
-    MockClientET.job = {
+    MockClientMC.job = {
         "Job": {
             "Id": "1498220566931-qtmtcu",
             "Status": "Error",
-            "Output": {
-                "StatusDetail": (
-                    "4000 45585321-f360-4557-aef7-91d46460eac5: "
-                    "Amazon Elastic Transcoder could not interpret the media file."
-                )
-            },
         }
     }
-    mocker.patch("ui.utils.boto3", MockBoto)
+    mocker.patch("cloudsync.api.boto3", MockBoto)
     mocker.patch("ui.models.tasks")
     api.refresh_status(video, encodejob)
     assert video.status == error_status
@@ -124,9 +119,12 @@ def test_refresh_status_video_job_status_complete(mocker, status):
     """
     video = VideoFactory(status=status)
     encodejob = EncodeJobFactory(video=video)
-    MockClientET.job = {"Job": {"Id": "1498220566931-qtmtcu", "Status": "Complete"}}
-    mocker.patch("ui.utils.boto3", MockBoto)
-    mocker.patch("cloudsync.api.process_transcode_results")
+    MockClientMC.job = {"Job": {"Id": "1498220566931-qtmtcu", "Status": "Complete"}}
+    mocker.patch("cloudsync.api.boto3", MockBoto)
+    mocker.patch(
+        "cloudsync.api.process_transcode_results",
+        side_effect=lambda results: video.update_status(VideoStatus.COMPLETE),
+    )
     mocker.patch("ui.models.tasks")
     api.refresh_status(video, encodejob)
     assert video.status == VideoStatus.COMPLETE
@@ -140,10 +138,10 @@ def test_refresh_status_video_job_othererror(mocker, status):
     video = VideoFactory(status=status)
     EncodeJobFactory(video=video)
     video.status = VideoStatus.TRANSCODING
-    mocker.patch("ui.utils.boto3", MockBoto)
+    mocker.patch("cloudsync.api.boto3", MockBoto)
     error = Exception("unexpected exception")
     mocker.patch(
-        "ui.utils.get_transcoder_client", return_value=MockClientET(error=error)
+        "cloudsync.api.media_convert_job", return_value=MockClientMC(error=error)
     )
     with pytest.raises(Exception):
         api.refresh_status(video)
@@ -236,7 +234,9 @@ def test_watch_s3_error():
 def test_watch_filename_error(mocker):
     """Test that a video with a bad filename is moved to the 'Unsorted' collection"""
     settings.UNSORTED_COLLECTION = "Unsorted"
-    mocker.patch("cloudsync.api.VideoTranscoder.encode")
+    # Mock media_convert_job to return a dict with Job ID
+    mock_job = {"Job": {"Id": str(uuid.uuid4())}}
+    mocker.patch("cloudsync.api.media_convert_job", return_value=mock_job)
     UserFactory(username="admin")
     s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
@@ -254,23 +254,16 @@ def test_watch_filename_error(mocker):
 @override_settings(LECTURE_CAPTURE_USER="admin")
 def test_process_watch(mocker):
     """Test that a file with valid filename is processed"""
-    mocker.patch.multiple(
-        "cloudsync.tasks.settings",
-        ET_HLS_PRESET_IDS=(
-            "1351620000001-000061",
-            "1351620000001-000040",
-            "1351620000001-000020",
-        ),
-        AWS_REGION="us-east-1",
-        ET_PIPELINE_ID="foo",
-        ENVIRONMENT="test",
+    # Mock media_convert_job to return a dict with Job ID
+    mock_job = {"Job": {"Id": str(uuid.uuid4())}}
+    mock_encoder = mocker.patch(
+        "cloudsync.api.media_convert_job", return_value=mock_job
     )
-    mock_encoder = mocker.patch("cloudsync.api.VideoTranscoder.encode")
     mocker.patch(
         "cloudsync.api.create_lecture_collection_slug", return_value="COLLECTION TITLE"
     )
     mocker.patch("cloudsync.api.create_lecture_video_title", return_value="VIDEO TITLE")
-    UserFactory(username="admin")  # pylint: disable=unused-variable
+    UserFactory(username="admin")
     s3 = boto3.resource("s3")
     s3c = boto3.client("s3")
     filename = "MIT-6.046-2017-Spring-lec-mit-0000-2017apr06-0404-L01.mp4"
@@ -286,39 +279,12 @@ def test_process_watch(mocker):
     assert new_video.collection.title == "COLLECTION TITLE"
     videofile = new_video.videofile_set.first()
     mock_encoder.assert_called_once_with(
-        {"Key": videofile.s3_object_key},
-        [
-            {
-                "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000061",
-                "PresetId": "1351620000001-000061",
-                "SegmentDuration": "10.0",
-                "ThumbnailPattern": "thumbnails/"
-                + new_video.hexkey
-                + "/video_thumbnail_{count}",
-            },
-            {
-                "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
-                "PresetId": "1351620000001-000040",
-                "SegmentDuration": "10.0",
-            },
-            {
-                "Key": "transcoded/" + new_video.hexkey + "/video_1351620000001-000020",
-                "PresetId": "1351620000001-000020",
-                "SegmentDuration": "10.0",
-            },
-        ],
-        Playlists=[
-            {
-                "Format": "HLSv3",
-                "Name": "transcoded/" + new_video.hexkey + "/video__index",
-                "OutputKeys": [
-                    "transcoded/" + new_video.hexkey + "/video_1351620000001-000061",
-                    "transcoded/" + new_video.hexkey + "/video_1351620000001-000040",
-                    "transcoded/" + new_video.hexkey + "/video_1351620000001-000020",
-                ],
-            }
-        ],
-        UserMetadata={"pipeline": "odl-video-service-test"},
+        videofile.s3_object_key,
+        destination_prefix=TRANSCODE_PREFIX,
+        group_settings={
+            "exclude_mp4": True,
+            "exclude_thumbnail": False,
+        },
     )
 
 
@@ -363,69 +329,41 @@ def test_lecture_video_title():
 
 
 @pytest.mark.parametrize(
-    "status,expected_status",
+    "status,expected_status,exclude_thumbnail",
     [
-        [VideoStatus.UPLOADING, VideoStatus.TRANSCODING],
-        [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODING],
+        [VideoStatus.UPLOADING, VideoStatus.TRANSCODING, False],
+        [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODING, True],
     ],
 )
-def test_transcode_job(mocker, status, expected_status):
+def test_transcode_job(mocker, status, expected_status, exclude_thumbnail):
     """
     Test that video status is updated properly after a transcode job is successfully created
     """
     video = VideoFactory.create(status=status)
     videofile = VideoFileFactory.create(video=video)
 
-    prefix = RETRANSCODE_FOLDER if status == VideoStatus.RETRANSCODE_SCHEDULED else ""
-    hls_preset_id_1 = "1351620000001-000040"
-    hls_preset_id_2 = "1351620000001-000020"
-    mp4_preset_id = "1351620000001-000060"
-    hls_preset_1 = {
-        "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000040",
-        "PresetId": hls_preset_id_1,
-        "SegmentDuration": "10.0",
-    }
-    hls_preset_2 = {
-        "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020",
-        "PresetId": hls_preset_id_2,
-        "SegmentDuration": "10.0",
-    }
-    if status != VideoStatus.RETRANSCODE_SCHEDULED:
-        hls_preset_1["ThumbnailPattern"] = (
-            "thumbnails/" + video.hexkey + "/video_thumbnail_{count}"
-        )
-
-    mocker.patch.multiple(
-        "cloudsync.tasks.settings",
-        ET_HLS_PRESET_IDS=(hls_preset_id_1, hls_preset_id_2),
-        ET_MP4_PRESET_ID=mp4_preset_id,
-        AWS_REGION="us-east-1",
-        ET_PIPELINE_ID="foo",
-        ENVIRONMENT="test",
+    prefix = (
+        RETRANSCODE_FOLDER + TRANSCODE_PREFIX
+        if status == VideoStatus.RETRANSCODE_SCHEDULED
+        else TRANSCODE_PREFIX
     )
-    mock_encoder = mocker.patch("cloudsync.api.VideoTranscoder.encode")
+
+    # Mock media_convert_job to return a dict with Job ID
+    mock_job = {"Job": {"Id": str(uuid.uuid4())}}
+    mock_encoder = mocker.patch(
+        "cloudsync.api.media_convert_job", return_value=mock_job
+    )
     mock_delete_objects = mocker.patch("cloudsync.api.delete_s3_objects")
     mocker.patch("ui.models.tasks")
 
-    api.transcode_video(video, videofile)  # pylint: disable=no-value-for-parameter
+    api.transcode_video(video, videofile)
     mock_encoder.assert_called_once_with(
-        {"Key": videofile.s3_object_key},
-        [hls_preset_1, hls_preset_2],
-        Playlists=[
-            {
-                "Format": "HLSv3",
-                "Name": f"{prefix}transcoded/" + video.hexkey + "/video__index",
-                "OutputKeys": [
-                    f"{prefix}transcoded/"
-                    + video.hexkey
-                    + "/video_1351620000001-000040",
-                    f"{prefix}transcoded/"
-                    + video.hexkey
-                    + "/video_1351620000001-000020",
-                ],
-            }
-        ],
-        UserMetadata={"pipeline": "odl-video-service-test"},
+        videofile.s3_object_key,
+        destination_prefix=prefix,
+        group_settings={
+            "exclude_mp4": True,
+            "exclude_thumbnail": exclude_thumbnail,
+        },
     )
     assert len(video.encode_jobs.all()) == 1
     assert mock_delete_objects.call_count == (
@@ -435,13 +373,13 @@ def test_transcode_job(mocker, status, expected_status):
 
 
 @pytest.mark.parametrize(
-    "status,error_status",
+    "status,error_status,exclude_thumbnail",
     [
-        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL],
-        [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODE_FAILED],
+        [VideoStatus.TRANSCODING, VideoStatus.TRANSCODE_FAILED_INTERNAL, False],
+        [VideoStatus.RETRANSCODE_SCHEDULED, VideoStatus.RETRANSCODE_FAILED, True],
     ],
 )
-def test_transcode_job_failure(mocker, status, error_status):
+def test_transcode_job_failure(mocker, status, error_status, exclude_thumbnail):
     """
     Test that video status is updated properly after a transcode or retranscode job creation fails
     """
@@ -453,46 +391,22 @@ def test_transcode_job_failure(mocker, status, error_status):
         "Job": {"Id": "1498220566931-qtmtcu", "Status": "Error"},
         "Error": {"Code": 200, "Message": "FAIL"},
     }
-    mocker.patch.multiple(
-        "cloudsync.tasks.settings",
-        ET_HLS_PRESET_IDS=("1351620000001-000020",),
-        AWS_REGION="us-east-1",
-        ET_PIPELINE_ID="foo",
-        ENVIRONMENT="test",
-    )
     mocker.patch("ui.models.tasks")
     mock_encoder = mocker.patch(
-        "cloudsync.api.VideoTranscoder.encode",
-        side_effect=ClientError(error_response=job_result, operation_name="ReadJob"),
+        "cloudsync.api.media_convert_job",
+        side_effect=ClientError(error_response=job_result, operation_name="job"),
     )
     with pytest.raises(ClientError):
         api.transcode_video(video, videofile)
 
-    prefix = "" if status == VideoStatus.TRANSCODING else RETRANSCODE_FOLDER
-    preset = {
-        "Key": f"{prefix}transcoded/" + video.hexkey + "/video_1351620000001-000020",
-        "PresetId": "1351620000001-000020",
-        "SegmentDuration": "10.0",
-    }
-    if status == VideoStatus.TRANSCODING:
-        preset["ThumbnailPattern"] = (
-            "thumbnails/" + video.hexkey + "/video_thumbnail_{count}"
-        )
+    prefix = TRANSCODE_PREFIX
+    if status == VideoStatus.RETRANSCODE_SCHEDULED:
+        prefix = RETRANSCODE_FOLDER + TRANSCODE_PREFIX
+
     mock_encoder.assert_called_once_with(
-        {"Key": videofile.s3_object_key},
-        [preset],
-        Playlists=[
-            {
-                "Format": "HLSv3",
-                "Name": f"{prefix}transcoded/" + video.hexkey + "/video__index",
-                "OutputKeys": [
-                    f"{prefix}transcoded/"
-                    + video.hexkey
-                    + "/video_1351620000001-000020"
-                ],
-            }
-        ],
-        UserMetadata={"pipeline": "odl-video-service-test"},
+        videofile.s3_object_key,
+        destination_prefix=prefix,
+        group_settings={"exclude_mp4": True, "exclude_thumbnail": exclude_thumbnail},
     )
     assert len(video.encode_jobs.all()) == 1
     assert Video.objects.get(id=video.id).status == error_status
@@ -580,3 +494,45 @@ def test_move_s3_objects():
     bucket_keys = [obj.key for obj in bucket.objects.all()]
     assert f"{from_prefix}{filename}" not in bucket_keys
     assert f"{to_prefix}{filename}" in bucket_keys
+
+
+@mock_aws
+def test_transcode_video_client_error_no_job_id(mocker):
+    """
+    Test that when ClientError is raised without a job ID in response,
+    the job_id used is the one we generated with uuid4
+    """
+
+    video = VideoFactory.create(status=VideoStatus.UPLOADING)
+    video_file = VideoFileFactory.create(video=video)
+
+    # Mock uuid4 to return a known value
+    mock_uuid = "test-uuid-1234"
+    mocker.patch("cloudsync.api.uuid4", return_value=mock_uuid)
+    mocker.patch("cloudsync.api.delete_s3_objects")
+    mocker.patch("ui.models.tasks")
+
+    # Create a ClientError without Job ID in response
+    error_response = {
+        "Error": {"Code": "InvalidParameter", "Message": "Invalid parameter value"}
+    }
+    mock_client_error = ClientError(
+        error_response=error_response, operation_name="CreateJob"
+    )
+    # Mock media_convert_job to raise our ClientError
+    mocker.patch("cloudsync.api.media_convert_job", side_effect=mock_client_error)
+
+    # Execute the function and catch the expected exception
+    with pytest.raises(ClientError):
+        api.transcode_video(video, video_file)
+
+    # Verify that an EncodeJob was created with our uuid
+    assert len(video.encode_jobs.all()) == 1
+    encode_job = video.encode_jobs.first()
+    assert encode_job.id == mock_uuid
+    assert encode_job.object_id == video.pk
+    assert encode_job.message == error_response
+
+    # Verify video status was updated
+    video.refresh_from_db()
+    assert video.status == VideoStatus.TRANSCODE_FAILED_INTERNAL

@@ -63,7 +63,7 @@ def youtube_mock(mocker):
     )
 
 
-class MockClientET:
+class MockClientMC:
     """
     Mock boto3 ElasticTranscoder client, because ElasticTranscode isn't supported by moto yet
     """
@@ -77,17 +77,11 @@ class MockClientET:
         if "error" in kwargs:
             self.error = kwargs["error"]
 
-    def read_job(self, **kwargs):  # pylint: disable=unused-argument
-        """Mock read_job method"""
+    def get_job(self, **kwargs):  # pylint: disable=unused-argument
+        """Mock get_job method"""
         if self.error:
             raise self.error
         return self.job
-
-    def read_preset(self, *args, **kwargs):  # pylint: disable=unused-argument
-        """Mock read_preset method"""
-        if self.error:
-            raise self.error
-        return self.preset
 
 
 class MockBoto:
@@ -99,8 +93,8 @@ class MockBoto:
         *args, **kwargs
     ):  # pylint: disable=unused-argument,no-method-argument,no-self-argument
         """Return a mock client"""
-        if args[0] == "elastictranscoder":
-            return MockClientET()
+        if args[0] == "mediaconvert":
+            return MockClientMC()
 
 
 class MockHttpErrorResponse:
