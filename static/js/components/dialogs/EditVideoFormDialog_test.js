@@ -288,7 +288,7 @@ describe("EditVideoFormDialog", () => {
 
   it("stores form submission errors in state", async () => {
     const wrapper = await renderComponent()
-    const expectedError = "Error: only absolute urls are supported"
+    const expectedErrorMessage = "Only absolute URLs are supported"
     const expectedActionTypes = [
       actions.videos.patch.requestType,
       "RECEIVE_PATCH_VIDEOS_FAILURE",
@@ -298,7 +298,8 @@ describe("EditVideoFormDialog", () => {
       // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
       wrapper.find("Dialog").prop("onAccept")()
     })
-    assert.equal(store.getState().videoUi.errors, expectedError)
+    const actualError = store.getState().videoUi.errors
+    assert.equal(actualError.message, expectedErrorMessage)
   })
 
   it("can get a video from the collection state when no video is provided to the component directly", () => {
