@@ -4,6 +4,7 @@ from datetime import datetime
 from urllib.parse import urlencode
 import requests
 from django.core.management.base import BaseCommand
+import uuid
 
 from ui.models import Collection, Video
 
@@ -28,9 +29,25 @@ class Command(BaseCommand):
             collections = collections.filter(id__in=collection_ids)
 
         for collection in collections:
+            self.stdout.write(
+                f"Syncing video keys for collection {collection.title} with edX"
+            )
             course_videos = []
             for edx_endpoint in collection.edx_endpoints.all():
-                edx_endpoint.refresh_access_token()
+                self.stdout.write(
+                    f"Getting videos from edX for collection {collection.title} using endpoint {edx_endpoint.name}"
+                )
+                try:
+                    edx_endpoint.refresh_access_token()
+                except Exception as exc:
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f"Can not refresh access token for edX endpoint {edx_endpoint.name} and url {edx_endpoint.base_url}"
+                        )
+                    )
+                    self.stdout.write(self.style.ERROR(str(exc)))
+                    continue
+
                 course_videos_query = urlencode(
                     {
                         "course": collection.edx_course_id,
@@ -68,6 +85,18 @@ class Command(BaseCommand):
                     .get("url", "/")
                     .split("/")[-2]
                 )
+
+                # verify if key is a valid UUID
+                try:
+                    uuid.UUID(key)
+                except ValueError:
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f"Invalid video key {key} for video {video.get('client_video_id')}"
+                        )
+                    )
+                    continue
+
                 created = datetime.fromisoformat(video.get("created", "1970-01-01"))
                 if key and (
                     key not in latest_videos_by_created_at
