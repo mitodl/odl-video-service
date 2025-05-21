@@ -71,7 +71,7 @@ mitol-django-transcoding = "^2025.5.9"
 
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.0.0"
+black = "^25.0.0"
 bpython = "*"
 ddt = "^1.6.0"
 django-debug-toolbar = "<4"
