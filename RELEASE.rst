@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.78.0
+Version 0.78.0 (Released May 22, 2025)
 --------------
 
 - Fix empty video list from edX (#1206)
