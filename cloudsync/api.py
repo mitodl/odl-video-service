@@ -19,6 +19,7 @@ from django.db import transaction
 from mitol.transcoding.api import media_convert_job
 
 from odl_video import logging
+from ui.api import get_duration_from_encode_job
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
 from ui.models import (
@@ -78,7 +79,10 @@ def process_transcode_results(results: dict) -> None:
         elif "FILE_GROUP" in group_type:
             process_mp4_outputs(group.get("outputDetails", []), video)
 
-    video.update_status(VideoStatus.COMPLETE)
+    video.duration = get_duration_from_encode_job(results)
+    video.status = VideoStatus.COMPLETE
+    video.save()
+
 
     # Ensure content_type and object_id are set for the EncodeJob
     content_type = ContentType.objects.get_for_model(video)
