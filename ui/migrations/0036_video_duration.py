@@ -37,7 +37,7 @@ def migrate_video_duration(apps, schema_editor):
         )
 
         if duration:
-            Video.objects.using(db_alias).get(id=video_id).update(duration=duration)
+            Video.objects.using(db_alias).filter(id=video_id).update(duration=duration)
 
 
 class Migration(migrations.Migration):
