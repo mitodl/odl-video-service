@@ -6,38 +6,45 @@ from django.db import migrations, models, connection
 
 def migrate_video_duration(apps, schema_editor):
     """
-    Migrate video duration from the old encode job.
+    Migrate video duration from the old encode job if data exists.
     """
-    Video = apps.get_model("ui", "Video")
-    db_alias = schema_editor.connection.alias
 
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT e1.object_id, e1.message 
-            FROM dj_elastictranscoder_encodejob e1
-            INNER JOIN (
-                SELECT object_id, MAX(created_at) as max_created_at
-                FROM dj_elastictranscoder_encodejob
-                WHERE state = 4
-                GROUP BY object_id
-            ) e2 ON e1.object_id = e2.object_id AND e1.created_at = e2.max_created_at
-            WHERE e1.state = 4
-        """
-        )
-        rows = cursor.fetchall()
+    if (
+        "dj_elastictranscoder_encodejob"
+        in schema_editor.connection.introspection.table_names()
+    ):
+        Video = apps.get_model("ui", "Video")
+        db_alias = schema_editor.connection.alias
 
-    for row in rows:
-        video_id, message = row
-        if not (message := literal_eval(message)):
-            continue
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT e1.object_id, e1.message 
+                FROM dj_elastictranscoder_encodejob e1
+                INNER JOIN (
+                    SELECT object_id, MAX(created_at) as max_created_at
+                    FROM dj_elastictranscoder_encodejob
+                    WHERE state = 4
+                    GROUP BY object_id
+                ) e2 ON e1.object_id = e2.object_id AND e1.created_at = e2.max_created_at
+                WHERE e1.state = 4
+                """
+            )
+            rows = cursor.fetchall()
 
-        duration = isinstance(message, dict) and message.get("Output", {}).get(
-            "Duration"
-        )
+        for row in rows:
+            video_id, message = row
+            if not (message := literal_eval(message)):
+                continue
 
-        if duration:
-            Video.objects.using(db_alias).filter(id=video_id).update(duration=duration)
+            duration = isinstance(message, dict) and message.get("Output", {}).get(
+                "Duration"
+            )
+
+            if duration:
+                Video.objects.using(db_alias).filter(id=video_id).update(
+                    duration=duration
+                )
 
 
 class Migration(migrations.Migration):
