@@ -116,7 +116,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
   }
 
   renderAdminTools() {
-    return [this.renderSettingsFrob(), this.renderUploadFrob()]
+    return [this.renderSettingsFrob(), this.renderSyncWithEdXFrob(), this.renderUploadFrob()]
   }
 
   renderSettingsFrob() {
@@ -156,6 +156,25 @@ export class CollectionDetailPage extends React.Component<*, void> {
     )
   }
 
+  renderSyncWithEdXFrob() {
+    const { collection } = this.props
+    // Only show the button if collection exists and has an edX course ID
+    if (!collection || !collection.edx_course_id) {
+      return null
+    }
+
+    return (
+      <Button
+        key="sync-edx"
+        className="sync-edx-btn mdc-button--unelevated mdc-ripple-upgraded"
+        onClick={this.handleSyncWithEdX.bind(this)}
+      >
+        <i className="material-icons" style={{marginRight: "8px"}}>sync</i>
+        Sync Videos with edX
+      </Button>
+    )
+  }
+
   async handleUpload(chosenFiles: Array<Object>) {
     const { dispatch, collection } = this.props
     if (!collection) {
@@ -163,6 +182,40 @@ export class CollectionDetailPage extends React.Component<*, void> {
     }
     await dispatch(actions.uploadVideo.post(collection.key, chosenFiles))
     dispatch(actions.collections.get(collection.key))
+  }
+
+  async handleSyncWithEdX(e: Event) {
+    e.preventDefault()
+    const { dispatch, collection } = this.props
+    if (!collection) {
+      return null
+    }
+
+    try {
+      // Import syncCollectionVideosWithEdX from the API
+      const { syncCollectionVideosWithEdX } = require("../lib/api")
+
+      // Call the API endpoint
+      const response = await syncCollectionVideosWithEdX(collection.id)
+
+      // Show success message to the user
+      dispatch(actions.toast.addMessage({
+        message: "Videos in this collection are being synced with edX",
+        type: "success"
+      }))
+    } catch (error) {
+      // Extract error message if available
+      let errorMessage = "Failed to sync videos with edX"
+      if (error.response && error.response.data && error.response.data.error) {
+        errorMessage = error.response.data.error
+      }
+
+      // Show error message to the user
+      dispatch(actions.toast.addMessage({
+        message: errorMessage,
+        type: "error"
+      }))
+    }
   }
 
   renderDescription(description: ?string) {
