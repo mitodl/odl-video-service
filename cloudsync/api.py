@@ -83,7 +83,6 @@ def process_transcode_results(results: dict) -> None:
     video.status = VideoStatus.COMPLETE
     video.save()
 
-
     # Ensure content_type and object_id are set for the EncodeJob
     content_type = ContentType.objects.get_for_model(video)
     video_job.content_type = content_type
