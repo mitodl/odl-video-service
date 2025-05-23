@@ -11,6 +11,7 @@ router = routers.DefaultRouter()
 router.register(r"videos", views.VideoViewSet, basename="video")
 router.register(r"collections", views.CollectionViewSet, basename="collection")
 router.register(r"subtitles", views.VideoSubtitleViewSet, basename="subtitle")
+router.register(r"edx-endpoints", views.EdxEndpointViewSet, basename="edx-endpoint")
 
 urlpatterns = [
     path("", views.index, name="index"),

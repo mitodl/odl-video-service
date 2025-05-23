@@ -50,6 +50,10 @@ export function getVideo(videoKey: string) {
   return fetchJSONWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/`)
 }
 
+export function getEdxEndpoints() {
+  return fetchJSONWithCSRF('/api/v0/edx-endpoints/')
+}
+
 export function updateVideo(videoKey: string, payload: VideoUpdatePayload) {
   return fetchJSONWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/`, {
     method: "PATCH",
