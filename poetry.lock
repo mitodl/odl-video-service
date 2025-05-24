@@ -968,19 +968,22 @@ test = ["pytest", "pytest-cov", "pytest-django"]
 
 [[package]]
 name = "django-redis"
-version = "5.0.0"
+version = "5.4.0"
 description = "Full featured redis cache backend for Django."
 optional = false
 python-versions = ">=3.6"
 groups = ["main"]
 files = [
-    {file = "django-redis-5.0.0.tar.gz", hash = "sha256:048f665bbe27f8ff2edebae6aa9c534ab137f1e8fa7234147ef470df3f3aa9b8"},
-    {file = "django_redis-5.0.0-py3-none-any.whl", hash = "sha256:97739ca9de3f964c51412d1d7d8aecdfd86737bb197fce6e1ff12620c63c97ee"},
+    {file = "django-redis-5.4.0.tar.gz", hash = "sha256:6a02abaa34b0fea8bf9b707d2c363ab6adc7409950b2db93602e6cb292818c42"},
+    {file = "django_redis-5.4.0-py3-none-any.whl", hash = "sha256:ebc88df7da810732e2af9987f7f426c96204bf89319df4c6da6ca9a2942edd5b"},
 ]
 
 [package.dependencies]
-Django = ">=2.2"
-redis = ">=3.0.0"
+Django = ">=3.2"
+redis = ">=3,<4.0.0 || >4.0.0,<4.0.1 || >4.0.1"
+
+[package.extras]
+hiredis = ["redis[hiredis] (>=3,!=4.0.0,!=4.0.1)"]
 
 [[package]]
 name = "django-shibboleth-remoteuser"
@@ -3371,4 +3374,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "7293bae7082dee083d4e0251b8b20bc7a9ea7f7c15de76e5b6140244e8890e5a"
+content-hash = "ca1f9c2fd028e3b8a395b5c24fd7b4a756d35cc6d01b9074d8536fb18b487403"

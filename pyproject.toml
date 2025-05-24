@@ -43,7 +43,7 @@ dj-static = "^0.0.6"
 django = "4.2.21"
 django-encrypted-model-fields = "^0.6.5"
 django-hijack = "^3.7.1"
-django-redis = ">=5.0.0,<5.1.0"
+django-redis = ">=5.4.0,<5.5.0"
 django-shibboleth-remoteuser = {git = "https://github.com/Brown-University-Library/django-shibboleth-remoteuser", tag = "v0.12"}
 django-webpack-loader = "^3.0.0"
 djangorestframework = "^3.11.2"
