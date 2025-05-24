@@ -10226,16 +10226,15 @@ webidl-conversions@^6.1.0:
   resolved "https://registry.yarnpkg.com/webidl-conversions/-/webidl-conversions-6.1.0.tgz#9111b4d7ea80acd40f5270d666621afa78b69514"
   integrity sha512-qBIvFLGiBpLjfwmYAaHPXsn+ho5xZnGvyGvsarywGNc8VyQJUMHJ8OBKGGrPER0okBeMDaan4mNBlgBROxuI8w==
 
-webpack-bundle-tracker@3.1.1:
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/webpack-bundle-tracker/-/webpack-bundle-tracker-3.1.1.tgz#0b02df6fa32974adb6fb99a5bda5c73621cddc6a"
-  integrity sha512-4gBt5EPKZyjy48Djr+75KTfLH+ikqDklgQD+padwuTc9y+ULHl9B4zqnZkV6cTdH3R2KzQYUZDQzpGUu+k6b/A==
+webpack-bundle-tracker@3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/webpack-bundle-tracker/-/webpack-bundle-tracker-3.2.0.tgz#6c0065170a4737fc00e32682da5d470d6904d895"
+  integrity sha512-/CV+Mre7jC+lSTjF7nYv36FpdwIQR15URKGHpLmdgGxxdYFQ858MV13J0qqR7Rn3wke3O41yX0tNntPv3uo1QA==
   dependencies:
     lodash.assign "^4.2.0"
     lodash.defaults "^4.2.0"
     lodash.foreach "^4.5.0"
     lodash.frompairs "^4.0.1"
-    lodash.get "^4.4.2"
     lodash.topairs "^4.3.0"
 
 webpack-cli@^3.3.11:
