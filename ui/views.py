@@ -2,6 +2,7 @@
 
 import json
 
+import django_filters.rest_framework
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView as DjangoLoginView
@@ -38,6 +39,7 @@ from ui.models import (
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import VideoSerializer
 from ui.templatetags.render_bundle import public_path
+from ui.filters import CollectionFilter
 from ui.utils import (
     generate_mock_video_analytics_data,
     get_video_analytics,
@@ -366,7 +368,11 @@ class CollectionViewSet(viewsets.ModelViewSet):
     permission_classes = (ui_permissions.HasCollectionPermissions,)
 
     pagination_class = CollectionSetPagination
-    filter_backends = (OrderingFilter,)
+    filter_backends = (
+        OrderingFilter,
+        django_filters.rest_framework.DjangoFilterBackend,
+    )
+    filterset_class = CollectionFilter
     ordering_fields = ("created_at", "title")
 
     def get_queryset(self):
@@ -579,3 +585,17 @@ class UsersForMoiraList(APIView):
     def get(self, request, list_name):
         """Get and return the users"""
         return Response(data={"users": list_members(list_name)})
+
+
+class EdxEndpointViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Implements the REST API views for the EdxEndpoint model.
+    Read-only to prevent unauthorized modification of edX endpoints.
+    """
+
+    queryset = EdxEndpoint.objects.all()
+    serializer_class = serializers.EdxEndpointSerializer
+    authentication_classes = (authentication.SessionAuthentication,)
+    permission_classes = (permissions.IsAdminUser,)
+    ordering_fields = ("name",)
+    ordering = ("name",)
