@@ -19,8 +19,6 @@ from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionEdxEndpointFactory,
     CollectionFactory,
-    EncodeJobFactory,
-    VideoFactory,
     VideoFileFactory,
 )
 
