@@ -39,6 +39,8 @@ from ui.models import (
 )
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import VideoSerializer
+from ui.tasks import batch_update_video_on_edx
+
 from ui.templatetags.render_bundle import public_path
 from ui.utils import (
     generate_mock_video_analytics_data,
@@ -593,7 +595,10 @@ class SyncCollectionVideosWithEdX(APIView):
     """
 
     authentication_classes = (authentication.SessionAuthentication,)
-    permission_classes = (permissions.IsAuthenticated, ui_permissions.CanUploadToCollection,)
+    permission_classes = (
+        permissions.IsAuthenticated,
+        ui_permissions.CanUploadToCollection,
+    )
 
     def post(self, request):
         """
@@ -609,49 +614,52 @@ class SyncCollectionVideosWithEdX(APIView):
         if not collection_id:
             return Response(
                 {"error": "collection_id is required"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Check if collection exists and user has permission
         try:
-            collection = get_object_or_404(Collection, id=collection_id)
+            collection = get_object_or_404(Collection, key=collection_id)
         except Http404:
             return Response(
                 {"error": f"Collection with id {collection_id} not found"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         # Check that collection has an edx_course_id
         if not collection.edx_course_id:
             return Response(
                 {"error": "Collection does not have an edX course ID configured"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Check that collection has edX endpoints
         if not collection.edx_endpoints.exists():
             return Response(
                 {"error": "Collection does not have any edX endpoints configured"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        video_keys = list(Video.objects.filter(
-            collection_id=collection_id,
-            status=VideoStatus.COMPLETE
-        ).values_list("key", flat=True))
+        video_keys = list(
+            Video.objects.filter(
+                collection__key=collection_id, status=VideoStatus.COMPLETE
+            ).values_list("key", flat=True)
+        )
 
         if not video_keys:
             return Response(
                 {"error": f"No videos found in the collection {collection.title}"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from ui.tasks import batch_update_video_on_edx
         task = batch_update_video_on_edx.delay(video_keys)
 
-        return Response({
-            "message": f"Syncing videos from collection '{collection.title}' with edX",
-            "task_id": task.id,
-            "collection_id": collection_id,
-            "status": "processing"
-        }, status=status.HTTP_202_ACCEPTED)
+        return Response(
+            {
+                "message": f"Syncing videos from collection '{collection.title}' with edX",
+                "task_id": task.id,
+                "collection_id": collection_id,
+                "status": "processing",
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )

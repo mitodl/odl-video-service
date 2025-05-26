@@ -62,6 +62,18 @@ def logged_in_apiclient(apiclient):
 
 
 @pytest.fixture
+def superuser_logged_in_apiclient(apiclient):
+    """
+    Fixture for a Django client that is logged in for the test user
+    """
+    user = UserFactory()
+    user.is_superuser = True
+    user.save()
+    apiclient.force_login(user)
+    return apiclient, user
+
+
+@pytest.fixture
 def user_view_list_data():
     """
     Fixture for testing VideoDetail view permissions with a collection view_list
@@ -1389,3 +1401,117 @@ def test_users_moira_list(logged_in_apiclient, mock_moira_client):
 
         assert response.status_code == status.HTTP_200_OK
         assert expected == response.data
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        {
+            "is_authenticated": False,
+            "request_data": lambda: {"collection_id": 1},
+            "description": "Test that the sync endpoint requires authentication",
+        },
+        {
+            "is_authenticated": True,
+            "request_data": lambda: {"collection_id": CollectionFactory.create().key},
+            "description": "Test that the sync endpoint requires permission to manage the collection",
+        },
+    ],
+)
+def test_sync_collection_videos_with_edx_auth(logged_in_apiclient, test_case):
+    """Test authentication and permission requirements for the sync endpoint"""
+    client, _ = logged_in_apiclient
+    if not test_case["is_authenticated"]:
+        client.logout()
+
+    url = reverse("sync-collection-videos-with-edx")
+    response = client.post(url, test_case["request_data"](), format="json")
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_sync_collection_videos_with_edx_no_collection_id(
+    superuser_logged_in_apiclient,
+):
+    """Test that the sync endpoint requires a collection_id"""
+    client, _ = superuser_logged_in_apiclient
+    url = reverse("sync-collection-videos-with-edx")
+    response = client.post(url, {}, format="json")
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "collection_id is required" in response.data["error"]
+
+
+def test_sync_collection_videos_with_edx_collection_not_found(
+    superuser_logged_in_apiclient,
+):
+    """Test that the sync endpoint returns 404 for non-existent collection"""
+    client, _ = superuser_logged_in_apiclient
+    url = reverse("sync-collection-videos-with-edx")
+    response = client.post(url, {"collection_id": 99999}, format="json")
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        {
+            "edx_course_id": None,
+            "error_message": "Collection does not have an edX course ID configured",
+        },
+        {
+            "edx_course_id": "course-v1:test",
+            "error_message": "Collection does not have any edX endpoints configured",
+        },
+    ],
+)
+def test_sync_collection_videos_with_edx_validation(
+    superuser_logged_in_apiclient, test_case
+):
+    """Test that the collection needs proper configuration for edX sync"""
+    client, user = superuser_logged_in_apiclient
+    collection = CollectionFactory.create(
+        owner=user, edx_course_id=test_case["edx_course_id"]
+    )
+    url = reverse("sync-collection-videos-with-edx")
+    response = client.post(url, {"collection_id": collection.key}, format="json")
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert test_case["error_message"] in response.data["error"]
+
+
+def test_sync_collection_videos_with_edx_success(superuser_logged_in_apiclient, mocker):
+    """Test that a successful request returns a 202 response and starts the celery task"""
+    client, user = superuser_logged_in_apiclient
+    collection = CollectionFactory.create(owner=user, edx_course_id="course-v1:test")
+
+    # Create a mock for the RelatedManager
+    mock_related_manager = mocker.MagicMock()
+    mock_related_manager.exists.return_value = True
+
+    # Patch the property to return our mock
+    mocker.patch.object(
+        collection.__class__,
+        "edx_endpoints",
+        new_callable=mocker.PropertyMock,
+        return_value=mock_related_manager,
+    )
+
+    mock_task = mocker.patch("ui.views.batch_update_video_on_edx")
+    mock_task.delay.return_value = mocker.MagicMock(id="mock-task-id")
+
+    # Mock to ensure we have some videos to sync
+    mocker.patch(
+        "ui.models.Video.objects.filter",
+        return_value=mocker.MagicMock(
+            values_list=mocker.MagicMock(return_value=["video1", "video2"])
+        ),
+    )
+
+    url = reverse("sync-collection-videos-with-edx")
+    response = client.post(url, {"collection_id": collection.key}, format="json")
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert (
+        response.data["message"]
+        == f"Syncing videos from collection '{collection.title}' with edX"
+    )
+    assert response.data["task_id"] == "mock-task-id"
+    assert response.data["collection_id"] == str(collection.key)
+    mock_task.delay.assert_called_once_with(["video1", "video2"])

@@ -186,8 +186,8 @@ export class CollectionDetailPage extends React.Component<*, void> {
 
   async handleSyncWithEdX(e: Event) {
     e.preventDefault()
-    const { dispatch, collection } = this.props
-    if (!collection) {
+    const { dispatch, collectionKey } = this.props
+    if (!collectionKey) {
       return null
     }
 
@@ -196,24 +196,31 @@ export class CollectionDetailPage extends React.Component<*, void> {
       const { syncCollectionVideosWithEdX } = require("../lib/api")
 
       // Call the API endpoint
-      const response = await syncCollectionVideosWithEdX(collection.id)
+      await syncCollectionVideosWithEdX(collectionKey)
 
       // Show success message to the user
       dispatch(actions.toast.addMessage({
-        message: "Videos in this collection are being synced with edX",
-        type: "success"
+        message: {
+          key:     "scheduled-sync",
+          content: "Videos are being synced with edX. This may take a few minutes.",
+          icon:    "check"
+        }
       }))
     } catch (error) {
       // Extract error message if available
       let errorMessage = "Failed to sync videos with edX"
-      if (error.response && error.response.data && error.response.data.error) {
-        errorMessage = error.response.data.error
+      console.log("Sync error:", error)
+      if (error && error.error) {
+        errorMessage = error.error
       }
 
       // Show error message to the user
       dispatch(actions.toast.addMessage({
-        message: errorMessage,
-        type: "error"
+        message: {
+          key:     "sync-error",
+          content: errorMessage,
+          icon:    "error"
+        }
       }))
     }
   }
