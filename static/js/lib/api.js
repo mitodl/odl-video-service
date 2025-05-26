@@ -109,6 +109,6 @@ export async function getVideoAnalytics(videoKey: string) {
 export function syncCollectionVideosWithEdX(collectionId: string) {
   return fetchJSONWithCSRF(`/api/v0/sync_collection_videos_with_edx/`, {
     method: "POST",
-    body: JSON.stringify({ collection_id: collectionId })
+    body:   JSON.stringify({ collection_id: collectionId })
   })
 }
