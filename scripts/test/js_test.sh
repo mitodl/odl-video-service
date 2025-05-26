@@ -53,6 +53,7 @@ if [[ $(
     grep -v "This browser doesn't support the \`onScroll\` event" |
     grep -v "Warning: Accessing PropTypes via the main React package is deprecated" |
     grep -v "Warning: Accessing createClass via the main React package is deprecated" |
+    grep -v 'VIDEOJS: WARN: A plugin named "qualityLevels" already exists' |
     wc -l |
     awk '{print $1}'
     ) -ne 0 ]]  # is file empty?
