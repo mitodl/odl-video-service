@@ -141,7 +141,7 @@ def test_refresh_status_video_job_othererror(mocker, status):
     mocker.patch("cloudsync.api.boto3", MockBoto)
     error = Exception("unexpected exception")
     mocker.patch(
-        "cloudsync.api.media_convert_job", return_value=MockClientMC(error=error)
+        "cloudsync.api.get_media_convert_job", return_value=MockClientMC(error=error)
     )
     with pytest.raises(Exception):
         api.refresh_status(video)
