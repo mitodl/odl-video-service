@@ -140,7 +140,7 @@ export class CollectionListPage extends React.Component<*, void> {
       return <LoadingIndicator />
     } else if (edxEndpoints.status === "ERROR") {
       return <ErrorMessages.UnableToLoadData />
-    } else if (edxEndpoints.status === "LOADED" && edxEndpoints.data && edxEndpoints.data.length > 0) {
+    } else {
       return (
         <div className="edx-endpoints-container landing-view">
           <ul className="mdc-list mdc-list--two-line mdc-list--avatar-list endpoint-list">
@@ -159,7 +159,7 @@ export class CollectionListPage extends React.Component<*, void> {
                 </span>
               </span>
             </li>
-            {edxEndpoints.data.map(endpoint => (
+            {edxEndpoints.status === "LOADED" && edxEndpoints.data && edxEndpoints.data.map(endpoint => (
               <li
                 key={endpoint.id}
                 className="mdc-list-item endpoint-item"
@@ -180,7 +180,6 @@ export class CollectionListPage extends React.Component<*, void> {
         </div>
       )
     }
-    return null
   }
 
   renderSearchInput() {
