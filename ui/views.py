@@ -39,7 +39,7 @@ from ui.models import (
 )
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import VideoSerializer
-from ui.tasks import batch_update_video_on_edx
+from ui.tasks import post_collection_videos_to_edx
 
 from ui.templatetags.render_bundle import public_path
 from ui.utils import (
@@ -640,19 +640,19 @@ class SyncCollectionVideosWithEdX(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        video_keys = list(
+        video_ids = list(
             Video.objects.filter(
                 collection__key=collection_id, status=VideoStatus.COMPLETE
-            ).values_list("key", flat=True)
+            ).values_list("id", flat=True)
         )
 
-        if not video_keys:
+        if not video_ids:
             return Response(
                 {"error": f"No videos found in the collection {collection.title}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        task = batch_update_video_on_edx.delay(video_keys)
+        task = post_collection_videos_to_edx.delay(video_ids)
 
         return Response(
             {

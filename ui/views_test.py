@@ -1494,7 +1494,7 @@ def test_sync_collection_videos_with_edx_success(superuser_logged_in_apiclient, 
         return_value=mock_related_manager,
     )
 
-    mock_task = mocker.patch("ui.views.batch_update_video_on_edx")
+    mock_task = mocker.patch("ui.views.post_collection_videos_to_edx")
     mock_task.delay.return_value = mocker.MagicMock(id="mock-task-id")
 
     # Mock to ensure we have some videos to sync
