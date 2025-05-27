@@ -50,10 +50,7 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Code formatting
-        run: poetry run black --check .
-
-      - name: Lint
-        run: poetry run pylint ./**/*.py
+        run: poetry run ruff format --check . --exclude '*/migrations/'
 
       - name: Tests
         run: |
@@ -118,7 +115,7 @@ jobs:
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+        run: echo "dir=$(yarn cache dir)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)

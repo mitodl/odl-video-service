@@ -927,5 +927,3 @@ Version 0.2.0 (Released September 25, 2017)
 
 Version 0.1.0 (Released July 27, 2017)
 -------------
-
-

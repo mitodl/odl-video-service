@@ -15,8 +15,6 @@ from ui.factories import VideoFactory, VideoFileFactory, VideoSubtitleFactory
 
 pytestmark = pytest.mark.django_db
 
-# pylint: disable=redefined-outer-name,unused-argument,no-value-for-parameter,unused-variable
-
 
 def test_youtube_settings(mocker, settings):
     """

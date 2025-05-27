@@ -4,7 +4,6 @@ Tests for ui/api.py
 
 from types import SimpleNamespace
 
-# pylint: disable=unused-argument,redefined-outer-name
 from uuid import uuid4
 
 import factory

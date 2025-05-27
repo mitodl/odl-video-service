@@ -100,7 +100,7 @@ def post_video_to_edx(video_files):
             )
             duration = get_duration_from_encode_job(encode_job)
             video_key = str(video_files[0].video.key)
-            resp = requests.post(  # pylint: disable=missing-timeout
+            resp = requests.post(
                 edx_endpoint.full_api_url,
                 json={
                     "client_video_id": video_files[0].video.title,
@@ -172,7 +172,7 @@ def update_video_on_edx(video_key, encoded_videos=None):
             }
             if encoded_videos:
                 payload["encoded_videos"] = encoded_videos
-            resp = requests.patch(  # pylint: disable=missing-timeout
+            resp = requests.patch(
                 video_partial_update_url,
                 json=payload,
                 headers={

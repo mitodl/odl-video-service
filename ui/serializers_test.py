@@ -13,8 +13,6 @@ from ui.factories import MoiraListFactory, UserFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
 
-# pylint: disable=redefined-outer-name
-
 
 def test_collection_serializer():
     """
@@ -101,7 +99,7 @@ def test_collection_serializer_admin_flag(mocker, has_permission):
     collection = factories.CollectionFactory()
     serialized_data = serializers.CollectionSerializer(
         collection,
-        context=dict(request=mocked_request),  # pylint: disable=use-dict-literal
+        context=dict(request=mocked_request),
     ).data
     mocked_admin_permission.assert_called_with(collection, mocked_request)
     assert serialized_data["is_admin"] is has_permission
@@ -126,7 +124,7 @@ def test_collection_serializer_private_video(mocker, is_admin, is_superuser):
 
     serialized_data = serializers.CollectionSerializer(
         collection,
-        context=dict(request=mocked_request),  # pylint: disable=use-dict-literal
+        context=dict(request=mocked_request),
     ).data
 
     assert len(serialized_data["videos"]) == (2 if has_permission else 1)

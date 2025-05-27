@@ -27,9 +27,7 @@ TRANSCODE_PREFIX = "transcoded"
 
 
 @shared_task(bind=True)
-def delete_s3_objects(
-    self, bucket_name, key, as_filter=False
-):  # pylint:disable=unused-argument
+def delete_s3_objects(self, bucket_name, key, as_filter=False):
     """
     Delete objects from an S3 bucket
 
@@ -53,9 +51,7 @@ class ValidateOnSaveMixin(models.Model):
     class Meta:
         abstract = True
 
-    def save(
-        self, force_insert=False, force_update=False, **kwargs
-    ):  # pylint: disable=arguments-differ
+    def save(self, force_insert=False, force_update=False, **kwargs):
         if not (force_insert or force_update):
             self.full_clean()
         super().save(force_insert=force_insert, force_update=force_update, **kwargs)
@@ -530,7 +526,7 @@ class Video(TimestampedModel):
         if status in tasks.STATUS_TO_NOTIFICATION.keys():
             tasks.async_send_notification_email.delay(self.id)
 
-    def save(self, *args, **kwargs):  # pylint: disable=arguments-differ
+    def save(self, *args, **kwargs):
         """
         Overridden method to run a preventive validation before saving the object.
         """

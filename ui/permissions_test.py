@@ -17,9 +17,6 @@ from ui.models import Collection
 pytestmark = pytest.mark.django_db
 
 
-# pylint: disable=redefined-outer-name,too-many-arguments,unused-argument
-
-
 @pytest.fixture(scope="module")
 def collection_owner_permission():
     """
@@ -702,7 +699,7 @@ def test_override_video_logged_in_collection_view_lists(
     )
 
 
-def test_override_video_logged_in_collection_private(  # pylint: disable=too-many-positional-arguments
+def test_override_video_logged_in_collection_private(
     mock_user_moira_lists,
     moira_list,
     video_permission,
