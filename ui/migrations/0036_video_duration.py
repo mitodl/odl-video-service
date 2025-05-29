@@ -35,14 +35,18 @@ def migrate_video_duration(apps, schema_editor):
 
         for row in rows:
             video_id, message = row
-            if not (message := literal_eval(message)):
+            try:
+                # Attempt to parse the message as a literal
+                message = literal_eval(message)
+            except (ValueError, SyntaxError, TypeError):
+                # If parsing fails, skip this row
                 continue
 
-            duration = isinstance(message, dict) and message.get("Output", {}).get(
-                "Duration"
-            )
-
-            if duration:
+            if duration := (
+                message
+                and isinstance(message, dict)
+                and message.get("Output", {}).get("Duration")
+            ):
                 Video.objects.using(db_alias).filter(id=video_id).update(
                     duration=duration
                 )
