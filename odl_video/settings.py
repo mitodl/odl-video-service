@@ -15,7 +15,7 @@ from redbeat import RedBeatScheduler
 from odl_video.envs import get_any, get_bool, get_int, get_key, get_string, parse_env
 from odl_video.sentry import init_sentry
 
-VERSION = "0.78.0"
+VERSION = "0.79.0"
 
 ENVIRONMENT = get_string("ODL_VIDEO_ENVIRONMENT", "dev")
 
@@ -343,7 +343,7 @@ AWS_S3_UPLOAD_MAX_IO_QUEUE = get_int("AWS_S3_UPLOAD_MAX_IO_QUEUE", 100)
 AWS_S3_UPLOAD_IO_CHUNKSIZE_KB = get_int("AWS_S3_UPLOAD_IO_CHUNKSIZE_KB", 256)
 AWS_S3_UPLOAD_USE_THREADS = get_bool("AWS_S3_UPLOAD_USE_THREADS", True)
 
-AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(  # pylint: disable=use-dict-literal
+AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
     multipart_threshold=AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB * MB,
     multipart_chunksize=AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB * MB,
     max_concurrency=AWS_S3_UPLOAD_MAX_CONCURRENCY,

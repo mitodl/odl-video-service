@@ -9,4 +9,3 @@ export type ToastMessage = {
 export type ToastState = {
   messages: Array<ToastMessage>
 };
-

@@ -54,8 +54,8 @@ more information.)
 <http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html>`_
 Set the S3 upload bucket name as the ``VIDEO_S3_BUCKET`` environment variable, the
 transcode bucket name as the ``VIDEO_S3_TRANSCODE_BUCKET`` environment variable, the
-thumbnail bucket name as the ``VIDEO_S3_THUMBNAIL_BUCKET`` environment variable, the 
-subtitle bucket name as the ``VIDEO_S3_SUBTITLE_BUCKET`` environment variable, and 
+thumbnail bucket name as the ``VIDEO_S3_THUMBNAIL_BUCKET`` environment variable, the
+subtitle bucket name as the ``VIDEO_S3_SUBTITLE_BUCKET`` environment variable, and
 set the CloudFront distribution ID as the ``VIDEO_CLOUDFRONT_DIST`` environment
 variable, using the ``.env`` file.
 

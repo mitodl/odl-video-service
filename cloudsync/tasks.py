@@ -28,8 +28,6 @@ log = logging.getLogger(__name__)
 
 CONTENT_DISPOSITION_RE = re.compile(r"filename\*=UTF-8''(?P<filename>[^ ]+)")
 
-# pylint: disable=unused-argument
-
 
 class VideoTask(Task):
     """
@@ -224,7 +222,7 @@ def schedule_retranscodes(self):
             retranscode_tasks = group(
                 [retranscode_video.si(video_id) for video_id in videos]
             )
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             error = "schedule_retranscodes threw an error"
             log.exception(error)
             return error
@@ -259,7 +257,7 @@ def upload_youtube_videos():
             )
             if API_QUOTA_ERROR_MSG in error.content.decode("utf-8"):
                 break
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             log.exception(
                 "Error uploading video to Youtube",
                 video_hexkey=video.hexkey,
@@ -355,7 +353,7 @@ def monitor_watch_bucket(self):
                 s3_object_key=key.key,
                 response=exc.response,
             )
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             # Log any other exception, raise later so other files can be processed.
             log.exception(
                 "AWS error when ingesting file from watch bucket", s3_object_key=key.key

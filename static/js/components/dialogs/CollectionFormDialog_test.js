@@ -126,7 +126,7 @@ describe("CollectionFormDialog", () => {
       it("stores form submission errors in state", async () => {
         const wrapper = await renderComponent()
         let expectedActionTypes
-        const expectedError = "Error: only absolute urls are supported"
+        const expectedErrorMessage = "Only absolute URLs are supported"
         if (isNew) {
           expectedActionTypes = [
             actions.collectionsList.post.requestType,
@@ -147,7 +147,8 @@ describe("CollectionFormDialog", () => {
           wrapper.find("Dialog").prop("onAccept")()
         })
 
-        assert.equal(store.getState().collectionUi.errors, expectedError)
+        const actualError = store.getState().collectionUi.errors
+        assert.equal(actualError.message, expectedErrorMessage)
       })
 
       it("sends a request to the right endpoint when the form is submitted", async () => {

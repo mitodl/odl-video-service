@@ -16,7 +16,7 @@ import requests
 from django.conf import settings
 from django.core.cache import caches
 from google.oauth2.service_account import (
-    Credentials as ServiceAccountCredentials,  # pylint:disable=no-name-in-module
+    Credentials as ServiceAccountCredentials,
 )
 from googleapiclient.discovery import build
 from mit_moira import Moira
@@ -45,7 +45,7 @@ def get_moira_client():
     )
     try:
         return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         raise MoiraException(
             "Something went wrong with creating a moira client"
         ) from exc
@@ -106,7 +106,7 @@ def query_moira_lists(user):
         )
         list_names = [list_info["listName"] for list_info in list_infos]
         return list_names
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         if "java.lang.NullPointerException" in str(exc):
             # User is not a member of any moira lists, so ignore exception and return empty list
             return []
@@ -154,7 +154,7 @@ def list_members(list_name):
     try:
         list_users = moira.list_members(list_name)
         return list_users
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         raise MoiraException(
             "Something went wrong with getting moira-users for %s" % list_name
         ) from exc
@@ -234,7 +234,7 @@ def get_google_analytics_client():
         )
         analytics_client = build("analyticsreporting", "v4", credentials=credentials)
         return analytics_client
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         raise GoogleAnalyticsException(
             "Something went wrong with creating a GoogleAnalytics client"
         ) from exc
@@ -454,7 +454,7 @@ def send_refresh_request(base_api_url, client_id, client_secret):
         "token_type": "JWT",
     }
 
-    resp = requests.post(access_token_url, data=data)  # pylint: disable=missing-timeout
+    resp = requests.post(access_token_url, data=data)
 
     resp.raise_for_status()
     return resp.json()

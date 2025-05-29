@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+Version 0.79.0
+--------------
+
+- Revert "feat: edx endpoint API added, search options added in collection API …" (#1221)
+- fix: Add duration from encodejob to video (#1212)
+- feat: edx endpoint API added, search options added in collection API (#1204)
+- pre-commit configs updated with Ruff (#1188)
+- fix(deps): update dependency redux-hammock to ^0.3.0 (#1126)
+- fix(deps): update dependency video.js to v8 (#1159)
+- fix(deps): update dependency webpack-bundle-tracker to v3.2.0 (#1218)
+- fix(deps): update dependency flow-bin to v0.272.1 (#1217)
+- fix(deps): update dependency django-redis to >=5.4.0,<5.5.0 (#1216)
+- chore(deps): update postgres docker tag to v15.13 (#1215)
+- chore(deps): update dependency pylint to v3.3.7 (#1214)
+- Updated transcoding app in OVS (#1209)
+- fix(deps): update dependency sinon to v20 (#1208)
+
 Version 0.78.0 (Released May 22, 2025)
 --------------
 
@@ -927,5 +944,3 @@ Version 0.2.0 (Released September 25, 2017)
 
 Version 0.1.0 (Released July 27, 2017)
 -------------
-
-

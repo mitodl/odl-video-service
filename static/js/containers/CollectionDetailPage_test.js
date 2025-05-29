@@ -186,7 +186,7 @@ describe("CollectionDetailPage", () => {
     ].forEach(([isAppAdmin, isEdxCourseAdmin, expAdminProp]) => {
       it(`${shouldIf(
         expAdminProp
-      )} set isEdxCourseAdmin=true for the collection edit form 
+      )} set isEdxCourseAdmin=true for the collection edit form
         if is_app_admin=${isAppAdmin.toString()}, is_edx_course_admin=${isEdxCourseAdmin.toString()}`, () => {
         SETTINGS.is_app_admin = isAppAdmin
         SETTINGS.is_edx_course_admin = isEdxCourseAdmin

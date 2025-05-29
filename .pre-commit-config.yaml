@@ -1,7 +1,67 @@
+---
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        exclude: "yarn.lock|.yarn/releases/.*"
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: debug-statements
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.11.0-1
+    hooks:
+      - id: shfmt
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.37.0
+    hooks:
+      - id: yamllint
+        args: [--format, parsable, -d, relaxed]
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
-    -   id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
-        exclude: .*_test.*|.*\.rst|poetry.lock
+      - id: detect-secrets
+        args:
+          - --baseline
+          - .secrets.baseline
+          - --exclude-files
+          - .yarn/
+          - --exclude-files
+          - "_test.py$"
+          - --exclude-files
+          - "test_.*.py"
+          - --exclude-files
+          - poetry.lock
+          - --exclude-files
+          - yarn.lock
+          - --exclude-files
+          - compliance/test_data/cybersource/
+          - --exclude-files
+          - "_test.js$"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.11.6"
+    hooks:
+      - id: ruff-format
+        exclude: migrations/
+      - id: ruff
+        exclude: migrations/
+        types_or: [python, pyi]
+        args:
+          - --extend-ignore=D1
+          - --fix
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        args: ["--severity=warning"]
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
+    hooks:
+      - id: actionlint
+        name: actionlint
+        description: Runs actionlint to lint GitHub Actions workflow files
