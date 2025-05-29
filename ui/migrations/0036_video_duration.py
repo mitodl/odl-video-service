@@ -9,13 +9,14 @@ def migrate_video_duration(apps, schema_editor):
     Migrate video duration from the old encode job if data exists.
     """
 
+    db_alias = schema_editor.connection.alias
+    EncodeJob = apps.get_model("ui", "EncodeJob")
+    Video = apps.get_model("ui", "Video")
+
     if (
         "dj_elastictranscoder_encodejob"
         in schema_editor.connection.introspection.table_names()
     ):
-        Video = apps.get_model("ui", "Video")
-        db_alias = schema_editor.connection.alias
-
         with connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -49,7 +50,7 @@ def migrate_video_duration(apps, schema_editor):
                 Video.objects.using(db_alias).filter(id=video_id).update(
                     duration=duration
                 )
-    EncodeJob = apps.get_model("ui", "EncodeJob")
+    
     encode_jobs = EncodeJob.objects.using(db_alias).filter(state=4)
     for job in encode_jobs:
         video_id = job.object_id
