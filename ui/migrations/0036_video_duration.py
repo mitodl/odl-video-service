@@ -20,7 +20,7 @@ def migrate_video_duration(apps, schema_editor):
         with connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT e1.object_id, e1.message 
+                SELECT e1.object_id, e1.message
                 FROM dj_elastictranscoder_encodejob e1
                 INNER JOIN (
                     SELECT object_id, MAX(created_at) as max_created_at
