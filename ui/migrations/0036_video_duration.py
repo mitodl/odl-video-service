@@ -49,7 +49,10 @@ def migrate_video_duration(apps, schema_editor):
 
         encode_jobs = EncodeJob.objects.using(db_alias).filter(state=4)
         for job in encode_jobs:
-            # Content object of an Encode Job is a Video instance
+            video_id = job.object_id
+            if not video_id:
+                continue
+            # Fetch the video object
             video = Video.objects.using(db_alias).get(id=video_id)
             if video and (not video.duration):
                 if output_groups := job.message.get("outputGroupDetails", []):
