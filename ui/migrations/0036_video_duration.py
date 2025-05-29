@@ -50,7 +50,7 @@ def migrate_video_duration(apps, schema_editor):
                 Video.objects.using(db_alias).filter(id=video_id).update(
                     duration=duration
                 )
-    
+
     encode_jobs = EncodeJob.objects.using(db_alias).filter(state=4)
     for job in encode_jobs:
         video_id = job.object_id
