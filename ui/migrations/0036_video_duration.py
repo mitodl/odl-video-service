@@ -14,7 +14,6 @@ def migrate_video_duration(apps, schema_editor):
         in schema_editor.connection.introspection.table_names()
     ):
         Video = apps.get_model("ui", "Video")
-        EncodeJob = apps.get_model("ui", "EncodeJob")
         db_alias = schema_editor.connection.alias
 
         with connection.cursor() as cursor:
@@ -50,7 +49,7 @@ def migrate_video_duration(apps, schema_editor):
                 Video.objects.using(db_alias).filter(id=video_id).update(
                     duration=duration
                 )
-
+    EncodeJob = apps.get_model("ui", "EncodeJob")
     encode_jobs = EncodeJob.objects.using(db_alias).filter(state=4)
     for job in encode_jobs:
         video_id = job.object_id
