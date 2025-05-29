@@ -51,25 +51,25 @@ def migrate_video_duration(apps, schema_editor):
                     duration=duration
                 )
 
-        encode_jobs = EncodeJob.objects.using(db_alias).filter(state=4)
-        for job in encode_jobs:
-            video_id = job.object_id
-            if not video_id:
-                continue
-            # Fetch the video object
-            video = Video.objects.using(db_alias).get(id=video_id)
-            if video and (not video.duration):
-                if output_groups := job.message.get("outputGroupDetails", []):
-                    # Get the first output group
-                    output_group = output_groups[0]
-                    if outputs := output_group.get("outputDetails", []):
-                        # Get the first output
-                        output = outputs[0]
-                        duration_in_ms = output.get("durationInMs", 0)
-                        # Convert milliseconds to seconds
-                        duration = duration_in_ms / 1000.0
-                        video.duration = duration
-                        video.save(update_fields=["duration"])
+    encode_jobs = EncodeJob.objects.using(db_alias).filter(state=4)
+    for job in encode_jobs:
+        video_id = job.object_id
+        if not video_id:
+            continue
+        # Fetch the video object
+        video = Video.objects.using(db_alias).get(id=video_id)
+        if video and (not video.duration):
+            if output_groups := job.message.get("outputGroupDetails", []):
+                # Get the first output group
+                output_group = output_groups[0]
+                if outputs := output_group.get("outputDetails", []):
+                    # Get the first output
+                    output = outputs[0]
+                    duration_in_ms = output.get("durationInMs", 0)
+                    # Convert milliseconds to seconds
+                    duration = duration_in_ms / 1000.0
+                    video.duration = duration
+                    video.save(update_fields=["duration"])
 
 
 class Migration(migrations.Migration):
