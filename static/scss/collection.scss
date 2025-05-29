@@ -40,83 +40,6 @@ $video-card-width: 15.6%;
       padding: 20px 20px 35px;
       width: 92%;
     }
-
-    .collection-list {
-      margin-bottom: 20px;
-    }
-
-    .edx-endpoints-container {
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-
-      &.landing-view {
-        margin-top: 15px;
-
-        .endpoint-list {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 20px;
-
-          @include breakpoint(mobile) {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .endpoint-item {
-          height: auto;
-          padding: 20px;
-          background-color: rgba(0, 0, 0, 0.04);
-          border-radius: 8px;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-          &:hover {
-            background-color: rgba(0, 0, 0, 0.06);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-          }
-
-          .mdc-list-item__text {
-            font-size: 1.1em;
-          }
-        }
-      }
-
-      h2 {
-        font-size: 1.1em;
-        color: rgba(0, 0, 0, 0.65);
-        margin-top: 0;
-        margin-bottom: 10px;
-      }
-
-      .mdc-list-item {
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        border-radius: 4px;
-
-        &:hover {
-          background-color: rgba(0, 0, 0, 0.04);
-        }
-
-        &.selected-endpoint {
-          background-color: rgba(0, 0, 0, 0.08);
-        }
-      }
-    }
-
-    .back-to-endpoints {
-      margin-bottom: 20px;
-    }
-
-    .collection-search {
-      margin-bottom: 20px;
-
-      .mdc-text-field {
-        input {
-          padding: 12px;
-          box-sizing: border-box;
-        }
-      }
-    }
   }
 
   .create-collection-button, .paginator {
@@ -135,7 +58,6 @@ $video-card-width: 15.6%;
   }
 
   .paginator {
-    margin-top: 20px;
     bottom: 25px;
   }
 

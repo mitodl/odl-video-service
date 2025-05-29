@@ -72,7 +72,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
-    "django_filters",
     "hijack",
     "hijack.contrib.admin",
     "encrypted_model_fields",

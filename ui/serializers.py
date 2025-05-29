@@ -419,20 +419,3 @@ class VideoSubtitleUploadSerializer(serializers.Serializer):
     video = serializers.UUIDField()
     language = serializers.CharField()
     filename = serializers.CharField()
-
-
-class EdxEndpointSerializer(serializers.ModelSerializer):
-    """EdxEndpoint model serializer"""
-
-    class Meta:
-        model = models.EdxEndpoint
-        fields = (
-            "id",
-            "name",
-            "base_url",
-            "edx_video_api_path",
-            "is_global_default",
-            "created_at",
-            "updated_at",
-        )
-        read_only_fields = ("id", "created_at", "updated_at")
