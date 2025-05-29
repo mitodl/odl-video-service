@@ -93,12 +93,7 @@ def post_video_to_edx(video_files):
     for edx_endpoint in edx_endpoints:
         try:
             edx_endpoint.refresh_access_token()
-            encode_job = (
-                video_files[0]
-                .video.encode_jobs.filter(state=models.EncodeJob.State.COMPLETED)
-                .first()
-            )
-            duration = get_duration_from_encode_job(encode_job)
+            duration = video_files[0].video.duration
             video_key = str(video_files[0].video.key)
             resp = requests.post(
                 edx_endpoint.full_api_url,
@@ -163,11 +158,7 @@ def update_video_on_edx(video_key, encoded_videos=None):
             payload = {
                 "edx_video_id": str(video.key),
                 "client_video_id": video.title,
-                "duration": get_duration_from_encode_job(
-                    video.encode_jobs.filter(
-                        state=models.EncodeJob.State.COMPLETED
-                    ).first()
-                ),
+                "duration": video.duration,
                 "status": "updated",
             }
             if encoded_videos:
@@ -197,8 +188,8 @@ def get_duration_from_encode_job(encode_job):
         duration: float
     """
     duration = 0.0
-    if encode_job and encode_job.message:
-        if output_groups := encode_job.message.get("outputGroupDetails", []):
+    if encode_job:
+        if output_groups := encode_job.get("outputGroupDetails", []):
             # Get the first output group
             output_group = output_groups[0]
             if outputs := output_group.get("outputDetails", []):

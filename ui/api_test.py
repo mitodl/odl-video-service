@@ -18,8 +18,6 @@ from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionEdxEndpointFactory,
     CollectionFactory,
-    EncodeJobFactory,
-    VideoFactory,
     VideoFileFactory,
 )
 
@@ -378,9 +376,7 @@ def test_get_duration_from_encode_job():
     """
     get_duration_from_encode_job should return duration from video's encode_jobs message body
     """
-    video = VideoFactory(status="Complete")
-    encode_job = EncodeJobFactory(video=video)
-    encode_job.message = {
+    encode_job = {
         "id": "1711563064503-e5qdnh",
         "outputGroupDetails": [
             {

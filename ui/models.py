@@ -351,6 +351,7 @@ class Video(TimestampedModel):
     is_logged_in_only = models.BooleanField(null=False, default=False)
     custom_order = models.IntegerField(null=True, blank=True)
     schedule_retranscode = models.BooleanField(default=False)
+    duration = models.FloatField(null=True, default=0.0)
 
     objects = VideoManager()
 
