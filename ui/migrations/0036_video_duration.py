@@ -47,12 +47,11 @@ def migrate_video_duration(apps, schema_editor):
                     duration=duration
                 )
 
-        encode_jobs = EncodeJob.objects.using(db_alias).filter(
-            state=EncodeJob.State.COMPLETED
-        )
+        encode_jobs = EncodeJob.objects.using(db_alias).filter(state=4)
         for job in encode_jobs:
             # Content object of an Encode Job is a Video instance
-            if job.content_object and (not job.content_object.duration):
+            video = Video.objects.using(db_alias).get(id=video_id)
+            if video and (not video.duration):
                 if output_groups := job.message.get("outputGroupDetails", []):
                     # Get the first output group
                     output_group = output_groups[0]
@@ -62,8 +61,8 @@ def migrate_video_duration(apps, schema_editor):
                         duration_in_ms = output.get("durationInMs", 0)
                         # Convert milliseconds to seconds
                         duration = duration_in_ms / 1000.0
-                        job.content_object.duration = duration
-                        job.content_object.save(update_fields=["duration"])
+                        video.duration = duration
+                        video.save(update_fields=["duration"])
 
 
 class Migration(migrations.Migration):
