@@ -188,7 +188,7 @@ def get_duration_from_encode_job(encode_job):
         duration: float
     """
     duration = 0.0
-    if encode_job and encode_job:
+    if encode_job:
         if output_groups := encode_job.get("outputGroupDetails", []):
             # Get the first output group
             output_group = output_groups[0]
