@@ -62,6 +62,8 @@ $video-card-width: 15.6%;
   }
 
   .mdc-list {
+    margin-bottom: 20px;
+
     @include breakpoint(phone) {
       padding: 8px 10px 0;
     }
@@ -91,6 +93,18 @@ $video-card-width: 15.6%;
 
       .material-icons {
         color: #fff;
+      }
+    }
+  }
+
+  .collection-search {
+    margin-top: 10px;
+    margin-bottom: 20px;
+
+    .mdc-text-field {
+      input {
+        padding: 12px;
+        box-sizing: border-box;
       }
     }
   }
