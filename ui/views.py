@@ -14,6 +14,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
+import django_filters.rest_framework
 from rest_framework import authentication, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -27,6 +28,7 @@ from techtv2ovs.models import TechTVVideo
 from ui import api
 from ui import permissions as ui_permissions
 from ui import serializers
+from ui.filters import CollectionFilter
 from ui.constants import EDX_ADMIN_GROUP
 from ui.models import (
     Collection,
@@ -366,7 +368,11 @@ class CollectionViewSet(viewsets.ModelViewSet):
     permission_classes = (ui_permissions.HasCollectionPermissions,)
 
     pagination_class = CollectionSetPagination
-    filter_backends = (OrderingFilter,)
+    filter_backends = (
+        OrderingFilter,
+        django_filters.rest_framework.DjangoFilterBackend,
+    )
+    filterset_class = CollectionFilter
     ordering_fields = ("created_at", "title")
 
     def get_queryset(self):
