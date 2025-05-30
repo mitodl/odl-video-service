@@ -74,3 +74,29 @@ def batch_update_video_on_edx_chunked(video_keys):
             else:
                 response[endpoint] = "failed"
     return response
+
+
+@app.task
+def post_collection_videos_to_edx(video_ids):
+    """Post videos from a collection to edX.
+    Args:
+        video_ids (list): List of video IDs to post.
+    """
+    video_files = sorted(
+        list(
+            VideoFile.objects.filter(
+                video__id__in=video_ids, encoding=EncodingNames.HLS
+            ).select_related("video__collection")
+        ),
+        key=lambda vf: vf.id,
+    )
+    responses = ovs_api.post_video_to_edx(video_files)
+
+    log.info(
+        "Posted collection videos to edX",
+        video_ids=video_ids,
+        responses={
+            endpoint.full_api_url: resp.status_code
+            for endpoint, resp in responses.items()
+        },
+    )

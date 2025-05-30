@@ -7,6 +7,7 @@ import {
 import { videosEndpoint } from "../reducers/videos"
 import { videoSubtitlesEndpoint } from "../reducers/videoSubtitles"
 import { videoAnalyticsEndpoint } from "../reducers/videoAnalytics"
+import { syncCollectionEdXEndpoint } from "../reducers/syncCollectionEdX"
 
 export const endpoints = [
   collectionsListEndpoint,
@@ -14,5 +15,6 @@ export const endpoints = [
   uploadVideoEndpoint,
   videosEndpoint,
   videoSubtitlesEndpoint,
-  videoAnalyticsEndpoint
+  videoAnalyticsEndpoint,
+  syncCollectionEdXEndpoint
 ]
