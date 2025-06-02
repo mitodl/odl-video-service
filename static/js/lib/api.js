@@ -50,6 +50,10 @@ export function getVideo(videoKey: string) {
   return fetchJSONWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/`)
 }
 
+export function getUsers() {
+  return fetchJSONWithCSRF(`/api/v0/users/`)
+}
+
 export function updateVideo(videoKey: string, payload: VideoUpdatePayload) {
   return fetchJSONWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/`, {
     method: "PATCH",

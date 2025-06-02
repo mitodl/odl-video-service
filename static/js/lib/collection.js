@@ -48,7 +48,13 @@ export function makeInitializedForm(
       admin_lists:       [],
       is_logged_in_only: false,
       edx_course_id:     "",
-      video_count:       0
+      video_count:       0,
+      owner:             null,
+      owner_info:        {
+        id:       null,
+        username: "",
+        email:    ""
+      }
     }
   }
   const viewChoice =
@@ -67,6 +73,12 @@ export function makeInitializedForm(
     adminChoice: adminChoice,
     adminLists:  _.join(collection.admin_lists, ","),
     edxCourseId: collection.edx_course_id,
-    videoCount:  collection.video_count
+    videoCount:  collection.video_count,
+    ownerId:     collection.owner || null,
+    ownerInfo:   collection.owner_info || {
+      id:       null,
+      username: "",
+      email:    ""
+    }
   }
 }
