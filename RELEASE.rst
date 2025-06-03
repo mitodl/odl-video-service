@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.79.0
+Version 0.79.0 (Released June 03, 2025)
 --------------
 
 - Revert "feat: edx endpoint API added, search options added in collection API …" (#1221)
