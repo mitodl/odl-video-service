@@ -29,7 +29,7 @@ from ui import api
 from ui import permissions as ui_permissions
 from ui import serializers
 from ui.filters import CollectionFilter
-from ui.constants import EDX_ADMIN_GROUP
+from ui.constants import EDX_ADMIN_GROUP, VideoStatus
 from ui.models import (
     Collection,
     CollectionEdxEndpoint,
@@ -39,6 +39,8 @@ from ui.models import (
 )
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import VideoSerializer
+from ui.tasks import post_collection_videos_to_edx
+
 from ui.templatetags.render_bundle import public_path
 from ui.utils import (
     generate_mock_video_analytics_data,
@@ -585,3 +587,79 @@ class UsersForMoiraList(APIView):
     def get(self, request, list_name):
         """Get and return the users"""
         return Response(data={"users": list_members(list_name)})
+
+
+class SyncCollectionVideosWithEdX(APIView):
+    """
+    API view for syncing all videos in a collection with edX
+    """
+
+    authentication_classes = (authentication.SessionAuthentication,)
+    permission_classes = (
+        permissions.IsAuthenticated,
+        ui_permissions.CanUploadToCollection,
+    )
+
+    def post(self, request):
+        """
+        Initiates the process of syncing all videos in a collection with edX.
+
+        Args:
+            request: Request object with collection_id in the body
+
+        Returns:
+            Response with details about initiated task
+        """
+        collection_id = request.data.get("collection_id")
+        if not collection_id:
+            return Response(
+                {"error": "collection_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Check if collection exists and user has permission
+        try:
+            collection = get_object_or_404(Collection, key=collection_id)
+        except Http404:
+            return Response(
+                {"error": f"Collection with id {collection_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Check that collection has an edx_course_id
+        if not collection.edx_course_id:
+            return Response(
+                {"error": "Collection does not have an edX course ID configured"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Check that collection has edX endpoints
+        if not collection.edx_endpoints.exists():
+            return Response(
+                {"error": "Collection does not have any edX endpoints configured"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        video_ids = list(
+            Video.objects.filter(
+                collection__key=collection_id, status=VideoStatus.COMPLETE
+            ).values_list("id", flat=True)
+        )
+
+        if not video_ids:
+            return Response(
+                {"error": f"No videos found in the collection {collection.title}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        task = post_collection_videos_to_edx.delay(video_ids)
+
+        return Response(
+            {
+                "message": f"Syncing videos from collection '{collection.title}' with edX",
+                "task_id": task.id,
+                "collection_id": collection_id,
+                "status": "processing",
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )

@@ -335,7 +335,7 @@ describe("CollectionDetailPage", () => {
 
     describe("renderAdminTools", () => {
       beforeEach(() => {
-        stubRenderingMethods(["renderSettingsFrob", "renderUploadFrob"])
+        stubRenderingMethods(["renderSettingsFrob", "renderSyncWithEdXFrob", "renderUploadFrob"])
       })
 
       const renderAdminTools = ({ extraProps = {} } = {}) => {
@@ -347,6 +347,14 @@ describe("CollectionDetailPage", () => {
         assert.isTrue(
           renderAdminTools()
             .find("#mocked-renderSettingsFrob")
+            .exists()
+        )
+      })
+
+      it("renders sync with edX frob", () => {
+        assert.isTrue(
+          renderAdminTools()
+            .find("#mocked-renderSyncWithEdXFrob")
             .exists()
         )
       })
@@ -646,6 +654,144 @@ describe("CollectionDetailPage", () => {
           })
         })
         assert.equal(page.isVideoMenuOpen(videoKey), expectedVisibilityValue)
+      })
+    })
+
+    describe("renderSyncWithEdXFrob", () => {
+      const renderSyncWithEdXFrob = ({ extraProps = {} } = {}) => {
+        page = new CollectionDetailPage({ ...props, ...extraProps })
+        return shallow(<div>{page.renderSyncWithEdXFrob()}</div>)
+      }
+
+      it("renders sync with edX button when collection has edx_course_id", () => {
+        const collectionWithEdX = {
+          ...collection,
+          edx_course_id: "course-v1:edX+DemoX+Demo_Course"
+        }
+        const button = renderSyncWithEdXFrob({
+          extraProps: { collection: collectionWithEdX }
+        }).find(".sync-edx-btn")
+
+        assert.isTrue(button.exists())
+        assert.include(button.debug(), "Sync Videos with edX")
+      })
+
+      it("does not render sync button when collection has no edx_course_id", () => {
+        const collectionWithoutEdX = {
+          ...collection,
+          edx_course_id: null
+        }
+        const wrapper = renderSyncWithEdXFrob({
+          extraProps: { collection: collectionWithoutEdX }
+        })
+
+        assert.isFalse(wrapper.find(".sync-edx-btn").exists())
+      })
+
+      it("does not render sync button when collection is null", () => {
+        const wrapper = renderSyncWithEdXFrob({
+          extraProps: { collection: null }
+        })
+
+        assert.isFalse(wrapper.find(".sync-edx-btn").exists())
+      })
+
+      it("calls handleSyncWithEdX when clicked", () => {
+        const collectionWithEdX = {
+          ...collection,
+          edx_course_id: "course-v1:edX+DemoX+Demo_Course"
+        }
+        sandbox.stub(CollectionDetailPage.prototype, "handleSyncWithEdX")
+        const button = renderSyncWithEdXFrob({
+          extraProps: { collection: collectionWithEdX }
+        }).find(".sync-edx-btn")
+
+        sinon.assert.notCalled(CollectionDetailPage.prototype.handleSyncWithEdX)
+        button.simulate("click")
+        sinon.assert.called(CollectionDetailPage.prototype.handleSyncWithEdX)
+      })
+    })
+
+    describe("handleSyncWithEdX", () => {
+      let event
+
+      beforeEach(() => {
+        event = {
+          preventDefault: sandbox.stub()
+        }
+        sandbox.stub(require("../lib/api"), "syncCollectionVideosWithEdX").returns(Promise.resolve())
+        page = new CollectionDetailPage(props)
+      })
+
+      it("prevents default event behavior", async () => {
+        await page.handleSyncWithEdX(event)
+        sinon.assert.called(event.preventDefault)
+      })
+
+      it("makes API call with collection key", async () => {
+        await page.handleSyncWithEdX(event)
+        sinon.assert.calledWith(
+          require("../lib/api").syncCollectionVideosWithEdX,
+          props.collectionKey
+        )
+      })
+
+      it("dispatches success toast message when API call succeeds", async () => {
+        await page.handleSyncWithEdX(event)
+        sinon.assert.calledWith(
+          props.dispatch,
+          actions.toast.addMessage({
+            message: {
+              key:     "scheduled-sync",
+              content: "Videos are being synced with edX. This may take a few minutes.",
+              icon:    "check"
+            }
+          })
+        )
+      })
+
+      it("dispatches error toast message when API call fails", async () => {
+        const error = { error: "Custom error message" }
+        require("../lib/api").syncCollectionVideosWithEdX.returns(Promise.reject(error))
+
+        await page.handleSyncWithEdX(event)
+        sinon.assert.calledWith(
+          props.dispatch,
+          actions.toast.addMessage({
+            message: {
+              key:     "sync-error",
+              content: error.error,
+              icon:    "error"
+            }
+          })
+        )
+      })
+
+      it("dispatches generic error message when API call fails without error details", async () => {
+        require("../lib/api").syncCollectionVideosWithEdX.returns(Promise.reject({}))
+
+        await page.handleSyncWithEdX(event)
+        sinon.assert.calledWith(
+          props.dispatch,
+          actions.toast.addMessage({
+            message: {
+              key:     "sync-error",
+              content: "Failed to sync videos with edX",
+              icon:    "error"
+            }
+          })
+        )
+      })
+
+      it("returns null if collectionKey is not present", async () => {
+        page = new CollectionDetailPage({
+          ...props,
+          collectionKey: null
+        })
+
+        const result = await page.handleSyncWithEdX(event)
+        assert.isNull(result)
+        sinon.assert.notCalled(require("../lib/api").syncCollectionVideosWithEdX)
       })
     })
   })

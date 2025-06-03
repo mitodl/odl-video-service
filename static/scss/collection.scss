@@ -174,7 +174,7 @@ $video-card-width: 15.6%;
         display: inline-block;
       }
 
-      .dropbox-btn {
+      .dropbox-btn, .sync-edx-btn {
         display: inline-block;
         margin: 0 0 0 23px;
         background-color: $dropbox-button-bgcolor;
@@ -189,6 +189,10 @@ $video-card-width: 15.6%;
           top: 5px;
           height: 20px;
           margin-right: 5px;
+        }
+
+        .material-icons {
+          color: #ffffff;
         }
       }
 

@@ -75,6 +75,11 @@ urlpatterns = [
         views.UploadVideoSubtitle.as_view(),
         name="upload-subtitles",
     ),
+    path(
+        "api/v0/sync_collection_videos_with_edx/",
+        views.SyncCollectionVideosWithEdX.as_view(),
+        name="sync-collection-videos-with-edx",
+    ),
     path("api/v0/", include((router.urls, "models-api"))),
     re_path(
         r"^api/v0/moira/user/(?P<username_or_email>[-\w]+$|.*@.*)$",
