@@ -1061,18 +1061,18 @@ doc = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-spelling"]
 
 [[package]]
 name = "faker"
-version = "18.13.0"
+version = "37.3.0"
 description = "Faker is a Python package that generates fake data for you."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "Faker-18.13.0-py3-none-any.whl", hash = "sha256:801d1a2d71f1fc54d332de2ab19de7452454309937233ea2f7485402882d67b3"},
-    {file = "Faker-18.13.0.tar.gz", hash = "sha256:84bcf92bb725dd7341336eea4685df9a364f16f2470c4d29c1d7e6c5fd5a457d"},
+    {file = "faker-37.3.0-py3-none-any.whl", hash = "sha256:48c94daa16a432f2d2bc803c7ff602509699fca228d13e97e379cd860a7e216e"},
+    {file = "faker-37.3.0.tar.gz", hash = "sha256:77b79e7a2228d57175133af0bbcdd26dc623df81db390ee52f5104d46c010f2f"},
 ]
 
 [package.dependencies]
-python-dateutil = ">=2.4"
+tzdata = "*"
 
 [[package]]
 name = "fancycompleter"
@@ -2979,7 +2979,6 @@ files = [
     {file = "tzdata-2025.1-py2.py3-none-any.whl", hash = "sha256:7e127113816800496f027041c570f50bcd464a020098a3b6b199517772303639"},
     {file = "tzdata-2025.1.tar.gz", hash = "sha256:24894909e88cdb28bd1636c6887801df64cb485bd593f2fd83ef29075a81d694"},
 ]
-markers = {dev = "sys_platform == \"win32\""}
 
 [[package]]
 name = "uritemplate"
@@ -3207,4 +3206,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "2ceeaa293ef2d075977bf02eaeb080986863434e10b610d111cfba24b8e497c4"
+content-hash = "07cd9211358070394d2a661613f38c02d675e1f8d1031d210e48077a56c242e9"
