@@ -80,11 +80,16 @@ class Command(BaseCommand):
 
             latest_videos_by_created_at = {}
             for video in course_videos:
-                key = (
-                    (video.get("encoded_videos") or [{}])[0]
-                    .get("url", "/")
-                    .split("/")[-2]
-                )
+                url = (video.get("encoded_videos") or [{}])[0].get("url", "/")
+                try:
+                    key = url.split("/")[-2]
+                except IndexError:
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f"BAD URL: Could not extract video key from URL {url} for video {video.get('client_video_id')}"
+                        )
+                    )
+                    continue
 
                 # verify if key is a valid UUID
                 try:
