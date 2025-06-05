@@ -1,7 +1,7 @@
 const { babelSharedLoader } = require("../../webpack.config.shared")
 const idlUtils = require("jsdom/lib/jsdom/living/generated/utils")
 const whatwgURL = require("whatwg-url")
-const uuid = require("uuid/v4")
+const { v4: uuidv4 } = require('uuid');
 require("babel-polyfill")
 
 babelSharedLoader.query.presets = ["env", "react"]
@@ -21,7 +21,7 @@ const changeURL = (window, urlString) => {
 URL.createObjectURL = function() {
   const url = new URL("http://fake/")
   url.path = []
-  const objectURL = `blob:${whatwgURL.serializeURL(url)}/${uuid()}`
+  const objectURL = `blob:${whatwgURL.serializeURL(url)}/${uuidv4()}`
   return objectURL
 }
 
