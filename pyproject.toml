@@ -51,7 +51,7 @@ django-filter = "^25.1"
 [tool.poetry.group.dev.dependencies]
 bpython = "*"
 ddt = "^1.6.0"
-django-debug-toolbar = "<4"
+django-debug-toolbar = "<6"
 factory-boy = "^3.3.3"
 faker = "^37.0.0"
 ipdb = "<0.14"
