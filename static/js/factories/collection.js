@@ -19,5 +19,11 @@ export const makeCollection = (
   is_logged_in_only:   false,
   edx_course_id:       casual.word,
   is_admin:            true,
-  is_edx_course_admin: true
+  is_edx_course_admin: true,
+  owner:               casual.integer(1, 100),
+  owner_info:          {
+    id:       casual.integer(1, 100),
+    username: casual.username,
+    email:    casual.email
+  }
 })

@@ -18,7 +18,8 @@ def test_collection_serializer():
     """
     Test for CollectionSerializer
     """
-    collection = factories.CollectionFactory()
+    user = UserFactory.create()
+    collection = factories.CollectionFactory(owner=user)
     videos = [factories.VideoFactory(collection=collection) for _ in range(3)]
     expected = {
         "key": collection.hexkey,
@@ -32,6 +33,12 @@ def test_collection_serializer():
         "is_logged_in_only": False,
         "is_admin": False,
         "edx_course_id": collection.edx_course_id,
+        "owner": user.id,
+        "owner_info": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+        },
     }
     expected["videos"].sort(key=lambda x: x["key"])
     serialized_data = serializers.CollectionSerializer(collection).data
@@ -134,7 +141,8 @@ def test_collection_list_serializer():
     """
     Test for CollectionListSerializer
     """
-    collection = factories.CollectionFactory()
+    user = UserFactory.create()
+    collection = factories.CollectionFactory(owner=user)
     _ = [factories.VideoFactory(collection=collection) for _ in range(3)]
     expected = {
         "key": collection.hexkey,
@@ -145,6 +153,12 @@ def test_collection_list_serializer():
         "admin_lists": [],
         "video_count": collection.videos.count(),
         "edx_course_id": collection.edx_course_id,
+        "owner": user.id,
+        "owner_info": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+        },
     }
     assert serializers.CollectionListSerializer(collection).data == expected
 
@@ -340,3 +354,15 @@ def test_simplevideo_serializer():
         "cloudfront_url": "",
     }
     assert serializers.SimpleVideoSerializer(video).data == expected
+
+
+def test_user_serializer():
+    """Test for UserSerializer"""
+    user = factories.UserFactory(username="testuser", email="testuser@example.com")
+    serialized_data = serializers.UserSerializer(user).data
+
+    assert serialized_data == {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+    }
