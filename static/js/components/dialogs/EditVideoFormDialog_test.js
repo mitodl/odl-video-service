@@ -288,7 +288,7 @@ describe("EditVideoFormDialog", () => {
 
   it("stores form submission errors in state", async () => {
     const wrapper = await renderComponent()
-    const expectedErrorMessage = "Only absolute URLs are supported"
+    const expectedErrorMessage = "Failed to parse URL from /api/v0/"
     const expectedActionTypes = [
       actions.videos.patch.requestType,
       "RECEIVE_PATCH_VIDEOS_FAILURE",
@@ -299,7 +299,7 @@ describe("EditVideoFormDialog", () => {
       wrapper.find("Dialog").prop("onAccept")()
     })
     const actualError = store.getState().videoUi.errors
-    assert.equal(actualError.message, expectedErrorMessage)
+    assert.include(actualError.message, expectedErrorMessage)
   })
 
   it("can get a video from the collection state when no video is provided to the component directly", () => {

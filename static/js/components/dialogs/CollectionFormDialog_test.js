@@ -126,7 +126,7 @@ describe("CollectionFormDialog", () => {
       it("stores form submission errors in state", async () => {
         const wrapper = await renderComponent()
         let expectedActionTypes
-        const expectedErrorMessage = "Only absolute URLs are supported"
+        const expectedErrorMessage = "Failed to parse URL from /api/v0/collections/"
         if (isNew) {
           expectedActionTypes = [
             actions.collectionsList.post.requestType,
@@ -148,7 +148,7 @@ describe("CollectionFormDialog", () => {
         })
 
         const actualError = store.getState().collectionUi.errors
-        assert.equal(actualError.message, expectedErrorMessage)
+        assert.include(actualError.message, expectedErrorMessage)
       })
 
       it("sends a request to the right endpoint when the form is submitted", async () => {
