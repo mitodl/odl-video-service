@@ -114,7 +114,7 @@ def post_video_to_edx(video_files):
                     "Video already exists on edX, updating instead",
                 )
                 update_resp = update_video_on_edx(video_key, encoded_videos)
-                responses[edx_endpoint] = list(update_resp.values())[0]
+                resp = list(update_resp.values())[0]
             else:
                 resp.raise_for_status()
         except requests.exceptions.RequestException as exc:
