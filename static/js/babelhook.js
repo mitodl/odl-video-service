@@ -1,7 +1,7 @@
 const { babelSharedLoader } = require("../../webpack.config.shared")
 const idlUtils = require("jsdom/lib/jsdom/living/generated/utils")
 const whatwgURL = require("whatwg-url")
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require('uuid')
 require("babel-polyfill")
 
 babelSharedLoader.query.presets = ["env", "react"]
