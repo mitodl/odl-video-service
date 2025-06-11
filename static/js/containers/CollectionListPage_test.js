@@ -28,6 +28,14 @@ describe("CollectionListPage", () => {
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     collections = [makeCollection(), makeCollection(), makeCollection()]
+    // Add owner_info to each collection
+    collections.forEach(collection => {
+      collection.owner_info = {
+        id:       collection.owner,
+        username: collection.owner_info.username,
+        email:    collection.owner_info.email
+      }
+    })
     collectionsPagination = {
       currentPage:     1,
       currentPageData: {
@@ -38,6 +46,14 @@ describe("CollectionListPage", () => {
     sandbox
       .stub(api, "getCollections")
       .returns(Promise.resolve({ results: collections }))
+    sandbox
+      .stub(api, "getUsers")
+      .returns(Promise.resolve({
+        users: [
+          { id: 1, username: "user1", email: "user1@example.com" },
+          { id: 2, username: "user2", email: "user2@example.com" }
+        ]
+      }))
   })
 
   afterEach(() => {
@@ -51,7 +67,8 @@ describe("CollectionListPage", () => {
       [
         actions.collectionsList.get.requestType,
         actions.collectionsList.get.successType,
-        collectionsPaginationActions.constants.REQUEST_GET_PAGE
+        collectionsPaginationActions.constants.REQUEST_GET_PAGE,
+        actions.usersList.get.requestType
       ],
       () => {
         wrapper = mount(
@@ -106,7 +123,7 @@ describe("CollectionListPage", () => {
     it("has video counts per collection", async () => {
       const wrapper = await renderPage()
       const counts = wrapper.find(".mdc-list-item__secondary-text")
-      assert.equal(counts.at(0).text(), `${collections[2].video_count} Videos`)
+      assert.equal(counts.at(0).text(), `${collections[0].video_count} Videos | Owner: ${collections[0].owner_info.username}`)
     })
   })
 

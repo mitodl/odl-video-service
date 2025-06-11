@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import redirect_to_login
+from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import Http404, HttpResponse
@@ -38,7 +39,7 @@ from ui.models import (
     VideoSubtitle,
 )
 from ui.pagination import CollectionSetPagination, VideoSetPagination
-from ui.serializers import VideoSerializer
+from ui.serializers import UserSerializer, VideoSerializer
 from ui.tasks import post_collection_videos_to_edx
 
 from ui.templatetags.render_bundle import public_path
@@ -401,7 +402,7 @@ class CollectionViewSet(viewsets.ModelViewSet):
         and the collection does not have any EdxEndpoint.
         """
         response = super().update(request, *args, **kwargs)
-        edx_course_id = request.data.get("edx_course_id", "").lower()
+        edx_course_id = (request.data.get("edx_course_id") or "").lower()
         instance = self.get_object()
         if edx_course_id and not instance.edx_endpoints.exists():
             endpoint = None
@@ -663,3 +664,20 @@ class SyncCollectionVideosWithEdX(APIView):
             },
             status=status.HTTP_202_ACCEPTED,
         )
+
+
+class UsersList(APIView):
+    """
+    View for getting a list of users for the owner dropdown.
+    """
+
+    authentication_classes = (authentication.SessionAuthentication,)
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get(self, request):
+        """Get and return the list of users"""
+
+        User = get_user_model()
+        users = User.objects.all().order_by("username")
+        serializer = UserSerializer(users, many=True)
+        return Response(data={"users": serializer.data})

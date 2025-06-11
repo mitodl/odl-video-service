@@ -19,12 +19,14 @@ import {
   setCollectionDesc,
   setCollectionTitle,
   setEdxCourseId,
+  setOwnerId,
   SET_COLLECTION_TITLE,
   SET_COLLECTION_DESC,
   SET_ADMIN_CHOICE,
   SET_ADMIN_LISTS,
   SET_VIEW_CHOICE,
   SET_VIEW_LISTS,
+  SET_OWNER_ID,
   showNewCollectionDialog,
   showEditCollectionDialog,
   CLEAR_COLLECTION_FORM,
@@ -49,6 +51,14 @@ describe("CollectionFormDialog", () => {
     hideDialogStub = sandbox.stub()
     collection = makeCollection()
     uiState = INITIAL_UI_STATE
+
+    // Mock the users API response
+    sandbox.stub(api, "getUsers").returns(Promise.resolve({
+      users: [
+        { id: 1, username: "user1", email: "user1@example.com" },
+        { id: 2, username: "user2", email: "user2@example.com" }
+      ]
+    }))
   })
 
   afterEach(() => {
@@ -99,6 +109,7 @@ describe("CollectionFormDialog", () => {
           isNew ? PERM_CHOICE_LISTS : PERM_CHOICE_NONE
         ],
         ["#view-moira-input", "viewLists", SET_VIEW_LISTS, "a,b,c"],
+        ["#collection-owner", "ownerId", SET_OWNER_ID, 2],
         [
           "#admin-perms-admin-only-me",
           "adminChoice",
@@ -167,6 +178,7 @@ describe("CollectionFormDialog", () => {
         store.dispatch(setCollectionDesc("new description"))
         store.dispatch(setCollectionTitle("new title"))
         store.dispatch(setEdxCourseId("edx-course-id"))
+        store.dispatch(setOwnerId(1))
 
         sandbox.stub(api, "getCollections").returns(Promise.resolve({}))
         let apiStub, expectedActionTypes
@@ -205,6 +217,7 @@ describe("CollectionFormDialog", () => {
           view_lists:        expectedListRequestData,
           admin_lists:       expectedListRequestData,
           edx_course_id:     "edx-course-id",
+          owner:             1,
           is_logged_in_only: false
         }
 
@@ -350,6 +363,168 @@ describe("CollectionFormDialog", () => {
           stubs.dispatch,
           stubs.collectionsListGet.returnValues[0]
         )
+      })
+
+      it("renders the owner dropdown and can change value", async () => {
+        const wrapper = renderComponent()
+        // Wait for component to fetch users
+        await new Promise(resolve => setTimeout(resolve, 10))
+        wrapper.update()
+
+        const select = wrapper.find("#collection-owner").hostNodes()
+        assert.ok(select.exists(), "Owner dropdown should be rendered")
+
+        // Check options are rendered correctly
+        const options = select.find("option")
+        assert.equal(options.length, 2, "Should have 2 user options")
+        assert.equal(options.at(0).text(), "user1 (user1@example.com)")
+        assert.equal(options.at(1).text(), "user2 (user2@example.com)")
+
+        // Test changing the selected owner
+        await listenForActions([SET_OWNER_ID], () => {
+          select.simulate("change", {
+            target: {
+              value: "2"
+            }
+          })
+        })
+
+        const state = store.getState()
+        assert.equal(getCollectionForm(state.collectionUi).ownerId, 2)
+      })
+
+      it("sends the owner in the API request when it is set", async () => {
+        const wrapper = await renderComponent({
+          history: {
+            push: sandbox.stub()
+          }
+        })
+
+        store.dispatch(setAdminChoice(PERM_CHOICE_NONE))
+        store.dispatch(setViewChoice(PERM_CHOICE_NONE))
+        store.dispatch(setCollectionTitle("new title"))
+        store.dispatch(setOwnerId(2)) // Set owner ID to 2
+
+        sandbox.stub(api, "getCollections").returns(Promise.resolve({}))
+        let apiStub, expectedActionTypes
+        if (isNew) {
+          apiStub = sandbox
+            .stub(api, "createCollection")
+            .returns(Promise.resolve(collection))
+          expectedActionTypes = [
+            actions.collectionsList.post.requestType,
+            actions.collectionsList.post.successType
+          ]
+        } else {
+          apiStub = sandbox
+            .stub(api, "updateCollection")
+            .returns(Promise.resolve(collection))
+          expectedActionTypes = [
+            actions.collections.patch.requestType,
+            actions.collections.patch.successType
+          ]
+        }
+
+        await listenForActions(expectedActionTypes, () => {
+          wrapper.find("Dialog").prop("onAccept")()
+        })
+
+        const payloadArg = isNew ?
+          apiStub.firstCall.args[0] :
+          apiStub.firstCall.args[1]
+
+        assert.equal(payloadArg.owner, 2, "Owner ID should be 2 in the API request")
+      })
+
+      it("fetches users on component mount", async () => {
+        // We need to restore the default stub to avoid conflicts
+        sandbox.restore()
+
+        // Create a new getUsersStub
+        sandbox.stub(api, "getUsers").returns(Promise.resolve({
+          users: [
+            { id: 1, username: "user1", email: "user1@example.com" },
+            { id: 2, username: "user2", email: "user2@example.com" }
+          ]
+        }))
+
+        // Create a dispatch stub that returns the expected data
+        const dispatchStub = sandbox.stub()
+        dispatchStub.returns(Promise.resolve({
+          users: [
+            { id: 1, username: "user1", email: "user1@example.com" },
+            { id: 2, username: "user2", email: "user2@example.com" }
+          ]
+        }))
+
+        const wrapper = shallow(
+          <UnconnectedCollectionFormDialog
+            dispatch={dispatchStub}
+            history={{ push: sandbox.stub() }}
+            collectionUi={{ isNew: true }}
+            collectionForm={{}}
+          />
+        )
+
+        // Wait for componentDidMount to finish
+        await new Promise(resolve => setTimeout(resolve, 10))
+
+        sinon.assert.called(dispatchStub)
+        assert.equal(wrapper.state().users.length, 2)
+
+        // Reinitialize the sandbox with the global stubs for other tests
+        sandbox.restore()
+        sandbox = sinon.createSandbox()
+        sandbox.stub(api, "getUsers").returns(Promise.resolve({
+          users: [
+            { id: 1, username: "user1", email: "user1@example.com" },
+            { id: 2, username: "user2", email: "user2@example.com" }
+          ]
+        }))
+      })
+
+      it("handles API errors when fetching users", async () => {
+        // Restore the original stub and create a new one that rejects
+        sandbox.restore()
+
+        // Create a dispatch stub that rejects the promise
+        const dispatchStub = sandbox.stub()
+        dispatchStub.returns(Promise.reject(new Error("Failed to fetch users")))
+
+        // Create a stub for console.error
+        const consoleErrorStub = sandbox.stub(console, "error")
+
+        const wrapper = shallow(
+          <UnconnectedCollectionFormDialog
+            dispatch={dispatchStub}
+            history={{ push: sandbox.stub() }}
+            collectionUi={{ isNew: true }}
+            collectionForm={{}}
+          />
+        )
+
+        // Create a stub for handleError
+        const handleErrorStub = sandbox.stub()
+        wrapper.instance().handleError = handleErrorStub
+
+        // Call fetchUsers manually
+        await wrapper.instance().fetchUsers()
+
+        // Verify console.error was called
+        sinon.assert.called(consoleErrorStub)
+
+        // Verify handleError was called
+        sinon.assert.called(handleErrorStub)
+
+        // Reset sandbox for other tests
+        sandbox.restore()
+        sandbox = sinon.createSandbox()
+        sandbox.stub(api, "getUsers").returns(Promise.resolve({
+          users: [
+            { id: 1, username: "user1", email: "user1@example.com" },
+            { id: 2, username: "user2", email: "user2@example.com" }
+          ]
+        }))
       })
     })
   }
