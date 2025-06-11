@@ -276,7 +276,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     is_admin = serializers.SerializerMethodField()
     owner_info = UserSerializer(source="owner", read_only=True)
     owner = serializers.PrimaryKeyRelatedField(
-        queryset=get_user_model().objects.all(), required=False
+        queryset=User.objects.all(), required=False
     )
 
     def get_key(self, obj):
@@ -376,7 +376,7 @@ class CollectionListSerializer(serializers.ModelSerializer):
     )
     owner_info = UserSerializer(source="owner", read_only=True)
     owner = serializers.PrimaryKeyRelatedField(
-        queryset=get_user_model().objects.all(), required=False
+        queryset=User.objects.all(), required=False
     )
 
     def create(self, validated_data):
