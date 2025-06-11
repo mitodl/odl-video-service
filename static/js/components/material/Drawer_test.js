@@ -60,14 +60,14 @@ describe("Drawer", () => {
 
   it("drawer element is rendered with the correct user", async () => {
     const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item .mdc-link").at(0)
+    const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(0)
     assert.isTrue(drawerNode.text().startsWith("foo@mit.edu"))
   })
 
   it("shows the username if the email is not present", async () => {
     SETTINGS.email = null
     const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item .mdc-link").at(0)
+    const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(0)
     assert.isTrue(drawerNode.text().startsWith("foo_user"))
   })
 
@@ -86,7 +86,7 @@ describe("Drawer", () => {
     })
 
     it("shows a message if the user is not logged in", async () => {
-      const drawerNode = wrapper.find(".mdc-list-item .mdc-link").at(0)
+      const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(0)
       assert.isTrue(drawerNode.text().startsWith("Not logged in"))
     })
 
@@ -97,7 +97,7 @@ describe("Drawer", () => {
 
   it("drawer element is rendered with collections", async () => {
     const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item .mdc-link").at(2)
+    const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(2)
     assert.equal(drawerNode.props().href, "/logout/")
     assert.isTrue(drawerNode.text().endsWith("Log out"))
   })
@@ -113,7 +113,7 @@ describe("Drawer", () => {
 
     it("drawer element is rendered with max of 10 collections", async () => {
       const wrapper = await renderDrawer()
-      const items = wrapper.find(".mdc-list-item .mdc-list-item--activated")
+      const items = wrapper.find(".mdc-list-item.mdc-list-item--activated")
       assert.equal(items.length, 10)
       ;[0, 1, 3, 9].forEach(function(col) {
         const drawerNode = items.at(col)
@@ -153,7 +153,7 @@ describe("Drawer", () => {
 
   it("drawer element is rendered with a logout link", async () => {
     const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item .mdc-link").at(2)
+    const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(2)
     assert.equal(drawerNode.props().href, "/logout/")
     assert.isTrue(drawerNode.text().endsWith("Log out"))
   })
