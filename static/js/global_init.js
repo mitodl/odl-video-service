@@ -29,6 +29,7 @@ global.SETTINGS = _createSettings()
 // workarounds for MDC and HTMLCanvasElement
 global.cancelAnimationFrame = () => null
 global.requestAnimationFrame = () => null
+global.window.requestAnimationFrame = () => null
 global.HTMLCanvasElement.prototype.getContext = () => {
   return {
     drawImage: function() {}
