@@ -3012,13 +3012,13 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "uwsgi"
-version = "2.0.29"
+version = "2.0.30"
 description = "The uWSGI server"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "uwsgi-2.0.29.tar.gz", hash = "sha256:6bd150ae60d0d9947429ea7dc8e5f868de027e5eb38355fb613b9413732c432f"},
+    {file = "uwsgi-2.0.30.tar.gz", hash = "sha256:c12aa652124f062ac216077da59f6d247bd7ef938234445881552e58afb1eb5f"},
 ]
 
 [[package]]
@@ -3207,4 +3207,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "613286e0997fdba5699cc2ae6fa6e39398e07b2ca2780a69cbfdc0cd31aea2d8"
+content-hash = "244e2c294e63d05d3e6d7dc712f25d80e18def9594cbcf6a4a7fd53536b9d7c1"
