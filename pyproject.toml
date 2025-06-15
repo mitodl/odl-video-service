@@ -43,7 +43,7 @@ smart-open = "^7.1.0"
 structlog = "^20.1.0"
 structlog-sentry = "^1.2.2"
 urllib3 = "^2.0.0"
-uwsgi = "2.0.29"
+uwsgi = "2.0.30"
 mitol-django-transcoding = "^2025.5.21"
 django-filter = "^25.1"
 
