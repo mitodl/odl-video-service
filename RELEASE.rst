@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 0.80.0 (Released June 16, 2025)
+--------------
+
+- chore(deps): update dependency django-debug-toolbar to v5 (#1198)
+- fix: bypass bad urls (#1229)
+- chore(deps): update codecov/codecov-action digest to 18283e0 (#1213)
+- chore(deps): update dependency faker to v37 (#1219)
+- chore(deps): update dependency pytest to v8 (#1227)
+- feat: Sync collection with edX (#1211)
+- feat: Collection search support added (#1223)
+- fix(deps): update dependency flow-bin to v0.272.2 (#1225)
+
 Version 0.79.0 (Released June 03, 2025)
 --------------
 
