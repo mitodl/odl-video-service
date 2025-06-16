@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.80.0
+Version 0.80.0 (Released June 16, 2025)
 --------------
 
 - chore(deps): update dependency django-debug-toolbar to v5 (#1198)
