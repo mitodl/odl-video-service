@@ -297,7 +297,7 @@ def transcode_video(
         prefix = TRANSCODE_PREFIX
 
     job_id = str(uuid4())
-    default_msg = {"Status": "Submitted"}
+    job_message_data = {"Status": "Submitted"}
     try:
         # Start the MediaConvert job
         job = media_convert_job(
@@ -316,7 +316,7 @@ def transcode_video(
         else:
             video.update_status(VideoStatus.TRANSCODE_FAILED_INTERNAL)
         if hasattr(exc, "response"):
-            default_msg = exc.response
+            job_message_data = exc.response
         raise
     finally:
         # Get the content type for the Video model
@@ -327,7 +327,7 @@ def transcode_video(
             defaults={
                 "content_type": content_type,
                 "object_id": video.pk,
-                "message": default_msg,
+                "message": job_message_data,
             },
         )
 
