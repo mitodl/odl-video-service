@@ -106,11 +106,11 @@
     "videojs-hls-quality-selector": "^2.0.0",
     "videojs-hotkeys": "^0.2.25",
     "videojs-youtube": "^3.0.1",
-    "webpack": "4.47.0",
-    "webpack-bundle-tracker": "3.2.0",
-    "webpack-cli": "^3.3.11",
-    "webpack-dev-middleware": "^5.0.0",
-    "webpack-hot-middleware": "2.26.1"
+    "webpack": "^5.99.9",
+    "webpack-bundle-tracker": "^3.2.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-middleware": "^7.4.2",
+    "webpack-hot-middleware": "^2.26.1"
   },
   "engines": {
     "node": "22.16.0",
