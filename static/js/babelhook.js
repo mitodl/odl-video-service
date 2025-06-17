@@ -4,7 +4,7 @@ const whatwgURL = require("whatwg-url")
 const { v4: uuidv4 } = require('uuid')
 require("babel-polyfill")
 
-babelSharedLoader.query.presets = ["env", "react"]
+babelSharedLoader.options.presets = ["env", "react"]
 
 // window and global must be defined here before React is imported
 require("jsdom-global")(undefined, {
@@ -35,4 +35,4 @@ Object.defineProperty(window, "location", {
   }
 })
 
-require("babel-register")(babelSharedLoader.query)
+require("babel-register")(babelSharedLoader.options)
