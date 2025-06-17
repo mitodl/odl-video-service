@@ -1,6 +1,7 @@
 // @flow
 
 import type { Video } from './videoTypes'
+import type { User } from './userTypes'
 
 export type CollectionListItem = {
   key:                string,
@@ -10,7 +11,8 @@ export type CollectionListItem = {
   admin_lists:        Array<string>,
   is_logged_in_only:  boolean,
   video_count:        number,
-  edx_course_id:      ?string
+  edx_course_id:      ?string,
+  owner:              User
 };
 
 export type Collection = CollectionListItem & {
@@ -30,6 +32,7 @@ export type CollectionFormState = {
   adminChoice: string,
   adminLists: ?string,
   edxCourseId: ?string,
+  ownerId: ?number,
 };
 
 export type CollectionValidation = {

@@ -204,6 +204,11 @@ describe("CollectionDetailPage", () => {
 
     beforeEach(() => {
       collection = makeCollection()
+      collection.owner_info = {
+        id:       collection.owner,
+        username: collection.owner_info.username,
+        email:    collection.owner_info.email
+      }
       props = {
         dispatch:        sandbox.stub(),
         collection,
@@ -792,6 +797,26 @@ describe("CollectionDetailPage", () => {
         const result = await page.handleSyncWithEdX(event)
         assert.isNull(result)
         sinon.assert.notCalled(require("../lib/api").syncCollectionVideosWithEdX)
+      })
+    })
+
+    describe("Owner display", () => {
+      beforeEach(() => {
+        collection = makeCollection()
+        props = {
+          dispatch:      sandbox.stub(),
+          collection:    collection,
+          collectionKey: collection.key,
+          editable:      true,
+          needsUpdate:   false
+        }
+        wrapper = shallow(<CollectionDetailPage {...props} />)
+      })
+
+      it("displays the owner username", () => {
+        const ownerElement = wrapper.find(".collection-owner")
+        assert.isTrue(ownerElement.exists())
+        assert.include(ownerElement.text(), `Owner: ${collection.owner_info.username}`)
       })
     })
   })

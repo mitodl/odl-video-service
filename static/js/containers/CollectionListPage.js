@@ -148,7 +148,7 @@ export class CollectionListPage extends React.Component<*, void> {
                   {collection.title}
                 </Link>
                 <span className="mdc-list-item__secondary-text">
-                  {collection.video_count} Videos
+                  {collection.video_count} Videos | Owner: {collection.owner_info.username}
                 </span>
               </span>
             </li>

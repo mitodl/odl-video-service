@@ -102,6 +102,9 @@ export class CollectionDetailPage extends React.Component<*, void> {
             <h1 className="mdc-typography--title">
               {`${collection.title} (${videos.length})`}
             </h1>
+            <div className="collection-owner">
+              <span className="mdc-typography--subheading1">Owner: {collection.owner_info.username}</span>
+            </div>
           </div>
           {this.renderTools(isCollectionAdmin)}
           {this.renderDescription(collection.description)}

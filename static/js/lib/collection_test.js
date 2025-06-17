@@ -80,7 +80,13 @@ describe("collection library function", () => {
       viewChoice:  PERM_CHOICE_NONE,
       viewLists:   "",
       edxCourseId: "",
-      videoCount:  0
+      videoCount:  0,
+      ownerId:     null,
+      ownerInfo:   {
+        id:       null,
+        username: "",
+        email:    ""
+      }
     })
   })
 
@@ -95,7 +101,13 @@ describe("collection library function", () => {
       viewChoice:  PERM_CHOICE_LISTS,
       viewLists:   collection.view_lists.join(","),
       edxCourseId: collection.edx_course_id,
-      videoCount:  collection.video_count
+      videoCount:  collection.video_count,
+      ownerId:     collection.owner || null,
+      ownerInfo:   collection.owner_info || {
+        id:       null,
+        username: "",
+        email:    ""
+      }
     })
   })
 })
