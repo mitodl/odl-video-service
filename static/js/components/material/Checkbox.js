@@ -1,4 +1,5 @@
 // @flow
+/* global React$Element */
 import React from "react"
 
 type CheckboxProps = {
