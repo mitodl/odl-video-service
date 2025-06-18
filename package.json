@@ -55,6 +55,7 @@
     "eslint-plugin-flowtype": "^4.7.0",
     "eslint-plugin-mocha": "^6.3.0",
     "eslint-plugin-react": "^7.19.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "express": "^5.0.0",
     "fetch-mock": "^5.12.1",
     "flow-bin": "0.273.1",
