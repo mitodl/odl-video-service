@@ -2,6 +2,7 @@
 serializers for ui
 """
 
+from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.relations import RelatedField
@@ -11,6 +12,8 @@ from ui import models
 from ui import permissions as ui_permissions
 from ui.encodings import EncodingNames
 from ui.utils import get_moira_client, has_common_lists
+
+User = get_user_model()
 
 
 def validate_moira_lists(lists):
@@ -33,6 +36,15 @@ def validate_moira_lists(lists):
             "Moira list does not exist: {}".format(",".join(bad_lists))
         )
     return lists
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Serializer for User model"""
+
+    class Meta:
+        model = User
+        fields = ("id", "username", "email")
+        read_only_fields = ("id", "username", "email")
 
 
 class SingleAttrRelatedField(RelatedField):
@@ -262,6 +274,10 @@ class CollectionSerializer(serializers.ModelSerializer):
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
     )
     is_admin = serializers.SerializerMethodField()
+    owner_info = UserSerializer(source="owner", read_only=True)
+    owner = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False
+    )
 
     def get_key(self, obj):
         """Custom getter for the key"""
@@ -333,6 +349,8 @@ class CollectionSerializer(serializers.ModelSerializer):
             "is_logged_in_only",
             "edx_course_id",
             "is_admin",
+            "owner",
+            "owner_info",
         )
         read_only_fields = (
             "key",
@@ -356,9 +374,15 @@ class CollectionListSerializer(serializers.ModelSerializer):
     admin_lists = SingleAttrRelatedField(
         model=models.MoiraList, attribute="name", many=True, allow_empty=True
     )
+    owner_info = UserSerializer(source="owner", read_only=True)
+    owner = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), required=False
+    )
 
     def create(self, validated_data):
-        return super().create({**validated_data, "owner": self.context["request"].user})
+        if "owner" not in validated_data:
+            validated_data["owner"] = self.context["request"].user
+        return super().create(validated_data)
 
     def get_key(self, obj):
         """Custom getter for the key"""
@@ -387,6 +411,8 @@ class CollectionListSerializer(serializers.ModelSerializer):
             "admin_lists",
             "video_count",
             "edx_course_id",
+            "owner",
+            "owner_info",
         )
         read_only_fields = (
             "key",

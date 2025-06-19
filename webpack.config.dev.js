@@ -31,12 +31,11 @@ const devConfig = Object.assign({}, config, {
   ],
   devtool: 'source-map',
   optimization: {
-    namedModules: true,
+    moduleIds: 'named',
     splitChunks:  {
-      name:      "common",
-      minChunks: 2
+      chunks: 'all',
     },
-    noEmitOnErrors: true
+    emitOnErrors: false,
   }
 });
 

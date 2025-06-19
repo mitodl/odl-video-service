@@ -1515,3 +1515,60 @@ def test_sync_collection_videos_with_edx_success(superuser_logged_in_apiclient, 
     assert response.data["task_id"] == "mock-task-id"
     assert response.data["collection_id"] == str(collection.key)
     mock_task.delay.assert_called_once_with(["video1", "video2"])
+
+
+def test_users_list_permission(logged_in_apiclient):
+    """Tests that only authenticated users with admin permissions can call UsersList"""
+    url = reverse("users-list")
+    client, user = logged_in_apiclient
+    client.logout()
+
+    # call with anonymous user
+    assert client.get(url).status_code == status.HTTP_403_FORBIDDEN
+
+    # call with regular user (not admin)
+    client.force_login(user)
+    assert client.get(url).status_code == status.HTTP_403_FORBIDDEN
+
+    # call with admin user
+    user.is_staff = True
+    user.save()
+    client.force_login(user)
+    assert client.get(url).status_code == status.HTTP_200_OK
+
+
+def test_users_list_content(logged_in_apiclient):
+    """Test that UsersList returns all users"""
+    url = reverse("users-list")
+    client, user = logged_in_apiclient
+
+    # Create some test users
+    user1 = UserFactory(username="user1", email="user1@example.com")
+    user2 = UserFactory(username="user2", email="user2@example.com")
+    user3 = UserFactory(username="user3", email="user3@example.com")
+
+    # Make the request user an admin
+    user.is_staff = True
+    user.save()
+    client.force_login(user)
+
+    response = client.get(url)
+
+    # Check response
+    assert response.status_code == status.HTTP_200_OK
+    assert "users" in response.data
+
+    # Extract usernames from response for easier testing
+    usernames = [u["username"] for u in response.data["users"]]
+
+    # Check that all our created users are in the response
+    assert user.username in usernames
+    assert user1.username in usernames
+    assert user2.username in usernames
+    assert user3.username in usernames
+
+    # Check that the user serializer includes the expected fields
+    for user_data in response.data["users"]:
+        assert "id" in user_data
+        assert "username" in user_data
+        assert "email" in user_data

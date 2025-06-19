@@ -12,7 +12,8 @@ import {
   setViewChoice,
   setViewLists,
   setIsNew,
-  clearCollectionForm
+  clearCollectionForm,
+  setOwnerId
 } from "../actions/collectionUi"
 import rootReducer from "../reducers"
 import { INITIAL_COLLECTION_FORM_STATE } from "../reducers/collectionUi"
@@ -130,6 +131,15 @@ describe("collectionUi", () => {
           setViewLists,
           ui => getCollectionForm(ui).viewLists,
           null
+        )
+      })
+
+      it("sets the owner id for the collection", () => {
+        const ownerId = 123
+        store.dispatch(setOwnerId(ownerId))
+        assert.equal(
+          getCollectionForm(store.getState().collectionUi).ownerId,
+          ownerId
         )
       })
     })
