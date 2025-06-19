@@ -51,6 +51,7 @@ if [[ $(
 		grep -v "Warning: Accessing PropTypes via the main React package is deprecated" |
 		grep -v "Warning: Accessing createClass via the main React package is deprecated" |
 		grep -v 'VIDEOJS: WARN: A plugin named "qualityLevels" already exists' |
+		grep -v "\[react-ga\] ReactGA.initialize must be called first" |
 		wc -l |
 		awk '{print $1}'
 ) -ne 0 ]]; then # is file empty?

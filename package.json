@@ -45,8 +45,8 @@
     "chai-as-promised": "^7.1.1",
     "codecov": "^3.7.1",
     "css-loader": "^3.5.2",
-    "enzyme": "^3.3.0",
-    "enzyme-adapter-react-15": "^1.0.5",
+    "enzyme": "^3.11.0",
+    "enzyme-adapter-react-15": "^1.4.4",
     "eslint": "6.8.0",
     "eslint-config-google": "^0.14.0",
     "eslint-config-mitodl": "^0.0.7",
@@ -106,19 +106,21 @@
     "videojs-hls-quality-selector": "^2.0.0",
     "videojs-hotkeys": "^0.2.25",
     "videojs-youtube": "^3.0.1",
-    "webpack": "4.47.0",
-    "webpack-bundle-tracker": "3.2.0",
-    "webpack-cli": "^3.3.11",
-    "webpack-dev-middleware": "^5.0.0",
-    "webpack-hot-middleware": "2.26.1"
+    "webpack": "^5.99.9",
+    "webpack-bundle-tracker": "^3.2.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-middleware": "^7.4.2",
+    "webpack-hot-middleware": "^2.26.1"
   },
   "engines": {
-    "node": "16.20.2",
-    "yarn": "1.22.19"
+    "node": "22.16.0",
+    "yarn": "1.22.22"
   },
   "resolutions": {
     "**/acorn": "^8.0.0",
-    "**/send/**/mime": "^2.4.6"
+    "**/send/**/mime": "^2.4.6",
+    "**/material-components-web": "^0.33.0",
+    "**/cheerio": "1.0.0-rc.2"
   },
   "scripts": {
     "postinstall": "./webpack_if_prod.sh",

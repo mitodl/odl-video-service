@@ -4,10 +4,11 @@ var BundleTracker = require('webpack-bundle-tracker');
 const glob = require('glob');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const { config, babelSharedLoader } = require(path.resolve("./webpack.config.shared.js"));
+const TerserPlugin = require("terser-webpack-plugin");
 
 const prodBabelConfig = Object.assign({}, babelSharedLoader);
 
-prodBabelConfig.query.plugins.push(
+prodBabelConfig.options.plugins.push(
   "transform-react-constant-elements",
   "transform-react-inline-elements"
 );
@@ -65,9 +66,6 @@ module.exports = Object.assign(prodConfig, {
       path: __dirname,
       filename: 'webpack-stats.json'
     }),
-    new webpack.LoaderOptionsPlugin({
-      minimize: true
-    }),
     new webpack.optimize.AggressiveMergingPlugin(),
     new MiniCssExtractPlugin({
       filename: "[name]-[contenthash].css",
@@ -77,10 +75,21 @@ module.exports = Object.assign(prodConfig, {
   ],
   optimization: {
     splitChunks: {
-      name:      "common",
-      minChunks: 2
+      chunks: "all",
     },
-    minimize: true
+    minimize: true,
+    minimizer: [
+    new TerserPlugin({
+      terserOptions: {
+        ecma: 2020,
+        compress: true,
+        output: {
+          comments: false,
+        },
+      },
+      extractComments: false,
+    }),
+  ],
   },
   devtool: 'source-map'
 });
