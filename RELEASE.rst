@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+Version 0.80.1
+--------------
+
+- chore(deps): update node.js to v22 (#1233)
+- fix(deps): update dependency ipython to v9 (#1243)
+- Bump elliptic from 6.5.3 to 6.5.5 (#1104)
+- [pre-commit.ci] pre-commit autoupdate (#1228)
+- feat: owner dropdown added in Collection edit Dialog (#1224)
+- fix: Intermediate job message status fixed (#1237)
+- fix(deps): update dependency flow-bin to v0.273.1 (#1241)
+- fix(deps): update dependency uwsgi to v2.0.30 (#1240)
+- fix(deps): update dependency django to v4.2.23 (#1239)
+- chore(deps): update dependency python to v3.13.5 (#1238)
+- fix(deps): update dependency urllib3 to v2 (#1232)
+- fix(deps): update dependency requests to v2.32.4 [security] (#1236)
+- fix(deps): update dependency django to v4.2.22 [security] (#1235)
+
 Version 0.80.0 (Released June 16, 2025)
 --------------
 
