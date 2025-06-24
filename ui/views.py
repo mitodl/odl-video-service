@@ -666,7 +666,7 @@ class SyncCollectionVideosWithEdX(APIView):
         )
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Implements all the REST views for the User Model.
     Supports pagination and filtering by username, email, etc.

@@ -1519,7 +1519,7 @@ def test_sync_collection_videos_with_edx_success(superuser_logged_in_apiclient, 
 
 def test_users_list_permission(logged_in_apiclient):
     """Tests that only authenticated users with admin permissions can call UsersList"""
-    url = reverse("users-list")
+    url = reverse("models-api:users-list")
     client, user = logged_in_apiclient
     client.logout()
 
@@ -1539,7 +1539,7 @@ def test_users_list_permission(logged_in_apiclient):
 
 def test_users_list_content(logged_in_apiclient):
     """Test that UsersList returns all users"""
-    url = reverse("users-list")
+    url = reverse("models-api:users-list")
     client, user = logged_in_apiclient
 
     # Create some test users
@@ -1556,10 +1556,9 @@ def test_users_list_content(logged_in_apiclient):
 
     # Check response
     assert response.status_code == status.HTTP_200_OK
-    assert "users" in response.data
 
     # Extract usernames from response for easier testing
-    usernames = [u["username"] for u in response.data["users"]]
+    usernames = [u["username"] for u in response.data["results"]]
 
     # Check that all our created users are in the response
     assert user.username in usernames
@@ -1568,7 +1567,7 @@ def test_users_list_content(logged_in_apiclient):
     assert user3.username in usernames
 
     # Check that the user serializer includes the expected fields
-    for user_data in response.data["users"]:
+    for user_data in response.data["results"]:
         assert "id" in user_data
         assert "username" in user_data
         assert "email" in user_data
