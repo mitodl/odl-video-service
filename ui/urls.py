@@ -11,6 +11,7 @@ router = routers.DefaultRouter()
 router.register(r"videos", views.VideoViewSet, basename="video")
 router.register(r"collections", views.CollectionViewSet, basename="collection")
 router.register(r"subtitles", views.VideoSubtitleViewSet, basename="subtitle")
+router.register(r"users", views.UserViewSet, basename="users")
 
 urlpatterns = [
     path("", views.index, name="index"),
@@ -90,10 +91,5 @@ urlpatterns = [
         r"^api/v0/moira/list/(?P<list_name>[-_\.\w]+)$",
         views.UsersForMoiraList.as_view(),
         name="list-members",
-    ),
-    path(
-        "api/v0/users/",
-        views.UsersList.as_view(),
-        name="users-list",
     ),
 ]

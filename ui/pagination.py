@@ -31,3 +31,9 @@ class VideoSetPagination(OVSPaginationMixin, PageNumberPagination):
     """Custom pagination class for videos"""
 
     page_size = settings.PAGE_SIZE_VIDEOS
+
+
+class UserSetPagination(OVSPaginationMixin, PageNumberPagination):
+    """Custom pagination class for users"""
+
+    page_size = settings.PAGE_SIZE_USERS

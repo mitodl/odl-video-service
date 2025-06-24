@@ -29,7 +29,7 @@ from techtv2ovs.models import TechTVVideo
 from ui import api
 from ui import permissions as ui_permissions
 from ui import serializers
-from ui.filters import CollectionFilter
+from ui.filters import CollectionFilter, UserFilter
 from ui.constants import EDX_ADMIN_GROUP, VideoStatus
 from ui.models import (
     Collection,
@@ -38,7 +38,7 @@ from ui.models import (
     Video,
     VideoSubtitle,
 )
-from ui.pagination import CollectionSetPagination, VideoSetPagination
+from ui.pagination import CollectionSetPagination, VideoSetPagination, UserSetPagination
 from ui.serializers import UserSerializer, VideoSerializer
 from ui.tasks import post_collection_videos_to_edx
 
@@ -666,18 +666,25 @@ class SyncCollectionVideosWithEdX(APIView):
         )
 
 
-class UsersList(APIView):
+class UserViewSet(viewsets.ModelViewSet):
     """
-    View for getting a list of users for the owner dropdown.
+    Implements all the REST views for the User Model.
+    Supports pagination and filtering by username, email, etc.
     """
 
     authentication_classes = (authentication.SessionAuthentication,)
     permission_classes = (permissions.IsAdminUser,)
 
-    def get(self, request):
-        """Get and return the list of users"""
-
-        User = get_user_model()
-        users = User.objects.all().order_by("username")
-        serializer = UserSerializer(users, many=True)
-        return Response(data={"users": serializer.data})
+    queryset = get_user_model().objects.all()
+    serializer_class = UserSerializer
+    pagination_class = UserSetPagination
+    filter_backends = (
+        OrderingFilter,
+        django_filters.rest_framework.DjangoFilterBackend,
+    )
+    filterset_class = UserFilter
+    ordering_fields = (
+        "username",
+        "email",
+    )
+    ordering = ("username",)
