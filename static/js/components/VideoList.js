@@ -1,7 +1,10 @@
 // @flow
+/* global Video */
 import React from "react"
 
 import VideoCard from "./VideoCard"
+
+import type { Video } from "../flow/videoTypes"
 
 export class VideoList extends React.Component<*, void> {
   props: {
