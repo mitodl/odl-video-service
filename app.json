@@ -157,6 +157,10 @@
       "description": "Default collection page size",
       "required": "false"
     },
+    "PAGE_SIZE_USERS": {
+      "description": "Default user page size",
+      "required": "false"
+    },
     "PGBOUNCER_DEFAULT_POOL_SIZE": {
       "value": "50"
     },
