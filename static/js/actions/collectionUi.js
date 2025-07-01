@@ -48,6 +48,9 @@ export const clearCollectionForm = createAction(CLEAR_COLLECTION_FORM)
 export const CLEAR_COLLECTION_ERRORS = qualifiedName("CLEAR_COLLECTION_ERRORS")
 export const clearCollectionErrors = createAction(CLEAR_COLLECTION_ERRORS)
 
+export const CLEAR_COLLECTION_DATA = qualifiedName("CLEAR_COLLECTION_DATA")
+export const clearCollectionData = createAction(CLEAR_COLLECTION_DATA)
+
 export const showNewCollectionDialog = () => (dispatch: Dispatch) => {
   dispatch(setIsNew(true))
   dispatch(showDialog(DIALOGS.COLLECTION_FORM))
