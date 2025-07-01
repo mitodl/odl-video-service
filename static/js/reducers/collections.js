@@ -29,8 +29,10 @@ export const collectionsEndpoint = {
     [CLEAR_COLLECTION_ERRORS]: R.dissoc("error"),
     [CLEAR_COLLECTION_DATA]:   state => ({
       ...state,
-      loaded: false,
-      data:   null
+      processing: false,
+      loaded:     false,
+      error:      null,
+      data:       null
     })
   }
 }
