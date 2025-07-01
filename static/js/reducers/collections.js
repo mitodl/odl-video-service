@@ -27,10 +27,10 @@ export const collectionsEndpoint = {
     api.updateCollection(collectionKey, payload),
   extraActions: {
     [CLEAR_COLLECTION_ERRORS]: R.dissoc("error"),
-    [CLEAR_COLLECTION_DATA]: state => ({
+    [CLEAR_COLLECTION_DATA]:   state => ({
       ...state,
       loaded: false,
-      data: null
+      data:   null
     })
   }
 }
