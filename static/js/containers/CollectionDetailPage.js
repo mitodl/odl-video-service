@@ -28,7 +28,7 @@ import type { Video } from "../flow/videoTypes"
 import type { CommonUiState } from "../reducers/commonUi"
 import * as commonUiActions from "../actions/commonUi"
 import VideoSaverScript from "../components/VideoSaverScript"
-import { clearCollectionErrors } from "../actions/collectionUi"
+import { clearCollectionErrors, clearCollectionData } from "../actions/collectionUi"
 
 export class CollectionDetailPage extends React.Component<*, void> {
   props: {
@@ -45,6 +45,10 @@ export class CollectionDetailPage extends React.Component<*, void> {
 
   componentDidMount() {
     this.updateRequirements()
+  }
+
+  componentWillUnmount() {
+    this.props.dispatch(clearCollectionData())
   }
 
   updateRequirements() {
@@ -323,8 +327,7 @@ export const mapStateToProps = (state: any, ownProps: any) => {
   const { collections, commonUi } = state
 
   const collectionKey = match.params.collectionKey
-  const collection =
-    collections.loaded && collections.data ? collections.data : null
+  const collection = collections.data && collections.data.key ? collections.data : null
   const collectionError = collections.error || null
   const collectionChanged = collection && collection.key !== collectionKey
   const isCollectionAdmin = collection && collection.is_admin

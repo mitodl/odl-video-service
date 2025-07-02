@@ -4,7 +4,7 @@ import * as R from "ramda"
 
 import * as api from "../lib/api"
 import type { Collection, CollectionList } from "../flow/collectionTypes"
-import { CLEAR_COLLECTION_ERRORS } from "../actions/collectionUi"
+import { CLEAR_COLLECTION_ERRORS, CLEAR_COLLECTION_DATA } from "../actions/collectionUi"
 
 export const collectionsListEndpoint = {
   name:               "collectionsList",
@@ -26,7 +26,14 @@ export const collectionsEndpoint = {
   patchFunc: (collectionKey: string, payload: Object): Promise<Collection> =>
     api.updateCollection(collectionKey, payload),
   extraActions: {
-    [CLEAR_COLLECTION_ERRORS]: R.dissoc("error")
+    [CLEAR_COLLECTION_ERRORS]: R.dissoc("error"),
+    [CLEAR_COLLECTION_DATA]:   state => ({
+      ...state,
+      processing: false,
+      loaded:     false,
+      error:      null,
+      data:       null
+    })
   }
 }
 

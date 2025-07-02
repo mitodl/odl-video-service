@@ -59,9 +59,9 @@ describe("CollectionDetailPage", () => {
     describe("when selecting collection", () => {
       const testDefs = [
         { opts: { loaded: true, data: undefined }, expected: null },
-        { opts: { loaded: true, data: "somedata" }, expected: "somedata" },
+        { opts: { loaded: true, data: { key: "somedata" } }, expected: { key: "somedata" } },
         { opts: { loaded: false, data: undefined }, expected: null },
-        { opts: { loaded: false, data: "somedata" }, expected: null }
+        { opts: { loaded: false, data: {} }, expected: null }
       ]
       testDefs.forEach(testDef => {
         const { opts, expected } = testDef
@@ -77,7 +77,7 @@ describe("CollectionDetailPage", () => {
             })
           }
           const actualProps = mapStateToProps(state, ownProps)
-          assert.equal(actualProps.collection, testDef.expected)
+          assert.deepEqual(actualProps.collection, testDef.expected)
         })
       })
     })
@@ -123,7 +123,7 @@ describe("CollectionDetailPage", () => {
         },
         {
           opts:     { processing: true, loaded: false, matchKey: false },
-          expected: false
+          expected: true // We keep the data regardless of the loaded state now.
         },
         {
           opts:     { processing: false, loaded: true, matchKey: true },
