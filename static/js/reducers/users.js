@@ -5,9 +5,9 @@ import * as api from "../lib/api"
 
 import type { User } from "../flow/userTypes"
 
-export const usersListEndpoint = {
-  name:              "usersList",
+export const potentialCollectionOwnersEndpoint = {
+  name:              "potentialCollectionOwners",
   verbs:             [GET],
   initialState:      { ...INITIAL_STATE, data: [] },
-  getFunc:           (): Promise<{users: Array<User>}> => api.getUsers(),
+  getFunc:           (collectionKey: string): Promise<{users: Array<User>}> => api.getPotentialCollectionOwners(collectionKey),
 }
