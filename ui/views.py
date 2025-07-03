@@ -666,18 +666,35 @@ class SyncCollectionVideosWithEdX(APIView):
         )
 
 
-class UsersList(APIView):
+class PotentialCollectionOwners(APIView):
     """
-    View for getting a list of users for the owner dropdown.
+    View for getting a list of users for the collection owner dropdown.
     """
 
     authentication_classes = (authentication.SessionAuthentication,)
     permission_classes = (permissions.IsAdminUser,)
 
     def get(self, request):
-        """Get and return the list of users"""
+        """Get and return the list of potential collection owners"""
 
         User = get_user_model()
-        users = User.objects.all().order_by("username")
+        collection_key = request.query_params.get("collection_key")
+        if collection_key:
+            try:
+                collection = Collection.objects.get(key=collection_key)
+            except Collection.DoesNotExist:
+                return Response(
+                    {
+                        "error": f"Collection with this key {collection_key} does not exists"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        user_filters = Q(groups__name="can_be_owner") | Q(is_superuser=True)
+        if collection_key:
+            user_filters |= Q(id=collection.owner_id)
+
+        users = User.objects.filter(user_filters).distinct().order_by("username")
+
         serializer = UserSerializer(users, many=True)
         return Response(data={"users": serializer.data})
