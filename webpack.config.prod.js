@@ -23,7 +23,7 @@ prodConfig.module.rules = [
       {
         loader: MiniCssExtractPlugin.loader
       },
-      "css-loader",
+      {loader: 'css-loader', options: {esModule: false}},
       "postcss-loader",
       {
         loader: 'sass-loader',
