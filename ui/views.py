@@ -690,7 +690,7 @@ class PotentialCollectionOwners(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        user_filters = Q(groups__name="can_be_owner") | Q(is_superuser=True)
+        user_filters = Q(groups__name="can_be_collection_owner") | Q(is_superuser=True)
         if collection_key:
             user_filters |= Q(id=collection.owner_id)
 
