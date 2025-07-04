@@ -4,7 +4,7 @@ import sinon from "sinon"
 import configureTestStore from "redux-asserts"
 import * as api from "../lib/api"
 import { actions } from "../actions"
-import rootReducer from "../reducers"
+import rootReducer from "."
 
 describe("Users reducer", () => {
   let sandbox, store, getStub, listenForActions
@@ -13,7 +13,7 @@ describe("Users reducer", () => {
     sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
-    getStub = sandbox.stub(api, "getUsers").returns(
+    getStub = sandbox.stub(api, "getPotentialCollectionOwners").returns(
       Promise.resolve({
         users: [
           { id: 1, username: "user1", email: "user1@example.com" },
@@ -27,19 +27,19 @@ describe("Users reducer", () => {
     sandbox.restore()
   })
 
-  it("should handle API request for users list", async () => {
+  it("should handle API request for potential collection owners", async () => {
     const expectedActions = [
-      actions.usersList.get.requestType,
-      actions.usersList.get.successType
+      actions.potentialCollectionOwners.get.requestType,
+      actions.potentialCollectionOwners.get.successType
     ]
 
     await listenForActions(expectedActions, () => {
-      return store.dispatch(actions.usersList.get())
+      return store.dispatch(actions.potentialCollectionOwners.get('b0b7fcb6fd644b5hy6de7b1ce3f2bb7be'))
     })
 
     assert.isTrue(getStub.calledOnce)
 
-    const state = store.getState().usersList
+    const state = store.getState().potentialCollectionOwners
     assert.isFalse(state.processing)
     assert.equal(state.error, null)
     assert.deepEqual(state.data, {
@@ -54,19 +54,19 @@ describe("Users reducer", () => {
     getStub.returns(Promise.reject(new Error("Network error")))
 
     const expectedActions = [
-      actions.usersList.get.requestType,
-      actions.usersList.get.failureType
+      actions.potentialCollectionOwners.get.requestType,
+      actions.potentialCollectionOwners.get.failureType
     ]
 
     // The dispatch itself should throw an error, not the listenForActions
     await listenForActions(expectedActions, () => {
-      return store.dispatch(actions.usersList.get()).catch(() => {
+      return store.dispatch(actions.potentialCollectionOwners.get('b0b7fcb6fd644b5hy6de7b1ce3f2bb7be')).catch(() => {
         return Promise.resolve()
       })
     })
 
     // Verify error state instead of trying to catch the error
-    const state = store.getState().usersList
+    const state = store.getState().potentialCollectionOwners
     assert.isFalse(state.processing)
     assert.instanceOf(state.error, Error)
     assert.equal(state.error.message, "Network error")

@@ -1530,7 +1530,7 @@ def test_potential_owners_api(
     client, is_admin, collection_key_type, expected_status, expected_owner_included
 ):
     # Setup users and group
-    can_be_owner_group, _ = Group.objects.get_or_create(name="can_be_owner")
+    can_be_owner_group, _ = Group.objects.get_or_create(name="can_be_collection_owner")
     owner = UserFactory(username="owner_user")
     can_be_owner = UserFactory(username="can_be_owner_user")
     can_be_owner.groups.add(can_be_owner_group)

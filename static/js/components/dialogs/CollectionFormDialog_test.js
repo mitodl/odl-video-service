@@ -53,7 +53,7 @@ describe("CollectionFormDialog", () => {
     uiState = INITIAL_UI_STATE
 
     // Mock the users API response
-    sandbox.stub(api, "getUsers").returns(Promise.resolve({
+    sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
       users: [
         { id: 1, username: "user1", email: "user1@example.com" },
         { id: 2, username: "user2", email: "user2@example.com" }
@@ -440,8 +440,8 @@ describe("CollectionFormDialog", () => {
         // We need to restore the default stub to avoid conflicts
         sandbox.restore()
 
-        // Create a new getUsersStub
-        sandbox.stub(api, "getUsers").returns(Promise.resolve({
+        // Create a new getPotentialCollectionOwnersStub
+        sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
           users: [
             { id: 1, username: "user1", email: "user1@example.com" },
             { id: 2, username: "user2", email: "user2@example.com" }
@@ -475,7 +475,7 @@ describe("CollectionFormDialog", () => {
         // Reinitialize the sandbox with the global stubs for other tests
         sandbox.restore()
         sandbox = sinon.createSandbox()
-        sandbox.stub(api, "getUsers").returns(Promise.resolve({
+        sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
           users: [
             { id: 1, username: "user1", email: "user1@example.com" },
             { id: 2, username: "user2", email: "user2@example.com" }
@@ -507,8 +507,8 @@ describe("CollectionFormDialog", () => {
         const handleErrorStub = sandbox.stub()
         wrapper.instance().handleError = handleErrorStub
 
-        // Call fetchUsers manually
-        await wrapper.instance().fetchUsers()
+        // Call fetchPotentialCollectionOwners manually
+        await wrapper.instance().fetchPotentialCollectionOwners()
 
         // Verify console.error was called
         sinon.assert.called(consoleErrorStub)
@@ -519,7 +519,7 @@ describe("CollectionFormDialog", () => {
         // Reset sandbox for other tests
         sandbox.restore()
         sandbox = sinon.createSandbox()
-        sandbox.stub(api, "getUsers").returns(Promise.resolve({
+        sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
           users: [
             { id: 1, username: "user1", email: "user1@example.com" },
             { id: 2, username: "user2", email: "user2@example.com" }

@@ -8,7 +8,7 @@ import { videosEndpoint } from "../reducers/videos"
 import { videoSubtitlesEndpoint } from "../reducers/videoSubtitles"
 import { videoAnalyticsEndpoint } from "../reducers/videoAnalytics"
 import { syncCollectionEdXEndpoint } from "../reducers/syncCollectionEdX"
-import { potentialCollectionOwnersEndpoint } from "../reducers/users"
+import { potentialCollectionOwnersEndpoint } from "../reducers/potentialCollectionOwners"
 
 
 export const endpoints = [
