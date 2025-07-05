@@ -47,7 +47,7 @@ describe("CollectionListPage", () => {
       .stub(api, "getCollections")
       .returns(Promise.resolve({ results: collections }))
     sandbox
-      .stub(api, "getUsers")
+      .stub(api, "getPotentialCollectionOwners")
       .returns(Promise.resolve({
         users: [
           { id: 1, username: "user1", email: "user1@example.com" },
@@ -68,7 +68,7 @@ describe("CollectionListPage", () => {
         actions.collectionsList.get.requestType,
         actions.collectionsList.get.successType,
         collectionsPaginationActions.constants.REQUEST_GET_PAGE,
-        actions.usersList.get.requestType
+        actions.potentialCollectionOwners.get.requestType
       ],
       () => {
         wrapper = mount(

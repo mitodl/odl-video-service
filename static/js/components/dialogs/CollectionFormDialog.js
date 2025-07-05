@@ -52,13 +52,14 @@ export class CollectionFormDialog extends React.Component<*, void> {
   }
 
   componentDidMount() {
-    this.fetchUsers()
+    this.fetchPotentialCollectionOwners()
   }
 
-  fetchUsers = async () => {
+  fetchPotentialCollectionOwners = async () => {
     const { dispatch } = this.props
     try {
-      const response = await dispatch(actions.usersList.get())
+      const { collectionKey } = this.props
+      const response = await dispatch(actions.potentialCollectionOwners.get(collectionKey))
       this.setState({ users: response.users || [] })
     } catch (error) {
       console.error("Error fetching users:", error)
