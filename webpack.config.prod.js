@@ -69,7 +69,6 @@ module.exports = Object.assign(prodConfig, {
     new webpack.optimize.AggressiveMergingPlugin(),
     new MiniCssExtractPlugin({
       filename: "[name]-[contenthash].css",
-      allChunks: true,
       ignoreOrder: false,
     })
   ],
