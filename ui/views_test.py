@@ -1523,6 +1523,7 @@ def test_sync_collection_videos_with_edx_success(superuser_logged_in_apiclient, 
         (True, None, status.HTTP_200_OK, False),
         (True, "valid", status.HTTP_200_OK, True),
         (True, "invalid", status.HTTP_400_BAD_REQUEST, False),
+        (True, "non-existent", status.HTTP_400_BAD_REQUEST, False),
         (False, None, status.HTTP_403_FORBIDDEN, False),
     ],
 )
@@ -1550,7 +1551,10 @@ def test_potential_owners_api(
         collection = CollectionFactory(owner=owner)
         params["collection_key"] = collection.key
     elif collection_key_type == "invalid":
-        params["collection_key"] = "b0b7fcb6fd644b589de7b1ce3f2bb7be"
+        params["collection_key"] = "invalid_key"
+    elif collection_key_type == "non-existent":
+        bad_key = "00000000000000000000000000000000"
+        params["collection_key"] = bad_key
 
     url = reverse("potential-collection-owners")
     response = client.get(url, params)
@@ -1565,4 +1569,10 @@ def test_potential_owners_api(
         else:
             assert "owner_user" not in usernames
     elif expected_status == status.HTTP_400_BAD_REQUEST:
-        assert "error" in response.data
+        if collection_key_type == "invalid":
+            assert "Invalid collection key format" in response.data["error"]
+        elif collection_key_type == "missing":
+            assert (
+                f"Collection with this key {bad_key} does not exists"
+                in response.data["error"]
+            )

@@ -689,6 +689,13 @@ class PotentialCollectionOwners(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            except Exception as exc:
+                return Response(
+                    {
+                        "error": f"Invalid collection key format: {collection_key} - {exc}"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         user_filters = Q(groups__name="can_be_collection_owner") | Q(is_superuser=True)
         if collection_key:

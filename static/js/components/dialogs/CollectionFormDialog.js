@@ -57,8 +57,12 @@ export class CollectionFormDialog extends React.Component<*, void> {
 
   fetchPotentialCollectionOwners = async () => {
     const { dispatch } = this.props
+    const { collectionKey } = this.props
+    if (!collectionKey) {
+      console.log("No collection key provided, skipping potential owner fetch.")
+      return
+    }
     try {
-      const { collectionKey } = this.props
       const response = await dispatch(actions.potentialCollectionOwners.get(collectionKey))
       this.setState({ users: response.users || [] })
     } catch (error) {
