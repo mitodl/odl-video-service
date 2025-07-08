@@ -96,7 +96,7 @@
     "rmwc": "^1.4.1",
     "sanitize-filename": "^1.6.1",
     "sass-lint": "^1.10.2",
-    "sass-loader": "^10",
+    "sass-loader": "^16.0.0",
     "sinon": "^21.0.0",
     "style-loader": "^0.23.0",
     "tar": "^7.0.0",
