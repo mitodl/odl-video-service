@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponseRedirect
 from django.test import RequestFactory
@@ -1515,3 +1515,64 @@ def test_sync_collection_videos_with_edx_success(superuser_logged_in_apiclient, 
     assert response.data["task_id"] == "mock-task-id"
     assert response.data["collection_id"] == str(collection.key)
     mock_task.delay.assert_called_once_with(["video1", "video2"])
+
+
+@pytest.mark.parametrize(
+    "is_admin,collection_key_type,expected_status,expected_owner_included",
+    [
+        (True, None, status.HTTP_200_OK, False),
+        (True, "valid", status.HTTP_200_OK, True),
+        (True, "invalid", status.HTTP_400_BAD_REQUEST, False),
+        (True, "non-existent", status.HTTP_400_BAD_REQUEST, False),
+        (False, None, status.HTTP_403_FORBIDDEN, False),
+    ],
+)
+def test_potential_owners_api(
+    client, is_admin, collection_key_type, expected_status, expected_owner_included
+):
+    # Setup users and group
+    can_be_owner_group, _ = Group.objects.get_or_create(name="can_be_collection_owner")
+    owner = UserFactory(username="owner_user")
+    can_be_owner = UserFactory(username="can_be_owner_user")
+    can_be_owner.groups.add(can_be_owner_group)
+    UserFactory(is_superuser=True, username="super_user")
+
+    # Setup admin user
+    if is_admin:
+        admin_user = UserFactory(is_staff=True, is_superuser=True)
+        client.force_login(admin_user)
+    else:
+        user = UserFactory()
+        client.force_login(user)
+
+    # Setup collection if needed
+    params = {}
+    if collection_key_type == "valid":
+        collection = CollectionFactory(owner=owner)
+        params["collection_key"] = collection.key
+    elif collection_key_type == "invalid":
+        params["collection_key"] = "invalid_key"
+    elif collection_key_type == "non-existent":
+        bad_key = "00000000000000000000000000000000"
+        params["collection_key"] = bad_key
+
+    url = reverse("potential-collection-owners")
+    response = client.get(url, params)
+    assert response.status_code == expected_status
+
+    if expected_status == status.HTTP_200_OK:
+        usernames = [u["username"] for u in response.data["users"]]
+        assert "can_be_owner_user" in usernames
+        assert "super_user" in usernames
+        if expected_owner_included:
+            assert "owner_user" in usernames
+        else:
+            assert "owner_user" not in usernames
+    elif expected_status == status.HTTP_400_BAD_REQUEST:
+        if collection_key_type == "invalid":
+            assert "Invalid collection key format" in response.data["error"]
+        elif collection_key_type == "missing":
+            assert (
+                f"Collection with this key {bad_key} does not exists"
+                in response.data["error"]
+            )

@@ -1,19 +1,19 @@
 version: '2.1'
 services:
   db:
-    image: postgres:15.13
+    image: postgres:17.5
     ports:
       - "5432"
     environment:
       - POSTGRES_PASSWORD=postgres  # pragma: allowlist secret
 
   redis:
-    image: redis:3.2.12@sha256:7b0a40301bc1567205e6461c5bf94c38e1e1ad0169709e49132cafc47f6b51f3
+    image: redis:8.0.2@sha256:b43d2dcbbdb1f9e1582e3a0f37e53bf79038522ccffb56a25858969d7a9b6c11
     ports:
       - "6379"
 
   nginx:
-    image: nginx:1.28.0
+    image: nginx:1.29.0
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/web.conf
       - ./:/src

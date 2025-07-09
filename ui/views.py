@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import redirect_to_login
+from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import Http404, HttpResponse
@@ -38,7 +39,7 @@ from ui.models import (
     VideoSubtitle,
 )
 from ui.pagination import CollectionSetPagination, VideoSetPagination
-from ui.serializers import VideoSerializer
+from ui.serializers import UserSerializer, VideoSerializer
 from ui.tasks import post_collection_videos_to_edx
 
 from ui.templatetags.render_bundle import public_path
@@ -401,7 +402,7 @@ class CollectionViewSet(viewsets.ModelViewSet):
         and the collection does not have any EdxEndpoint.
         """
         response = super().update(request, *args, **kwargs)
-        edx_course_id = request.data.get("edx_course_id", "").lower()
+        edx_course_id = (request.data.get("edx_course_id") or "").lower()
         instance = self.get_object()
         if edx_course_id and not instance.edx_endpoints.exists():
             endpoint = None
@@ -663,3 +664,39 @@ class SyncCollectionVideosWithEdX(APIView):
             },
             status=status.HTTP_202_ACCEPTED,
         )
+
+
+class PotentialCollectionOwners(APIView):
+    """
+    View for getting a list of users for the collection owner dropdown.
+    """
+
+    authentication_classes = (authentication.SessionAuthentication,)
+    permission_classes = (permissions.IsAdminUser,)
+
+    def get(self, request):
+        """Get and return the list of potential collection owners"""
+
+        User = get_user_model()
+        collection_key = request.query_params.get("collection_key")
+        user_filters = Q(groups__name="can_be_collection_owner") | Q(is_superuser=True)
+        if collection_key:
+            try:
+                collection = Collection.objects.get(key=collection_key)
+                user_filters |= Q(id=collection.owner_id)
+            except Collection.DoesNotExist:
+                return Response(
+                    {
+                        "error": f"Collection with this key {collection_key} does not exists"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            except Exception:
+                return Response(
+                    {"error": f"Invalid collection key format: {collection_key}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        users = User.objects.filter(user_filters).distinct().order_by("username")
+        serializer = UserSerializer(users, many=True)
+        return Response(data={"users": serializer.data})

@@ -59,9 +59,9 @@ describe("CollectionDetailPage", () => {
     describe("when selecting collection", () => {
       const testDefs = [
         { opts: { loaded: true, data: undefined }, expected: null },
-        { opts: { loaded: true, data: "somedata" }, expected: "somedata" },
+        { opts: { loaded: true, data: { key: "somedata" } }, expected: { key: "somedata" } },
         { opts: { loaded: false, data: undefined }, expected: null },
-        { opts: { loaded: false, data: "somedata" }, expected: null }
+        { opts: { loaded: false, data: {} }, expected: null }
       ]
       testDefs.forEach(testDef => {
         const { opts, expected } = testDef
@@ -77,7 +77,7 @@ describe("CollectionDetailPage", () => {
             })
           }
           const actualProps = mapStateToProps(state, ownProps)
-          assert.equal(actualProps.collection, testDef.expected)
+          assert.deepEqual(actualProps.collection, testDef.expected)
         })
       })
     })
@@ -123,7 +123,7 @@ describe("CollectionDetailPage", () => {
         },
         {
           opts:     { processing: true, loaded: false, matchKey: false },
-          expected: false
+          expected: true // We keep the data regardless of the loaded state now.
         },
         {
           opts:     { processing: false, loaded: true, matchKey: true },
@@ -204,6 +204,11 @@ describe("CollectionDetailPage", () => {
 
     beforeEach(() => {
       collection = makeCollection()
+      collection.owner_info = {
+        id:       collection.owner,
+        username: collection.owner_info.username,
+        email:    collection.owner_info.email
+      }
       props = {
         dispatch:        sandbox.stub(),
         collection,
@@ -792,6 +797,26 @@ describe("CollectionDetailPage", () => {
         const result = await page.handleSyncWithEdX(event)
         assert.isNull(result)
         sinon.assert.notCalled(require("../lib/api").syncCollectionVideosWithEdX)
+      })
+    })
+
+    describe("Owner display", () => {
+      beforeEach(() => {
+        collection = makeCollection()
+        props = {
+          dispatch:      sandbox.stub(),
+          collection:    collection,
+          collectionKey: collection.key,
+          editable:      true,
+          needsUpdate:   false
+        }
+        wrapper = shallow(<CollectionDetailPage {...props} />)
+      })
+
+      it("displays the owner username", () => {
+        const ownerElement = wrapper.find(".collection-owner")
+        assert.isTrue(ownerElement.exists())
+        assert.include(ownerElement.text(), `Owner: ${collection.owner_info.username}`)
       })
     })
   })

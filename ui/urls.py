@@ -91,4 +91,9 @@ urlpatterns = [
         views.UsersForMoiraList.as_view(),
         name="list-members",
     ),
+    path(
+        "api/v0/potential_collection_owners/",
+        views.PotentialCollectionOwners.as_view(),
+        name="potential-collection-owners",
+    ),
 ]

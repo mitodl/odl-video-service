@@ -1,5 +1,5 @@
 // @flow
-/* global SETTINGS: false */
+/* global SETTINGS: false, Class */
 
 // From https://github.com/ReactTraining/react-router/issues/4278#issuecomment-299692502
 import React from "react"

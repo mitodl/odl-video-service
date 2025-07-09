@@ -33,6 +33,9 @@ export const setAdminLists = createAction(SET_ADMIN_LISTS)
 export const SET_EDX_COURSE_ID = qualifiedName("SET_EDX_COURSE_ID")
 export const setEdxCourseId = createAction(SET_EDX_COURSE_ID)
 
+export const SET_OWNER_ID = qualifiedName("SET_OWNER_ID")
+export const setOwnerId = createAction(SET_OWNER_ID)
+
 export const SET_SELECTED_VIDEO_KEY = qualifiedName("SET_SELECTED_VIDEO_KEY")
 export const setSelectedVideoKey = createAction(SET_SELECTED_VIDEO_KEY)
 
@@ -44,6 +47,9 @@ export const clearCollectionForm = createAction(CLEAR_COLLECTION_FORM)
 
 export const CLEAR_COLLECTION_ERRORS = qualifiedName("CLEAR_COLLECTION_ERRORS")
 export const clearCollectionErrors = createAction(CLEAR_COLLECTION_ERRORS)
+
+export const CLEAR_COLLECTION_DATA = qualifiedName("CLEAR_COLLECTION_DATA")
+export const clearCollectionData = createAction(CLEAR_COLLECTION_DATA)
 
 export const showNewCollectionDialog = () => (dispatch: Dispatch) => {
   dispatch(setIsNew(true))

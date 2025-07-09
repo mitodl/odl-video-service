@@ -8,7 +8,7 @@ jobs:
       # Label used to access the service container
       db:
         # Docker Hub image
-        image: postgres:15.13
+        image: postgres:17.5
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -23,7 +23,7 @@ jobs:
           - 5432:5432
 
       redis:
-        image: redis:3.2.12@sha256:7b0a40301bc1567205e6461c5bf94c38e1e1ad0169709e49132cafc47f6b51f3
+        image: redis:8.0.2@sha256:b43d2dcbbdb1f9e1582e3a0f37e53bf79038522ccffb56a25858969d7a9b6c11
         ports:
           - 6379:6379
 
@@ -43,7 +43,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          python-version: "3.13.3"
+          python-version: "3.13.5"
           cache: poetry
 
       - name: Install dependencies
@@ -108,7 +108,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 16.20.2
+          node-version: 22.17.0
 
       - name: Setup environment
         run: sudo apt-get install libelf1

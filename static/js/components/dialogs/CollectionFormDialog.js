@@ -44,6 +44,33 @@ type DialogProps = {
 export class CollectionFormDialog extends React.Component<*, void> {
   props: DialogProps
 
+  constructor(props) {
+    super(props)
+    this.state = {
+      users: props.users || []
+    }
+  }
+
+  componentDidMount() {
+    this.fetchPotentialCollectionOwners()
+  }
+
+  fetchPotentialCollectionOwners = async () => {
+    const { dispatch } = this.props
+    const { collectionKey } = this.props
+    if (!collectionKey) {
+      console.log("No collection key provided, skipping potential owner fetch.")
+      return
+    }
+    try {
+      const response = await dispatch(actions.potentialCollectionOwners.get(collectionKey))
+      this.setState({ users: response.users || [] })
+    } catch (error) {
+      console.error("Error fetching users:", error)
+      this.handleError(error)
+    }
+  }
+
   setCollectionTitle = (event: Object) => {
     const { dispatch } = this.props
     dispatch(uiActions.setCollectionTitle(event.target.value))
@@ -91,6 +118,11 @@ export class CollectionFormDialog extends React.Component<*, void> {
     dispatch(uiActions.setEdxCourseId(event.target.value))
   }
 
+  setCollectionOwner = (event: Object) => {
+    const { dispatch } = this.props
+    dispatch(uiActions.setOwnerId(parseInt(event.target.value, 10)))
+  }
+
   submitForm = async () => {
     const {
       dispatch,
@@ -115,6 +147,9 @@ export class CollectionFormDialog extends React.Component<*, void> {
     }
     if (isEdxCourseAdmin) {
       payload.edx_course_id = collectionForm.edxCourseId
+    }
+    if (collectionForm.ownerId) {
+      payload.owner = collectionForm.ownerId
     }
 
     try {
@@ -290,6 +325,20 @@ export class CollectionFormDialog extends React.Component<*, void> {
               validationMessage={errors ? errors.edx_course_id : ""}
             />
           )}
+          <div className="owner-selection">
+            <label htmlFor="collection-owner">Owner</label>
+            <select
+              id="collection-owner"
+              onChange={this.setCollectionOwner}
+              value={collectionForm.ownerId || ""}
+            >
+              {this.state.users.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.username} {user.email && `(${user.email})`}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </Dialog>
     )
