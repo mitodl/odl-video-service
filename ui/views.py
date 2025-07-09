@@ -679,9 +679,11 @@ class PotentialCollectionOwners(APIView):
 
         User = get_user_model()
         collection_key = request.query_params.get("collection_key")
+        user_filters = Q(groups__name="can_be_collection_owner") | Q(is_superuser=True)
         if collection_key:
             try:
                 collection = Collection.objects.get(key=collection_key)
+                user_filters |= Q(id=collection.owner_id)
             except Collection.DoesNotExist:
                 return Response(
                     {
@@ -689,19 +691,12 @@ class PotentialCollectionOwners(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            except Exception as exc:
+            except Exception:
                 return Response(
-                    {
-                        "error": f"Invalid collection key format: {collection_key} - {exc}"
-                    },
+                    {"error": f"Invalid collection key format: {collection_key}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-        user_filters = Q(groups__name="can_be_collection_owner") | Q(is_superuser=True)
-        if collection_key:
-            user_filters |= Q(id=collection.owner_id)
-
         users = User.objects.filter(user_filters).distinct().order_by("username")
-
         serializer = UserSerializer(users, many=True)
         return Response(data={"users": serializer.data})
