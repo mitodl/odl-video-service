@@ -75,6 +75,7 @@ describe("CollectionFormDialog", () => {
             open={true}
             hideDialog={hideDialogStub}
             isEdxCourseAdmin={true}
+            collectionKey={'00000000-0000-0000-0000-000000000000'}
             {...props}
           />
         </div>
@@ -463,6 +464,7 @@ describe("CollectionFormDialog", () => {
             history={{ push: sandbox.stub() }}
             collectionUi={{ isNew: true }}
             collectionForm={{}}
+            collectionKey={'00000000-0000-0000-0000-000000000000'}
           />
         )
 
@@ -500,6 +502,7 @@ describe("CollectionFormDialog", () => {
             history={{ push: sandbox.stub() }}
             collectionUi={{ isNew: true }}
             collectionForm={{}}
+            collectionKey={'00000000-0000-0000-0000-000000000000'}
           />
         )
 
@@ -515,16 +518,28 @@ describe("CollectionFormDialog", () => {
 
         // Verify handleError was called
         sinon.assert.called(handleErrorStub)
+      })
 
-        // Reset sandbox for other tests
+      it("does not fetch users when collectionKey is not provided", async () => {
         sandbox.restore()
-        sandbox = sinon.createSandbox()
-        sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
-          users: [
-            { id: 1, username: "user1", email: "user1@example.com" },
-            { id: 2, username: "user2", email: "user2@example.com" }
-          ]
-        }))
+
+        const dispatchStub = sandbox.stub()
+
+        const consoleLogStub = sandbox.stub(console, "log")
+
+        const wrapper = shallow(
+          <UnconnectedCollectionFormDialog
+            dispatch={dispatchStub}
+            history={{ push: sandbox.stub() }}
+            collectionUi={{ isNew: true }}
+            collectionForm={{}}
+          />
+        )
+        await new Promise(resolve => setTimeout(resolve, 10))
+
+        sinon.assert.notCalled(dispatchStub)
+        assert.equal(wrapper.state().users.length, 0)
+        sinon.assert.calledWithMatch(consoleLogStub, "No collection key provided, skipping potential owner fetch.")
       })
     })
   }
