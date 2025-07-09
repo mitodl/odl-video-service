@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponseRedirect
 from django.test import RequestFactory
@@ -1517,58 +1517,62 @@ def test_sync_collection_videos_with_edx_success(superuser_logged_in_apiclient, 
     mock_task.delay.assert_called_once_with(["video1", "video2"])
 
 
-def test_users_list_permission(logged_in_apiclient):
-    """Tests that only authenticated users with admin permissions can call UsersList"""
-    url = reverse("users-list")
-    client, user = logged_in_apiclient
-    client.logout()
+@pytest.mark.parametrize(
+    "is_admin,collection_key_type,expected_status,expected_owner_included",
+    [
+        (True, None, status.HTTP_200_OK, False),
+        (True, "valid", status.HTTP_200_OK, True),
+        (True, "invalid", status.HTTP_400_BAD_REQUEST, False),
+        (True, "non-existent", status.HTTP_400_BAD_REQUEST, False),
+        (False, None, status.HTTP_403_FORBIDDEN, False),
+    ],
+)
+def test_potential_owners_api(
+    client, is_admin, collection_key_type, expected_status, expected_owner_included
+):
+    # Setup users and group
+    can_be_owner_group, _ = Group.objects.get_or_create(name="can_be_collection_owner")
+    owner = UserFactory(username="owner_user")
+    can_be_owner = UserFactory(username="can_be_owner_user")
+    can_be_owner.groups.add(can_be_owner_group)
+    UserFactory(is_superuser=True, username="super_user")
 
-    # call with anonymous user
-    assert client.get(url).status_code == status.HTTP_403_FORBIDDEN
+    # Setup admin user
+    if is_admin:
+        admin_user = UserFactory(is_staff=True, is_superuser=True)
+        client.force_login(admin_user)
+    else:
+        user = UserFactory()
+        client.force_login(user)
 
-    # call with regular user (not admin)
-    client.force_login(user)
-    assert client.get(url).status_code == status.HTTP_403_FORBIDDEN
+    # Setup collection if needed
+    params = {}
+    if collection_key_type == "valid":
+        collection = CollectionFactory(owner=owner)
+        params["collection_key"] = collection.key
+    elif collection_key_type == "invalid":
+        params["collection_key"] = "invalid_key"
+    elif collection_key_type == "non-existent":
+        bad_key = "00000000000000000000000000000000"
+        params["collection_key"] = bad_key
 
-    # call with admin user
-    user.is_staff = True
-    user.save()
-    client.force_login(user)
-    assert client.get(url).status_code == status.HTTP_200_OK
+    url = reverse("potential-collection-owners")
+    response = client.get(url, params)
+    assert response.status_code == expected_status
 
-
-def test_users_list_content(logged_in_apiclient):
-    """Test that UsersList returns all users"""
-    url = reverse("users-list")
-    client, user = logged_in_apiclient
-
-    # Create some test users
-    user1 = UserFactory(username="user1", email="user1@example.com")
-    user2 = UserFactory(username="user2", email="user2@example.com")
-    user3 = UserFactory(username="user3", email="user3@example.com")
-
-    # Make the request user an admin
-    user.is_staff = True
-    user.save()
-    client.force_login(user)
-
-    response = client.get(url)
-
-    # Check response
-    assert response.status_code == status.HTTP_200_OK
-    assert "users" in response.data
-
-    # Extract usernames from response for easier testing
-    usernames = [u["username"] for u in response.data["users"]]
-
-    # Check that all our created users are in the response
-    assert user.username in usernames
-    assert user1.username in usernames
-    assert user2.username in usernames
-    assert user3.username in usernames
-
-    # Check that the user serializer includes the expected fields
-    for user_data in response.data["users"]:
-        assert "id" in user_data
-        assert "username" in user_data
-        assert "email" in user_data
+    if expected_status == status.HTTP_200_OK:
+        usernames = [u["username"] for u in response.data["users"]]
+        assert "can_be_owner_user" in usernames
+        assert "super_user" in usernames
+        if expected_owner_included:
+            assert "owner_user" in usernames
+        else:
+            assert "owner_user" not in usernames
+    elif expected_status == status.HTTP_400_BAD_REQUEST:
+        if collection_key_type == "invalid":
+            assert "Invalid collection key format" in response.data["error"]
+        elif collection_key_type == "missing":
+            assert (
+                f"Collection with this key {bad_key} does not exists"
+                in response.data["error"]
+            )

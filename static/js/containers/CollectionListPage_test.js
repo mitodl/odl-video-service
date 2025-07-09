@@ -46,14 +46,6 @@ describe("CollectionListPage", () => {
     sandbox
       .stub(api, "getCollections")
       .returns(Promise.resolve({ results: collections }))
-    sandbox
-      .stub(api, "getUsers")
-      .returns(Promise.resolve({
-        users: [
-          { id: 1, username: "user1", email: "user1@example.com" },
-          { id: 2, username: "user2", email: "user2@example.com" }
-        ]
-      }))
   })
 
   afterEach(() => {
@@ -68,7 +60,6 @@ describe("CollectionListPage", () => {
         actions.collectionsList.get.requestType,
         actions.collectionsList.get.successType,
         collectionsPaginationActions.constants.REQUEST_GET_PAGE,
-        actions.usersList.get.requestType
       ],
       () => {
         wrapper = mount(

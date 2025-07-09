@@ -53,7 +53,7 @@ describe("CollectionFormDialog", () => {
     uiState = INITIAL_UI_STATE
 
     // Mock the users API response
-    sandbox.stub(api, "getUsers").returns(Promise.resolve({
+    sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
       users: [
         { id: 1, username: "user1", email: "user1@example.com" },
         { id: 2, username: "user2", email: "user2@example.com" }
@@ -75,6 +75,7 @@ describe("CollectionFormDialog", () => {
             open={true}
             hideDialog={hideDialogStub}
             isEdxCourseAdmin={true}
+            collectionKey={'00000000-0000-0000-0000-000000000000'}
             {...props}
           />
         </div>
@@ -440,8 +441,8 @@ describe("CollectionFormDialog", () => {
         // We need to restore the default stub to avoid conflicts
         sandbox.restore()
 
-        // Create a new getUsersStub
-        sandbox.stub(api, "getUsers").returns(Promise.resolve({
+        // Create a new getPotentialCollectionOwnersStub
+        sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
           users: [
             { id: 1, username: "user1", email: "user1@example.com" },
             { id: 2, username: "user2", email: "user2@example.com" }
@@ -463,6 +464,7 @@ describe("CollectionFormDialog", () => {
             history={{ push: sandbox.stub() }}
             collectionUi={{ isNew: true }}
             collectionForm={{}}
+            collectionKey={'00000000-0000-0000-0000-000000000000'}
           />
         )
 
@@ -475,7 +477,7 @@ describe("CollectionFormDialog", () => {
         // Reinitialize the sandbox with the global stubs for other tests
         sandbox.restore()
         sandbox = sinon.createSandbox()
-        sandbox.stub(api, "getUsers").returns(Promise.resolve({
+        sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
           users: [
             { id: 1, username: "user1", email: "user1@example.com" },
             { id: 2, username: "user2", email: "user2@example.com" }
@@ -500,6 +502,7 @@ describe("CollectionFormDialog", () => {
             history={{ push: sandbox.stub() }}
             collectionUi={{ isNew: true }}
             collectionForm={{}}
+            collectionKey={'00000000-0000-0000-0000-000000000000'}
           />
         )
 
@@ -507,24 +510,36 @@ describe("CollectionFormDialog", () => {
         const handleErrorStub = sandbox.stub()
         wrapper.instance().handleError = handleErrorStub
 
-        // Call fetchUsers manually
-        await wrapper.instance().fetchUsers()
+        // Call fetchPotentialCollectionOwners manually
+        await wrapper.instance().fetchPotentialCollectionOwners()
 
         // Verify console.error was called
         sinon.assert.called(consoleErrorStub)
 
         // Verify handleError was called
         sinon.assert.called(handleErrorStub)
+      })
 
-        // Reset sandbox for other tests
+      it("does not fetch users when collectionKey is not provided", async () => {
         sandbox.restore()
-        sandbox = sinon.createSandbox()
-        sandbox.stub(api, "getUsers").returns(Promise.resolve({
-          users: [
-            { id: 1, username: "user1", email: "user1@example.com" },
-            { id: 2, username: "user2", email: "user2@example.com" }
-          ]
-        }))
+
+        const dispatchStub = sandbox.stub()
+
+        const consoleLogStub = sandbox.stub(console, "log")
+
+        const wrapper = shallow(
+          <UnconnectedCollectionFormDialog
+            dispatch={dispatchStub}
+            history={{ push: sandbox.stub() }}
+            collectionUi={{ isNew: true }}
+            collectionForm={{}}
+          />
+        )
+        await new Promise(resolve => setTimeout(resolve, 10))
+
+        sinon.assert.notCalled(dispatchStub)
+        assert.equal(wrapper.state().users.length, 0)
+        sinon.assert.calledWithMatch(consoleLogStub, "No collection key provided, skipping potential owner fetch.")
       })
     })
   }
