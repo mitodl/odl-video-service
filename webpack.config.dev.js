@@ -46,7 +46,7 @@ devConfig.module.rules = [
     test: /\.css$|\.scss$/,
     use: [
       {loader: 'style-loader'},
-      {loader: 'css-loader'},
+      {loader: 'css-loader', options: {esModule: false}},
       {loader: 'postcss-loader', options: {sourceMap: true}},
       {
         loader: 'sass-loader',
