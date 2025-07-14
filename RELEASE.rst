@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.81.0
+Version 0.81.0 (Released July 14, 2025)
 --------------
 
 - feat: add potential owner api for owner dropdown (#1269)
