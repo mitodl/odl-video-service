@@ -38,18 +38,18 @@ module.exports = {
     loader: 'babel-loader',
     options: {
       "presets": [
-        ["env", { "modules": false }],
-        "react",
+        ["@babel/preset-env", { "modules": false }],
+        "@babel/preset-react",
       ],
       "ignore": [
         "node_modules/**"
       ],
       "plugins": [
-        "transform-flow-strip-types",
+        "@babel/plugin-transform-flow-strip-types",
         "react-hot-loader/babel",
-        "transform-object-rest-spread",
-        "transform-class-properties",
-        "syntax-dynamic-import",
+        "@babel/plugin-proposal-object-rest-spread",
+        "@babel/plugin-proposal-class-properties",
+        "@babel/plugin-syntax-dynamic-import",
       ]
     }
   },

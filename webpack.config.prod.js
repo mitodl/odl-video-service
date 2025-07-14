@@ -9,8 +9,8 @@ const TerserPlugin = require("terser-webpack-plugin");
 const prodBabelConfig = Object.assign({}, babelSharedLoader);
 
 prodBabelConfig.options.plugins.push(
-  "transform-react-constant-elements",
-  "transform-react-inline-elements"
+  "@babel/plugin-transform-react-constant-elements",
+  "@babel/plugin-transform-react-inline-elements"
 );
 
 const prodConfig = Object.assign({}, config);
