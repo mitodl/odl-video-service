@@ -2878,20 +2878,15 @@ kidmagic = ["kid"]
 
 [[package]]
 name = "structlog"
-version = "20.2.0"
+version = "25.4.0"
 description = "Structured Logging for Python"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "structlog-20.2.0-py2.py3-none-any.whl", hash = "sha256:33dd6bd5f49355e52c1c61bb6a4f20d0b48ce0328cc4a45fe872d38b97a05ccd"},
-    {file = "structlog-20.2.0.tar.gz", hash = "sha256:af79dfa547d104af8d60f86eac12fb54825f54a46bc998e4504ef66177103174"},
+    {file = "structlog-25.4.0-py3-none-any.whl", hash = "sha256:fe809ff5c27e557d14e613f45ca441aabda051d119ee5a0102aaba6ce40eed2c"},
+    {file = "structlog-25.4.0.tar.gz", hash = "sha256:186cd1b0a8ae762e29417095664adf1d6a31702160a46dacb7796ea82f7409e4"},
 ]
-
-[package.extras]
-dev = ["coverage[toml]", "freezegun (>=0.2.8)", "furo", "pre-commit", "pretend", "pytest (>=6.0)", "pytest-asyncio", "pytest-randomly", "simplejson", "sphinx", "sphinx-toolbox", "twisted"]
-docs = ["furo", "sphinx", "sphinx-toolbox", "twisted"]
-tests = ["coverage[toml]", "freezegun (>=0.2.8)", "pretend", "pytest (>=6.0)", "pytest-asyncio", "pytest-randomly", "simplejson"]
 
 [[package]]
 name = "structlog-sentry"
@@ -3203,4 +3198,4 @@ xmlsec = ["xmlsec (>=0.6.1)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "d1114cbb4d08db9b71cb4e1d205884644292662eaf042cc4ca306d096ea2725a"
+content-hash = "8eafbccd54bddb705877fd2ab6ba32d5ad28b78a4d28f965583915ec5f40446c"
