@@ -98,8 +98,6 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:latest
-    profiles:
-      - keycloak
     depends_on:
       - db
     environment:
