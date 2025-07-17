@@ -560,7 +560,7 @@
           "type": "password",
           "userLabel": "My password",
           "createdDate": 1726159949877,
-          "secretData": "{\"value\":\"P23HPeLgfgQ9i+0x06J/5anJmV9wwcqrkhW7FBrfHJg=\",\"salt\":\"LW6v4uvkk+vBD9jNxNxAlQ==\",\"additionalParameters\":{}}",
+          "secretData": "{\"value\":\"Z4094Gk709tijTtqeYWfL6ukMMQMyaoGgv/BQAMZdy0=\",\"salt\":\"oVorytXE3j/MNcchyj+OWw==\",\"additionalParameters\":{}}",
           "credentialData": "{\"hashIterations\":5,\"algorithm\":\"argon2\",\"additionalParameters\":{\"hashLength\":[\"32\"],\"memory\":[\"7168\"],\"type\":[\"id\"],\"version\":[\"1.3\"],\"parallelism\":[\"1\"]}}"
         }
       ],
