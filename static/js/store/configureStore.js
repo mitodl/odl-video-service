@@ -1,32 +1,37 @@
 // eslint-disable-next-line no-redeclare
 /* global require:false, module:false */
-import { compose, createStore, applyMiddleware } from "redux"
-import { thunk as thunkMiddleware } from "redux-thunk"
+import { compose, legacy_createStore as createStore, applyMiddleware } from "redux"
+import { thunk } from "redux-thunk"  // Updated import
 import { createLogger } from "redux-logger"
 
 import rootReducer from "../reducers"
 
+const composeEnhancers =
+  (typeof window !== 'undefined' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
+  compose
+
 let createStoreWithMiddleware
 if (process.env.NODE_ENV !== "production") {
-  createStoreWithMiddleware = compose(
-    applyMiddleware(thunkMiddleware, createLogger()),
-    window.devToolsExtension ? window.devToolsExtension() : f => f
+  createStoreWithMiddleware = composeEnhancers(
+    applyMiddleware(thunk, createLogger())
   )(createStore)
 } else {
-  createStoreWithMiddleware = compose(applyMiddleware(thunkMiddleware))(
-    createStore
-  )
+  createStoreWithMiddleware = compose(
+    applyMiddleware(thunk)
+  )(createStore)
 }
 
+// @flow
 export default function configureStore(initialState: Object) {
   const store = createStoreWithMiddleware(rootReducer, initialState)
 
   if (module.hot) {
     // Enable Webpack hot module replacement for reducers
     module.hot.accept("../reducers", () => {
-      const nextRootReducer = require("../reducers")
-
-      store.replaceReducer(nextRootReducer)
+      // Use import() instead of require() for better code splitting
+      import("../reducers").then(({ default: nextRootReducer }) => {
+        store.replaceReducer(nextRootReducer)
+      })
     })
   }
 
