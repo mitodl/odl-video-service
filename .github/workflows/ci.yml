@@ -108,7 +108,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 22.17.0
+          node-version: 22.17.1
 
       - name: Setup environment
         run: sudo apt-get install libelf1
