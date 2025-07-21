@@ -1,7 +1,5 @@
 """urls for ui"""
 
-from django.conf import settings
-from django.contrib.auth.views import LogoutView
 from django.urls import include, path, re_path
 from rest_framework import routers
 
@@ -15,7 +13,7 @@ router.register(r"subtitles", views.VideoSubtitleViewSet, basename="subtitle")
 urlpatterns = [
     path("", views.index, name="index"),
     path("login/", views.LoginView.as_view(), name="login"),
-    path("logout/", LogoutView.as_view(next_page=settings.LOGIN_URL), name="logout"),
+    path("logout/", views.LogoutView.as_view(), name="logout"),
     re_path(
         r"^collections/(?P<collection_key>[0-9a-f]{32})?/?$",
         views.CollectionReactView.as_view(),

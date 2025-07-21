@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "hijack",
     "hijack.contrib.admin",
     "encrypted_model_fields",
+    "social_django",
 ]
 
 DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
@@ -88,6 +89,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "social_django.middleware.SocialAuthExceptionMiddleware",
     "hijack.middleware.HijackUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -100,21 +102,66 @@ if DEBUG:
 
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
-LOGIN_REDIRECT_URL = "/"
-if get_bool("USE_SHIBBOLETH", False):
-    # TOUCHSTONE
-    MIDDLEWARE.append("shibboleth.middleware.ShibbolethRemoteUserMiddleware")
-    SHIBBOLETH_ATTRIBUTE_MAP = {
-        "EPPN": (True, "username"),
-        "MAIL": (True, "email"),
-        # full name is in the "DISPLAY_NAME" header,
-        # but no way to parse that into first_name and last_name...
-    }
-    AUTHENTICATION_BACKENDS = [
-        "shibboleth.backends.ShibbolethRemoteUserBackend",
-    ]
-LOGIN_URL = "/login/"
+AUTHENTICATION_BACKENDS = [
+    "social_core.backends.keycloak.KeycloakOAuth2",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
+# Keycloak OIDC Configuration
+KEYCLOAK_CLIENT_ID = get_string("KEYCLOAK_CLIENT_ID", "odl-video-app")
+KEYCLOAK_CLIENT_SECRET = get_string("KEYCLOAK_CLIENT_SECRET", "odl-video-secret-2025")
+KEYCLOAK_PUBLIC_KEY = get_string("KEYCLOAK_PUBLIC_KEY", "")
+KEYCLOAK_SERVER_URL = get_string("KEYCLOAK_SERVER_URL", "http://kc.odl.local:7080")
+KEYCLOAK_REALM = get_string("KEYCLOAK_REALM", "ovs-local")
+
+# Social Auth Keycloak settings
+SOCIAL_AUTH_KEYCLOAK_KEY = KEYCLOAK_CLIENT_ID
+SOCIAL_AUTH_KEYCLOAK_SECRET = KEYCLOAK_CLIENT_SECRET
+SOCIAL_AUTH_PUBLIC_KEY = KEYCLOAK_PUBLIC_KEY
+
+# Keycloak URLs
+if KEYCLOAK_SERVER_URL and KEYCLOAK_REALM:
+    KEYCLOAK_BASE_URL = f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM}"
+    SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL = (
+        f"{KEYCLOAK_BASE_URL}/protocol/openid-connect/auth"
+    )
+    SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL = (
+        f"{KEYCLOAK_BASE_URL}/protocol/openid-connect/token"
+    )
+    SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL = (
+        f"{KEYCLOAK_BASE_URL}/protocol/openid-connect/logout"
+    )
+
+# Social Auth Pipeline - Custom pipeline for user creation and role mapping
+SOCIAL_AUTH_PIPELINE = [
+    "social_core.pipeline.social_auth.social_details",
+    "social_core.pipeline.social_auth.social_uid",
+    "social_core.pipeline.social_auth.auth_allowed",
+    "social_core.pipeline.social_auth.social_user",
+    "social_core.pipeline.user.get_username",
+    # Send a validation email to the user to verify its email address.
+    # Disabled by default.
+    # 'social_core.pipeline.mail.mail_validation',
+    # Associates the current social details with another user account with
+    # a similar email address. Disabled by default.
+    # 'social_core.pipeline.social_auth.associate_by_email',
+    # Create the user account and create the social association.
+    "social_core.pipeline.user.create_user",
+    # Associate the current social details with the user in the database.
+    "social_core.pipeline.social_auth.associate_user",
+    "social_core.pipeline.social_auth.load_extra_data",
+    "odl_video.pipeline.assign_user_groups",
+    "social_core.pipeline.user.user_details",
+]
+
+SOCIAL_AUTH_KEYCLOAK_ID_KEY = "email"
+SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
+SOCIAL_AUTH_KEYCLOAK_SCOPE = ["openid", "profile", "email"]
+SOCIAL_AUTH_KEYCLOAK_EXTRA_DATA = ["user_groups"]
+
+LOGIN_REDIRECT_URL = "/"
+LOGIN_URL = "/auth/login/keycloak/"
+LOGOUT_REDIRECT_URL = "/"
 
 ROOT_URLCONF = "odl_video.urls"
 
