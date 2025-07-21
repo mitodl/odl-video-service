@@ -21,6 +21,7 @@ urlpatterns = [
     re_path(r"^admin/", admin.site.urls),
     path("", include("ui.urls")),
     path("", include("cloudsync.urls")),
+    path("auth/", include("social_django.urls", namespace="social")),
     path("hijack/", include("hijack.urls", namespace="hijack")),
     path("api/", include("mitol.transcoding.urls")),
 ]
