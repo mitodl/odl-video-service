@@ -1,6 +1,26 @@
 Release Notes
 =============
 
+Version 0.81.1
+--------------
+
+- fix(deps): update dependency structlog-sentry to v2 (#1295)
+- fix(deps): update dependency flow-bin to v0.276.0 (#1300)
+- fix(deps): update dependency @sentry/browser to v9.40.0 (#1299)
+- chore(deps): update redis docker tag to v8.0.3 (#1298)
+- fix(deps): update dependency redux to v5 (#1285)
+- fix(deps): update dependency structlog to v25 (#1294)
+- fix(deps): update dependency isomorphic-fetch to v3 (#1293)
+- Revert "chore(deps): update node.js to v22.17.1 (#1290)" (#1296)
+- fix(deps): update dependency @sentry/browser to v9.39.0 (#1291)
+- chore(deps): update node.js to v22.17.1 (#1290)
+- fix(deps): update dependency react-ga to v3 (#1283)
+- fix(deps): update dependency mini-css-extract-plugin to v2 (#1254)
+- [pre-commit.ci] pre-commit autoupdate
+- fix(deps): update dependency css-loader to v7 (#1267)
+- fix(deps): update dependency babel-loader to v10 (#1272)
+- fix(deps): update dependency redux-thunk to v3 (#1287)
+
 Version 0.81.0 (Released July 14, 2025)
 --------------
 
