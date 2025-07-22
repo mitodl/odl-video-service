@@ -565,7 +565,7 @@ def test_video_detail_no_permission(
 
 def test_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_data):
     """
-    Tests that an anonymous user is redirected to the login page, with a next parameter
+    Tests that an anonymous user is redirected to the login page
     """
     client, _ = logged_in_apiclient
     client.logout()
@@ -574,9 +574,22 @@ def test_video_detail_anonymous(settings, logged_in_apiclient, user_admin_list_d
     )
     response = client.get(f"{url}?start=35", follow=True)
     last_url, status_code = response.redirect_chain[-1]
-    assert settings.LOGIN_URL in last_url
+
+    # With Keycloak integration, the redirect chain goes:
+    # 1. Protected page -> Django login URL
+    # 2. Django login URL -> Keycloak authentication
+    # So we should check that we end up at Keycloak with proper parameters
+    assert "keycloak" in last_url.lower() or "kc.odl.local" in last_url
     assert status_code == 302
-    assert f"?next={url}%3Fstart%3D35" in last_url
+
+    # Check that the redirect chain includes our login URL
+    redirect_urls = [redirect_url for redirect_url, _ in response.redirect_chain]
+    assert any(settings.LOGIN_URL in redirect_url for redirect_url in redirect_urls)
+
+    # Verify that the redirect to Keycloak has the expected parameters
+    assert "client_id=odl-video-app" in last_url
+    assert "response_type=code" in last_url
+    assert "scope=openid+profile+email" in last_url
 
 
 def test_public_video_detail_anonymous(
