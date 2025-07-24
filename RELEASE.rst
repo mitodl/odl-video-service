@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.81.1
+Version 0.81.1 (Released July 24, 2025)
 --------------
 
 - fix(deps): update dependency structlog-sentry to v2 (#1295)
