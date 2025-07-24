@@ -541,6 +541,7 @@ class LoginView(DjangoLoginView):
                 **default_js_settings(self.request),
             }
         )
+        context["use_keycloak"] = getattr(settings, "USE_KEYCLOAK", False)
         return context
 
     def get(self, request, *args, **kwargs):
@@ -551,7 +552,11 @@ class LoginView(DjangoLoginView):
                 return redirect(next_redirect)
             else:
                 return redirect("/")
-        return redirect("social:begin", "keycloak")
+
+        if getattr(settings, "USE_KEYCLOAK", False):
+            return redirect("social:begin", "keycloak")
+
+        return super().get(request, *args, **kwargs)
 
 
 class LogoutView(View):
