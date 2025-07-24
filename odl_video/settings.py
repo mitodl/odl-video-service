@@ -76,7 +76,7 @@ INSTALLED_APPS = [
     "hijack",
     "hijack.contrib.admin",
     "encrypted_model_fields",
-    "social_django",
+    # "social_django",
 ]
 
 DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
@@ -89,7 +89,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "social_django.middleware.SocialAuthExceptionMiddleware",
+    # "social_django.middleware.SocialAuthExceptionMiddleware",
     "hijack.middleware.HijackUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -102,10 +102,32 @@ if DEBUG:
 
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
-AUTHENTICATION_BACKENDS = [
-    "social_core.backends.keycloak.KeycloakOAuth2",
-    "django.contrib.auth.backends.ModelBackend",
-]
+LOGIN_REDIRECT_URL = "/"
+LOGIN_URL = "login"
+USE_KEYCLOAK = get_bool("USE_KEYCLOAK", False)
+if get_bool("USE_SHIBBOLETH", False):
+    # TOUCHSTONE
+    MIDDLEWARE.append("shibboleth.middleware.ShibbolethRemoteUserMiddleware")
+    SHIBBOLETH_ATTRIBUTE_MAP = {
+        "EPPN": (True, "username"),
+        "MAIL": (True, "email"),
+        # full name is in the "DISPLAY_NAME" header,
+        # but no way to parse that into first_name and last_name...
+    }
+    AUTHENTICATION_BACKENDS = [
+        "shibboleth.backends.ShibbolethRemoteUserBackend",
+    ]
+elif USE_KEYCLOAK:
+    # KEYCLOAK
+    MIDDLEWARE.append("social_django.middleware.SocialAuthExceptionMiddleware")
+    INSTALLED_APPS += ("social_django",)
+
+    AUTHENTICATION_BACKENDS = [
+        "social_core.backends.keycloak.KeycloakOAuth2",
+    ]
+
+    LOGIN_URL = "/auth/login/keycloak/"
+
 
 # Keycloak OIDC Configuration
 KEYCLOAK_CLIENT_ID = get_string("KEYCLOAK_CLIENT_ID", "odl-video-app")
@@ -159,8 +181,6 @@ SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_KEYCLOAK_SCOPE = ["openid", "profile", "email"]
 SOCIAL_AUTH_KEYCLOAK_EXTRA_DATA = ["user_groups"]
 
-LOGIN_REDIRECT_URL = "/"
-LOGIN_URL = "/auth/login/keycloak/"
 LOGOUT_REDIRECT_URL = "/"
 
 ROOT_URLCONF = "odl_video.urls"
