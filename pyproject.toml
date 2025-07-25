@@ -31,7 +31,7 @@ html5lib = "^1.1"
 httplib2 = "^0.22.0"
 ipython = "^9.0.0"
 mit-moira = {git = "https://github.com/mitodl/mit-moira", tag = "v0.0.4"}
-newrelic = "^8.8.0"
+newrelic = "^10.0.0"
 psycopg2 = "^2.9.10"
 pycountry = "^24.0.0"
 python-dateutil = "^2.8.1"
