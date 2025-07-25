@@ -4763,10 +4763,10 @@ flatted@^2.0.0:
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-2.0.2.tgz#4575b21e2bcee7434aa9be662f4b7b5f9c2b5138"
   integrity sha512-r5wGx7YeOwNWNlCA0wQ86zKyDLMQr+/RB8xy74M4hTphfmjlijTSSXGuH8rnvKZnfT9i+75zmd8jcKdMR4O6jA==
 
-flow-bin@0.276.0:
-  version "0.276.0"
-  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.276.0.tgz#0c4f4de9d3eed254e5f6d86b0c02df58a4354588"
-  integrity sha512-qcxqq2ZtUS7KqwRiGa3w/N/YppQuWj5vaKMH9KgLDv0QaxrUskv6iCNoTfpFg/crT0YjQk5hJ8ALdk8YVqnO0g==
+flow-bin@0.277.1:
+  version "0.277.1"
+  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.277.1.tgz#8c438f7dc448a918c9fc1b2920e4ced8c43ee983"
+  integrity sha512-WllhR0uomrlxTg0F7rSt2khi8KQKSVU5N5vD1m0ZlYzAs2q9rIP7RWhXFsctXwKkscqI+csEWIgcPoCYzPv1dw==
 
 focus-trap@^2.3.0:
   version "2.4.6"
