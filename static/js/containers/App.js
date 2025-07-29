@@ -1,7 +1,8 @@
 // @flow
 /* global SETTINGS: false */
 import React from "react"
-import { Route } from "react-router-dom"
+import { Routes, Route, useParams, useLocation } from "react-router-dom"
+import ga from "react-ga"
 
 import CollectionListPage from "./CollectionListPage"
 import CollectionDetailPage from "./CollectionDetailPage"
@@ -11,67 +12,74 @@ import HelpPage from "./HelpPage"
 import TermsPage from "./TermsPage"
 import ToastOverlay from "./ToastOverlay"
 
-import type { Match } from "react-router"
+// Google Analytics tracking hook
+function usePageTracking() {
+  const location = useLocation()
 
-class App extends React.Component<*, void> {
-  props: {
-    match: Match
-  }
+  React.useEffect(() => {
+    if (SETTINGS.gaTrackingID) {
+      ga.pageview(location.pathname)
+    }
+  }, [location])
+}
 
-  renderVideoEmbedPage = (routeProps: any) => {
-    return <VideoEmbedPage video={SETTINGS.video} {...routeProps} />
-  }
+// Wrapper components to handle route parameters
+function VideoDetailPageWrapper() {
+  const { videoKey, collectionKey } = useParams()
+  return (
+    <VideoDetailPage
+      videoKey={videoKey || SETTINGS.videoKey}
+      isAdmin={!!SETTINGS.is_video_admin}
+    />
+  )
+}
 
-  renderVideoDetailPage = (routeProps: any) => {
-    return (
-      <VideoDetailPage
-        videoKey={SETTINGS.videoKey}
-        isAdmin={!!SETTINGS.is_video_admin}
-        {...routeProps}
-      />
-    )
-  }
+function VideoEmbedPageWrapper() {
+  const { videoKey } = useParams()
+  return <VideoEmbedPage video={SETTINGS.video} videoKey={videoKey} />
+}
 
-  render() {
-    const { match } = this.props
-    return (
-      <div className="app">
-        <ToastOverlay />
+function CollectionDetailPageWrapper() {
+  const { collectionKey } = useParams()
+  return <CollectionDetailPage collectionKey={collectionKey} />
+}
+
+function App() {
+  usePageTracking()
+
+  return (
+    <div className="app">
+      <ToastOverlay />
+      <Routes>
         <Route
-          exact
-          path={`${match.url}collections/`}
-          component={CollectionListPage}
+          path="collections"
+          element={<CollectionListPage />}
         />
         <Route
-          exact
-          path={`${match.url}collections/:collectionKey/`}
-          component={CollectionDetailPage}
+          path="collections/:collectionKey"
+          element={<CollectionDetailPageWrapper />}
         />
         <Route
-          exact
-          path={`${match.url}collections/:collectionKey/videos/:videoKey/`}
-          component={this.renderVideoDetailPage}
+          path="collections/:collectionKey/videos/:videoKey"
+          element={<VideoDetailPageWrapper />}
         />
         <Route
-          exact
-          path={`${match.url}videos/:videoKey/`}
-          component={this.renderVideoDetailPage}
+          path="videos/:videoKey"
+          element={<VideoDetailPageWrapper />}
         />
         <Route
-          exact
-          path={`${match.url}videos/:videoKey/embed/`}
-          component={this.renderVideoEmbedPage}
+          path="videos/:videoKey/embed"
+          element={<VideoEmbedPageWrapper />}
         />
         <Route
-          exact
-          path={`${match.url}embeds/:videoKey/`}
-          component={this.renderVideoEmbedPage}
+          path="embeds/:videoKey"
+          element={<VideoEmbedPageWrapper />}
         />
-        <Route exact path={`${match.url}help/`} component={HelpPage} />
-        <Route exact path={`${match.url}terms/`} component={TermsPage} />
-      </div>
-    )
-  }
+        <Route path="help" element={<HelpPage />} />
+        <Route path="terms" element={<TermsPage />} />
+      </Routes>
+    </div>
+  )
 }
 
 export default App

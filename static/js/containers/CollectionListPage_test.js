@@ -6,7 +6,7 @@ import { mount } from "enzyme"
 import { assert } from "chai"
 import { Provider } from "react-redux"
 import configureTestStore from "redux-asserts"
-import { MemoryRouter, Route } from "react-router"
+import { MemoryRouter, Routes, Route } from "react-router"
 
 import CollectionListPage from "./CollectionListPage"
 import { CollectionListPage as UnconnectedCollectionListPage } from "./CollectionListPage"
@@ -64,11 +64,13 @@ describe("CollectionListPage", () => {
       () => {
         wrapper = mount(
           <MemoryRouter>
-            <Route>
-              <Provider store={store}>
-                <CollectionListPage {...props} />
-              </Provider>
-            </Route>
+            <Routes>
+              <Route path="*" element={
+                <Provider store={store}>
+                  <CollectionListPage {...props} />
+                </Provider>
+              } />
+            </Routes>
           </MemoryRouter>
         )
       }

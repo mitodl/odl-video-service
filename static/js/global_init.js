@@ -1,10 +1,11 @@
 // Define globals we would usually get from Django
 import ReactDOM from "react-dom"
+import { createRoot } from "react-dom/client"
 import { makeVideo } from "./factories/video"
 
 // For setting up enzyme with react adapter.
 import { configure as configureEnzyme } from "enzyme"
-import Adapter from "enzyme-adapter-react-15"
+import Adapter from "@wojtekmaj/enzyme-adapter-react-17"
 
 // Configure enzyme with react adapter.
 configureEnzyme({ adapter: new Adapter() })
@@ -47,7 +48,13 @@ if (!Object.entries) {
 afterEach(function() {
   const node = document.querySelector("#integration_test_div")
   if (node) {
-    ReactDOM.unmountComponentAtNode(node)
+    // For React 18 compatibility
+    if (node._reactRootContainer) {
+      node._reactRootContainer.unmount()
+    } else {
+      // Fallback for older mounting patterns
+      ReactDOM.unmountComponentAtNode(node)
+    }
   }
   document.body.innerHTML = ""
   global.SETTINGS = _createSettings()

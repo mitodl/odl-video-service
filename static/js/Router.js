@@ -1,27 +1,34 @@
-/* global Store */
+/* global Store, SETTINGS: false */
 import React from "react"
 import { Provider } from "react-redux"
-import { Route, Router as ReactRouter } from "react-router-dom"
+import { BrowserRouter as ReactRouter } from "react-router-dom"
+import ga from "react-ga"
 
 import App from "./containers/App"
-import withTracker from "./util/withTracker"
 
 export default class Router extends React.Component {
   props: {
-    history: Object,
     store: Store
   }
 
+  componentDidMount() {
+    // Initialize Google Analytics
+    const debug = SETTINGS.reactGaDebug === "true"
+    if (SETTINGS.gaTrackingID) {
+      ga.initialize(SETTINGS.gaTrackingID, { debug: debug })
+    }
+  }
+
   render() {
-    const { children, history, store } = this.props
+    const { children, store } = this.props
 
     return (
       <div>
         <Provider store={store}>
-          <ReactRouter history={history}>{children}</ReactRouter>
+          <ReactRouter>{children}</ReactRouter>
         </Provider>
       </div>
     )
   }
 }
-export const routes = <Route component={withTracker(App)} />
+export const routes = <App />

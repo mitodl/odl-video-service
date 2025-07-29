@@ -26,7 +26,8 @@ module.exports = {
       alias: {
         'videojs-contrib-hls': path.resolve(__dirname, 'node_modules/videojs-contrib-hls/dist/videojs-contrib-hls.js'),
         'videojs-contrib-quality-levels': path.resolve(__dirname, 'node_modules/videojs-contrib-quality-levels/dist/videojs-contrib-quality-levels.js'),
-      }
+      },
+      mainFields: ['browser', 'module', 'main']
     },
     performance: {
       hints: false
