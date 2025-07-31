@@ -4121,13 +4121,6 @@ eslint-plugin-flow-vars@^0.5.0:
   resolved "https://registry.yarnpkg.com/eslint-plugin-flow-vars/-/eslint-plugin-flow-vars-0.5.0.tgz#a7fb78fd873c86e0e5839df3b3c90d47bc68c6d2"
   integrity sha512-KD6Kdd2+9U8e7+Qg0BNVmQ6Qh8lsrCHfCRGooT0lJUonVsZo7QI2rtkPHBBJBC4REMwRVeViIDi3gWczM0qK8A==
 
-eslint-plugin-flowtype@^4.7.0:
-  version "4.7.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-flowtype/-/eslint-plugin-flowtype-4.7.0.tgz#903a6ea3eb5cbf4c7ba7fa73cc43fc39ab7e4a70"
-  integrity sha512-M+hxhSCk5QBEValO5/UqrS4UunT+MgplIJK5wA1sCtXjzBcZkpTGRwxmLHhGpbHcrmQecgt6ZL/KDdXWqGB7VA==
-  dependencies:
-    lodash "^4.17.15"
-
 eslint-plugin-mocha@^6.3.0:
   version "6.3.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-mocha/-/eslint-plugin-mocha-6.3.0.tgz#72bfd06a5c4323e17e30ef41cd726030e8cdb8fd"
