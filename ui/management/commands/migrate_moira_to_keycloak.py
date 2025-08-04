@@ -230,7 +230,9 @@ class Command(BaseCommand):
         # 3. Create users and add to group
         for member in moira_members:
             try:
-                user_result = self.migrate_moira_user(member, moira_list.name, group)
+                user_result = self.migrate_moira_user(
+                    member["username"], moira_list.name, group
+                )
                 result["users_created"] += user_result["keycloak_user_created"]
                 result["users_existed"] += user_result["keycloak_user_existed"]
                 result["django_users_created"] += user_result["django_user_created"]

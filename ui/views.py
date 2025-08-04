@@ -48,7 +48,7 @@ from ui.utils import (
     generate_mock_video_analytics_data,
     get_video_analytics,
     list_members,
-    query_moira_lists,
+    query_lists,
 )
 
 
@@ -592,9 +592,9 @@ class LogoutView(View):
         return redirect(getattr(settings, "LOGOUT_REDIRECT_URL", "/"))
 
 
-class MoiraListsForUser(APIView):
+class GroupsForUser(APIView):
     """
-    View for getting moira lists against given user.
+    View for getting Keycloak groups against given user.
     """
 
     authentication_classes = (authentication.SessionAuthentication,)
@@ -605,20 +605,20 @@ class MoiraListsForUser(APIView):
 
         email = username_or_email
         if "@" not in email:
-            email = "{username}@mit.edu".format(username=username_or_email)
+            email = f"{username_or_email}@mit.edu"
 
         try:
             user = User.objects.get(Q(username=username_or_email) | Q(email=email))
         except User.DoesNotExist:
             return Response(status.HTTP_404_NOT_FOUND)
 
-        user_lists = query_moira_lists(user)
+        user_lists = query_lists(user)
         return Response(data={"user_lists": user_lists})
 
 
-class UsersForMoiraList(APIView):
+class UsersForGroup(APIView):
     """
-    View for getting users against give list name.
+    View for getting users against given group name.
     """
 
     authentication_classes = (authentication.SessionAuthentication,)
