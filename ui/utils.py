@@ -6,171 +6,135 @@ import json
 import os
 import random
 import re
-from collections import namedtuple
-from functools import lru_cache
+from typing import List, Set, Dict
 from urllib.parse import urljoin
 
 import boto3
 import pytz
 import requests
 from django.conf import settings
-from django.core.cache import caches
 from google.oauth2.service_account import (
     Credentials as ServiceAccountCredentials,
 )
 from googleapiclient.discovery import build
-from mit_moira import Moira
 
 from odl_video import logging
-from ui.exceptions import GoogleAnalyticsException, MoiraException
+from ui.exceptions import GoogleAnalyticsException
+
+from keycloak_utils import get_keycloak_client
 
 log = logging.getLogger(__name__)
 
-MoiraUser = namedtuple("MoiraUser", "username type")
-MOIRA_CACHE_KEY = "moira_lists_{user_id}"
-cache = caches["redis"]
 
-
-@lru_cache(1)  # memoize this function
-def get_moira_client():
+def query_user_groups(username: str) -> List[str]:
     """
-    Gets a moira client.
-
-    Returns:
-        Moira: A moira client
-    """
-
-    _check_files_exist(
-        [settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE]
-    )
-    try:
-        return Moira(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE)
-    except Exception as exc:
-        raise MoiraException(
-            "Something went wrong with creating a moira client"
-        ) from exc
-
-
-def _check_files_exist(paths):
-    """Checks that files exist at given paths."""
-    errors = []
-    for path in paths:
-        if not os.path.isfile(path):
-            errors.append("File missing: expected path '{}'".format(path))
-    if errors:
-        raise RuntimeError("\n".join(errors))
-
-
-def get_moira_user(user):
-    """
-    Return the most likely username & type (USER, STRING) for a user in moira lists based on email.
-    If the email ends with 'mit.edu', assume kerberos id = email prefix
-    Otherwise use the entire email address as the username.
+    Get a list of all groups a user is a member of.
 
     Args:
-        user (django.contrib.auth.User): the Django user to return a Moira user for.
+        username (str): The username to query groups for.
 
     Returns:
-        MoiraUser: A namedtuple containing username and type
+        List[str]: A list of names of groups which contain the user as a member.
     """
-    if re.search(r"(@|\.)mit.edu$", user.email):
-        return MoiraUser(user.email.split("@")[0], "USER")
-    return MoiraUser(user.email, "STRING")
+    client = get_keycloak_client()
+    return set(client.get_user_groups(username))
 
 
-def delete_moira_cache(user):
+def user_groups(user) -> Set[str]:
     """
-    Delete the user's moira list cache
-
-    Args:
-        user (django.contrib.auth.User): the Django user to return a Moira user for.
-    """
-    cache.delete(MOIRA_CACHE_KEY.format(user_id=user.id))
-
-
-def query_moira_lists(user):
-    """
-    Get a set of all moira lists (including nested lists) a user has access to, by querying the Moira service.
+    Get a set of all the groups a user has access to.
 
     Args:
         user (django.contrib.auth.User): the Django user.
 
     Returns:
-        List[str]: A list of names of moira lists which contain the user as a member.
-    """
-    moira_user = get_moira_user(user)
-    moira = get_moira_client()
-    try:
-        list_infos = moira.user_list_membership(
-            moira_user.username, moira_user.type, max_return_count=100000
-        )
-        list_names = [list_info["listName"] for list_info in list_infos]
-        return list_names
-    except Exception as exc:
-        if "java.lang.NullPointerException" in str(exc):
-            # User is not a member of any moira lists, so ignore exception and return empty list
-            return []
-        raise MoiraException(
-            "Something went wrong with getting moira-lists for %s" % user.username
-        ) from exc
-
-
-def user_moira_lists(user):
-    """
-    Get a list of all the moira lists a user has access to, from the cache if it exists,
-    otherwise query Moira service and create the cache.
-
-    Args:
-        user (django.contrib.auth.User): the Django user.
-
-    Returns:
-        Set[str]: An set containing all known lists the user belongs to,
-            including ancestors of nested lists.
+        Set[str]: A set containing all groups the user belongs to.
     """
     if user.is_anonymous:
         return set()
-    list_names = cache.get(MOIRA_CACHE_KEY.format(user_id=user.id)) or set()
-    if not list_names:
-        list_names = set(query_moira_lists(user))
-        cache.set(
-            MOIRA_CACHE_KEY.format(user_id=user.id),
-            list_names,
-            settings.MOIRA_CACHE_TIMEOUT,
-        )
-    return list_names
+
+    return query_user_groups(user.username)
 
 
-def list_members(list_name):
+def group_members(group_name: str) -> List[Dict]:
     """
-    Get a set of all moira users against given list name
+    Get a list of all users in a given group
 
     Args:
-        list_name (str): name of list.
+        group_name (str): name of the group.
+
+    Returns:
+        List[Dict]: A list of users as dictionaries
+    """
+    client = get_keycloak_client()
+    return client.get_group_members_by_name(group_name)
+
+
+def has_common_groups(user, group_names) -> bool:
+    """
+    Return true if the user is a member of any of the supplied group names, false otherwise.
+
+    Returns:
+        bool: True if there is any name in group_names which is in the user's groups
+    """
+    if user.is_anonymous:
+        return False
+
+    user_group_list = user_groups(user)
+    return not user_group_list.isdisjoint(group_names)
+
+
+def query_lists(user):
+    """
+    Get a list of all groups a user has access to by querying the Keycloak service.
+
+    Args:
+        user (django.contrib.auth.User): the Django user.
+
+    Returns:
+        List[str]: A list of names of groups which contain the user as a member.
+    """
+    email = user.username
+    if "@" not in email:
+        email = f"{email}@mit.edu"
+    return query_user_groups(email)
+
+
+def user_lists(user):
+    """
+    Get a set of all the groups a user has access to, from the cache if it exists,
+    otherwise query Keycloak service and create the cache.
+
+    Args:
+        user (django.contrib.auth.User): the Django user.
+
+    Returns:
+        Set[str]: A set containing all known groups the user belongs to.
+    """
+    return user_groups(user)
+
+
+def list_members(group_name):
+    """
+    Get a list of all users in a given group
+
+    Args:
+        group_name (str): name of the group.
 
     Returns:
         list_users(list): A list of users
     """
-    moira = get_moira_client()
-    try:
-        list_users = moira.list_members(list_name)
-        return list_users
-    except Exception as exc:
-        raise MoiraException(
-            "Something went wrong with getting moira-users for %s" % list_name
-        ) from exc
+    return group_members(group_name)
 
 
 def has_common_lists(user, list_names):
     """
-    Return true if the user is a member of any of the supplied moira list names, false otherwise.
+    Return true if the user is a member of any of the supplied group names, false otherwise.
 
     Returns:
-        bool: True if there is any name in list_names which is in the user's moira lists
+        bool: True if there is any name in list_names which is in the user's groups
     """
-    if user.is_anonymous:
-        return False
-    user_lists = user_moira_lists(user)
-    return not user_lists.isdisjoint(list_names)
+    return has_common_groups(user, list_names)
 
 
 def get_bucket(bucket_name):

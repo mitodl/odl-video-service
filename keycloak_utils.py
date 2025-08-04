@@ -1,11 +1,13 @@
 """
-Keycloak Management Utility for MOIRA Migration
+Keycloak Management Utility
 """
 
 import requests
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 import logging
+
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ class KeycloakUser:
 
 
 class KeycloakManager:
-    """Keycloak management utility for MOIRA migration"""
+    """Keycloak management utility for group and user management"""
 
     def __init__(
         self, keycloak_url: str, realm: str, admin_username: str, admin_password: str
@@ -97,7 +99,7 @@ class KeycloakManager:
 
         group_data = {
             "name": group_name,
-            "attributes": attributes or {"source": ["moira_migration"]},
+            "attributes": attributes or {"source": ["odl_video_service"]},
         }
 
         response = requests.post(url, json=group_data, headers=self.get_headers())
@@ -119,6 +121,76 @@ class KeycloakManager:
         response = requests.put(url, headers=self.get_headers())
         response.raise_for_status()
         return response.status_code == 204
+
+    def list_exists(self, group_name: str) -> bool:
+        """
+        Check if a group exists
+
+        Args:
+            group_name (str): Name of the group to check
+
+        Returns:
+            bool: True if the group exists, False otherwise
+        """
+        group = self.find_group_by_name(group_name)
+        return bool(group)
+
+    def get_user_groups(self, username: str) -> List[str]:
+        """
+        Get a list of all groups a user is a member of
+
+        Args:
+            username (str): The username to query groups for
+
+        Returns:
+            List[str]: A list of names of groups which contain the user as a member
+        """
+        try:
+            # Find the user first
+            user = self.find_user_by_username(username)
+            if not user:
+                logger.warning(f"User {username} not found in Keycloak")
+                return []
+
+            # Get all groups
+            all_groups = self.get_groups()
+            user_groups = []
+
+            # For each group, check if the user is a member
+            for group in all_groups:
+                group_members = self.get_group_members(group["id"])
+                if any(member["username"] == username for member in group_members):
+                    user_groups.append(group["name"])
+
+            return user_groups
+        except Exception as exc:
+            logger.error(f"Error querying Keycloak groups for {username}: {exc}")
+            return []
+
+    def get_group_members_by_name(self, group_name: str) -> List[Dict]:
+        """
+        Get all members of a specific group by group name
+
+        Args:
+            group_name (str): Name of the group
+
+        Returns:
+            List[Dict]: List of user dictionaries in the group
+        """
+        try:
+            # Find the group first
+            group = self.find_group_by_name(group_name)
+            if not group:
+                logger.warning(f"Group {group_name} not found in Keycloak")
+                return []
+
+            # Get the group members
+            return self.get_group_members(group["id"])
+        except Exception as exc:
+            logger.error(f"Error getting members for group {group_name}: {exc}")
+            raise Exception(
+                f"Something went wrong with getting Keycloak users for {group_name}"
+            ) from exc
 
     # USER MANAGEMENT METHODS
     def get_users(self, max_users: int = 100, search: str = None) -> List[Dict]:
@@ -161,7 +233,7 @@ class KeycloakManager:
             "lastName": user.last_name,
             "enabled": user.enabled,
             "emailVerified": True,
-            "attributes": user.attributes or {"source": ["moira_migration"]},
+            "attributes": user.attributes or {"source": ["odl_video_service"]},
         }
 
         # Create the user
@@ -221,3 +293,42 @@ class KeycloakManager:
                 logger.error(f"Failed to create user {user.username}: {e}")
 
         return created_users
+
+
+def get_keycloak_client() -> KeycloakManager:
+    """
+    Creates a new Keycloak client configured with settings from Django settings.
+    This creates a fresh connection each time without caching the instance.
+
+    Returns:
+        KeycloakManager: A new Keycloak client instance
+    """
+    try:
+        # Ensure we have the necessary settings
+        if (
+            not hasattr(settings, "KEYCLOAK_SERVER_URL")
+            or not settings.KEYCLOAK_SERVER_URL
+        ):
+            raise ValueError("KEYCLOAK_SERVER_URL setting is missing")
+        if not hasattr(settings, "KEYCLOAK_REALM") or not settings.KEYCLOAK_REALM:
+            raise ValueError("KEYCLOAK_REALM setting is missing")
+        if (
+            not hasattr(settings, "KEYCLOAK_SVC_ADMIN")
+            or not settings.KEYCLOAK_SVC_ADMIN
+        ):
+            raise ValueError("KEYCLOAK_SVC_ADMIN setting is missing")
+        if (
+            not hasattr(settings, "KEYCLOAK_SVC_ADMIN_PASSWORD")
+            or not settings.KEYCLOAK_SVC_ADMIN_PASSWORD
+        ):
+            raise ValueError("KEYCLOAK_SVC_ADMIN_PASSWORD setting is missing")
+
+        return KeycloakManager(
+            keycloak_url=settings.KEYCLOAK_SERVER_URL,
+            realm=settings.KEYCLOAK_REALM,
+            admin_username=settings.KEYCLOAK_SVC_ADMIN,
+            admin_password=settings.KEYCLOAK_SVC_ADMIN_PASSWORD,
+        )
+    except Exception as exc:
+        logger.error(f"Failed to create Keycloak client: {exc}")
+        raise Exception("Something went wrong with creating a Keycloak client") from exc

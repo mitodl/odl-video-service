@@ -11,29 +11,32 @@ from rest_framework.settings import api_settings
 from ui import models
 from ui import permissions as ui_permissions
 from ui.encodings import EncodingNames
-from ui.utils import get_moira_client, has_common_lists
+from ui.utils import has_common_lists
+from keycloak_utils import get_keycloak_client
 
 User = get_user_model()
 
 
-def validate_moira_lists(lists):
+def validate_keycloak_groups(lists):
     """
-    Raise a validation error if any of the moira lists in a list does not exist or is not a mailing list
+    Raise a validation error if any of the groups in a list does not exist
 
     Args:
-        lists(list of MoiraList): List of moira lists
+        lists(list of keycloak groups): List of groups
 
     Returns:
-        (list of MoiraList) List of moira lists
+        (list of keycloak groups) List of groups
     """
     bad_lists = []
-    moira_client = get_moira_client()
+    keycloak_client = get_keycloak_client()
     for mlist in lists:
-        if not moira_client.list_exists(mlist.name):
+        group = keycloak_client.find_group_by_name(mlist.name)
+        if not group:
             bad_lists.append(mlist.name)
+
     if bad_lists:
         raise serializers.ValidationError(
-            "Moira list does not exist: {}".format(",".join(bad_lists))
+            "Group does not exist: {}".format(",".join(bad_lists))
         )
     return lists
 
@@ -175,15 +178,15 @@ class VideoSerializer(serializers.ModelSerializer):
 
     def validate_view_lists(self, value):
         """
-        Validation for view-only moira lists
+        Validation for view-only keycloak groups
 
         Args:
-            value(list of MoiraList): list of moira lists
+            value(list of keycloak groups): list of keycloak groups
 
         Returns:
-            (list of MoiraList) List of moira lists
+            (list of keycloak groups) List of keycloak groups
         """
-        return validate_moira_lists(value)
+        return validate_keycloak_groups(value)
 
     def get_cloudfront_url(self, obj):
         """Get cloudfront_url"""
@@ -313,27 +316,26 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     def validate_view_lists(self, value):
         """
-        Validation for view-only moira lists
-
+        Validation for view-only keycloak groups
         Args:
-            value(list of MoiraList): list of moira lists
+            value(list of keycloak groups): list of keycloak groups
 
         Returns:
-            (list of MoiraList) List of moira lists
+            (list of keycloak groups) List of keycloak groups
         """
-        return validate_moira_lists(value)
+        return validate_keycloak_groups(value)
 
     def validate_admin_lists(self, value):
         """
-        Validation for admin moira lists
+        Validation for admin keycloak groups
 
         Args:
-            value(list of MoiraList): list of moira lists
+            value(list of keycloak groups): list of keycloak groups
 
         Returns:
-            (list of MoiraList) List of moira lists
+            (list of keycloak groups) List of keycloak groups
         """
-        return validate_moira_lists(value)
+        return validate_keycloak_groups(value)
 
     class Meta:
         model = models.Collection
@@ -393,12 +395,12 @@ class CollectionListSerializer(serializers.ModelSerializer):
         return obj.videos.count()
 
     def validate_view_lists(self, value):
-        """Validation for view-only moira lists"""
-        return validate_moira_lists(value)
+        """Validation for view-only keycloak groups"""
+        return validate_keycloak_groups(value)
 
     def validate_admin_lists(self, value):
-        """Validation for admin moira lists"""
-        return validate_moira_lists(value)
+        """Validation for admin keycloak groups"""
+        return validate_keycloak_groups(value)
 
     class Meta:
         model = models.Collection
