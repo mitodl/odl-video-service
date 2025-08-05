@@ -9,6 +9,8 @@ import logging
 
 from django.conf import settings
 
+from ui.exceptions import KeycloakException
+
 logger = logging.getLogger(__name__)
 
 
@@ -164,7 +166,6 @@ class KeycloakManager:
         """Find a group by name"""
         params = {"search": group_name, "exact": "true"}
         groups = self.get_groups(params)
-
         return groups[0] if groups else None
 
     def create_group(self, group_name: str, attributes: Optional[Dict] = None) -> Dict:
@@ -239,7 +240,9 @@ class KeycloakManager:
             return user_groups
         except Exception as exc:
             logger.error(f"Error querying Keycloak groups for {email}: {exc}")
-            return []
+            raise KeycloakException(
+                f"Something went wrong with getting groups for user {email}"
+            ) from exc
 
     def get_group_members_by_name(self, group_name: str) -> List[Dict]:
         """
@@ -260,8 +263,8 @@ class KeycloakManager:
             return self.get_group_members(group["id"])
         except Exception as exc:
             logger.error(f"Error getting members for group {group_name}: {exc}")
-            raise Exception(
-                f"Something went wrong with getting Keycloak users for {group_name}"
+            raise KeycloakException(
+                f"Something went wrong with getting members for group {group_name}"
             ) from exc
 
     # USER MANAGEMENT METHODS
@@ -302,11 +305,13 @@ class KeycloakManager:
             if e.response.status_code == 409:  # User already exists
                 logger.warning(f"User '{user.username}' already exists")
                 return self.find_user_by_email(user.email)
-            raise
+            raise KeycloakException(
+                f"Failed to create user {user.username}: {e.response.text}"
+            ) from e
 
         created_user = self.find_user_by_email(user.email)
         if not created_user:
-            raise RuntimeError("Failed to retrieve created user")
+            raise KeycloakException("Failed to retrieve created user")
 
         # Set password if provided
         if user.password:
@@ -344,18 +349,19 @@ def get_keycloak_client() -> KeycloakManager:
     Returns:
         KeycloakManager: A new Keycloak client instance
     """
-    try:
-        # Ensure we have the necessary settings
-        required_settings = [
-            "KEYCLOAK_SERVER_URL",
-            "KEYCLOAK_REALM",
-            "KEYCLOAK_SVC_ADMIN",
-            "KEYCLOAK_SVC_ADMIN_PASSWORD",
-        ]
-        for setting in required_settings:
-            if not getattr(settings, setting, None):
-                raise ValueError(f"{setting} setting is missing")
+    # Ensure we have the necessary settings
+    required_settings = [
+        "KEYCLOAK_SERVER_URL",
+        "KEYCLOAK_REALM",
+        "KEYCLOAK_SVC_ADMIN",
+        "KEYCLOAK_SVC_ADMIN_PASSWORD",
+    ]
+    for setting in required_settings:
+        if not getattr(settings, setting, None):
+            logger.error(f"Missing required setting: {setting}")
+            raise ValueError(f"{setting} setting is missing")
 
+    try:
         return KeycloakManager(
             keycloak_url=settings.KEYCLOAK_SERVER_URL,
             realm=settings.KEYCLOAK_REALM,
@@ -364,4 +370,6 @@ def get_keycloak_client() -> KeycloakManager:
         )
     except Exception as exc:
         logger.error(f"Failed to create Keycloak client: {exc}")
-        raise Exception("Something went wrong with creating a Keycloak client") from exc
+        raise KeycloakException(
+            "Something went wrong with creating a Keycloak client"
+        ) from exc

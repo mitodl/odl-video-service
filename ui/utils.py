@@ -5,7 +5,7 @@ import itertools
 import json
 import random
 import re
-from typing import List, Set, Dict
+from typing import List, Dict
 from urllib.parse import urljoin
 
 import boto3
@@ -20,12 +20,12 @@ from googleapiclient.discovery import build
 from odl_video import logging
 from ui.exceptions import GoogleAnalyticsException
 
-from keycloak_utils import get_keycloak_client
+from ui.keycloak_utils import get_keycloak_client
 
 log = logging.getLogger(__name__)
 
 
-def query_user_groups(email: str) -> Set[str]:
+def query_user_groups(email: str) -> List[str]:
     """
     Get a list of all groups a user is a member of.
 
@@ -36,21 +36,21 @@ def query_user_groups(email: str) -> Set[str]:
         Set[str]: A set of names of groups which contain the user as a member.
     """
     client = get_keycloak_client()
-    return set(client.get_user_groups(email))
+    return list(set(client.get_user_groups(email)))
 
 
-def user_groups(user) -> Set[str]:
+def user_groups(user) -> List[str]:
     """
-    Get a set of all the groups a user has access to.
+    Get a list of all the groups a user has access to.
 
     Args:
         user (django.contrib.auth.User): the Django user.
 
     Returns:
-        Set[str]: A set containing all groups the user belongs to.
+        List[str]: A list containing all groups the user belongs to.
     """
     if user.is_anonymous:
-        return set()
+        return []
 
     return query_user_groups(user.email)
 

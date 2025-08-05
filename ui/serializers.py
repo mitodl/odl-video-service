@@ -12,7 +12,7 @@ from ui import models
 from ui import permissions as ui_permissions
 from ui.encodings import EncodingNames
 from ui.utils import has_common_lists
-from keycloak_utils import get_keycloak_client
+from ui.keycloak_utils import get_keycloak_client
 
 User = get_user_model()
 

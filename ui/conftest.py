@@ -21,6 +21,18 @@ def mock_moira(mocker):
 
 
 @pytest.fixture
+def mock_kc_client(mocker):
+    """Mock for the KeycloakManager client"""
+    return mocker.patch("ui.keycloak_utils.get_keycloak_client", autospec=True)
+
+
+@pytest.fixture
+def mock_keycloak(mocker):
+    """Mock for the KeycloakManager client"""
+    return mocker.patch("ui.keycloak_utils.KeycloakManager")
+
+
+@pytest.fixture
 def mock_moira_client(mocker):
     """Return a fake moira client"""
     return mocker.patch("ui.utils.get_moira_client", autospec=True)
