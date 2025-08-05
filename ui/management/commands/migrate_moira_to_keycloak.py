@@ -224,7 +224,7 @@ class Command(BaseCommand):
             return result
 
         # 3. Create users and add to group
-        for member in moira_members[:2]:
+        for member in moira_members:
             try:
                 user_result = self.migrate_moira_user(member, moira_list.name, group)
                 result["users_created"] += user_result["keycloak_user_created"]
