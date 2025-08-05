@@ -3,7 +3,6 @@
 import datetime
 import itertools
 import json
-import os
 import random
 import re
 from typing import List, Set, Dict
@@ -26,18 +25,18 @@ from keycloak_utils import get_keycloak_client
 log = logging.getLogger(__name__)
 
 
-def query_user_groups(username: str) -> List[str]:
+def query_user_groups(email: str) -> Set[str]:
     """
     Get a list of all groups a user is a member of.
 
     Args:
-        username (str): The username to query groups for.
+        email (str): The email to query groups for.
 
     Returns:
-        List[str]: A list of names of groups which contain the user as a member.
+        Set[str]: A set of names of groups which contain the user as a member.
     """
     client = get_keycloak_client()
-    return set(client.get_user_groups(username))
+    return set(client.get_user_groups(email))
 
 
 def user_groups(user) -> Set[str]:
@@ -53,7 +52,7 @@ def user_groups(user) -> Set[str]:
     if user.is_anonymous:
         return set()
 
-    return query_user_groups(user.username)
+    return query_user_groups(user.email)
 
 
 def group_members(group_name: str) -> List[Dict]:
@@ -149,27 +148,6 @@ def get_bucket(bucket_name):
     """
     s3 = boto3.resource("s3")
     return s3.Bucket(bucket_name)
-
-
-def write_to_file(filename, contents):
-    """
-    Write content to a file in binary mode, creating directories if necessary
-
-    Args:
-        filename (str): The full-path filename to write to.
-        contents (bytes): What to write to the file.
-
-    """
-    if not os.path.exists(os.path.dirname(filename)):
-        os.makedirs(os.path.dirname(filename))
-    with open(filename, "wb") as infile:
-        infile.write(contents)
-
-
-def write_x509_files():
-    """Write the x509 certificate and key to files"""
-    write_to_file(settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_CERTIFICATE)
-    write_to_file(settings.MIT_WS_PRIVATE_KEY_FILE, settings.MIT_WS_PRIVATE_KEY)
 
 
 def get_video_analytics(video):
