@@ -11,7 +11,7 @@ import re
 
 from keycloak_utils import KeycloakManager, KeycloakUser
 from ui.models import MoiraList, Collection, Video
-from ui.utils import get_moira_client, list_members
+from ui.moira_util import get_moira_client, list_members
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -230,9 +230,7 @@ class Command(BaseCommand):
         # 3. Create users and add to group
         for member in moira_members:
             try:
-                user_result = self.migrate_moira_user(
-                    member["username"], moira_list.name, group
-                )
+                user_result = self.migrate_moira_user(member, moira_list.name, group)
                 result["users_created"] += user_result["keycloak_user_created"]
                 result["users_existed"] += user_result["keycloak_user_existed"]
                 result["django_users_created"] += user_result["django_user_created"]
@@ -271,7 +269,7 @@ class Command(BaseCommand):
             return result
 
         # 2. Create/update Keycloak user
-        keycloak_user = self.kc_manager.find_user_by_username(email)
+        keycloak_user = self.kc_manager.find_user_by_email(email)
         if keycloak_user:
             self.stdout.write(f"    Keycloak user exists: {username}")
             result["keycloak_user_existed"] = 1

@@ -32,17 +32,11 @@ def _get_recipients_for_video(video):
 
     # Get all admin list names
     for group_name in video.collection.admin_lists.values_list("name", flat=True):
-        # Find the group first
-        group = keycloak_client.find_group_by_name(group_name)
-        if not group:
-            continue
-
-        admin_lists.append(group_name)
-
         # Get all members of this group
-        group_members = keycloak_client.get_group_members(group["id"])
+        group_members = keycloak_client.get_group_members_by_name(group_name=group_name)
+        if group_members:
+            admin_lists.append(group_name)
 
-        # Extract email addresses from users
         for member in group_members:
             recipients_list.add(member["email"])
 
@@ -71,12 +65,6 @@ def send_notification_email(video):
         return
     # get the list of emails
     recipients = _get_recipients_for_video(video)
-    log.info(
-        "Sending notification email",
-        video_hexkey=video.hexkey,
-        video_status=video.status,
-        recipients=recipients,
-    )
     if not recipients:
         log.error(
             "No email sent, no valid recipient emails",

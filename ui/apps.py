@@ -32,6 +32,6 @@ class UIConfig(AppConfig):
             )
 
         # write the x509 certification & key to files
-        from ui.utils import write_x509_files
+        from ui.moira_util import write_x509_files
 
         write_x509_files()
