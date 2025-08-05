@@ -10,7 +10,7 @@ from mail.api import context_for_video, render_email_templates
 from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
 from odl_video import logging
 from ui.utils import has_common_lists
-from keycloak_utils import get_keycloak_client
+from ui.keycloak_utils import get_keycloak_client
 
 log = logging.getLogger(__name__)
 

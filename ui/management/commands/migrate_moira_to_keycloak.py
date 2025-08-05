@@ -9,7 +9,7 @@ from django.utils import timezone
 import logging
 import re
 
-from keycloak_utils import KeycloakManager, KeycloakUser
+from ui.keycloak_utils import KeycloakManager, KeycloakUser
 from ui.models import MoiraList, Collection, Video
 from ui.moira_util import get_moira_client, list_members
 
