@@ -15,12 +15,6 @@ def apiclient():
 
 
 @pytest.fixture
-def mock_moira(mocker):
-    """Return a fake mit_moira.Moira object"""
-    return mocker.patch("ui.utils.Moira")
-
-
-@pytest.fixture
 def mock_kc_client(mocker):
     """Mock for the KeycloakManager client"""
     return mocker.patch("ui.keycloak_utils.get_keycloak_client", autospec=True)
@@ -33,15 +27,9 @@ def mock_keycloak(mocker):
 
 
 @pytest.fixture
-def mock_moira_client(mocker):
-    """Return a fake moira client"""
-    return mocker.patch("ui.utils.get_moira_client", autospec=True)
-
-
-@pytest.fixture
-def mock_user_moira_lists(mocker):
-    """Return a fake moira client"""
-    mocked = mocker.patch("ui.utils.user_moira_lists")
+def mock_user_groups(mocker):
+    """Return a fake user groups"""
+    mocked = mocker.patch("ui.utils.user_groups")
     mocked.return_value = set()
     return mocked
 

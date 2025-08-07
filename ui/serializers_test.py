@@ -9,7 +9,7 @@ from rest_framework.serializers import DateTimeField, ValidationError
 
 from ui import factories, serializers
 from ui.encodings import EncodingNames
-from ui.factories import MoiraListFactory, UserFactory, VideoFactory
+from ui.factories import KeycloakGroupFactory, UserFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -50,7 +50,9 @@ def test_collection_serializer_validation_fake_admin_lists():
     """
     Test for CollectionSerializer's admin keycloak group validation for fake lists
     """
-    collection = factories.CollectionFactory(admin_lists=[factories.MoiraListFactory()])
+    collection = factories.CollectionFactory(
+        admin_lists=[factories.KeycloakGroupFactory()]
+    )
     serialized_data = serializers.CollectionSerializer(collection).data
     with pytest.raises(ValidationError) as exc:
         serializers.CollectionSerializer(data=serialized_data).is_valid(
@@ -65,7 +67,9 @@ def test_collection_serializer_validation_fake_view_lists():
     """
     Test for CollectionSerializer's viewable keycloak group validation for fake lists
     """
-    collection = factories.CollectionFactory(view_lists=[factories.MoiraListFactory()])
+    collection = factories.CollectionFactory(
+        view_lists=[factories.KeycloakGroupFactory()]
+    )
     serialized_data = serializers.CollectionSerializer(collection).data
     with pytest.raises(ValidationError) as exc:
         serializers.CollectionSerializer(data=serialized_data).is_valid(
@@ -120,7 +124,9 @@ def test_collection_serializer_private_video(mocker, is_admin, is_superuser):
 
     mocker.patch("ui.serializers.has_common_lists", return_value=is_admin)
 
-    collection = factories.CollectionFactory(admin_lists=[MoiraListFactory.create()])
+    collection = factories.CollectionFactory(
+        admin_lists=[KeycloakGroupFactory.create()]
+    )
     VideoFactory.create(collection=collection)
     VideoFactory.create(is_private=True, collection=collection)
 

@@ -11,7 +11,7 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework.exceptions import ValidationError
 
 from ui import factories, permissions
-from ui.factories import CollectionFactory, MoiraListFactory
+from ui.factories import CollectionFactory, KeycloakGroupFactory
 from ui.models import Collection
 
 pytestmark = pytest.mark.django_db
@@ -58,11 +58,11 @@ def collection():
 
 
 @pytest.fixture
-def moira_list():
+def keycloak_group():
     """
-    Returns an instance of MoiraList
+    Returns an instance of KeycloakGroup
     """
-    return factories.MoiraListFactory()
+    return factories.KeycloakGroupFactory()
 
 
 @pytest.fixture
@@ -114,15 +114,15 @@ def request_data_anon():
 
 
 @pytest.fixture
-def alt_moira_data():
+def alt_kc_group_data():
     """
-    Fixture for tests requiring a moira list, collection, and user
+    Fixture for tests requiring a Keycloak group, collection, and user
     """
-    alt_moira_list = MoiraListFactory()
+    alt_kc_group = KeycloakGroupFactory()
     alt_collection = CollectionFactory()
     alt_user = factories.UserFactory()
     return SimpleNamespace(
-        moira_list=alt_moira_list, collection=alt_collection, user=alt_user
+        keycloak_group=alt_kc_group, collection=alt_collection, user=alt_user
     )
 
 
@@ -209,14 +209,14 @@ def test_is_collection_admin_anonymous_users(
 
 
 def test_is_collection_user_not_matching_admin_lists(
-    mock_user_moira_lists, moira_list, collection_permission, collection, request_data
+    mock_user_groups, keycloak_group, collection_permission, collection, request_data
 ):
     """
     Test for HasCollectionPermissions.has_object_permission to verify
-    that user who does not match a collection moira admin list does have permission
+    that user who does not match a collection keycloak admin group does have permission
     """
-    collection.admin_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    collection.admin_lists.set([keycloak_group])
+    mock_user_groups.return_value = {"some_other_list"}
     assert (
         collection_permission.has_object_permission(
             request_data.request, request_data.view, collection
@@ -226,14 +226,14 @@ def test_is_collection_user_not_matching_admin_lists(
 
 
 def test_is_collection_user_not_matching_view_lists(
-    mock_user_moira_lists, moira_list, collection_permission, collection, request_data
+    mock_user_groups, keycloak_group, collection_permission, collection, request_data
 ):
     """
     Test for HasCollectionPermissions.has_object_permission to verify
-    that user who does not match a collection moira view list has permission
+    that user who does not match a collection keycloak view group has permission
     """
-    collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    collection.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {"some_other_list"}
     assert (
         collection_permission.has_object_permission(
             request_data.request, request_data.view, collection
@@ -321,14 +321,14 @@ def test_can_upload_to_collection_other_key(
 
 
 def test_can_upload_to_collection_other_owner(
-    mock_user_moira_lists, can_upload_to_collection_permission, collection, request_data
+    mock_user_groups, can_upload_to_collection_permission, collection, request_data
 ):
     """
     Test for CanUploadToCollection with a collection having another owner
     """
     request_data.request.method = "POST"
     request_data.request.data = {"collection": collection.hexkey}
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    mock_user_groups.return_value = {"some_other_list"}
     assert (
         can_upload_to_collection_permission.has_permission(
             request_data.request, request_data.view
@@ -371,13 +371,13 @@ def test_video_view_permission_anonymous_users(
 
 
 def test_video_view_permission_other_user(
-    mock_user_moira_lists, video_permission, video, request_data
+    mock_user_groups, video_permission, video, request_data
 ):
     """
     Test for HasVideoPermissions.has_object_permission to verify
     that user who does not own the video's collection does not have permission
     """
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    mock_user_groups.return_value = {"some_other_list"}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -413,14 +413,14 @@ def test_video_view_permission_user_superuser(video_permission, video, request_d
 
 
 def test_video_view_permission_no_matching_lists(
-    mock_user_moira_lists, moira_list, video_permission, video, request_data
+    mock_user_groups, keycloak_group, video_permission, video, request_data
 ):
     """
     Test for HasVideoPermissions.has_object_permission to verify
-    that user who is not in the video collection's view-only moira lists cannot see it.
+    that user who is not in the video collection's view-only keycloak groups cannot see it.
     """
-    video.collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    video.collection.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {"some_other_list"}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -430,14 +430,14 @@ def test_video_view_permission_no_matching_lists(
 
 
 def test_video_view_permission_matching_lists(
-    mock_user_moira_lists, moira_list, video_permission, video, request_data
+    mock_user_groups, keycloak_group, video_permission, video, request_data
 ):
     """
     Test for HasVideoPermissions.has_object_permission to verify
-    that a user in one of the video collection's view-only moira lists can see it.
+    that a user in one of the video collection's view-only keycloak groups can see it.
     """
-    video.collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
+    video.collection.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -447,15 +447,15 @@ def test_video_view_permission_matching_lists(
 
 
 def test_video_view_permission_matching_lists_post(
-    mock_user_moira_lists, moira_list, video_permission, video, request_data
+    mock_user_groups, keycloak_group, video_permission, video, request_data
 ):
     """
     Test for HasVideoPermissions.has_object_permission to verify
-    that a user in one of the video collection's view-only moira lists cannot use unsafe methods.
+    that a user in one of the video collection's view-only keycloak groups cannot use unsafe methods.
     """
-    video.collection.view_lists.set([moira_list])
+    video.collection.view_lists.set([keycloak_group])
     request_data.request.method = "POST"
-    mock_user_moira_lists.return_value = {moira_list.name}
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -465,14 +465,14 @@ def test_video_view_permission_matching_lists_post(
 
 
 def test_video_view_permission_matching_admin_lists(
-    mock_user_moira_lists, moira_list, video_permission, video, request_data
+    mock_user_groups, keycloak_group, video_permission, video, request_data
 ):
     """
     Test for HasVideoPermissions.has_object_permission to verify
-    that a user in one of the video collection's admin-only moira lists can see it.
+    that a user in one of the video collection's admin-only keycloak groups can see it.
     """
-    video.collection.admin_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
+    video.collection.admin_lists.set([keycloak_group])
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -498,14 +498,14 @@ def test_video_admin_permission_anonymous_users(
 
 
 def test_video_admin_permission_other_user(
-    mock_user_moira_lists, moira_list, video_permission, video, request_data
+    mock_user_groups, keycloak_group, video_permission, video, request_data
 ):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify
     that user who does not own the video's collection does not have permission
     """
-    video.collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    video.collection.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {"some_other_list"}
     request_data.request.method = "POST"
     assert (
         video_permission.has_object_permission(
@@ -544,15 +544,15 @@ def test_video_admin_permission_superuser(video_permission, video, request_data_
 
 
 def test_video_admin_permission_no_matching_lists(
-    mock_user_moira_lists, moira_list, video_permission, video, request_data
+    mock_user_groups, keycloak_group, video_permission, video, request_data
 ):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify
-    that user who is not in the video collection's admin moira lists cannot edit it.
+    that user who is not in the video collection's admin keycloak groups cannot edit it.
     """
-    video.collection.admin_lists.set([moira_list])
+    video.collection.admin_lists.set([keycloak_group])
     request_data.request.method = "POST"
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    mock_user_groups.return_value = {"some_other_list"}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -562,15 +562,15 @@ def test_video_admin_permission_no_matching_lists(
 
 
 def test_video_admin_permission_matching_view_lists(
-    mock_user_moira_lists, moira_list, video_permission, video, request_data
+    mock_user_groups, keycloak_group, video_permission, video, request_data
 ):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify
-    that a user in one of the video collection's view-only moira lists cannot edit it.
+    that a user in one of the video collection's view-only keycloak groups cannot edit it.
     """
-    video.collection.view_lists.set([moira_list])
+    video.collection.view_lists.set([keycloak_group])
     request_data.request.method = "POST"
-    mock_user_moira_lists.return_value = {moira_list.name}
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -580,15 +580,15 @@ def test_video_admin_permission_matching_view_lists(
 
 
 def test_video_admin_permission_matching_admin_lists(
-    mock_user_moira_lists, moira_list, video_permission, video, request_data
+    mock_user_groups, keycloak_group, video_permission, video, request_data
 ):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify
-    that a user in one of the video collection's admin moira lists can edit it.
+    that a user in one of the video collection's admin keycloak groups can edit it.
     """
-    video.collection.admin_lists.set([moira_list])
+    video.collection.admin_lists.set([keycloak_group])
     request_data.request.method = "POST"
-    mock_user_moira_lists.return_value = {moira_list.name}
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -598,15 +598,15 @@ def test_video_admin_permission_matching_admin_lists(
 
 
 def test_video_admin_permission_matching_lists_post(
-    mock_user_moira_lists, moira_list, video_permission, video, request_data
+    mock_user_groups, keycloak_group, video_permission, video, request_data
 ):
     """
     Test for HasAdminPermissionsForVideo.has_object_permission to verify
-    that a user in one of the video collection's admin moira lists can use unsafe methods.
+    that a user in one of the video collection's admin keycloak groups can use unsafe methods.
     """
-    video.collection.admin_lists.set([moira_list])
+    video.collection.admin_lists.set([keycloak_group])
     request_data.request.method = "POST"
-    mock_user_moira_lists.return_value = {moira_list.name}
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -631,14 +631,14 @@ def test_override_video_public_collection_private(
 
 
 def test_override_video_public_collection_view_lists(
-    video_permission, mock_user_moira_lists, moira_list, request_data_anon, video
+    video_permission, mock_user_groups, keycloak_group, request_data_anon, video
 ):
     """
     A public video in a collection with view lists should be viewable by anonymous users if video permissions enabled
     """
     video.is_public = True
-    video.collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    video.collection.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {"some_other_list"}
     assert (
         video_permission.has_object_permission(
             request_data_anon.request, request_data_anon.view, video
@@ -648,15 +648,15 @@ def test_override_video_public_collection_view_lists(
 
 
 def test_override_video_private_collection_view_lists(
-    mock_user_moira_lists, request_data, video_permission, video, moira_list
+    mock_user_groups, request_data, video_permission, video, keycloak_group
 ):
     """
     A private video should not be viewable by users in the collection view lists if video permissions enabled
     """
     video.is_private = True
-    video.collection.view_lists.set([moira_list])
+    video.collection.view_lists.set([keycloak_group])
     video.save()
-    mock_user_moira_lists.return_value = {moira_list.name}
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -666,14 +666,14 @@ def test_override_video_private_collection_view_lists(
 
 
 def test_override_video_private_collection_admin_lists(
-    mock_user_moira_lists, moira_list, request_data, video_permission, video
+    mock_user_groups, keycloak_group, request_data, video_permission, video
 ):
     """
     A private video should be viewable by users in the collection admin lists
     """
     video.is_private = True
-    video.collection.admin_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
+    video.collection.admin_lists.set([keycloak_group])
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -683,14 +683,14 @@ def test_override_video_private_collection_admin_lists(
 
 
 def test_override_video_logged_in_collection_view_lists(
-    mock_user_moira_lists, moira_list, request_data, video_permission, video
+    mock_user_groups, keycloak_group, request_data, video_permission, video
 ):
     """
     A logged_in_only video should be viewable by users in the collection view lists
     """
     video.is_logged_in_only = True
-    video.collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
+    video.collection.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -700,8 +700,8 @@ def test_override_video_logged_in_collection_view_lists(
 
 
 def test_override_video_logged_in_collection_private(
-    mock_user_moira_lists,
-    moira_list,
+    mock_user_groups,
+    keycloak_group,
     video_permission,
     request_data,
     request_data_anon,
@@ -711,7 +711,7 @@ def test_override_video_logged_in_collection_private(
     A logged_in_only video should be viewable by users in a private collection
     """
     video.is_logged_in_only = True
-    mock_user_moira_lists.return_value = {moira_list.name}
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         video_permission.has_object_permission(
             request_data_anon.request, request_data_anon.view, video
@@ -727,24 +727,24 @@ def test_override_video_logged_in_collection_private(
 
 
 def test_override_video_view_lists_collection_view_lists(
-    mock_user_moira_lists, request_data, video_permission, video
+    mock_user_groups, request_data, video_permission, video
 ):
     """
     A video with view lists should by viewable by users in those lists but not users in collection view lists,
     if video permissions are enabled
     """
-    video_list = MoiraListFactory()
-    collection_list = MoiraListFactory()
+    video_list = KeycloakGroupFactory()
+    collection_list = KeycloakGroupFactory()
     video.view_lists.set([video_list])
     video.collection.view_lists.set([collection_list])
-    mock_user_moira_lists.return_value = {video_list.name, collection_list.name}
+    mock_user_groups.return_value = {video_list.name, collection_list.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
         )
         is True
     )
-    mock_user_moira_lists.return_value = {collection_list.name}
+    mock_user_groups.return_value = {collection_list.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -754,16 +754,16 @@ def test_override_video_view_lists_collection_view_lists(
 
 
 def test_override_video_view_lists_collection_admin_lists(
-    mock_user_moira_lists, request_data, video_permission, video
+    mock_user_groups, request_data, video_permission, video
 ):
     """
     A video with view lists should by viewable by users in collection admin lists
     """
-    video_list = MoiraListFactory()
-    collection_list = MoiraListFactory()
+    video_list = KeycloakGroupFactory()
+    collection_list = KeycloakGroupFactory()
     video.view_lists.set([video_list])
     video.collection.admin_lists.set([collection_list])
-    mock_user_moira_lists.return_value = {collection_list.name}
+    mock_user_groups.return_value = {collection_list.name}
     assert (
         video_permission.has_object_permission(
             request_data.request, request_data.view, video
@@ -773,58 +773,58 @@ def test_override_video_view_lists_collection_admin_lists(
 
 
 def test_collections_view(
-    mock_user_moira_lists, moira_list, collection, alt_moira_data
+    mock_user_groups, keycloak_group, collection, alt_kc_group_data
 ):
     """
     Test that CollectionManager.all_viewable returns the lists that the user has view access to.
     """
-    collection.view_lists.set([moira_list])
-    alt_moira_data.collection.view_lists.set([alt_moira_data.moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
-    assert collection in Collection.objects.all_viewable(alt_moira_data.user)
-    assert alt_moira_data.collection not in Collection.objects.all_viewable(
-        alt_moira_data.user
+    collection.view_lists.set([keycloak_group])
+    alt_kc_group_data.collection.view_lists.set([alt_kc_group_data.keycloak_group])
+    mock_user_groups.return_value = {keycloak_group.name}
+    assert collection in Collection.objects.all_viewable(alt_kc_group_data.user)
+    assert alt_kc_group_data.collection not in Collection.objects.all_viewable(
+        alt_kc_group_data.user
     )
 
 
 def test_collections_view_admin_user(
-    mock_user_moira_lists, moira_list, collection, alt_moira_data
+    mock_user_groups, keycloak_group, collection, alt_kc_group_data
 ):
     """
     Test that CollectionManager.all_viewable returns the lists that the user has view access to.
     """
-    collection.admin_lists.set([moira_list])
-    alt_moira_data.collection.admin_lists.set([alt_moira_data.moira_list])
-    alt_moira_data.collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
-    for col in (collection, alt_moira_data.collection):
-        assert col in Collection.objects.all_viewable(alt_moira_data.user)
+    collection.admin_lists.set([keycloak_group])
+    alt_kc_group_data.collection.admin_lists.set([alt_kc_group_data.keycloak_group])
+    alt_kc_group_data.collection.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {keycloak_group.name}
+    for col in (collection, alt_kc_group_data.collection):
+        assert col in Collection.objects.all_viewable(alt_kc_group_data.user)
 
 
 def test_collections_admin(
-    mock_user_moira_lists, collection, moira_list, alt_moira_data
+    mock_user_groups, collection, keycloak_group, alt_kc_group_data
 ):
     """
     Test that CollectionManager.all_admin returns the lists that the user has admin access to.
     """
-    collection.admin_lists.set([moira_list])
-    alt_moira_data.collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
-    assert collection in Collection.objects.all_admin(alt_moira_data.user)
-    assert alt_moira_data.collection not in Collection.objects.all_admin(
-        alt_moira_data.user
+    collection.admin_lists.set([keycloak_group])
+    alt_kc_group_data.collection.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {keycloak_group.name}
+    assert collection in Collection.objects.all_admin(alt_kc_group_data.user)
+    assert alt_kc_group_data.collection not in Collection.objects.all_admin(
+        alt_kc_group_data.user
     )
 
 
 def test_subtitle_view_permission_no_matching_lists(
-    mock_user_moira_lists, moira_list, subtitle_permission, subtitle, request_data
+    mock_user_groups, keycloak_group, subtitle_permission, subtitle, request_data
 ):
     """
     Test for HasVideoSubtitlePermissions.has_object_permission to verify
-    that user who is not in the subtitle collection's view-only moira lists cannot see it.
+    that user who is not in the subtitle collection's view-only keycloak groups cannot see it.
     """
-    subtitle.video.collection.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    subtitle.video.collection.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {"some_other_list"}
     assert (
         subtitle_permission.has_object_permission(
             request_data.request, request_data.view, subtitle
@@ -834,14 +834,14 @@ def test_subtitle_view_permission_no_matching_lists(
 
 
 def test_subtitle_view_permission_matching_lists(
-    mock_user_moira_lists, moira_list, subtitle_permission, subtitle, request_data
+    mock_user_groups, keycloak_group, subtitle_permission, subtitle, request_data
 ):
     """
     Test for HasVideoSubtitlePermissions.has_object_permission to verify
-    that a user in one of the subtitle collection's view-only moira lists can see it.
+    that a user in one of the subtitle collection's view-only keycloak groups can see it.
     """
-    subtitle.video.view_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
+    subtitle.video.view_lists.set([keycloak_group])
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         subtitle_permission.has_object_permission(
             request_data.request, request_data.view, subtitle
@@ -851,14 +851,14 @@ def test_subtitle_view_permission_matching_lists(
 
 
 def test_subtitle_admin_permission_no_matching_lists(
-    mock_user_moira_lists, moira_list, subtitle_permission, subtitle, request_data
+    mock_user_groups, keycloak_group, subtitle_permission, subtitle, request_data
 ):
     """
     Test for HasVideoSubtitlePermissions.has_object_permission to verify
-    that user who is not in the subtitle collection's admin moira lists cannot edit it.
+    that user who is not in the subtitle collection's admin keycloak groups cannot edit it.
     """
-    subtitle.video.collection.admin_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    subtitle.video.collection.admin_lists.set([keycloak_group])
+    mock_user_groups.return_value = {"some_other_list"}
     request_data.request.method = "POST"
     assert (
         subtitle_permission.has_object_permission(
@@ -869,14 +869,14 @@ def test_subtitle_admin_permission_no_matching_lists(
 
 
 def test_subtitle_admin_permission_matching_lists(
-    mock_user_moira_lists, moira_list, subtitle_permission, subtitle, request_data
+    mock_user_groups, keycloak_group, subtitle_permission, subtitle, request_data
 ):
     """
     Test for HasVideoSubtitlePermissions.has_object_permission to verify
-    that a user in one of the subtitle collection's admin moira lists can use unsafe methods.
+    that a user in one of the subtitle collection's admin keycloak groups can use unsafe methods.
     """
-    subtitle.video.collection.admin_lists.set([moira_list])
-    mock_user_moira_lists.return_value = {moira_list.name}
+    subtitle.video.collection.admin_lists.set([keycloak_group])
+    mock_user_groups.return_value = {keycloak_group.name}
     request_data.request.method = "POST"
     assert (
         subtitle_permission.has_object_permission(
