@@ -105,7 +105,7 @@ def test_query_lists_error(mock_keycloak):
     """
     Test that a Keycloak exception is raised if keycloak client call fails
     """
-    # Mock the get_user_groups method to raise an HTTPError
+    # Mock the get_user_groups method to raise an KeycloakException
     mock_keycloak.return_value.get_user_groups.side_effect = KeycloakException(
         "Mock Exception"
     )
