@@ -28,7 +28,7 @@ def mock_kc_client(mocker):
 
 @pytest.fixture
 def mock_keycloak(mocker):
-    """Mock for the KeycloakManager client"""
+    """Mock for the KeycloakManager"""
     return mocker.patch("ui.keycloak_utils.KeycloakManager")
 
 
