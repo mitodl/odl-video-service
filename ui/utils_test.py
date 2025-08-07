@@ -117,7 +117,7 @@ def test_user_groups_anonymous():
     """
     Test that empty set is returned for anonymous user
     """
-    assert user_groups(AnonymousUser()) == []
+    assert user_groups(AnonymousUser()) == set()
 
 
 def test_has_common_groups(mocker):

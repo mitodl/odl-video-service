@@ -156,7 +156,7 @@ class VideoSerializer(serializers.ModelSerializer):
     videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
     videosubtitle_set = VideoSubtitleSerializer(many=True)
     view_lists = SingleAttrRelatedField(
-        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+        model=models.KeycloakGroup, attribute="name", many=True, allow_empty=True
     )
     collection_view_lists = serializers.SerializerMethodField()
 
@@ -271,10 +271,10 @@ class CollectionSerializer(serializers.ModelSerializer):
     video_count = serializers.SerializerMethodField()
     videos = serializers.SerializerMethodField()
     view_lists = SingleAttrRelatedField(
-        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+        model=models.KeycloakGroup, attribute="name", many=True, allow_empty=True
     )
     admin_lists = SingleAttrRelatedField(
-        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+        model=models.KeycloakGroup, attribute="name", many=True, allow_empty=True
     )
     is_admin = serializers.SerializerMethodField()
     owner_info = UserSerializer(source="owner", read_only=True)
@@ -371,10 +371,10 @@ class CollectionListSerializer(serializers.ModelSerializer):
     key = serializers.SerializerMethodField()
     video_count = serializers.SerializerMethodField()
     view_lists = SingleAttrRelatedField(
-        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+        model=models.KeycloakGroup, attribute="name", many=True, allow_empty=True
     )
     admin_lists = SingleAttrRelatedField(
-        model=models.MoiraList, attribute="name", many=True, allow_empty=True
+        model=models.KeycloakGroup, attribute="name", many=True, allow_empty=True
     )
     owner_info = UserSerializer(source="owner", read_only=True)
     owner = serializers.PrimaryKeyRelatedField(

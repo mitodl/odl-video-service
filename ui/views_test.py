@@ -20,7 +20,7 @@ from ui.constants import YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionFactory,
-    MoiraListFactory,
+    KeycloakGroupFactory,
     UserFactory,
     VideoFactory,
     VideoFileFactory,
@@ -80,9 +80,11 @@ def user_view_list_data():
     """
     video = VideoFactory()
     collection = video.collection
-    moira_list = factories.MoiraListFactory()
-    collection.view_lists.set([moira_list])
-    return SimpleNamespace(video=video, moira_list=moira_list, collection=collection)
+    keycloak_group = factories.KeycloakGroupFactory()
+    collection.view_lists.set([keycloak_group])
+    return SimpleNamespace(
+        video=video, keycloak_group=keycloak_group, collection=collection
+    )
 
 
 @pytest.fixture
@@ -92,9 +94,11 @@ def user_admin_list_data():
     """
     video = VideoFactory()
     collection = video.collection
-    moira_list = factories.MoiraListFactory()
-    collection.admin_lists.set([moira_list])
-    return SimpleNamespace(video=video, moira_list=moira_list, collection=collection)
+    keycloak_group = factories.KeycloakGroupFactory()
+    collection.admin_lists.set([keycloak_group])
+    return SimpleNamespace(
+        video=video, keycloak_group=keycloak_group, collection=collection
+    )
 
 
 @pytest.fixture
@@ -196,9 +200,7 @@ def test_video_embed(logged_in_client, settings):
     }
 
 
-def test_upload_dropbox_videos_authentication(
-    mock_user_moira_lists, logged_in_apiclient
-):
+def test_upload_dropbox_videos_authentication(mock_user_groups, logged_in_apiclient):
     """
     Tests that only authenticated users with collection admin permissions can call UploadVideosFromDropbox
     """
@@ -206,8 +208,8 @@ def test_upload_dropbox_videos_authentication(
     client.logout()
     url = reverse("upload-videos")
     collection = CollectionFactory(owner=user)
-    moira_list = factories.MoiraListFactory()
-    collection.admin_lists.set([moira_list])
+    keycloak_group = factories.KeycloakGroupFactory()
+    collection.admin_lists.set([keycloak_group])
     collection.save()
     other_user = UserFactory()
     input_data = {
@@ -306,23 +308,23 @@ def test_collection_viewset_permissions(logged_in_apiclient):
         assert client.post(url, {"owner": 1}).status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_collection_viewset_list(mock_user_moira_lists, logged_in_apiclient):
+def test_collection_viewset_list(mock_user_groups, logged_in_apiclient):
     """
     Tests the list of collections for a user
     """
     client, user = logged_in_apiclient
     url = reverse("models-api:collection-list")
 
-    moira_list = MoiraListFactory()
+    keycloak_group = KeycloakGroupFactory()
     expected_collection_keys = [
         CollectionFactory(owner=user).hexkey,
-        CollectionFactory(view_lists=[moira_list]).hexkey,
+        CollectionFactory(view_lists=[keycloak_group]).hexkey,
     ]
     prohibited_collection_keys = [
         CollectionFactory().hexkey,
-        CollectionFactory(view_lists=[MoiraListFactory()]).hexkey,
+        CollectionFactory(view_lists=[KeycloakGroupFactory()]).hexkey,
     ]
-    mock_user_moira_lists.return_value = {moira_list.name}
+    mock_user_groups.return_value = {keycloak_group.name}
 
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
@@ -370,7 +372,7 @@ def test_collection_viewset_create_as_staff(mocker, post_data, logged_in_apiclie
     """
     Tests that a staff user can create a collection with self as owner but nobody else
     """
-    mocker.patch("ui.serializers.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
     client, user = logged_in_apiclient
     user.is_staff = True
     user.save()
@@ -389,7 +391,7 @@ def test_collection_viewset_create_as_superuser(mocker, post_data, logged_in_api
     """
     Tests that a superuser can create a collection for anyone as owner (but owner can't be None).
     """
-    mocker.patch("ui.serializers.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
     client, user = logged_in_apiclient
     user.is_superuser = True
     user.save()
@@ -403,8 +405,8 @@ def test_collection_viewset_detail(mocker, logged_in_apiclient):
     """
     Tests to retrieve a collection details for a user
     """
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
     videos = [VideoFactory(collection=collection).hexkey for _ in range(5)]
@@ -450,8 +452,8 @@ def test_collection_viewset_detail_404(logged_in_apiclient, collection_key, logg
 
 def test_collection_detail_anonymous(mocker, logged_in_apiclient, settings):
     """Test that anonymous users can see the collection detail page"""
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     client, _ = logged_in_apiclient
     client.logout()
     collection = CollectionFactory()
@@ -464,7 +466,7 @@ def test_collection_viewset_detail_as_superuser(mocker, logged_in_apiclient):
     """
     Tests to retrieve a collection details for a superuser
     """
-    mocker.patch("ui.serializers.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
     client, user = logged_in_apiclient
     user.is_superuser = True
     user.save()
@@ -488,12 +490,12 @@ def test_collection_viewset_detail_as_superuser(mocker, logged_in_apiclient):
     assert result.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_login_next(mock_user_moira_lists, logged_in_apiclient, user_admin_list_data):
+def test_login_next(mock_user_groups, logged_in_apiclient, user_admin_list_data):
     """
     Tests that the login page redirects to the URL in the `next` parameter if present
     """
     client = logged_in_apiclient[0]
-    mock_user_moira_lists.return_value = {user_admin_list_data.moira_list.name}
+    mock_user_groups.return_value = {user_admin_list_data.keycloak_group.name}
     video_url = reverse(
         "video-detail", kwargs={"video_key": user_admin_list_data.video.hexkey}
     )
@@ -503,7 +505,7 @@ def test_login_next(mock_user_moira_lists, logged_in_apiclient, user_admin_list_
     assert status_code == 302
 
 
-def test_login_nonext(mock_user_moira_lists, logged_in_apiclient):
+def test_login_nonext(mock_user_groups, logged_in_apiclient):
     """
     Tests that the login page redirects to the collections page if authenticated
     """
@@ -515,13 +517,13 @@ def test_login_nonext(mock_user_moira_lists, logged_in_apiclient):
 
 
 def test_video_detail_view_permission(
-    mock_user_moira_lists, logged_in_apiclient, user_view_list_data
+    mock_user_groups, logged_in_apiclient, user_view_list_data
 ):
     """
     Tests that a user can view a video if user is a member of collection's view_lists
     """
     client = logged_in_apiclient[0]
-    mock_user_moira_lists.return_value = {user_view_list_data.moira_list.name}
+    mock_user_groups.return_value = {user_view_list_data.keycloak_group.name}
     url = reverse(
         "video-detail", kwargs={"video_key": user_view_list_data.video.hexkey}
     )
@@ -533,13 +535,13 @@ def test_video_detail_view_permission(
 
 
 def test_video_detail_admin_permission(
-    logged_in_apiclient, mock_user_moira_lists, user_admin_list_data
+    logged_in_apiclient, mock_user_groups, user_admin_list_data
 ):
     """
     Tests that a user can view a video if user is a member of collection's admin_lists
     """
     client = logged_in_apiclient[0]
-    mock_user_moira_lists.return_value = {user_admin_list_data.moira_list.name}
+    mock_user_groups.return_value = {user_admin_list_data.keycloak_group.name}
     url = reverse(
         "video-detail", kwargs={"video_key": user_admin_list_data.video.hexkey}
     )
@@ -549,13 +551,13 @@ def test_video_detail_admin_permission(
 
 
 def test_video_detail_no_permission(
-    mock_user_moira_lists, logged_in_apiclient, user_admin_list_data
+    mock_user_groups, logged_in_apiclient, user_admin_list_data
 ):
     """
     Tests that a user cannot view a video if user is not a member of collection's lists
     """
     client, _ = logged_in_apiclient
-    mock_user_moira_lists.return_value = {"some_other_list"}
+    mock_user_groups.return_value = {"some_other_list"}
     url = reverse(
         "video-detail", kwargs={"video_key": user_admin_list_data.video.hexkey}
     )
@@ -670,13 +672,13 @@ def test_techtv_video_download_nofiles(logged_in_client, is_public, mocker):
     ],
 )
 def test_techtv_detail_standard_url(
-    mock_user_moira_lists, user_view_list_data, logged_in_apiclient, url
+    mock_user_groups, user_view_list_data, logged_in_apiclient, url
 ):
     """
     Tests that a URL based on a TechTV id returns the correct Video detail page
     """
     client = logged_in_apiclient[0]
-    mock_user_moira_lists.return_value = {user_view_list_data.moira_list.name}
+    mock_user_groups.return_value = {user_view_list_data.keycloak_group.name}
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
     result = client.get(url.format(ttv_video.ttv_id))
     assert result.status_code == status.HTTP_200_OK
@@ -688,7 +690,7 @@ def test_techtv_detail_standard_url(
 
 
 def test_techtv_detail_private_url(
-    mock_user_moira_lists, user_view_list_data, logged_in_apiclient
+    mock_user_groups, user_view_list_data, logged_in_apiclient
 ):
     """
     Tests that a URL based on a TechTV private token returns the correct Video detail page
@@ -697,7 +699,7 @@ def test_techtv_detail_private_url(
     ttv_video = TechTVVideoFactory(
         video=user_view_list_data.video, private=True, private_token=uuid4().hex
     )
-    mock_user_moira_lists.return_value = {user_view_list_data.moira_list.name}
+    mock_user_groups.return_value = {user_view_list_data.keycloak_group.name}
     url = reverse("techtv-private", kwargs={"video_key": ttv_video.private_token})
     result = client.get(url)
     assert result.status_code == status.HTTP_200_OK
@@ -709,14 +711,14 @@ def test_techtv_detail_private_url(
 
 @pytest.mark.parametrize("url", ["/embeds/{}", "/embeds/{}-foo"])
 def test_techtv_detail_embed_url(
-    mock_user_moira_lists, user_view_list_data, logged_in_apiclient, url
+    mock_user_groups, user_view_list_data, logged_in_apiclient, url
 ):
     """
     Tests that an embed URL based on a TechTV id returns the correct Video embed page
     """
     client = logged_in_apiclient[0]
     ttv_video = TechTVVideoFactory(video=user_view_list_data.video)
-    mock_user_moira_lists.return_value = {user_view_list_data.moira_list.name}
+    mock_user_groups.return_value = {user_view_list_data.keycloak_group.name}
     result = client.get(url.format(ttv_video.ttv_id))
     assert result.status_code == status.HTTP_200_OK
     assert (
@@ -762,17 +764,15 @@ def test_upload_subtitles(logged_in_apiclient, mocker):
     youtube_task.assert_called_once_with(response.data["id"])
 
 
-def test_upload_subtitles_authentication(
-    mock_user_moira_lists, logged_in_apiclient, mocker
-):
+def test_upload_subtitles_authentication(mock_user_groups, logged_in_apiclient, mocker):
     """
     Tests that only authenticated users with collection admin permissions can call UploadVideoSubtitle
     """
     client, user = logged_in_apiclient
     client.logout()
     url = reverse("upload-subtitles")
-    moira_list = factories.MoiraListFactory()
-    video = VideoFactory(collection=CollectionFactory(admin_lists=[moira_list]))
+    keycloak_group = factories.KeycloakGroupFactory()
+    video = VideoFactory(collection=CollectionFactory(admin_lists=[keycloak_group]))
     filename = "file.vtt"
     input_data = {
         "collection": video.collection.hexkey,
@@ -785,7 +785,6 @@ def test_upload_subtitles_authentication(
         "ui.views.cloudapi.upload_subtitle_to_s3",
         return_value=VideoSubtitle(video=video, filename=filename),
     )
-    mocker.patch("ui.utils.cache")
     # call with anonymous user
     assert (
         client.post(url, input_data, format="multipart").status_code
@@ -798,25 +797,22 @@ def test_upload_subtitles_authentication(
         == status.HTTP_403_FORBIDDEN
     )
     # call with user on admin list
-    mock_user_moira_lists.return_value = {moira_list.name}
+    mock_user_groups.return_value = {keycloak_group.name}
     assert (
         client.post(url, input_data, format="multipart").status_code
         == status.HTTP_202_ACCEPTED
     )
 
 
-def test_delete_subtitles_authentication(
-    mock_user_moira_lists, logged_in_apiclient, mocker
-):
+def test_delete_subtitles_authentication(mock_user_groups, logged_in_apiclient, mocker):
     """
     Tests that only authenticated users with collection admin permissions can delete VideoSubtitles
     """
     mocker.patch("ui.views.VideoSubtitle.delete_from_s3")
-    mocker.patch("ui.utils.cache")
     client, user = logged_in_apiclient
     client.logout()
-    moira_list = factories.MoiraListFactory()
-    video = VideoFactory(collection=CollectionFactory(admin_lists=[moira_list]))
+    keycloak_group = factories.KeycloakGroupFactory()
+    video = VideoFactory(collection=CollectionFactory(admin_lists=[keycloak_group]))
     subtitle = VideoSubtitleFactory(video=video)
     url = reverse("models-api:subtitle-detail", kwargs={"id": subtitle.id})
 
@@ -826,7 +822,7 @@ def test_delete_subtitles_authentication(
     client.force_login(user)
     assert client.delete(url).status_code == status.HTTP_403_FORBIDDEN
     # call with user on admin list
-    mock_user_moira_lists.return_value = {moira_list.name}
+    mock_user_groups.return_value = {keycloak_group.name}
     assert client.delete(url).status_code == status.HTTP_204_NO_CONTENT
 
 
@@ -884,7 +880,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
 
 def test_terms_page(mocker, logged_in_client):
     """Test terms page"""
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     client, _ = logged_in_client
     response = client.get(reverse("terms-react-view"))
     assert response.status_code == status.HTTP_200_OK
@@ -895,8 +891,8 @@ def test_video_viewset_analytics(mocker, logged_in_apiclient):
     """
     Tests to retrieve video analytics
     """
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     mock_get_video_analytics = mocker.patch("ui.views.get_video_analytics")
     mock_get_video_analytics.return_value = {"mock-analytics-data": "foo"}
     client, user = logged_in_apiclient
@@ -913,8 +909,8 @@ def test_video_viewset_analytics_mock_data(mocker, logged_in_apiclient):
     """
     Tests to retrieve mock video analytics data.
     """
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     mock_generate_mock_video_analytics_data = mocker.patch(
         "ui.views.generate_mock_video_analytics_data"
     )
@@ -937,8 +933,8 @@ def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
     """
     Tests to retrieve video analytics w/ error.
     """
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
     video = VideoFactory(collection=collection)
@@ -947,17 +943,17 @@ def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
     assert result.status_code == 500
 
 
-def test_video_viewset_list(mocker, mock_user_moira_lists, logged_in_apiclient):
+def test_video_viewset_list(mocker, mock_user_groups, logged_in_apiclient):
     """
     Tests the list of videos for a user.
 
     A quasi-integration test, because we're also testing models.VideoManager.all_vieweable here.
     """
-    view_list = MoiraListFactory()
-    admin_list = MoiraListFactory()
+    view_list = KeycloakGroupFactory()
+    admin_list = KeycloakGroupFactory()
     mocker.patch("ui.serializers.ui_permissions")
-    mock_user_moira_lists.return_value = [view_list.name, admin_list.name]
-    non_matching_list = MoiraListFactory()
+    mock_user_groups.return_value = [view_list.name, admin_list.name]
+    non_matching_list = KeycloakGroupFactory()
     client, user = logged_in_apiclient
     collections = {
         "owned": CollectionFactory(owner=user),
@@ -1163,8 +1159,8 @@ def test_videos_pagination(mocker, logged_in_apiclient):
     """
     Verify that the correct number of videos is returned per page
     """
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     page_size = 8
     VideoSetPagination.page_size = page_size
     client, user = logged_in_apiclient
@@ -1185,8 +1181,8 @@ def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
     """
     Verify that videos are only returned for the specified collection.
     """
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     page_size = 8
     VideoSetPagination.page_size = page_size
     client, user = logged_in_apiclient
@@ -1210,8 +1206,8 @@ def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
 
 def test_videos_default_ordering(mocker, logged_in_apiclient):
     """Verify that by default results are returned in the created_at descending order"""
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     VideoSetPagination.page_size = 5
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
@@ -1237,8 +1233,8 @@ def test_videos_default_ordering(mocker, logged_in_apiclient):
 @pytest.mark.parametrize("field", ["created_at", "title"])
 def test_videos_ordering(mocker, logged_in_apiclient, field):
     """Verify that results are returned in the appropriate order"""
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     VideoSetPagination.page_size = 5
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
@@ -1267,8 +1263,8 @@ def test_collection_pagination(mocker, logged_in_apiclient):
     """
     Verify that the correct number of collections is returned per page
     """
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     page_size = 8
     CollectionSetPagination.page_size = page_size
     client, user = logged_in_apiclient
@@ -1287,8 +1283,8 @@ def test_collection_pagination(mocker, logged_in_apiclient):
 @pytest.mark.parametrize("field", ["created_at", "title"])
 def test_collection_ordering(mocker, logged_in_apiclient, field):
     """Verify that results are returned in the appropriate order"""
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.serializers.get_keycloak_client")
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
     CollectionSetPagination.page_size = 5
     client, user = logged_in_apiclient
     CollectionFactory.create_batch(10, owner=user)
@@ -1312,7 +1308,7 @@ def test_collection_ordering(mocker, logged_in_apiclient, field):
         )
 
 
-def test_help_for_anonymous_user(mock_user_moira_lists):
+def test_help_for_anonymous_user(mock_user_groups):
     """Test help page for anonymous user"""
     request = RequestFactory()
     request.method = "GET"
@@ -1321,7 +1317,7 @@ def test_help_for_anonymous_user(mock_user_moira_lists):
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_terms_of_service_for_anonymous_user(mock_user_moira_lists):
+def test_terms_of_service_for_anonymous_user(mock_user_groups):
     """Test help page for anonymous user"""
     request = RequestFactory()
     request.method = "GET"
@@ -1337,9 +1333,9 @@ def test_terms_of_service_for_anonymous_user(mock_user_moira_lists):
         reverse("list-members", kwargs={"list_name": "test_name"}),
     ],
 )
-def test_moira_list_views_permission(logged_in_apiclient, mocker, url):
+def test_keycloak_group_views_permission(logged_in_apiclient, mocker, url):
     """
-    Tests that only authenticated users with admin permissions can call MoiraListsForUser and UsersForMoiraList
+    Tests that only authenticated users with admin permissions can call KeycloakGroupsForUser and UsersForKeycloakGroup
     """
     mocker.patch("ui.views.list_members", return_value=[])
 
@@ -1358,16 +1354,13 @@ def test_moira_list_views_permission(logged_in_apiclient, mocker, url):
     assert client.get(url).status_code == status.HTTP_200_OK
 
 
-def test_moira_list_users(logged_in_apiclient, mock_moira_client):
-    """Test that UsersForMoiraList returns list of users for a given list name"""
+def test_keycloak_group_users(logged_in_apiclient, mocker):
+    """Test that UsersForKeycloakGroup returns list of users for a given group name"""
     client, user = logged_in_apiclient
     user.is_staff = True
     user.save()
     client.force_login(user)
-    mock_moira_client.return_value.list_members.return_value = [
-        "fakeuser1",
-        "fakeuser2",
-    ]
+    mocker.patch("ui.views.list_members", return_value=["fakeuser1", "fakeuser2"])
     url = reverse("list-members", kwargs={"list_name": "Test-list_name.1"})
     expected = {"users": ["fakeuser1", "fakeuser2"]}
     response = client.get(url)
@@ -1376,16 +1369,14 @@ def test_moira_list_users(logged_in_apiclient, mock_moira_client):
     assert expected == response.data
 
 
-def test_users_moira_list(logged_in_apiclient, mock_moira_client):
-    """Test that MoiraListsForUser returns lists for a given username or email."""
+def test_users_keycloak_group(logged_in_apiclient, mocker):
+    """Test that KeycloakGroupsForUser returns groups for a given username or email."""
     client, user = logged_in_apiclient
     user.is_staff = True
     user.save()
     client.force_login(user)
-    list_names = ["test_moira_list01", "test_moira_list02"]
-    mock_moira_client.return_value.user_list_membership.return_value = [
-        {"listName": list_name} for list_name in list_names
-    ]
+    group_names = ["test_keycloak_group01", "test_keycloak_group02"]
+    mocker.patch("ui.views.query_lists", return_value=group_names)
 
     username_or_email = [
         user.username,
@@ -1395,7 +1386,7 @@ def test_users_moira_list(logged_in_apiclient, mock_moira_client):
 
     for arg in username_or_email:
         url = reverse("member-lists", kwargs={"username_or_email": arg})
-        expected = {"user_lists": list_names}
+        expected = {"user_lists": group_names}
 
         response = client.get(url)
 

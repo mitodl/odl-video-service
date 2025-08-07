@@ -37,8 +37,10 @@ def _get_recipients_for_video(video):
         if group_members:
             admin_lists.append(group_name)
 
-        for member in group_members:
-            recipients_list.add(member["email"])
+        kc_group = keycloak_client.get_group_attributes_by_name(group_name)
+        if kc_group and kc_group.get("mail_list", ["false"])[0] == "true":
+            for member in group_members:
+                recipients_list.add(member["email"])
 
     # Add the collection owner's email if they're not already in one of the admin groups
     owner = video.collection.owner
