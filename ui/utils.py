@@ -5,7 +5,7 @@ import itertools
 import json
 import random
 import re
-from typing import List, Dict
+from typing import List, Dict, Set
 from urllib.parse import urljoin
 
 import boto3
@@ -39,7 +39,7 @@ def query_user_groups(email: str) -> List[str]:
     return list(set(client.get_user_groups(email)))
 
 
-def user_groups(user) -> List[str]:
+def user_groups(user) -> Set[str]:
     """
     Get a list of all the groups a user has access to.
 
@@ -47,12 +47,12 @@ def user_groups(user) -> List[str]:
         user (django.contrib.auth.User): the Django user.
 
     Returns:
-        List[str]: A list containing all groups the user belongs to.
+        Set[str]: A set containing all groups the user belongs to.
     """
     if user.is_anonymous:
-        return []
+        return set()
 
-    return query_user_groups(user.email)
+    return set(query_user_groups(user.email))
 
 
 def group_members(group_name: str) -> List[Dict]:

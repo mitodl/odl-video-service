@@ -10,7 +10,7 @@ import logging
 import re
 
 from ui.keycloak_utils import KeycloakManager, KeycloakUser
-from ui.models import MoiraList, Collection, Video
+from ui.models import Collection, KeycloakGroup, Video
 from ui.moira_util import get_moira_client, list_members
 
 logger = logging.getLogger(__name__)
@@ -173,9 +173,9 @@ class Command(BaseCommand):
 
         return list(moira_lists)
 
-    def migrate_moira_list(self, moira_list: MoiraList):
+    def migrate_moira_list(self, kc_group: KeycloakGroup):
         """Migrate a single MOIRA list to Keycloak"""
-        self.stdout.write(f"\nMigrating MOIRA list: {moira_list.name}")
+        self.stdout.write(f"\nMigrating MOIRA list: {kc_group.name}")
 
         result = {
             "group_created": 0,
@@ -185,33 +185,33 @@ class Command(BaseCommand):
             "django_users_created": 0,
         }
         # 1. Create Keycloak group if it doesn't exist
-        group = self.kc_manager.find_group_by_name(moira_list.name)
+        group = self.kc_manager.find_group_by_name(kc_group.name)
         if group:
-            self.stdout.write(f"  Group '{moira_list.name}' already exists in Keycloak")
+            self.stdout.write(f"  Group '{kc_group.name}' already exists in Keycloak")
             result["group_existed"] = 1
         else:
             if not self.dry_run:
                 moira_client = get_moira_client()
                 list_attributes = moira_client.client.service.getListAttributes(
-                    moira_list.name, moira_client.proxy_id
+                    kc_group.name, moira_client.proxy_id
                 )
                 group = self.kc_manager.create_group(
-                    moira_list.name,
+                    kc_group.name,
                     attributes={
                         "source": ["moira_migration"],
-                        "original_moira_list": [moira_list.name],
+                        "original_moira_list": [kc_group.name],
                         "migrated_at": [str(timezone.now())],
                         "mail_list": [str(list_attributes[0].mailList).lower()],
                     },
                 )
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f"  ✓ Created group '{moira_list.name}' in Keycloak"
+                        f"  ✓ Created group '{kc_group.name}' in Keycloak"
                     )
                 )
             else:
                 self.stdout.write(
-                    f"  [DRY RUN] Would create group '{moira_list.name}' in Keycloak"
+                    f"  [DRY RUN] Would create group '{kc_group.name}' in Keycloak"
                 )
             result["group_created"] = 1
 
@@ -221,7 +221,7 @@ class Command(BaseCommand):
 
         # 2. Get MOIRA list members
         try:
-            moira_members = list_members(moira_list.name)
+            moira_members = list_members(kc_group.name)
             self.stdout.write(f"  Found {len(moira_members)} members in MOIRA list")
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"  Failed to get MOIRA members: {e}"))
@@ -230,7 +230,7 @@ class Command(BaseCommand):
         # 3. Create users and add to group
         for member in moira_members:
             try:
-                user_result = self.migrate_moira_user(member, moira_list.name, group)
+                user_result = self.migrate_moira_user(member, kc_group.name, group)
                 result["users_created"] += user_result["keycloak_user_created"]
                 result["users_existed"] += user_result["keycloak_user_existed"]
                 result["django_users_created"] += user_result["django_user_created"]

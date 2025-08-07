@@ -57,9 +57,9 @@ class ValidateOnSaveMixin(models.Model):
         super().save(force_insert=force_insert, force_update=force_update, **kwargs)
 
 
-class MoiraList(TimestampedModel):
+class KeycloakGroup(TimestampedModel):
     """
-    Model for Moira
+    Model for Keycloak Groups
     """
 
     name = models.CharField(max_length=250, unique=True)
@@ -68,7 +68,7 @@ class MoiraList(TimestampedModel):
         return self.name
 
     def __repr__(self):
-        return "<MoiraList: {self.name!r}>".format(self=self)
+        return "<KeycloakGroup: {self.name!r}>".format(self=self)
 
 
 class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
@@ -152,12 +152,12 @@ class CollectionManager(TimestampedModelManager):
             return self.all()
         if user.is_anonymous:
             return self.none()
-        moira_list_qset = MoiraList.objects.filter(
-            name__in=utils.user_moira_lists(user)
+        keycloak_group_qset = KeycloakGroup.objects.filter(
+            name__in=utils.user_lists(user)
         )
         return self.filter(
-            models.Q(view_lists__in=moira_list_qset)
-            | models.Q(admin_lists__in=moira_list_qset)
+            models.Q(view_lists__in=keycloak_group_qset)
+            | models.Q(admin_lists__in=keycloak_group_qset)
             | models.Q(owner=user)
         ).distinct()
 
@@ -176,8 +176,8 @@ class CollectionManager(TimestampedModelManager):
             return self.all()
         return self.filter(
             models.Q(
-                admin_lists__in=MoiraList.objects.filter(
-                    name__in=utils.user_moira_lists(user)
+                admin_lists__in=KeycloakGroup.objects.filter(
+                    name__in=utils.user_lists(user)
                 )
             )
             | models.Q(owner=user)
@@ -195,10 +195,10 @@ class Collection(TimestampedModel):
     description = models.TextField(null=True, blank=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     view_lists = models.ManyToManyField(
-        MoiraList, blank=True, related_name="view_lists"
+        KeycloakGroup, blank=True, related_name="view_lists"
     )
     admin_lists = models.ManyToManyField(
-        MoiraList, blank=True, related_name="admin_lists"
+        KeycloakGroup, blank=True, related_name="admin_lists"
     )
     is_logged_in_only = models.BooleanField(null=False, default=False)
     allow_share_openedx = models.BooleanField(null=False, default=False)
@@ -273,13 +273,13 @@ class VideoManager(TimestampedModelManager):
             return self.all()
         if user.is_anonymous:
             return self.filter(is_public=True)
-        moira_list_qset = MoiraList.objects.filter(
-            name__in=utils.user_moira_lists(user)
+        keycloak_user_qset = KeycloakGroup.objects.filter(
+            name__in=utils.user_lists(user)
         )
         return self.filter(
             (
                 models.Q(collection__owner=user)
-                | models.Q(collection__admin_lists__in=moira_list_qset)
+                | models.Q(collection__admin_lists__in=keycloak_user_qset)
             )
             | (
                 models.Q(is_private=False)
@@ -287,8 +287,8 @@ class VideoManager(TimestampedModelManager):
                     models.Q(is_public=True)
                     | models.Q(is_logged_in_only=True)
                     | models.Q(collection__is_logged_in_only=True)
-                    | models.Q(view_lists__in=moira_list_qset)
-                    | models.Q(collection__view_lists__in=moira_list_qset)
+                    | models.Q(view_lists__in=keycloak_user_qset)
+                    | models.Q(collection__view_lists__in=keycloak_user_qset)
                 )
             )
         ).distinct()
@@ -344,7 +344,7 @@ class Video(TimestampedModel):
     encode_jobs = GenericRelation(EncodeJob)
     multiangle = models.BooleanField(null=False, default=False)
     view_lists = models.ManyToManyField(
-        MoiraList, blank=True, related_name="video_view_lists"
+        KeycloakGroup, blank=True, related_name="video_view_lists"
     )
     is_public = models.BooleanField(null=False, default=False)
     is_private = models.BooleanField(null=False, default=False)

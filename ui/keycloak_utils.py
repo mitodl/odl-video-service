@@ -186,6 +186,19 @@ class KeycloakManager:
         endpoint = f"/admin/realms/{self.realm}/groups/{group_id}/members"
         return self._make_api_request("get", endpoint)
 
+    def get_group_details(self, group_id: str) -> Dict:
+        """
+        Get detailed information about a group including its attributes
+
+        Args:
+            group_id (str): The ID of the group
+
+        Returns:
+            Dict: Group details including attributes
+        """
+        endpoint = f"/admin/realms/{self.realm}/groups/{group_id}"
+        return self._make_api_request("get", endpoint)
+
     def add_user_to_group(self, user_id: str, group_id: str) -> bool:
         """Add a user to a group"""
         endpoint = f"/admin/realms/{self.realm}/users/{user_id}/groups/{group_id}"
@@ -265,6 +278,30 @@ class KeycloakManager:
             logger.error(f"Error getting members for group {group_name}: {exc}")
             raise KeycloakException(
                 f"Something went wrong with getting members for group {group_name}"
+            ) from exc
+
+    def get_group_attributes_by_name(self, group_name: str) -> Dict:
+        """
+        Get attributes of a specific group by group name
+
+        Args:
+            group_name (str): Name of the group
+
+        Returns:
+            Dict: Dictionary of group attributes or empty dict if group not found
+        """
+        try:
+            group = self.find_group_by_name(group_name)
+            if not group:
+                logger.warning(f"Group {group_name} not found in Keycloak")
+                return {}
+
+            group_details = self.get_group_details(group["id"])
+            return group_details.get("attributes", {})
+        except Exception as exc:
+            logger.error(f"Error getting attributes for group {group_name}: {exc}")
+            raise KeycloakException(
+                f"Something went wrong with getting attributes for group {group_name}"
             ) from exc
 
     # USER MANAGEMENT METHODS
