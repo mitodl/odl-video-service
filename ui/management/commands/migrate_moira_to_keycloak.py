@@ -11,7 +11,7 @@ import re
 
 from keycloak_utils import KeycloakManager, KeycloakUser
 from ui.models import MoiraList, Collection, Video
-from ui.utils import list_members
+from ui.utils import get_moira_client, list_members
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -184,7 +184,6 @@ class Command(BaseCommand):
             "users_existed": 0,
             "django_users_created": 0,
         }
-
         # 1. Create Keycloak group if it doesn't exist
         group = self.kc_manager.find_group_by_name(moira_list.name)
         if group:
@@ -192,12 +191,17 @@ class Command(BaseCommand):
             result["group_existed"] = 1
         else:
             if not self.dry_run:
+                moira_client = get_moira_client()
+                list_attributes = moira_client.client.service.getListAttributes(
+                    moira_list.name, moira_client.proxy_id
+                )
                 group = self.kc_manager.create_group(
                     moira_list.name,
                     attributes={
                         "source": ["moira_migration"],
                         "original_moira_list": [moira_list.name],
                         "migrated_at": [str(timezone.now())],
+                        "mail_list": [str(list_attributes[0].mailList).lower()],
                     },
                 )
                 self.stdout.write(
