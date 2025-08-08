@@ -57,7 +57,7 @@
     "flow-bin": "0.277.1",
     "isomorphic-fetch": "^3.0.0",
     "jquery": "^3.5.0",
-    "jsdom": "^16.7.0",
+    "jsdom": "^26.0.0",
     "jsdom-global": "^3.0.2",
     "lodash": "^4.17.21",
     "mini-css-extract-plugin": "^2.0.0",
