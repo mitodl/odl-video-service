@@ -42,3 +42,14 @@ def ga_client_mocks(mocker):
         "ServiceAccountCredentials": mocker.patch("ui.utils.ServiceAccountCredentials"),
     }
     return mocks
+
+
+@pytest.fixture(autouse=True)
+def disable_keycloak(settings):
+    """
+    Disable Keycloak for all tests by default.
+    This fixture automatically runs for every test.
+    """
+    settings.USE_KEYCLOAK = False
+    settings.LOGIN_URL = "/login/"
+    return settings

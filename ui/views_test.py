@@ -405,8 +405,7 @@ def test_collection_viewset_detail(mocker, logged_in_apiclient):
     """
     Tests to retrieve a collection details for a user
     """
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
     videos = [VideoFactory(collection=collection).hexkey for _ in range(5)]
@@ -891,8 +890,7 @@ def test_video_viewset_analytics(mocker, logged_in_apiclient):
     """
     Tests to retrieve video analytics
     """
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     mock_get_video_analytics = mocker.patch("ui.views.get_video_analytics")
     mock_get_video_analytics.return_value = {"mock-analytics-data": "foo"}
     client, user = logged_in_apiclient
@@ -909,8 +907,7 @@ def test_video_viewset_analytics_mock_data(mocker, logged_in_apiclient):
     """
     Tests to retrieve mock video analytics data.
     """
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     mock_generate_mock_video_analytics_data = mocker.patch(
         "ui.views.generate_mock_video_analytics_data"
     )
@@ -933,8 +930,7 @@ def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
     """
     Tests to retrieve video analytics w/ error.
     """
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
     video = VideoFactory(collection=collection)
@@ -1159,8 +1155,7 @@ def test_videos_pagination(mocker, logged_in_apiclient):
     """
     Verify that the correct number of videos is returned per page
     """
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     page_size = 8
     VideoSetPagination.page_size = page_size
     client, user = logged_in_apiclient
@@ -1181,8 +1176,7 @@ def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
     """
     Verify that videos are only returned for the specified collection.
     """
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     page_size = 8
     VideoSetPagination.page_size = page_size
     client, user = logged_in_apiclient
@@ -1206,8 +1200,7 @@ def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
 
 def test_videos_default_ordering(mocker, logged_in_apiclient):
     """Verify that by default results are returned in the created_at descending order"""
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     VideoSetPagination.page_size = 5
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
@@ -1233,8 +1226,7 @@ def test_videos_default_ordering(mocker, logged_in_apiclient):
 @pytest.mark.parametrize("field", ["created_at", "title"])
 def test_videos_ordering(mocker, logged_in_apiclient, field):
     """Verify that results are returned in the appropriate order"""
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     VideoSetPagination.page_size = 5
     client, user = logged_in_apiclient
     collection = CollectionFactory(owner=user)
@@ -1263,8 +1255,7 @@ def test_collection_pagination(mocker, logged_in_apiclient):
     """
     Verify that the correct number of collections is returned per page
     """
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     page_size = 8
     CollectionSetPagination.page_size = page_size
     client, user = logged_in_apiclient
@@ -1283,8 +1274,7 @@ def test_collection_pagination(mocker, logged_in_apiclient):
 @pytest.mark.parametrize("field", ["created_at", "title"])
 def test_collection_ordering(mocker, logged_in_apiclient, field):
     """Verify that results are returned in the appropriate order"""
-    mocker.patch("ui.serializers.get_keycloak_client")
-    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     CollectionSetPagination.page_size = 5
     client, user = logged_in_apiclient
     CollectionFactory.create_batch(10, owner=user)
