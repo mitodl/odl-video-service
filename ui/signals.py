@@ -3,7 +3,6 @@ ui model signals
 """
 
 from django.conf import settings
-from django.contrib.auth.signals import user_logged_out
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
@@ -18,7 +17,6 @@ from ui.models import (
     VideoThumbnail,
     YouTubeVideo,
 )
-from ui.utils import delete_moira_cache
 
 
 @receiver(pre_delete, sender=VideoFile)
@@ -112,18 +110,3 @@ def sync_youtube(video):
             or yt_video.status in (YouTubeStatus.FAILED, YouTubeStatus.REJECTED)
         ):
             YouTubeVideo.objects.get(id=yt_video.id).delete()
-
-
-def reset_moira(sender, user, request, **kwargs):
-    """
-    Clear out the user's cached moira lists
-
-    Args:
-        sender(Object): The sender of the signal
-        user(User): The user logging out
-        request(WSGIRequest): The request to log out
-    """
-    delete_moira_cache(user)
-
-
-user_logged_out.connect(reset_moira)
