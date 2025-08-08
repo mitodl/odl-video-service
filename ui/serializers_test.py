@@ -46,12 +46,14 @@ def test_collection_serializer():
     assert serialized_data == expected
 
 
-def test_collection_serializer_validation_fake_admin_lists():
+def test_collection_serializer_validation_fake_admin_lists(mocker):
     """
     Test for CollectionSerializer's admin keycloak group validation for fake lists
     """
+    mock_keycloak_client = mocker.patch("ui.serializers.get_keycloak_client")
+    mock_keycloak_client().find_group_by_name.return_value = None
     collection = factories.CollectionFactory(
-        admin_lists=[factories.KeycloakGroupFactory()]
+        admin_lists=[KeycloakGroupFactory.create()]
     )
     serialized_data = serializers.CollectionSerializer(collection).data
     with pytest.raises(ValidationError) as exc:
@@ -63,10 +65,12 @@ def test_collection_serializer_validation_fake_admin_lists():
     )
 
 
-def test_collection_serializer_validation_fake_view_lists():
+def test_collection_serializer_validation_fake_view_lists(mocker):
     """
     Test for CollectionSerializer's viewable keycloak group validation for fake lists
     """
+    mock_keycloak_client = mocker.patch("ui.serializers.get_keycloak_client")
+    mock_keycloak_client().find_group_by_name.return_value = None
     collection = factories.CollectionFactory(
         view_lists=[factories.KeycloakGroupFactory()]
     )
