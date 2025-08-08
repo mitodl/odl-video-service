@@ -1,6 +1,28 @@
 Release Notes
 =============
 
+Version 0.81.2
+--------------
+
+- fix(deps): update dependency jsdom to v26 (#1316)
+- fix(deps): update dependency eslint-plugin-flowtype to v8 (#1315)
+- chore(deps): lock file maintenance (#1323)
+- fix(deps): update dependency redis to v6 (#1321)
+- fix(deps): update dependency setuptools to v80 (#1320)
+- fix(deps): update dependency google-auth-oauthlib to v1 (#1305)
+- fix(deps): update dependency @sentry/browser to v9.43.0 (#1319)
+- fix(deps): update dependency setuptools to v78 [security] (#1318)
+- fix(deps): update dependency newrelic to v10 (#1306)
+- fix(deps): update dependency pycountry to v24 (#1308)
+- chore(deps): update dependency django-debug-toolbar to v6 (#1314)
+- [pre-commit.ci] pre-commit autoupdate (#1303)
+- fix(deps): update dependency flow-bin to v0.277.1 (#1311)
+- fix(deps): update dependency @sentry/browser to v9.42.0 (#1310)
+- fix(deps): update dependency pytz to v2025 (#1309)
+- chore(deps): update redis:8.0.3 docker digest to f957ce9 (#1304)
+- fix(deps): update dependency cryptography to v45 (#1301)
+- chore(deps): update node.js to v22.17.1 (#1297)
+
 Version 0.81.1 (Released July 24, 2025)
 --------------
 

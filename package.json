@@ -30,7 +30,7 @@
     "@material/textfield": "^0.33.0",
     "@material/toolbar": "^0.33.0",
     "@material/typography": "^0.28.0",
-    "@sentry/browser": "9.40.0",
+    "@sentry/browser": "9.43.0",
     "@silvermine/videojs-quality-selector": "^1.3.1",
     "autoprefixer": "^10.0.0",
     "babel-eslint": "^10.0.0",
@@ -50,15 +50,14 @@
     "eslint-config-mitodl": "^0.2.0",
     "eslint-plugin-babel": "^5.3.0",
     "eslint-plugin-flow-vars": "^0.5.0",
-    "eslint-plugin-flowtype": "^4.7.0",
     "eslint-plugin-mocha": "^6.3.0",
     "eslint-plugin-react": "^7.19.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "express": "^5.0.0",
-    "flow-bin": "0.276.0",
+    "flow-bin": "0.277.1",
     "isomorphic-fetch": "^3.0.0",
     "jquery": "^3.5.0",
-    "jsdom": "^16.7.0",
+    "jsdom": "^26.0.0",
     "jsdom-global": "^3.0.2",
     "lodash": "^4.17.21",
     "mini-css-extract-plugin": "^2.0.0",
@@ -112,7 +111,7 @@
     "webpack-hot-middleware": "^2.26.1"
   },
   "engines": {
-    "node": "22.17.0",
+    "node": "22.17.1",
     "yarn": "1.22.22"
   },
   "resolutions": {
