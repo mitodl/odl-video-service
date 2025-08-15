@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.81.2
+Version 0.81.2 (Released August 15, 2025)
 --------------
 
 - fix(deps): update dependency jsdom to v26 (#1316)
