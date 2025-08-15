@@ -90,13 +90,13 @@ def post_collection_videos_to_edx(video_ids):
         ),
         key=lambda vf: vf.id,
     )
-    responses = ovs_api.post_video_to_edx(video_files)
-
-    log.info(
-        "Posted collection videos to edX",
-        video_ids=video_ids,
-        responses={
-            endpoint.full_api_url: resp.status_code
-            for endpoint, resp in responses.items()
-        },
-    )
+    for video_file in video_files:
+        responses = ovs_api.post_video_to_edx([video_file])
+        log.info(
+            "Posted collection video to edX",
+            video_title=video_file.video.title,
+            responses={
+                endpoint.full_api_url: resp.status_code
+                for endpoint, resp in responses.items()
+            },
+        )
