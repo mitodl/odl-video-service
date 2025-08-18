@@ -1,6 +1,11 @@
 Release Notes
 =============
 
+Version 0.81.3
+--------------
+
+- fix: sync collection videos with edx (#1326)
+
 Version 0.81.2 (Released August 15, 2025)
 --------------
 
