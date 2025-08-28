@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 0.81.4
+--------------
+
+- fix(deps): update dependency chai to v6 (#1335)
+- fix(deps): update dependency @sentry/browser to v10 (#1334)
+- chore(deps): update node.js to v22.18.0 (#1332)
+- chore(deps): update dependency python (#1331)
+- chore(deps): update redis:8.0.3 docker digest to 30abfcc (#1330)
+- chore(deps): update actions/checkout digest to 08eba0b (#1329)
+- chore(deps): update actions/cache digest to 0400d5f (#1328)
+- [pre-commit.ci] pre-commit autoupdate (#1317)
+
 Version 0.81.3 (Released August 19, 2025)
 --------------
 
