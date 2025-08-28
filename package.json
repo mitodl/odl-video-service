@@ -39,7 +39,7 @@
     "babel-plugin-jsx": "^1.2.0",
     "babel-preset-latest": "^6.24.1",
     "casual-browserify": "^1.5.12",
-    "chai": "^5.0.0",
+    "chai": "^6.0.0",
     "chai-as-promised": "^8.0.0",
     "codecov": "^3.7.1",
     "css-loader": "^7.0.0",
