@@ -1,4 +1,4 @@
-FROM node:22.17.1 AS node
+FROM node:22.18.0 AS node
 ENV NODE_ENV=production
 RUN apt-get update && apt-get install libelf1 -y
 COPY . /src
@@ -6,7 +6,7 @@ WORKDIR /src
 RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline && \
     node node_modules/webpack/bin/webpack.js --config  webpack.config.prod.js --bail
 
-FROM python:3.13.5-bullseye AS base
+FROM python:3.13.6-bullseye AS base
 # Add package files, install updated node and pip
 WORKDIR /tmp
 

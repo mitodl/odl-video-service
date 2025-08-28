@@ -8,7 +8,7 @@ services:
       - POSTGRES_PASSWORD=postgres  # pragma: allowlist secret
 
   redis:
-    image: redis:8.0.3@sha256:f957ce918b51f3ac10414244bedd0043c47db44a819f98b9902af1bd9d0afcea
+    image: redis:8.0.3@sha256:30abfcce7d0527dceb081dfa17cea0a6c2c315bf5a4ec7b2799118e852fdd553
     ports:
       - "6379"
 
