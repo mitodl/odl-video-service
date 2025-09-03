@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.81.4
+Version 0.81.4 (Released September 03, 2025)
 --------------
 
 - chore(deps): update actions/checkout action to v5 (#1337)
