@@ -4,6 +4,7 @@ ui celery tasks
 
 import celery
 from django.db.models import Q
+from itertools import groupby
 
 from mail.utils import chunks
 from odl_video import logging
@@ -82,19 +83,21 @@ def post_collection_videos_to_edx(video_ids):
     Args:
         video_ids (list): List of video IDs to post.
     """
-    video_files = sorted(
-        list(
-            VideoFile.objects.filter(
-                video__id__in=video_ids, encoding=EncodingNames.HLS
-            ).select_related("video__collection")
-        ),
-        key=lambda vf: vf.id,
+    video_files = (
+        VideoFile.objects.filter(
+            ~Q(encoding=EncodingNames.ORIGINAL), video__id__in=video_ids
+        )
+        .select_related("video__collection")
+        .order_by("video__id", "id")
     )
-    for video_file in video_files:
-        responses = ovs_api.post_video_to_edx([video_file])
+
+    for video_id, video_file_list in groupby(video_files, key=lambda vf: vf.video.id):
+        video_file_list = list(video_file_list)
+        responses = ovs_api.post_video_to_edx(video_file_list)
         log.info(
             "Posted collection video to edX",
-            video_title=video_file.video.title,
+            video_title=video_file_list[0].video.title,
+            video_id=video_id,
             responses={
                 endpoint.full_api_url: resp.status_code
                 for endpoint, resp in responses.items()

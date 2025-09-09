@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.81.5
+--------------
+
+- fix: mp4 format added when re-syncing videos to edx (#1340)
+- fix(deps): update dependency django to v4.2.24 (#1341)
+
 Version 0.81.4 (Released September 03, 2025)
 --------------
 
