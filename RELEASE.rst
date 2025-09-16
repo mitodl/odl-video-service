@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.81.5
+Version 0.81.5 (Released September 16, 2025)
 --------------
 
 - fix: mp4 format added when re-syncing videos to edx (#1340)
