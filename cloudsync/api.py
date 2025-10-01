@@ -103,6 +103,32 @@ def process_hls_outputs(file_paths: list, video: Video) -> None:
             file_path = Path(file_path)
             bucket_name = file_path.parts[1]
             s3_path = str(Path(*file_path.parts[2:])).replace(RETRANSCODE_FOLDER, "")
+
+            # Check if VideoFile with HLS encoding already exists for this video
+            existing_hls_files = VideoFile.objects.filter(
+                video=video, encoding=EncodingNames.HLS
+            )
+
+            # If an existing HLS file has different s3_object_key, delete it from S3
+            for existing_file in existing_hls_files:
+                if existing_file.s3_object_key != s3_path:
+                    try:
+                        log.info(
+                            "Deleting existing HLS VideoFile with different s3_object_key",
+                            video_id=video.id,
+                            old_s3_key=existing_file.s3_object_key,
+                            new_s3_key=s3_path,
+                        )
+                        existing_file.delete_from_s3()
+                        existing_file.delete()
+                    except Exception as exc:
+                        log.error(
+                            "Failed to delete existing HLS VideoFile",
+                            video_id=video.id,
+                            s3_object_key=existing_file.s3_object_key,
+                            error=str(exc),
+                        )
+
             VideoFile.objects.update_or_create(
                 s3_object_key=s3_path,
                 defaults={
@@ -129,6 +155,31 @@ def process_mp4_outputs(outputs: list, video: Video) -> None:
             bucket_name = file_path.parts[1]
             s3_path = str(Path(*file_path.parts[2:])).replace(RETRANSCODE_FOLDER, "")
             if file_path.name.endswith(".mp4"):
+                # Check if VideoFile with MP4 encoding already exists for this video
+                existing_mp4_files = VideoFile.objects.filter(
+                    video=video, encoding=EncodingNames.DESKTOP_MP4
+                )
+
+                # If an existing MP4 file has different s3_object_key, delete it from S3
+                for existing_file in existing_mp4_files:
+                    if existing_file.s3_object_key != s3_path:
+                        try:
+                            log.info(
+                                "Deleting existing MP4 VideoFile with different s3_object_key",
+                                video_id=video.id,
+                                old_s3_key=existing_file.s3_object_key,
+                                new_s3_key=s3_path,
+                            )
+                            existing_file.delete_from_s3()
+                            existing_file.delete()
+                        except Exception as exc:
+                            log.error(
+                                "Failed to delete existing MP4 VideoFile",
+                                video_id=video.id,
+                                s3_object_key=existing_file.s3_object_key,
+                                error=str(exc),
+                            )
+
                 VideoFile.objects.update_or_create(
                     s3_object_key=s3_path,
                     defaults={
