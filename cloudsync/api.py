@@ -119,7 +119,8 @@ def process_hls_outputs(file_paths: list, video: Video) -> None:
                             old_s3_key=existing_file.s3_object_key,
                             new_s3_key=s3_path,
                         )
-                        existing_file.delete_from_s3()
+                        # S3 object(s) will be deleted through pre-delete signal
+                        # odl-video-service/ui/signals.py
                         existing_file.delete()
                     except Exception as exc:
                         log.error(
@@ -170,7 +171,8 @@ def process_mp4_outputs(outputs: list, video: Video) -> None:
                                 old_s3_key=existing_file.s3_object_key,
                                 new_s3_key=s3_path,
                             )
-                            existing_file.delete_from_s3()
+                            # S3 object(s) will be deleted through pre-delete signal
+                            # odl-video-service/ui/signals.py
                             existing_file.delete()
                         except Exception as exc:
                             log.error(
