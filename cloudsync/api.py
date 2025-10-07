@@ -104,40 +104,8 @@ def process_hls_outputs(file_paths: list, video: Video) -> None:
             bucket_name = file_path.parts[1]
             s3_path = str(Path(*file_path.parts[2:])).replace(RETRANSCODE_FOLDER, "")
 
-            # Check if VideoFile with HLS encoding already exists for this video
-            existing_hls_files = VideoFile.objects.filter(
-                video=video, encoding=EncodingNames.HLS
-            )
-
-            # If an existing HLS file has different s3_object_key, delete it from S3
-            for existing_file in existing_hls_files:
-                if existing_file.s3_object_key != s3_path:
-                    try:
-                        log.info(
-                            "Deleting existing HLS VideoFile with different s3_object_key",
-                            video_id=video.id,
-                            old_s3_key=existing_file.s3_object_key,
-                            new_s3_key=s3_path,
-                        )
-                        # S3 object(s) will be deleted through pre-delete signal
-                        # odl-video-service/ui/signals.py
-                        existing_file.delete()
-                    except Exception as exc:
-                        log.error(
-                            "Failed to delete existing HLS VideoFile",
-                            video_id=video.id,
-                            s3_object_key=existing_file.s3_object_key,
-                            error=str(exc),
-                        )
-
-            VideoFile.objects.update_or_create(
-                s3_object_key=s3_path,
-                defaults={
-                    "video": video,
-                    "bucket_name": bucket_name,
-                    "encoding": EncodingNames.HLS,
-                    "preset_id": "",
-                },
+            cleanup_and_upsert_video_file(
+                video, EncodingNames.HLS, s3_path, bucket_name
             )
 
 
@@ -156,40 +124,8 @@ def process_mp4_outputs(outputs: list, video: Video) -> None:
             bucket_name = file_path.parts[1]
             s3_path = str(Path(*file_path.parts[2:])).replace(RETRANSCODE_FOLDER, "")
             if file_path.name.endswith(".mp4"):
-                # Check if VideoFile with MP4 encoding already exists for this video
-                existing_mp4_files = VideoFile.objects.filter(
-                    video=video, encoding=EncodingNames.DESKTOP_MP4
-                )
-
-                # If an existing MP4 file has different s3_object_key, delete it from S3
-                for existing_file in existing_mp4_files:
-                    if existing_file.s3_object_key != s3_path:
-                        try:
-                            log.info(
-                                "Deleting existing MP4 VideoFile with different s3_object_key",
-                                video_id=video.id,
-                                old_s3_key=existing_file.s3_object_key,
-                                new_s3_key=s3_path,
-                            )
-                            # S3 object(s) will be deleted through pre-delete signal
-                            # odl-video-service/ui/signals.py
-                            existing_file.delete()
-                        except Exception as exc:
-                            log.error(
-                                "Failed to delete existing MP4 VideoFile",
-                                video_id=video.id,
-                                s3_object_key=existing_file.s3_object_key,
-                                error=str(exc),
-                            )
-
-                VideoFile.objects.update_or_create(
-                    s3_object_key=s3_path,
-                    defaults={
-                        "video": video,
-                        "bucket_name": bucket_name,
-                        "encoding": EncodingNames.DESKTOP_MP4,
-                        "preset_id": "",
-                    },
+                cleanup_and_upsert_video_file(
+                    video, EncodingNames.DESKTOP_MP4, s3_path, bucket_name
                 )
             elif file_path.name.endswith(".jpg"):
                 VideoThumbnail.objects.update_or_create(
@@ -607,3 +543,48 @@ def move_s3_objects(bucket_name, from_prefix, to_prefix):
         copy_src = {"Bucket": bucket_name, "Key": obj.key}
         bucket.copy(copy_src, Key=obj.key.replace(from_prefix, to_prefix))
     delete_s3_objects.delay(bucket_name, from_prefix, as_filter=True)
+
+
+def cleanup_and_upsert_video_file(
+    video: Video, encoding: str, s3_path: str, bucket_name: str
+) -> None:
+    """
+    Ensures there is only one VideoFile object for a given video and encoding.
+    If there are duplicates, delete them. Then, create or update the VideoFile object
+    with the given s3_path.
+
+    Args:
+        video (Video): The video to check for duplicate VideoFile objects.
+        encoding (str): The encoding type to check for duplicates.
+        s3_path (str): The s3_object_key that should be retained.
+        bucket_name (str): The S3 bucket name where the video file is stored.
+    """
+    video_files = VideoFile.objects.filter(video=video, encoding=encoding)
+    for vf in video_files:
+        if vf.s3_object_key != s3_path:
+            try:
+                log.debug(
+                    "Deleting duplicate VideoFile",
+                    video_id=video.id,
+                    video_file_id=vf.id,
+                    s3_object_key=vf.s3_object_key,
+                )
+                vf.delete()
+            except Exception as exc:
+                log.error(
+                    "Failed to delete duplicate VideoFile",
+                    video_id=video.id,
+                    video_file_id=vf.id,
+                    s3_object_key=vf.s3_object_key,
+                    error=str(exc),
+                )
+
+    VideoFile.objects.update_or_create(
+        s3_object_key=s3_path,
+        defaults={
+            "video": video,
+            "bucket_name": bucket_name,
+            "encoding": encoding,
+            "preset_id": "",
+        },
+    )
