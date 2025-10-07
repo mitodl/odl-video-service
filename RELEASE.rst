@@ -1,6 +1,26 @@
 Release Notes
 =============
 
+Version 0.81.6
+--------------
+
+- fix: avoid saving multiple video files for same format (#1360)
+- fix(deps): update dependency django to v4.2.25 [security] (#1361)
+- fix(deps): update dependency @sentry/browser to v10.15.0 (#1354)
+- fix(deps): update dependency jsdom to v27 (#1357)
+- chore(deps): update dependency pytest-cov to v7 (#1356)
+- fix(deps): update dependency httplib2 to ^0.31.0 (#1355)
+- fix(deps): update dependency cryptography to v46 (#1352)
+- chore(deps): update actions/setup-node action to v5 (#1351)
+- chore(deps): update actions/setup-python action to v6 (#1350)
+- chore(deps): update codecov/codecov-action digest to 5a10915 (#1343)
+- [pre-commit.ci] pre-commit autoupdate (#1338)
+- chore(deps): update redis docker tag to v8.2.1 (#1349)
+- chore(deps): update postgres docker tag to v17.6 (#1348)
+- chore(deps): update node.js to v22.19.0 (#1347)
+- chore(deps): update dependency ruff to ^0.13.0 (#1346)
+- chore(deps): update nginx docker tag to v1.29.1 (#1345)
+
 Version 0.81.5 (Released September 16, 2025)
 --------------
 
