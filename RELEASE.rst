@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.81.6
+Version 0.81.6 (Released October 08, 2025)
 --------------
 
 - fix: avoid saving multiple video files for same format (#1360)
