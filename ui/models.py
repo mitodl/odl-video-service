@@ -494,6 +494,12 @@ class Video(TimestampedModel):
             prefix=TRANSCODE_PREFIX, s3key=basename, preset=preset
         )
 
+    def video_s3_prefix(self):
+        """
+        Get the S3 prefix for all files associated with this video
+        """
+        return self.transcode_key().split("/")[0]
+
     def subtitle_key(self, dttm, language="en", prefix="subtitles"):
         """
         Returns an S3 object key to be used for a subtitle file

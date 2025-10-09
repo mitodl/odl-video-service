@@ -62,7 +62,7 @@ def process_transcode_results(results: dict) -> None:
 
     if video.status == VideoStatus.RETRANSCODING:
         # Move old transcoded files
-        video_key = video.transcode_key().split("/")[0]
+        video_key = video.video_s3_prefix()
 
         move_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
@@ -243,7 +243,7 @@ def prepare_results(video: Video, job: EncodeJob, results: str) -> dict:
                 else getattr(settings, key, "")
             ),
         )
-    video_key = video.transcode_key().split("/")[0]
+    video_key = video.video_s3_prefix()
     results = results.replace("<VIDEO_KEY>", video_key).replace("<VIDEO_NAME>", "video")
 
     # Decode the JSON string
@@ -274,7 +274,7 @@ def transcode_video(
     if video.status == VideoStatus.RETRANSCODE_SCHEDULED:
         # Retranscode to a temporary folder and delete any stray S3 objects from there
         prefix = RETRANSCODE_FOLDER + TRANSCODE_PREFIX
-        video_key = video.transcode_key().split("/")[0]
+        video_key = video.video_s3_prefix()
         # pylint:disable=no-value-for-parameter
         delete_s3_objects(
             settings.VIDEO_S3_TRANSCODE_BUCKET,
