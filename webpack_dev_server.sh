@@ -6,6 +6,7 @@ WEBPACK_PORT='8082'
 
 if [[ $1 == "--install" ]]; then
 	yarn install --frozen-lockfile && echo "Finished yarn install"
+	yarn build
 fi
 # Start the webpack dev server on the appropriate host and port
 node ./hot-reload-dev-server.js --host "$WEBPACK_HOST" --port "$WEBPACK_PORT"
