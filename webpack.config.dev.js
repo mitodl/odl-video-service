@@ -51,6 +51,7 @@ devConfig.module.rules = [
       {
         loader: 'sass-loader',
         options: {
+          implementation: require('sass'),
           sassOptions: {
             sourceMap: true,
             includePaths: ['node_modules', 'node_modules/@material/*']
