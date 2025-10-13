@@ -116,6 +116,7 @@ def test_refresh_status_video_job_status_complete(mocker, status):
     Verify that Video.job_status property returns the status of its encoding job
     """
     video = VideoFactory(status=status)
+    VideoFileFactory(video=video)
     encodejob = EncodeJobFactory(video=video)
     MockClientMC.job = {"Job": {"Id": "1498220566931-qtmtcu", "Status": "Complete"}}
     mocker.patch("cloudsync.api.boto3", MockBoto)
@@ -134,6 +135,7 @@ def test_refresh_status_video_job_othererror(mocker, status):
     Verify that refresh_status does not raise ClientError
     """
     video = VideoFactory(status=status)
+    VideoFileFactory(video=video)
     EncodeJobFactory(video=video)
     video.status = VideoStatus.TRANSCODING
     mocker.patch("cloudsync.api.boto3", MockBoto)
