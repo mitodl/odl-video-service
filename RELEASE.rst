@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+Version 0.81.7
+--------------
+
+- fix: use original video's path and s3 key (#1370)
+- Security: Disable yarn postinstall scripts (#1358)
+- chore(deps): update actions/cache digest to 0057852 (#1363)
+- fix(deps): update dependency @sentry/browser to v10.19.0 (#1369)
+- chore(deps): update dependency ruff to ^0.14.0 (#1367)
+- chore(deps): update redis docker tag to v8.2.2 (#1366)
+- chore(deps): update nginx docker tag to v1.29.2 (#1365)
+- [pre-commit.ci] pre-commit autoupdate (#1359)
+
 Version 0.81.6 (Released October 08, 2025)
 --------------
 
