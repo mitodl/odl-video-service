@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.81.7
+Version 0.81.7 (Released October 14, 2025)
 --------------
 
 - fix: use original video's path and s3 key (#1370)
