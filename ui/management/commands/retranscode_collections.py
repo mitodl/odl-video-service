@@ -3,10 +3,11 @@
 from datetime import datetime
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
+from django.db.models import Count
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 
-from ui.models import Collection, Video
+from ui.models import Collection
 
 User = get_user_model()
 
@@ -24,7 +25,7 @@ class Command(BaseCommand):
             "--ids",
             nargs="+",
             type=str,
-            help="Collection IDs (UUID hex keys or primary keys) to retranscode",
+            help="Collection IDs (primary keys) to retranscode",
         )
 
         filter_group.add_argument(
@@ -43,7 +44,7 @@ class Command(BaseCommand):
             "--course-ids",
             nargs="+",
             type=str,
-            help="edX course ID - retranscode all collections with this course ID",
+            help="edX course IDs - retranscode all collections with these course IDs",
         )
 
         filter_group.add_argument(
@@ -84,10 +85,10 @@ class Command(BaseCommand):
 
         # Display summary
         collection_count = collections.count()
-        video_count = self._get_eligible_videos_count(collections, options)
+        video_count = self._get_videos_count(collections)
 
         self.stdout.write(
-            f"Found {collection_count} collection(s) with {video_count} eligible video(s)"
+            f"Found {collection_count} collection(s) with {video_count} video(s)"
         )
 
         if options["dry_run"]:
@@ -95,14 +96,7 @@ class Command(BaseCommand):
             return
 
         # Schedule retranscoding
-        retranscoded_collections = self._schedule_retranscoding(collections, options)
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Successfully scheduled retranscoding for {retranscoded_collections} collection(s) "
-                f"with {video_count} total video(s)"
-            )
-        )
+        self._schedule_retranscoding(collections)
 
     def _get_collections_queryset(self, options):
         """Get collections queryset based on filtering options"""
@@ -112,16 +106,11 @@ class Command(BaseCommand):
         base_queryset = self._apply_date_filters(base_queryset, options)
 
         if options["ids"]:
-            # Handle both UUID hex keys and primary keys
             ids = options["ids"]
-            # Try to filter by hex key first, then by primary key
-            collections_by_hex = base_queryset.filter(
-                key__in=[id.replace("-", "") for id in ids]
-            )
             collections_by_pk = base_queryset.filter(
                 pk__in=[int(id) for id in ids if id.isdigit()]
             )
-            return (collections_by_hex | collections_by_pk).distinct()
+            return collections_by_pk.distinct()
 
         elif options["all"]:
             return base_queryset
@@ -141,7 +130,7 @@ class Command(BaseCommand):
                 edx_endpoints__name=options["edx_endpoint"]
             ).distinct()
 
-        return base_queryset
+        return base_queryset.prefetch_related("edx_endpoints", "videos")
 
     def _apply_date_filters(self, queryset, options):
         """Apply created_at date filters to the queryset"""
@@ -189,9 +178,10 @@ class Command(BaseCommand):
                 f"Error parsing --{argument_name} date '{date_string}': {str(e)}"
             )
 
-    def _get_eligible_videos_count(self, collections, options):
-        """Count videos eligible for retranscoding"""
-        return Video.objects.filter(collection__in=collections).count()
+    def _get_videos_count(self, collections):
+        """Count videos for retranscoding"""
+        result = collections.aggregate(total=Count("videos"))
+        return result["total"] or 0
 
     def _show_dry_run_details(self, collections, options):
         """Show detailed information about what would be retranscoded"""
@@ -210,9 +200,12 @@ class Command(BaseCommand):
             self.stdout.write("")
 
         total_videos = 0
-        for collection in collections:
-            videos = self._get_eligible_videos_for_collection(collection, options)
-            video_count = videos.count()
+        for collection in (
+            collections.select_related("owner")
+            .annotate(video_count=Count("videos"))
+            .iterator()
+        ):
+            video_count = collection.video_count
             total_videos += video_count
 
             self.stdout.write(f"\nCollection: {collection.title}")
@@ -231,50 +224,48 @@ class Command(BaseCommand):
                     f"  edX Endpoints: {', '.join([ep.name for ep in endpoints])}"
                 )
 
-            self.stdout.write(f"  Eligible videos: {video_count}")
+            self.stdout.write(f"  Videos: {video_count}")
 
             if video_count > 0:
                 # Show video details
-                for video in videos[:5]:  # Limit to first 5 videos for brevity
+                for video in collection.videos.all()[
+                    :5
+                ]:  # Limit to first 5 videos for brevity
                     self.stdout.write(f"    - {video.title} (Status: {video.status})")
                 if video_count > 5:
                     self.stdout.write(f"    ... and {video_count - 5} more video(s)")
 
         self.stdout.write(f"\nTotal videos to be retranscoded: {total_videos}")
 
-    def _get_eligible_videos_for_collection(self, collection, options):
-        """Get videos eligible for retranscoding in a specific collection"""
-        return collection.videos.all()
-
-    def _schedule_retranscoding(self, collections, options):
+    def _schedule_retranscoding(self, collections):
         """Schedule retranscoding for collections"""
-        retranscoded_collections = 0
-
-        for collection in collections:
-            videos = self._get_eligible_videos_for_collection(collection, options)
-
-            if not videos.exists():
+        collections_to_update_pks = []
+        for collection in collections.annotate(video_count=Count("videos")).iterator():
+            if collection.video_count == 0:
                 self.stdout.write(
-                    f"Skipping collection '{collection.title}' - no eligible videos"
+                    f"Skipping collection '{collection.title}' - no videos"
                 )
                 continue
 
-            # Check if already scheduled (unless force is used)
             if collection.schedule_retranscode:
                 self.stdout.write(
                     f"Skipping collection '{collection.title}' - already scheduled for retranscoding"
                 )
                 continue
 
-            # Schedule collection for retranscoding
-            collection.schedule_retranscode = True
-            collection.save()
-            retranscoded_collections += 1
+            collections_to_update_pks.append(collection.pk)
 
-            video_count = videos.count()
+            video_count = collection.video_count
             self.stdout.write(
                 f"Scheduled retranscoding for collection '{collection.title}' "
-                f"({video_count} eligible videos)"
+                f"({video_count} videos)"
             )
 
-        return retranscoded_collections
+        # Bulk update collections to set schedule_retranscode=True
+        updated_count = 0
+        if collections_to_update_pks:
+            updated_count = Collection.objects.filter(
+                pk__in=collections_to_update_pks
+            ).update(schedule_retranscode=True)
+
+        return updated_count
