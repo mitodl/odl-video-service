@@ -25,7 +25,7 @@ class Command(BaseCommand):
             "--ids",
             nargs="+",
             type=str,
-            help="Collection IDs (primary keys) to retranscode",
+            help="Collection IDs (primary keys) to retranscode. Provide one or more IDs separated by spaces (e.g., --ids 123 456 789)",
         )
 
         filter_group.add_argument(
@@ -44,7 +44,7 @@ class Command(BaseCommand):
             "--course-ids",
             nargs="+",
             type=str,
-            help="edX course IDs - retranscode all collections with these course IDs",
+            help="edX course IDs - retranscode all collections with these course IDs. Provide one or more course IDs separated by spaces (e.g., --course-ids course-v1:MIT+6.00x+2023 course-v1:MIT+8.01x+2023)",
         )
 
         filter_group.add_argument(
@@ -53,13 +53,13 @@ class Command(BaseCommand):
             help="edX endpoint name - retranscode all collections using this endpoint",
         )
 
-        filter_group.add_argument(
+        parser.add_argument(
             "--created-after",
             type=str,
             help="Only include collections created after this date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS format)",
         )
 
-        filter_group.add_argument(
+        parser.add_argument(
             "--created-before",
             type=str,
             help="Only include collections created before this date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS format)",
@@ -75,7 +75,7 @@ class Command(BaseCommand):
         # Get collections based on filtering criteria
         collections = self._get_collections_queryset(options)
 
-        if not collections:
+        if not collections.exists():
             self.stdout.write(
                 self.style.WARNING(
                     "No collections found matching the specified criteria."
@@ -90,25 +90,46 @@ class Command(BaseCommand):
         self.stdout.write(
             f"Found {collection_count} collection(s) with {video_count} video(s)"
         )
+        if video_count == 0:
+            self.stdout.write(
+                self.style.WARNING("No videos found in the selected collections.")
+            )
+            return
 
         if options["dry_run"]:
             self._show_dry_run_details(collections, options)
             return
 
         # Schedule retranscoding
-        self._schedule_retranscoding(collections)
+        updated_count = self._schedule_retranscoding(collections)
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Successfully scheduled retranscoding for {updated_count} collection(s)."
+            )
+        )
 
     def _get_collections_queryset(self, options):
         """Get collections queryset based on filtering options"""
-        base_queryset = Collection.objects.all()
+        base_queryset = Collection.objects.prefetch_related(
+            "edx_endpoints", "videos"
+        ).all()
 
         # Apply date filters if specified
         base_queryset = self._apply_date_filters(base_queryset, options)
 
         if options["ids"]:
             ids = options["ids"]
+            invalid_ids = [
+                collection_id for collection_id in ids if not collection_id.isdigit()
+            ]
+            if invalid_ids:
+                raise CommandError(
+                    f"Invalid collection ID(s) provided: {', '.join(invalid_ids)}. All IDs must be integers."
+                )
+
             collections_by_pk = base_queryset.filter(
-                pk__in=[int(id) for id in ids if id.isdigit()]
+                pk__in=[int(collection_id) for collection_id in ids]
             )
             return collections_by_pk.distinct()
 
@@ -119,8 +140,8 @@ class Command(BaseCommand):
             try:
                 user = User.objects.get(username=options["owner"])
                 return base_queryset.filter(owner=user)
-            except User.DoesNotExist:
-                raise CommandError(f"User '{options['owner']}' does not exist")
+            except User.DoesNotExist as exc:
+                raise CommandError(f"User '{options['owner']}' does not exist") from exc
 
         elif options["course_ids"]:
             return base_queryset.filter(edx_course_id__in=options["course_ids"])
@@ -130,7 +151,7 @@ class Command(BaseCommand):
                 edx_endpoints__name=options["edx_endpoint"]
             ).distinct()
 
-        return base_queryset.prefetch_related("edx_endpoints", "videos")
+        return base_queryset
 
     def _apply_date_filters(self, queryset, options):
         """Apply created_at date filters to the queryset"""
@@ -148,34 +169,26 @@ class Command(BaseCommand):
 
     def _parse_date(self, date_string, argument_name):
         """Parse date string and return timezone-aware datetime"""
+        parsed_date = parse_datetime(date_string)
+        if parsed_date:
+            # If no timezone info, assume UTC
+            if timezone.is_naive(parsed_date):
+                parsed_date = timezone.make_aware(parsed_date, timezone.utc)
+            return parsed_date
+
+        # Try parsing as date only (YYYY-MM-DD)
         try:
-            # Try parsing as full datetime first
-            parsed_date = parse_datetime(date_string)
-            if parsed_date:
-                # If no timezone info, assume UTC
-                if timezone.is_naive(parsed_date):
-                    parsed_date = timezone.make_aware(parsed_date, timezone.utc)
-                return parsed_date
-
-            # Try parsing as date only (YYYY-MM-DD)
-            try:
-                parsed_date = datetime.strptime(date_string, "%Y-%m-%d")
-                # For "created-after", use start of day; for "created-before", use end of day
-                if argument_name == "created-before":
-                    parsed_date = parsed_date.replace(
-                        hour=23, minute=59, second=59, microsecond=999999
-                    )
-                return timezone.make_aware(parsed_date, timezone.utc)
-            except ValueError:
-                pass
-
+            parsed_date = datetime.strptime(date_string, "%Y-%m-%d")
+            # For "created-after", use start of day; for "created-before", use end of day
+            if argument_name == "created-before":
+                parsed_date = parsed_date.replace(
+                    hour=23, minute=59, second=59, microsecond=999999
+                )
+            return timezone.make_aware(parsed_date, timezone.utc)
+        except ValueError:
             raise CommandError(
                 f"Invalid date format for --{argument_name}: '{date_string}'. "
                 f"Use YYYY-MM-DD or YYYY-MM-DD HH:MM:SS format."
-            )
-        except Exception as e:
-            raise CommandError(
-                f"Error parsing --{argument_name} date '{date_string}': {str(e)}"
             )
 
     def _get_videos_count(self, collections):
