@@ -8,7 +8,7 @@ jobs:
       # Label used to access the service container
       db:
         # Docker Hub image
-        image: postgres:17.6
+        image: postgres:18.0
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
@@ -23,7 +23,7 @@ jobs:
           - 5432:5432
 
       redis:
-        image: redis:8.2.2@sha256:f0957bcaa75fd58a9a1847c1f07caf370579196259d69ac07f2e27b5b389b021
+        image: redis:8.2.3@sha256:5c7c0445ed86918cb9efb96d95a6bfc03ed2059fe2c5f02b4d74f477ffe47915
         ports:
           - 6379:6379
 
@@ -108,7 +108,7 @@ jobs:
       - name: Set up NodeJS
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
-          node-version: 22.19.0
+          node-version: 22.21.1
 
       - name: Setup environment
         run: sudo apt-get install libelf1

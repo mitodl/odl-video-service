@@ -1,6 +1,26 @@
 Release Notes
 =============
 
+Version 0.82.0
+--------------
+
+- feat: management command added to re-transcode collections in bulk (#1383)
+- chore(deps): update dependency tar to v7.5.2 [security] (#1381)
+- chore(deps): update redis docker tag to v8.2.3 (#1386)
+- chore(deps): update node.js to v22.21.1 (#1385)
+- chore(deps): update nginx docker tag to v1.29.3 (#1384)
+- [pre-commit.ci] pre-commit autoupdate (#1379)
+- fix(deps): update dependency django to v4.2.26 [security] (#1382)
+- fix(deps): update dependency ramda to ^0.32.0 (#1380)
+- fix(deps): update dependency @sentry/browser to v10.22.0 (#1377)
+- fix(deps): update dependency uwsgi to v2.0.31 (#1375)
+- chore(deps): update node.js to v22.21.0 (#1376)
+- chore(deps): update postgres docker tag to v18 (#1378)
+- chore(deps): update redis:8.2.2 docker digest to 4521b58 (#1374)
+- [pre-commit.ci] pre-commit autoupdate (#1373)
+- [pre-commit.ci] pre-commit autoupdate (#1372)
+- chore(deps): update node.js to v22.20.0 (#1368)
+
 Version 0.81.7 (Released October 14, 2025)
 --------------
 
