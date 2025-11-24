@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.82.0
+Version 0.82.0 (Released November 24, 2025)
 --------------
 
 - feat: management command added to re-transcode collections in bulk (#1383)
