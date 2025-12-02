@@ -6,8 +6,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Count
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
+from django.conf import settings
 
-from ui.models import Collection
+from ui.models import Collection, Video
 
 User = get_user_model()
 
@@ -280,5 +281,11 @@ class Command(BaseCommand):
             updated_count = Collection.objects.filter(
                 pk__in=collections_to_update_pks
             ).update(schedule_retranscode=True)
+
+            # Manually update videos since bulk update doesn't trigger post_save signals
+            if settings.FEATURES.get("RETRANSCODE_ENABLED", False):
+                Video.objects.filter(
+                    collection__pk__in=collections_to_update_pks
+                ).update(schedule_retranscode=True)
 
         return updated_count
