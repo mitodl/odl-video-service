@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.82.1
+Version 0.82.1 (Released December 04, 2025)
 --------------
 
 - fix: manually set re-transcode to true for videos (#1390)
