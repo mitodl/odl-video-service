@@ -795,7 +795,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "**********",
+      "secret": "odl-video-secret-2025",
       "redirectUris": [
         "http://localhost:8089/auth/complete/keycloak/",
         "http://ovs.odl.local:8089/auth/complete/keycloak/*",

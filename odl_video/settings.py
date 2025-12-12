@@ -130,8 +130,8 @@ elif USE_KEYCLOAK:
 
 
 # Keycloak OIDC Configuration
-KEYCLOAK_CLIENT_ID = get_string("KEYCLOAK_CLIENT_ID", "odl-video-app")
-KEYCLOAK_CLIENT_SECRET = get_string("KEYCLOAK_CLIENT_SECRET", "odl-video-secret-2025")
+KEYCLOAK_CLIENT_ID = get_string("KEYCLOAK_CLIENT_ID", "")
+KEYCLOAK_CLIENT_SECRET = get_string("KEYCLOAK_CLIENT_SECRET", "")
 KEYCLOAK_PUBLIC_KEY = get_string("KEYCLOAK_PUBLIC_KEY", "")
 KEYCLOAK_SERVER_URL = get_string("KEYCLOAK_SERVER_URL", "http://kc.odl.local:7080")
 KEYCLOAK_REALM = get_string("KEYCLOAK_REALM", "ovs-local")
