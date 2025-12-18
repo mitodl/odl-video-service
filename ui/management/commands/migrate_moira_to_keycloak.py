@@ -8,6 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 import logging
 import re
+import time
 
 from ui.keycloak_utils import KeycloakManager, KeycloakUser
 from ui.models import Collection, KeycloakGroup, Video
@@ -121,7 +122,16 @@ class Command(BaseCommand):
             "users_existed": 0,
             "django_users_created": 0,
             "errors": [],
+            "timing": {
+                "total_time": 0,
+                "moira_list_fetch_time": 0,
+                "group_creation_time": 0,
+                "member_fetch_time": 0,
+                "user_migration_time": 0,
+            },
         }
+
+        migration_start_time = time.time()
 
         for moira_list in moira_lists:
             try:
@@ -135,10 +145,26 @@ class Command(BaseCommand):
                     "django_users_created"
                 ]
 
+                # Aggregate timing information
+                migration_summary["timing"]["moira_list_fetch_time"] += result[
+                    "timing"
+                ].get("moira_list_fetch_time", 0)
+                migration_summary["timing"]["group_creation_time"] += result[
+                    "timing"
+                ].get("group_creation_time", 0)
+                migration_summary["timing"]["member_fetch_time"] += result[
+                    "timing"
+                ].get("member_fetch_time", 0)
+                migration_summary["timing"]["user_migration_time"] += result[
+                    "timing"
+                ].get("user_migration_time", 0)
+
             except Exception as e:
                 error_msg = f"Failed to migrate list '{moira_list.name}': {e}"
                 migration_summary["errors"].append(error_msg)
                 self.stdout.write(self.style.ERROR(error_msg))
+
+        migration_summary["timing"]["total_time"] = time.time() - migration_start_time
 
         # Print summary
         self.print_migration_summary(migration_summary)
@@ -183,17 +209,37 @@ class Command(BaseCommand):
             "users_created": 0,
             "users_existed": 0,
             "django_users_created": 0,
+            "timing": {
+                "moira_list_fetch_time": 0,
+                "group_creation_time": 0,
+                "member_fetch_time": 0,
+                "user_migration_time": 0,
+            },
         }
+
         # 1. Create Keycloak group if it doesn't exist
+        group_start_time = time.time()
         group = self.kc_manager.find_group_by_name(kc_group.name)
         if group:
             self.stdout.write(f"  Group '{kc_group.name}' already exists in Keycloak")
             result["group_existed"] = 1
         else:
             if not self.dry_run:
+                moira_fetch_start = time.time()
                 moira_client = get_moira_client()
                 list_attributes = moira_client.client.service.getListAttributes(
                     kc_group.name, moira_client.proxy_id
+                )
+                result["timing"]["moira_list_fetch_time"] = (
+                    time.time() - moira_fetch_start
+                )
+                self.stdout.write(
+                    f"  ⏱️  MOIRA list fetch time: {result['timing']['moira_list_fetch_time']:.2f}s"
+                )
+                mail_list = (
+                    [str(list_attributes[0].mailList).lower()]
+                    if list_attributes
+                    else []
                 )
                 group = self.kc_manager.create_group(
                     kc_group.name,
@@ -201,7 +247,7 @@ class Command(BaseCommand):
                         "source": ["moira_migration"],
                         "original_moira_list": [kc_group.name],
                         "migrated_at": [str(timezone.now())],
-                        "mail_list": [str(list_attributes[0].mailList).lower()],
+                        "mail_list": mail_list,
                     },
                 )
                 self.stdout.write(
@@ -215,19 +261,31 @@ class Command(BaseCommand):
                 )
             result["group_created"] = 1
 
+        result["timing"]["group_creation_time"] = time.time() - group_start_time
+        self.stdout.write(
+            f"  ⏱️  Total group operation time: {result['timing']['group_creation_time']:.2f}s"
+        )
+
         if self.skip_user_creation:
             self.stdout.write("  Skipping user creation (--skip-user-creation)")
             return result
 
         # 2. Get MOIRA list members
+        member_fetch_start = time.time()
         try:
-            moira_members = list_members(kc_group.name)
+            moira_members = [m for m in list_members(kc_group.name) if m]
+            result["timing"]["member_fetch_time"] = time.time() - member_fetch_start
             self.stdout.write(f"  Found {len(moira_members)} members in MOIRA list")
+            self.stdout.write(
+                f"  ⏱️  Member fetch time: {result['timing']['member_fetch_time']:.2f}s"
+            )
         except Exception as e:
+            result["timing"]["member_fetch_time"] = time.time() - member_fetch_start
             self.stdout.write(self.style.ERROR(f"  Failed to get MOIRA members: {e}"))
             return result
 
         # 3. Create users and add to group
+        user_migration_start = time.time()
         for member in moira_members:
             try:
                 user_result = self.migrate_moira_user(member, kc_group.name, group)
@@ -238,6 +296,26 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.ERROR(f"    Failed to migrate user '{member}': {e}")
                 )
+
+        result["timing"]["user_migration_time"] = time.time() - user_migration_start
+        if moira_members:
+            avg_time_per_user = result["timing"]["user_migration_time"] / len(
+                moira_members
+            )
+            self.stdout.write(
+                f"  ⏱️  User migration time: {result['timing']['user_migration_time']:.2f}s ({avg_time_per_user:.2f}s per user)"
+            )
+
+        list_total_time = (
+            result["timing"]["group_creation_time"]
+            + result["timing"]["member_fetch_time"]
+            + result["timing"]["user_migration_time"]
+        )
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"  ✓ Total time for '{kc_group.name}': {list_total_time:.2f}s"
+            )
+        )
 
         return result
 
@@ -386,5 +464,29 @@ class Command(BaseCommand):
             self.stdout.write(f"\nErrors encountered: {len(summary['errors'])}")
             for error in summary["errors"]:
                 self.stdout.write(self.style.ERROR(f"  - {error}"))
+
+        # Print timing information
+        self.stdout.write("\n" + "-" * 60)
+        self.stdout.write(self.style.SUCCESS("TIMING BREAKDOWN"))
+        self.stdout.write("-" * 60)
+        timing = summary["timing"]
+        self.stdout.write(f"Total migration time: {timing['total_time']:.2f}s")
+        self.stdout.write(
+            f"  - MOIRA list fetch time: {timing['moira_list_fetch_time']:.2f}s"
+        )
+        self.stdout.write(
+            f"  - Group creation time: {timing['group_creation_time']:.2f}s"
+        )
+        self.stdout.write(f"  - Member fetch time: {timing['member_fetch_time']:.2f}s")
+        self.stdout.write(
+            f"  - User migration time: {timing['user_migration_time']:.2f}s"
+        )
+
+        if summary["users_created"] + summary["users_existed"] > 0:
+            total_users = summary["users_created"] + summary["users_existed"]
+            avg_time = (
+                timing["user_migration_time"] / total_users if total_users > 0 else 0
+            )
+            self.stdout.write(f"\nAverage time per user: {avg_time:.2f}s")
 
         self.stdout.write("=" * 60)
