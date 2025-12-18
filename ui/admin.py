@@ -18,16 +18,16 @@ class ViewListsInline(admin.TabularInline):
     """Inline model for collection view_lists"""
 
     model = models.Collection.view_lists.through
-    verbose_name = "View moira lists"
-    verbose_name_plural = "View moira lists"
+    verbose_name = "View keycloak group"
+    verbose_name_plural = "View keycloak groups"
 
 
 class AdminListsInline(admin.TabularInline):
     """Inline model for collection admin_lists"""
 
     model = models.Collection.admin_lists.through
-    verbose_name = "Admin moira lists"
-    verbose_name_plural = "Admin moira lists"
+    verbose_name = "Admin keycloak groups"
+    verbose_name_plural = "Admin keycloak groups"
 
 
 class EdxEndpointAdmin(admin.ModelAdmin):
@@ -230,16 +230,16 @@ class YouTubeVideoAdmin(admin.ModelAdmin):
         return obj.created_at
 
 
-class MoiraListAdmin(admin.ModelAdmin):
-    """admin page of Moira list"""
+class KeycloakGroupAdmin(admin.ModelAdmin):
+    """admin page of Keycloak group"""
 
-    model = models.MoiraList
+    model = models.KeycloakGroup
     list_display = ("name",)
     search_fields = ("name",)
 
 
 class VideoSubtitleAdmin(admin.ModelAdmin):
-    """admin page of Moira list"""
+    """admin page of Keycloak group"""
 
     model = models.VideoSubtitle
     list_display = (
@@ -255,7 +255,7 @@ class VideoSubtitleAdmin(admin.ModelAdmin):
 
 
 class VideoThumbnailAdmin(admin.ModelAdmin):
-    """admin page of Moira list"""
+    """admin page of Keycloak group"""
 
     model = models.VideoThumbnail
     list_display = (
@@ -281,7 +281,7 @@ class EncodeJobAdmin(admin.ModelAdmin):
 admin.site.register(models.EdxEndpoint, EdxEndpointAdmin)
 admin.site.register(models.Collection, CollectionAdmin)
 admin.site.register(models.CollectionEdxEndpoint, CollectionEdxEndpointAdmin)
-admin.site.register(models.MoiraList, MoiraListAdmin)
+admin.site.register(models.KeycloakGroup, KeycloakGroupAdmin)
 admin.site.register(models.Video, VideoAdmin)
 admin.site.register(models.VideoFile, VideoFileAdmin)
 admin.site.register(models.VideoThumbnail, VideoThumbnailAdmin)
