@@ -45,6 +45,7 @@ urllib3 = "^2.0.0"
 uwsgi = "2.0.31"
 mitol-django-transcoding = "^2025.5.21"
 django-filter = "^25.1"
+social-auth-app-django = "^5.4.3"
 setuptools = "^80.0.0"
 
 
