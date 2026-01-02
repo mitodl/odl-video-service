@@ -1,4 +1,4 @@
-FROM node:22.21.1 AS node
+FROM node:24.12.0 AS node
 ENV NODE_ENV=production
 RUN apt-get update && apt-get install libelf1 -y
 COPY . /src
