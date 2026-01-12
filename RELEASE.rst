@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.82.2
+Version 0.82.2 (Released January 12, 2026)
 --------------
 
 - chore(deps): update node.js to v24 (#1394)
