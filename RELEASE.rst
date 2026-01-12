@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.82.2 (Released January 12, 2026)
+--------------
+
+- chore(deps): update node.js to v24 (#1394)
+- [pre-commit.ci] pre-commit autoupdate (#1387)
+- chore(deps): update dependency urllib3 to v2.6.0 [security] (#1393)
+- fix(deps): update dependency django to v4.2.27 [security] (#1392)
+
 Version 0.82.1 (Released December 04, 2025)
 --------------
 
