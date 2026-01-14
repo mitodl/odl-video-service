@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import redirect_to_login
+from django.contrib.auth import logout
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -540,6 +541,7 @@ class LoginView(DjangoLoginView):
                 **default_js_settings(self.request),
             }
         )
+        context["use_keycloak"] = getattr(settings, "USE_KEYCLOAK", False)
         return context
 
     def get(self, request, *args, **kwargs):
@@ -550,7 +552,44 @@ class LoginView(DjangoLoginView):
                 return redirect(next_redirect)
             else:
                 return redirect("/")
+
+        if getattr(settings, "USE_KEYCLOAK", False):
+            return redirect("social:begin", "keycloak")
+
         return super().get(request, *args, **kwargs)
+
+
+class LogoutView(View):
+    """Custom logout view that handles both Django and Keycloak logout"""
+
+    def get(self, request, *args, **kwargs):
+        """Logout from both Django and Keycloak"""
+        if request.user.is_authenticated:
+            # Log out from Django
+            logout(request)
+
+            # Build Keycloak logout URL
+            keycloak_base_url = getattr(settings, "SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL", "")
+            logout_redirect_url = getattr(settings, "LOGOUT_REDIRECT_URL", "/")
+
+            if keycloak_base_url:
+                # Build the full redirect URL (the URL user will return to after Keycloak logout)
+                redirect_uri = request.build_absolute_uri(logout_redirect_url)
+
+                params = []
+                params.append(f"post_logout_redirect_uri={redirect_uri}")
+
+                client_id = getattr(settings, "KEYCLOAK_CLIENT_ID", "")
+                if client_id:
+                    params.append(f"client_id={client_id}")
+
+                # Keycloak logout URL with redirect
+                keycloak_logout_url = f"{keycloak_base_url}?{'&'.join(params)}"
+
+                return redirect(keycloak_logout_url)
+
+        # Fallback - just redirect to logout redirect URL
+        return redirect(getattr(settings, "LOGOUT_REDIRECT_URL", "/"))
 
 
 class MoiraListsForUser(APIView):
