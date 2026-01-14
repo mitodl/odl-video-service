@@ -15,9 +15,15 @@ Including another URLconf
 """
 
 from django.contrib import admin
+from django.shortcuts import redirect
 from django.urls import include, path, re_path
 
 urlpatterns = [
+    path(
+        "admin/logout/",
+        lambda request: redirect("/logout/", permanent=False),
+        name="admin_logout",
+    ),
     re_path(r"^admin/", admin.site.urls),
     path("", include("ui.urls")),
     path("", include("cloudsync.urls")),
