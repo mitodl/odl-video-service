@@ -240,7 +240,7 @@ def test_post_same_video_to_edx(mocker, reqmocker, edx_api_scenario):
                     "profile": "desktop_mp4",
                 },
             ],
-            "status": "updated",
+            "status": "file_complete",
             "duration": 0.0,
         }
         assert len(request_body["edx_video_id"]) == 36
@@ -337,7 +337,7 @@ def test_update_video_on_edx(
         mock_body = {
             "edx_video_id": str(edx_api_scenario.video_file_hls.video.key),
             "client_video_id": edx_api_scenario.video_file_hls.video.title,
-            "status": "updated",
+            "status": "file_complete",
             "duration": 0.0,
         }
         if encoded_videos:
