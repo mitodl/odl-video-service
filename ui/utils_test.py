@@ -5,67 +5,71 @@ from tempfile import NamedTemporaryFile
 
 import pytest
 from django.contrib.auth.models import AnonymousUser
-from zeep.exceptions import Fault
 
 from odl_video.test_utils import MockResponse
 from ui import factories
-from ui.exceptions import GoogleAnalyticsException, MoiraException
+from ui.exceptions import GoogleAnalyticsException, KeycloakException
 from ui.utils import (
-    MOIRA_CACHE_KEY,
     generate_google_analytics_query,
     generate_mock_video_analytics_data,
     get_error_response_summary_dict,
     get_google_analytics_client,
-    get_moira_client,
+    get_keycloak_client,
     get_video_analytics,
-    has_common_lists,
-    list_members,
+    has_common_groups,
+    group_members,
     multi_urljoin,
     parse_google_analytics_response,
     partition,
     partition_to_lists,
-    query_moira_lists,
+    query_lists,
     send_refresh_request,
-    user_moira_lists,
-    write_to_file,
+    user_groups,
 )
+from ui.moira_util import write_to_file
 
 pytestmark = pytest.mark.django_db
 
 
 @pytest.mark.parametrize(
-    "key_file, cert_file",
+    "missing_setting",
     [
-        (NamedTemporaryFile(), None),
-        (None, NamedTemporaryFile()),
-        (None, None),
+        "KEYCLOAK_SERVER_URL",
+        "KEYCLOAK_REALM",
+        "KEYCLOAK_SVC_ADMIN",
+        "KEYCLOAK_SVC_ADMIN_PASSWORD",
     ],
 )
-def test_get_moira_client_missing_secrets(mock_moira, settings, key_file, cert_file):
-    """Test that the correct error is returned if a key file is missing"""
-    settings.MIT_WS_PRIVATE_KEY_FILE = (
-        "bad/file/path" if not key_file else key_file.name
-    )
-    settings.MIT_WS_CERTIFICATE_FILE = (
-        "bad/file/path" if not cert_file else cert_file.name
-    )
-    with pytest.raises(RuntimeError) as err:
-        get_moira_client()
-        assert not mock_moira.called
-        if key_file is None:
-            assert settings.MIT_WS_PRIVATE_KEY_FILE in str(err)
-        if cert_file is None:
-            assert settings.MIT_WS_CERTIFICATE_FILE in str(err)
+def test_get_keycloak_client_missing_settings(mock_keycloak, settings, missing_setting):
+    """Test that the correct error is returned if a required setting is missing"""
+    # Set all required settings
+    settings.KEYCLOAK_SERVER_URL = "https://keycloak.example.com"
+    settings.KEYCLOAK_REALM = "test-realm"
+    settings.KEYCLOAK_SVC_ADMIN = "admin"
+    settings.KEYCLOAK_SVC_ADMIN_PASSWORD = "password"
+
+    # Now remove the one we want to test
+    setattr(settings, missing_setting, None)
+
+    with pytest.raises(ValueError) as err:
+        get_keycloak_client()
+        assert not mock_keycloak.called
+        assert missing_setting in str(err.value)
 
 
-def test_get_moira_client_success(mock_moira, settings):
-    """Test that a client is returned from get_moira_client"""
-    tempfile1, tempfile2 = (NamedTemporaryFile(), NamedTemporaryFile())
-    settings.MIT_WS_PRIVATE_KEY_FILE = tempfile1.name
-    settings.MIT_WS_CERTIFICATE_FILE = tempfile2.name
-    get_moira_client()
-    mock_moira.assert_called_once_with(
-        settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE
+def test_get_keycloak_client_success(mock_keycloak, settings):
+    """Test that a client is returned from get_keycloak_client"""
+    settings.KEYCLOAK_SERVER_URL = "https://keycloak.example.com"
+    settings.KEYCLOAK_REALM = "test-realm"
+    settings.KEYCLOAK_SVC_ADMIN = "admin"
+    settings.KEYCLOAK_SVC_ADMIN_PASSWORD = "password"
+
+    get_keycloak_client()
+    mock_keycloak.assert_called_once_with(
+        keycloak_url=settings.KEYCLOAK_SERVER_URL,
+        realm=settings.KEYCLOAK_REALM,
+        admin_username=settings.KEYCLOAK_SVC_ADMIN,
+        admin_password=settings.KEYCLOAK_SVC_ADMIN_PASSWORD,
     )
 
 
@@ -78,90 +82,53 @@ def test_write_to_file():
             assert infile.read() == content
 
 
-def test_query_moira_lists(mock_moira_client):
+def test_query_lists(mock_keycloak):
     """
     Test that expected lists are returned.
     """
-    list_names = ["test_moira_list01", "test_moira_list02"]
-    mock_moira_client.return_value.user_list_membership.return_value = [
-        {"listName": list_name} for list_name in list_names
-    ]
+    group_names = ["test_group01", "test_group02"]
+    mock_keycloak.return_value.get_user_groups.return_value = group_names
     other_user = factories.UserFactory(email="someone@mit.edu")
-    assert query_moira_lists(other_user) == list_names
+    assert sorted(query_lists(other_user)) == sorted(group_names)
 
 
-def test_query_moira_lists_no_lists(mock_moira_client):
+def test_query_lists_no_lists(mock_keycloak):
     """
-    Test that an empty list is returned if Moira throws a java NPE
+    Test that an empty list is returned if Keycloak returns no groups
     """
-    mock_moira_client.return_value.user_list_membership.side_effect = Fault(
-        "java.lang.NullPointerException"
-    )
+    mock_keycloak.return_value.get_user_groups.return_value = []
     other_user = factories.UserFactory(email="someone@mit.edu")
-    assert query_moira_lists(other_user) == []
+    assert query_lists(other_user) == []
 
 
-def test_query_moira_lists_error(mock_moira_client):
+def test_query_lists_error(mock_keycloak):
     """
-    Test that a Moira exception is raised if moira client call fails with anything other than a java NPE
+    Test that a Keycloak exception is raised if keycloak client call fails
     """
-    mock_moira_client.return_value.user_list_membership.side_effect = Fault(
-        "Not a java NPE"
+    # Mock the get_user_groups method to raise an KeycloakException
+    mock_keycloak.return_value.get_user_groups.side_effect = KeycloakException(
+        "Mock Exception"
     )
-    with pytest.raises(MoiraException):
-        query_moira_lists(factories.UserFactory())
+    with pytest.raises(KeycloakException):
+        query_lists(factories.UserFactory())
 
 
-def test_user_moira_lists_cache_hit(mocker):
-    """
-    Test that returns from cache if cache has lists.
-    """
-    mock_cache = mocker.patch("ui.utils.cache")
-    mock_query_moira_lists = mocker.patch("ui.utils.query_moira_lists")
-    cached_list_names = set(["some_list"])
-    mock_cache.get.return_value = cached_list_names
-    result = user_moira_lists(factories.UserFactory())
-    assert result == cached_list_names
-    assert not mock_query_moira_lists.called
-
-
-def test_user_moira_lists_cache_miss(mocker, settings):
-    """
-    Test that queries and caches lists if not already in cache.
-    """
-    mock_cache = mocker.patch("ui.utils.cache")
-    mock_query_moira_lists = mocker.patch("ui.utils.query_moira_lists")
-    mock_cache.get.return_value = None
-    user = factories.UserFactory()
-    assert not mock_query_moira_lists.called
-    assert not mock_cache.set.called
-    result = user_moira_lists(user)
-    expected_result = set(mock_query_moira_lists.return_value)
-    assert result == expected_result
-    mock_query_moira_lists.assert_called_once_with(user)
-    mock_cache.set.assert_called_once_with(
-        MOIRA_CACHE_KEY.format(user_id=user.id),
-        expected_result,
-        settings.MOIRA_CACHE_TIMEOUT,
-    )
-
-
-def test_user_moira_lists_anonymous():
+def test_user_groups_anonymous():
     """
     Test that empty set is returned for anonymous user
     """
-    assert user_moira_lists(AnonymousUser()) == set()
+    assert user_groups(AnonymousUser()) == set()
 
 
-def test_has_common_lists(mocker):
+def test_has_common_groups(mocker):
     """
-    Test that has_common_lists returns the correct boolean value
+    Test that has_common_groups returns the correct boolean value
     """
-    mock_user_moira_lists = mocker.patch("ui.utils.user_moira_lists")
-    mock_user_moira_lists.return_value = set(["a", "b"])
+    mock_user_groups = mocker.patch("ui.utils.user_groups")
+    mock_user_groups.return_value = set(["a", "b"])
     user = factories.UserFactory()
-    assert has_common_lists(user, ["b", "c"]) is True
-    assert has_common_lists(user, ["c"]) is False
+    assert has_common_groups(user, ["b", "c"]) is True
+    assert has_common_groups(user, ["c"]) is False
 
 
 def test_get_video_analytics(mocker):
@@ -400,13 +367,15 @@ def test_generate_mock_video_analytics_data(n, seed, expected):
     assert actual == expected
 
 
-def test_list_members_exception(mock_moira_client):
+def test_group_members_exception(mock_keycloak):
     """
-    Test that a Moira exception is raised if moira client call fails with anything other than a java NPE
+    Test that an HTTPError exception is raised if keycloak client call fails
     """
-    mock_moira_client.return_value.list_members.side_effect = Exception("exception")
-    with pytest.raises(MoiraException):
-        list_members(factories.UserFactory())
+    mock_keycloak.return_value.get_group_members_by_name.side_effect = (
+        KeycloakException("Mock Exception")
+    )
+    with pytest.raises(KeycloakException):
+        group_members("group_name")
 
 
 @pytest.mark.parametrize(

@@ -80,13 +80,13 @@ urlpatterns = [
     ),
     path("api/v0/", include((router.urls, "models-api"))),
     re_path(
-        r"^api/v0/moira/user/(?P<username_or_email>[-\w]+$|.*@.*)$",
-        views.MoiraListsForUser.as_view(),
+        r"^api/v0/groups/user/(?P<username_or_email>[-\w]+$|.*@.*)$",
+        views.GroupsForUser.as_view(),
         name="member-lists",
     ),
     re_path(
-        r"^api/v0/moira/list/(?P<list_name>[-_\.\w]+)$",
-        views.UsersForMoiraList.as_view(),
+        r"^api/v0/groups/list/(?P<list_name>[-_\.\w]+)$",
+        views.UsersForGroup.as_view(),
         name="list-members",
     ),
     path(

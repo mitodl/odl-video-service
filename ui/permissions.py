@@ -69,14 +69,14 @@ def has_video_view_permission(obj, request):
 def has_admin_permission(obj, request):
     """
     Determine if a user can edit a collection or its videos based
-    on moira lists and superuser status
+    on keycloak groups and superuser status
 
     Args:
         obj (ui.models.Collection): The collection to check permission for
         request (HTTPRequest): The request object
 
     Returns:
-        bool: True if the user is a superuser or owner, or is on the admin moira list
+        bool: True if the user is a superuser or owner, or is on the admin keycloak group
     """
     if request.user == obj.owner or request.user.is_superuser:
         return True
@@ -130,7 +130,7 @@ class IsCollectionOwner(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.user == obj.owner or request.user.is_superuser:
             return True
-        # this should check for moira lists as well
+        # this should check for keycloak groups as well
         return False
 
 

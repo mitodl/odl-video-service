@@ -9,7 +9,7 @@ from rest_framework.serializers import DateTimeField, ValidationError
 
 from ui import factories, serializers
 from ui.encodings import EncodingNames
-from ui.factories import MoiraListFactory, UserFactory, VideoFactory
+from ui.factories import KeycloakGroupFactory, UserFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -48,43 +48,46 @@ def test_collection_serializer():
 
 def test_collection_serializer_validation_fake_admin_lists(mocker):
     """
-    Test for CollectionSerializer's admin moira lists validation for fake lists
+    Test for CollectionSerializer's admin keycloak group validation for fake lists
     """
-    mock_client = mocker.patch("ui.serializers.get_moira_client")
-    mock_client().list_exists.return_value = False
-    collection = factories.CollectionFactory(admin_lists=[factories.MoiraListFactory()])
+    mock_keycloak_client = mocker.patch("ui.serializers.get_keycloak_client")
+    mock_keycloak_client().find_group_by_name.return_value = None
+    collection = factories.CollectionFactory(
+        admin_lists=[KeycloakGroupFactory.create()]
+    )
     serialized_data = serializers.CollectionSerializer(collection).data
     with pytest.raises(ValidationError) as exc:
         serializers.CollectionSerializer(data=serialized_data).is_valid(
             raise_exception=True
         )
     assert exc.match(
-        "Moira list does not exist: {}".format(collection.admin_lists.first().name)
+        "Group does not exist: {}".format(collection.admin_lists.first().name)
     )
 
 
 def test_collection_serializer_validation_fake_view_lists(mocker):
     """
-    Test for CollectionSerializer's viewable moira lists validation for fake lists
+    Test for CollectionSerializer's viewable keycloak group validation for fake lists
     """
-    mock_client = mocker.patch("ui.serializers.get_moira_client")
-    mock_client().list_exists.return_value = False
-    collection = factories.CollectionFactory(view_lists=[factories.MoiraListFactory()])
+    mock_keycloak_client = mocker.patch("ui.serializers.get_keycloak_client")
+    mock_keycloak_client().find_group_by_name.return_value = None
+    collection = factories.CollectionFactory(
+        view_lists=[factories.KeycloakGroupFactory()]
+    )
     serialized_data = serializers.CollectionSerializer(collection).data
     with pytest.raises(ValidationError) as exc:
         serializers.CollectionSerializer(data=serialized_data).is_valid(
             raise_exception=True
         )
     assert exc.match(
-        "Moira list does not exist: {}".format(collection.view_lists.first().name)
+        "Group does not exist: {}".format(collection.view_lists.first().name)
     )
 
 
-def test_collection_serializer_validate_title(mocker):
+def test_collection_serializer_validate_title():
     """
     Test that we can't save a blank title
     """
-    mocker.patch("ui.serializers.get_moira_client")
     collection = factories.CollectionFactory(title="")
     serialized_data = serializers.CollectionSerializer(collection).data
     with pytest.raises(ValidationError) as exc:
@@ -125,7 +128,9 @@ def test_collection_serializer_private_video(mocker, is_admin, is_superuser):
 
     mocker.patch("ui.serializers.has_common_lists", return_value=is_admin)
 
-    collection = factories.CollectionFactory(admin_lists=[MoiraListFactory.create()])
+    collection = factories.CollectionFactory(
+        admin_lists=[KeycloakGroupFactory.create()]
+    )
     VideoFactory.create(collection=collection)
     VideoFactory.create(is_private=True, collection=collection)
 
@@ -243,11 +248,10 @@ def test_video_serializer_with_sharing_url(
     mocked_admin_permission.assert_called_with(video.collection, mocked_request)
 
 
-def test_video_serializer_validate_title(mocker):
+def test_video_serializer_validate_title():
     """
     Test that VideoSerializer raises if title is blank
     """
-    mocker.patch("ui.serializers.get_moira_client")
     video = factories.VideoFactory()
     video.title = ""
     serialized_data = serializers.VideoSerializer(video).data

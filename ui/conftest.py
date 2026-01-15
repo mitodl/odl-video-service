@@ -15,21 +15,21 @@ def apiclient():
 
 
 @pytest.fixture
-def mock_moira(mocker):
-    """Return a fake mit_moira.Moira object"""
-    return mocker.patch("ui.utils.Moira")
+def mock_kc_client(mocker):
+    """Mock for the KeycloakManager client"""
+    return mocker.patch("ui.keycloak_utils.get_keycloak_client", autospec=True)
 
 
 @pytest.fixture
-def mock_moira_client(mocker):
-    """Return a fake moira client"""
-    return mocker.patch("ui.utils.get_moira_client", autospec=True)
+def mock_keycloak(mocker):
+    """Mock for the KeycloakManager"""
+    return mocker.patch("ui.keycloak_utils.KeycloakManager")
 
 
 @pytest.fixture
-def mock_user_moira_lists(mocker):
-    """Return a fake moira client"""
-    mocked = mocker.patch("ui.utils.user_moira_lists")
+def mock_user_groups(mocker):
+    """Return a fake user groups"""
+    mocked = mocker.patch("ui.utils.user_groups")
     mocked.return_value = set()
     return mocked
 
@@ -42,3 +42,14 @@ def ga_client_mocks(mocker):
         "ServiceAccountCredentials": mocker.patch("ui.utils.ServiceAccountCredentials"),
     }
     return mocks
+
+
+@pytest.fixture(autouse=True)
+def disable_keycloak(settings):
+    """
+    Disable Keycloak for all tests by default.
+    This fixture automatically runs for every test.
+    """
+    settings.USE_KEYCLOAK = False
+    settings.LOGIN_URL = "/login/"
+    return settings

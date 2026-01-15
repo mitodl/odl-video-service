@@ -211,12 +211,12 @@ class EncodeJobFactory(DjangoModelFactory):
         exclude = ("video",)
 
 
-class MoiraListFactory(DjangoModelFactory):
+class KeycloakGroupFactory(DjangoModelFactory):
     """
-    Factory for a MoiraList
+    Factory for a KeycloakGroup
     """
 
     name = FuzzyText()
 
     class Meta:
-        model = models.MoiraList
+        model = models.KeycloakGroup
