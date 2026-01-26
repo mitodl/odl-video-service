@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.82.3
+--------------
+
+- fix: replace updated with file_complete to get ready status in edx (#1400)
+- feat: auto assign edx-endpoints to collection (#1399)
+- chore(deps): update dependency urllib3 to v2.6.3 [security] (#1397)
+
 Version 0.82.2 (Released January 12, 2026)
 --------------
 

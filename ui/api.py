@@ -159,7 +159,7 @@ def update_video_on_edx(video_key, encoded_videos=None):
                 "edx_video_id": str(video.key),
                 "client_video_id": video.title,
                 "duration": video.duration,
-                "status": "updated",
+                "status": "file_complete",
             }
             if encoded_videos:
                 payload["encoded_videos"] = encoded_videos

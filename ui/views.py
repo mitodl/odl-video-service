@@ -410,9 +410,9 @@ class CollectionViewSet(viewsets.ModelViewSet):
                 endpoint = EdxEndpoint.objects.filter(
                     base_url__icontains=".xpro."
                 ).first()
-            elif ":mitxt+" in edx_course_id:
+            else:  # All other courses are on learn e.g; MiTxt, UAI_SOURCE, or HZN_SOURCE
                 endpoint = EdxEndpoint.objects.filter(
-                    base_url__icontains=".mitxonline."
+                    base_url__icontains=".learn."
                 ).first()
 
             if endpoint:
