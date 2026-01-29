@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.82.3
+Version 0.82.3 (Released January 29, 2026)
 --------------
 
 - fix: replace updated with file_complete to get ready status in edx (#1400)
