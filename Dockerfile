@@ -20,29 +20,22 @@ RUN apt-get update && \
     apt-get clean && \
     apt-get purge
 
-# Install pip
-RUN curl --silent --location https://bootstrap.pypa.io/get-pip.py | python3 -
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
 # Add, and run as, non-root user.
 RUN mkdir /src
 RUN adduser --disabled-password --gecos "" mitodl
 RUN mkdir /var/media && chown -R mitodl:mitodl /var/media
 
-# Poetry env configuration
-ENV  \
-  # poetry:
-  POETRY_VERSION=2.1.3 \
-  POETRY_VIRTUALENVS_CREATE=false \
-  POETRY_CACHE_DIR='/tmp/cache/poetry'
-
-# Install poetry
-RUN pip install "poetry==$POETRY_VERSION"
+ENV UV_PROJECT_ENVIRONMENT="/opt/venv"
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Install project packages
 COPY pyproject.toml /src
-COPY poetry.lock /src
+COPY uv.lock /src
 WORKDIR /src
-RUN poetry install --only main
+RUN uv sync --frozen --no-install-project --no-dev
 
 # Add project
 COPY . /src
@@ -60,10 +53,8 @@ COPY --from=node --chown=mitodl:mitodl /src/static /src/static
 COPY --from=node --chown=mitodl:mitodl /src/webpack-stats.json /src
 USER mitodl
 
-# Second stage build installs reqs needed only for develoment envs
-# Invoke 'requirements.txt' again because 'test_requirements.txt' doesn't
-# like to run alone for some reasont
+# Second stage build installs reqs needed only for development envs
 FROM base AS development
 USER root
-RUN poetry install
+RUN uv sync --frozen
 USER mitodl
