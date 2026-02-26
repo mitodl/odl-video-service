@@ -168,6 +168,7 @@ class VideoEmbed(TemplateView):
 
     def get(self, request, *args, **kwargs):
         video = get_object_or_404(Video, key=kwargs["video_key"])
+        self.get_context_data(video, **kwargs)
         return conditional_response(self, video, *args, **kwargs)
 
     def get_context_data(self, video, **kwargs):

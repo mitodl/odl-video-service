@@ -21,10 +21,11 @@ export type VideoFile = {
 };
 
 export type VideoThumbnail = {
-  id:            number,
-  created_at:    string,
-  s3_object_key: string,
-  bucket_name:   string,
+  id:             number,
+  created_at:     string,
+  s3_object_key:  string,
+  bucket_name:    string,
+  cloudfront_url: string,
 };
 
 export type VideoSource = {

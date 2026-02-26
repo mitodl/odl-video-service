@@ -44,10 +44,11 @@ export const makeVideoThumbnail = (
   videoKey: string = casual.uuid,
   encoding: string = ENCODING_ORIGINAL
 ) => ({
-  id:            videoThumbnailId(),
-  created_at:    casual.moment.format(),
-  s3_object_key: makeObjectKey(videoKey, encoding),
-  bucket_name:   casual.text
+  id:             videoThumbnailId(),
+  created_at:     casual.moment.format(),
+  s3_object_key:  makeObjectKey(videoKey, encoding),
+  bucket_name:    casual.text,
+  cloudfront_url: `https://fake.cloudfront.fake/${makeObjectKey(videoKey, encoding)}`
 })
 
 export const makeVideoSubtitle = (
