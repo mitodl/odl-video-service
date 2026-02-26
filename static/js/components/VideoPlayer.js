@@ -30,7 +30,10 @@ const makeConfigForVideo = (
   embedded: ?boolean,
   startTime: number
 ): Object => ({
-  autoplay:    false,
+  autoplay: false,
+  poster:   !useYouTube && video.videothumbnail_set.length > 0 ?
+    video.videothumbnail_set[0].cloudfront_url :
+    undefined,
   controls:    true,
   fluid:       embedded || false,
   playsinline: true,
@@ -397,6 +400,7 @@ class VideoPlayer extends React.Component<*, void> {
         if (this.tech_.hls !== undefined) {
           this.tech_.hls.selectPlaylist = selectPlaylist
         }
+        self.updateSubtitles()
       }
     )
     if (SETTINGS.FEATURES.VIDEOJS_ANNOTATIONS) {
@@ -412,7 +416,6 @@ class VideoPlayer extends React.Component<*, void> {
     if (useYouTube) {
       this.checkYouTube()
     }
-    this.updateSubtitles()
   }
 
   componentDidUpdate() {

@@ -26,6 +26,8 @@ def validate_moira_lists(lists):
     Returns:
         (list of MoiraList) List of moira lists
     """
+    if not lists:
+        return lists
     bad_lists = []
     moira_client = get_moira_client()
     for mlist in lists:
@@ -109,8 +111,14 @@ class VideoThumbnailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.VideoThumbnail
-        fields = ("id", "created_at", "s3_object_key", "bucket_name")
-        read_only_fields = ("id", "created_at", "s3_object_key", "bucket_name")
+        fields = ("id", "created_at", "s3_object_key", "bucket_name", "cloudfront_url")
+        read_only_fields = (
+            "id",
+            "created_at",
+            "s3_object_key",
+            "bucket_name",
+            "cloudfront_url",
+        )
 
 
 class VideoSubtitleSerializer(serializers.ModelSerializer):
