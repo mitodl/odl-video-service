@@ -102,8 +102,8 @@ describe("VideoPlayer", () => {
         const args = videojsStub.firstCall.args
         assert.equal(args[0].tagName, "VIDEO")
         assert.deepEqual(args[1], {
-          autoplay: false,
-          poster:   video.videothumbnail_set[0].cloudfront_url,
+          autoplay:    false,
+          poster:      video.videothumbnail_set[0].cloudfront_url,
           controls:    true,
           fluid:       embed,
           playsinline: true,

@@ -31,9 +31,9 @@ const makeConfigForVideo = (
   startTime: number
 ): Object => ({
   autoplay: false,
-  poster:   !useYouTube && video.videothumbnail_set.length > 0
-    ? video.videothumbnail_set[0].cloudfront_url
-    : undefined,
+  poster:   !useYouTube && video.videothumbnail_set.length > 0 ?
+    video.videothumbnail_set[0].cloudfront_url :
+    undefined,
   controls:    true,
   fluid:       embedded || false,
   playsinline: true,
