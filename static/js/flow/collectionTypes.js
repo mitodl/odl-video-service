@@ -12,7 +12,9 @@ export type CollectionListItem = {
   is_logged_in_only:  boolean,
   video_count:        number,
   edx_course_id:      ?string,
-  owner:              User
+  owner:              User,
+  is_public:         boolean,
+  stream_source:     string,
 };
 
 export type Collection = CollectionListItem & {

@@ -202,6 +202,7 @@ class Collection(TimestampedModel):
     )
     is_logged_in_only = models.BooleanField(null=False, default=False)
     allow_share_openedx = models.BooleanField(null=False, default=False)
+    is_public = models.BooleanField(null=False, default=False)
     stream_source = models.CharField(
         null=True,
         blank=True,

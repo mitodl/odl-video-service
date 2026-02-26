@@ -34,19 +34,11 @@ def delete_s3_files(sender, **kwargs):
 @receiver(pre_delete, sender=VideoSubtitle)
 def update_video_permissions(sender, **kwargs):
     """
-    Remove public video permissions if the subtitle is about to be deleted and no other subtitles exist.
-    Otherwise just delete the subtitle from Youtube.
+    Delete the subtitle from Youtube if it exists.
     """
     video = kwargs["instance"].video
-    if video.is_public:
-        if (
-            video.techtvvideo_set.first() is None
-            and len(video.videosubtitle_set.all()) <= 1
-        ):
-            video.is_public = False
-            video.save()
-        elif YouTubeVideo.objects.filter(video=video).first() is not None:
-            remove_youtube_caption.delay(video.id, kwargs["instance"].language)
+    if video.is_public and YouTubeVideo.objects.filter(video=video).first() is not None:
+        remove_youtube_caption.delay(video.id, kwargs["instance"].language)
 
 
 @receiver(pre_delete, sender=YouTubeVideo)
@@ -69,6 +61,21 @@ def update_collection_youtube(sender, **kwargs):
 
 
 @receiver(post_save, sender=Collection)
+def update_collection_is_public(sender, instance, created, update_fields, **kwargs):
+    """
+    If a collection's is_public field is changed, update all videos in that collection
+    """
+    # If update_fields is provided, check if is_public is in it
+    if update_fields is not None and "is_public" not in update_fields:
+        return
+
+    # Update all videos in this collection to inherit the collection's is_public value
+    instance.videos.update(
+        is_public=instance.is_public, is_private=not instance.is_public
+    )
+
+
+@receiver(post_save, sender=Collection)
 def update_collection_retranscodes(sender, **kwargs):
     """
     Sync schedule_retranscode value for all videos in the collection
@@ -86,6 +93,20 @@ def update_video_youtube(sender, instance, **kwargs):
     If a video's is_public field is changed, sync associated YoutubeVideo object
     """
     sync_youtube(instance)
+
+
+@receiver(post_save, sender=Video)
+def set_video_is_public_from_collection(sender, instance, created, **kwargs):
+    """
+    When a video is created, inherit the collection's is_public value
+    """
+    if created:
+        collection = instance.collection
+        if getattr(collection, "is_public", False) and not instance.is_public:
+            # Use update to avoid triggering signals again
+            Video.objects.filter(pk=instance.pk).update(
+                is_public=True, is_private=False
+            )
 
 
 @receiver(post_save, sender=Video)
