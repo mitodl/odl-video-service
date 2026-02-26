@@ -69,7 +69,7 @@ export class VideoDetailPage extends React.Component<*, void> {
   }
 
   updateRequirements = () => {
-    const { dispatch, videoKey, needsUpdate, video, collection, collectionNeedsUpdate } = this.props
+    const { dispatch, videoKey, needsUpdate, video, collectionNeedsUpdate } = this.props
 
     if (needsUpdate) {
       dispatch(actions.videos.get(videoKey))

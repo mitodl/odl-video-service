@@ -32,6 +32,8 @@ def test_collection_serializer():
         "admin_lists": [],
         "is_logged_in_only": False,
         "is_admin": False,
+        "is_public": collection.is_public,
+        "stream_source": collection.stream_source,
         "edx_course_id": collection.edx_course_id,
         "owner": user.id,
         "owner_info": {
@@ -152,6 +154,8 @@ def test_collection_list_serializer():
         "view_lists": [],
         "admin_lists": [],
         "video_count": collection.videos.count(),
+        "is_public": collection.is_public,
+        "stream_source": collection.stream_source,
         "edx_course_id": collection.edx_course_id,
         "owner": user.id,
         "owner_info": {
