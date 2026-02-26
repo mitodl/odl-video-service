@@ -1,6 +1,20 @@
 Release Notes
 =============
 
+Version 0.83.0
+--------------
+
+- Show captions button in embed view, use thumbnail as video poster (#1410)
+- ci: update setup-uv to v7, enable caching, use uv sync --locked
+- fix: pin Python 3.13 in CI to match Dockerfile
+- fix: use uv run in test scripts
+- chore: migrate from poetry/pip to uv for dependency management
+- [pre-commit.ci] pre-commit autoupdate
+- chore(deps): update dependency lodash to v4.17.23 [security] (#1401)
+- [pre-commit.ci] pre-commit autoupdate (#1396)
+- chore(deps): update dependency cryptography to v46.0.5 [security] (#1406)
+- fix(deps): update dependency django to v4.2.28 [security] (#1404)
+
 Version 0.82.3 (Released January 29, 2026)
 --------------
 
