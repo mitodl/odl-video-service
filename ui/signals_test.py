@@ -38,8 +38,7 @@ def test_youtube_video_delete_signal(mocker):
 
 
 def test_youtube_video_permissions_signal(mocker):
-    """Tests that a video's public permissions are removed if it's subtitle is deleted"""
-    mock_delete_video = mocker.patch("ui.signals.remove_youtube_video.delay")
+    """Tests that captions are removed from YouTube when a video's subtitle is deleted"""
     mock_delete_caption = mocker.patch("ui.signals.remove_youtube_caption.delay")
     mocker.patch("ui.models.VideoSubtitle.delete_from_s3")
     video = VideoFactory(is_public=True)
@@ -47,18 +46,20 @@ def test_youtube_video_permissions_signal(mocker):
     VideoSubtitleFactory(video=video)
     VideoSubtitleFactory(video=video, language="fr")
     video.videosubtitle_set.get(language="fr").delete()
-    # video's public status should not be changed as long as 1 subtitle still exists
+    # Captions should be removed from YouTube when subtitle is deleted
     assert video.is_public is True
     assert mock_delete_caption.call_count == 1
     video.videosubtitle_set.first().delete()
-    # If no subtitles exists, video should be made non-public and deleted from youtube
-    assert mock_delete_video.call_count == 1
-    assert not video.is_public
+    # Video should remain public even when all subtitles are deleted (captions requirement removed)
+    assert mock_delete_caption.call_count == 2
+    assert video.is_public is True
+    # Test that captions are only removed for public videos on YouTube
+    video.is_public = False
+    video.save()
     caption = VideoSubtitleFactory(video=video)
-    mock_video_save = mocker.patch("ui.models.Video.save")
     caption.delete()
-    # If video is not public, no change to it should be saved after a caption is deleted.
-    assert mock_video_save.call_count == 0
+    # If video is not public, YouTube caption removal should not be called
+    assert mock_delete_caption.call_count == 2
 
 
 @pytest.mark.parametrize(
