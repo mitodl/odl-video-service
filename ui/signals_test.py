@@ -40,6 +40,7 @@ def test_youtube_video_delete_signal(mocker):
 def test_youtube_video_permissions_signal(mocker):
     """Tests that captions are removed from YouTube when a video's subtitle is deleted"""
     mock_delete_caption = mocker.patch("ui.signals.remove_youtube_caption.delay")
+    mocker.patch("ui.signals.remove_youtube_video.delay")
     mocker.patch("ui.models.VideoSubtitle.delete_from_s3")
     video = VideoFactory(is_public=True)
     YouTubeVideoFactory(video=video)
