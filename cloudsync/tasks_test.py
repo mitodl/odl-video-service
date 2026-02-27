@@ -449,12 +449,12 @@ def test_upload_youtube_videos(mocker, source, max_uploads):
     )
     upload_youtube_videos()
     assert mock_uploader.call_count == (
-        min(3, max_uploads) if source != StreamSource.CLOUDFRONT else 0
+        min(3, max_uploads) if source == StreamSource.YOUTUBE else 0
     )
     for video in Video.objects.filter(is_public=True).order_by("-created_at")[
         : settings.YT_UPLOAD_LIMIT
     ]:
-        if video.collection.stream_source != StreamSource.CLOUDFRONT:
+        if video.collection.stream_source == StreamSource.YOUTUBE:
             assert YouTubeVideo.objects.filter(video=video).first() is not None
         else:
             assert YouTubeVideo.objects.filter(video=video).first() is None
@@ -466,7 +466,10 @@ def test_upload_youtube_videos_error(mocker):
     """
     Test that the YoutubeVideo object is deleted if an error occurs during upload, and all videos are processed
     """
-    videos = VideoFactory.create_batch(3, is_public=True, status=VideoStatus.COMPLETE)
+    collection = CollectionFactory(stream_source=StreamSource.YOUTUBE)
+    videos = VideoFactory.create_batch(
+        3, collection=collection, is_public=True, status=VideoStatus.COMPLETE
+    )
     mock_uploader = mocker.patch(
         "cloudsync.tasks.YouTubeApi.upload_video", side_effect=OSError
     )
@@ -482,7 +485,10 @@ def test_upload_youtube_quota_exceeded(mocker, msg):
     Test that the YoutubeVideo object is deleted if an error occurs during upload,
     and the loop is halted if the quota is exceeded.
     """
-    videos = VideoFactory.create_batch(3, is_public=True, status=VideoStatus.COMPLETE)
+    collection = CollectionFactory(stream_source=StreamSource.YOUTUBE)
+    videos = VideoFactory.create_batch(
+        3, collection=collection, is_public=True, status=VideoStatus.COMPLETE
+    )
     mock_uploader = mocker.patch(
         "cloudsync.tasks.YouTubeApi.upload_video",
         side_effect=ResumableUploadError(
