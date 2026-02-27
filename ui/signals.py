@@ -66,13 +66,10 @@ def update_collection_is_public(sender, instance, created, update_fields, **kwar
     If a collection's is_public field is changed, update all videos in that collection
     """
     # If update_fields is provided, check if is_public is in it
-    if update_fields is not None and "is_public" not in update_fields:
-        return
-
-    # Update all videos in this collection to inherit the collection's is_public value
-    instance.videos.update(
-        is_public=instance.is_public, is_private=not instance.is_public
-    )
+    if update_fields and "is_public" in update_fields:
+        instance.videos.update(
+            is_public=instance.is_public, is_private=not instance.is_public
+        )
 
 
 @receiver(post_save, sender=Collection)
