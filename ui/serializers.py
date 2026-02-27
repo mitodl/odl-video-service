@@ -191,7 +191,9 @@ class VideoSerializer(serializers.ModelSerializer):
         Returns:
             (list of MoiraList) List of moira lists
         """
-        return validate_moira_lists(value)
+        if value:  # Validate only when we get view_lists
+            return validate_moira_lists(value)
+        return value
 
     def get_cloudfront_url(self, obj):
         """Get cloudfront_url"""
@@ -355,6 +357,8 @@ class CollectionSerializer(serializers.ModelSerializer):
             "view_lists",
             "admin_lists",
             "is_logged_in_only",
+            "is_public",
+            "stream_source",
             "edx_course_id",
             "is_admin",
             "owner",
@@ -366,6 +370,8 @@ class CollectionSerializer(serializers.ModelSerializer):
             "videos",
             "video_count",
             "is_admin",
+            "is_public",
+            "stream_source",
         )
 
 
@@ -421,11 +427,15 @@ class CollectionListSerializer(serializers.ModelSerializer):
             "edx_course_id",
             "owner",
             "owner_info",
+            "is_public",
+            "stream_source",
         )
         read_only_fields = (
             "key",
             "created_at",
             "video_count",
+            "is_public",
+            "stream_source",
         )
 
 

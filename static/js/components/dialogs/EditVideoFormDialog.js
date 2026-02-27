@@ -15,6 +15,7 @@ import { getVideoWithKey } from "../../lib/collection"
 import {
   PERM_CHOICE_NONE,
   PERM_CHOICE_LISTS,
+  PERM_CHOICE_PUBLIC,
   PERM_CHOICE_COLLECTION,
   PERM_CHOICE_OVERRIDE,
   PERM_CHOICE_LOGGED_IN
@@ -54,6 +55,8 @@ class EditVideoFormDialog extends React.Component<*, void> {
   determineViewChoice(video: Video) {
     if (video.is_private) {
       return PERM_CHOICE_NONE
+    } else if (video.is_public) {
+      return PERM_CHOICE_PUBLIC
     } else if (video.is_logged_in_only) {
       return PERM_CHOICE_LOGGED_IN
     } else if (video.view_lists.length > 0) {
@@ -159,6 +162,8 @@ class EditVideoFormDialog extends React.Component<*, void> {
             editVideoForm.viewLists
           ) :
           [],
+        is_public:
+          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_PUBLIC,
         is_private:
           overridePerms && editVideoForm.viewChoice === PERM_CHOICE_NONE,
         is_logged_in_only:
@@ -193,9 +198,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
   }
 
   renderPermissions() {
-    const { videoUi: { editVideoForm, errors }, video } = this.props
+    const { videoUi: { editVideoForm, errors }, video, collection } = this.props
 
     const defaultPerms = editVideoForm.overrideChoice === PERM_CHOICE_COLLECTION
+    const collectionIsPublic = collection ? collection.is_public : false
 
     return (
       <section className="permission-group">
@@ -270,6 +276,17 @@ class EditVideoFormDialog extends React.Component<*, void> {
             disabled={defaultPerms}
             className="wideLabel"
           />
+          {collectionIsPublic && (
+            <Radio
+              id="view-public"
+              label="Publicly accessible"
+              radioGroupName="video-view-perms"
+              value={PERM_CHOICE_PUBLIC}
+              selectedValue={editVideoForm.viewChoice}
+              onChange={this.handleVideoViewPermClick}
+              className="wideLabel"
+            />)
+          }
         </section>
       </section>
     )
@@ -340,7 +357,8 @@ const mapStateToProps = (state, ownProps) => {
   return {
     videoUi:                videoUi,
     video:                  selectedVideo,
-    shouldUpdateCollection: shouldUpdateCollection
+    shouldUpdateCollection: shouldUpdateCollection,
+    collection:             collection,
   }
 }
 
