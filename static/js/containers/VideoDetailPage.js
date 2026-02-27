@@ -345,10 +345,11 @@ const mapStateToProps = (state, ownProps) => {
     collections.data :
     null
 
-  // Only fetch collection if not processing and either not loaded or wrong collection
+  // Only fetch collection if not processing, not loaded, and we don't have it
   const collectionNeedsUpdate = video && video.collection_key &&
     !collections.processing &&
-    (!collection || (collections.data && collections.data.key !== video.collection_key))
+    !collections.loaded &&
+    !collection
 
   const dialogProps = {
     [DIALOGS.EDIT_VIDEO]: {

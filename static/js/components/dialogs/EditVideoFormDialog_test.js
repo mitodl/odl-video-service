@@ -230,6 +230,7 @@ describe("EditVideoFormDialog", () => {
     const newValues = {
       title:             "New Title",
       description:       "New Description",
+      is_public:         false,
       is_private:        false,
       is_logged_in_only: false,
       view_lists:        ["my-moira-list1", "my-moira-list2"]
