@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.83.0
+Version 0.83.0 (Released February 27, 2026)
 --------------
 
 - Show captions button in embed view, use thumbnail as video poster (#1410)
