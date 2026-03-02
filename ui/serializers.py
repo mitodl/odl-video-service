@@ -228,6 +228,7 @@ class VideoSerializer(serializers.ModelSerializer):
             "sources",
             "youtube_id",
             "cloudfront_url",
+            "cta_link",
         )
         read_only_fields = (
             "key",
@@ -265,6 +266,7 @@ class SimpleVideoSerializer(VideoSerializer):
             "status",
             "collection_key",
             "cloudfront_url",
+            "cta_link",
         )
         read_only_fields = fields
 

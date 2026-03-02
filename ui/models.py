@@ -353,6 +353,7 @@ class Video(TimestampedModel):
     custom_order = models.IntegerField(null=True, blank=True)
     schedule_retranscode = models.BooleanField(default=False)
     duration = models.FloatField(null=True, default=0.0)
+    cta_link = models.URLField(max_length=2000, null=True, blank=True)
 
     objects = VideoManager()
 
