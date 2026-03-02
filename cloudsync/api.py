@@ -18,7 +18,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from mitol.transcoding.api import media_convert_job
 
-from odl_video import logging
+import structlog
 from ui.api import get_duration_from_encode_job
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
@@ -34,7 +34,7 @@ from ui.models import (
 )
 from ui.utils import get_bucket
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 THUMBNAIL_PATTERN = "thumbnails/{}_thumbnail_{{count}}"
 RETRANSCODE_FOLDER = "retranscode/"

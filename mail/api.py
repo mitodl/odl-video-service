@@ -16,9 +16,9 @@ from rest_framework import status
 
 from mail.exceptions import SendBatchException
 from mail.utils import chunks
-from odl_video import logging
+import structlog
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 class MailgunClient:

@@ -21,10 +21,10 @@ from google.oauth2.service_account import (
 from googleapiclient.discovery import build
 from mit_moira import Moira
 
-from odl_video import logging
+import structlog
 from ui.exceptions import GoogleAnalyticsException, MoiraException
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 MoiraUser = namedtuple("MoiraUser", "username type")
 MOIRA_CACHE_KEY = "moira_lists_{user_id}"
