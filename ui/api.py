@@ -10,11 +10,11 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 from cloudsync import tasks
-from odl_video import logging
+import structlog
 from ui import models
 from ui.utils import get_error_response_summary_dict
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 def process_dropbox_data(dropbox_upload_data):

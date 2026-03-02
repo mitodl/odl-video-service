@@ -17,13 +17,13 @@ from googleapiclient.errors import HttpError
 from cloudsync.api import process_watch_file, refresh_status, transcode_video
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.youtube import API_QUOTA_ERROR_MSG, YouTubeApi
-from odl_video import logging
+import structlog
 from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.models import Collection, EncodeJob, Video, VideoSubtitle, YouTubeVideo
 from ui.utils import get_bucket
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 CONTENT_DISPOSITION_RE = re.compile(r"filename\*=UTF-8''(?P<filename>[^ ]+)")

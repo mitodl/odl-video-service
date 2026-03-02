@@ -43,7 +43,7 @@ dependencies = [
     "sentry-sdk>=2.0.0,<3",
     "smart-open>=7.1.0,<8",
     "structlog>=25.0.0,<26",
-    "structlog-sentry>=2.0.0,<3",
+    "mitol-django-observability>=2026.1.0",
     "urllib3>=2.0.0,<3",
     "uwsgi==2.0.31",
     "mitol-django-transcoding>=2025.5.21,<2026",

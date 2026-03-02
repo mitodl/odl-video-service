@@ -8,10 +8,10 @@ from django.conf import settings
 from mail import api
 from mail.api import context_for_video, render_email_templates
 from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
-from odl_video import logging
+import structlog
 from ui.utils import get_moira_client, has_common_lists
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 def _get_recipients_for_video(video):

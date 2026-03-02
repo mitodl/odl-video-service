@@ -13,9 +13,9 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 from smart_open.http import SeekableBufferedInputBase
 
-from odl_video import logging
+import structlog
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 # Quota errors may contain either one of the following
 API_QUOTA_ERROR_MSG = "dailyLimitExceeded"
