@@ -61,18 +61,6 @@ def update_collection_youtube(sender, **kwargs):
 
 
 @receiver(post_save, sender=Collection)
-def update_collection_is_public(sender, instance, created, update_fields, **kwargs):
-    """
-    If a collection's is_public field is changed, update all videos in that collection
-    """
-    # If update_fields is provided, check if is_public is in it
-    if update_fields and "is_public" in update_fields:
-        instance.videos.update(
-            is_public=instance.is_public, is_private=not instance.is_public
-        )
-
-
-@receiver(post_save, sender=Collection)
 def update_collection_retranscodes(sender, **kwargs):
     """
     Sync schedule_retranscode value for all videos in the collection
