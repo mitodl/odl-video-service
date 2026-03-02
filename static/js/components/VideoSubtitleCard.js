@@ -68,8 +68,8 @@ export default class VideoSubtitleCard extends React.Component<*, void> {
               {isAdmin && (
                 <Filefield
                   id="video-subtitle"
-                  accept=".vtt"
-                  label="Add subtitles (.vtt file)"
+                  accept=".vtt,.srt"
+                  label="Add subtitles (.vtt or .srt file)"
                   onChange={uploadVideoSubtitle}
                 />
               )}
