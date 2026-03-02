@@ -195,6 +195,7 @@ def get_expected_result(video):
         "is_logged_in_only": video.is_logged_in_only,
         "youtube_id": None,
         "cloudfront_url": "",
+        "cta_link": video.cta_link,
     }
 
 
@@ -356,6 +357,7 @@ def test_simplevideo_serializer():
         "status": video.status,
         "collection_key": video.collection.hexkey,
         "cloudfront_url": "",
+        "cta_link": video.cta_link,
     }
     assert serializers.SimpleVideoSerializer(video).data == expected
 
