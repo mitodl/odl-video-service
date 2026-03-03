@@ -238,7 +238,7 @@ def upload_youtube_videos():
         Video.objects.filter(is_public=True)
         .filter(status=VideoStatus.COMPLETE)
         .filter(youtubevideo__id__isnull=True)
-        .exclude(collection__stream_source=StreamSource.CLOUDFRONT)
+        .filter(collection__stream_source=StreamSource.YOUTUBE)
         .order_by("-created_at")[: settings.YT_UPLOAD_LIMIT]
     )
     for video in yt_queue.all():

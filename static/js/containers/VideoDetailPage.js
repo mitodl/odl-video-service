@@ -32,18 +32,22 @@ import { DIALOGS, MM_DD_YYYY } from "../constants"
 import { initGA, sendGAPageView } from "../util/google_analytics"
 
 import type { Video, VideoUiState } from "../flow/videoTypes"
+import type { Collection } from "../flow/collectionTypes"
 import type { CommonUiState } from "../reducers/commonUi"
 
 export class VideoDetailPage extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
     video: ?Video,
+    collection: ?Collection,
     videoKey: string,
     needsUpdate: boolean,
+    collectionNeedsUpdate: boolean,
     commonUi: CommonUiState,
     videoUi: VideoUiState,
     showDialog: Function,
-    isAdmin: boolean
+    isAdmin: boolean,
+    dialogProps: Object
   }
 
   videoPlayerRef: Object
@@ -65,10 +69,15 @@ export class VideoDetailPage extends React.Component<*, void> {
   }
 
   updateRequirements = () => {
-    const { dispatch, videoKey, needsUpdate } = this.props
+    const { dispatch, videoKey, needsUpdate, video, collectionNeedsUpdate } = this.props
 
     if (needsUpdate) {
       dispatch(actions.videos.get(videoKey))
+    }
+
+    // Fetch collection if video exists and collection needs update
+    if (collectionNeedsUpdate && video && video.collection_key) {
+      dispatch(actions.collections.get(video.collection_key))
     }
   }
 
@@ -324,18 +333,39 @@ export class VideoDetailPage extends React.Component<*, void> {
 
 const mapStateToProps = (state, ownProps) => {
   const { videoKey } = ownProps
-  const { videos, commonUi, videoUi } = state
+  const { videos, collections, commonUi, videoUi } = state
   const video =
     videos.data && _.isFunction(videos.data.get) ?
       videos.data.get(videoKey) :
       null
   const needsUpdate = !videos.processing && !videos.loaded
 
+  // Get the collection if video exists
+  const collection = video && collections.data && collections.data.key === video.collection_key ?
+    collections.data :
+    null
+
+  // Only fetch collection if not processing, not loaded, and we don't have it
+  const collectionNeedsUpdate = video && video.collection_key &&
+    !collections.processing &&
+    !collections.loaded &&
+    !collection
+
+  const dialogProps = {
+    [DIALOGS.EDIT_VIDEO]: {
+      video,
+      collection
+    }
+  }
+
   return {
     video,
+    collection,
+    collectionNeedsUpdate,
     needsUpdate,
     commonUi,
-    videoUi
+    videoUi,
+    dialogProps
   }
 }
 
