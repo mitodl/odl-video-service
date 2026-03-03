@@ -731,12 +731,48 @@ def test_upload_subtitles(logged_in_apiclient, mocker):
     Tests for UploadVideoSubtitle
     """
     mocker.patch("ui.views.cloudapi.boto3")
-    expected_subtitle_key = "subtitles/test/20171227121212_en.vtt"
+    expected_subtitle_key = "subtitles/test/20261227121212_en.vtt"
     mocker.patch("ui.models.Video.subtitle_key", return_value=expected_subtitle_key)
     client, user = logged_in_apiclient
     video = VideoFactory(collection=CollectionFactory(owner=user))
     yt_video = YouTubeVideoFactory(video=video, status=YouTubeStatus.PROCESSED)
     filename = "subtitles.vtt"
+    youtube_task = mocker.patch("ui.views.upload_youtube_caption.delay")
+    input_data = {
+        "collection": video.collection.hexkey,
+        "video": video.hexkey,
+        "language": "en",
+        "filename": filename,
+        "file": SimpleUploadedFile(filename, bytes(1024)),
+    }
+    response = client.post(reverse("upload-subtitles"), input_data, format="multipart")
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    expected_data = {
+        "language": "en",
+        "filename": filename,
+        "s3_object_key": expected_subtitle_key,
+        "language_name": "English",
+    }
+    for key in expected_data:
+        assert expected_data[key] == response.data[key]
+    assert (
+        VideoSubtitle.objects.get(id=response.data["id"]).video.youtube_id
+        == yt_video.id
+    )
+    youtube_task.assert_called_once_with(response.data["id"])
+
+
+def test_upload_subtitles_srt(logged_in_apiclient, mocker):
+    """
+    Tests for UploadVideoSubtitle with .srt file
+    """
+    mocker.patch("ui.views.cloudapi.boto3")
+    expected_subtitle_key = "subtitles/test/20261227121212_en.srt"
+    mocker.patch("ui.models.Video.subtitle_key", return_value=expected_subtitle_key)
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    yt_video = YouTubeVideoFactory(video=video, status=YouTubeStatus.PROCESSED)
+    filename = "subtitles.srt"
     youtube_task = mocker.patch("ui.views.upload_youtube_caption.delay")
     input_data = {
         "collection": video.collection.hexkey,

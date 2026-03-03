@@ -314,6 +314,24 @@ def test_subtitle_upload_serializer():
     assert serializer.data == output_data
 
 
+def test_subtitle_upload_serializer_srt():
+    """Test for the VideoSubtitleUploadSerializer with .srt file"""
+
+    input_data = {
+        "video": "9734262d30144b8cbedb94a872158581",
+        "language": "en",
+        "filename": "foo.srt",
+    }
+    serializer = serializers.VideoSubtitleUploadSerializer(data=input_data)
+    assert serializer.is_valid()
+    output_data = {
+        "video": str(uuid.UUID("9734262d30144b8cbedb94a872158581")),
+        "language": "en",
+        "filename": "foo.srt",
+    }
+    assert serializer.data == output_data
+
+
 def test_subtitle_serializer():
     """
     Test for VideoSubtitleSerializer

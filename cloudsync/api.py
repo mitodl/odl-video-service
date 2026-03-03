@@ -492,17 +492,28 @@ def upload_subtitle_to_s3(caption_data, file_data):
         )
         raise
 
+    # Extract file extension from filename
+    file_extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else "vtt"
+    # Validate extension
+    if file_extension not in ["vtt", "srt"]:
+        file_extension = "vtt"  # Default to vtt if invalid
+
+    # Determine content type based on extension
+    content_type = "text/vtt" if file_extension == "vtt" else "application/x-subrip"
+
     s3 = boto3.resource("s3")
     bucket_name = settings.VIDEO_S3_SUBTITLE_BUCKET
     bucket = s3.Bucket(bucket_name)
     config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
-    s3_key = video.subtitle_key(datetime.now(tz=pytz.UTC), language)
+    s3_key = video.subtitle_key(
+        datetime.now(tz=pytz.UTC), language, extension=file_extension
+    )
 
     try:
         bucket.upload_fileobj(
             Fileobj=file_data,
             Key=s3_key,
-            ExtraArgs={"ContentType": "mime/vtt"},
+            ExtraArgs={"ContentType": content_type},
             Config=config,
         )
     except Exception:

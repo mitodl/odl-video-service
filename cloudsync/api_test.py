@@ -470,6 +470,43 @@ def test_upload_subtitle_to_s3_bad_video(mocker, file_object):
         upload_subtitle_to_s3(subtitle_data, file_object.data)
 
 
+@pytest.mark.parametrize("replace", [True, False])
+@pytest.mark.parametrize("s3error", [True, False])
+def test_upload_subtitle_to_s3_srt(mocker, video, file_object, replace, s3error):
+    """
+    Test that a VideoSubtitle object is returned after a .srt upload to S3
+    """
+    mocker.patch("cloudsync.api.boto3")
+    mock_s3delete = mocker.patch(
+        "ui.models.VideoS3.delete_from_s3",
+        side_effect=(
+            None
+            if not s3error
+            else ClientError(
+                error_response={
+                    "Job": {"Id": "1498220566931-qtmtcu", "Status": "Error"},
+                    "Error": {"Code": 200, "Message": "FAIL"},
+                },
+                operation_name="DeleteObject",
+            )
+        ),
+    )
+    if replace:
+        VideoSubtitleFactory.create(video=video)
+    subtitle_data = {
+        "video": video.hexkey,
+        "language": "en",
+        "filename": "subtitles.srt",
+    }
+    subtitle = upload_subtitle_to_s3(subtitle_data, file_object.data)
+    assert mock_s3delete.call_count == (1 if replace else 0)
+    assert subtitle.filename == "subtitles.srt"
+    assert subtitle.video == video
+    assert subtitle.language == "en"
+    # Verify the S3 key has .srt extension
+    assert subtitle.s3_object_key.endswith(".srt")
+
+
 @mock_aws
 def test_move_s3_objects():
     """

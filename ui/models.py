@@ -501,22 +501,24 @@ class Video(TimestampedModel):
         """
         return self.transcode_key().split("/")[0]
 
-    def subtitle_key(self, dttm, language="en", prefix="subtitles"):
+    def subtitle_key(self, dttm, language="en", prefix="subtitles", extension="vtt"):
         """
         Returns an S3 object key to be used for a subtitle file
         Args:
             language(str): 2-letter language code
             dttm(DateTime): a DateTime object
             prefix(str): beginning of S3 key
+            extension(str): file extension (vtt or srt)
 
         Returns:
             str: S3 object key
         """
-        return "{prefix}/{key}/subtitles_{key}_{dt}_{lang}.vtt".format(
+        return "{prefix}/{key}/subtitles_{key}_{dt}_{lang}.{ext}".format(
             prefix=prefix,
             key=self.hexkey,
             dt=dttm.strftime("%Y%m%d%H%M%S"),
             lang=language,
+            ext=extension,
         )
 
     def update_status(self, status):
@@ -677,7 +679,7 @@ class VideoThumbnail(VideoS3):
 
 
 class VideoSubtitle(VideoS3):
-    """A VTT file that provides captions for a Video"""
+    """A VTT or SRT file that provides captions for a Video"""
 
     filename = models.CharField(max_length=1024, null=False, blank=True)
     language = models.CharField(
