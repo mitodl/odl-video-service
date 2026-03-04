@@ -16,7 +16,14 @@ from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
 import django_filters.rest_framework
-from rest_framework import authentication, mixins, permissions, status, viewsets
+from rest_framework import (
+    authentication,
+    generics,
+    mixins,
+    permissions,
+    status,
+    viewsets,
+)
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.parsers import MultiPartParser
@@ -29,7 +36,7 @@ from techtv2ovs.models import TechTVVideo
 from ui import api
 from ui import permissions as ui_permissions
 from ui import serializers
-from ui.filters import CollectionFilter
+from ui.filters import CollectionFilter, PublicVideoFilter
 from ui.constants import EDX_ADMIN_GROUP, VideoStatus
 from ui.models import (
     Collection,
@@ -358,6 +365,39 @@ class UploadVideoSubtitle(APIView):
         return Response(
             data=serializers.VideoSubtitleSerializer(subtitle).data,
             status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class PublicVideoListView(generics.ListAPIView):
+    """
+    Public read-only endpoint listing all publicly accessible videos.
+    No authentication required.
+    Each video includes embedded collection details.
+    Supports filtering by: title, description, status, collection (UUID),
+    collection_title, stream_source, and a full-text `search` parameter.
+    """
+
+    serializer_class = serializers.PublicVideoSerializer
+    permission_classes = (permissions.AllowAny,)
+    authentication_classes = ()
+    pagination_class = VideoSetPagination
+    filter_backends = (
+        OrderingFilter,
+        django_filters.rest_framework.DjangoFilterBackend,
+    )
+    filterset_class = PublicVideoFilter
+    ordering_fields = ("created_at", "title")
+    ordering = ("-created_at",)
+
+    def get_queryset(self):
+        return (
+            Video.objects.filter(is_public=True)
+            .select_related("collection")
+            .prefetch_related(
+                "videofile_set",
+                "videothumbnail_set",
+                "videosubtitle_set",
+            )
         )
 
 
