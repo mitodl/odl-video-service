@@ -41,6 +41,21 @@ type DialogState = {
   thumbnailPreviewUrl: ?string
 }
 
+/**
+ * Allow only blob: (local preview) and https: (CDN) URLs in img src to prevent
+ * javascript: or data: URI injection (satisfies CodeQL DOM-XSS check).
+ */
+function sanitizeImgSrc(url: ?string): string {
+  if (!url) return ""
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol === "blob:" || parsed.protocol === "https:") {
+      return parsed.href
+    }
+  } catch (_) { /* invalid URL */ }
+  return ""
+}
+
 class EditVideoFormDialog extends React.Component<*, DialogState> {
   props: DialogProps
   state: DialogState = {
@@ -252,7 +267,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {previewUrl && (
             <img
-              src={previewUrl}
+              src={sanitizeImgSrc(previewUrl)}
               alt="Video thumbnail"
               style={{
                 width:        "120px",
