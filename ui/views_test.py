@@ -16,7 +16,7 @@ from rest_framework.reverse import reverse
 
 from techtv2ovs.factories import TechTVVideoFactory
 from ui import factories
-from ui.constants import YouTubeStatus
+from ui.constants import StreamSource, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionFactory,
@@ -1792,3 +1792,128 @@ def test_upload_thumbnail_unauthenticated(mocker):
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+# ---------------------------------------------------------------------------
+# Public Video API tests  (GET /api/v0/public/videos/)
+# ---------------------------------------------------------------------------
+
+PUBLIC_VIDEO_URL = "public-video-list"
+
+
+def test_public_video_list_returns_only_public_videos(apiclient):
+    """
+    Only videos with is_public=True should be returned.
+    Private, logged-in-only and default-visibility videos are excluded.
+    """
+    collection = CollectionFactory(is_public=True)
+    public_video = VideoFactory(collection=collection, is_public=True)
+    VideoFactory(collection=collection, is_public=False)  # non-public
+    VideoFactory(collection=collection, is_logged_in_only=True)  # logged-in only
+    VideoFactory(collection=collection, is_private=True)  # private
+
+    url = reverse(PUBLIC_VIDEO_URL)
+    resp = apiclient.get(url)
+
+    assert resp.status_code == status.HTTP_200_OK
+    keys = [v["key"] for v in resp.data["results"]]
+    assert keys == [public_video.hexkey]
+
+
+def test_public_video_list_response_shape(apiclient):
+    """
+    Response items must contain video fields and an embedded collection object.
+    """
+    collection = CollectionFactory(
+        is_public=True, stream_source=StreamSource.CLOUDFRONT
+    )
+    video = VideoFactory(
+        collection=collection,
+        is_public=True,
+        cta_link="https://example.com",
+        duration=120.5,
+    )
+    hls_file = VideoFileFactory(video=video, hls=True)
+    VideoFileFactory(
+        video=video, s3_object_key=f"{video.hexkey}/original.mp4"
+    )  # original – should NOT appear in sources
+    VideoThumbnailFactory(video=video)
+    VideoSubtitleFactory(video=video)
+
+    url = reverse(PUBLIC_VIDEO_URL)
+    resp = apiclient.get(url)
+
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["count"] == 1
+    item = resp.data["results"][0]
+
+    # Top-level video fields
+    for field in (
+        "key",
+        "title",
+        "description",
+        "status",
+        "is_public",
+        "youtube_id",
+        "sources",
+        "cta_link",
+        "duration",
+        "multiangle",
+        "videofile_set",
+        "videothumbnail_set",
+        "videosubtitle_set",
+        "collection",
+    ):
+        assert field in item, f"Missing field: {field}"
+
+    assert item["key"] == video.hexkey
+    assert item["cta_link"] == "https://example.com"
+    assert item["duration"] == 120.5
+
+    # Embedded collection fields
+    coll = item["collection"]
+    for field in ("key", "title", "description", "is_public", "stream_source"):
+        assert field in coll, f"Missing collection field: {field}"
+    assert coll["key"] == collection.hexkey
+    assert coll["stream_source"] == StreamSource.CLOUDFRONT
+
+    # sources must contain only the HLS file
+    assert len(item["sources"]) == 1
+    assert item["sources"][0]["type"] == "application/x-mpegURL"
+    assert item["sources"][0]["label"] == EncodingNames.HLS
+    assert hls_file.cloudfront_url in item["sources"][0]["src"]
+
+
+def test_public_video_list_filter_by_title(apiclient):
+    """
+    ?title= filters case-insensitively on video title.
+    """
+    collection = CollectionFactory(is_public=True)
+    match = VideoFactory(collection=collection, is_public=True, title="Alpha Video")
+    VideoFactory(collection=collection, is_public=True, title="Beta Video")
+
+    url = reverse(PUBLIC_VIDEO_URL)
+    resp = apiclient.get(url, {"title": "alpha"})
+
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["count"] == 1
+    assert resp.data["results"][0]["key"] == match.hexkey
+
+
+def test_public_video_list_filter_by_collection(apiclient):
+    """
+    ?collection=<uuid> returns only videos from that collection.
+    """
+    target_collection = CollectionFactory(is_public=True)
+    other_collection = CollectionFactory(is_public=True)
+    v1 = VideoFactory(collection=target_collection, is_public=True)
+    v2 = VideoFactory(collection=target_collection, is_public=True)
+    VideoFactory(collection=other_collection, is_public=True)
+
+    url = reverse(PUBLIC_VIDEO_URL)
+    resp = apiclient.get(url, {"collection": str(target_collection.key)})
+
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["count"] == 2
+    keys = {v["key"] for v in resp.data["results"]}
+    assert keys == {v1.hexkey, v2.hexkey}

@@ -30,7 +30,6 @@ export const INITIAL_EDIT_VIDEO_FORM_STATE = {
   key:            null,
   title:          "",
   description:    "",
-  cta_link:       null,
   overrideChoice: PERM_CHOICE_COLLECTION,
   viewChoice:     PERM_CHOICE_NONE,
   viewLists:      null
