@@ -14,6 +14,9 @@ actionCreators.setEditVideoTitle = createAction(constants.SET_EDIT_VIDEO_TITLE)
 constants.SET_EDIT_VIDEO_DESC = qualifiedName("SET_EDIT_VIDEO_DESC")
 actionCreators.setEditVideoDesc = createAction(constants.SET_EDIT_VIDEO_DESC)
 
+constants.SET_EDIT_VIDEO_CTA_LINK = qualifiedName("SET_EDIT_VIDEO_CTA_LINK")
+actionCreators.setEditVideoCtaLink = createAction(constants.SET_EDIT_VIDEO_CTA_LINK)
+
 constants.SET_UPLOAD_SUBTITLE = qualifiedName("SET_UPLOAD_SUBTITLE")
 actionCreators.setUploadSubtitle = createAction(constants.SET_UPLOAD_SUBTITLE)
 

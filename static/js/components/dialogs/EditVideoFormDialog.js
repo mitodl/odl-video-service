@@ -127,6 +127,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
         key:            video.key,
         title:          video.title,
         description:    video.description,
+        cta_link:       video.cta_link || null,
         overrideChoice:
           viewChoice === PERM_CHOICE_COLLECTION ?
             PERM_CHOICE_COLLECTION :
@@ -145,6 +146,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   setEditVideoDesc = (event: Object) => {
     const { dispatch } = this.props
     dispatch(actions.videoUi.setEditVideoDesc(event.target.value))
+  }
+
+  setEditVideoCtaLink = (event: Object) => {
+    const { dispatch } = this.props
+    dispatch(actions.videoUi.setEditVideoCtaLink(event.target.value))
   }
 
   setVideoViewPermChoice = (choice: string) => {
@@ -242,7 +248,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 
     let patchData = {
       title:       editVideoForm.title,
-      description: editVideoForm.description
+      description: editVideoForm.description,
+      cta_link:    editVideoForm.cta_link || null
     }
 
     if (SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS) {
@@ -500,6 +507,14 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             id="video-description"
             onChange={this.setEditVideoDesc}
             value={editVideoForm.description}
+          />
+          <Textfield
+            label="Call-to-Action Link"
+            id="video-cta-link"
+            onChange={this.setEditVideoCtaLink}
+            value={editVideoForm.cta_link || ""}
+            validationMessage={errors ? errors.cta_link : ""}
+            placeholder="https://"
           />
           {video &&
             !videoIsProcessing(video) &&
