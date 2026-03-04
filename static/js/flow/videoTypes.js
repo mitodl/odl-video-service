@@ -59,6 +59,7 @@ export type Video = {
 export type VideoUpdatePayload = {
   title: string,
   description: string,
+  cta_link?: ?string,
   view_lists?: Array<string>,
   is_logged_in_only?: boolean,
   is_private?: boolean,
@@ -69,6 +70,7 @@ export type VideoFormState = {
   key: ?string,
   title: ?string,
   description: ?string,
+  cta_link: ?string,
   overrideChoice: string,
   viewChoice: string,
   viewLists: ?string
