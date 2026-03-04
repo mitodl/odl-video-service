@@ -234,7 +234,7 @@ describe("VideoDetailPage", () => {
         .stub(api, "createSubtitle")
         .returns(Promise.resolve())
       wrapper = await renderPage({ isAdmin: true })
-      const uploadBtn = wrapper.find(".upload-input")
+      const uploadBtn = wrapper.find(".video-subtitle-card .upload-input")
       file = new File(["foo"], "filename.vtt")
       store.getState().videoUi.videoSubtitleForm.video = video.key
       await listenForActions(
