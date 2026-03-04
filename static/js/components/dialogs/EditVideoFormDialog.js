@@ -52,7 +52,9 @@ function sanitizeImgSrc(url: ?string): string {
     if (parsed.protocol === "blob:" || parsed.protocol === "https:") {
       return parsed.href
     }
-  } catch (_) { /* invalid URL */ }
+  } catch (_) {
+    /* invalid URL */
+  }
   return ""
 }
 
@@ -72,7 +74,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   }
 
   checkActiveVideo() {
-    const { open, video, videoUi: { editVideoForm } } = this.props
+    const {
+      open,
+      video,
+      videoUi: { editVideoForm }
+    } = this.props
     if (open && video && video.key !== editVideoForm.key) {
       this.initializeFormWithVideo(video)
     }
@@ -123,7 +129,10 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   }
 
   setVideoViewPermChoice = (choice: string) => {
-    const { dispatch, videoUi: { editVideoForm } } = this.props
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
     if (choice !== editVideoForm.viewChoice) {
       dispatch(actions.videoUi.setViewChoice(choice))
     }
@@ -134,7 +143,10 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   }
 
   setVideoPermOverrideChoice = (choice: boolean) => {
-    const { dispatch, videoUi: { editVideoForm } } = this.props
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
     if (choice !== editVideoForm.overrideChoice) {
       dispatch(actions.videoUi.setPermOverrideChoice(choice))
     }
@@ -174,7 +186,10 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   }
 
   handleError = (error: Error) => {
-    const { dispatch, videoUi: { editVideoForm } } = this.props
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
     dispatch(
       actions.videoUi.setVideoFormErrors({
         ...editVideoForm,
@@ -251,15 +266,17 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     const { video } = this.props
     const { thumbnailPreviewUrl } = this.state
     const existingThumbnail =
-      video && video.videothumbnail_set && video.videothumbnail_set.length > 0
-        ? video.videothumbnail_set[0]
-        : null
+      video && video.videothumbnail_set && video.videothumbnail_set.length > 0 ?
+        video.videothumbnail_set[0] :
+        null
 
-    const previewUrl = thumbnailPreviewUrl || (existingThumbnail ? existingThumbnail.cloudfront_url : null)
+    const previewUrl =
+      thumbnailPreviewUrl ||
+      (existingThumbnail ? existingThumbnail.cloudfront_url : null)
 
-    const buttonLabel = existingThumbnail
-        ? "Replace thumbnail"
-        : "Add thumbnail"
+    const buttonLabel = existingThumbnail ?
+      "Replace thumbnail" :
+      "Add thumbnail"
 
     return (
       <section className="thumbnail-group">
@@ -290,7 +307,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   }
 
   renderPermissions() {
-    const { videoUi: { editVideoForm, errors }, video, collection } = this.props
+    const {
+      videoUi: { editVideoForm, errors },
+      video,
+      collection
+    } = this.props
 
     const defaultPerms = editVideoForm.overrideChoice === PERM_CHOICE_COLLECTION
     const collectionIsPublic = collection ? collection.is_public : false
@@ -377,8 +398,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
               selectedValue={editVideoForm.viewChoice}
               onChange={this.handleVideoViewPermClick}
               className="wideLabel"
-            />)
-          }
+            />
+          )}
         </section>
       </section>
     )
@@ -436,7 +457,10 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 }
 
 const mapStateToProps = (state, ownProps) => {
-  const { videoUi, collectionUi: { selectedVideoKey } } = state
+  const {
+    videoUi,
+    collectionUi: { selectedVideoKey }
+  } = state
   const { collection, video } = ownProps
 
   // The dialog needs a Video object passed in as a prop. Depending on the container that includes this dialog,
@@ -454,7 +478,7 @@ const mapStateToProps = (state, ownProps) => {
     videoUi:                videoUi,
     video:                  selectedVideo,
     shouldUpdateCollection: shouldUpdateCollection,
-    collection:             collection,
+    collection:             collection
   }
 }
 
