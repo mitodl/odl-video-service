@@ -224,7 +224,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     let patchData = {
       title:       editVideoForm.title,
       description: editVideoForm.description,
-      cta_link:    editVideoForm.cta_link || null
+      ...(editVideoForm.cta_link != null
+        ? { cta_link: editVideoForm.cta_link || null }
+        : {})
     }
 
     if (SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS) {
