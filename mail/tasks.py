@@ -25,13 +25,22 @@ def _get_recipients_for_video(video):
         list: a list of strings representing emails
     """
     admin_lists = []
-    moira_client = get_moira_client()
-    for mlist in video.collection.admin_lists.values_list("name", flat=True):
-        attributes = moira_client.client.service.getListAttributes(
-            mlist, moira_client.proxy_id
+    video_admins_list = video.collection.admin_lists.values_list("name", flat=True)
+    if not video_admins_list:
+        log.warning(
+            "No admin list found for collection, no notification will be sent",
+            video_hexkey=video.hexkey,
+            collection_key=video.collection.key,
         )
-        if attributes and attributes[0]["mailList"]:
-            admin_lists.append(mlist)
+    else:
+        moira_client = get_moira_client()
+        for mlist in video_admins_list:
+            attributes = moira_client.client.service.getListAttributes(
+                mlist, moira_client.proxy_id
+            )
+            if attributes and attributes[0]["mailList"]:
+                admin_lists.append(mlist)
+
     recipients_list = ["{}@mit.edu".format(alist) for alist in admin_lists]
     owner = video.collection.owner
     if owner.email and not has_common_lists(owner, admin_lists):
