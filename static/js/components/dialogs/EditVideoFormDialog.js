@@ -70,7 +70,9 @@ function sanitizeImgSrc(url: ?string): string {
     if (parsed.protocol === "blob:" || parsed.protocol === "https:") {
       return parsed.href
     }
-  } catch (_) { /* invalid URL */ }
+  } catch (_) {
+    /* invalid URL */
+  }
   return ""
 }
 
