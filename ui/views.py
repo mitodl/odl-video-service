@@ -452,6 +452,35 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
             queryset = queryset.filter(collection__key=collection_key)
         return queryset
 
+    @action(
+        detail=True,
+        methods=["patch"],
+        parser_classes=[MultiPartParser],
+        url_path="thumbnail",
+    )
+    def upload_thumbnail(self, request, key=None):
+        """
+        Replace the thumbnail image for this video.
+        The existing S3 key is overwritten in-place so all URLs remain unchanged.
+        """
+        video = self.get_object()
+        thumbnail = video.videothumbnail_set.first()
+        thumbnail_file = request.data.get("thumbnail")
+        if not thumbnail_file:
+            return Response(
+                {"error": "No thumbnail file provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if thumbnail:
+            cloudapi.replace_thumbnail_in_s3(thumbnail, thumbnail_file)
+        else:
+            cloudapi.create_thumbnail_in_s3(video, thumbnail_file)
+
+        return Response(
+            serializers.VideoSerializer(video, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
+
     @action(detail=True)
     def analytics(self, request, key=None):
         """get video analytics data"""

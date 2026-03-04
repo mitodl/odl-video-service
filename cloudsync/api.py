@@ -12,6 +12,7 @@ from uuid import uuid4
 import boto3
 import pytz
 from boto3.s3.transfer import TransferConfig
+from PIL import Image
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -562,6 +563,126 @@ def upload_subtitle_to_s3(caption_data, file_data):
     vt.s3_object_key = s3_key
     vt.save()
     return vt
+
+
+def replace_thumbnail_in_s3(thumbnail, file_data):
+    """
+    Replaces the image content of an existing VideoThumbnail by overwriting its S3
+    object in-place so that the S3 key (and therefore the CloudFront URL) never changes.
+
+    Args:
+        thumbnail (VideoThumbnail): The existing thumbnail record whose S3 object
+            should be overwritten.
+        file_data (InMemoryUploadedFile): The new image file to upload.
+    """
+    content_type = getattr(file_data, "content_type", "image/jpeg")
+
+    # Read dimensions before upload so the file pointer is at 0.
+    file_data.seek(0)
+    with Image.open(file_data) as img:
+        width, height = img.size
+    file_data.seek(0)
+
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(thumbnail.bucket_name)
+    config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
+    try:
+        bucket.upload_fileobj(
+            Fileobj=file_data,
+            Key=thumbnail.s3_object_key,
+            ExtraArgs={"ContentType": content_type},
+            Config=config,
+        )
+    except Exception:
+        log.error(
+            "An error occurred replacing thumbnail in S3",
+            s3_object_key=thumbnail.s3_object_key,
+        )
+        raise
+
+    thumbnail.max_width = width
+    thumbnail.max_height = height
+    thumbnail.save(update_fields=["max_width", "max_height"])
+
+    # Invalidate the CloudFront cache so the new image is served immediately.
+    dist_id = getattr(settings, "VIDEO_CLOUDFRONT_DIST", "")
+    if dist_id:
+        try:
+            cf_client = boto3.client("cloudfront")
+            cf_client.create_invalidation(
+                DistributionId=dist_id,
+                InvalidationBatch={
+                    "Paths": {
+                        "Quantity": 1,
+                        "Items": [f"/{thumbnail.s3_object_key}"],
+                    },
+                    "CallerReference": str(uuid4()),
+                },
+            )
+        except Exception as exc:
+            log.error(
+                "CloudFront invalidation failed for replaced thumbnail",
+                s3_object_key=thumbnail.s3_object_key,
+                distribution_id=dist_id,
+                exc_info=exc,
+            )
+
+
+def create_thumbnail_in_s3(video, file_data):
+    """
+    Uploads a new thumbnail image to S3 and creates a VideoThumbnail record for it.
+    Used when a video has no existing thumbnail.
+
+    Args:
+        video (Video): The video to create the thumbnail for.
+        file_data (InMemoryUploadedFile): The image file to upload.
+
+    Returns:
+        VideoThumbnail: The newly created VideoThumbnail instance.
+    """
+    content_type = getattr(file_data, "content_type", "image/jpeg")
+    ext_map = {
+        "image/jpeg": ".jpg",
+        "image/png": ".png",
+        "image/gif": ".gif",
+        "image/webp": ".webp",
+    }
+    extension = ext_map.get(content_type, ".jpg")
+    bucket_name = settings.VIDEO_S3_THUMBNAIL_BUCKET
+    s3_key = "thumbnails/{video_key}/video_thumbnail.0000000{ext}".format(
+        video_key=video.hexkey,
+        ext=extension,
+    )
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(bucket_name)
+    config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
+    # Read dimensions before upload so the file pointer is at 0.
+    file_data.seek(0)
+    with Image.open(file_data) as img:
+        width, height = img.size
+    file_data.seek(0)
+
+    try:
+        bucket.upload_fileobj(
+            Fileobj=file_data,
+            Key=s3_key,
+            ExtraArgs={"ContentType": content_type},
+            Config=config,
+        )
+    except Exception:
+        log.error(
+            "An error occurred uploading new thumbnail to S3",
+            video_key=video.key,
+        )
+        raise
+
+    return VideoThumbnail.objects.create(
+        video=video,
+        s3_object_key=s3_key,
+        bucket_name=bucket_name,
+        max_width=width,
+        max_height=height,
+    )
 
 
 def move_s3_objects(bucket_name, from_prefix, to_prefix):

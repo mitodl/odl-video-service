@@ -90,6 +90,16 @@ export function deleteSubtitle(videoSubtitleKey: number) {
   })
 }
 
+export function uploadThumbnail(videoKey: string, formData: FormData) {
+  return fetchWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/thumbnail/`, {
+    headers: {
+      Accept: "application/json"
+    },
+    method: "PATCH",
+    body:   formData
+  })
+}
+
 export async function getVideoAnalytics(videoKey: string) {
   if (window && window.ovsMockAnalyticsData) {
     return Promise.resolve({

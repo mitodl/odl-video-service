@@ -6,12 +6,14 @@ import type { Dispatch } from "redux"
 import _ from "lodash"
 
 import Dialog from "../material/Dialog"
+import Filefield from "../material/Filefield"
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
 import Textarea from "../material/Textarea"
 
 import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
+import { uploadThumbnail } from "../../lib/api"
 import {
   PERM_CHOICE_NONE,
   PERM_CHOICE_LISTS,
@@ -34,8 +36,17 @@ type DialogProps = {
   shouldUpdateCollection: boolean
 }
 
-class EditVideoFormDialog extends React.Component<*, void> {
+type DialogState = {
+  thumbnailFile: ?File,
+  thumbnailPreviewUrl: ?string
+}
+
+class EditVideoFormDialog extends React.Component<*, DialogState> {
   props: DialogProps
+  state: DialogState = {
+    thumbnailFile:       null,
+    thumbnailPreviewUrl: null
+  }
 
   componentDidMount() {
     this.checkActiveVideo()
@@ -123,8 +134,26 @@ class EditVideoFormDialog extends React.Component<*, void> {
     dispatch(actions.videoUi.setViewLists(event.target.value))
   }
 
+  handleThumbnailChange = (event: Object) => {
+    const file = event.target.files[0]
+    if (!file) return
+    const { thumbnailPreviewUrl } = this.state
+    if (thumbnailPreviewUrl) {
+      URL.revokeObjectURL(thumbnailPreviewUrl)
+    }
+    this.setState({
+      thumbnailFile:       file,
+      thumbnailPreviewUrl: URL.createObjectURL(file)
+    })
+  }
+
   onClose = () => {
     const { hideDialog, dispatch } = this.props
+    const { thumbnailPreviewUrl } = this.state
+    if (thumbnailPreviewUrl) {
+      URL.revokeObjectURL(thumbnailPreviewUrl)
+    }
+    this.setState({ thumbnailFile: null, thumbnailPreviewUrl: null })
     dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }
@@ -172,6 +201,12 @@ class EditVideoFormDialog extends React.Component<*, void> {
     }
 
     try {
+      const { thumbnailFile } = this.state
+      if (thumbnailFile) {
+        const formData = new FormData()
+        formData.append("thumbnail", thumbnailFile)
+        await uploadThumbnail(editVideoForm.key, formData)
+      }
       const video = await dispatch(
         actions.videos.patch(editVideoForm.key, patchData)
       )
@@ -195,6 +230,48 @@ class EditVideoFormDialog extends React.Component<*, void> {
   addToastMessage(...args) {
     const { dispatch } = this.props
     dispatch(actions.toast.addMessage(...args))
+  }
+
+  renderThumbnail() {
+    const { video } = this.props
+    const { thumbnailPreviewUrl } = this.state
+    const existingThumbnail =
+      video && video.videothumbnail_set && video.videothumbnail_set.length > 0
+        ? video.videothumbnail_set[0]
+        : null
+
+    const previewUrl = thumbnailPreviewUrl || (existingThumbnail ? existingThumbnail.cloudfront_url : null)
+
+    const buttonLabel = existingThumbnail
+        ? "Replace thumbnail"
+        : "Add thumbnail"
+
+    return (
+      <section className="thumbnail-group">
+        <h4 className="mdc-typography--subheading2">Thumbnail</h4>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {previewUrl && (
+            <img
+              src={previewUrl}
+              alt="Video thumbnail"
+              style={{
+                width:        "120px",
+                height:       "68px",
+                objectFit:    "cover",
+                borderRadius: "4px",
+                border:       "1px solid #ccc",
+                flexShrink:   0
+              }}
+            />
+          )}
+          <Filefield
+            label={buttonLabel}
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            onChange={this.handleThumbnailChange}
+          />
+        </div>
+      </section>
+    )
   }
 
   renderPermissions() {
@@ -328,6 +405,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
             onChange={this.setEditVideoDesc}
             value={editVideoForm.description}
           />
+          {video &&
+            !videoIsProcessing(video) &&
+            !videoHasError(video) &&
+            this.renderThumbnail()}
           {SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS &&
             video &&
             !videoIsProcessing(video) &&
