@@ -38,7 +38,8 @@ type DialogProps = {
 
 type DialogState = {
   thumbnailFile: ?File,
-  thumbnailPreviewUrl: ?string
+  thumbnailPreviewUrl: ?string,
+  thumbnailError: ?string
 }
 
 /**
@@ -62,7 +63,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   props: DialogProps
   state: DialogState = {
     thumbnailFile:       null,
-    thumbnailPreviewUrl: null
+    thumbnailPreviewUrl: null,
+    thumbnailError:      null
   }
 
   componentDidMount() {
@@ -164,13 +166,19 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   handleThumbnailChange = (event: Object) => {
     const file = event.target.files[0]
     if (!file) return
+    if (file.type !== "image/jpeg") {
+      this.setState({ thumbnailError: "Only JPEG image files are allowed.", thumbnailFile: null, thumbnailPreviewUrl: null })
+      event.target.value = ""
+      return
+    }
     const { thumbnailPreviewUrl } = this.state
     if (thumbnailPreviewUrl) {
       URL.revokeObjectURL(thumbnailPreviewUrl)
     }
     this.setState({
       thumbnailFile:       file,
-      thumbnailPreviewUrl: URL.createObjectURL(file)
+      thumbnailPreviewUrl: URL.createObjectURL(file),
+      thumbnailError:      null
     })
   }
 
@@ -180,7 +188,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     if (thumbnailPreviewUrl) {
       URL.revokeObjectURL(thumbnailPreviewUrl)
     }
-    this.setState({ thumbnailFile: null, thumbnailPreviewUrl: null })
+    this.setState({ thumbnailFile: null, thumbnailPreviewUrl: null, thumbnailError: null })
     dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }
@@ -264,7 +272,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 
   renderThumbnail() {
     const { video } = this.props
-    const { thumbnailPreviewUrl } = this.state
+    const { thumbnailPreviewUrl, thumbnailError } = this.state
     const existingThumbnail =
       video && video.videothumbnail_set && video.videothumbnail_set.length > 0 ?
         video.videothumbnail_set[0] :
@@ -298,9 +306,14 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
           )}
           <Filefield
             label={buttonLabel}
-            accept="image/jpeg,image/png,image/gif,image/webp"
+            accept="image/jpeg,.jpg,.jpeg"
             onChange={this.handleThumbnailChange}
           />
+          {thumbnailError && (
+            <p style={{ color: "red", margin: "4px 0 0 0", fontSize: "0.85em" }}>
+              {thumbnailError}
+            </p>
+          )}
         </div>
       </section>
     )
