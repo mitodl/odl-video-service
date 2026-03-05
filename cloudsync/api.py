@@ -12,7 +12,6 @@ from uuid import uuid4
 import boto3
 import pytz
 from boto3.s3.transfer import TransferConfig
-from PIL import Image
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
