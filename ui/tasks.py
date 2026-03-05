@@ -7,14 +7,14 @@ from django.db.models import Q
 from itertools import groupby
 
 from mail.utils import chunks
-from odl_video import logging
+import structlog
 from odl_video.celery import app
 from ui import api as ovs_api
 from ui.api import update_video_on_edx
 from ui.encodings import EncodingNames
 from ui.models import VideoFile
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 @app.task
