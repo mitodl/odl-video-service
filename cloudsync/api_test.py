@@ -503,8 +503,8 @@ def test_upload_subtitle_to_s3_srt(mocker, video, file_object, replace, s3error)
     assert subtitle.filename == "subtitles.srt"
     assert subtitle.video == video
     assert subtitle.language == "en"
-    # Verify the S3 key has .srt extension
-    assert subtitle.s3_object_key.endswith(".srt")
+    # SRT is converted to VTT before upload, so the S3 key should have .vtt extension
+    assert subtitle.s3_object_key.endswith(".vtt")
 
 
 @mock_aws
