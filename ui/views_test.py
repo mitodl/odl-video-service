@@ -1859,7 +1859,6 @@ def test_public_video_list_response_shape(apiclient):
         "cta_link",
         "duration",
         "multiangle",
-        "videofile_set",
         "videothumbnail_set",
         "videosubtitle_set",
         "collection",
