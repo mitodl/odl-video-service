@@ -1,5 +1,6 @@
 """APIs for coudsync app"""
 
+import io
 import json
 from pathlib import Path
 import re
@@ -468,6 +469,23 @@ def parse_lecture_video_filename(filename):
     )
 
 
+def convert_srt_to_vtt(srt_content):
+    """
+    Converts SRT subtitle content to WebVTT format.
+
+    Args:
+        srt_content (str): The SRT file content.
+
+    Returns:
+        str: The converted VTT content.
+    """
+    # Replace SRT timestamp commas with VTT dots (00:00:00,000 -> 00:00:00.000)
+    vtt = re.sub(r"(\d{2}:\d{2}:\d{2}),(\d{3})", r"\1.\2", srt_content)
+    # Remove cue sequence numbers (digit-only lines preceding a timestamp line)
+    vtt = re.sub(r"^\d+\s*\n(?=\d{2}:\d{2}:\d{2})", "", vtt, flags=re.MULTILINE)
+    return "WEBVTT\n\n" + vtt.strip() + "\n"
+
+
 def upload_subtitle_to_s3(caption_data, file_data):
     """
     Uploads a subtitle file to S3
@@ -498,8 +516,14 @@ def upload_subtitle_to_s3(caption_data, file_data):
     if file_extension not in ["vtt", "srt"]:
         file_extension = "vtt"  # Default to vtt if invalid
 
-    # Determine content type based on extension
-    content_type = "text/vtt" if file_extension == "vtt" else "application/x-subrip"
+    # Convert SRT to VTT before uploading
+    if file_extension == "srt":
+        srt_content = file_data.read().decode("utf-8")
+        vtt_content = convert_srt_to_vtt(srt_content)
+        file_data = io.BytesIO(vtt_content.encode("utf-8"))
+        file_extension = "vtt"
+
+    content_type = "text/vtt"
 
     s3 = boto3.resource("s3")
     bucket_name = settings.VIDEO_S3_SUBTITLE_BUCKET
