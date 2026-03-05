@@ -466,7 +466,6 @@ class PublicVideoSerializer(serializers.ModelSerializer):
 
     key = serializers.SerializerMethodField()
     collection = PublicCollectionSerializer(read_only=True)
-    videofile_set = VideoFileSerializer(many=True, read_only=True)
     videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
     videosubtitle_set = VideoSubtitleSerializer(many=True, read_only=True)
     sources = serializers.SerializerMethodField()
@@ -483,7 +482,8 @@ class PublicVideoSerializer(serializers.ModelSerializer):
                 "label": f.encoding,
                 "type": "application/x-mpegURL",
             }
-            for f in obj.videofile_set.filter(encoding=EncodingNames.HLS)
+            for f in obj.videofile_set.all()
+            if f.encoding == EncodingNames.HLS
         ]
 
     class Meta:
@@ -500,7 +500,6 @@ class PublicVideoSerializer(serializers.ModelSerializer):
             "cta_link",
             "duration",
             "multiangle",
-            "videofile_set",
             "videothumbnail_set",
             "videosubtitle_set",
             "collection",
