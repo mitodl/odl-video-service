@@ -640,14 +640,21 @@ def create_thumbnail_in_s3(video, file_data):
     Returns:
         VideoThumbnail: The newly created VideoThumbnail instance.
     """
-    content_type = getattr(file_data, "content_type", "image/jpeg")
-    ext_map = {
-        "image/jpeg": ".jpg",
-        "image/png": ".png",
-        "image/gif": ".gif",
-        "image/webp": ".webp",
+    # Read dimensions before upload so the file pointer is at 0.
+    file_data.seek(0)
+    with Image.open(file_data) as img:
+        width, height = img.size
+        pil_format = (getattr(img, "format", "") or "").upper()
+    file_data.seek(0)
+
+    # Map Pillow-detected image format to a trusted content type and file extension.
+    format_map = {
+        "JPEG": ("image/jpeg", ".jpg"),
+        "PNG": ("image/png", ".png"),
+        "GIF": ("image/gif", ".gif"),
+        "WEBP": ("image/webp", ".webp"),
     }
-    extension = ext_map.get(content_type, ".jpg")
+    content_type, extension = format_map.get(pil_format, ("image/jpeg", ".jpg"))
     bucket_name = settings.VIDEO_S3_THUMBNAIL_BUCKET
     s3_key = "thumbnails/{video_key}/video_thumbnail.0000000{ext}".format(
         video_key=video.hexkey,
