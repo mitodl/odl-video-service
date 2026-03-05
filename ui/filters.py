@@ -5,7 +5,7 @@ Filters for ui app
 import django_filters
 from django.db.models import Q
 
-from ui.models import Collection, EdxEndpoint
+from ui.models import Collection, EdxEndpoint, Video
 
 
 class CollectionFilter(django_filters.FilterSet):
@@ -40,3 +40,49 @@ class CollectionFilter(django_filters.FilterSet):
     class Meta:
         model = Collection
         fields = ["title", "slug", "description", "edx_course_id", "edx_endpoint"]
+
+
+class PublicVideoFilter(django_filters.FilterSet):
+    """
+    Filter for public video list endpoint.
+    Supports filtering by video fields and collection fields.
+    """
+
+    title = django_filters.CharFilter(field_name="title", lookup_expr="icontains")
+    description = django_filters.CharFilter(
+        field_name="description", lookup_expr="icontains"
+    )
+    status = django_filters.CharFilter(field_name="status", lookup_expr="exact")
+    collection = django_filters.UUIDFilter(
+        field_name="collection__key", lookup_expr="exact"
+    )
+    collection_title = django_filters.CharFilter(
+        field_name="collection__title", lookup_expr="icontains"
+    )
+    stream_source = django_filters.CharFilter(
+        field_name="collection__stream_source", lookup_expr="exact"
+    )
+    search = django_filters.CharFilter(method="search_filter")
+
+    def search_filter(self, queryset, name, value):  # pylint: disable=unused-argument
+        """
+        Full-text search across video title, video description,
+        collection title, and collection description.
+        """
+        return queryset.filter(
+            Q(title__icontains=value)
+            | Q(description__icontains=value)
+            | Q(collection__title__icontains=value)
+            | Q(collection__description__icontains=value)
+        ).distinct()
+
+    class Meta:
+        model = Video
+        fields = [
+            "title",
+            "description",
+            "status",
+            "collection",
+            "collection_title",
+            "stream_source",
+        ]

@@ -441,6 +441,72 @@ class CollectionListSerializer(serializers.ModelSerializer):
         )
 
 
+class PublicCollectionSerializer(serializers.ModelSerializer):
+    """Lightweight collection serializer for embedding in public video responses"""
+
+    key = serializers.SerializerMethodField()
+
+    def get_key(self, obj):
+        """Return hex key"""
+        return obj.hexkey
+
+    class Meta:
+        model = models.Collection
+        fields = (
+            "key",
+            "title",
+            "description",
+            "is_public",
+            "stream_source",
+        )
+
+
+class PublicVideoSerializer(serializers.ModelSerializer):
+    """Serializer for the public video list endpoint — includes embedded collection details"""
+
+    key = serializers.SerializerMethodField()
+    collection = PublicCollectionSerializer(read_only=True)
+    videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
+    videosubtitle_set = VideoSubtitleSerializer(many=True, read_only=True)
+    sources = serializers.SerializerMethodField()
+
+    def get_key(self, obj):
+        """Return hex key"""
+        return obj.hexkey
+
+    def get_sources(self, obj):
+        """Return only HLS sources"""
+        return [
+            {
+                "src": f.cloudfront_url,
+                "label": f.encoding,
+                "type": "application/x-mpegURL",
+            }
+            for f in obj.videofile_set.all()
+            if f.encoding == EncodingNames.HLS
+        ]
+
+    class Meta:
+        model = models.Video
+        fields = (
+            "key",
+            "created_at",
+            "title",
+            "description",
+            "status",
+            "is_public",
+            "youtube_id",
+            "sources",
+            "cta_link",
+            "duration",
+            "multiangle",
+            "videothumbnail_set",
+            "videosubtitle_set",
+            "collection",
+        )
+        read_only_fields = fields
+
+
 class DropboxFileSerializer(serializers.Serializer):
     """Dropbox File Serializer"""
 
