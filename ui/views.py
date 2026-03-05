@@ -471,9 +471,19 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 {"error": "No thumbnail file provided."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if getattr(thumbnail_file, "content_type", "") not in (
+            "image/jpeg",
+            "image/jpg",
+        ):
+            return Response(
+                {"error": "Only JPEG image files are allowed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if thumbnail:
             cloudapi.replace_thumbnail_in_s3(thumbnail, thumbnail_file)
         else:
+            # This is really a fallback case since a thumbnail should have already been created for the video,
+            # but we can handle it gracefully by creating a new thumbnail object and uploading the file to S3
             cloudapi.create_thumbnail_in_s3(video, thumbnail_file)
 
         return Response(
