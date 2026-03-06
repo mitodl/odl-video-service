@@ -17,7 +17,8 @@ import {
   uploadVideo,
   createSubtitle,
   deleteSubtitle,
-  getVideoAnalytics
+  getVideoAnalytics,
+  uploadThumbnail
 } from "../lib/api"
 
 describe("api", () => {
@@ -139,6 +140,27 @@ describe("api", () => {
     sinon.assert.calledWith(fetchStub, `/api/v0/subtitles/${subtitle.id}/`, {
       method: "DELETE"
     })
+  })
+
+  it("can upload a thumbnail for a video", async () => {
+    const fetchFormStub = sandbox.stub(fetchFuncs, "fetchWithCSRF")
+    const video = makeVideo()
+    const formData = new FormData()
+    formData.append("thumbnail", new Blob(["fake-image"], { type: "image/jpeg" }), "thumb.jpg")
+    formData.append("width", 1280)
+    formData.append("height", 720)
+    fetchFormStub.returns(Promise.resolve({}))
+
+    await uploadThumbnail(video.key, formData)
+    sinon.assert.calledWith(
+      fetchFormStub,
+      `/api/v0/videos/${video.key}/thumbnail/`,
+      {
+        method:  "PATCH",
+        body:    formData,
+        headers: { Accept: "application/json" }
+      }
+    )
   })
 
   it("gets video analytics", async () => {
