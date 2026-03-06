@@ -12,7 +12,6 @@ from uuid import uuid4
 import boto3
 import pytz
 from boto3.s3.transfer import TransferConfig
-from PIL import Image
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -565,7 +564,7 @@ def upload_subtitle_to_s3(caption_data, file_data):
     return vt
 
 
-def replace_thumbnail_in_s3(thumbnail, file_data):
+def replace_thumbnail_in_s3(thumbnail, file_data, width: int, height: int):
     """
     Replaces the image content of an existing VideoThumbnail by overwriting its S3
     object in-place so that the S3 key (and therefore the CloudFront URL) never changes.
@@ -574,13 +573,9 @@ def replace_thumbnail_in_s3(thumbnail, file_data):
         thumbnail (VideoThumbnail): The existing thumbnail record whose S3 object
             should be overwritten.
         file_data (InMemoryUploadedFile): The new image file to upload.
+        width (int): Image width in pixels, as reported by the browser.
+        height (int): Image height in pixels, as reported by the browser.
     """
-    # Read dimensions before upload so the file pointer is at 0.
-    file_data.seek(0)
-    with Image.open(file_data) as img:
-        width, height = img.size
-    file_data.seek(0)
-
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(thumbnail.bucket_name)
     config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
@@ -626,7 +621,7 @@ def replace_thumbnail_in_s3(thumbnail, file_data):
             )
 
 
-def create_thumbnail_in_s3(video, file_data):
+def create_thumbnail_in_s3(video, file_data, width: int, height: int):
     """
     Uploads a new thumbnail image to S3 and creates a VideoThumbnail record for it.
     Used when a video has no existing thumbnail.
@@ -634,16 +629,12 @@ def create_thumbnail_in_s3(video, file_data):
     Args:
         video (Video): The video to create the thumbnail for.
         file_data (InMemoryUploadedFile): The image file to upload.
+        width (int): Image width in pixels, as reported by the browser.
+        height (int): Image height in pixels, as reported by the browser.
 
     Returns:
         VideoThumbnail: The newly created VideoThumbnail instance.
     """
-    # Read dimensions before upload so the file pointer is at 0.
-    file_data.seek(0)
-    with Image.open(file_data) as img:
-        width, height = img.size
-    file_data.seek(0)
-
     bucket_name = settings.VIDEO_S3_THUMBNAIL_BUCKET
     s3_key = "thumbnails/{video_key}/video_thumbnail.0000000.jpg".format(
         video_key=video.hexkey,
@@ -659,10 +650,11 @@ def create_thumbnail_in_s3(video, file_data):
             ExtraArgs={"ContentType": "image/jpeg"},
             Config=config,
         )
-    except Exception:
-        log.error(
+    except Exception as exc:
+        log.exception(
             "An error occurred uploading new thumbnail to S3",
             video_key=video.key,
+            exc_info=exc,
         )
         raise
 
