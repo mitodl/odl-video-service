@@ -29,47 +29,48 @@ export default class VideoSubtitleCard extends React.Component<*, void> {
           <div className="actions">
             <div className="video-subtitle-list">
               {video.videosubtitle_set.map(
-                (subtitle: VideoSubtitle, key) => (
-                  <div className="mdc-list-item" key={key}>
-                    <span className="video-subtitle-filename">
-                      {subtitle.s3_object_key
-                        .split("/")
-                        .slice(-1)[0]
-                        .slice(0, 10)}..._{subtitle.language}.vtt
-                    </span>
-                    <span className="video-subtitle-language">
-                      ({subtitle.language_name})
-                    </span>
-                    <span className="video-subtitle-button">
-                      <a
-                        className="mdc-list-item mdc-link download-link"
-                        href={makeVideoSubtitleUrl(subtitle)}
-                        alt="Download this subtitle"
-                      >
-                        <i className="material-icons">file_download</i>
-                      </a>
-                    </span>
-                    {isAdmin && (
+                (subtitle: VideoSubtitle, key) => {
+                  const filenameParts = subtitle.s3_object_key.split("/")
+                  const fullFilename = filenameParts[filenameParts.length - 1]
+                  const extension = fullFilename.split(".").pop()
+                  return (
+                    <div className="mdc-list-item" key={key}>
+                      <span className="video-subtitle-filename">
+                        {fullFilename.slice(0, 10)}..._{subtitle.language}.{extension}
+                      </span>
+                      <span className="video-subtitle-language">
+                        ({subtitle.language_name})
+                      </span>
                       <span className="video-subtitle-button">
                         <a
-                          className="mdc-list-item mdc-link delete-btn"
-                          onClick={() => deleteVideoSubtitle(subtitle.id)}
+                          className="mdc-list-item mdc-link download-link"
+                          href={makeVideoSubtitleUrl(subtitle)}
+                          alt="Download this subtitle"
                         >
-                          <i className="material-icons">delete</i>
+                          <i className="material-icons">file_download</i>
                         </a>
                       </span>
-                    )}
-                  </div>
-                ),
-                this
+                      {isAdmin && (
+                        <span className="video-subtitle-button">
+                          <a
+                            className="mdc-list-item mdc-link delete-btn"
+                            onClick={() => deleteVideoSubtitle(subtitle.id)}
+                          >
+                            <i className="material-icons">delete</i>
+                          </a>
+                        </span>
+                      )}
+                    </div>
+                  )
+                }
               )}
             </div>
             <div className="video-subtitle-upload">
               {isAdmin && (
                 <Filefield
                   id="video-subtitle"
-                  accept=".vtt"
-                  label="Add subtitles (.vtt file)"
+                  accept=".vtt,.srt"
+                  label="Add subtitles (.vtt or .srt file)"
                   onChange={uploadVideoSubtitle}
                 />
               )}

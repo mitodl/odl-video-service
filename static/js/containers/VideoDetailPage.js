@@ -109,16 +109,28 @@ export class VideoDetailPage extends React.Component<*, void> {
   setUploadSubtitle = async (event: Object) => {
     const { dispatch } = this.props
     await dispatch(actions.videoUi.setUploadSubtitle(event.target.files[0]))
-    this.uploadVideoSubtitle()
-    dispatch(
-      actions.toast.addMessage({
-        message: {
-          key:     "subtitles-uploaded",
-          content: "Subtitles uploaded",
-          icon:    "check"
-        }
-      })
-    )
+    try {
+      await this.uploadVideoSubtitle()
+      dispatch(
+        actions.toast.addMessage({
+          message: {
+            key:     "subtitles-uploaded",
+            content: "Subtitles uploaded",
+            icon:    "check"
+          }
+        })
+      )
+    } catch (e) {
+      dispatch(
+        actions.toast.addMessage({
+          message: {
+            key:     "subtitles-error",
+            content: "Subtitle upload failed",
+            icon:    "error"
+          }
+        })
+      )
+    }
   }
 
   updateCorner = (corner: string) => {

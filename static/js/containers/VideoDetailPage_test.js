@@ -240,6 +240,10 @@ describe("VideoDetailPage", () => {
       await listenForActions(
         [
           actions.videoSubtitles.post.requestType,
+          actions.videoSubtitles.post.successType,
+          actions.videos.get.requestType,
+          actions.videos.get.successType,
+          actions.collections.get.failureType,
           toastActions.constants.ADD_MESSAGE,
           videoUiActions.constants.SET_UPLOAD_SUBTITLE
         ],
