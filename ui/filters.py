@@ -60,9 +60,21 @@ class PublicVideoFilter(django_filters.FilterSet):
         field_name="collection__title", lookup_expr="icontains"
     )
     stream_source = django_filters.CharFilter(
-        field_name="collection__stream_source", lookup_expr="exact"
+        field_name="collection__stream_source", lookup_expr="iexact"
     )
+    exclude_source = django_filters.CharFilter(method="exclude_source_filter")
     search = django_filters.CharFilter(method="search_filter")
+
+    def exclude_source_filter(self, queryset, name, value):  # pylint: disable=unused-argument
+        """
+        Exclude videos whose collection stream_source matches the given value
+        (case-insensitive). Accepts a single value or a comma-separated list
+        of values to exclude multiple sources at once.
+        """
+        sources = [s.strip() for s in value.split(",") if s.strip()]
+        for source in sources:
+            queryset = queryset.exclude(collection__stream_source__iexact=source)
+        return queryset
 
     def search_filter(self, queryset, name, value):  # pylint: disable=unused-argument
         """
@@ -85,4 +97,5 @@ class PublicVideoFilter(django_filters.FilterSet):
             "collection",
             "collection_title",
             "stream_source",
+            "exclude_source",
         ]

@@ -397,6 +397,7 @@ class PublicVideoListView(generics.ListAPIView):
                 "videofile_set",
                 "videothumbnail_set",
                 "videosubtitle_set",
+                "youtubevideo",
             )
         )
 
