@@ -254,9 +254,20 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
         const img = new window.Image()
         const objectUrl = URL.createObjectURL(thumbnailFile)
         img.src = objectUrl
-        await new Promise(resolve => {
-          img.onload = resolve
-        })
+        try {
+          await new Promise((resolve, reject) => {
+            img.onload = resolve
+            img.onerror = () => reject(new Error("Failed to read image dimensions"))
+          })
+        } catch (_) {
+          URL.revokeObjectURL(objectUrl)
+          this.setState({
+            thumbnailError:      "Failed to load image. Please try a different file.",
+            thumbnailFile:       null,
+            thumbnailPreviewUrl: null
+          })
+          return
+        }
         formData.append("width", img.naturalWidth)
         formData.append("height", img.naturalHeight)
         URL.revokeObjectURL(objectUrl)

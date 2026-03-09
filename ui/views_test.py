@@ -25,6 +25,7 @@ from ui.factories import (
     VideoFactory,
     VideoFileFactory,
     VideoSubtitleFactory,
+    VideoThumbnailFactory,
     YouTubeVideoFactory,
 )
 from ui.models import VideoSubtitle
@@ -1612,3 +1613,182 @@ def test_potential_owners_api(
                 f"Collection with this key {bad_key} does not exists"
                 in response.data["error"]
             )
+
+
+# ---------------------------------------------------------------------------
+# VideoViewSet.upload_thumbnail tests
+# ---------------------------------------------------------------------------
+def _make_jpeg_file(name="thumb.jpg"):
+    """Return a minimal in-memory JPEG SimpleUploadedFile."""
+    # Smallest valid JPEG header that PIL / browsers accept
+    jpeg_bytes = bytes(
+        [
+            0xFF,
+            0xD8,
+            0xFF,
+            0xE0,
+            0x00,
+            0x10,
+            0x4A,
+            0x46,
+            0x49,
+            0x46,
+            0x00,
+            0x01,
+            0x01,
+            0x00,
+            0x00,
+            0x01,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0xFF,
+            0xD9,
+        ]
+    )
+    return SimpleUploadedFile(name, jpeg_bytes, content_type="image/jpeg")
+
+
+def test_upload_thumbnail_replaces_existing(mocker, logged_in_apiclient):
+    """
+    When a VideoThumbnail already exists, upload_thumbnail should call
+    replace_thumbnail_in_s3 and return HTTP 200 with the updated video data.
+    """
+    mocker.patch("ui.serializers.get_moira_client")
+    mocker.patch("ui.utils.get_moira_client")
+    mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    thumbnail = VideoThumbnailFactory(video=video)
+
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url,
+        {"thumbnail": _make_jpeg_file(), "width": 1280, "height": 720},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    mock_replace.assert_called_once_with(thumbnail, mocker.ANY, 1280, 720)
+
+
+def test_upload_thumbnail_creates_new(mocker, logged_in_apiclient):
+    """
+    When no VideoThumbnail exists yet, upload_thumbnail should call
+    create_thumbnail_in_s3 and return HTTP 201.
+    """
+    mocker.patch("ui.serializers.get_moira_client")
+    mocker.patch("ui.utils.get_moira_client")
+    mock_create = mocker.patch("ui.views.cloudapi.create_thumbnail_in_s3")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    # No VideoThumbnail created — videothumbnail_set is empty
+
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url,
+        {"thumbnail": _make_jpeg_file(), "width": 640, "height": 360},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    mock_create.assert_called_once_with(video, mocker.ANY, 640, 360)
+
+
+def test_upload_thumbnail_no_file(mocker, logged_in_apiclient):
+    """
+    When no thumbnail file is included in the request, the view should
+    return HTTP 400 with an appropriate error message.
+    """
+    mocker.patch("ui.serializers.get_moira_client")
+    mocker.patch("ui.utils.get_moira_client")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(url, {"width": 640, "height": 360}, format="multipart")
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "No thumbnail file provided" in response.data["error"]
+
+
+def test_upload_thumbnail_wrong_content_type(mocker, logged_in_apiclient):
+    """
+    When the uploaded file is not a JPEG, the view should return HTTP 400.
+    """
+    mocker.patch("ui.serializers.get_moira_client")
+    mocker.patch("ui.utils.get_moira_client")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+
+    png_file = SimpleUploadedFile("thumb.png", b"pngdata", content_type="image/png")
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url,
+        {"thumbnail": png_file, "width": 640, "height": 360},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Only JPEG" in response.data["error"]
+
+
+@pytest.mark.parametrize(
+    "width, height",
+    [
+        (0, 360),
+        (640, 0),
+        (-1, 360),
+        (640, -1),
+        (0, 0),
+    ],
+)
+def test_upload_thumbnail_invalid_dimensions(
+    mocker, logged_in_apiclient, width, height
+):
+    """
+    When width or height is zero or negative, the view should return HTTP 400.
+    """
+    mocker.patch("ui.serializers.get_moira_client")
+    mocker.patch("ui.utils.get_moira_client")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url,
+        {"thumbnail": _make_jpeg_file(), "width": width, "height": height},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "dimensions" in response.data["error"]
+
+
+def test_upload_thumbnail_unauthenticated(mocker):
+    """
+    Unauthenticated requests to upload_thumbnail should be rejected.
+    The viewset filters out non-public videos for anonymous users via
+    all_viewable(), so get_object() raises 404 before a 403 can be emitted.
+    This intentionally avoids leaking whether a video key exists.
+    """
+    from rest_framework.test import APIClient
+
+    mocker.patch("ui.serializers.get_moira_client")
+    mocker.patch("ui.utils.get_moira_client")
+
+    video = VideoFactory()
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = APIClient().patch(
+        url,
+        {"thumbnail": _make_jpeg_file(), "width": 640, "height": 360},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
