@@ -612,12 +612,11 @@ def replace_thumbnail_in_s3(thumbnail, file_data, width: int, height: int):
                     "CallerReference": str(uuid4()),
                 },
             )
-        except Exception as exc:
-            log.error(
+        except Exception:
+            log.exception(
                 "CloudFront invalidation failed for replaced thumbnail",
                 s3_object_key=thumbnail.s3_object_key,
                 distribution_id=dist_id,
-                exc_info=exc,
             )
 
 
