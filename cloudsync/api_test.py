@@ -19,7 +19,13 @@ from django.test import override_settings
 from moto import mock_aws
 
 from cloudsync import api
-from cloudsync.api import RETRANSCODE_FOLDER, move_s3_objects, upload_subtitle_to_s3
+from cloudsync.api import (
+    RETRANSCODE_FOLDER,
+    create_thumbnail_in_s3,
+    move_s3_objects,
+    replace_thumbnail_in_s3,
+    upload_subtitle_to_s3,
+)
 from cloudsync.conftest import MockBoto, MockClientMC
 from ui.constants import VideoStatus
 from ui.factories import (
@@ -28,6 +34,7 @@ from ui.factories import (
     VideoFactory,
     VideoFileFactory,
     VideoSubtitleFactory,
+    VideoThumbnailFactory,
 )
 from ui.models import TRANSCODE_PREFIX, Video
 
@@ -573,3 +580,142 @@ def test_transcode_video_client_error_no_job_id(mocker):
     # Verify video status was updated
     video.refresh_from_db()
     assert video.status == VideoStatus.TRANSCODE_FAILED_INTERNAL
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_jpeg_file():
+    """
+    Return a minimal in-memory file-like object for thumbnail upload tests.
+    Content does not matter since the server no longer parses image dimensions.
+    """
+    return io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 64)
+
+
+# ---------------------------------------------------------------------------
+# Tests for replace_thumbnail_in_s3
+# ---------------------------------------------------------------------------
+
+
+@mock_aws
+def test_replace_thumbnail_in_s3_updates_s3_and_model():
+    """
+    Happy path: the S3 object is overwritten and the thumbnail dimensions are updated.
+    """
+    s3c = boto3.client("s3", region_name="us-east-1")
+    thumbnail = VideoThumbnailFactory(
+        s3_object_key="thumbnails/abc/thumb.jpg",
+        bucket_name="thumb-bucket",
+        max_width=100,
+        max_height=100,
+    )
+    s3c.create_bucket(Bucket="thumb-bucket")
+
+    new_image = _make_jpeg_file()
+    replace_thumbnail_in_s3(thumbnail, new_image, 640, 480)
+
+    # Dimensions must be written back to the model
+    thumbnail.refresh_from_db()
+    assert thumbnail.max_width == 640
+    assert thumbnail.max_height == 480
+
+    # The object must exist in S3 under the same key
+    obj = s3c.get_object(Bucket="thumb-bucket", Key="thumbnails/abc/thumb.jpg")
+    assert obj["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+
+@mock_aws
+@override_settings(VIDEO_CLOUDFRONT_DIST="EDIST123")
+def test_replace_thumbnail_in_s3_invalidates_cloudfront(mocker):
+    """
+    When VIDEO_CLOUDFRONT_DIST is set, a CloudFront invalidation is issued.
+    """
+    mock_cf = mocker.MagicMock()
+    mock_boto3 = mocker.patch("cloudsync.api.boto3")
+    # resource("s3").Bucket(...).upload_fileobj must not raise
+    mock_boto3.resource.return_value.Bucket.return_value.upload_fileobj.return_value = (
+        None
+    )
+    mock_boto3.client.return_value = mock_cf
+
+    thumbnail = VideoThumbnailFactory(
+        s3_object_key="thumbnails/abc/thumb.jpg",
+        bucket_name="thumb-bucket",
+    )
+
+    replace_thumbnail_in_s3(thumbnail, _make_jpeg_file(), 320, 240)
+
+    mock_cf.create_invalidation.assert_called_once()
+    call_kwargs = mock_cf.create_invalidation.call_args[1]
+    assert call_kwargs["DistributionId"] == "EDIST123"
+    assert (
+        "/thumbnails/abc/thumb.jpg"
+        in call_kwargs["InvalidationBatch"]["Paths"]["Items"]
+    )
+
+
+@mock_aws
+def test_replace_thumbnail_in_s3_s3_error_propagates(mocker):
+    """
+    If the S3 upload raises, the exception is re-raised and the model is not updated.
+    """
+    original_width = 50
+    original_height = 50
+    thumbnail = VideoThumbnailFactory(
+        max_width=original_width,
+        max_height=original_height,
+        bucket_name="thumb-bucket",
+    )
+
+    mock_boto3 = mocker.patch("cloudsync.api.boto3")
+    mock_boto3.resource.return_value.Bucket.return_value.upload_fileobj.side_effect = (
+        Exception("S3 upload failed")
+    )
+
+    with pytest.raises(Exception, match="S3 upload failed"):
+        replace_thumbnail_in_s3(thumbnail, _make_jpeg_file(), 640, 480)
+
+    # Model must NOT have been updated
+    thumbnail.refresh_from_db()
+    assert thumbnail.max_width == original_width
+    assert thumbnail.max_height == original_height
+
+
+# ---------------------------------------------------------------------------
+# Tests for create_thumbnail_in_s3
+# ---------------------------------------------------------------------------
+
+
+@mock_aws
+@override_settings(
+    VIDEO_S3_THUMBNAIL_BUCKET="thumbnail-bucket",
+    AWS_S3_UPLOAD_TRANSFER_CONFIG={},
+)
+def test_create_thumbnail_in_s3_creates_record_and_uploads():
+    """
+    Happy path: the S3 object is uploaded and a VideoThumbnail record is created.
+    """
+    s3c = boto3.client("s3", region_name="us-east-1")
+    s3c.create_bucket(Bucket="thumbnail-bucket")
+
+    video = VideoFactory()
+    new_image = _make_jpeg_file()
+
+    thumbnail = create_thumbnail_in_s3(video, new_image, 1280, 720)
+
+    # A VideoThumbnail record must be created
+    assert thumbnail.pk is not None
+    assert thumbnail.video == video
+    assert thumbnail.bucket_name == "thumbnail-bucket"
+    assert thumbnail.max_width == 1280
+    assert thumbnail.max_height == 720
+    assert thumbnail.s3_object_key.startswith("thumbnails/")
+    assert thumbnail.s3_object_key.endswith(".jpg")
+
+    # The object must exist in S3
+    obj = s3c.get_object(Bucket="thumbnail-bucket", Key=thumbnail.s3_object_key)
+    assert obj["ResponseMetadata"]["HTTPStatusCode"] == 200
+    assert video.hexkey in thumbnail.s3_object_key

@@ -6,12 +6,14 @@ import type { Dispatch } from "redux"
 import _ from "lodash"
 
 import Dialog from "../material/Dialog"
+import Filefield from "../material/Filefield"
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
 import Textarea from "../material/Textarea"
 
 import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
+import { uploadThumbnail } from "../../lib/api"
 import {
   PERM_CHOICE_NONE,
   PERM_CHOICE_LISTS,
@@ -34,8 +36,36 @@ type DialogProps = {
   shouldUpdateCollection: boolean
 }
 
-class EditVideoFormDialog extends React.Component<*, void> {
+type DialogState = {
+  thumbnailFile: ?File,
+  thumbnailPreviewUrl: ?string,
+  thumbnailError: ?string
+}
+
+/**
+ * Allow only blob: (local preview) and https: (CDN) URLs in img src to prevent
+ * javascript: or data: URI injection (satisfies CodeQL DOM-XSS check).
+ */
+function sanitizeImgSrc(url: ?string): string {
+  if (!url) return ""
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol === "blob:" || parsed.protocol === "https:") {
+      return parsed.href
+    }
+  } catch (_) {
+    /* invalid URL */
+  }
+  return ""
+}
+
+class EditVideoFormDialog extends React.Component<*, DialogState> {
   props: DialogProps
+  state: DialogState = {
+    thumbnailFile:       null,
+    thumbnailPreviewUrl: null,
+    thumbnailError:      null
+  }
 
   componentDidMount() {
     this.checkActiveVideo()
@@ -46,7 +76,11 @@ class EditVideoFormDialog extends React.Component<*, void> {
   }
 
   checkActiveVideo() {
-    const { open, video, videoUi: { editVideoForm } } = this.props
+    const {
+      open,
+      video,
+      videoUi: { editVideoForm }
+    } = this.props
     if (open && video && video.key !== editVideoForm.key) {
       this.initializeFormWithVideo(video)
     }
@@ -97,7 +131,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
   }
 
   setVideoViewPermChoice = (choice: string) => {
-    const { dispatch, videoUi: { editVideoForm } } = this.props
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
     if (choice !== editVideoForm.viewChoice) {
       dispatch(actions.videoUi.setViewChoice(choice))
     }
@@ -108,7 +145,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
   }
 
   setVideoPermOverrideChoice = (choice: boolean) => {
-    const { dispatch, videoUi: { editVideoForm } } = this.props
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
     if (choice !== editVideoForm.overrideChoice) {
       dispatch(actions.videoUi.setPermOverrideChoice(choice))
     }
@@ -123,14 +163,49 @@ class EditVideoFormDialog extends React.Component<*, void> {
     dispatch(actions.videoUi.setViewLists(event.target.value))
   }
 
+  handleThumbnailChange = (event: Object) => {
+    const file = event.target.files[0]
+    if (!file) return
+    if (file.type !== "image/jpeg") {
+      this.setState({
+        thumbnailError:      "Only JPEG image files are allowed.",
+        thumbnailFile:       null,
+        thumbnailPreviewUrl: null
+      })
+      event.target.value = ""
+      return
+    }
+    const { thumbnailPreviewUrl } = this.state
+    if (thumbnailPreviewUrl) {
+      URL.revokeObjectURL(thumbnailPreviewUrl)
+    }
+    this.setState({
+      thumbnailFile:       file,
+      thumbnailPreviewUrl: URL.createObjectURL(file),
+      thumbnailError:      null
+    })
+  }
+
   onClose = () => {
     const { hideDialog, dispatch } = this.props
+    const { thumbnailPreviewUrl } = this.state
+    if (thumbnailPreviewUrl) {
+      URL.revokeObjectURL(thumbnailPreviewUrl)
+    }
+    this.setState({
+      thumbnailFile:       null,
+      thumbnailPreviewUrl: null,
+      thumbnailError:      null
+    })
     dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }
 
   handleError = (error: Error) => {
-    const { dispatch, videoUi: { editVideoForm } } = this.props
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
     dispatch(
       actions.videoUi.setVideoFormErrors({
         ...editVideoForm,
@@ -172,6 +247,32 @@ class EditVideoFormDialog extends React.Component<*, void> {
     }
 
     try {
+      const { thumbnailFile } = this.state
+      if (thumbnailFile) {
+        const formData = new FormData()
+        formData.append("thumbnail", thumbnailFile)
+        const img = new window.Image()
+        const objectUrl = URL.createObjectURL(thumbnailFile)
+        img.src = objectUrl
+        try {
+          await new Promise((resolve, reject) => {
+            img.onload = resolve
+            img.onerror = () => reject(new Error("Failed to read image dimensions"))
+          })
+        } catch (_) {
+          URL.revokeObjectURL(objectUrl)
+          this.setState({
+            thumbnailError:      "Failed to load image. Please try a different file.",
+            thumbnailFile:       null,
+            thumbnailPreviewUrl: null
+          })
+          return
+        }
+        formData.append("width", img.naturalWidth)
+        formData.append("height", img.naturalHeight)
+        URL.revokeObjectURL(objectUrl)
+        await uploadThumbnail(editVideoForm.key, formData)
+      }
       const video = await dispatch(
         actions.videos.patch(editVideoForm.key, patchData)
       )
@@ -197,8 +298,63 @@ class EditVideoFormDialog extends React.Component<*, void> {
     dispatch(actions.toast.addMessage(...args))
   }
 
+  renderThumbnail() {
+    const { video } = this.props
+    const { thumbnailPreviewUrl, thumbnailError } = this.state
+    const existingThumbnail =
+      video && video.videothumbnail_set && video.videothumbnail_set.length > 0 ?
+        video.videothumbnail_set[0] :
+        null
+
+    const previewUrl =
+      thumbnailPreviewUrl ||
+      (existingThumbnail ? existingThumbnail.cloudfront_url : null)
+
+    const buttonLabel = existingThumbnail ?
+      "Replace thumbnail" :
+      "Add thumbnail"
+
+    return (
+      <section className="thumbnail-group">
+        <h4 className="mdc-typography--subheading2">Thumbnail</h4>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {previewUrl && (
+            <img
+              src={sanitizeImgSrc(previewUrl)}
+              alt="Video thumbnail"
+              style={{
+                width:        "120px",
+                height:       "68px",
+                objectFit:    "cover",
+                borderRadius: "4px",
+                border:       "1px solid #ccc",
+                flexShrink:   0
+              }}
+            />
+          )}
+          <Filefield
+            label={buttonLabel}
+            accept="image/jpeg,.jpg,.jpeg"
+            onChange={this.handleThumbnailChange}
+          />
+          {thumbnailError && (
+            <p
+              style={{ color: "red", margin: "4px 0 0 0", fontSize: "0.85em" }}
+            >
+              {thumbnailError}
+            </p>
+          )}
+        </div>
+      </section>
+    )
+  }
+
   renderPermissions() {
-    const { videoUi: { editVideoForm, errors }, video, collection } = this.props
+    const {
+      videoUi: { editVideoForm, errors },
+      video,
+      collection
+    } = this.props
 
     const defaultPerms = editVideoForm.overrideChoice === PERM_CHOICE_COLLECTION
     const collectionIsPublic = collection ? collection.is_public : false
@@ -285,8 +441,8 @@ class EditVideoFormDialog extends React.Component<*, void> {
               selectedValue={editVideoForm.viewChoice}
               onChange={this.handleVideoViewPermClick}
               className="wideLabel"
-            />)
-          }
+            />
+          )}
         </section>
       </section>
     )
@@ -328,6 +484,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
             onChange={this.setEditVideoDesc}
             value={editVideoForm.description}
           />
+          {video &&
+            !videoIsProcessing(video) &&
+            !videoHasError(video) &&
+            this.renderThumbnail()}
           {SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS &&
             video &&
             !videoIsProcessing(video) &&
@@ -340,7 +500,10 @@ class EditVideoFormDialog extends React.Component<*, void> {
 }
 
 const mapStateToProps = (state, ownProps) => {
-  const { videoUi, collectionUi: { selectedVideoKey } } = state
+  const {
+    videoUi,
+    collectionUi: { selectedVideoKey }
+  } = state
   const { collection, video } = ownProps
 
   // The dialog needs a Video object passed in as a prop. Depending on the container that includes this dialog,
@@ -358,7 +521,7 @@ const mapStateToProps = (state, ownProps) => {
     videoUi:                videoUi,
     video:                  selectedVideo,
     shouldUpdateCollection: shouldUpdateCollection,
-    collection:             collection,
+    collection:             collection
   }
 }
 

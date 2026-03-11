@@ -452,6 +452,57 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
             queryset = queryset.filter(collection__key=collection_key)
         return queryset
 
+    @action(
+        detail=True,
+        methods=["patch"],
+        parser_classes=[MultiPartParser],
+        url_path="thumbnail",
+    )
+    def upload_thumbnail(self, request, key=None):
+        """
+        Replace the thumbnail image for this video.
+        The existing S3 key is overwritten in-place so all URLs remain unchanged.
+        """
+        video = self.get_object()
+        thumbnail = video.videothumbnail_set.first()
+        thumbnail_file = request.data.get("thumbnail")
+        if not thumbnail_file:
+            return Response(
+                {"error": "No thumbnail file provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if getattr(thumbnail_file, "content_type", "") not in (
+            "image/jpeg",
+            "image/jpg",
+        ):
+            return Response(
+                {"error": "Only JPEG image files are allowed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            width = int(request.data.get("width", 0))
+            height = int(request.data.get("height", 0))
+        except (TypeError, ValueError):
+            width, height = 0, 0
+        if width <= 0 or height <= 0:
+            return Response(
+                {"error": "Valid image dimensions (width and height) are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if thumbnail:
+            cloudapi.replace_thumbnail_in_s3(thumbnail, thumbnail_file, width, height)
+            _status = status.HTTP_200_OK
+        else:
+            # This is really a fallback case since a thumbnail should have already been created for the video,
+            # but we can handle it gracefully by creating a new thumbnail object and uploading the file to S3
+            cloudapi.create_thumbnail_in_s3(video, thumbnail_file, width, height)
+            _status = status.HTTP_201_CREATED
+
+        return Response(
+            serializers.VideoSerializer(video, context={"request": request}).data,
+            status=_status,
+        )
+
     @action(detail=True)
     def analytics(self, request, key=None):
         """get video analytics data"""
