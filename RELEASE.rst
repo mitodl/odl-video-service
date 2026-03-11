@@ -1,6 +1,27 @@
 Release Notes
 =============
 
+Version 0.84.0
+--------------
+
+- chore(deps): update redis docker tag to v8.6.1 (#1428)
+- chore(deps): update nginx docker tag to v1.29.6 (#1426)
+- chore(deps): update dependency ruff to >=0.15.5,<0.16 (#1427)
+- chore(deps): update dependency webpack to v5.104.1 [security] (#1405)
+- chore(deps): update redis:8.2.3 docker digest to 0908d9a (#1420)
+- chore(deps): pin astral-sh/setup-uv action to 6ee6290 (#1418)
+- Endpoint for public videos (#1416)
+- feat: CTA link field added in video model and serializers (#1412)
+- chore(deps): update dependency pdbpp to >=0.12.1,<0.13 (#1422)
+- chore(deps): update nginx docker tag to v1.29.5 (#1421)
+- chore(deps): update node.js to v24.14.0 (#1423)
+- chore(deps): update actions/cache action to v5 (#1424)
+- chore(deps): update actions/checkout action to v6 (#1425)
+- [pre-commit.ci] pre-commit autoupdate (#1415)
+- feat: add srt file support for video subtitles (#1413)
+- fix(deps): update dependency django to v4.2.29 [security] (#1417)
+- feat: public collection support added (#1409)
+
 Version 0.83.0 (Released February 27, 2026)
 --------------
 
