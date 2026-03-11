@@ -69,7 +69,7 @@ dev = [
     "pytest-pep8>=1.0.6,<2",
     "requests-mock>=1.10.0,<2",
     "semantic-version>=2.10.0,<3",
-    "ruff>=0.14.0,<0.15",
+    "ruff>=0.15.5,<0.16",
 ]
 
 [tool.uv]
