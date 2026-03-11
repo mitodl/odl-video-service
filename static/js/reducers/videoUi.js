@@ -9,6 +9,7 @@ const {
   INIT_EDIT_VIDEO_FORM,
   SET_EDIT_VIDEO_TITLE,
   SET_EDIT_VIDEO_DESC,
+  SET_EDIT_VIDEO_CTA_LINK,
   INIT_UPLOAD_SUBTITLE_FORM,
   SET_UPLOAD_SUBTITLE,
   SET_VIDEOJS_SYNC,
@@ -86,6 +87,8 @@ const reducer = (
     return updateVideoForm(state, "title", action.payload)
   case SET_EDIT_VIDEO_DESC:
     return updateVideoForm(state, "description", action.payload)
+  case SET_EDIT_VIDEO_CTA_LINK:
+    return updateVideoForm(state, "cta_link", action.payload)
   case SET_PERM_OVERRIDE_CHOICE:
     return updateVideoForm(state, "overrideChoice", action.payload)
   case SET_VIEW_CHOICE:
