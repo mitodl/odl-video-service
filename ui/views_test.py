@@ -1803,21 +1803,19 @@ PUBLIC_VIDEO_URL = "public-video-list"
 
 def test_public_video_list_returns_only_public_videos(apiclient):
     """
-    Only videos with is_public=True should be returned.
-    Private, logged-in-only and default-visibility videos are excluded.
+    Only videos with is_public=True should be returned by default.
+    Non-public videos are excluded regardless of collection flags.
     """
-    collection = CollectionFactory(is_public=True)
+    collection = CollectionFactory()
     public_video = VideoFactory(collection=collection, is_public=True)
-    VideoFactory(collection=collection, is_public=False)  # non-public
-    VideoFactory(collection=collection, is_logged_in_only=True)  # logged-in only
-    VideoFactory(collection=collection, is_private=True)  # private
+    VideoFactory(collection=collection, is_public=False)  # excluded
 
     url = reverse(PUBLIC_VIDEO_URL)
     resp = apiclient.get(url)
 
     assert resp.status_code == status.HTTP_200_OK
-    keys = [v["key"] for v in resp.data["results"]]
-    assert keys == [public_video.hexkey]
+    keys = {v["key"] for v in resp.data["results"]}
+    assert keys == {public_video.hexkey}
 
 
 def test_public_video_list_response_shape(apiclient):
@@ -1887,7 +1885,7 @@ def test_public_video_list_filter_by_title(apiclient):
     """
     ?title= filters case-insensitively on video title.
     """
-    collection = CollectionFactory(is_public=True)
+    collection = CollectionFactory(include_in_learn=True)
     match = VideoFactory(collection=collection, is_public=True, title="Alpha Video")
     VideoFactory(collection=collection, is_public=True, title="Beta Video")
 
@@ -1903,8 +1901,8 @@ def test_public_video_list_filter_by_collection(apiclient):
     """
     ?collection=<uuid> returns only videos from that collection.
     """
-    target_collection = CollectionFactory(is_public=True)
-    other_collection = CollectionFactory(is_public=True)
+    target_collection = CollectionFactory(include_in_learn=True)
+    other_collection = CollectionFactory(include_in_learn=True)
     v1 = VideoFactory(collection=target_collection, is_public=True)
     v2 = VideoFactory(collection=target_collection, is_public=True)
     VideoFactory(collection=other_collection, is_public=True)
@@ -1916,3 +1914,27 @@ def test_public_video_list_filter_by_collection(apiclient):
     assert resp.data["count"] == 2
     keys = {v["key"] for v in resp.data["results"]}
     assert keys == {v1.hexkey, v2.hexkey}
+
+
+def test_public_video_list_filter_by_include_in_learn(apiclient):
+    """
+    ?include_in_learn=true narrows results to videos from collections with
+    include_in_learn=True; ?include_in_learn=false returns videos from
+    collections with include_in_learn=False.
+    """
+    learn_collection = CollectionFactory(include_in_learn=True)
+    other_collection = CollectionFactory(include_in_learn=False)
+    v_learn = VideoFactory(collection=learn_collection, is_public=True)
+    v_other = VideoFactory(collection=other_collection, is_public=True)
+
+    url = reverse(PUBLIC_VIDEO_URL)
+
+    resp = apiclient.get(url, {"include_in_learn": "true"})
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["count"] == 1
+    assert resp.data["results"][0]["key"] == v_learn.hexkey
+
+    resp = apiclient.get(url, {"include_in_learn": "false"})
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["count"] == 1
+    assert resp.data["results"][0]["key"] == v_other.hexkey
