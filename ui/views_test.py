@@ -1803,15 +1803,12 @@ PUBLIC_VIDEO_URL = "public-video-list"
 
 def test_public_video_list_returns_only_public_videos(apiclient):
     """
-    Only videos with is_public=True in collections with include_in_learn=True are returned.
-    Non-public videos and videos in non-learn collections are both excluded.
+    Only videos with is_public=True should be returned by default.
+    Non-public videos are excluded regardless of collection flags.
     """
-    collection = CollectionFactory(include_in_learn=True)
+    collection = CollectionFactory()
     public_video = VideoFactory(collection=collection, is_public=True)
-    VideoFactory(collection=collection, is_public=False)  # excluded: not public
-
-    other_collection = CollectionFactory(include_in_learn=False)
-    VideoFactory(collection=other_collection, is_public=True)  # excluded: not in learn
+    VideoFactory(collection=collection, is_public=False)  # excluded
 
     url = reverse(PUBLIC_VIDEO_URL)
     resp = apiclient.get(url)
@@ -1826,7 +1823,7 @@ def test_public_video_list_response_shape(apiclient):
     Response items must contain video fields and an embedded collection object.
     """
     collection = CollectionFactory(
-        include_in_learn=True, is_public=True, stream_source=StreamSource.CLOUDFRONT
+        is_public=True, stream_source=StreamSource.CLOUDFRONT
     )
     video = VideoFactory(
         collection=collection,
@@ -1917,3 +1914,27 @@ def test_public_video_list_filter_by_collection(apiclient):
     assert resp.data["count"] == 2
     keys = {v["key"] for v in resp.data["results"]}
     assert keys == {v1.hexkey, v2.hexkey}
+
+
+def test_public_video_list_filter_by_include_in_learn(apiclient):
+    """
+    ?include_in_learn=true narrows results to videos from collections with
+    include_in_learn=True; ?include_in_learn=false returns videos from
+    collections with include_in_learn=False.
+    """
+    learn_collection = CollectionFactory(include_in_learn=True)
+    other_collection = CollectionFactory(include_in_learn=False)
+    v_learn = VideoFactory(collection=learn_collection, is_public=True)
+    v_other = VideoFactory(collection=other_collection, is_public=True)
+
+    url = reverse(PUBLIC_VIDEO_URL)
+
+    resp = apiclient.get(url, {"include_in_learn": "true"})
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["count"] == 1
+    assert resp.data["results"][0]["key"] == v_learn.hexkey
+
+    resp = apiclient.get(url, {"include_in_learn": "false"})
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["count"] == 1
+    assert resp.data["results"][0]["key"] == v_other.hexkey

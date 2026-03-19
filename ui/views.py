@@ -391,7 +391,7 @@ class PublicVideoListView(generics.ListAPIView):
 
     def get_queryset(self):
         return (
-            Video.objects.filter(is_public=True, collection__include_in_learn=True)
+            Video.objects.filter(is_public=True)
             .select_related("collection")
             .prefetch_related(
                 "videofile_set",
