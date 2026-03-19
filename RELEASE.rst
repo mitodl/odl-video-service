@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.85.0
+--------------
+
+- feat: include_in_learn flag added in collection for public videos (#1431)
+- chore(deps): update postgres docker tag to v18.3 (#1435)
+- chore(deps): update codecov/codecov-action digest to 671740a (#1433)
+- chore(deps): update astral-sh/setup-uv digest to 37802ad (#1430)
+- [pre-commit.ci] pre-commit autoupdate (#1432)
+
 Version 0.84.0 (Released March 12, 2026)
 --------------
 
