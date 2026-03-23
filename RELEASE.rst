@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.85.0
+Version 0.85.0 (Released March 23, 2026)
 --------------
 
 - feat: include_in_learn flag added in collection for public videos (#1431)
