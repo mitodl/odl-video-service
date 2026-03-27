@@ -8,11 +8,11 @@ from django.contrib.auth import get_user_model
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
-from odl_video import logging
+import structlog
 from ui.models import Collection
 from ui.utils import has_common_lists
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 User = get_user_model()
 

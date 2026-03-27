@@ -4,9 +4,9 @@ from enum import Flag, auto
 
 from django.conf import settings
 
-from odl_video import logging
+import structlog
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 class FeatureFlag(Flag):
