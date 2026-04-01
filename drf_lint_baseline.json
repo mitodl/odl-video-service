@@ -1,0 +1,10 @@
+[
+  "ui/serializers.py:182:20:ORM002",
+  "ui/serializers.py:203:25:ORM002",
+  "ui/serializers.py:307:25:ORM002",
+  "ui/serializers.py:309:27:ORM002",
+  "ui/serializers.py:311:25:ORM002",
+  "ui/serializers.py:313:25:ORM002",
+  "ui/serializers.py:315:21:ORM002",
+  "ui/serializers.py:485:21:ORM002"
+]
