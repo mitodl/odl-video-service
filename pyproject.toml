@@ -70,6 +70,7 @@ dev = [
     "requests-mock>=1.10.0,<2",
     "semantic-version>=2.10.0,<3",
     "ruff>=0.15.5,<0.16",
+    "mitol-drf-lint==2026.4.2",
 ]
 
 [tool.uv]
