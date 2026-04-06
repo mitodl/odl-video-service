@@ -4,9 +4,9 @@ General bootcamp utility functions
 
 from itertools import islice
 
-from odl_video import logging
+import structlog
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 
 def chunks(iterable, chunk_size=20):

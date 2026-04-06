@@ -28,6 +28,7 @@ init_sentry(
 
 import_settings_modules(
     "mitol.transcoding.settings.job",
+    "mitol.observability.settings.logging",
 )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -61,6 +62,7 @@ WEBPACK_LOADER = {
 # Application definition
 
 INSTALLED_APPS = [
+    "mitol.observability.apps.ObservabilityConfig",
     "ui.apps.UIConfig",
     "cloudsync.apps.CloudSyncConfig",
     "techtv2ovs",
@@ -220,79 +222,13 @@ if ADMIN_EMAIL != "":
 else:
     ADMINS = ()
 
-# Logging configuration
-LOG_LEVEL = get_string("ODL_VIDEO_LOG_LEVEL", "INFO")
-DJANGO_LOG_LEVEL = get_string("DJANGO_LOG_LEVEL", "INFO")
-LOG_FILE = get_string("ODL_VIDEO_LOG_FILE", None)
-
-# For logging to a remote syslog host
-LOG_HOST = get_string("ODL_VIDEO_LOG_HOST", "localhost")
-LOG_HOST_PORT = get_int("ODL_VIDEO_LOG_HOST_PORT", 514)
-
 HOSTNAME = platform.node().split(".")[0]
 
 # nplusone profiler logger configuration
 NPLUSONE_LOGGER = logging.getLogger("nplusone")
 NPLUSONE_LOG_LEVEL = logging.ERROR
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {
-        "require_debug_false": {
-            "()": "django.utils.log.RequireDebugFalse",
-        }
-    },
-    "formatters": {
-        "verbose": {
-            "format": (
-                "[%(asctime)s] %(levelname)s %(process)d [%(name)s] "
-                "%(filename)s:%(lineno)d - "
-                "[{hostname}] - %(message)s"
-            ).format(hostname=HOSTNAME),
-            "datefmt": "%Y-%m-%d %H:%M:%S",
-        }
-    },
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-        },
-        "syslog": {
-            "level": LOG_LEVEL,
-            "class": "logging.handlers.SysLogHandler",
-            "facility": "local7",
-            "formatter": "verbose",
-            "address": (LOG_HOST, LOG_HOST_PORT),
-        },
-        "mail_admins": {
-            "level": "ERROR",
-            "filters": ["require_debug_false"],
-            "class": "django.utils.log.AdminEmailHandler",
-        },
-    },
-    "loggers": {
-        "django": {
-            "propagate": True,
-            "level": DJANGO_LOG_LEVEL,
-            "handlers": ["console", "syslog"],
-        },
-        "django.request": {
-            "handlers": ["mail_admins"],
-            "level": DJANGO_LOG_LEVEL,
-            "propagate": True,
-        },
-        "nplusone": {
-            "handlers": ["console"],
-            "level": "ERROR",
-        },
-    },
-    "root": {
-        "handlers": ["console", "syslog"],
-        "level": LOG_LEVEL,
-    },
-}
+# LOGGING is provided by mitol-django-observability via import_settings_modules above
 
 # MIT keys
 MIT_WS_CERTIFICATE = get_key("MIT_WS_CERTIFICATE", "")
