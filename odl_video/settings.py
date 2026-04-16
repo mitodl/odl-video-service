@@ -15,7 +15,7 @@ from redbeat import RedBeatScheduler
 from odl_video.envs import get_any, get_bool, get_int, get_key, get_string, parse_env
 from odl_video.sentry import init_sentry
 
-VERSION = "0.85.0"
+VERSION = "2026.04.16.1"
 
 ENVIRONMENT = get_string("ODL_VIDEO_ENVIRONMENT", "dev")
 

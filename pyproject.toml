@@ -87,3 +87,13 @@ module-root = ""
 [build-system]
 requires = ["uv_build>=0.10.0,<0.11.0"]
 build-backend = "uv_build"
+
+[tool.bumpver]
+current_version = "2026.04.16.1"
+version_pattern = "YYYY.0M.0D.INC1"
+commit = false
+tag = false
+push = false
+
+[tool.bumpver.file_patterns]
+"odl_video/settings.py" = ['VERSION = "{version}"']
