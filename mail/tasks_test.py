@@ -45,6 +45,23 @@ def test_get_recipients_for_video(mocker):
     assert tasks._get_recipients_for_video(video) == list_emails
 
 
+def test_get_recipients_for_video_moira_disabled(mocker, settings):
+    """
+    Test that _get_recipients_for_video returns only the owner's email
+    when MOIRA_ENABLED is False, without calling the Moira SOAP client.
+    """
+    settings.MOIRA_ENABLED = False
+    mock_client = mocker.patch("mail.tasks.get_moira_client")
+    lists = MoiraListFactory.create_batch(2)
+    video = VideoFactory(collection__admin_lists=lists)
+    mocker.patch("mail.tasks.has_common_lists", return_value=False)
+    result = tasks._get_recipients_for_video(video)
+    # Moira client should never be called
+    mock_client.assert_not_called()
+    # Owner email is the only recipient
+    assert result == [video.collection.owner.email]
+
+
 def test_send_notification_email_wrong_status(mocker):
     """
     Tests send_notification_email with a status that does not require sending an email

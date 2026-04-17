@@ -338,6 +338,8 @@ UNSORTED_COLLECTION = get_string("UNSORTED_COLLECTION", "Unsorted")
 
 ENABLE_VIDEO_PERMISSIONS = get_bool("ENABLE_VIDEO_PERMISSIONS", False)
 
+MOIRA_ENABLED = get_bool("MOIRA_ENABLED", True)
+
 AWS_ACCOUNT_ID = get_string("AWS_ACCOUNT_ID", "")
 AWS_TRANSCODE_BUCKET_NAME = get_string("AWS_TRANSCODE_BUCKET_NAME", "")
 AWS_ROLE_NAME = get_string("AWS_ROLE_NAME", "")
@@ -366,8 +368,6 @@ MANDATORY_SETTINGS = [
     "REDIS_URL",
     "SECRET_KEY",
     "VIDEO_CLOUDFRONT_DIST",
-    "MIT_WS_CERTIFICATE",
-    "MIT_WS_PRIVATE_KEY",
     "VIDEO_S3_BUCKET",
     "VIDEO_S3_TRANSCODE_BUCKET",
     "VIDEO_S3_THUMBNAIL_BUCKET",
@@ -380,6 +380,9 @@ MANDATORY_SETTINGS = [
     "YT_CLIENT_ID",
     "YT_CLIENT_SECRET",
 ]
+
+if MOIRA_ENABLED:
+    MANDATORY_SETTINGS += ["MIT_WS_CERTIFICATE", "MIT_WS_PRIVATE_KEY"]
 
 # We want to be able to optionally disable mandatory settings. e.g. when running
 # collectstatic

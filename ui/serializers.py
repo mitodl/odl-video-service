@@ -3,6 +3,7 @@ serializers for ui
 """
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.utils.translation import gettext_lazy
 from rest_framework import serializers
 from rest_framework.relations import RelatedField
@@ -26,7 +27,7 @@ def validate_moira_lists(lists):
     Returns:
         (list of MoiraList) List of moira lists
     """
-    if not lists:
+    if not lists or not settings.MOIRA_ENABLED:
         return lists
     bad_lists = []
     moira_client = get_moira_client()

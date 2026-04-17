@@ -39,6 +39,8 @@ def get_moira_client():
     Returns:
         Moira: A moira client
     """
+    if not settings.MOIRA_ENABLED:
+        raise MoiraException("Moira is disabled (MOIRA_ENABLED=False)")
 
     _check_files_exist(
         [settings.MIT_WS_CERTIFICATE_FILE, settings.MIT_WS_PRIVATE_KEY_FILE]
@@ -127,7 +129,7 @@ def user_moira_lists(user):
         Set[str]: An set containing all known lists the user belongs to,
             including ancestors of nested lists.
     """
-    if user.is_anonymous:
+    if user.is_anonymous or not settings.MOIRA_ENABLED:
         return set()
     list_names = cache.get(MOIRA_CACHE_KEY.format(user_id=user.id)) or set()
     if not list_names:
