@@ -14,6 +14,19 @@ from ui.exceptions import KeycloakException
 logger = logging.getLogger(__name__)
 
 
+def build_keycloak_manager(config):
+    """Construct a KeycloakManager from a serialized configuration dict."""
+    return KeycloakManager(**config)
+
+
+def is_keycloak_conflict_error(exc):
+    """Return True if an exception is an HTTP 409 conflict response from Keycloak."""
+    return (
+        isinstance(exc, requests.exceptions.HTTPError)
+        and getattr(exc.response, "status_code", None) == 409
+    )
+
+
 @dataclass
 class KeycloakUser:
     """Data class for Keycloak user"""
