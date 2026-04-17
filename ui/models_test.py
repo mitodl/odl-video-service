@@ -22,7 +22,7 @@ from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionFactory,
     EdxEndpointFactory,
-    MoiraListFactory,
+    KeycloakGroupFactory,
     UserFactory,
     VideoFactory,
     VideoFileFactory,
@@ -62,9 +62,9 @@ def videosubtitle():
 
 
 @pytest.fixture
-def moiralist():
-    """Fixture to create a moira list"""
-    return MoiraListFactory()
+def keycloakgroup():
+    """Fixture to create a keycloak group"""
+    return KeycloakGroupFactory()
 
 
 def test_s3_object_uniqueness(videofile):

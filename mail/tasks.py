@@ -9,7 +9,8 @@ from mail import api
 from mail.api import context_for_video, render_email_templates
 from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
 from odl_video import logging
-from ui.utils import get_moira_client, has_common_lists
+from ui.utils import has_common_lists
+from ui.keycloak_utils import get_keycloak_client
 
 log = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ log = logging.getLogger(__name__)
 def _get_recipients_for_video(video):
     """
     Returns a list of recipients that will receive notifications for a video.
+    Gets all individual user emails from the admin groups.
 
     Args:
         video (ui.models.Video): a video object
@@ -25,18 +27,27 @@ def _get_recipients_for_video(video):
         list: a list of strings representing emails
     """
     admin_lists = []
-    moira_client = get_moira_client()
-    for mlist in video.collection.admin_lists.values_list("name", flat=True):
-        attributes = moira_client.client.service.getListAttributes(
-            mlist, moira_client.proxy_id
-        )
-        if attributes and attributes[0]["mailList"]:
-            admin_lists.append(mlist)
-    recipients_list = ["{}@mit.edu".format(alist) for alist in admin_lists]
+    recipients_list = set()
+    keycloak_client = get_keycloak_client()
+
+    # Get all admin list names
+    for group_name in video.collection.admin_lists.values_list("name", flat=True):
+        # Get all members of this group
+        group_members = keycloak_client.get_group_members_by_name(group_name=group_name)
+        if group_members:
+            admin_lists.append(group_name)
+
+        kc_group = keycloak_client.get_group_attributes_by_name(group_name)
+        if kc_group and kc_group.get("mail_list", ["false"])[0] == "true":
+            for member in group_members:
+                recipients_list.add(member["email"])
+
+    # Add the collection owner's email if they're not already in one of the admin groups
     owner = video.collection.owner
     if owner.email and not has_common_lists(owner, admin_lists):
-        recipients_list.append(owner.email)
-    return recipients_list
+        recipients_list.add(owner.email)
+
+    return list(recipients_list)
 
 
 def send_notification_email(video):
