@@ -69,6 +69,25 @@ def test_get_moira_client_success(mock_moira, settings):
     )
 
 
+def test_get_moira_client_disabled(settings):
+    """Test that get_moira_client raises MoiraException when MOIRA_ENABLED is False"""
+    settings.MOIRA_ENABLED = False
+    get_moira_client.cache_clear()
+    with pytest.raises(MoiraException, match="MOIRA_ENABLED=False"):
+        get_moira_client()
+    get_moira_client.cache_clear()
+
+
+def test_user_moira_lists_moira_disabled(mocker, settings):
+    """Test that user_moira_lists returns an empty set when MOIRA_ENABLED is False"""
+    settings.MOIRA_ENABLED = False
+    mock_query = mocker.patch("ui.utils.query_moira_lists")
+    user = factories.UserFactory()
+    result = user_moira_lists(user)
+    assert result == set()
+    mock_query.assert_not_called()
+
+
 def test_write_to_file():
     """Test that write_to_file creates a file with the correct contents"""
     content = b"-----BEGIN CERTIFICATE-----\nMIID5DCCA02gAwIBAgIRTUTVwsj4Vy+l6+XTYjnIQ==\n-----END CERTIFICATE-----"

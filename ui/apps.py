@@ -32,6 +32,7 @@ class UIConfig(AppConfig):
             )
 
         # write the x509 certification & key to files
-        from ui.utils import write_x509_files
+        if settings.MOIRA_ENABLED:
+            from ui.utils import write_x509_files
 
-        write_x509_files()
+            write_x509_files()

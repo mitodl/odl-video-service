@@ -82,6 +82,25 @@ def test_collection_serializer_validation_fake_view_lists(mocker):
     )
 
 
+def test_collection_serializer_validation_skipped_when_moira_disabled(mocker, settings):
+    """
+    Test that moira list validation is skipped when MOIRA_ENABLED is False,
+    allowing collections with unverified list names to be saved.
+    """
+    settings.MOIRA_ENABLED = False
+    mock_client = mocker.patch("ui.serializers.get_moira_client")
+    collection = factories.CollectionFactory(
+        admin_lists=[factories.MoiraListFactory()],
+        view_lists=[factories.MoiraListFactory()],
+    )
+    serialized_data = serializers.CollectionSerializer(collection).data
+    # Should not raise even though list existence is not verified
+    assert serializers.CollectionSerializer(data=serialized_data).is_valid(
+        raise_exception=True
+    )
+    mock_client.assert_not_called()
+
+
 def test_collection_serializer_validate_title(mocker):
     """
     Test that we can't save a blank title

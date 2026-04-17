@@ -32,7 +32,7 @@ def _get_recipients_for_video(video):
             video_hexkey=video.hexkey,
             collection_key=video.collection.key,
         )
-    else:
+    elif settings.MOIRA_ENABLED:
         moira_client = get_moira_client()
         for mlist in video_admins_list:
             attributes = moira_client.client.service.getListAttributes(
