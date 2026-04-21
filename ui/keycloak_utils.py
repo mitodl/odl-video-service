@@ -105,7 +105,12 @@ class KeycloakManager:
         }
 
     def _make_api_request(
-        self, method: str, endpoint: str, params: Dict = None, json_data: Dict = None
+        self,
+        method: str,
+        endpoint: str,
+        params: Dict = None,
+        json_data: Dict = None,
+        _retry: bool = False,
     ) -> Dict:
         """
         Make an API request to Keycloak
@@ -147,10 +152,13 @@ class KeycloakManager:
                 raise ValueError(f"Unsupported HTTP method: {method}")
 
             # If we get a 401, the token might be expired, so we'll try again
-            if response.status_code == 401:
+            # exactly once with a fresh token before letting the error propagate.
+            if response.status_code == 401 and not _retry:
                 self.access_token = None
                 self.get_admin_token()
-                return self._make_api_request(method, endpoint, params, json_data)
+                return self._make_api_request(
+                    method, endpoint, params, json_data, _retry=True
+                )
 
             response.raise_for_status()
 
@@ -369,7 +377,7 @@ class KeycloakManager:
                 created_user["id"], user.password, user.temporary_password
             )
 
-        for group_name in user.groups:
+        for group_name in user.groups or []:
             group = self.find_group_by_name(group_name)
             if group:
                 self.add_user_to_group(created_user["id"], group["id"])

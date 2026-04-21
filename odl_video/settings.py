@@ -106,20 +106,8 @@ SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
 LOGIN_REDIRECT_URL = "/"
 LOGIN_URL = "login"
-USE_KEYCLOAK = get_bool("USE_KEYCLOAK", False)
-if get_bool("USE_SHIBBOLETH", False):
-    # TOUCHSTONE
-    MIDDLEWARE.append("shibboleth.middleware.ShibbolethRemoteUserMiddleware")
-    SHIBBOLETH_ATTRIBUTE_MAP = {
-        "EPPN": (True, "username"),
-        "MAIL": (True, "email"),
-        # full name is in the "DISPLAY_NAME" header,
-        # but no way to parse that into first_name and last_name...
-    }
-    AUTHENTICATION_BACKENDS = [
-        "shibboleth.backends.ShibbolethRemoteUserBackend",
-    ]
-elif USE_KEYCLOAK:
+USE_KEYCLOAK = get_bool("USE_KEYCLOAK", True)
+if USE_KEYCLOAK:
     # KEYCLOAK
     MIDDLEWARE.append("social_django.middleware.SocialAuthExceptionMiddleware")
     INSTALLED_APPS += ("social_django",)

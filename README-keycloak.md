@@ -25,7 +25,7 @@ docker-compose ps keycloak
 
 ### Add `/etc/hosts` alias for Keycloak
 
-If one doesn’t already exist, add an alias to `/etc/hosts` for Keyclaok. We have standardized this alias to kc.odl.local. Your `/etc/hosts` entry should look like this:
+If one doesn’t already exist, add an alias to `/etc/hosts` for Keycloak. We have standardized this alias to kc.odl.local. Your `/etc/hosts` entry should look like this:
 ```bash
 127.0.0.1.   kc.odl.local
 ```

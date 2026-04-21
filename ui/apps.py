@@ -30,8 +30,3 @@ class UIConfig(AppConfig):
                     ", ".join(missing_settings)
                 )
             )
-
-        # write the x509 certification & key to files
-        from ui.utils import write_x509_files
-
-        write_x509_files()

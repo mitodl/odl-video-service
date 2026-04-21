@@ -1,11 +1,13 @@
 """Views for ui app"""
 
 import json
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import redirect_to_login
+from django.contrib.auth import logout
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
@@ -54,7 +56,7 @@ from ui.utils import (
     generate_mock_video_analytics_data,
     get_video_analytics,
     list_members,
-    query_moira_lists,
+    query_lists,
 )
 
 
@@ -632,6 +634,7 @@ class LoginView(DjangoLoginView):
                 **default_js_settings(self.request),
             }
         )
+        context["use_keycloak"] = getattr(settings, "USE_KEYCLOAK", False)
         return context
 
     def get(self, request, *args, **kwargs):
@@ -642,12 +645,48 @@ class LoginView(DjangoLoginView):
                 return redirect(next_redirect)
             else:
                 return redirect("/")
+
+        if getattr(settings, "USE_KEYCLOAK", False):
+            return redirect("social:begin", "keycloak")
+
         return super().get(request, *args, **kwargs)
 
 
-class MoiraListsForUser(APIView):
+class LogoutView(View):
+    """Custom logout view that handles both Django and Keycloak logout"""
+
+    def get(self, request, *args, **kwargs):
+        """Logout from both Django and Keycloak"""
+        if request.user.is_authenticated:
+            # Log out from Django
+            logout(request)
+
+            # Build Keycloak logout URL
+            keycloak_base_url = getattr(settings, "SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL", "")
+            logout_redirect_url = getattr(settings, "LOGOUT_REDIRECT_URL", "/")
+
+            if keycloak_base_url:
+                # Build the full redirect URL (the URL user will return to after Keycloak logout)
+                redirect_uri = request.build_absolute_uri(logout_redirect_url)
+
+                params = {"post_logout_redirect_uri": redirect_uri}
+
+                client_id = getattr(settings, "KEYCLOAK_CLIENT_ID", "")
+                if client_id:
+                    params["client_id"] = client_id
+
+                # Keycloak logout URL with redirect
+                keycloak_logout_url = f"{keycloak_base_url}?{urlencode(params)}"
+
+                return redirect(keycloak_logout_url)
+
+        # Fallback - just redirect to logout redirect URL
+        return redirect(getattr(settings, "LOGOUT_REDIRECT_URL", "/"))
+
+
+class GroupsForUser(APIView):
     """
-    View for getting moira lists against given user.
+    View for getting Keycloak groups against given user.
     """
 
     authentication_classes = (authentication.SessionAuthentication,)
@@ -658,20 +697,20 @@ class MoiraListsForUser(APIView):
 
         email = username_or_email
         if "@" not in email:
-            email = "{username}@mit.edu".format(username=username_or_email)
+            email = f"{username_or_email}@mit.edu"
 
         try:
             user = User.objects.get(Q(username=username_or_email) | Q(email=email))
         except User.DoesNotExist:
             return Response(status.HTTP_404_NOT_FOUND)
 
-        user_lists = query_moira_lists(user)
+        user_lists = query_lists(user)
         return Response(data={"user_lists": user_lists})
 
 
-class UsersForMoiraList(APIView):
+class UsersForGroup(APIView):
     """
-    View for getting users against give list name.
+    View for getting users against given group name.
     """
 
     authentication_classes = (authentication.SessionAuthentication,)

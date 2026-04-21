@@ -2,12 +2,18 @@
 
 import factory
 import pytest
+import requests
 from django.db.models import signals
 
 from ui import tasks
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
 from ui.factories import VideoFactory, VideoFileFactory
+
+
+def _conflict_error():
+    response = type("Response", (), {"status_code": 409, "text": "conflict"})()
+    return requests.exceptions.HTTPError(response=response)
 
 
 @pytest.mark.django_db
@@ -55,3 +61,129 @@ def test_batch_update_video_on_edx(mocker):
     assert group_mock.call_count == 1
     for i in list(range(10)):
         mock_batch.assert_any_call(all_ids[i * 10 : i * 10 + 10])
+
+
+@pytest.mark.django_db
+def test_migrate_keycloak_groups_chunk_handles_conflict_and_errors(mocker):
+    """Group chunk task should count 409s as skipped and record other failures."""
+    mock_manager = mocker.Mock()
+    mock_manager.create_group.side_effect = [
+        {"id": "created"},
+        _conflict_error(),
+        _conflict_error(),
+        Exception("boom"),
+    ]
+
+    mocker.patch(
+        "ui.tasks.build_keycloak_manager",
+        return_value=mock_manager,
+    )
+
+    result = tasks.migrate_keycloak_groups_chunk(
+        ["create-me", "dup-a", "dup-b", "bad-group"],
+        keycloak_config={},
+    )
+
+    assert result["created"] == 1
+    assert result["existing_skipped"] == 2
+    assert result["failed"] == 1
+    assert len(result["errors"]) == 1
+
+
+@pytest.mark.django_db
+def test_migrate_keycloak_users_chunk_handles_conflict_and_errors(mocker):
+    """User chunk task should count 409s as skipped and record other failures."""
+    mock_manager = mocker.Mock()
+    mock_manager.create_user.side_effect = [
+        {"id": "created"},
+        _conflict_error(),
+        _conflict_error(),
+        Exception("boom"),
+    ]
+
+    mocker.patch(
+        "ui.tasks.build_keycloak_manager",
+        return_value=mock_manager,
+    )
+
+    payload = [
+        {
+            "id": 1,
+            "username": "create",
+            "email": "create@example.com",
+            "first_name": "Create",
+            "last_name": "User",
+        },
+        {
+            "id": 2,
+            "username": "dup-a",
+            "email": "dup-a@example.com",
+            "first_name": "Dup",
+            "last_name": "A",
+        },
+        {
+            "id": 3,
+            "username": "dup-b",
+            "email": "dup-b@example.com",
+            "first_name": "Dup",
+            "last_name": "B",
+        },
+        {
+            "id": 4,
+            "username": "bad",
+            "email": "bad@example.com",
+            "first_name": "Bad",
+            "last_name": "User",
+        },
+    ]
+
+    result = tasks.migrate_keycloak_users_chunk(
+        payload,
+        keycloak_config={},
+        default_password="ChangeMe123!",
+    )
+
+    assert result["created"] == 1
+    assert result["existing_skipped"] == 2
+    assert result["invalid_skipped"] == 0
+    assert result["failed"] == 1
+    assert len(result["errors"]) == 1
+
+
+@pytest.mark.django_db
+def test_migrate_keycloak_users_chunk_skips_invalid_payload(mocker):
+    """Task should skip malformed user payload entries and continue."""
+    mock_manager = mocker.Mock()
+    mock_manager.create_user.return_value = {"id": "created"}
+
+    mocker.patch(
+        "ui.tasks.build_keycloak_manager",
+        return_value=mock_manager,
+    )
+
+    payload = [
+        {
+            "id": 1,
+            "username": "ok",
+            "email": "ok@example.com",
+            "first_name": "Ok",
+            "last_name": "User",
+        },
+        {
+            "id": 2,
+            "username": "",
+            "email": "",
+            "first_name": "Bad",
+            "last_name": "User",
+        },
+    ]
+
+    result = tasks.migrate_keycloak_users_chunk(
+        payload,
+        keycloak_config={},
+        default_password="ChangeMe123!",
+    )
+
+    assert result["created"] == 1
+    assert result["invalid_skipped"] == 1
+    assert result["failed"] == 0
