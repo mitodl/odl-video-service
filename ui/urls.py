@@ -1,7 +1,5 @@
 """urls for ui"""
 
-from django.conf import settings
-from django.contrib.auth.views import LogoutView
 from django.urls import include, path, re_path
 from rest_framework import routers
 
@@ -15,7 +13,7 @@ router.register(r"subtitles", views.VideoSubtitleViewSet, basename="subtitle")
 urlpatterns = [
     path("", views.index, name="index"),
     path("login/", views.LoginView.as_view(), name="login"),
-    path("logout/", LogoutView.as_view(next_page=settings.LOGIN_URL), name="logout"),
+    path("logout/", views.LogoutView.as_view(), name="logout"),
     re_path(
         r"^collections/(?P<collection_key>[0-9a-f]{32})?/?$",
         views.CollectionReactView.as_view(),
@@ -87,13 +85,13 @@ urlpatterns = [
     ),
     path("api/v0/", include((router.urls, "models-api"))),
     re_path(
-        r"^api/v0/moira/user/(?P<username_or_email>[-\w]+$|.*@.*)$",
-        views.MoiraListsForUser.as_view(),
+        r"^api/v0/groups/user/(?P<username_or_email>[-\w]+$|.*@.*)$",
+        views.GroupsForUser.as_view(),
         name="member-lists",
     ),
     re_path(
-        r"^api/v0/moira/list/(?P<list_name>[-_\.\w]+)$",
-        views.UsersForMoiraList.as_view(),
+        r"^api/v0/groups/list/(?P<list_name>[-_\.\w]+)$",
+        views.UsersForGroup.as_view(),
         name="list-members",
     ),
     path(

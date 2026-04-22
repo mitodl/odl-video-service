@@ -12,7 +12,7 @@ from mail import tasks
 from mail.api import context_for_video, render_email_templates
 from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
 from ui.constants import VideoStatus
-from ui.factories import MoiraListFactory, VideoFactory
+from ui.factories import KeycloakGroupFactory, VideoFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -23,26 +23,28 @@ def mocker_defaults(mocker):
     Sets default settings to safe defaults
     """
     mocker.patch("mail.tasks.has_common_lists", return_value=False)
-    mocker.patch("mail.tasks.get_moira_client")
+    mocker.patch("mail.tasks.get_keycloak_client")
 
 
 def test_get_recipients_for_video(mocker):
     """
     Tests the _get_recipients_for_video api
     """
-    mock_client = mocker.patch("mail.tasks.get_moira_client")
-    lists = MoiraListFactory.create_batch(3)
+    mock_client = mocker.patch("mail.tasks.get_keycloak_client")
+    lists = KeycloakGroupFactory.create_batch(3)
     video = VideoFactory(collection__admin_lists=lists)
-    list_attributes = [[{"mailList": False}], [{"mailList": True}], None]
-    list_emails = ["{}@mit.edu".format(lists[1].name)]
+    list_attributes = [{"mail_list": ["false"]}, {"mail_list": ["true"]}, None]
+    group_members = [{"email": "{}@mit.edu".format(lists[1].name)}]
+    list_emails = [group_members[0]["email"]]
     mocker.patch("mail.tasks.has_common_lists", return_value=False)
-    mock_client().client.service.getListAttributes.side_effect = list_attributes
-    assert tasks._get_recipients_for_video(video) == list_emails + [
-        video.collection.owner.email
-    ]
+    mock_client().get_group_members_by_name.return_value = group_members
+    mock_client().get_group_attributes_by_name.side_effect = list_attributes
+    assert sorted(tasks._get_recipients_for_video(video)) == sorted(
+        list_emails + [video.collection.owner.email]
+    )
     mocker.patch("mail.tasks.has_common_lists", return_value=True)
-    mock_client().client.service.getListAttributes.side_effect = list_attributes
-    assert tasks._get_recipients_for_video(video) == list_emails
+    mock_client().get_group_attributes_by_name.side_effect = list_attributes
+    assert sorted(tasks._get_recipients_for_video(video)) == sorted(list_emails)
 
 
 def test_send_notification_email_wrong_status(mocker):

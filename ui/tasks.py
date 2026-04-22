@@ -3,12 +3,16 @@ ui celery tasks
 """
 
 import celery
+from celery import shared_task
 from django.db.models import Q
+from django.utils import timezone
 from itertools import groupby
 
 from mail.utils import chunks
 import structlog
 from odl_video.celery import app
+from ui.keycloak_utils import KeycloakUser, build_keycloak_manager
+from ui.management.commands.keycloak_command_utils import record_exception
 from ui import api as ovs_api
 from ui.api import update_video_on_edx
 from ui.encodings import EncodingNames
@@ -103,3 +107,75 @@ def post_collection_videos_to_edx(video_ids):
                 for endpoint, resp in responses.items()
             },
         )
+
+
+def _empty_keycloak_migration_summary():
+    return {
+        "created": 0,
+        "existing_skipped": 0,
+        "invalid_skipped": 0,
+        "failed": 0,
+        "errors": [],
+    }
+
+
+@shared_task
+def migrate_keycloak_groups_chunk(group_names, keycloak_config):
+    """Create Keycloak groups for one chunk of group names. Always returns a summary dict."""
+    manager = build_keycloak_manager(keycloak_config)
+    summary = _empty_keycloak_migration_summary()
+
+    for group_name in group_names:
+        try:
+            manager.create_group(
+                group_name,
+                attributes={
+                    "source": ["ovs_keycloak_migration"],
+                    "migrated_at": [str(timezone.now())],
+                    "mail_list": ["true"],
+                },
+            )
+            summary["created"] += 1
+        except Exception as exc:  # noqa: BLE001
+            record_exception(summary, f"group={group_name}", exc)
+
+    return summary
+
+
+@shared_task
+def migrate_keycloak_users_chunk(users_payload, keycloak_config, default_password):
+    """Create Keycloak users for one chunk of serialized Django users. Always returns a summary dict."""
+    manager = build_keycloak_manager(keycloak_config)
+    summary = _empty_keycloak_migration_summary()
+
+    for payload in users_payload:
+        email = (payload.get("email") or "").strip()
+        username = (payload.get("username") or "").strip()
+        if not email or not username:
+            summary["invalid_skipped"] += 1
+            summary["errors"].append(
+                f"invalid user payload: id={payload.get('id')} username={username} email={email}"
+            )
+            continue
+
+        try:
+            manager.create_user(
+                KeycloakUser(
+                    username=username,
+                    email=email,
+                    first_name=payload.get("first_name", "") or "",
+                    last_name=payload.get("last_name", "") or "",
+                    password=default_password,
+                    temporary_password=True,
+                    groups=[],
+                    attributes={
+                        "source": ["ovs_keycloak_migration"],
+                        "django_user_id": [str(payload["id"])],
+                    },
+                )
+            )
+            summary["created"] += 1
+        except Exception as exc:  # noqa: BLE001
+            record_exception(summary, f"user={email}", exc)
+
+    return summary
