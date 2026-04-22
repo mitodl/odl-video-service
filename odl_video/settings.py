@@ -119,32 +119,26 @@ if USE_KEYCLOAK:
     LOGIN_URL = "/auth/login/keycloak/"
 
 
-# Keycloak OIDC Configuration
-KEYCLOAK_CLIENT_ID = get_string("KEYCLOAK_CLIENT_ID", "")
-KEYCLOAK_CLIENT_SECRET = get_string("KEYCLOAK_CLIENT_SECRET", "")
-KEYCLOAK_PUBLIC_KEY = get_string("KEYCLOAK_PUBLIC_KEY", "")
+# Keycloak OIDC settings — consumed by social-auth-app-django at runtime.
+SOCIAL_AUTH_KEYCLOAK_KEY = get_string("SOCIAL_AUTH_KEYCLOAK_KEY", "")
+SOCIAL_AUTH_KEYCLOAK_SECRET = get_string("SOCIAL_AUTH_KEYCLOAK_SECRET", "")
+SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY = get_string("SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY", "")
+SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL = get_string(
+    "SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL", ""
+)
+SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL = get_string(
+    "SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL", ""
+)
+SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL = SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL.replace(
+    "/protocol/openid-connect/auth", "/protocol/openid-connect/logout"
+)
+
+# Keycloak admin-API settings — consumed by the moira-to-keycloak migration
+# management commands, not by the runtime login flow.
 KEYCLOAK_SERVER_URL = get_string("KEYCLOAK_SERVER_URL", "http://kc.odl.local:7080")
 KEYCLOAK_REALM = get_string("KEYCLOAK_REALM", "ovs-local")
 KEYCLOAK_SVC_ADMIN = get_string("KEYCLOAK_SVC_ADMIN", "admin")
 KEYCLOAK_SVC_ADMIN_PASSWORD = get_string("KEYCLOAK_SVC_ADMIN_PASSWORD", "admin")
-
-# Social Auth Keycloak settings
-SOCIAL_AUTH_KEYCLOAK_KEY = KEYCLOAK_CLIENT_ID
-SOCIAL_AUTH_KEYCLOAK_SECRET = KEYCLOAK_CLIENT_SECRET
-SOCIAL_AUTH_PUBLIC_KEY = KEYCLOAK_PUBLIC_KEY
-
-# Keycloak URLs
-if KEYCLOAK_SERVER_URL and KEYCLOAK_REALM:
-    KEYCLOAK_BASE_URL = f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM}"
-    SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL = (
-        f"{KEYCLOAK_BASE_URL}/protocol/openid-connect/auth"
-    )
-    SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL = (
-        f"{KEYCLOAK_BASE_URL}/protocol/openid-connect/token"
-    )
-    SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL = (
-        f"{KEYCLOAK_BASE_URL}/protocol/openid-connect/logout"
-    )
 
 # Social Auth Pipeline - Custom pipeline for user creation and role mapping
 SOCIAL_AUTH_PIPELINE = [
@@ -164,7 +158,6 @@ SOCIAL_AUTH_PIPELINE = [
     # Associate the current social details with the user in the database.
     "social_core.pipeline.social_auth.associate_user",
     "social_core.pipeline.social_auth.load_extra_data",
-    "odl_video.pipeline.assign_user_groups",
     "social_core.pipeline.user.user_details",
 ]
 
