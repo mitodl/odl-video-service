@@ -116,7 +116,7 @@ services:
       default:
         aliases:
           - ${KEYCLOAK_SVC_HOSTNAME:-kc.odl.local}
-    command: start --verbose --features scripts --import-realm --hostname=${KEYCLOAK_SVC_HOSTNAME:-kc.odl.local} --hostname-strict=false --hostname-debug=true --https-port=${KEYCLOAK_SSL_PORT} --https-certificate-file=/etc/x509/https/tls.crt --https-certificate-key-file=/etc/x509/https/tls.key --http-enabled=true --http-port=${KEYCLOAK_PORT} --config-keystore=/etc/keycloak-store --config-keystore-password=${KEYCLOAK_SVC_KEYSTORE_PASSWORD} --db=postgres --db-url-database=keycloak --db-url-host=db --db-schema=public --db-password=${POSTGRES_PASSWORD:-postgres} --db-username=postgres
+    command: start --verbose --features scripts --import-realm --hostname=${KEYCLOAK_SVC_HOSTNAME:-kc.odl.local} --hostname-strict=false --hostname-debug=true --https-port=${KEYCLOAK_SSL_PORT:-7443} --https-certificate-file=/etc/x509/https/tls.crt --https-certificate-key-file=/etc/x509/https/tls.key --http-enabled=true --http-port=${KEYCLOAK_PORT:-7080} --config-keystore=/etc/keycloak-store --config-keystore-password=${KEYCLOAK_SVC_KEYSTORE_PASSWORD} --db=postgres --db-url-database=keycloak --db-url-host=db --db-schema=public --db-password=${POSTGRES_PASSWORD:-postgres} --db-username=postgres
     volumes:
       - keycloak-store:/etc/keycloak-store
       - ./config/keycloak/tls:/etc/x509/https
