@@ -108,15 +108,13 @@ KEYCLOAK_SSL_PORT=7443
 6. Django exchanges code for access token
 7. Django creates/updates user account with Keycloak data
 
-### 2. Group/Role Mapping
+### 2. Django Permissions
 
-The application automatically maps Keycloak groups to Django permissions:
-
-- **Admin group** → `is_superuser=True, is_staff=True`
-- **Staff group** → `is_staff=True`
-- **Other groups** → Regular user permissions
-
-This mapping is handled by the custom pipeline in `odl_video/pipeline.py`.
+Keycloak authenticates users but does **not** manage Django's `is_staff` /
+`is_superuser` flags. Those are set manually via the Django admin or shell and
+are preserved across logins. The raw `user_groups` claim from Keycloak is still
+stored on the social user's `extra_data` (see `SOCIAL_AUTH_KEYCLOAK_EXTRA_DATA`
+in `odl_video/settings.py`) but nothing acts on it.
 
 ## Testing Authentication
 
@@ -161,13 +159,11 @@ In Keycloak Admin Console:
 - Verify Keycloak URL is accessible: `curl http://kc.odl.local:7080`
 
 #### 5. Users Can Login But Have No Permissions
-- Check that groups are properly configured
-- Verify the pipeline function `assign_user_groups` is working
-- Check Django logs for pipeline errors
+- `is_staff` / `is_superuser` are set manually in Django admin or shell; log in
+  as an existing superuser and promote the new user from there.
 
 ## File Locations
 
 - **Realm Configuration**: `config/keycloak/realms/ovs-local-realm.json`
 - **Django Settings**: `odl_video/settings.py`
-- **Authentication Pipeline**: `odl_video/pipeline.py`
 - **Docker Compose**: `docker-compose.yml` (Keycloak service definition)
