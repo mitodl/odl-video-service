@@ -671,7 +671,7 @@ class LogoutView(View):
 
                 params = {"post_logout_redirect_uri": redirect_uri}
 
-                client_id = getattr(settings, "KEYCLOAK_CLIENT_ID", "")
+                client_id = getattr(settings, "SOCIAL_AUTH_KEYCLOAK_KEY", "")
                 if client_id:
                     params["client_id"] = client_id
 

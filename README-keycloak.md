@@ -69,7 +69,7 @@ You need to get the public key from your Keycloak instance:
 5. Update your `.env` file with the key on a single line:
 
 ```env
-KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
 ```
 
 ## Environment Configuration
@@ -77,17 +77,21 @@ KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
 Create/update your `.env` file with these Keycloak settings:
 
 ```env
-# Keycloak Configuration
+# Runtime OIDC login — consumed by social-auth-app-django.
+SOCIAL_AUTH_KEYCLOAK_KEY=odl-video-app
+SOCIAL_AUTH_KEYCLOAK_SECRET=odl-video-secret-2025
+SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL=http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/auth
+SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL=http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/token
+
+# Admin-API access — consumed by the moira-to-keycloak migration commands.
 KEYCLOAK_SERVER_URL=http://kc.odl.local:7080
 KEYCLOAK_REALM=ovs-local
-KEYCLOAK_CLIENT_ID=odl-video-app
-KEYCLOAK_CLIENT_SECRET=odl-video-secret-2025
-KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
-
-# Keycloak Service Configuration (for docker-compose)
-KEYCLOAK_SVC_HOSTNAME=kc.odl.local
 KEYCLOAK_SVC_ADMIN=admin
 KEYCLOAK_SVC_ADMIN_PASSWORD=admin
+
+# Local Keycloak container bootstrap.
+KEYCLOAK_SVC_HOSTNAME=kc.odl.local
 KEYCLOAK_PORT=7080
 KEYCLOAK_SSL_PORT=7443
 ```
@@ -104,15 +108,13 @@ KEYCLOAK_SSL_PORT=7443
 6. Django exchanges code for access token
 7. Django creates/updates user account with Keycloak data
 
-### 2. Group/Role Mapping
+### 2. Django Permissions
 
-The application automatically maps Keycloak groups to Django permissions:
-
-- **Admin group** → `is_superuser=True, is_staff=True`
-- **Staff group** → `is_staff=True`
-- **Other groups** → Regular user permissions
-
-This mapping is handled by the custom pipeline in `odl_video/pipeline.py`.
+Keycloak authenticates users but does **not** manage Django's `is_staff` /
+`is_superuser` flags. Those are set manually via the Django admin or shell and
+are preserved across logins. The raw `user_groups` claim from Keycloak is still
+stored on the social user's `extra_data` (see `SOCIAL_AUTH_KEYCLOAK_EXTRA_DATA`
+in `odl_video/settings.py`) but nothing acts on it.
 
 ## Testing Authentication
 
@@ -144,8 +146,8 @@ In Keycloak Admin Console:
 - Ensure Web Origins are set correctly
 
 #### 2. "Invalid client" Error
-- Verify `KEYCLOAK_CLIENT_ID` matches the client ID in Keycloak
-- Check that `KEYCLOAK_CLIENT_SECRET` is correct
+- Verify `SOCIAL_AUTH_KEYCLOAK_KEY` matches the client ID in Keycloak
+- Check that `SOCIAL_AUTH_KEYCLOAK_SECRET` is correct
 
 #### 3. "Invalid public key" Error
 - Get a fresh public key from Keycloak Admin Console
@@ -157,13 +159,11 @@ In Keycloak Admin Console:
 - Verify Keycloak URL is accessible: `curl http://kc.odl.local:7080`
 
 #### 5. Users Can Login But Have No Permissions
-- Check that groups are properly configured
-- Verify the pipeline function `assign_user_groups` is working
-- Check Django logs for pipeline errors
+- `is_staff` / `is_superuser` are set manually in Django admin or shell; log in
+  as an existing superuser and promote the new user from there.
 
 ## File Locations
 
 - **Realm Configuration**: `config/keycloak/realms/ovs-local-realm.json`
 - **Django Settings**: `odl_video/settings.py`
-- **Authentication Pipeline**: `odl_video/pipeline.py`
 - **Docker Compose**: `docker-compose.yml` (Keycloak service definition)

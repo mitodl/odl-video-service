@@ -145,6 +145,18 @@ Touchstone hasn't been configured yet, but here are some instructions for
 `Touchstone integration`_.
 
 
+Keycloak (local authentication)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Local development uses Keycloak as the OIDC provider instead of Touchstone.
+A ``keycloak`` service runs in ``docker-compose`` with a pre-configured
+``ovs-local`` realm, seeded users, and an ``odl-video-app`` client. See
+`README-keycloak.md`_ for the full setup walkthrough — adding the
+``kc.odl.local`` entry to ``/etc/hosts``, pulling the realm public key, and
+populating the ``SOCIAL_AUTH_KEYCLOAK_*`` and ``KEYCLOAK_*`` values in your
+``.env``.
+
+
 YouTube Integration
 ~~~~~~~~~~~~~~~~~~~
 
@@ -186,6 +198,7 @@ like this:
 .. _Touchstone integration: https://github.com/singingwolfboy/touchstone-notes
 .. _Moira: http://kb.mit.edu/confluence/display/istcontrib/Moira+Overview
 .. _Docker Compose: https://docs.docker.com/compose/
+.. _README-keycloak.md: ./README-keycloak.md
 
 .. |build-status| image:: https://travis-ci.org/mitodl/odl-video-service.svg?branch=master&style=flat
    :target: https://travis-ci.org/mitodl/odl-video-service
