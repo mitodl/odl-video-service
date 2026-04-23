@@ -12,3 +12,12 @@ openssl req -x509 -newkey rsa:4096 -keyout tls.key -out tls.crt -sha256 -days 36
 ```
 
 Run from the `config/keycloak/tls` directory (this one) locally. The Keycloak image doesn't have openssl installed so you can't use that.
+
+## OIDC Signing Key
+
+The following files hold the fixed RSA-2048 key pair used by the `ovs-local`
+Keycloak realm to sign JWTs. They are **dev-only** and safe to commit.
+
+* `oidc-signing.key` — RSA private key (PEM); injected into the realm JSON
+* `oidc-signing.crt` — Self-signed X.509 certificate (PEM); injected into the realm JSON
+* `oidc-signing-pub.pem` — RSA public key (PEM); injected into `SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY` in `.env`
