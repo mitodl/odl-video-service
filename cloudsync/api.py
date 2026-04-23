@@ -12,6 +12,7 @@ from uuid import uuid4
 import boto3
 import pytz
 from boto3.s3.transfer import TransferConfig
+from PIL import Image
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -564,6 +565,48 @@ def upload_subtitle_to_s3(caption_data, file_data):
     return vt
 
 
+def convert_image_to_jpeg(file_data):
+    """
+    Convert an uploaded image to JPEG format using PIL.
+
+    If the source is already a JPEG, the original bytes are returned unchanged
+    to avoid a lossy re-encode. If the file cannot be decoded or is not a
+    JPEG/PNG, a ValueError is raised.
+
+    Args:
+        file_data: A file-like object containing the source image.
+
+    Returns:
+        io.BytesIO: A BytesIO buffer containing the JPEG-encoded image.
+
+    Raises:
+        ValueError: If the file cannot be decoded or is not a JPEG or PNG image.
+    """
+    try:
+        with Image.open(file_data) as img:
+            if img.format not in ("JPEG", "PNG"):
+                raise ValueError(
+                    f"Unsupported image format: {img.format!r}. Only JPEG and PNG are supported."
+                )
+            if img.format == "JPEG":
+                # Return the original bytes to avoid a lossy re-encode.
+                file_data.seek(0)
+                buf = io.BytesIO(file_data.read())
+                buf.seek(0)
+                return buf
+            # PNG path: convert to a JPEG-compatible mode if needed.
+            if img.mode not in ("L", "RGB", "CMYK"):
+                img = img.convert("RGB")
+            output = io.BytesIO()
+            img.save(output, format="JPEG")
+            output.seek(0)
+            return output
+    except ValueError:
+        raise
+    except Exception as exc:
+        raise ValueError(f"Could not decode image: {exc}") from exc
+
+
 def replace_thumbnail_in_s3(thumbnail, file_data, width: int, height: int):
     """
     Replaces the image content of an existing VideoThumbnail by overwriting its S3
@@ -576,12 +619,13 @@ def replace_thumbnail_in_s3(thumbnail, file_data, width: int, height: int):
         width (int): Image width in pixels, as reported by the browser.
         height (int): Image height in pixels, as reported by the browser.
     """
+    jpeg_data = convert_image_to_jpeg(file_data)
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(thumbnail.bucket_name)
     config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
     try:
         bucket.upload_fileobj(
-            Fileobj=file_data,
+            Fileobj=jpeg_data,
             Key=thumbnail.s3_object_key,
             ExtraArgs={"ContentType": "image/jpeg"},
             Config=config,
@@ -634,6 +678,7 @@ def create_thumbnail_in_s3(video, file_data, width: int, height: int):
     Returns:
         VideoThumbnail: The newly created VideoThumbnail instance.
     """
+    jpeg_data = convert_image_to_jpeg(file_data)
     bucket_name = settings.VIDEO_S3_THUMBNAIL_BUCKET
     s3_key = "thumbnails/{video_key}/video_thumbnail.0000000.jpg".format(
         video_key=video.hexkey,
@@ -644,7 +689,7 @@ def create_thumbnail_in_s3(video, file_data, width: int, height: int):
 
     try:
         bucket.upload_fileobj(
-            Fileobj=file_data,
+            Fileobj=jpeg_data,
             Key=s3_key,
             ExtraArgs={"ContentType": "image/jpeg"},
             Config=config,

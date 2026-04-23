@@ -1695,11 +1695,34 @@ def test_upload_thumbnail_no_file(mocker, logged_in_apiclient):
 
 def test_upload_thumbnail_wrong_content_type(mocker, logged_in_apiclient):
     """
-    When the uploaded file is not a JPEG, the view should return HTTP 400.
+    When the uploaded file is not a JPEG or PNG, the view should return HTTP 400.
     """
     mocker.patch("ui.utils.get_keycloak_client")
     client, user = logged_in_apiclient
     video = VideoFactory(collection=CollectionFactory(owner=user))
+
+    gif_file = SimpleUploadedFile("thumb.gif", b"gifdata", content_type="image/gif")
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url,
+        {"thumbnail": gif_file, "width": 640, "height": 360},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Only JPEG and PNG" in response.data["error"]
+
+
+def test_upload_thumbnail_accepts_png(mocker, logged_in_apiclient):
+    """
+    PNG images should be accepted and forwarded to the cloud API.
+    """
+    mocker.patch("ui.utils.get_keycloak_client")
+    mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    VideoThumbnailFactory(video=video)
 
     png_file = SimpleUploadedFile("thumb.png", b"pngdata", content_type="image/png")
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
@@ -1709,8 +1732,8 @@ def test_upload_thumbnail_wrong_content_type(mocker, logged_in_apiclient):
         format="multipart",
     )
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "Only JPEG" in response.data["error"]
+    assert response.status_code == status.HTTP_200_OK
+    mock_replace.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -1762,6 +1785,35 @@ def test_upload_thumbnail_unauthenticated():
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_upload_thumbnail_corrupt_file_returns_400(mocker, logged_in_apiclient):
+    """
+    When the cloud API raises ValueError (e.g. corrupt/undecodable image),
+    the view should return HTTP 400 with the error message rather than a 500.
+    """
+    mocker.patch("ui.utils.get_keycloak_client")
+    mocker.patch(
+        "ui.views.cloudapi.replace_thumbnail_in_s3",
+        side_effect=ValueError("Could not decode image: cannot identify image file"),
+    )
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    VideoThumbnailFactory(video=video)
+
+    corrupt_file = SimpleUploadedFile(
+        "thumb.jpg", b"not-an-image", content_type="image/jpeg"
+    )
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url,
+        {"thumbnail": corrupt_file, "width": 640, "height": 360},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Invalid thumbnail data provided" in response.data["error"]
 
 
 # ---------------------------------------------------------------------------

@@ -172,9 +172,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   handleThumbnailChange = (event: Object) => {
     const file = event.target.files[0]
     if (!file) return
-    if (file.type !== "image/jpeg") {
+    if (file.type !== "image/jpeg" && file.type !== "image/jpg" && file.type !== "image/png") {
       this.setState({
-        thumbnailError:      "Only JPEG image files are allowed.",
+        thumbnailError:      "Only JPEG and PNG image files are allowed.",
         thumbnailFile:       null,
         thumbnailPreviewUrl: null
       })
@@ -343,7 +343,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
           )}
           <Filefield
             label={buttonLabel}
-            accept="image/jpeg,.jpg,.jpeg"
+            accept="image/jpeg,image/jpg,image/png,.jpg,.jpeg,.png"
             onChange={this.handleThumbnailChange}
           />
           {thumbnailError && (

@@ -3,6 +3,8 @@
 import json
 from urllib.parse import urlencode
 
+import structlog
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView as DjangoLoginView
@@ -58,6 +60,8 @@ from ui.utils import (
     list_members,
     query_lists,
 )
+
+log = structlog.get_logger(__name__)
 
 
 def default_js_settings(request):
@@ -517,9 +521,10 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
         if getattr(thumbnail_file, "content_type", "") not in (
             "image/jpeg",
             "image/jpg",
+            "image/png",
         ):
             return Response(
-                {"error": "Only JPEG image files are allowed."},
+                {"error": "Only JPEG and PNG image files are allowed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
@@ -532,14 +537,23 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 {"error": "Valid image dimensions (width and height) are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if thumbnail:
-            cloudapi.replace_thumbnail_in_s3(thumbnail, thumbnail_file, width, height)
-            _status = status.HTTP_200_OK
-        else:
-            # This is really a fallback case since a thumbnail should have already been created for the video,
-            # but we can handle it gracefully by creating a new thumbnail object and uploading the file to S3
-            cloudapi.create_thumbnail_in_s3(video, thumbnail_file, width, height)
-            _status = status.HTTP_201_CREATED
+        try:
+            if thumbnail:
+                cloudapi.replace_thumbnail_in_s3(
+                    thumbnail, thumbnail_file, width, height
+                )
+                _status = status.HTTP_200_OK
+            else:
+                # This is really a fallback case since a thumbnail should have already been created for the video,
+                # but we can handle it gracefully by creating a new thumbnail object and uploading the file to S3
+                cloudapi.create_thumbnail_in_s3(video, thumbnail_file, width, height)
+                _status = status.HTTP_201_CREATED
+        except ValueError as exc:
+            log.warning("Thumbnail upload validation failed", exc_info=exc)
+            return Response(
+                {"error": "Invalid thumbnail data provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response(
             serializers.VideoSerializer(video, context={"request": request}).data,

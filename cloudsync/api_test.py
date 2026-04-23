@@ -17,10 +17,12 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from django.test import override_settings
 from moto import mock_aws
+from PIL import Image
 
 from cloudsync import api
 from cloudsync.api import (
     RETRANSCODE_FOLDER,
+    convert_image_to_jpeg,
     create_thumbnail_in_s3,
     move_s3_objects,
     replace_thumbnail_in_s3,
@@ -589,10 +591,33 @@ def test_transcode_video_client_error_no_job_id(mocker):
 
 def _make_jpeg_file():
     """
-    Return a minimal in-memory file-like object for thumbnail upload tests.
-    Content does not matter since the server no longer parses image dimensions.
+    Return a minimal in-memory JPEG file-like object using PIL.
     """
-    return io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 64)
+    buf = io.BytesIO()
+    Image.new("RGB", (1, 1), color=(255, 0, 0)).save(buf, format="JPEG")
+    buf.seek(0)
+    return buf
+
+
+def _make_png_file():
+    """
+    Return a minimal in-memory PNG file-like object using PIL.
+    """
+    buf = io.BytesIO()
+    Image.new("RGBA", (1, 1), color=(0, 128, 255, 200)).save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+def _make_bilevel_png_file():
+    """
+    Return a minimal 1-bit (bilevel) PNG file-like object using PIL.
+    Mode '1' is not directly JPEG-compatible and triggered the OSError bug.
+    """
+    buf = io.BytesIO()
+    Image.new("1", (2, 2)).save(buf, format="PNG")
+    buf.seek(0)
+    return buf
 
 
 # ---------------------------------------------------------------------------
@@ -719,3 +744,102 @@ def test_create_thumbnail_in_s3_creates_record_and_uploads():
     obj = s3c.get_object(Bucket="thumbnail-bucket", Key=thumbnail.s3_object_key)
     assert obj["ResponseMetadata"]["HTTPStatusCode"] == 200
     assert video.hexkey in thumbnail.s3_object_key
+
+
+@mock_aws
+def test_replace_thumbnail_in_s3_converts_png_to_jpeg():
+    """
+    A PNG input file should be converted to JPEG before being uploaded to S3.
+    """
+    s3c = boto3.client("s3", region_name="us-east-1")
+    thumbnail = VideoThumbnailFactory(
+        s3_object_key="thumbnails/abc/thumb.jpg",
+        bucket_name="thumb-bucket",
+    )
+    s3c.create_bucket(Bucket="thumb-bucket")
+
+    replace_thumbnail_in_s3(thumbnail, _make_png_file(), 320, 240)
+
+    obj = s3c.get_object(Bucket="thumb-bucket", Key="thumbnails/abc/thumb.jpg")
+    assert obj["ResponseMetadata"]["HTTPStatusCode"] == 200
+    # The stored bytes must be a valid JPEG (starts with JPEG magic bytes)
+    body = obj["Body"].read()
+    assert body[:2] == b"\xff\xd8"
+
+
+@mock_aws
+def test_replace_thumbnail_in_s3_converts_bilevel_png_to_jpeg():
+    """
+    A bilevel (mode '1') PNG — not directly JPEG-compatible — must be converted
+    to RGB before saving, rather than raising an OSError.
+    """
+    s3c = boto3.client("s3", region_name="us-east-1")
+    thumbnail = VideoThumbnailFactory(
+        s3_object_key="thumbnails/abc/thumb.jpg",
+        bucket_name="thumb-bucket",
+    )
+    s3c.create_bucket(Bucket="thumb-bucket")
+
+    replace_thumbnail_in_s3(thumbnail, _make_bilevel_png_file(), 2, 2)
+
+    obj = s3c.get_object(Bucket="thumb-bucket", Key="thumbnails/abc/thumb.jpg")
+    body = obj["Body"].read()
+    assert body[:2] == b"\xff\xd8"
+
+
+@mock_aws
+@override_settings(
+    VIDEO_S3_THUMBNAIL_BUCKET="thumbnail-bucket",
+    AWS_S3_UPLOAD_TRANSFER_CONFIG={},
+)
+def test_create_thumbnail_in_s3_converts_png_to_jpeg():
+    """
+    A PNG input file should be converted to JPEG before being uploaded to S3.
+    """
+    s3c = boto3.client("s3", region_name="us-east-1")
+    s3c.create_bucket(Bucket="thumbnail-bucket")
+
+    video = VideoFactory()
+    thumbnail = create_thumbnail_in_s3(video, _make_png_file(), 640, 480)
+
+    assert thumbnail.s3_object_key.endswith(".jpg")
+    obj = s3c.get_object(Bucket="thumbnail-bucket", Key=thumbnail.s3_object_key)
+    body = obj["Body"].read()
+    assert body[:2] == b"\xff\xd8"
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for convert_image_to_jpeg
+# ---------------------------------------------------------------------------
+
+
+def test_convert_image_to_jpeg_passthrough_for_jpeg():
+    """
+    A JPEG input must be returned as-is (same bytes) to avoid a lossy re-encode.
+    """
+    buf = io.BytesIO()
+    Image.new("RGB", (2, 2), color=(255, 0, 0)).save(buf, format="JPEG")
+    original_bytes = buf.getvalue()
+    buf.seek(0)
+
+    result = convert_image_to_jpeg(buf)
+    assert result.read() == original_bytes
+
+
+def test_convert_image_to_jpeg_raises_for_corrupt_data():
+    """
+    Corrupt / non-image bytes must raise ValueError rather than an unhandled exception.
+    """
+    with pytest.raises(ValueError, match="Could not decode image"):
+        convert_image_to_jpeg(io.BytesIO(b"this is not an image"))
+
+
+def test_convert_image_to_jpeg_raises_for_unsupported_format():
+    """
+    Non-JPEG/PNG images (e.g. GIF) must raise ValueError with a clear message.
+    """
+    buf = io.BytesIO()
+    Image.new("RGB", (1, 1)).save(buf, format="GIF")
+    buf.seek(0)
+    with pytest.raises(ValueError, match="Unsupported image format"):
+        convert_image_to_jpeg(buf)
