@@ -1787,6 +1787,35 @@ def test_upload_thumbnail_unauthenticated():
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+def test_upload_thumbnail_corrupt_file_returns_400(mocker, logged_in_apiclient):
+    """
+    When the cloud API raises ValueError (e.g. corrupt/undecodable image),
+    the view should return HTTP 400 with the error message rather than a 500.
+    """
+    mocker.patch("ui.utils.get_keycloak_client")
+    mocker.patch(
+        "ui.views.cloudapi.replace_thumbnail_in_s3",
+        side_effect=ValueError("Could not decode image: cannot identify image file"),
+    )
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    VideoThumbnailFactory(video=video)
+
+    corrupt_file = SimpleUploadedFile(
+        "thumb.jpg", b"not-an-image", content_type="image/jpeg"
+    )
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url,
+        {"thumbnail": corrupt_file, "width": 640, "height": 360},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Could not decode image" in response.data["error"]
+
+
 # ---------------------------------------------------------------------------
 # Public Video API tests  (GET /api/v0/public/videos/)
 # ---------------------------------------------------------------------------

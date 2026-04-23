@@ -22,6 +22,7 @@ from PIL import Image
 from cloudsync import api
 from cloudsync.api import (
     RETRANSCODE_FOLDER,
+    convert_image_to_jpeg,
     create_thumbnail_in_s3,
     move_s3_objects,
     replace_thumbnail_in_s3,
@@ -805,3 +806,40 @@ def test_create_thumbnail_in_s3_converts_png_to_jpeg():
     obj = s3c.get_object(Bucket="thumbnail-bucket", Key=thumbnail.s3_object_key)
     body = obj["Body"].read()
     assert body[:2] == b"\xff\xd8"
+
+
+# ---------------------------------------------------------------------------
+# Unit tests for convert_image_to_jpeg
+# ---------------------------------------------------------------------------
+
+
+def test_convert_image_to_jpeg_passthrough_for_jpeg():
+    """
+    A JPEG input must be returned as-is (same bytes) to avoid a lossy re-encode.
+    """
+    buf = io.BytesIO()
+    Image.new("RGB", (2, 2), color=(255, 0, 0)).save(buf, format="JPEG")
+    original_bytes = buf.getvalue()
+    buf.seek(0)
+
+    result = convert_image_to_jpeg(buf)
+    assert result.read() == original_bytes
+
+
+def test_convert_image_to_jpeg_raises_for_corrupt_data():
+    """
+    Corrupt / non-image bytes must raise ValueError rather than an unhandled exception.
+    """
+    with pytest.raises(ValueError, match="Could not decode image"):
+        convert_image_to_jpeg(io.BytesIO(b"this is not an image"))
+
+
+def test_convert_image_to_jpeg_raises_for_unsupported_format():
+    """
+    Non-JPEG/PNG images (e.g. GIF) must raise ValueError with a clear message.
+    """
+    buf = io.BytesIO()
+    Image.new("RGB", (1, 1)).save(buf, format="GIF")
+    buf.seek(0)
+    with pytest.raises(ValueError, match="Unsupported image format"):
+        convert_image_to_jpeg(buf)

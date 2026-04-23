@@ -569,19 +569,42 @@ def convert_image_to_jpeg(file_data):
     """
     Convert an uploaded image to JPEG format using PIL.
 
+    If the source is already a JPEG, the original bytes are returned unchanged
+    to avoid a lossy re-encode. If the file cannot be decoded or is not a
+    JPEG/PNG, a ValueError is raised.
+
     Args:
         file_data: A file-like object containing the source image.
 
     Returns:
         io.BytesIO: A BytesIO buffer containing the JPEG-encoded image.
+
+    Raises:
+        ValueError: If the file cannot be decoded or is not a JPEG or PNG image.
     """
-    img = Image.open(file_data)
-    if img.mode not in ("L", "RGB", "CMYK"):
-        img = img.convert("RGB")
-    output = io.BytesIO()
-    img.save(output, format="JPEG")
-    output.seek(0)
-    return output
+    try:
+        with Image.open(file_data) as img:
+            if img.format not in ("JPEG", "PNG"):
+                raise ValueError(
+                    f"Unsupported image format: {img.format!r}. Only JPEG and PNG are supported."
+                )
+            if img.format == "JPEG":
+                # Return the original bytes to avoid a lossy re-encode.
+                file_data.seek(0)
+                buf = io.BytesIO(file_data.read())
+                buf.seek(0)
+                return buf
+            # PNG path: convert to a JPEG-compatible mode if needed.
+            if img.mode not in ("L", "RGB", "CMYK"):
+                img = img.convert("RGB")
+            output = io.BytesIO()
+            img.save(output, format="JPEG")
+            output.seek(0)
+            return output
+    except ValueError:
+        raise
+    except Exception as exc:
+        raise ValueError(f"Could not decode image: {exc}") from exc
 
 
 def replace_thumbnail_in_s3(thumbnail, file_data, width: int, height: int):
