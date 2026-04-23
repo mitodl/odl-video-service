@@ -15,18 +15,11 @@ The ODL Video Service uses Keycloak as an OpenID Connect (OIDC) provider for use
 
 ### 1. First-time setup
 
-For local development OIDC signing files pre-generated and placed in `config/keycloak/tls`. Copy and replace the content of files as following:
+For local development OIDC signing key pair files are pre-generated and placed in `config/keycloak/tls`. The [Local Realm JSON](config/keycloak/realms/ovs-local-realm.json#1930) already contains the correct values for  `privateKey` and `certificate` from [Key](config/keycloak/tls/oidc-signing.key) and [Certificate](config/keycloak/tls/oidc-signing.crt) respectively.
 
-
-1. In `config/keycloak/realms/ovs-local-realm.json`, on lines 1930-1931, update the values of `privateKey` and `certificate` with content of `config/keycloak/tls/oidc-signing.key` and `config/keycloak/tls/oidc-signing.crt` respectively.
 ```
-   "privateKey": ["MIIEowIBAAKCAQEAkVcc5QcK9biP2TWBO3P1ZlxbhDpsr..."],
-   "certificate": ["MIICpDCCAYwCCQD5UHLf1MqmDDANBgkqhkiG9w0BAQsFA..."]
-```
-
-2. Add the content of `config/keycloak/tls/oidc-signing-pub.pem` in `.env` as below:
-```env
-SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+"privateKey": ["MIIEowIBAAKCAQEAkVcc5QcK9biP2TWBO3P1ZlxbhDpsr..."]
+"certificate": ["MIICpDCCAYwCCQD5UHLf1MqmDDANBgkqhkiG9w0BAQsFA..."]
 ```
 
 ### 2. Start the Services
@@ -73,11 +66,15 @@ The project comes with a pre-configured realm called `ovs-local` that includes:
 - **Client ID**: `odl-video-app`
 - **Client Secret**: `odl-video-secret-2025`
 
+#### **Pre-configured Signing**
+- **Private Key**: `MIIEowIBAAKCAQEAkVcc5QcK9biP2TWBO3P1ZlxbhDpsr...`
+- **Certificate**: `MIICpDCCAYwCCQD5UHLf1MqmDDANBgkqhkiG9w0BAQsFA...`
+
+
 ### 5. Public Key
 
 #### Local Development:
-For local development the public key is pre-generated and lives in `config/keycloak/tls/oidc-signing-pub.pem`. [First-time setup](#1-first-time-setup) section populates it into `.env`.
-
+For local development, no extra steps are needed. `.env.example` contains the correct value for `SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY` from pre-generated [Public Key](config/keycloak/tls/oidc-signing-pub.pem).
 
 #### Production:
 1. Go to Realm Settings → Keys tab
@@ -98,7 +95,7 @@ Create/update your `.env` file with these Keycloak settings:
 # Runtime OIDC login — consumed by social-auth-app-django.
 SOCIAL_AUTH_KEYCLOAK_KEY=odl-video-app
 SOCIAL_AUTH_KEYCLOAK_SECRET=odl-video-secret-2025
-SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkVcc5QcK9biP2TWBO3P1ZlxbhDpsrFOkH/SG4W6LJ2Te/UO4io0M+yLkiaO9jmT4VxMwYZA+h8+Gy18TCm0hzKsYM5+VN2Nmc5fOB3BIotjXj3UMsnXRxeia/4Lscx8cjRwqy2Xt2aXufjMwEAJjcr+P3nCwJHocmR3G+DpjMzIN9+33mJzfcpOpfFivM04QJmPxm6qYaiS1f5/RB98vyeQJC7WKLKJJO8+lXWck2uHILez75I0hbjKJxQxnvcoeWXS9lsEIFmyxMcg41WkQt/eUUfyd19ALK44+XFRY9KlIKTd47CADlNPD/MyO4DJ8EL7GJjSQ2HwgIRLJhzDcTwIDAQAB
 SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL=http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/auth
 SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL=http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/token
 
