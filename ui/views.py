@@ -3,6 +3,8 @@
 import json
 from urllib.parse import urlencode
 
+import structlog
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView as DjangoLoginView
@@ -58,6 +60,8 @@ from ui.utils import (
     list_members,
     query_lists,
 )
+
+log = structlog.get_logger(__name__)
 
 
 def default_js_settings(request):
@@ -545,8 +549,9 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 cloudapi.create_thumbnail_in_s3(video, thumbnail_file, width, height)
                 _status = status.HTTP_201_CREATED
         except ValueError as exc:
+            log.warning("Thumbnail upload validation failed", exc_info=exc)
             return Response(
-                {"error": str(exc)},
+                {"error": "Invalid thumbnail data provided."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

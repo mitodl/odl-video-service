@@ -1813,7 +1813,7 @@ def test_upload_thumbnail_corrupt_file_returns_400(mocker, logged_in_apiclient):
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "Could not decode image" in response.data["error"]
+    assert "Invalid thumbnail data provided" in response.data["error"]
 
 
 # ---------------------------------------------------------------------------
