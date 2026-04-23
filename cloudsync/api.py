@@ -576,7 +576,7 @@ def convert_image_to_jpeg(file_data):
         io.BytesIO: A BytesIO buffer containing the JPEG-encoded image.
     """
     img = Image.open(file_data)
-    if img.mode in ("RGBA", "P", "LA"):
+    if img.mode not in ("L", "RGB", "CMYK"):
         img = img.convert("RGB")
     output = io.BytesIO()
     img.save(output, format="JPEG")

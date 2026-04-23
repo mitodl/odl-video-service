@@ -608,6 +608,17 @@ def _make_png_file():
     return buf
 
 
+def _make_bilevel_png_file():
+    """
+    Return a minimal 1-bit (bilevel) PNG file-like object using PIL.
+    Mode '1' is not directly JPEG-compatible and triggered the OSError bug.
+    """
+    buf = io.BytesIO()
+    Image.new("1", (2, 2)).save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
 # ---------------------------------------------------------------------------
 # Tests for replace_thumbnail_in_s3
 # ---------------------------------------------------------------------------
@@ -751,6 +762,26 @@ def test_replace_thumbnail_in_s3_converts_png_to_jpeg():
     obj = s3c.get_object(Bucket="thumb-bucket", Key="thumbnails/abc/thumb.jpg")
     assert obj["ResponseMetadata"]["HTTPStatusCode"] == 200
     # The stored bytes must be a valid JPEG (starts with JPEG magic bytes)
+    body = obj["Body"].read()
+    assert body[:2] == b"\xff\xd8"
+
+
+@mock_aws
+def test_replace_thumbnail_in_s3_converts_bilevel_png_to_jpeg():
+    """
+    A bilevel (mode '1') PNG — not directly JPEG-compatible — must be converted
+    to RGB before saving, rather than raising an OSError.
+    """
+    s3c = boto3.client("s3", region_name="us-east-1")
+    thumbnail = VideoThumbnailFactory(
+        s3_object_key="thumbnails/abc/thumb.jpg",
+        bucket_name="thumb-bucket",
+    )
+    s3c.create_bucket(Bucket="thumb-bucket")
+
+    replace_thumbnail_in_s3(thumbnail, _make_bilevel_png_file(), 2, 2)
+
+    obj = s3c.get_object(Bucket="thumb-bucket", Key="thumbnails/abc/thumb.jpg")
     body = obj["Body"].read()
     assert body[:2] == b"\xff\xd8"
 
