@@ -1717,8 +1717,7 @@ def test_upload_thumbnail_accepts_png(mocker, logged_in_apiclient):
     """
     PNG images should be accepted and forwarded to the cloud API.
     """
-    mocker.patch("ui.serializers.get_moira_client")
-    mocker.patch("ui.utils.get_moira_client")
+    mocker.patch("ui.utils.get_keycloak_client")
     mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
 
     client, user = logged_in_apiclient
