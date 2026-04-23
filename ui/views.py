@@ -517,9 +517,10 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
         if getattr(thumbnail_file, "content_type", "") not in (
             "image/jpeg",
             "image/jpg",
+            "image/png",
         ):
             return Response(
-                {"error": "Only JPEG image files are allowed."},
+                {"error": "Only JPEG and PNG image files are allowed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:

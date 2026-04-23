@@ -12,6 +12,7 @@ from uuid import uuid4
 import boto3
 import pytz
 from boto3.s3.transfer import TransferConfig
+from PIL import Image
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -564,6 +565,25 @@ def upload_subtitle_to_s3(caption_data, file_data):
     return vt
 
 
+def convert_image_to_jpeg(file_data):
+    """
+    Convert an uploaded image to JPEG format using PIL.
+
+    Args:
+        file_data: A file-like object containing the source image.
+
+    Returns:
+        io.BytesIO: A BytesIO buffer containing the JPEG-encoded image.
+    """
+    img = Image.open(file_data)
+    if img.mode in ("RGBA", "P", "LA"):
+        img = img.convert("RGB")
+    output = io.BytesIO()
+    img.save(output, format="JPEG")
+    output.seek(0)
+    return output
+
+
 def replace_thumbnail_in_s3(thumbnail, file_data, width: int, height: int):
     """
     Replaces the image content of an existing VideoThumbnail by overwriting its S3
@@ -576,12 +596,13 @@ def replace_thumbnail_in_s3(thumbnail, file_data, width: int, height: int):
         width (int): Image width in pixels, as reported by the browser.
         height (int): Image height in pixels, as reported by the browser.
     """
+    jpeg_data = convert_image_to_jpeg(file_data)
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(thumbnail.bucket_name)
     config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
     try:
         bucket.upload_fileobj(
-            Fileobj=file_data,
+            Fileobj=jpeg_data,
             Key=thumbnail.s3_object_key,
             ExtraArgs={"ContentType": "image/jpeg"},
             Config=config,
@@ -634,6 +655,7 @@ def create_thumbnail_in_s3(video, file_data, width: int, height: int):
     Returns:
         VideoThumbnail: The newly created VideoThumbnail instance.
     """
+    jpeg_data = convert_image_to_jpeg(file_data)
     bucket_name = settings.VIDEO_S3_THUMBNAIL_BUCKET
     s3_key = "thumbnails/{video_key}/video_thumbnail.0000000.jpg".format(
         video_key=video.hexkey,
@@ -644,7 +666,7 @@ def create_thumbnail_in_s3(video, file_data, width: int, height: int):
 
     try:
         bucket.upload_fileobj(
-            Fileobj=file_data,
+            Fileobj=jpeg_data,
             Key=s3_key,
             ExtraArgs={"ContentType": "image/jpeg"},
             Config=config,
