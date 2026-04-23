@@ -1921,11 +1921,14 @@
       },
       {
         "id": "737dcc5c-959d-47c3-b853-14dbb6b1a419",
-        "name": "rsa-generated",
-        "providerId": "rsa-generated",
+        "name": "rsa-fixed",
+        "providerId": "rsa",
         "subComponents": {},
         "config": {
-          "priority": ["100"]
+          "priority": ["100"],
+          "algorithm": ["RS256"],
+          "privateKey": ["MIIEowIBAAKCAQEAkVcc5QcK9biP2TWBO3P1ZlxbhDpsr..."],
+          "certificate": ["MIICpDCCAYwCCQD5UHLf1MqmDDANBgkqhkiG9w0BAQsFA..."]
         }
       },
       {

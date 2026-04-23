@@ -13,7 +13,23 @@ The ODL Video Service uses Keycloak as an OpenID Connect (OIDC) provider for use
 
 ## Quick Start
 
-### 1. Start the Services
+### 1. First-time setup
+
+For local development OIDC signing files pre-generated and placed in `config/keycloak/tls`. Copy and replace the content of files as following:
+
+
+1. In `config/keycloak/realms/ovs-local-realm.json`, on lines 1930-1931, update the values of `privateKey` and `certificate` with content of `config/keycloak/tls/oidc-signing.key` and `config/keycloak/tls/oidc-signing.crt` respectively.
+```
+   "privateKey": ["MIIEowIBAAKCAQEAkVcc5QcK9biP2TWBO3P1ZlxbhDpsr..."],
+   "certificate": ["MIICpDCCAYwCCQD5UHLf1MqmDDANBgkqhkiG9w0BAQsFA..."]
+```
+
+2. Add the content of `config/keycloak/tls/oidc-signing-pub.pem` in `.env` as below:
+```env
+SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
+```
+
+### 2. Start the Services
 
 ```bash
 # Start all services including Keycloak
@@ -32,15 +48,14 @@ If one doesn’t already exist, add an alias to `/etc/hosts` for Keycloak. We ha
 
 Keycloak will be available at: `http://kc.odl.local:7080`
 
-### 2. Access Keycloak Admin Console
+### 3. Access Keycloak Admin Console
 
-1. Open your browser and go to `http://kc.odl.local:7080`
-2. Click "Administration Console"
-3. Login with the default admin credentials:
+1. Open your browser and go to `https://kc.odl.local:7443`
+2. Login with the default admin credentials:
    - **Username**: `admin`
    - **Password**: `admin`
 
-### 3. Pre-configured Setup
+### 4. Pre-configured Setup
 
 The project comes with a pre-configured realm called `ovs-local` that includes:
 
@@ -58,15 +73,18 @@ The project comes with a pre-configured realm called `ovs-local` that includes:
 - **Client ID**: `odl-video-app`
 - **Client Secret**: `odl-video-secret-2025`
 
-### 4. Get the Public Key (Required)
+### 5. Public Key
 
-You need to get the public key from your Keycloak instance:
+#### Local Development:
+For local development the public key is pre-generated and lives in `config/keycloak/tls/oidc-signing-pub.pem`. [First-time setup](#1-first-time-setup) section populates it into `.env`.
 
+
+#### Production:
 1. Go to Realm Settings → Keys tab
 2. Find the RSA key with "RS256" algorithm
 3. Click "Public key" button
 4. Copy the public key (without the BEGIN/END lines)
-5. Update your `.env` file with the key on a single line:
+5. Update your environment with the key accordingly:
 
 ```env
 SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
