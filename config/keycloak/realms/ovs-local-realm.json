@@ -981,6 +981,20 @@
             "access.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "id": "b63d51e4-1816-41e4-8d66-fc06594dd3ec",
+          "name": "user_groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "user_groups",
+            "userinfo.token.claim": "true"
+          }
         }
       ],
       "defaultClientScopes": [

@@ -177,6 +177,9 @@ SOCIAL_AUTH_PIPELINE = [
     "social_core.pipeline.social_auth.associate_user",
     "social_core.pipeline.social_auth.load_extra_data",
     "social_core.pipeline.user.user_details",
+    # Map Keycloak groups (from the user_groups token claim) to Django
+    # is_staff / is_superuser flags.  Must run after load_extra_data.
+    "odl_video.pipeline.assign_user_groups",
 ]
 
 SOCIAL_AUTH_KEYCLOAK_ID_KEY = "email"

@@ -39,20 +39,76 @@ def query_user_groups(email: str) -> List[str]:
     return list(set(client.get_user_groups(email)))
 
 
+def _groups_from_social_auth(user) -> Set[str] | None:
+    """Return the user's group names cached in their Keycloak social-auth record.
+
+    The Keycloak ``GroupMembershipProtocolMapper`` (``full_path=True``) stores
+    values like ``/some-moira-list`` or ``/parent/child`` in the ``user_groups``
+    token claim.  We normalise these to bare leaf names (e.g. ``some-moira-list``,
+    ``child``) so they match ``KeycloakGroup.name`` values in the OVS database.
+
+    **Freshness note**: these groups reflect the user's Keycloak membership at
+    their *last login*.  Keycloak group changes take effect on the user's next
+    authentication.  If immediate revocation is required, remove this cache and
+    rely solely on ``query_user_groups`` (live Keycloak admin API).
+
+    Returns ``None`` when the cached value is absent or unusable, signalling
+    that the caller should fall back to a live API query.
+    """
+    from social_django.models import UserSocialAuth
+
+    try:
+        social = UserSocialAuth.objects.get(user=user, provider="keycloak")
+    except UserSocialAuth.DoesNotExist:
+        return None
+
+    raw = social.extra_data.get("user_groups") if social.extra_data else None
+    if not isinstance(raw, list):
+        return None
+
+    groups: Set[str] = set()
+    for entry in raw:
+        if not isinstance(entry, str):
+            continue
+        # Take the last non-empty segment of the path so that both
+        # "/leaf" and "/parent/child" resolve to a bare group name.
+        leaf = entry.rstrip("/").rsplit("/", 1)[-1]
+        if leaf:
+            groups.add(leaf)
+    return groups if groups else None
+
+
 def user_groups(user) -> Set[str]:
     """
-    Get a list of all the groups a user has access to.
+    Return the set of Keycloak group names the user belongs to.
+
+    Reads group membership from the cached ``user_groups`` claim stored in the
+    user's Keycloak social-auth ``extra_data`` record (populated at login).
+    Falls back to a live Keycloak admin API query when the cache is absent or
+    unusable (e.g. for users not authenticated via Keycloak OIDC).
 
     Args:
         user (django.contrib.auth.User): the Django user.
 
     Returns:
-        Set[str]: A set containing all groups the user belongs to.
+        Set[str]: A set containing the bare group names the user belongs to.
     """
     if user.is_anonymous:
         return set()
 
-    return set(query_user_groups(user.email))
+    # Per-request memoisation: avoid repeated DB (or API) lookups within the
+    # same request when multiple permission checks run for the same user.
+    if hasattr(user, "_keycloak_groups_cache"):
+        return user._keycloak_groups_cache  # noqa: SLF001
+
+    cached = _groups_from_social_auth(user)
+    if cached is not None:
+        user._keycloak_groups_cache = cached  # noqa: SLF001
+        return cached
+
+    groups = set(query_user_groups(user.email))
+    user._keycloak_groups_cache = groups  # noqa: SLF001
+    return groups
 
 
 def group_members(group_name: str) -> List[Dict]:

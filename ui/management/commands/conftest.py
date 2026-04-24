@@ -9,6 +9,7 @@ _COMMAND_MANAGER_TARGETS = (
     "ui.management.commands.migrate_moira_to_keycloak.build_keycloak_manager",
     "ui.management.commands.migrate_users_to_keycloak.build_keycloak_manager",
     "ui.management.commands.assign_group_users.build_keycloak_manager",
+    "ui.management.commands.migrate_collection_owners_to_keycloak_groups.build_keycloak_manager",
 )
 
 

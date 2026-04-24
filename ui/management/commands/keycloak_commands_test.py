@@ -11,7 +11,7 @@ import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
-from ui.factories import UserFactory
+from ui.factories import CollectionFactory, KeycloakGroupFactory, UserFactory
 from ui.management.commands.conftest import FakeAsyncResult, conflict_error
 
 pytestmark = pytest.mark.django_db
@@ -208,6 +208,7 @@ _ALL_COMMANDS = [
     ("migrate_moira_to_keycloak", {}),
     ("migrate_users_to_keycloak", {}),
     ("assign_group_users", {"group": "odl-group", "users": "user@example.com"}),
+    ("migrate_collection_owners_to_keycloak_groups", {}),
 ]
 
 
@@ -450,3 +451,189 @@ def test_assign_group_users_raises_when_any_assignment_fails(manager_mock):
             users="user@example.com",
             **_keycloak_args(),
         )
+
+
+# ---------------------------------------------------------------------------
+# migrate_collection_owners_to_keycloak_groups
+# ---------------------------------------------------------------------------
+
+
+def test_migrate_collection_owners_warns_when_no_pairs(manager_mock):
+    """No collections with admin_lists should warn and return without API calls."""
+    out = StringIO()
+    call_command(
+        "migrate_collection_owners_to_keycloak_groups",
+        **_keycloak_args(),
+        stdout=out,
+    )
+
+    assert "No collection owner" in out.getvalue()
+    manager_mock.find_group_by_name.assert_not_called()
+    manager_mock.add_user_to_group.assert_not_called()
+
+
+def test_migrate_collection_owners_dry_run(manager_mock):
+    """Dry-run should list assignments without calling add_user_to_group."""
+    owner = UserFactory.create(email="owner@example.com")
+    group = KeycloakGroupFactory.create(name="odl-admin")
+    CollectionFactory.create(owner=owner, admin_lists=[group])
+
+    out = StringIO()
+    call_command(
+        "migrate_collection_owners_to_keycloak_groups",
+        dry_run=True,
+        **_keycloak_args(),
+        stdout=out,
+    )
+
+    output = out.getvalue()
+    assert "DRY RUN" in output
+    assert "owner@example.com" in output
+    assert "odl-admin" in output
+    manager_mock.add_user_to_group.assert_not_called()
+
+
+def test_migrate_collection_owners_assigns_owner_to_admin_group(manager_mock):
+    """Happy path: owner found in Keycloak, group found, assignment made."""
+    owner = UserFactory.create(email="owner@example.com")
+    group = KeycloakGroupFactory.create(name="odl-admin")
+    CollectionFactory.create(owner=owner, admin_lists=[group])
+
+    manager_mock.find_group_by_name.return_value = {"id": "gid", "name": "odl-admin"}
+    manager_mock.find_user_by_email.return_value = {"id": "uid"}
+
+    out = StringIO()
+    call_command(
+        "migrate_collection_owners_to_keycloak_groups",
+        **_keycloak_args(),
+        stdout=out,
+    )
+
+    output = out.getvalue()
+    assert "Collection owner group assignment completed" in output
+    assert "Assigned: 1" in output
+    manager_mock.add_user_to_group.assert_called_once_with("uid", "gid")
+
+
+def test_migrate_collection_owners_deduplicates_pairs(manager_mock):
+    """Same owner across multiple collections with the same group produces one assignment."""
+    owner = UserFactory.create(email="shared@example.com")
+    group = KeycloakGroupFactory.create(name="shared-group")
+    CollectionFactory.create(owner=owner, admin_lists=[group])
+    CollectionFactory.create(owner=owner, admin_lists=[group])
+
+    manager_mock.find_group_by_name.return_value = {"id": "gid", "name": "shared-group"}
+    manager_mock.find_user_by_email.return_value = {"id": "uid"}
+
+    out = StringIO()
+    call_command(
+        "migrate_collection_owners_to_keycloak_groups",
+        **_keycloak_args(),
+        stdout=out,
+    )
+
+    assert "Assigned: 1" in out.getvalue()
+    manager_mock.add_user_to_group.assert_called_once()
+
+
+def test_migrate_collection_owners_skips_missing_group(manager_mock):
+    """Missing Keycloak group is counted and skipped."""
+    owner = UserFactory.create(email="owner@example.com")
+    group = KeycloakGroupFactory.create(name="ghost-group")
+    CollectionFactory.create(owner=owner, admin_lists=[group])
+
+    manager_mock.find_group_by_name.return_value = None
+
+    out = StringIO()
+    call_command(
+        "migrate_collection_owners_to_keycloak_groups",
+        **_keycloak_args(),
+        stdout=out,
+    )
+
+    output = out.getvalue()
+    assert "skipping missing Keycloak group" in output
+    manager_mock.add_user_to_group.assert_not_called()
+
+
+def test_migrate_collection_owners_skips_missing_user(manager_mock):
+    """Missing Keycloak user is counted and skipped without raising."""
+    owner = UserFactory.create(email="ghost@example.com")
+    group = KeycloakGroupFactory.create(name="odl-admin")
+    CollectionFactory.create(owner=owner, admin_lists=[group])
+
+    manager_mock.find_group_by_name.return_value = {"id": "gid", "name": "odl-admin"}
+    manager_mock.find_user_by_email.return_value = None
+
+    out = StringIO()
+    call_command(
+        "migrate_collection_owners_to_keycloak_groups",
+        **_keycloak_args(),
+        stdout=out,
+    )
+
+    output = out.getvalue()
+    assert "skipping missing Keycloak user" in output
+    manager_mock.add_user_to_group.assert_not_called()
+
+
+def test_migrate_collection_owners_counts_conflict_as_existing(manager_mock):
+    """HTTP 409 when adding to group is treated as existing membership (skipped, not failed)."""
+    owner = UserFactory.create(email="owner@example.com")
+    group = KeycloakGroupFactory.create(name="odl-admin")
+    CollectionFactory.create(owner=owner, admin_lists=[group])
+
+    manager_mock.find_group_by_name.return_value = {"id": "gid", "name": "odl-admin"}
+    manager_mock.find_user_by_email.return_value = {"id": "uid"}
+    manager_mock.add_user_to_group.side_effect = conflict_error()
+
+    out = StringIO()
+    call_command(
+        "migrate_collection_owners_to_keycloak_groups",
+        **_keycloak_args(),
+        stdout=out,
+    )
+
+    output = out.getvalue()
+    assert "Existing skipped: 1" in output
+    assert "Failed: 0" in output
+    manager_mock.add_user_to_group.assert_called_once()
+
+
+def test_migrate_collection_owners_raises_on_assignment_failure(manager_mock):
+    """Non-conflict assignment failure raises CommandError after summary."""
+    owner = UserFactory.create(email="owner@example.com")
+    group = KeycloakGroupFactory.create(name="odl-admin")
+    CollectionFactory.create(owner=owner, admin_lists=[group])
+
+    manager_mock.find_group_by_name.return_value = {"id": "gid", "name": "odl-admin"}
+    manager_mock.find_user_by_email.return_value = {"id": "uid"}
+    manager_mock.add_user_to_group.side_effect = RuntimeError("server error")
+
+    with pytest.raises(CommandError, match="One or more group assignments failed"):
+        call_command(
+            "migrate_collection_owners_to_keycloak_groups",
+            **_keycloak_args(),
+        )
+
+
+def test_migrate_collection_owners_limit_groups_filters_pairs(manager_mock):
+    """--limit-groups restricts which admin groups are considered."""
+    owner = UserFactory.create(email="owner@example.com")
+    group_a = KeycloakGroupFactory.create(name="group-a")
+    group_b = KeycloakGroupFactory.create(name="group-b")
+    CollectionFactory.create(owner=owner, admin_lists=[group_a, group_b])
+
+    manager_mock.find_group_by_name.return_value = {"id": "gid", "name": "group-a"}
+    manager_mock.find_user_by_email.return_value = {"id": "uid"}
+
+    out = StringIO()
+    call_command(
+        "migrate_collection_owners_to_keycloak_groups",
+        limit_groups="group-a",
+        **_keycloak_args(),
+        stdout=out,
+    )
+
+    assert "Assigned: 1" in out.getvalue()
+    manager_mock.add_user_to_group.assert_called_once()

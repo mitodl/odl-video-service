@@ -11,6 +11,7 @@ from ui import factories
 from ui.exceptions import GoogleAnalyticsException, KeycloakException
 from ui.keycloak_utils import KeycloakManager
 from ui.utils import (
+    _groups_from_social_auth,
     generate_google_analytics_query,
     generate_mock_video_analytics_data,
     get_error_response_summary_dict,
@@ -140,6 +141,132 @@ def test_user_groups_anonymous():
     Test that empty set is returned for anonymous user
     """
     assert user_groups(AnonymousUser()) == set()
+
+
+# ---------------------------------------------------------------------------
+# _groups_from_social_auth and user_groups (token-claim cache)
+# ---------------------------------------------------------------------------
+
+
+def _make_social_auth(user, user_groups_value):
+    """Create a social_django.UserSocialAuth record for the given user."""
+    from social_django.models import UserSocialAuth
+
+    return UserSocialAuth.objects.create(
+        user=user,
+        provider="keycloak",
+        uid=user.email,
+        extra_data={"user_groups": user_groups_value}
+        if user_groups_value is not None
+        else {},
+    )
+
+
+@pytest.mark.parametrize(
+    "groups_value,expected",
+    [
+        (["/admin-list", "/staff-list"], {"admin-list", "staff-list"}),
+        (["/Admin"], {"Admin"}),
+        # nested path: leaf name only
+        (["/parent/child-group"], {"child-group"}),
+        # trailing slashes stripped before split
+        (["/trailingslash/"], {"trailingslash"}),
+        # mixed valid and invalid entries
+        (["/valid", 42, None, ""], {"valid"}),
+    ],
+    ids=["top-level-two", "single-top", "nested-path", "trailing-slash", "mixed-types"],
+)
+def test_groups_from_social_auth_normalises_paths(groups_value, expected):
+    """Full-path group names are normalised to bare leaf names."""
+    user = factories.UserFactory()
+    _make_social_auth(user, groups_value)
+    assert _groups_from_social_auth(user) == expected
+
+
+def test_groups_from_social_auth_no_social_record():
+    """Returns None when the user has no Keycloak social-auth record."""
+    user = factories.UserFactory()
+    assert _groups_from_social_auth(user) is None
+
+
+@pytest.mark.parametrize(
+    "extra_data",
+    [
+        {},
+        {"user_groups": None},
+        {"user_groups": "not-a-list"},
+        {"user_groups": 42},
+    ],
+    ids=["missing-key", "null-value", "string-value", "int-value"],
+)
+def test_groups_from_social_auth_unusable_cache(extra_data):
+    """Returns None for all unusable cache states so caller falls back to live API."""
+    from social_django.models import UserSocialAuth
+
+    user = factories.UserFactory()
+    UserSocialAuth.objects.create(
+        user=user, provider="keycloak", uid=user.email, extra_data=extra_data
+    )
+    assert _groups_from_social_auth(user) is None
+
+
+def test_groups_from_social_auth_empty_paths_only():
+    """Returns None when all paths normalise to empty strings."""
+    user = factories.UserFactory()
+    _make_social_auth(user, ["/", "//", ""])
+    assert _groups_from_social_auth(user) is None
+
+
+def test_user_groups_uses_social_auth_cache(mock_keycloak):
+    """user_groups reads from extra_data and does NOT call the Keycloak API."""
+    user = factories.UserFactory()
+    _make_social_auth(user, ["/odl-staff", "/odl-admin"])
+
+    result = user_groups(user)
+
+    assert result == {"odl-staff", "odl-admin"}
+    mock_keycloak.return_value.get_user_groups.assert_not_called()
+
+
+def test_user_groups_falls_back_to_live_api_when_no_social_auth(mock_keycloak):
+    """user_groups falls back to live API when no social-auth record exists."""
+    user = factories.UserFactory()
+    mock_keycloak.return_value.get_user_groups.return_value = ["live-group"]
+
+    result = user_groups(user)
+
+    assert result == {"live-group"}
+    mock_keycloak.return_value.get_user_groups.assert_called_once()
+
+
+def test_user_groups_falls_back_when_cache_unusable(mock_keycloak):
+    """user_groups falls back to live API when extra_data is missing user_groups."""
+    from social_django.models import UserSocialAuth
+
+    user = factories.UserFactory()
+    UserSocialAuth.objects.create(
+        user=user, provider="keycloak", uid=user.email, extra_data={}
+    )
+    mock_keycloak.return_value.get_user_groups.return_value = ["fallback-group"]
+
+    result = user_groups(user)
+
+    assert result == {"fallback-group"}
+    mock_keycloak.return_value.get_user_groups.assert_called_once()
+
+
+def test_user_groups_memoises_result(mock_keycloak):
+    """user_groups calls the backing store only once per user object instance."""
+    user = factories.UserFactory()
+    _make_social_auth(user, ["/odl-staff"])
+
+    first = user_groups(user)
+    second = user_groups(user)
+
+    assert first == second == {"odl-staff"}
+    # social-auth path never touches Keycloak; but also only one DB lookup
+    mock_keycloak.return_value.get_user_groups.assert_not_called()
+    assert hasattr(user, "_keycloak_groups_cache")
 
 
 def test_has_common_groups(mocker):
