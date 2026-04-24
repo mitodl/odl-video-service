@@ -103,9 +103,9 @@ export async function uploadThumbnail(videoKey: string, formData: FormData) {
   )
   if (!response.ok) {
     const message =
-      response.status === 413
-        ? "This image is too large. Please reduce the file size and try again."
-        : `Thumbnail upload failed (${response.status})`
+      response.status === 413 ?
+        "This image is too large. Please reduce the file size and try again." :
+        `Thumbnail upload failed (${response.status})`
     const err = new Error(message)
     // $FlowFixMe
     err.status = response.status
