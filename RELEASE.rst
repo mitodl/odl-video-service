@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.86.4
+Version 0.86.4 (Released April 24, 2026)
 --------------
 
 - Add create_keycloak_social_auth management command
