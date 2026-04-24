@@ -4,8 +4,8 @@ ODL Video Service
 |build-status| |coverage-status|
 
 This is a video hosting platform, designed for MIT's
-`Office of Digital Learning`_ (ODL). It is tightly integrated with MIT's
-Touchstone_ authentication system and Moira_ permission system.
+`Office of Digital Learning`_ (ODL). Authentication is handled through a
+Keycloak realm that federates to MIT's Touchstone_ identity provider.
 
 Installation
 ------------
@@ -124,27 +124,6 @@ and store the app key in the file
 
     DROPBOX_KEY=foo
 
-MIT Web Services
-~~~~~~~~~~~~~~~~
-
-You'll need an X.509 certificate and private key to access MIT web services,
-including the Moira_ web API. Follow `MIT's instructions for how to get an
-X.509 certificate <https://wikis.mit.edu/confluence/display/devtools/How+to+acquire+and+verify+a+x509+Application+Certificate>`_.
-Store the certificate and the private key in the file ``.env``
-in one line strings (careful with the newlines), like this:
-
-.. code-block:: ini
-
-    MIT_WS_CERTIFICATE=foo\nblah\n...
-    MIT_WS_PRIVATE_KEY=bar\nblah\n...
-
-Touchstone
-~~~~~~~~~~
-
-Touchstone hasn't been configured yet, but here are some instructions for
-`Touchstone integration`_.
-
-
 Keycloak (local authentication)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -195,8 +174,6 @@ like this:
 
 .. _Office of Digital Learning: http://odl.mit.edu/
 .. _Touchstone: https://ist.mit.edu/touchstone
-.. _Touchstone integration: https://github.com/singingwolfboy/touchstone-notes
-.. _Moira: http://kb.mit.edu/confluence/display/istcontrib/Moira+Overview
 .. _Docker Compose: https://docs.docker.com/compose/
 .. _README-keycloak.md: ./README-keycloak.md
 

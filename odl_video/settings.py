@@ -122,6 +122,10 @@ if USE_KEYCLOAK:
     ]
 
     LOGIN_URL = "/auth/login/keycloak/"
+else:
+    AUTHENTICATION_BACKENDS = [
+        "django.contrib.auth.backends.ModelBackend",
+    ]
 
 
 # Keycloak OIDC settings — consumed by social-auth-app-django at runtime.
@@ -162,7 +166,6 @@ KEYCLOAK_SVC_ADMIN_PASSWORD = get_string(
 SOCIAL_AUTH_PIPELINE = [
     "social_core.pipeline.social_auth.social_details",
     "social_core.pipeline.social_auth.social_uid",
-    "social_core.pipeline.social_auth.auth_allowed",
     "social_core.pipeline.social_auth.social_user",
     "social_core.pipeline.user.get_username",
     # Send a validation email to the user to verify its email address.
@@ -301,14 +304,6 @@ NPLUSONE_LOG_LEVEL = logging.ERROR
 
 # LOGGING is provided by mitol-django-observability via import_settings_modules above
 
-# MIT keys
-MIT_WS_CERTIFICATE = get_key("MIT_WS_CERTIFICATE", "")
-MIT_WS_PRIVATE_KEY = get_key("MIT_WS_PRIVATE_KEY", "")
-
-# x509 filenames
-MIT_WS_CERTIFICATE_FILE = os.path.join(STATIC_ROOT, "mit_x509.cert")
-MIT_WS_PRIVATE_KEY_FILE = os.path.join(STATIC_ROOT, "mit_x509.key")
-
 # Dropbox key
 DROPBOX_KEY = get_string("DROPBOX_KEY", "")
 
@@ -437,8 +432,6 @@ MANDATORY_SETTINGS = [
     "REDIS_URL",
     "SECRET_KEY",
     "VIDEO_CLOUDFRONT_DIST",
-    "MIT_WS_CERTIFICATE",
-    "MIT_WS_PRIVATE_KEY",
     "VIDEO_S3_BUCKET",
     "VIDEO_S3_TRANSCODE_BUCKET",
     "VIDEO_S3_THUMBNAIL_BUCKET",

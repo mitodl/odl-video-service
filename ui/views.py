@@ -652,7 +652,7 @@ class LoginView(DjangoLoginView):
         return context
 
     def get(self, request, *args, **kwargs):
-        """This is the Touchstone `login` page, so redirect if `next` is a URL parameter"""
+        """Login entry point — redirect to Keycloak (or honor `next`) if already authenticated."""
         if request.user.is_authenticated:
             next_redirect = request.GET.get("next")
             if next_redirect:
