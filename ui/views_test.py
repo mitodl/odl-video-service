@@ -10,7 +10,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser, Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponseRedirect
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -1711,6 +1711,24 @@ def test_upload_thumbnail_wrong_content_type(mocker, logged_in_apiclient):
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "Only JPEG and PNG" in response.data["error"]
+
+
+@override_settings(THUMBNAIL_UPLOAD_MAX_SIZE=100)
+def test_upload_thumbnail_too_large(mocker, logged_in_apiclient):
+    """
+    When the uploaded file exceeds THUMBNAIL_UPLOAD_MAX_SIZE the view should
+    return HTTP 413.
+    """
+    mocker.patch("ui.utils.get_keycloak_client")
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+
+    big_file = SimpleUploadedFile("thumb.jpg", b"x" * 101, content_type="image/jpeg")
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(url, {"thumbnail": big_file}, format="multipart")
+
+    assert response.status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    assert "too large" in response.data["error"]
 
 
 def test_upload_thumbnail_accepts_png(mocker, logged_in_apiclient):

@@ -12,7 +12,7 @@ from uuid import uuid4
 import boto3
 import pytz
 from boto3.s3.transfer import TransferConfig
-from PIL import Image
+from PIL import Image, ImageOps
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -593,12 +593,19 @@ def convert_image_to_jpeg(file_data, max_width=None, max_height=None):
         max_width = settings.THUMBNAIL_UPLOAD_MAX_WIDTH
     if max_height is None:
         max_height = settings.THUMBNAIL_UPLOAD_MAX_HEIGHT
+    if max_width <= 0 or max_height <= 0:
+        raise ValueError(
+            f"Invalid thumbnail max dimensions: {max_width}x{max_height}. Both must be positive integers."
+        )
     try:
         with Image.open(file_data) as img:
             if img.format not in ("JPEG", "PNG"):
                 raise ValueError(
                     f"Unsupported image format: {img.format!r}. Only JPEG and PNG are supported."
                 )
+            # Normalise EXIF orientation so pixel data matches display orientation
+            # before any size computation or re-encode.
+            img = ImageOps.exif_transpose(img)
             # Downscale if either dimension exceeds the configured limit.
             orig_w, orig_h = img.size
             if orig_w > max_width or orig_h > max_height:

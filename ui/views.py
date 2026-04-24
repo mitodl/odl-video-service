@@ -527,6 +527,12 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 {"error": "Only JPEG and PNG image files are allowed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if getattr(thumbnail_file, "size", 0) > settings.THUMBNAIL_UPLOAD_MAX_SIZE:
+            max_mb = settings.THUMBNAIL_UPLOAD_MAX_SIZE // (1024 * 1024)
+            return Response(
+                {"error": f"The uploaded image is too large (max {max_mb} MB)."},
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
         try:
             if thumbnail:
                 cloudapi.replace_thumbnail_in_s3(thumbnail, thumbnail_file)
