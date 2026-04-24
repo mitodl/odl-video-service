@@ -140,8 +140,19 @@ SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL = SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL.replace
 
 # Keycloak admin-API settings — consumed by the moira-to-keycloak migration
 # management commands, not by the runtime login flow.
-KEYCLOAK_SERVER_URL = get_string("KEYCLOAK_SERVER_URL", "http://kc.odl.local:7080")
-KEYCLOAK_REALM = get_string("KEYCLOAK_REALM", "ovs-local")
+# KEYCLOAK_SERVER_URL and KEYCLOAK_REALM fall back to values parsed from
+# SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL so that they work even before the
+# Vault secret is updated with the explicit server_url/realm_name fields.
+_keycloak_token_url = SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL
+if "/realms/" in _keycloak_token_url:
+    _kc_server_url_default = _keycloak_token_url.split("/realms/")[0]
+    _kc_realm_default = _keycloak_token_url.split("/realms/")[1].split("/")[0]
+else:
+    _kc_server_url_default = "http://kc.odl.local:7080"
+    _kc_realm_default = "ovs-local"
+
+KEYCLOAK_SERVER_URL = get_string("KEYCLOAK_SERVER_URL", "") or _kc_server_url_default
+KEYCLOAK_REALM = get_string("KEYCLOAK_REALM", "") or _kc_realm_default
 KEYCLOAK_SVC_ADMIN = get_string("KEYCLOAK_SVC_ADMIN", "odl-video-app")
 KEYCLOAK_SVC_ADMIN_PASSWORD = get_string(
     "KEYCLOAK_SVC_ADMIN_PASSWORD", "odl-video-secret-2025"
