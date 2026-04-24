@@ -1,6 +1,26 @@
 Release Notes
 =============
 
+Version 0.86.2
+--------------
+
+- Switch Keycloak admin auth to client_credentials grant via service account
+- Trust X-Forwarded-Proto header from upstream proxy for HTTPS detection
+- Umar/10959 multiple formats for thumbnail uploads in ovs (#1457)
+- chore: updated deprecated settings and fixed ssl error in local testing (#1456)
+- Compatibility with ol-mit keycloak realm (#1454)
+- chore(deps): update dependency social-auth-app-django to v5.6.0 [security] (#1453)
+- Enable keycloak integration, convert moira lists to keycloak (#1452)
+- fix(deps): update dependency django to v4.2.30 [security] (#1446)
+- chore(deps): update dependency cryptography to v46.0.7 [security] (#1445)
+- [pre-commit.ci] pre-commit autoupdate (#1438)
+- feat: migrate to mitol-django-observability plugin (#1414)
+- Merge pull request #1442 from mitodl/chore/add-drf-lint-pre-commit
+- chore(deps): update dependency cryptography to v46.0.6 [security] (#1441)
+- chore(deps): update dependency requests to v2.33.0 [security] (#1439)
+- chore(deps): update actions/setup-node action to v6
+- chore(deps): update redis:8.6.1 docker digest to 315270d
+
 Version 0.85.0 (Released March 23, 2026)
 --------------
 
