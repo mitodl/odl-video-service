@@ -149,7 +149,7 @@ describe("api", () => {
     formData.append("thumbnail", new Blob(["fake-image"], { type: "image/jpeg" }), "thumb.jpg")
     formData.append("width", 1280)
     formData.append("height", 720)
-    fetchFormStub.returns(Promise.resolve({}))
+    fetchFormStub.returns(Promise.resolve({ ok: true, status: 200 }))
 
     await uploadThumbnail(video.key, formData)
     sinon.assert.calledWith(
@@ -161,6 +161,39 @@ describe("api", () => {
         headers: { Accept: "application/json" }
       }
     )
+  })
+
+  it("throws with a 413 message when the thumbnail upload is too large", async () => {
+    const fetchFormStub = sandbox.stub(fetchFuncs, "fetchWithCSRF")
+    const video = makeVideo()
+    const formData = new FormData()
+    fetchFormStub.returns(Promise.resolve({ ok: false, status: 413 }))
+
+    let thrown
+    try {
+      await uploadThumbnail(video.key, formData)
+    } catch (err) {
+      thrown = err
+    }
+    assert.isDefined(thrown)
+    assert.include(thrown.message, "too large")
+    assert.equal(thrown.status, 413)
+  })
+
+  it("throws with a generic message for non-413 upload errors", async () => {
+    const fetchFormStub = sandbox.stub(fetchFuncs, "fetchWithCSRF")
+    const video = makeVideo()
+    const formData = new FormData()
+    fetchFormStub.returns(Promise.resolve({ ok: false, status: 500 }))
+
+    let thrown
+    try {
+      await uploadThumbnail(video.key, formData)
+    } catch (err) {
+      thrown = err
+    }
+    assert.isDefined(thrown)
+    assert.include(thrown.message, "500")
   })
 
   it("gets video analytics", async () => {

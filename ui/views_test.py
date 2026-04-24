@@ -1646,12 +1646,12 @@ def test_upload_thumbnail_replaces_existing(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": _make_jpeg_file(), "width": 1280, "height": 720},
+        {"thumbnail": _make_jpeg_file()},
         format="multipart",
     )
 
     assert response.status_code == status.HTTP_200_OK
-    mock_replace.assert_called_once_with(thumbnail, mocker.ANY, 1280, 720)
+    mock_replace.assert_called_once_with(thumbnail, mocker.ANY)
 
 
 def test_upload_thumbnail_creates_new(mocker, logged_in_apiclient):
@@ -1669,12 +1669,12 @@ def test_upload_thumbnail_creates_new(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": _make_jpeg_file(), "width": 640, "height": 360},
+        {"thumbnail": _make_jpeg_file()},
         format="multipart",
     )
 
     assert response.status_code == status.HTTP_201_CREATED
-    mock_create.assert_called_once_with(video, mocker.ANY, 640, 360)
+    mock_create.assert_called_once_with(video, mocker.ANY)
 
 
 def test_upload_thumbnail_no_file(mocker, logged_in_apiclient):
@@ -1687,7 +1687,7 @@ def test_upload_thumbnail_no_file(mocker, logged_in_apiclient):
     video = VideoFactory(collection=CollectionFactory(owner=user))
 
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
-    response = client.patch(url, {"width": 640, "height": 360}, format="multipart")
+    response = client.patch(url, {}, format="multipart")
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "No thumbnail file provided" in response.data["error"]
@@ -1705,7 +1705,7 @@ def test_upload_thumbnail_wrong_content_type(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": gif_file, "width": 640, "height": 360},
+        {"thumbnail": gif_file},
         format="multipart",
     )
 
@@ -1728,43 +1728,12 @@ def test_upload_thumbnail_accepts_png(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": png_file, "width": 640, "height": 360},
+        {"thumbnail": png_file},
         format="multipart",
     )
 
     assert response.status_code == status.HTTP_200_OK
     mock_replace.assert_called_once()
-
-
-@pytest.mark.parametrize(
-    "width, height",
-    [
-        (0, 360),
-        (640, 0),
-        (-1, 360),
-        (640, -1),
-        (0, 0),
-    ],
-)
-def test_upload_thumbnail_invalid_dimensions(
-    mocker, logged_in_apiclient, width, height
-):
-    """
-    When width or height is zero or negative, the view should return HTTP 400.
-    """
-    mocker.patch("ui.utils.get_keycloak_client")
-    client, user = logged_in_apiclient
-    video = VideoFactory(collection=CollectionFactory(owner=user))
-
-    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
-    response = client.patch(
-        url,
-        {"thumbnail": _make_jpeg_file(), "width": width, "height": height},
-        format="multipart",
-    )
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "dimensions" in response.data["error"]
 
 
 def test_upload_thumbnail_unauthenticated():
@@ -1780,7 +1749,7 @@ def test_upload_thumbnail_unauthenticated():
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = APIClient().patch(
         url,
-        {"thumbnail": _make_jpeg_file(), "width": 640, "height": 360},
+        {"thumbnail": _make_jpeg_file()},
         format="multipart",
     )
 
@@ -1808,7 +1777,7 @@ def test_upload_thumbnail_corrupt_file_returns_400(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": corrupt_file, "width": 640, "height": 360},
+        {"thumbnail": corrupt_file},
         format="multipart",
     )
 

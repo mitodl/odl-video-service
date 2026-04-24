@@ -90,14 +90,28 @@ export function deleteSubtitle(videoSubtitleKey: number) {
   })
 }
 
-export function uploadThumbnail(videoKey: string, formData: FormData) {
-  return fetchWithCSRF(`/api/v0/videos/${encodeURI(videoKey)}/thumbnail/`, {
-    headers: {
-      Accept: "application/json"
-    },
-    method: "PATCH",
-    body:   formData
-  })
+export async function uploadThumbnail(videoKey: string, formData: FormData) {
+  const response = await fetchWithCSRF(
+    `/api/v0/videos/${encodeURI(videoKey)}/thumbnail/`,
+    {
+      headers: {
+        Accept: "application/json"
+      },
+      method: "PATCH",
+      body:   formData
+    }
+  )
+  if (!response.ok) {
+    const message =
+      response.status === 413
+        ? "This image is too large. Please reduce the file size and try again."
+        : `Thumbnail upload failed (${response.status})`
+    const err = new Error(message)
+    // $FlowFixMe
+    err.status = response.status
+    throw err
+  }
+  return response
 }
 
 export async function getVideoAnalytics(videoKey: string) {

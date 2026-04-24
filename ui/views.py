@@ -528,25 +528,13 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            width = int(request.data.get("width", 0))
-            height = int(request.data.get("height", 0))
-        except (TypeError, ValueError):
-            width, height = 0, 0
-        if width <= 0 or height <= 0:
-            return Response(
-                {"error": "Valid image dimensions (width and height) are required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        try:
             if thumbnail:
-                cloudapi.replace_thumbnail_in_s3(
-                    thumbnail, thumbnail_file, width, height
-                )
+                cloudapi.replace_thumbnail_in_s3(thumbnail, thumbnail_file)
                 _status = status.HTTP_200_OK
             else:
                 # This is really a fallback case since a thumbnail should have already been created for the video,
                 # but we can handle it gracefully by creating a new thumbnail object and uploading the file to S3
-                cloudapi.create_thumbnail_in_s3(video, thumbnail_file, width, height)
+                cloudapi.create_thumbnail_in_s3(video, thumbnail_file)
                 _status = status.HTTP_201_CREATED
         except ValueError as exc:
             log.warning("Thumbnail upload validation failed", exc_info=exc)

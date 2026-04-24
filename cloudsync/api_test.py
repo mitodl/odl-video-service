@@ -594,7 +594,7 @@ def _make_jpeg_file():
     Return a minimal in-memory JPEG file-like object using PIL.
     """
     buf = io.BytesIO()
-    Image.new("RGB", (1, 1), color=(255, 0, 0)).save(buf, format="JPEG")
+    Image.new("RGB", (640, 480), color=(255, 0, 0)).save(buf, format="JPEG")
     buf.seek(0)
     return buf
 
@@ -604,7 +604,7 @@ def _make_png_file():
     Return a minimal in-memory PNG file-like object using PIL.
     """
     buf = io.BytesIO()
-    Image.new("RGBA", (1, 1), color=(0, 128, 255, 200)).save(buf, format="PNG")
+    Image.new("RGBA", (640, 480), color=(0, 128, 255, 200)).save(buf, format="PNG")
     buf.seek(0)
     return buf
 
@@ -640,7 +640,7 @@ def test_replace_thumbnail_in_s3_updates_s3_and_model():
     s3c.create_bucket(Bucket="thumb-bucket")
 
     new_image = _make_jpeg_file()
-    replace_thumbnail_in_s3(thumbnail, new_image, 640, 480)
+    replace_thumbnail_in_s3(thumbnail, new_image)
 
     # Dimensions must be written back to the model
     thumbnail.refresh_from_db()
@@ -671,7 +671,7 @@ def test_replace_thumbnail_in_s3_invalidates_cloudfront(mocker):
         bucket_name="thumb-bucket",
     )
 
-    replace_thumbnail_in_s3(thumbnail, _make_jpeg_file(), 320, 240)
+    replace_thumbnail_in_s3(thumbnail, _make_jpeg_file())
 
     mock_cf.create_invalidation.assert_called_once()
     call_kwargs = mock_cf.create_invalidation.call_args[1]
@@ -701,7 +701,7 @@ def test_replace_thumbnail_in_s3_s3_error_propagates(mocker):
     )
 
     with pytest.raises(Exception, match="S3 upload failed"):
-        replace_thumbnail_in_s3(thumbnail, _make_jpeg_file(), 640, 480)
+        replace_thumbnail_in_s3(thumbnail, _make_jpeg_file())
 
     # Model must NOT have been updated
     thumbnail.refresh_from_db()
@@ -729,14 +729,14 @@ def test_create_thumbnail_in_s3_creates_record_and_uploads():
     video = VideoFactory()
     new_image = _make_jpeg_file()
 
-    thumbnail = create_thumbnail_in_s3(video, new_image, 1280, 720)
+    thumbnail = create_thumbnail_in_s3(video, new_image)
 
     # A VideoThumbnail record must be created
     assert thumbnail.pk is not None
     assert thumbnail.video == video
     assert thumbnail.bucket_name == "thumbnail-bucket"
-    assert thumbnail.max_width == 1280
-    assert thumbnail.max_height == 720
+    assert thumbnail.max_width == 640
+    assert thumbnail.max_height == 480
     assert thumbnail.s3_object_key.startswith("thumbnails/")
     assert thumbnail.s3_object_key.endswith(".jpg")
 
@@ -758,7 +758,7 @@ def test_replace_thumbnail_in_s3_converts_png_to_jpeg():
     )
     s3c.create_bucket(Bucket="thumb-bucket")
 
-    replace_thumbnail_in_s3(thumbnail, _make_png_file(), 320, 240)
+    replace_thumbnail_in_s3(thumbnail, _make_png_file())
 
     obj = s3c.get_object(Bucket="thumb-bucket", Key="thumbnails/abc/thumb.jpg")
     assert obj["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -780,7 +780,7 @@ def test_replace_thumbnail_in_s3_converts_bilevel_png_to_jpeg():
     )
     s3c.create_bucket(Bucket="thumb-bucket")
 
-    replace_thumbnail_in_s3(thumbnail, _make_bilevel_png_file(), 2, 2)
+    replace_thumbnail_in_s3(thumbnail, _make_bilevel_png_file())
 
     obj = s3c.get_object(Bucket="thumb-bucket", Key="thumbnails/abc/thumb.jpg")
     body = obj["Body"].read()
@@ -800,7 +800,7 @@ def test_create_thumbnail_in_s3_converts_png_to_jpeg():
     s3c.create_bucket(Bucket="thumbnail-bucket")
 
     video = VideoFactory()
-    thumbnail = create_thumbnail_in_s3(video, _make_png_file(), 640, 480)
+    thumbnail = create_thumbnail_in_s3(video, _make_png_file())
 
     assert thumbnail.s3_object_key.endswith(".jpg")
     obj = s3c.get_object(Bucket="thumbnail-bucket", Key=thumbnail.s3_object_key)
@@ -815,15 +815,41 @@ def test_create_thumbnail_in_s3_converts_png_to_jpeg():
 
 def test_convert_image_to_jpeg_passthrough_for_jpeg():
     """
-    A JPEG input must be returned as-is (same bytes) to avoid a lossy re-encode.
+    A JPEG input that is within the size limit must be returned as-is (same
+    bytes) to avoid a lossy re-encode. The returned dimensions match the image.
     """
     buf = io.BytesIO()
     Image.new("RGB", (2, 2), color=(255, 0, 0)).save(buf, format="JPEG")
     original_bytes = buf.getvalue()
     buf.seek(0)
 
-    result = convert_image_to_jpeg(buf)
+    result, width, height = convert_image_to_jpeg(buf)
     assert result.read() == original_bytes
+    assert width == 2
+    assert height == 2
+
+
+@override_settings(THUMBNAIL_UPLOAD_MAX_WIDTH=200, THUMBNAIL_UPLOAD_MAX_HEIGHT=150)
+def test_convert_image_to_jpeg_resizes_large_image():
+    """
+    An image whose dimensions exceed the configured maximums must be downscaled
+    proportionally. The returned dimensions reflect the resized image.
+    """
+    big_w = 800
+    big_h = 600
+    buf = io.BytesIO()
+    Image.new("RGB", (big_w, big_h), color=(0, 128, 0)).save(buf, format="JPEG")
+    buf.seek(0)
+
+    result, width, height = convert_image_to_jpeg(buf)
+    assert width <= 200
+    assert height <= 150
+    # Aspect ratio preserved within a pixel of rounding
+    assert abs(width / height - big_w / big_h) < 0.01
+    # Result is a valid JPEG
+    result.seek(0)
+    img = Image.open(result)
+    assert img.format == "JPEG"
 
 
 def test_convert_image_to_jpeg_raises_for_corrupt_data():

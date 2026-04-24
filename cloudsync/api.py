@@ -565,61 +565,78 @@ def upload_subtitle_to_s3(caption_data, file_data):
     return vt
 
 
-def convert_image_to_jpeg(file_data):
+def convert_image_to_jpeg(file_data, max_width=None, max_height=None):
     """
-    Convert an uploaded image to JPEG format using PIL.
+    Convert an uploaded image to JPEG format using PIL, downscaling it if
+    either dimension exceeds the configured maximums.
 
-    If the source is already a JPEG, the original bytes are returned unchanged
-    to avoid a lossy re-encode. If the file cannot be decoded or is not a
-    JPEG/PNG, a ValueError is raised.
+    If the source is already a JPEG and within the size limits, the original
+    bytes are returned unchanged to avoid a lossy re-encode. If the file
+    cannot be decoded or is not a JPEG/PNG, a ValueError is raised.
 
     Args:
         file_data: A file-like object containing the source image.
+        max_width (int | None): Maximum allowed width in pixels. Defaults to
+            ``settings.THUMBNAIL_UPLOAD_MAX_WIDTH``.
+        max_height (int | None): Maximum allowed height in pixels. Defaults to
+            ``settings.THUMBNAIL_UPLOAD_MAX_HEIGHT``.
 
     Returns:
-        io.BytesIO: A BytesIO buffer containing the JPEG-encoded image.
+        tuple[io.BytesIO, int, int]: A ``(buffer, width, height)`` tuple where
+        *buffer* is a BytesIO containing the JPEG-encoded image and *width* /
+        *height* are the final pixel dimensions.
 
     Raises:
         ValueError: If the file cannot be decoded or is not a JPEG or PNG image.
     """
+    if max_width is None:
+        max_width = settings.THUMBNAIL_UPLOAD_MAX_WIDTH
+    if max_height is None:
+        max_height = settings.THUMBNAIL_UPLOAD_MAX_HEIGHT
     try:
         with Image.open(file_data) as img:
             if img.format not in ("JPEG", "PNG"):
                 raise ValueError(
                     f"Unsupported image format: {img.format!r}. Only JPEG and PNG are supported."
                 )
-            if img.format == "JPEG":
-                # Return the original bytes to avoid a lossy re-encode.
+            # Downscale if either dimension exceeds the configured limit.
+            orig_w, orig_h = img.size
+            if orig_w > max_width or orig_h > max_height:
+                img.thumbnail((max_width, max_height), Image.LANCZOS)
+            final_w, final_h = img.size
+            if img.format == "JPEG" and (orig_w, orig_h) == (final_w, final_h):
+                # No resize needed — return original bytes to avoid lossy re-encode.
                 file_data.seek(0)
                 buf = io.BytesIO(file_data.read())
                 buf.seek(0)
-                return buf
-            # PNG path: convert to a JPEG-compatible mode if needed.
+                return buf, final_w, final_h
+            # PNG or resized JPEG: convert to a JPEG-compatible mode if needed.
             if img.mode not in ("L", "RGB", "CMYK"):
                 img = img.convert("RGB")
             output = io.BytesIO()
             img.save(output, format="JPEG")
             output.seek(0)
-            return output
+            return output, final_w, final_h
     except ValueError:
         raise
     except Exception as exc:
         raise ValueError(f"Could not decode image: {exc}") from exc
 
 
-def replace_thumbnail_in_s3(thumbnail, file_data, width: int, height: int):
+def replace_thumbnail_in_s3(thumbnail, file_data):
     """
     Replaces the image content of an existing VideoThumbnail by overwriting its S3
     object in-place so that the S3 key (and therefore the CloudFront URL) never changes.
+    The image is downscaled to at most ``settings.THUMBNAIL_UPLOAD_MAX_WIDTH`` ×
+    ``settings.THUMBNAIL_UPLOAD_MAX_HEIGHT`` pixels before upload; the resulting
+    dimensions are persisted on the record.
 
     Args:
         thumbnail (VideoThumbnail): The existing thumbnail record whose S3 object
             should be overwritten.
         file_data (InMemoryUploadedFile): The new image file to upload.
-        width (int): Image width in pixels, as reported by the browser.
-        height (int): Image height in pixels, as reported by the browser.
     """
-    jpeg_data = convert_image_to_jpeg(file_data)
+    jpeg_data, width, height = convert_image_to_jpeg(file_data)
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(thumbnail.bucket_name)
     config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
@@ -664,21 +681,21 @@ def replace_thumbnail_in_s3(thumbnail, file_data, width: int, height: int):
             )
 
 
-def create_thumbnail_in_s3(video, file_data, width: int, height: int):
+def create_thumbnail_in_s3(video, file_data):
     """
     Uploads a new thumbnail image to S3 and creates a VideoThumbnail record for it.
-    Used when a video has no existing thumbnail.
+    Used when a video has no existing thumbnail. The image is downscaled to at most
+    ``settings.THUMBNAIL_UPLOAD_MAX_WIDTH`` × ``settings.THUMBNAIL_UPLOAD_MAX_HEIGHT``
+    pixels before upload.
 
     Args:
         video (Video): The video to create the thumbnail for.
         file_data (InMemoryUploadedFile): The image file to upload.
-        width (int): Image width in pixels, as reported by the browser.
-        height (int): Image height in pixels, as reported by the browser.
 
     Returns:
         VideoThumbnail: The newly created VideoThumbnail instance.
     """
-    jpeg_data = convert_image_to_jpeg(file_data)
+    jpeg_data, width, height = convert_image_to_jpeg(file_data)
     bucket_name = settings.VIDEO_S3_THUMBNAIL_BUCKET
     s3_key = "thumbnails/{video_key}/video_thumbnail.0000000.jpg".format(
         video_key=video.hexkey,
