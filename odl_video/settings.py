@@ -47,6 +47,11 @@ ALLOWED_HOSTS = ["*"]
 
 SECURE_SSL_REDIRECT = get_bool("ODL_VIDEO_SECURE_SSL_REDIRECT", True)
 
+# Trust the X-Forwarded-Proto header set by the upstream proxy (Nginx/APISix).
+# This lets Django recognise TLS-terminated requests as HTTPS so that
+# request.is_secure() returns True and social-auth builds redirect_uris with https://.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 WEBPACK_LOADER = {
     "DEFAULT": {
         "CACHE": not DEBUG,
