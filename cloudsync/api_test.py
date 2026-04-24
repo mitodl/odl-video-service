@@ -591,10 +591,11 @@ def test_transcode_video_client_error_no_job_id(mocker):
 
 def _make_jpeg_file():
     """
-    Return a minimal in-memory JPEG file-like object using PIL.
+    Return a minimal in-memory JPEG file-like object using PIL (640×360,
+    matching the default THUMBNAIL_UPLOAD_MAX_WIDTH/HEIGHT so no resize occurs).
     """
     buf = io.BytesIO()
-    Image.new("RGB", (640, 480), color=(255, 0, 0)).save(buf, format="JPEG")
+    Image.new("RGB", (640, 360), color=(255, 0, 0)).save(buf, format="JPEG")
     buf.seek(0)
     return buf
 
@@ -645,7 +646,7 @@ def test_replace_thumbnail_in_s3_updates_s3_and_model():
     # Dimensions must be written back to the model
     thumbnail.refresh_from_db()
     assert thumbnail.max_width == 640
-    assert thumbnail.max_height == 480
+    assert thumbnail.max_height == 360
 
     # The object must exist in S3 under the same key
     obj = s3c.get_object(Bucket="thumb-bucket", Key="thumbnails/abc/thumb.jpg")
@@ -736,7 +737,7 @@ def test_create_thumbnail_in_s3_creates_record_and_uploads():
     assert thumbnail.video == video
     assert thumbnail.bucket_name == "thumbnail-bucket"
     assert thumbnail.max_width == 640
-    assert thumbnail.max_height == 480
+    assert thumbnail.max_height == 360
     assert thumbnail.s3_object_key.startswith("thumbnails/")
     assert thumbnail.s3_object_key.endswith(".jpg")
 
