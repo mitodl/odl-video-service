@@ -48,12 +48,6 @@ class Command(BaseCommand):
             default=100,
             help="Number of users per task chunk",
         )
-        parser.add_argument(
-            "--default-password",
-            type=str,
-            default="ChangeMe123!",
-            help="Temporary password for newly created Keycloak users",
-        )
 
     def handle(self, *args, **options):
         if options["chunk_size"] <= 0:
@@ -138,9 +132,7 @@ class Command(BaseCommand):
         }
 
         async_results = [
-            migrate_keycloak_users_chunk.delay(
-                chunk, keycloak_config, options["default_password"]
-            )
+            migrate_keycloak_users_chunk.delay(chunk, keycloak_config)
             for chunk in chunks
         ]
 

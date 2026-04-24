@@ -143,7 +143,7 @@ def migrate_keycloak_groups_chunk(group_names, keycloak_config):
 
 
 @shared_task
-def migrate_keycloak_users_chunk(users_payload, keycloak_config, default_password):
+def migrate_keycloak_users_chunk(users_payload, keycloak_config):
     """Create Keycloak users for one chunk of serialized Django users. Always returns a summary dict."""
     manager = build_keycloak_manager(keycloak_config)
     summary = _empty_keycloak_migration_summary()
@@ -165,8 +165,12 @@ def migrate_keycloak_users_chunk(users_payload, keycloak_config, default_passwor
                     email=email,
                     first_name=payload.get("first_name", "") or "",
                     last_name=payload.get("last_name", "") or "",
-                    password=default_password,
-                    temporary_password=True,
+                    # No password: users authenticate via federated SAML, not a
+                    # local Keycloak credential.  Setting a temporary password
+                    # causes Keycloak to add UPDATE_PASSWORD as a required action,
+                    # prompting users to set a password even after SAML succeeds.
+                    password=None,
+                    temporary_password=False,
                     groups=[],
                     attributes={
                         "source": ["ovs_keycloak_migration"],

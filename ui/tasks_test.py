@@ -140,7 +140,6 @@ def test_migrate_keycloak_users_chunk_handles_conflict_and_errors(mocker):
     result = tasks.migrate_keycloak_users_chunk(
         payload,
         keycloak_config={},
-        default_password="ChangeMe123!",
     )
 
     assert result["created"] == 1
@@ -148,10 +147,6 @@ def test_migrate_keycloak_users_chunk_handles_conflict_and_errors(mocker):
     assert result["invalid_skipped"] == 0
     assert result["failed"] == 1
     assert len(result["errors"]) == 1
-
-
-@pytest.mark.django_db
-def test_migrate_keycloak_users_chunk_skips_invalid_payload(mocker):
     """Task should skip malformed user payload entries and continue."""
     mock_manager = mocker.Mock()
     mock_manager.create_user.return_value = {"id": "created"}
@@ -181,9 +176,36 @@ def test_migrate_keycloak_users_chunk_skips_invalid_payload(mocker):
     result = tasks.migrate_keycloak_users_chunk(
         payload,
         keycloak_config={},
-        default_password="ChangeMe123!",
     )
 
     assert result["created"] == 1
     assert result["invalid_skipped"] == 1
     assert result["failed"] == 0
+
+
+@pytest.mark.django_db
+def test_migrate_keycloak_users_chunk_creates_user_without_password(mocker):
+    """Migrated users must be created with no password so Keycloak does not add
+    UPDATE_PASSWORD as a required action (which would prompt SAML-authed users
+    to set a local password after login)."""
+    mock_manager = mocker.Mock()
+    mock_manager.create_user.return_value = {"id": "created"}
+    mocker.patch("ui.tasks.build_keycloak_manager", return_value=mock_manager)
+
+    tasks.migrate_keycloak_users_chunk(
+        [
+            {
+                "id": 1,
+                "username": "alice",
+                "email": "alice@example.com",
+                "first_name": "Alice",
+                "last_name": "A",
+            }
+        ],
+        keycloak_config={},
+    )
+
+    mock_manager.create_user.assert_called_once()
+    user_arg = mock_manager.create_user.call_args[0][0]
+    assert user_arg.password is None
+    assert user_arg.temporary_password is False
