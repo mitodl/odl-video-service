@@ -37,7 +37,7 @@ class KeycloakUser:
     last_name: str = ""
     enabled: bool = True
     email_verified: bool = False
-    password: Optional[str] = "TemporaryPass123!"
+    password: Optional[str] = None
     temporary_password: bool = True
     groups: Optional[List[str]] = None
     attributes: Optional[Dict[str, List[str]]] = None
@@ -47,7 +47,7 @@ class KeycloakManager:
     """Keycloak management utility for group and user management"""
 
     def __init__(
-        self, keycloak_url: str, realm: str, admin_username: str, admin_password: str
+        self, keycloak_url: str, realm: str, client_id: str, client_secret: str
     ):
         """
         Initialize Keycloak Manager
@@ -55,18 +55,20 @@ class KeycloakManager:
         Args:
             keycloak_url: Base Keycloak URL (e.g., 'http://kc.odl.local:7080')
             realm: Keycloak realm name
-            admin_username: Admin username
-            admin_password: Admin password
+            client_id: OIDC client ID for the service account
+            client_secret: OIDC client secret for the service account
         """
         self.keycloak_url = keycloak_url.rstrip("/")
         self.realm = realm
-        self.admin_username = admin_username
-        self.admin_password = admin_password
+        self.client_id = client_id
+        self.client_secret = client_secret
         self.access_token = None
 
     def get_admin_token(self) -> str:
         """
-        Get admin access token for Keycloak API calls
+        Obtain an access token via the client_credentials grant using the
+        configured service account.  The service account must have the
+        required realm-management roles (manage-users, view-users, etc.).
 
         Returns:
             str: The access token
@@ -74,13 +76,14 @@ class KeycloakManager:
         Raises:
             requests.exceptions.RequestException: If the token request fails
         """
-        token_url = f"{self.keycloak_url}/realms/master/protocol/openid-connect/token"
+        token_url = (
+            f"{self.keycloak_url}/realms/{self.realm}/protocol/openid-connect/token"
+        )
 
         data = {
-            "grant_type": "password",
-            "client_id": "admin-cli",
-            "username": self.admin_username,
-            "password": self.admin_password,
+            "grant_type": "client_credentials",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
         }
 
         try:
@@ -423,8 +426,8 @@ def get_keycloak_client() -> KeycloakManager:
         return KeycloakManager(
             keycloak_url=settings.KEYCLOAK_SERVER_URL,
             realm=settings.KEYCLOAK_REALM,
-            admin_username=settings.KEYCLOAK_SVC_ADMIN,
-            admin_password=settings.KEYCLOAK_SVC_ADMIN_PASSWORD,
+            client_id=settings.KEYCLOAK_SVC_ADMIN,
+            client_secret=settings.KEYCLOAK_SVC_ADMIN_PASSWORD,
         )
     except Exception as exc:
         logger.error(f"Failed to create Keycloak client: {exc}")

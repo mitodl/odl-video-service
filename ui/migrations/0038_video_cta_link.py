@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ui', '0037_collection_is_public'),
+        ("ui", "0037_collection_is_public"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='video',
-            name='cta_link',
+            model_name="video",
+            name="cta_link",
             field=models.URLField(blank=True, max_length=2000, null=True),
         ),
     ]

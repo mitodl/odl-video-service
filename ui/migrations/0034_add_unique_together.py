@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ui", "0033_rename_hls_api_path_to_edx_video_api_path"),
     ]

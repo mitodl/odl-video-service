@@ -21,8 +21,8 @@ def _keycloak_args():
     return {
         "keycloak_url": "http://kc.odl.local:7080",
         "keycloak_realm": "ovs-local",
-        "keycloak_admin_username": "admin",
-        "keycloak_admin_password": "admin",
+        "keycloak_client_id": "odl-video-app",
+        "keycloak_client_secret": "odl-video-secret-2025",
     }
 
 

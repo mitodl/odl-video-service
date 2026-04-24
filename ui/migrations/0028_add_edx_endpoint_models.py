@@ -27,7 +27,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ui", "0027_edx_course_admin_group"),
     ]

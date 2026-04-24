@@ -18,7 +18,6 @@ def populate_collection_created_at(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ui", "0011_collection_created_at"),
     ]

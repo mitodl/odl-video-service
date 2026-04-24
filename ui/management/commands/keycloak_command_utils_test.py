@@ -108,22 +108,22 @@ def test_keycloak_config_from_options_prefers_options_then_settings(settings):
     assert keycloak_config_from_options({}) == {
         "keycloak_url": "http://kc.settings:7080",
         "realm": "settings-realm",
-        "admin_username": "settings-admin",
-        "admin_password": "settings-pw",
+        "client_id": "settings-admin",
+        "client_secret": "settings-pw",
     }
 
     assert keycloak_config_from_options(
         {
             "keycloak_url": "http://kc.override:7080",
             "keycloak_realm": "override-realm",
-            "keycloak_admin_username": "override-admin",
-            "keycloak_admin_password": "override-pw",
+            "keycloak_client_id": "override-client",
+            "keycloak_client_secret": "override-secret",
         }
     ) == {
         "keycloak_url": "http://kc.override:7080",
         "realm": "override-realm",
-        "admin_username": "override-admin",
-        "admin_password": "override-pw",
+        "client_id": "override-client",
+        "client_secret": "override-secret",
     }
 
 

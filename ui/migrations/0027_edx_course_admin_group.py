@@ -14,7 +14,6 @@ def create_edx_course_admin_group(*args, **kwargs):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ui", "0026_schedule_retranscode"),
     ]

@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ui', '0039_collection_include_in_learn'),
+        ("ui", "0039_collection_include_in_learn"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='MoiraList',
-            new_name='KeycloakGroup',
+            old_name="MoiraList",
+            new_name="KeycloakGroup",
         ),
     ]

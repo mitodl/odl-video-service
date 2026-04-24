@@ -36,7 +36,6 @@ def set_client_id_and_secret_key(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("ui", "0030_edxendpoint_expires_in"),
     ]

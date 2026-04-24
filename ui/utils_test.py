@@ -3,11 +3,13 @@
 import json
 
 import pytest
+import responses
 from django.contrib.auth.models import AnonymousUser
 
 from odl_video.test_utils import MockResponse
 from ui import factories
 from ui.exceptions import GoogleAnalyticsException, KeycloakException
+from ui.keycloak_utils import KeycloakManager
 from ui.utils import (
     generate_google_analytics_query,
     generate_mock_video_analytics_data,
@@ -59,16 +61,47 @@ def test_get_keycloak_client_success(mock_keycloak, settings):
     """Test that a client is returned from get_keycloak_client"""
     settings.KEYCLOAK_SERVER_URL = "https://keycloak.example.com"
     settings.KEYCLOAK_REALM = "test-realm"
-    settings.KEYCLOAK_SVC_ADMIN = "admin"
-    settings.KEYCLOAK_SVC_ADMIN_PASSWORD = "password"
+    settings.KEYCLOAK_SVC_ADMIN = "odl-video-app"
+    settings.KEYCLOAK_SVC_ADMIN_PASSWORD = "test-secret"
 
     get_keycloak_client()
     mock_keycloak.assert_called_once_with(
         keycloak_url=settings.KEYCLOAK_SERVER_URL,
         realm=settings.KEYCLOAK_REALM,
-        admin_username=settings.KEYCLOAK_SVC_ADMIN,
-        admin_password=settings.KEYCLOAK_SVC_ADMIN_PASSWORD,
+        client_id=settings.KEYCLOAK_SVC_ADMIN,
+        client_secret=settings.KEYCLOAK_SVC_ADMIN_PASSWORD,
     )
+
+
+@responses.activate
+def test_get_admin_token_uses_client_credentials():
+    """get_admin_token() must use client_credentials grant against the configured realm."""
+    realm = "test-realm"
+    base_url = "https://keycloak.example.com"
+    token_url = f"{base_url}/realms/{realm}/protocol/openid-connect/token"
+
+    responses.add(
+        responses.POST,
+        token_url,
+        json={"access_token": "tok-abc123"},
+        status=200,
+    )
+
+    manager = KeycloakManager(
+        keycloak_url=base_url,
+        realm=realm,
+        client_id="odl-video-app",
+        client_secret="secret",
+    )
+    token = manager.get_admin_token()
+
+    assert token == "tok-abc123"
+    assert manager.access_token == "tok-abc123"
+    assert len(responses.calls) == 1
+    body = dict(pair.split("=") for pair in responses.calls[0].request.body.split("&"))
+    assert body["grant_type"] == "client_credentials"
+    assert body["client_id"] == "odl-video-app"
+    assert body["client_secret"] == "secret"
 
 
 def test_query_lists(mock_keycloak):

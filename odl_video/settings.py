@@ -142,8 +142,10 @@ SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL = SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL.replace
 # management commands, not by the runtime login flow.
 KEYCLOAK_SERVER_URL = get_string("KEYCLOAK_SERVER_URL", "http://kc.odl.local:7080")
 KEYCLOAK_REALM = get_string("KEYCLOAK_REALM", "ovs-local")
-KEYCLOAK_SVC_ADMIN = get_string("KEYCLOAK_SVC_ADMIN", "admin")
-KEYCLOAK_SVC_ADMIN_PASSWORD = get_string("KEYCLOAK_SVC_ADMIN_PASSWORD", "admin")
+KEYCLOAK_SVC_ADMIN = get_string("KEYCLOAK_SVC_ADMIN", "odl-video-app")
+KEYCLOAK_SVC_ADMIN_PASSWORD = get_string(
+    "KEYCLOAK_SVC_ADMIN_PASSWORD", "odl-video-secret-2025"
+)
 
 # Social Auth Pipeline - Custom pipeline for user creation and role mapping
 SOCIAL_AUTH_PIPELINE = [

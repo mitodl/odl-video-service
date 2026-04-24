@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('ui', '0038_video_cta_link'),
+        ("ui", "0038_video_cta_link"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='collection',
-            name='include_in_learn',
+            model_name="collection",
+            name="include_in_learn",
             field=models.BooleanField(default=False),
         ),
     ]

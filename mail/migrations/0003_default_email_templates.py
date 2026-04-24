@@ -41,7 +41,6 @@ You can view it and change settings at the following URL:
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("mail", "0002_default_email_templates"),
     ]

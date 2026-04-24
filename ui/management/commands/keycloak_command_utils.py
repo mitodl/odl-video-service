@@ -41,16 +41,16 @@ def add_keycloak_arguments(parser):
         help="Keycloak realm name (defaults to settings.KEYCLOAK_REALM)",
     )
     parser.add_argument(
-        "--keycloak-admin-username",
+        "--keycloak-client-id",
         type=str,
         default=None,
-        help="Keycloak admin username (defaults to settings.KEYCLOAK_SVC_ADMIN)",
+        help="Keycloak service account client ID (defaults to settings.KEYCLOAK_SVC_ADMIN)",
     )
     parser.add_argument(
-        "--keycloak-admin-password",
+        "--keycloak-client-secret",
         type=str,
         default=None,
-        help="Keycloak admin password (defaults to settings.KEYCLOAK_SVC_ADMIN_PASSWORD)",
+        help="Keycloak service account client secret (defaults to settings.KEYCLOAK_SVC_ADMIN_PASSWORD)",
     )
 
 
@@ -59,11 +59,9 @@ def keycloak_config_from_options(options):
     return {
         "keycloak_url": options.get("keycloak_url") or settings.KEYCLOAK_SERVER_URL,
         "realm": options.get("keycloak_realm") or settings.KEYCLOAK_REALM,
-        "admin_username": (
-            options.get("keycloak_admin_username") or settings.KEYCLOAK_SVC_ADMIN
-        ),
-        "admin_password": (
-            options.get("keycloak_admin_password")
+        "client_id": (options.get("keycloak_client_id") or settings.KEYCLOAK_SVC_ADMIN),
+        "client_secret": (
+            options.get("keycloak_client_secret")
             or settings.KEYCLOAK_SVC_ADMIN_PASSWORD
         ),
     }
