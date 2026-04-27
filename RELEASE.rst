@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.87.0
+--------------
+
+- Update dependency social-auth-app-django to v5.6.0 [SECURITY] (#1465)
+- moira/shibboleth backend cleanup (#1464)
+- Don't set a password when migrating users to Keycloak
+
 Version 0.86.4 (Released April 24, 2026)
 --------------
 
