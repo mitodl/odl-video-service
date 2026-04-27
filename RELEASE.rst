@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.87.0
+Version 0.87.0 (Released April 27, 2026)
 --------------
 
 - Update dependency social-auth-app-django to v5.6.0 [SECURITY] (#1465)
