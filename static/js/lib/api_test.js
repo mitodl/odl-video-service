@@ -147,9 +147,7 @@ describe("api", () => {
     const video = makeVideo()
     const formData = new FormData()
     formData.append("thumbnail", new Blob(["fake-image"], { type: "image/jpeg" }), "thumb.jpg")
-    formData.append("width", 1280)
-    formData.append("height", 720)
-    fetchFormStub.returns(Promise.resolve({ ok: true, status: 200 }))
+    fetchFormStub.returns(Promise.resolve("{}"))
 
     await uploadThumbnail(video.key, formData)
     sinon.assert.calledWith(
@@ -167,7 +165,7 @@ describe("api", () => {
     const fetchFormStub = sandbox.stub(fetchFuncs, "fetchWithCSRF")
     const video = makeVideo()
     const formData = new FormData()
-    fetchFormStub.returns(Promise.resolve({ ok: false, status: 413 }))
+    fetchFormStub.returns(Promise.reject(["", 413]))
 
     let thrown
     try {
@@ -184,7 +182,7 @@ describe("api", () => {
     const fetchFormStub = sandbox.stub(fetchFuncs, "fetchWithCSRF")
     const video = makeVideo()
     const formData = new FormData()
-    fetchFormStub.returns(Promise.resolve({ ok: false, status: 500 }))
+    fetchFormStub.returns(Promise.reject(["", 500]))
 
     let thrown
     try {

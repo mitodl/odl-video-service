@@ -17,8 +17,11 @@ services:
   nginx:
     image: nginx:1.29.6
     volumes:
-      - ./config/nginx.conf:/etc/nginx/conf.d/web.conf
+      - ./config/nginx.conf:/etc/nginx/templates/web.conf.template
       - ./:/src
+    environment:
+      NGINX_CLIENT_MAX_BODY_SIZE: ${NGINX_CLIENT_MAX_BODY_SIZE:-1m}
+    env_file: .env
     ports:
       - "8089:8089"
     links:

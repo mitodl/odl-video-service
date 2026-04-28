@@ -152,6 +152,7 @@ def test_video_detail(logged_in_client, settings):
         "user": user.username,
         "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
         "dropbox_key": "foo_dropbox_key",
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": False,
@@ -194,6 +195,7 @@ def test_video_embed(logged_in_client, settings):
         "email": user.email,
         "is_app_admin": False,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": False,
             "VIDEOJS_ANNOTATIONS": False,
@@ -904,6 +906,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
         "public_path": "/static/bundles/",
         "status_code": status.HTTP_404_NOT_FOUND,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
         "email": user.email,
         "user": user.username,
         "is_app_admin": False,

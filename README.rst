@@ -175,6 +175,30 @@ YouTube Integration
 - Save the ``YT_ACCESS_TOKEN`` and ``YT_REFRESH_TOKEN`` values to your ``.env`` file
 
 
+Thumbnail Upload Limits
+-----------------------
+Two environment variables control the maximum size of uploaded thumbnail images.
+Both must be kept in sync so the limits are consistent across all layers:
+
+``THUMBNAIL_UPLOAD_MAX_SIZE`` (default: ``1048576`` — 1 MB)
+  Maximum allowed thumbnail file size **in bytes**. Enforced by Django before the
+  image is processed. The value is also passed to the frontend as
+  ``SETTINGS.thumbnail_upload_max_size`` for client-side validation.
+
+``NGINX_CLIENT_MAX_BODY_SIZE`` (default: ``1m``)
+  nginx ``client_max_body_size`` directive. Requests exceeding this limit are
+  rejected by nginx with a 413 before reaching Django. Accepts standard nginx
+  size strings (e.g. ``1m``, ``5m``, ``500k``).
+
+Both variables default to **1 MB**. To raise the limit, set both together in
+your ``.env`` file (or k8s/Heroku config vars):
+
+.. code-block:: bash
+
+    THUMBNAIL_UPLOAD_MAX_SIZE=5242880   # 5 MB in bytes
+    NGINX_CLIENT_MAX_BODY_SIZE=5m       # 5 MB nginx string
+
+
 Running
 -------
 To run the application, install Docker and `Docker Compose`_, then run:

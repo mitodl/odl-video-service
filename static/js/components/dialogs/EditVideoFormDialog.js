@@ -27,9 +27,6 @@ import type { Video, VideoUiState } from "../../flow/videoTypes"
 import { calculateListPermissionValue } from "../../util/util"
 import { videoHasError, videoIsProcessing } from "../../lib/video"
 
-const THUMBNAIL_MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
-
-
 type DialogProps = {
   dispatch: Dispatch,
   videoUi: VideoUiState,
@@ -184,9 +181,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       event.target.value = ""
       return
     }
-    if (file.size > THUMBNAIL_MAX_FILE_SIZE) {
+    if (file.size > SETTINGS.thumbnail_upload_max_size) {
       this.setState({
-        thumbnailError:      `This image is too large (max ${THUMBNAIL_MAX_FILE_SIZE / (1024 * 1024)} MB). Please reduce the file size and try again.`,
+        thumbnailError:      `This image is too large (max ${SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB). Please reduce the file size and try again.`,
         thumbnailFile:       null,
         thumbnailPreviewUrl: null
       })
@@ -357,7 +354,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             <p
               style={{ color: "#666", margin: "4px 0 0 0", fontSize: "0.8em" }}
             >
-              JPEG or PNG, max {THUMBNAIL_MAX_FILE_SIZE / (1024 * 1024)} MB
+              JPEG or PNG, max {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
             </p>
           )}
         </div>
