@@ -173,6 +173,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     const file = event.target.files[0]
     if (!file) return
     if (file.type !== "image/jpeg" && file.type !== "image/jpg" && file.type !== "image/png") {
+      const { thumbnailPreviewUrl } = this.state
+      if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
       this.setState({
         thumbnailError:      "Only JPEG and PNG image files are allowed.",
         thumbnailFile:       null,
@@ -182,6 +184,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       return
     }
     if (file.size > SETTINGS.thumbnail_upload_max_size) {
+      const { thumbnailPreviewUrl } = this.state
+      if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
       this.setState({
         thumbnailError:      `This image is too large (max ${SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB). Please reduce the file size and try again.`,
         thumbnailFile:       null,
@@ -272,6 +276,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
         try {
           await uploadThumbnail(editVideoForm.key, formData)
         } catch (uploadErr) {
+          const { thumbnailPreviewUrl } = this.state
+          if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
           this.setState({
             thumbnailError:      uploadErr.message,
             thumbnailFile:       null,

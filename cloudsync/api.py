@@ -607,14 +607,20 @@ def convert_image_to_jpeg(file_data, max_width=None, max_height=None):
                 )
             # Normalise EXIF orientation so pixel data matches display orientation
             # before any size computation or re-encode.
-            img = ImageOps.exif_transpose(img)
+            transposed = ImageOps.exif_transpose(img)
+            exif_changed = transposed is not img
+            img = transposed
             # Downscale if either dimension exceeds the configured limit.
             orig_w, orig_h = img.size
             if orig_w > max_width or orig_h > max_height:
                 img.thumbnail((max_width, max_height), Image.LANCZOS)
             final_w, final_h = img.size
-            if img_format == "JPEG" and (orig_w, orig_h) == (final_w, final_h):
-                # No resize needed — return original bytes to avoid lossy re-encode.
+            if (
+                img_format == "JPEG"
+                and not exif_changed
+                and (orig_w, orig_h) == (final_w, final_h)
+            ):
+                # No resize and no EXIF rotation — return original bytes to avoid lossy re-encode.
                 file_data.seek(0)
                 buf = io.BytesIO(file_data.read())
                 buf.seek(0)

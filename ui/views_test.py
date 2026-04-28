@@ -1732,6 +1732,7 @@ def test_upload_thumbnail_too_large(mocker, logged_in_apiclient):
 
     assert response.status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
     assert "too large" in response.data["error"]
+    assert "100 bytes" in response.data["error"]
 
 
 def test_upload_thumbnail_accepts_png(mocker, logged_in_apiclient):

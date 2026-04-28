@@ -529,9 +529,15 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if getattr(thumbnail_file, "size", 0) > settings.THUMBNAIL_UPLOAD_MAX_SIZE:
-            max_mb = settings.THUMBNAIL_UPLOAD_MAX_SIZE // (1024 * 1024)
+            max_size = settings.THUMBNAIL_UPLOAD_MAX_SIZE
+            if max_size >= 1024 * 1024:
+                size_str = f"{max_size // (1024 * 1024)} MB"
+            elif max_size >= 1024:
+                size_str = f"{max_size // 1024} KB"
+            else:
+                size_str = f"{max_size} bytes"
             return Response(
-                {"error": f"The uploaded image is too large (max {max_mb} MB)."},
+                {"error": f"The uploaded image is too large (max {size_str})."},
                 status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )
         try:
