@@ -6,17 +6,32 @@ Used to recover Videos whose original ``stream_to_s3`` chain stalled — for
 example when Dropbox starts gating shared links behind a sign-in wall and the
 streaming download hangs. The operator manually downloads the file, then runs
 this command pointing at the file and the existing Video's UUID.
+
+By default the command refuses to overwrite an existing S3 object — pass
+``--force`` to overwrite (e.g. when re-uploading the same Video after a
+known-bad upload).
 """
 
 import mimetypes
 import os
 
 import boto3
+from botocore.exceptions import ClientError
 from django.core.management.base import BaseCommand, CommandError
 
 from cloudsync.tasks import transcode_from_s3
 from ui.constants import VideoStatus
 from ui.models import Video, VideoFile
+
+
+def _existing_object_size(bucket, key):
+    """Return the size of an S3 object at ``key``, or None if it doesn't exist."""
+    try:
+        return bucket.Object(key).content_length
+    except ClientError as exc:
+        if exc.response.get("Error", {}).get("Code") in {"404", "NoSuchKey"}:
+            return None
+        raise
 
 
 class Command(BaseCommand):
@@ -47,6 +62,15 @@ class Command(BaseCommand):
             "--dry-run",
             action="store_true",
             help="Look up the Video and print what would happen, but don't upload or dispatch.",
+        )
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help=(
+                "Overwrite an existing S3 object at the destination key. "
+                "Without this, the command refuses to clobber an existing "
+                "object — guards against typo'd --video-key."
+            ),
         )
 
     def handle(self, *args, **options):
@@ -89,13 +113,29 @@ class Command(BaseCommand):
             f"  target: s3://{video_file.bucket_name}/{video_file.s3_object_key}"
         )
 
+        bucket = boto3.resource("s3").Bucket(video_file.bucket_name)
+        existing_size = _existing_object_size(bucket, video_file.s3_object_key)
+        if existing_size is not None:
+            note = f"S3 object already exists ({existing_size} bytes)"
+            if options["force"]:
+                self.stdout.write(
+                    self.style.WARNING(f"  {note}; --force given, will overwrite.")
+                )
+            elif not options["dry_run"]:
+                raise CommandError(
+                    f"{note} at s3://{video_file.bucket_name}/{video_file.s3_object_key}. "
+                    f"Re-run with --force to overwrite, "
+                    f"or double-check --video-key {options['video_key']!r}."
+                )
+            else:
+                self.stdout.write(f"  {note}; would require --force to overwrite.")
+
         if options["dry_run"]:
             self.stdout.write(
                 self.style.WARNING("DRY-RUN: no upload, no transcode dispatch")
             )
             return
 
-        bucket = boto3.resource("s3").Bucket(video_file.bucket_name)
         with open(local_path, "rb") as fh:
             bucket.upload_fileobj(
                 Fileobj=fh,
