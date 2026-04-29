@@ -15,7 +15,7 @@ from redbeat import RedBeatScheduler
 from odl_video.envs import get_any, get_bool, get_int, get_key, get_string, parse_env
 from odl_video.sentry import init_sentry
 
-VERSION = "0.87.0"
+VERSION = "2026.4.16.1"
 
 ENVIRONMENT = get_string("ODL_VIDEO_ENVIRONMENT", "dev")
 
@@ -46,11 +46,6 @@ DEBUG = get_bool("DEBUG", False)
 ALLOWED_HOSTS = ["*"]
 
 SECURE_SSL_REDIRECT = get_bool("ODL_VIDEO_SECURE_SSL_REDIRECT", True)
-
-# Trust the X-Forwarded-Proto header set by the upstream proxy (Nginx/APISix).
-# This lets Django recognise TLS-terminated requests as HTTPS so that
-# request.is_secure() returns True and social-auth builds redirect_uris with https://.
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 WEBPACK_LOADER = {
     "DEFAULT": {
@@ -83,7 +78,6 @@ INSTALLED_APPS = [
     "hijack",
     "hijack.contrib.admin",
     "encrypted_model_fields",
-    # "social_django",
 ]
 
 DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
@@ -96,7 +90,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    # "social_django.middleware.SocialAuthExceptionMiddleware",
     "hijack.middleware.HijackUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -110,87 +103,20 @@ if DEBUG:
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
 LOGIN_REDIRECT_URL = "/"
-LOGIN_URL = "login"
-USE_KEYCLOAK = get_bool("USE_KEYCLOAK", True)
-if USE_KEYCLOAK:
-    # KEYCLOAK
-    MIDDLEWARE.append("social_django.middleware.SocialAuthExceptionMiddleware")
-    INSTALLED_APPS += ("social_django",)
-
+if get_bool("USE_SHIBBOLETH", False):
+    # TOUCHSTONE
+    MIDDLEWARE.append("shibboleth.middleware.ShibbolethRemoteUserMiddleware")
+    SHIBBOLETH_ATTRIBUTE_MAP = {
+        "EPPN": (True, "username"),
+        "MAIL": (True, "email"),
+        # full name is in the "DISPLAY_NAME" header,
+        # but no way to parse that into first_name and last_name...
+    }
     AUTHENTICATION_BACKENDS = [
-        "social_core.backends.keycloak.KeycloakOAuth2",
+        "shibboleth.backends.ShibbolethRemoteUserBackend",
     ]
+LOGIN_URL = "/login/"
 
-    LOGIN_URL = "/auth/login/keycloak/"
-else:
-    AUTHENTICATION_BACKENDS = [
-        "django.contrib.auth.backends.ModelBackend",
-    ]
-
-
-# Keycloak OIDC settings — consumed by social-auth-app-django at runtime.
-SOCIAL_AUTH_KEYCLOAK_KEY = get_string("SOCIAL_AUTH_KEYCLOAK_KEY", "")
-SOCIAL_AUTH_KEYCLOAK_SECRET = get_string("SOCIAL_AUTH_KEYCLOAK_SECRET", "")
-SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY = get_string("SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY", "")
-SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL = get_string(
-    "SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL", ""
-)
-SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL = get_string(
-    "SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL", ""
-)
-SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL = SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL.replace(
-    "/protocol/openid-connect/auth", "/protocol/openid-connect/logout"
-)
-
-# Keycloak admin-API settings — consumed by the moira-to-keycloak migration
-# management commands, not by the runtime login flow.
-# KEYCLOAK_SERVER_URL and KEYCLOAK_REALM fall back to values parsed from
-# SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL so that they work even before the
-# Vault secret is updated with the explicit server_url/realm_name fields.
-_keycloak_token_url = SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL
-if "/realms/" in _keycloak_token_url:
-    _kc_server_url_default = _keycloak_token_url.split("/realms/")[0]
-    _kc_realm_default = _keycloak_token_url.split("/realms/")[1].split("/")[0]
-else:
-    _kc_server_url_default = "http://kc.odl.local:7080"
-    _kc_realm_default = "ovs-local"
-
-KEYCLOAK_SERVER_URL = get_string("KEYCLOAK_SERVER_URL", "") or _kc_server_url_default
-KEYCLOAK_REALM = get_string("KEYCLOAK_REALM", "") or _kc_realm_default
-KEYCLOAK_SVC_ADMIN = get_string("KEYCLOAK_SVC_ADMIN", "odl-video-app")
-KEYCLOAK_SVC_ADMIN_PASSWORD = get_string(
-    "KEYCLOAK_SVC_ADMIN_PASSWORD", "odl-video-secret-2025"
-)
-
-# Social Auth Pipeline - Custom pipeline for user creation and role mapping
-SOCIAL_AUTH_PIPELINE = [
-    "social_core.pipeline.social_auth.social_details",
-    "social_core.pipeline.social_auth.social_uid",
-    "social_core.pipeline.social_auth.social_user",
-    "social_core.pipeline.user.get_username",
-    # Send a validation email to the user to verify its email address.
-    # Disabled by default.
-    # 'social_core.pipeline.mail.mail_validation',
-    # Associates the current social details with another user account with
-    # a similar email address. Disabled by default.
-    # 'social_core.pipeline.social_auth.associate_by_email',
-    # Create the user account and create the social association.
-    "social_core.pipeline.user.create_user",
-    # Associate the current social details with the user in the database.
-    "social_core.pipeline.social_auth.associate_user",
-    "social_core.pipeline.social_auth.load_extra_data",
-    "social_core.pipeline.user.user_details",
-    # Map Keycloak groups (from the user_groups token claim) to Django
-    # is_staff / is_superuser flags.  Must run after load_extra_data.
-    "odl_video.pipeline.assign_user_groups",
-]
-
-SOCIAL_AUTH_KEYCLOAK_ID_KEY = "email"
-SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
-SOCIAL_AUTH_KEYCLOAK_SCOPE = ["openid", "profile", "email"]
-SOCIAL_AUTH_KEYCLOAK_EXTRA_DATA = ["user_groups"]
-
-LOGOUT_REDIRECT_URL = "/"
 
 ROOT_URLCONF = "odl_video.urls"
 
@@ -304,6 +230,14 @@ NPLUSONE_LOG_LEVEL = logging.ERROR
 
 # LOGGING is provided by mitol-django-observability via import_settings_modules above
 
+# MIT keys
+MIT_WS_CERTIFICATE = get_key("MIT_WS_CERTIFICATE", "")
+MIT_WS_PRIVATE_KEY = get_key("MIT_WS_PRIVATE_KEY", "")
+
+# x509 filenames
+MIT_WS_CERTIFICATE_FILE = os.path.join(STATIC_ROOT, "mit_x509.cert")
+MIT_WS_PRIVATE_KEY_FILE = os.path.join(STATIC_ROOT, "mit_x509.key")
+
 # Dropbox key
 DROPBOX_KEY = get_string("DROPBOX_KEY", "")
 
@@ -377,9 +311,6 @@ VIDEO_S3_BUCKET = AWS_STORAGE_BUCKET_NAME = get_string("VIDEO_S3_BUCKET", "")
 VIDEO_S3_TRANSCODE_BUCKET = get_string("VIDEO_S3_TRANSCODE_BUCKET", "")
 VIDEO_S3_THUMBNAIL_BUCKET = get_string("VIDEO_S3_THUMBNAIL_BUCKET", "")
 VIDEO_S3_SUBTITLE_BUCKET = get_string("VIDEO_S3_SUBTITLE_BUCKET", "")
-THUMBNAIL_UPLOAD_MAX_WIDTH = get_int("THUMBNAIL_UPLOAD_MAX_WIDTH", 640)
-THUMBNAIL_UPLOAD_MAX_HEIGHT = get_int("THUMBNAIL_UPLOAD_MAX_HEIGHT", 360)
-THUMBNAIL_UPLOAD_MAX_SIZE = get_int("THUMBNAIL_UPLOAD_MAX_SIZE", 1024 * 1024)
 VIDEO_S3_WATCH_BUCKET = get_string("VIDEO_S3_WATCH_BUCKET", "")
 
 # server-status
@@ -435,6 +366,8 @@ MANDATORY_SETTINGS = [
     "REDIS_URL",
     "SECRET_KEY",
     "VIDEO_CLOUDFRONT_DIST",
+    "MIT_WS_CERTIFICATE",
+    "MIT_WS_PRIVATE_KEY",
     "VIDEO_S3_BUCKET",
     "VIDEO_S3_TRANSCODE_BUCKET",
     "VIDEO_S3_THUMBNAIL_BUCKET",
@@ -578,6 +511,7 @@ PAGE_SIZE_MAXIMUM = get_int("PAGE_SIZE_MAXIMUM", 1000)
 PAGE_SIZE_COLLECTIONS = get_int("PAGE_SIZE_COLLECTIONS", 50)
 PAGE_SIZE_VIDEOS = get_int("PAGE_SIZE_VIDEOS", 1000)
 
+MOIRA_CACHE_TIMEOUT = get_int("MOIRA_CACHE_TIMEOUT", 10800)
 HIJACK_ALLOW_GET_REQUESTS = True
 HIJACK_LOGOUT_REDIRECT_URL = "/admin/auth/user"
 
