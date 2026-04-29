@@ -173,8 +173,27 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     const file = event.target.files[0]
     if (!file) return
     if (file.type !== "image/jpeg" && file.type !== "image/jpg" && file.type !== "image/png") {
+      const { thumbnailPreviewUrl } = this.state
+      if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
       this.setState({
         thumbnailError:      "Only JPEG and PNG image files are allowed.",
+        thumbnailFile:       null,
+        thumbnailPreviewUrl: null
+      })
+      event.target.value = ""
+      return
+    }
+    if (file.size > SETTINGS.thumbnail_upload_max_size) {
+      const { thumbnailPreviewUrl } = this.state
+      if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
+      const maxBytes = SETTINGS.thumbnail_upload_max_size
+      const maxSizeStr = maxBytes >= 1024 * 1024 ?
+        `${Math.floor(maxBytes / (1024 * 1024))} MB` :
+        maxBytes >= 1024 ?
+          `${Math.floor(maxBytes / 1024)} KB` :
+          `${maxBytes} bytes`
+      this.setState({
+        thumbnailError:      `This image is too large (max ${maxSizeStr}). Please reduce the file size and try again.`,
         thumbnailFile:       null,
         thumbnailPreviewUrl: null
       })
@@ -260,27 +279,18 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       if (thumbnailFile) {
         const formData = new FormData()
         formData.append("thumbnail", thumbnailFile)
-        const img = new window.Image()
-        const objectUrl = URL.createObjectURL(thumbnailFile)
-        img.src = objectUrl
         try {
-          await new Promise((resolve, reject) => {
-            img.onload = resolve
-            img.onerror = () => reject(new Error("Failed to read image dimensions"))
-          })
-        } catch (_) {
-          URL.revokeObjectURL(objectUrl)
+          await uploadThumbnail(editVideoForm.key, formData)
+        } catch (uploadErr) {
+          const { thumbnailPreviewUrl } = this.state
+          if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
           this.setState({
-            thumbnailError:      "Failed to load image. Please try a different file.",
+            thumbnailError:      uploadErr.message,
             thumbnailFile:       null,
             thumbnailPreviewUrl: null
           })
           return
         }
-        formData.append("width", img.naturalWidth)
-        formData.append("height", img.naturalHeight)
-        URL.revokeObjectURL(objectUrl)
-        await uploadThumbnail(editVideoForm.key, formData)
       }
       const video = await dispatch(
         actions.videos.patch(editVideoForm.key, patchData)
@@ -346,11 +356,17 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             accept="image/jpeg,image/jpg,image/png,.jpg,.jpeg,.png"
             onChange={this.handleThumbnailChange}
           />
-          {thumbnailError && (
+          {thumbnailError ? (
             <p
               style={{ color: "red", margin: "4px 0 0 0", fontSize: "0.85em" }}
             >
               {thumbnailError}
+            </p>
+          ) : (
+            <p
+              style={{ color: "#666", margin: "4px 0 0 0", fontSize: "0.8em" }}
+            >
+              JPEG or PNG, max {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
             </p>
           )}
         </div>

@@ -10,7 +10,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser, Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponseRedirect
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -152,6 +152,7 @@ def test_video_detail(logged_in_client, settings):
         "user": user.username,
         "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
         "dropbox_key": "foo_dropbox_key",
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": False,
@@ -194,6 +195,7 @@ def test_video_embed(logged_in_client, settings):
         "email": user.email,
         "is_app_admin": False,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": False,
             "VIDEOJS_ANNOTATIONS": False,
@@ -904,6 +906,7 @@ def test_page_not_found(url, logged_in_apiclient, settings):
         "public_path": "/static/bundles/",
         "status_code": status.HTTP_404_NOT_FOUND,
         "support_email_address": settings.EMAIL_SUPPORT,
+        "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
         "email": user.email,
         "user": user.username,
         "is_app_admin": False,
@@ -1646,12 +1649,12 @@ def test_upload_thumbnail_replaces_existing(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": _make_jpeg_file(), "width": 1280, "height": 720},
+        {"thumbnail": _make_jpeg_file()},
         format="multipart",
     )
 
     assert response.status_code == status.HTTP_200_OK
-    mock_replace.assert_called_once_with(thumbnail, mocker.ANY, 1280, 720)
+    mock_replace.assert_called_once_with(thumbnail, mocker.ANY)
 
 
 def test_upload_thumbnail_creates_new(mocker, logged_in_apiclient):
@@ -1669,12 +1672,12 @@ def test_upload_thumbnail_creates_new(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": _make_jpeg_file(), "width": 640, "height": 360},
+        {"thumbnail": _make_jpeg_file()},
         format="multipart",
     )
 
     assert response.status_code == status.HTTP_201_CREATED
-    mock_create.assert_called_once_with(video, mocker.ANY, 640, 360)
+    mock_create.assert_called_once_with(video, mocker.ANY)
 
 
 def test_upload_thumbnail_no_file(mocker, logged_in_apiclient):
@@ -1687,7 +1690,7 @@ def test_upload_thumbnail_no_file(mocker, logged_in_apiclient):
     video = VideoFactory(collection=CollectionFactory(owner=user))
 
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
-    response = client.patch(url, {"width": 640, "height": 360}, format="multipart")
+    response = client.patch(url, {}, format="multipart")
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "No thumbnail file provided" in response.data["error"]
@@ -1705,12 +1708,31 @@ def test_upload_thumbnail_wrong_content_type(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": gif_file, "width": 640, "height": 360},
+        {"thumbnail": gif_file},
         format="multipart",
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "Only JPEG and PNG" in response.data["error"]
+
+
+@override_settings(THUMBNAIL_UPLOAD_MAX_SIZE=100)
+def test_upload_thumbnail_too_large(mocker, logged_in_apiclient):
+    """
+    When the uploaded file exceeds THUMBNAIL_UPLOAD_MAX_SIZE the view should
+    return HTTP 413.
+    """
+    mocker.patch("ui.utils.get_keycloak_client")
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+
+    big_file = SimpleUploadedFile("thumb.jpg", b"x" * 101, content_type="image/jpeg")
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(url, {"thumbnail": big_file}, format="multipart")
+
+    assert response.status_code == status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    assert "too large" in response.data["error"]
+    assert "100 bytes" in response.data["error"]
 
 
 def test_upload_thumbnail_accepts_png(mocker, logged_in_apiclient):
@@ -1728,43 +1750,12 @@ def test_upload_thumbnail_accepts_png(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": png_file, "width": 640, "height": 360},
+        {"thumbnail": png_file},
         format="multipart",
     )
 
     assert response.status_code == status.HTTP_200_OK
     mock_replace.assert_called_once()
-
-
-@pytest.mark.parametrize(
-    "width, height",
-    [
-        (0, 360),
-        (640, 0),
-        (-1, 360),
-        (640, -1),
-        (0, 0),
-    ],
-)
-def test_upload_thumbnail_invalid_dimensions(
-    mocker, logged_in_apiclient, width, height
-):
-    """
-    When width or height is zero or negative, the view should return HTTP 400.
-    """
-    mocker.patch("ui.utils.get_keycloak_client")
-    client, user = logged_in_apiclient
-    video = VideoFactory(collection=CollectionFactory(owner=user))
-
-    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
-    response = client.patch(
-        url,
-        {"thumbnail": _make_jpeg_file(), "width": width, "height": height},
-        format="multipart",
-    )
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "dimensions" in response.data["error"]
 
 
 def test_upload_thumbnail_unauthenticated():
@@ -1780,7 +1771,7 @@ def test_upload_thumbnail_unauthenticated():
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = APIClient().patch(
         url,
-        {"thumbnail": _make_jpeg_file(), "width": 640, "height": 360},
+        {"thumbnail": _make_jpeg_file()},
         format="multipart",
     )
 
@@ -1808,7 +1799,7 @@ def test_upload_thumbnail_corrupt_file_returns_400(mocker, logged_in_apiclient):
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
-        {"thumbnail": corrupt_file, "width": 640, "height": 360},
+        {"thumbnail": corrupt_file},
         format="multipart",
     )
 

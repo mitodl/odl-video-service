@@ -82,6 +82,7 @@ def default_js_settings(request):
         ),
         "support_email_address": settings.EMAIL_SUPPORT,
         "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
+        "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": settings.ENABLE_VIDEO_PERMISSIONS,
             "VIDEOJS_ANNOTATIONS": settings.FEATURES.get("VIDEOJS_ANNOTATIONS", False),
@@ -527,26 +528,26 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 {"error": "Only JPEG and PNG image files are allowed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        try:
-            width = int(request.data.get("width", 0))
-            height = int(request.data.get("height", 0))
-        except (TypeError, ValueError):
-            width, height = 0, 0
-        if width <= 0 or height <= 0:
+        if getattr(thumbnail_file, "size", 0) > settings.THUMBNAIL_UPLOAD_MAX_SIZE:
+            max_size = settings.THUMBNAIL_UPLOAD_MAX_SIZE
+            if max_size >= 1024 * 1024:
+                size_str = f"{max_size // (1024 * 1024)} MB"
+            elif max_size >= 1024:
+                size_str = f"{max_size // 1024} KB"
+            else:
+                size_str = f"{max_size} bytes"
             return Response(
-                {"error": "Valid image dimensions (width and height) are required."},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": f"The uploaded image is too large (max {size_str})."},
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )
         try:
             if thumbnail:
-                cloudapi.replace_thumbnail_in_s3(
-                    thumbnail, thumbnail_file, width, height
-                )
+                cloudapi.replace_thumbnail_in_s3(thumbnail, thumbnail_file)
                 _status = status.HTTP_200_OK
             else:
                 # This is really a fallback case since a thumbnail should have already been created for the video,
                 # but we can handle it gracefully by creating a new thumbnail object and uploading the file to S3
-                cloudapi.create_thumbnail_in_s3(video, thumbnail_file, width, height)
+                cloudapi.create_thumbnail_in_s3(video, thumbnail_file)
                 _status = status.HTTP_201_CREATED
         except ValueError as exc:
             log.warning("Thumbnail upload validation failed", exc_info=exc)
