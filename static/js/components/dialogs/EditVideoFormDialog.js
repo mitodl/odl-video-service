@@ -186,8 +186,14 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     if (file.size > SETTINGS.thumbnail_upload_max_size) {
       const { thumbnailPreviewUrl } = this.state
       if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
+      const maxBytes = SETTINGS.thumbnail_upload_max_size
+      const maxSizeStr = maxBytes >= 1024 * 1024
+        ? `${Math.floor(maxBytes / (1024 * 1024))} MB`
+        : maxBytes >= 1024
+          ? `${Math.floor(maxBytes / 1024)} KB`
+          : `${maxBytes} bytes`
       this.setState({
-        thumbnailError:      `This image is too large (max ${SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB). Please reduce the file size and try again.`,
+        thumbnailError:      `This image is too large (max ${maxSizeStr}). Please reduce the file size and try again.`,
         thumbnailFile:       null,
         thumbnailPreviewUrl: null
       })

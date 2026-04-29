@@ -12,7 +12,7 @@ from uuid import uuid4
 import boto3
 import pytz
 from boto3.s3.transfer import TransferConfig
-from PIL import Image, ImageOps
+from PIL import ExifTags, Image, ImageOps
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -605,11 +605,16 @@ def convert_image_to_jpeg(file_data, max_width=None, max_height=None):
                 raise ValueError(
                     f"Unsupported image format: {img_format!r}. Only JPEG and PNG are supported."
                 )
+
+            # Read the orientation tag *before* transposing — exif_transpose()
+            # always returns a new object, so an identity check is unreliable.
+            exif_orientation = img.getexif().get(ExifTags.Base.Orientation, 1)
+            exif_changed = exif_orientation != 1
+
             # Normalise EXIF orientation so pixel data matches display orientation
             # before any size computation or re-encode.
-            transposed = ImageOps.exif_transpose(img)
-            exif_changed = transposed is not img
-            img = transposed
+            img = ImageOps.exif_transpose(img)
+
             # Downscale if either dimension exceeds the configured limit.
             orig_w, orig_h = img.size
             if orig_w > max_width or orig_h > max_height:
@@ -625,6 +630,7 @@ def convert_image_to_jpeg(file_data, max_width=None, max_height=None):
                 buf = io.BytesIO(file_data.read())
                 buf.seek(0)
                 return buf, final_w, final_h
+
             # PNG or resized JPEG: convert to a JPEG-compatible mode if needed.
             if img.mode not in ("L", "RGB", "CMYK"):
                 img = img.convert("RGB")
