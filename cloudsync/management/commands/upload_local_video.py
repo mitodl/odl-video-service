@@ -17,10 +17,12 @@ import os
 
 import boto3
 from botocore.exceptions import ClientError
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 
 from cloudsync.tasks import transcode_from_s3
 from ui.constants import VideoStatus
+from ui.encodings import EncodingNames
 from ui.models import Video, VideoFile
 
 
@@ -84,9 +86,12 @@ class Command(BaseCommand):
             raise CommandError(
                 f"Video with key {options['video_key']!r} not found"
             ) from exc
-
+        except ValidationError as exc:
+            raise CommandError(
+                f"Video key {options['video_key']!r} is invalid"
+            ) from exc
         try:
-            video_file = video.videofile_set.get(encoding="original")
+            video_file = video.videofile_set.get(encoding=EncodingNames.ORIGINAL)
         except VideoFile.DoesNotExist as exc:
             raise CommandError(
                 f"Video {video.id} has no VideoFile with encoding='original' — "
