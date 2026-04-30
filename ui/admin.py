@@ -67,8 +67,8 @@ class CollectionAdmin(admin.ModelAdmin):
 
     date_hierarchy = "created_at"
     readonly_fields = ["show_url", "created_at"]
-    list_filter = ["stream_source"]
-    list_display = ["title", "show_url", "include_in_learn"]
+    list_filter = ["stream_source", "for_shorts", "include_in_learn"]
+    list_display = ["title", "show_url", "include_in_learn", "for_shorts"]
     autocomplete_fields = ["owner", "view_lists", "admin_lists"]
     search_fields = (
         "title",

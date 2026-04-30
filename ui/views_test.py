@@ -1882,7 +1882,14 @@ def test_public_video_list_response_shape(apiclient):
 
     # Embedded collection fields
     coll = item["collection"]
-    for field in ("key", "title", "description", "is_public", "stream_source"):
+    for field in (
+        "key",
+        "title",
+        "description",
+        "is_public",
+        "stream_source",
+        "for_shorts",
+    ):
         assert field in coll, f"Missing collection field: {field}"
     assert coll["key"] == collection.hexkey
     assert coll["stream_source"] == StreamSource.CLOUDFRONT
@@ -1948,6 +1955,30 @@ def test_public_video_list_filter_by_include_in_learn(apiclient):
     assert resp.data["results"][0]["key"] == v_learn.hexkey
 
     resp = apiclient.get(url, {"include_in_learn": "false"})
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["count"] == 1
+    assert resp.data["results"][0]["key"] == v_other.hexkey
+
+
+def test_public_video_list_filter_by_for_shorts(apiclient):
+    """
+    ?for_shorts=true narrows results to videos from collections with
+    for_shorts=True; ?for_shorts=false returns videos from collections
+    with for_shorts=False.
+    """
+    shorts_collection = CollectionFactory(for_shorts=True)
+    other_collection = CollectionFactory(for_shorts=False)
+    v_shorts = VideoFactory(collection=shorts_collection, is_public=True)
+    v_other = VideoFactory(collection=other_collection, is_public=True)
+
+    url = reverse(PUBLIC_VIDEO_URL)
+
+    resp = apiclient.get(url, {"for_shorts": "true"})
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.data["count"] == 1
+    assert resp.data["results"][0]["key"] == v_shorts.hexkey
+
+    resp = apiclient.get(url, {"for_shorts": "false"})
     assert resp.status_code == status.HTTP_200_OK
     assert resp.data["count"] == 1
     assert resp.data["results"][0]["key"] == v_other.hexkey
