@@ -12,7 +12,7 @@ from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth import logout
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
@@ -42,11 +42,13 @@ from ui import permissions as ui_permissions
 from ui import serializers
 from ui.filters import CollectionFilter, PublicVideoFilter
 from ui.constants import EDX_ADMIN_GROUP, VideoStatus
+from ui.encodings import EncodingNames
 from ui.models import (
     Collection,
     CollectionEdxEndpoint,
     EdxEndpoint,
     Video,
+    VideoFile,
     VideoSubtitle,
 )
 from ui.pagination import CollectionSetPagination, VideoSetPagination
@@ -401,7 +403,11 @@ class PublicVideoListView(generics.ListAPIView):
             Video.objects.filter(is_public=True)
             .select_related("collection")
             .prefetch_related(
-                "videofile_set",
+                Prefetch(
+                    "videofile_set",
+                    queryset=VideoFile.objects.filter(encoding=EncodingNames.HLS),
+                    to_attr="hls_files",
+                ),
                 "videothumbnail_set",
                 "videosubtitle_set",
                 "youtubevideo",

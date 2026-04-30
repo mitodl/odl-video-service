@@ -460,6 +460,7 @@ class PublicCollectionSerializer(serializers.ModelSerializer):
             "description",
             "is_public",
             "stream_source",
+            "for_shorts",
         )
 
 
@@ -484,8 +485,7 @@ class PublicVideoSerializer(serializers.ModelSerializer):
                 "label": f.encoding,
                 "type": "application/x-mpegURL",
             }
-            for f in obj.videofile_set.all()
-            if f.encoding == EncodingNames.HLS
+            for f in obj.hls_files
         ]
 
     class Meta:
