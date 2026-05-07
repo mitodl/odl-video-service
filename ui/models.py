@@ -204,6 +204,7 @@ class Collection(TimestampedModel):
     allow_share_openedx = models.BooleanField(null=False, default=False)
     is_public = models.BooleanField(null=False, default=False)
     include_in_learn = models.BooleanField(null=False, default=False)
+    for_shorts = models.BooleanField(null=False, default=False)
     stream_source = models.CharField(
         null=True,
         blank=True,

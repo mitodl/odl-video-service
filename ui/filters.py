@@ -66,6 +66,7 @@ class PublicVideoFilter(django_filters.FilterSet):
     include_in_learn = django_filters.BooleanFilter(
         field_name="collection__include_in_learn"
     )
+    for_shorts = django_filters.BooleanFilter(field_name="collection__for_shorts")
     search = django_filters.CharFilter(method="search_filter")
 
     def exclude_source_filter(self, queryset, name, value):  # pylint: disable=unused-argument
@@ -102,4 +103,5 @@ class PublicVideoFilter(django_filters.FilterSet):
             "stream_source",
             "exclude_source",
             "include_in_learn",
+            "for_shorts",
         ]
