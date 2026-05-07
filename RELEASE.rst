@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.88.0
+--------------
+
+- "for_shorts" attribute and filter (#1468)
+- [pre-commit.ci] pre-commit autoupdate (#1444)
+- Update dependency postcss to v8.5.10 [SECURITY] (#1462)
+- Backfill video shorts into OVS (#1467)
+- feat: added resizing for thumbnail upload using PIL (#1458)
+
 Version 0.87.0 (Released April 27, 2026)
 --------------
 
