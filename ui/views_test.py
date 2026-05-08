@@ -295,6 +295,105 @@ def test_upload_dropbox_videos(logged_in_apiclient, mocker):
     mocked_api.assert_called_once_with(serializer.validated_data)
 
 
+DROPBOX_FILE = {
+    "isDir": False,
+    "link": "http://dropbox.example.com/video.mp4",
+    "thumbnailLink": "http://dropbox.example.com/video.mp4",
+    "bytes": 12345678,
+    "name": "video.mp4",
+    "icon": "https://dropbox.example.com/static/images/icons64/page_white_film.png",
+}
+
+
+def test_replace_video_authentication(mock_user_groups, logged_in_apiclient):
+    """Anonymous users and non-admins cannot call ReplaceVideoFromDropbox"""
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    url = reverse("replace-video")
+    input_data = {"video": str(video.key), "file": DROPBOX_FILE}
+
+    # Anonymous user
+    client.logout()
+    assert (
+        client.post(url, input_data, format="json").status_code
+        == status.HTTP_403_FORBIDDEN
+    )
+
+    # Authenticated user with no admin rights over the video's collection
+    other_user = UserFactory()
+    client.force_login(other_user)
+    assert (
+        client.post(url, input_data, format="json").status_code
+        == status.HTTP_403_FORBIDDEN
+    )
+
+
+def test_replace_video_bad_data(logged_in_apiclient):
+    """Missing required fields return 400"""
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    url = reverse("replace-video")
+
+    # Missing 'file' — video present so permission passes, serializer rejects
+    assert (
+        client.post(url, {"video": str(video.key)}, format="json").status_code
+        == status.HTTP_400_BAD_REQUEST
+    )
+
+    # Missing 'video' — permission layer returns 403 before serializer runs
+    assert (
+        client.post(url, {"file": DROPBOX_FILE}, format="json").status_code
+        == status.HTTP_403_FORBIDDEN
+    )
+
+    # Invalid UUID for 'video'
+    assert (
+        client.post(
+            url, {"video": "not-a-uuid", "file": DROPBOX_FILE}, format="json"
+        ).status_code
+        == status.HTTP_400_BAD_REQUEST
+    )
+
+
+def test_replace_video(logged_in_apiclient, mocker):
+    """Owner can replace a video; api.replace_video_from_dropbox is called with correct args"""
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    url = reverse("replace-video")
+    mocked_api = mocker.patch(
+        "ui.api.replace_video_from_dropbox",
+        return_value={"key": video.hexkey, "title": video.title},
+    )
+    input_data = {"video": str(video.key), "file": DROPBOX_FILE}
+
+    response = client.post(url, input_data, format="json")
+
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.data == {"key": video.hexkey, "title": video.title}
+    mocked_api.assert_called_once()
+    call_kwargs = mocked_api.call_args
+    # First positional arg is the UUID, second is the validated file dict
+    assert str(call_kwargs[0][0]) == str(video.key)
+    assert call_kwargs[0][1]["link"] == DROPBOX_FILE["link"]
+
+
+def test_replace_video_superuser(logged_in_apiclient, mocker):
+    """Superusers can replace any video regardless of collection ownership"""
+    client, user = logged_in_apiclient
+    user.is_superuser = True
+    user.save()
+    video = VideoFactory(collection=CollectionFactory())  # owned by someone else
+    url = reverse("replace-video")
+    mocker.patch(
+        "ui.api.replace_video_from_dropbox",
+        return_value={"key": video.hexkey, "title": video.title},
+    )
+    response = client.post(
+        url, {"video": str(video.key), "file": DROPBOX_FILE}, format="json"
+    )
+    assert response.status_code == status.HTTP_202_ACCEPTED
+
+
 def test_collection_viewset_permissions(logged_in_apiclient):
     """
     Tests the list of collections for an anonymous_user

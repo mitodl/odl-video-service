@@ -59,7 +59,7 @@ describe("VideoCard", () => {
     [false, ["Share"], "user without admin permissions"],
     [
       true,
-      ["Share", "Edit", "Save To Dropbox", "Delete"],
+      ["Share", "Edit", "Save To Dropbox", "Replace", "Delete"],
       "user with admin permissions"
     ]
   ].forEach(
@@ -79,7 +79,7 @@ describe("VideoCard", () => {
   )
 
   it("executes the right handlers for video actions (edit/share/etc.)", () => {
-    const wrapper = renderComponent({ isAdmin: true })
+    const wrapper = renderComponent({ isAdmin: true, onReplaceVideo: sandbox.stub() })
     const menuItems = wrapper.find("Menu").props().menuItems
     menuItems[0].action()
     sinon.assert.called(showShareVideoDialogStub)
@@ -88,6 +88,9 @@ describe("VideoCard", () => {
     menuItems[2].action()
     sinon.assert.called(dropboxSaveMenuStub)
     menuItems[3].action()
+    // Replace triggers the hidden dropbox button — just verify the item exists
+    assert.equal(menuItems[3].label, "Replace")
+    menuItems[4].action()
     sinon.assert.called(showDeleteVideoDialogStub)
   })
 
