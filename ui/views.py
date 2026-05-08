@@ -339,6 +339,29 @@ class UploadVideosFromDropbox(APIView):
         return Response(data=response_data, status=status.HTTP_202_ACCEPTED)
 
 
+class ReplaceVideoFromDropbox(APIView):
+    """
+    Replace an existing video with a new file chosen from Dropbox.
+    Accepts the existing video key and a single Dropbox file descriptor,
+    then resets the video status and re-triggers the upload + transcode pipeline.
+    """
+
+    authentication_classes = (authentication.SessionAuthentication,)
+    permission_classes = (
+        permissions.IsAuthenticated,
+        ui_permissions.CanReplaceVideo,
+    )
+
+    def post(self, request):
+        serializer = serializers.ReplaceVideoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response_data = api.replace_video_from_dropbox(
+            serializer.validated_data["video"],
+            serializer.validated_data["file"],
+        )
+        return Response(data=response_data, status=status.HTTP_202_ACCEPTED)
+
+
 class UploadVideoSubtitle(APIView):
     """
     Class based view for uploading videos from dropbox to S3.

@@ -144,3 +144,10 @@ export function syncCollectionVideosWithEdX(collectionId: string) {
     body:   JSON.stringify({ collection_id: collectionId })
   })
 }
+
+export function replaceVideoFromDropbox(videoKey: string, file: Object) {
+  return fetchJSONWithCSRF(`/api/v0/replace_video/`, {
+    method: "POST",
+    body:   JSON.stringify({ video: videoKey, file: file })
+  })
+}

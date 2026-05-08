@@ -29,6 +29,7 @@ import type { CommonUiState } from "../reducers/commonUi"
 import * as commonUiActions from "../actions/commonUi"
 import VideoSaverScript from "../components/VideoSaverScript"
 import { clearCollectionErrors, clearCollectionData } from "../actions/collectionUi"
+import { replaceVideoFromDropbox } from "../lib/api"
 
 export class CollectionDetailPage extends React.Component<*, void> {
   props: {
@@ -191,6 +192,31 @@ export class CollectionDetailPage extends React.Component<*, void> {
     dispatch(actions.collections.get(collection.key))
   }
 
+  async handleReplaceVideo(videoKey: string, file: Object) {
+    const { dispatch, collection } = this.props
+    try {
+      await replaceVideoFromDropbox(videoKey, file)
+      dispatch(actions.toast.addMessage({
+        message: {
+          key:     "replace-video-started",
+          content: "Video replacement has started. You will receive an email when it is ready.",
+          icon:    "check"
+        }
+      }))
+      if (collection) {
+        dispatch(actions.collections.get(collection.key))
+      }
+    } catch (error) {
+      dispatch(actions.toast.addMessage({
+        message: {
+          key:     "replace-video-error",
+          content: "Failed to start video replacement. Please try again.",
+          icon:    "error"
+        }
+      }))
+    }
+  }
+
   async handleSyncWithEdX(e: Event) {
     e.preventDefault()
     const { dispatch, collectionKey } = this.props
@@ -255,6 +281,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
         showVideoMenu={this.showVideoMenu.bind(this)}
         hideVideoMenu={this.hideVideoMenu.bind(this)}
         isVideoMenuOpen={this.isVideoMenuOpen.bind(this)}
+        onReplaceVideo={isAdmin ? this.handleReplaceVideo.bind(this) : undefined}
       />
     )
   }

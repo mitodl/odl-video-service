@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from cloudsync import tasks
 import structlog
 from ui import models
+from ui.constants import VideoStatus
 from ui.utils import get_error_response_summary_dict
 
 log = structlog.get_logger(__name__)
@@ -55,6 +56,30 @@ def process_dropbox_data(dropbox_upload_data):
             "title": video.title,
         }
     return response_data
+
+
+def replace_video_from_dropbox(video_key, dropbox_file):
+    """
+    Replace an existing video with a new file from Dropbox.
+    Updates the source URL, resets the video status to Created,
+    and kicks off the stream_to_s3 + transcode_from_s3 chain.
+
+    Args:
+        video_key (UUID): The key of the existing Video to replace
+        dropbox_file (dict): A single validated DropboxFile dict with 'link', 'name', etc.
+
+    Returns:
+        dict: Basic info about the video being re-processed
+    """
+    video = get_object_or_404(models.Video, key=video_key)
+    with transaction.atomic():
+        video.source_url = dropbox_file["link"]
+        video.save(update_fields=["source_url"])
+        video.update_status(VideoStatus.CREATED)
+
+    # Considering Retranscode here as that will handle replacing the existing video
+    chain(tasks.stream_to_s3.s(video.id), tasks.retranscode_video.si(video.id)).delay()
+    return {"key": video.hexkey, "title": video.title}
 
 
 def post_video_to_edx(video_files):
