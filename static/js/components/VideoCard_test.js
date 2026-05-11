@@ -20,7 +20,9 @@ describe("VideoCard", () => {
     hideVideoMenuStub,
     dropboxSaveMenuStub,
     videoIsProcessingStub,
-    videoHasErrorStub
+    videoHasErrorStub,
+    videoIsInFlightStub,
+    onReplaceVideoStub
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
@@ -34,7 +36,11 @@ describe("VideoCard", () => {
       .stub(libVideo, "videoIsProcessing")
       .returns(false)
     videoHasErrorStub = sandbox.stub(libVideo, "videoHasError").returns(false)
+    videoIsInFlightStub = sandbox
+      .stub(libVideo, "videoIsInFlight")
+      .returns(false)
     dropboxSaveMenuStub = sandbox.stub(libVideo, "saveToDropbox")
+    onReplaceVideoStub = sandbox.stub()
   })
 
   afterEach(() => {
@@ -52,6 +58,7 @@ describe("VideoCard", () => {
         showDeleteVideoDialog={showDeleteVideoDialogStub}
         showVideoMenu={showVideoMenuStub}
         hideVideoMenu={hideVideoMenuStub}
+        onReplaceVideo={onReplaceVideoStub}
         {...props}
       />
     )
@@ -101,6 +108,43 @@ describe("VideoCard", () => {
     sinon.assert.calledOnce(showVideoMenuStub)
     menu.props().closeMenu()
     sinon.assert.calledOnce(hideVideoMenuStub)
+  })
+
+  describe("videoIsInFlight behaviour", () => {
+    it("hides Replace menu item when video is in-flight", () => {
+      videoIsInFlightStub.returns(true)
+      const wrapper = renderComponent({ isAdmin: true })
+      const menuItems = wrapper.find("Menu").props().menuItems
+      assert.isFalse(menuItems.some(item => item.label === "Replace"))
+      assert.equal(menuItems.length, 4)
+    })
+
+    it("shows Replace menu item when video is not in-flight", () => {
+      videoIsInFlightStub.returns(false)
+      const wrapper = renderComponent({ isAdmin: true })
+      const menuItems = wrapper.find("Menu").props().menuItems
+      assert.isTrue(menuItems.some(item => item.label === "Replace"))
+      assert.equal(menuItems.length, 5)
+    })
+
+    it("hides the hidden DropboxChooser when video is in-flight", () => {
+      videoIsInFlightStub.returns(true)
+      const wrapper = renderComponent({ isAdmin: true })
+      assert.isFalse(wrapper.find("DropboxChooser").exists())
+    })
+
+    it("renders the hidden DropboxChooser when video is not in-flight", () => {
+      videoIsInFlightStub.returns(false)
+      const wrapper = renderComponent({ isAdmin: true })
+      assert.isTrue(wrapper.find("DropboxChooser").exists())
+    })
+
+    it("does not show Replace menu item when onReplaceVideo prop is absent, even if not in-flight", () => {
+      videoIsInFlightStub.returns(false)
+      const wrapper = renderComponent({ isAdmin: true, onReplaceVideo: undefined })
+      const menuItems = wrapper.find("Menu").props().menuItems
+      assert.isFalse(menuItems.some(item => item.label === "Replace"))
+    })
   })
 
   it(`should have a title that links to the video detail page`, () => {
