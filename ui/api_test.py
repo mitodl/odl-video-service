@@ -18,6 +18,7 @@ from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionEdxEndpointFactory,
     CollectionFactory,
+    VideoFactory,
     VideoFileFactory,
 )
 
@@ -129,6 +130,42 @@ def test_process_dropbox_data_wrong_collection():
                 "collection": uuid4().hex,
                 "files": [],
             }
+        )
+
+
+def test_replace_video_from_dropbox(mocker):
+    """
+    replace_video_from_dropbox should update source_url, reset video status,
+    and kick off the stream_to_s3 + retranscode_video chain.
+    """
+    mocked_chain = mocker.patch("ui.api.chain")
+    mocked_stream_to_s3 = mocker.patch("cloudsync.tasks.stream_to_s3")
+    mocked_retranscode = mocker.patch("cloudsync.tasks.retranscode_video")
+    video = VideoFactory()
+    dropbox_file = {
+        "link": "http://dropbox.example.com/new_video.mp4",
+        "name": "new_video.mp4",
+        "bytes": 12345678,
+        "isDir": False,
+        "thumbnailLink": "http://dropbox.example.com/new_video.mp4",
+        "icon": "https://dropbox.example.com/icon.png",
+    }
+
+    result = api.replace_video_from_dropbox(video.key, dropbox_file)
+
+    video.refresh_from_db()
+    assert video.source_url == dropbox_file["link"]
+    assert result == {"key": video.hexkey, "title": video.title}
+    mocked_chain.assert_called_once()
+    mocked_stream_to_s3.s.assert_called_once_with(video.id)
+    mocked_retranscode.si.assert_called_once_with(video.id)
+
+
+def test_replace_video_from_dropbox_not_found():
+    """replace_video_from_dropbox raises Http404 when the video key does not exist."""
+    with pytest.raises(Http404):
+        api.replace_video_from_dropbox(
+            uuid4(), {"link": "http://example.com/video.mp4"}
         )
 
 

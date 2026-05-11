@@ -15,6 +15,9 @@ export const VIDEO_STATUS_TRANSCODE_FAILED_VIDEO =
   "Transcode failed video error"
 export const VIDEO_STATUS_COMPLETE = "Complete"
 export const VIDEO_STATUS_ERROR = "Error"
+export const VIDEO_STATUS_RETRANSCODE_SCHEDULED = "Retranscode scheduled"
+export const VIDEO_STATUS_RETRANSCODING = "Retranscoding"
+export const VIDEO_STATUS_RETRANSCODE_FAILED = "Retranscode failed error"
 
 export const ALL_VIDEO_STATUSES = [
   VIDEO_STATUS_CREATED,

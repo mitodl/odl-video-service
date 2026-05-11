@@ -340,10 +340,10 @@ def test_replace_video_bad_data(logged_in_apiclient):
         == status.HTTP_400_BAD_REQUEST
     )
 
-    # Missing 'video' — permission layer returns 403 before serializer runs
+    # Missing 'video' — serializer rejects as required field
     assert (
         client.post(url, {"file": DROPBOX_FILE}, format="json").status_code
-        == status.HTTP_403_FORBIDDEN
+        == status.HTTP_400_BAD_REQUEST
     )
 
     # Invalid UUID for 'video'

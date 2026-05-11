@@ -9,7 +9,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 import structlog
-from ui.models import Collection, Video
+from ui.models import Collection
 from ui.utils import has_common_lists
 
 log = structlog.get_logger(__name__)
@@ -153,23 +153,3 @@ class CanUploadToCollection(BasePermission):
             ) from exc
         collection = Collection.objects.filter(key=collection_key)
         return len(collection) > 0 and has_admin_permission(collection.first(), request)
-
-
-class CanReplaceVideo(BasePermission):
-    """
-    Permission that checks for a video key in the request.data and verifies
-    that the user has admin access to its collection.
-    """
-
-    def has_permission(self, request, view):
-        if request.user.is_superuser:
-            return True
-        video_key = request.data.get("video")
-        if video_key is None:
-            return False
-        try:
-            uuid.UUID(str(video_key))
-        except ValueError as exc:
-            raise ValidationError("wrong UUID format for {}".format(video_key)) from exc
-        video = Video.objects.filter(key=video_key).select_related("collection").first()
-        return video is not None and has_admin_permission(video.collection, request)

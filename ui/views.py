@@ -349,14 +349,17 @@ class ReplaceVideoFromDropbox(APIView):
     authentication_classes = (authentication.SessionAuthentication,)
     permission_classes = (
         permissions.IsAuthenticated,
-        ui_permissions.CanReplaceVideo,
+        ui_permissions.HasVideoPermissions,
     )
 
     def post(self, request):
         serializer = serializers.ReplaceVideoSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        video_key = serializer.validated_data["video"]
+        video = get_object_or_404(Video, key=video_key)
+        self.check_object_permissions(request, video)
         response_data = api.replace_video_from_dropbox(
-            serializer.validated_data["video"],
+            video_key,
             serializer.validated_data["file"],
         )
         return Response(data=response_data, status=status.HTTP_202_ACCEPTED)

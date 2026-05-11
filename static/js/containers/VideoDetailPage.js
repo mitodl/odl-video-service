@@ -27,8 +27,7 @@ import DropboxChooser from "react-dropbox-chooser"
 import { actions } from "../actions"
 import { setDrawerOpen } from "../actions/commonUi"
 import { makeCollectionUrl } from "../lib/urls"
-import { saveToDropbox } from "../lib/video"
-import { videoIsProcessing, videoHasError } from "../lib/video"
+import { saveToDropbox, videoIsProcessing, videoHasError, videoIsInFlight } from "../lib/video"
 import { replaceVideoFromDropbox } from "../lib/api"
 import { DIALOGS, MM_DD_YYYY } from "../constants"
 import { initGA, sendGAPageView } from "../util/google_analytics"
@@ -227,12 +226,14 @@ export class VideoDetailPage extends React.Component<*, void> {
                         >
                           Save To Dropbox
                         </Button>
-                        <Button
-                          className="replace mdc-button--raised"
-                          onClick={() => this.replaceDropboxTriggerRef && this.replaceDropboxTriggerRef.click()}
-                        >
-                          Replace
-                        </Button>
+                        {!videoIsInFlight(video) && (
+                          <Button
+                            className="replace mdc-button--raised"
+                            onClick={() => this.replaceDropboxTriggerRef && this.replaceDropboxTriggerRef.click()}
+                          >
+                            Replace
+                          </Button>
+                        )}
                         <Button
                           className="delete mdc-button--raised"
                           onClick={showDialog.bind(this, DIALOGS.DELETE_VIDEO)}
@@ -245,19 +246,21 @@ export class VideoDetailPage extends React.Component<*, void> {
                         >
                           Show/Hide Analytics
                         </Button>
-                        <div style={{ display: "none" }}>
-                          <DropboxChooser
-                            appKey={SETTINGS.dropbox_key}
-                            success={files => this.handleReplaceVideo(files[0])}
-                            linkType="direct"
-                            multiselect={false}
-                            extensions={["video"]}
-                          >
-                            <button ref={el => {
-                              this.replaceDropboxTriggerRef = el
-                            }}>replace</button>
-                          </DropboxChooser>
-                        </div>
+                        {!videoIsInFlight(video) && (
+                          <div style={{ display: "none" }}>
+                            <DropboxChooser
+                              appKey={SETTINGS.dropbox_key}
+                              success={files => this.handleReplaceVideo(files[0])}
+                              linkType="direct"
+                              multiselect={false}
+                              extensions={["video"]}
+                            >
+                              <button ref={el => {
+                                this.replaceDropboxTriggerRef = el
+                              }}>replace</button>
+                            </DropboxChooser>
+                          </div>
+                        )}
                       </span>
                     )}
                   </div>

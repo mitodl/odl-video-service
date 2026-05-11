@@ -62,7 +62,7 @@ def replace_video_from_dropbox(video_key, dropbox_file):
     """
     Replace an existing video with a new file from Dropbox.
     Updates the source URL, resets the video status to Created,
-    and kicks off the stream_to_s3 + transcode_from_s3 chain.
+    and kicks off the stream_to_s3 + retranscode_from_s3 chain.
 
     Args:
         video_key (UUID): The key of the existing Video to replace

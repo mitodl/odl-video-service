@@ -6,7 +6,7 @@ import _ from "lodash"
 import Menu from "./material/Menu"
 import Card from "./material/Card"
 import { makeVideoThumbnailUrl, makeVideoUrl } from "../lib/urls"
-import { videoIsProcessing, videoHasError, saveToDropbox } from "../lib/video"
+import { videoIsProcessing, videoHasError, saveToDropbox, videoIsInFlight } from "../lib/video"
 import DropboxChooser from "react-dropbox-chooser"
 
 import type { Video } from "../flow/videoTypes"
@@ -73,6 +73,8 @@ class VideoCard extends React.Component<VideoCardProps, void> {
       { label: "Share", action: showShareVideoDialog.bind(this) }
     ]
 
+    const inFlight = videoIsInFlight(video)
+
     if (isAdmin) {
       menuItems = _.concat(
         menuItems,
@@ -81,10 +83,10 @@ class VideoCard extends React.Component<VideoCardProps, void> {
           label:  "Save To Dropbox",
           action: saveToDropbox.bind(this, video)
         },
-        {
+        ...(!inFlight && onReplaceVideo ? [{
           label:  "Replace",
           action: this.triggerReplaceDropbox.bind(this)
-        },
+        }] : []),
         { label: "Delete", action: showDeleteVideoDialog.bind(this) }
       )
     }
@@ -107,7 +109,7 @@ class VideoCard extends React.Component<VideoCardProps, void> {
             open={isMenuOpen}
             menuItems={menuItems}
           />
-          {isAdmin && onReplaceVideo && (
+          {isAdmin && onReplaceVideo && !videoIsInFlight(video) && (
             <div style={{ display: "none" }}>
               <DropboxChooser
                 appKey={SETTINGS.dropbox_key}
