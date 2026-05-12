@@ -59,6 +59,9 @@ def _collect_output_keys(output_groups: list) -> list:
     For HLS groups a directory wildcard (``<dir>/*``) is appended so that
     individual ``.ts`` segment files — which are not listed in the job output —
     are also invalidated.
+
+    ``RETRANSCODE_FOLDER`` is always stripped so that keys reflect the paths
+    actually served by CloudFront after ``move_s3_objects`` has relocated them.
     """
     keys = []
     seen_wildcards = set()
@@ -66,10 +69,11 @@ def _collect_output_keys(output_groups: list) -> list:
         group_type = group.get("type", "")
         for path in group.get("playlistFilePaths", []):
             if key := _s3_uri_to_key(path):
-                keys.append(key)
+                keys.append(key.replace(RETRANSCODE_FOLDER, "", 1))
         for output in group.get("outputDetails", []):
             for path in output.get("outputFilePaths", []):
                 if key := _s3_uri_to_key(path):
+                    key = key.replace(RETRANSCODE_FOLDER, "", 1)
                     keys.append(key)
                     if "HLS_GROUP" in group_type:
                         directory = key.rsplit("/", 1)[0]
@@ -82,7 +86,7 @@ def _collect_output_keys(output_groups: list) -> list:
 
 def _invalidate_cloudfront_paths(keys: list) -> None:
     """Create a single CloudFront invalidation batch for a list of S3 object keys."""
-    dist_id = getattr(settings, "VIDEO_CLOUDFRONT_DIST", "")
+    dist_id = getattr(settings, "VIDEO_CDN_DISTRIBUTION_ID", "")
     if not dist_id or not keys:
         return
     paths = [f"/{k}" for k in keys]

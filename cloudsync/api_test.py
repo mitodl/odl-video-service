@@ -642,10 +642,10 @@ def test_replace_thumbnail_in_s3_updates_s3_and_model():
 
 
 @mock_aws
-@override_settings(VIDEO_CLOUDFRONT_DIST="EDIST123")
+@override_settings(VIDEO_CDN_DISTRIBUTION_ID="EDIST123")
 def test_replace_thumbnail_in_s3_invalidates_cloudfront(mocker):
     """
-    When VIDEO_CLOUDFRONT_DIST is set, a CloudFront invalidation is issued.
+    When VIDEO_CDN_DISTRIBUTION_ID is set, a CloudFront invalidation is issued.
     """
     mock_cf = mocker.MagicMock()
     mock_boto3 = mocker.patch("cloudsync.api.boto3")
@@ -977,14 +977,65 @@ def test_collect_output_keys_mixed_groups():
     assert "mp4/video.mp4" in keys
 
 
+def test_collect_output_keys_strips_retranscode_folder():
+    """
+    Keys whose S3 paths begin with RETRANSCODE_FOLDER (``retranscode/``) are
+    stripped to their served equivalents so that CloudFront invalidation targets
+    the paths that the player actually fetches after move_s3_objects relocates
+    the files.  Keys that do not contain the prefix are returned unchanged.
+    """
+    output_groups = [
+        {
+            "type": "HLS_GROUP",
+            "playlistFilePaths": [
+                "s3://bucket/retranscode/transcoded/abc/__index.m3u8"
+            ],
+            "outputDetails": [
+                {
+                    "outputFilePaths": [
+                        "s3://bucket/retranscode/transcoded/abc/seg0.ts",
+                        "s3://bucket/retranscode/transcoded/abc/seg1.ts",
+                    ]
+                },
+            ],
+        },
+        {
+            "type": "FILE_GROUP",
+            "playlistFilePaths": [],
+            "outputDetails": [
+                {
+                    "outputFilePaths": [
+                        "s3://bucket/retranscode/transcoded/abc/video.mp4"
+                    ]
+                },
+            ],
+        },
+    ]
+    keys = _collect_output_keys(output_groups)
+
+    # Retranscode prefix must be stripped from every key
+    assert not any("retranscode/" in k for k in keys)
+
+    # HLS playlist
+    assert "transcoded/abc/__index.m3u8" in keys
+    # HLS segments
+    assert "transcoded/abc/seg0.ts" in keys
+    assert "transcoded/abc/seg1.ts" in keys
+    # Wildcard derived from the stripped path (not the retranscode path)
+    assert "transcoded/abc/*" in keys
+    assert keys.count("transcoded/abc/*") == 1
+    # MP4
+    assert "transcoded/abc/video.mp4" in keys
+
+
 # ---------------------------------------------------------------------------
 # Tests for _invalidate_cloudfront_paths
 # ---------------------------------------------------------------------------
 
 
-@override_settings(VIDEO_CLOUDFRONT_DIST="DIST123")
+@override_settings(VIDEO_CDN_DISTRIBUTION_ID="DIST123")
 def test_invalidate_cloudfront_paths_sends_invalidation(mocker):
-    """When VIDEO_CLOUDFRONT_DIST is set and keys are provided, a batch invalidation is created."""
+    """When VIDEO_CDN_DISTRIBUTION_ID is set and keys are provided, a batch invalidation is created."""
     mock_cf = mocker.MagicMock()
     mocker.patch("cloudsync.api.boto3").client.return_value = mock_cf
 
@@ -1008,13 +1059,13 @@ def test_invalidate_cloudfront_paths_sends_invalidation(mocker):
 )
 def test_invalidate_cloudfront_paths_no_op(mocker, settings, dist_id, keys):
     """No CloudFront call is made when the dist is unset or the key list is empty."""
-    settings.VIDEO_CLOUDFRONT_DIST = dist_id
+    settings.VIDEO_CDN_DISTRIBUTION_ID = dist_id
     mock_boto3 = mocker.patch("cloudsync.api.boto3")
     _invalidate_cloudfront_paths(keys)
     mock_boto3.client.assert_not_called()
 
 
-@override_settings(VIDEO_CLOUDFRONT_DIST="DIST123")
+@override_settings(VIDEO_CDN_DISTRIBUTION_ID="DIST123")
 def test_invalidate_cloudfront_paths_swallows_exceptions(mocker):
     """
     If the CloudFront API call raises, the exception is caught and logged

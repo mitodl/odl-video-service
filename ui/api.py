@@ -64,6 +64,11 @@ def replace_video_from_dropbox(video_key, dropbox_file):
     Updates the source URL, resets the video status to Created,
     and kicks off the stream_to_s3 + retranscode_from_s3 chain.
 
+    If the new file's extension differs from the original (e.g. .mp4 → .m4v),
+    the existing original VideoFile is repointed to the new S3 key so that
+    stream_to_s3 writes there and retranscode_video reads the correct object.
+    The old S3 object is scheduled for deletion to avoid leaving stale files.
+
     Args:
         video_key (UUID): The key of the existing Video to replace
         dropbox_file (dict): A single validated DropboxFile dict with 'link', 'name', etc.
@@ -76,6 +81,16 @@ def replace_video_from_dropbox(video_key, dropbox_file):
         video.source_url = dropbox_file["link"]
         video.save(update_fields=["source_url"])
         video.update_status(VideoStatus.CREATED)
+
+        new_s3_key = video.get_s3_key()
+        original_vf = video.original_video
+        if original_vf and original_vf.s3_object_key != new_s3_key:
+            old_s3_key = original_vf.s3_object_key
+            old_bucket = original_vf.bucket_name
+            original_vf.s3_object_key = new_s3_key
+            original_vf.save(update_fields=["s3_object_key"])
+            # Delete the stale source object asynchronously so it doesn't linger.
+            models.delete_s3_objects.delay(old_bucket, old_s3_key)
 
     # Considering Retranscode here as that will handle replacing the existing video
     chain(tasks.stream_to_s3.s(video.id), tasks.retranscode_video.si(video.id)).delay()

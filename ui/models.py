@@ -680,6 +680,9 @@ class VideoThumbnail(VideoS3):
             self=self
         )
 
+    class Meta:
+        ordering = ["-created_at"]
+
 
 class VideoSubtitle(VideoS3):
     """A VTT or SRT file that provides captions for a Video"""
