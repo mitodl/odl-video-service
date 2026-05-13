@@ -8,7 +8,6 @@ import platform
 from urllib.parse import urljoin
 
 import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
 from mitol.common.envs import import_settings_modules
 from redbeat import RedBeatScheduler
 
@@ -356,22 +355,6 @@ AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
     use_threads=AWS_S3_UPLOAD_USE_THREADS,
 )
 
-# AWS ElasticTranscoder
-ET_PIPELINE_ID = get_string("ET_PIPELINE_ID", "")
-ET_HLS_PRESET_IDS = get_string(
-    "ET_HLS_PRESET_IDS",
-    "1351620000001-200010,1351620000001-200020,1351620000001-200050",
-).split(",")
-
-ET_MP4_PRESET_ID = get_string("ET_MP4_PRESET_ID", "1351620000001-200010")
-
-if ET_HLS_PRESET_IDS == [""] or ET_MP4_PRESET_ID == [
-    ""
-]:  # This may happen if `ET_HLS_PRESET_IDS=` or `ET_MP4_PRESET_ID=` is in .env file.
-    raise ImproperlyConfigured(
-        "ET_HLS_PRESET_IDS and ET_MP4_PRESET_ID cannot be blank, please check your settings & environment"
-    )
-
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CDN_DISTRIBUTION_ID = get_string("VIDEO_CDN_DISTRIBUTION_ID", "")
 VIDEO_S3_BUCKET = AWS_STORAGE_BUCKET_NAME = get_string("VIDEO_S3_BUCKET", "")
@@ -425,7 +408,6 @@ MANDATORY_SETTINGS = [
     "CLOUDFRONT_KEY_ID",
     "CLOUDFRONT_PRIVATE_KEY",
     "DROPBOX_KEY",
-    "ET_PIPELINE_ID",
     "GA_DIMENSION_CAMERA",
     "GA_KEYFILE_JSON",
     "GA_VIEW_ID",

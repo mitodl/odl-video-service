@@ -57,12 +57,11 @@ transcode bucket name as the ``VIDEO_S3_TRANSCODE_BUCKET`` environment variable,
 thumbnail bucket name as the ``VIDEO_S3_THUMBNAIL_BUCKET`` environment variable, the
 subtitle bucket name as the ``VIDEO_S3_SUBTITLE_BUCKET`` environment variable, and
 set the CloudFront distribution ID as the ``VIDEO_CLOUDFRONT_DIST`` environment
+variable and the CDN distribution ID as the ``VIDEO_CDN_DISTRIBUTION_ID`` environment
 variable, using the ``.env`` file.
 
 The Buckets should each have a CORS configuration that will allow for cross-origin requests,
 for example:
-
-You also must have a proper Elastic Transcoder pipeline configured to use the specified 3 bucket names.
 
 .. code-block:: xml
 
@@ -109,9 +108,47 @@ serving static files for the web application. If you want to do this, set the
 CloudFront distribution ID as the ``STATIC_CLOUDFRONT_DIST`` environment
 variable, using the ``.env`` file.
 
-This app expects the transcoding to use HLS or MP4, and the ``ET_HLS_PRESET_IDS`` and ``ET_MP4_PRESET_ID``environment variables, respectively.
-``ET_HLS_PRESET_IDS`` should be a comma-delimited list of Video HLS presets for AWS ElasticTranscode.  The defaults
-are standard presets (2M, 1M, 600K).
+AWS MediaConvert (Video Transcoding)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+OVS uses `AWS MediaConvert`_ for video transcoding (HLS and MP4 outputs).
+You will need:
+
+1. **A MediaConvert endpoint URL** for your AWS region.  Retrieve it with the
+   AWS CLI:
+
+   .. code-block:: bash
+
+       aws mediaconvert describe-endpoints --region <your-aws-region>
+
+   If you do not have AWS access, ask a fellow developer for the correct value.
+
+   Store the returned HTTPS URL as ``VIDEO_S3_TRANSCODE_ENDPOINT`` in
+   ``.env``, for example::
+
+       VIDEO_S3_TRANSCODE_ENDPOINT=https://XXXXXXXXXXXXXXX.mediaconvert.us-east-1.amazonaws.com
+
+2. **An IAM role** that MediaConvert can assume with read access to
+   ``VIDEO_S3_BUCKET`` and write access to ``VIDEO_S3_TRANSCODE_BUCKET`` and
+   ``VIDEO_S3_THUMBNAIL_BUCKET``.  Set the following in ``.env``::
+
+       AWS_ACCOUNT_ID=<your-12-digit-aws-account-id>
+       AWS_ROLE_NAME=<iam-role-name-e.g.-MediaConvertRole>
+
+   If you do not have AWS access, ask a fellow developer for the correct values.
+
+   OVS constructs the full role ARN internally as
+   ``arn:aws:iam::{AWS_ACCOUNT_ID}:role/{AWS_ROLE_NAME}``.
+
+3. **Queue** (optional): set ``VIDEO_TRANSCODE_QUEUE`` to the name of a
+   custom MediaConvert queue.  Defaults to ``Default``.
+
+4. **Job template**: the transcoding job template is provided at
+   ``config/mediaconvert.json`` in the repository.  Set::
+
+       TRANSCODE_JOB_TEMPLATE=config/mediaconvert.json
+
+.. _AWS MediaConvert: https://aws.amazon.com/mediaconvert/
 
 Dropbox
 ~~~~~~~
@@ -152,6 +189,90 @@ YouTube Integration
 
 - Click on the provided link, follow the prompts, and enter the verification code back in the shell.
 - Save the ``YT_ACCESS_TOKEN`` and ``YT_REFRESH_TOKEN`` values to your ``.env`` file
+
+
+Open edX Integration
+--------------------
+
+OVS can push video metadata to one or more `Open edX`_ instances using the
+`edX Video Abstraction Layer (VAL)`_ API.  This powers the **Sync Videos
+with edX** button that appears in each collection once it is configured.
+
+Prerequisites on the edX side
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each edX instance must have:
+
+- The **edxval** (Video Abstraction Layer) Django app installed and enabled.
+- An **OAuth2 application** configured for OVS with
+  ``grant_type: client_credentials``, ``Client Type: Public``, and
+  **Skip Authorization** checked.  Note the ``Client ID`` and
+  ``Client Secret`` — you will need them below.
+
+Encryption key
+~~~~~~~~~~~~~~
+
+EdxEndpoint credentials (``client_id`` and ``secret_key``) are stored
+encrypted.  You **must** set a non-empty encryption key before creating any
+records::
+
+    FIELD_ENCRYPTION_KEY=<fernet-key>
+
+Generate one with:
+
+.. code-block:: bash
+
+    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+Creating EdxEndpoint records
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create one ``EdxEndpoint`` per edX instance in the Django admin at
+``/admin/ui/edxendpoint/``:
+
+- **Name** — a short label, e.g. ``mitxonline`` or ``xpro``.
+- **Base URL** — root URL of the edX instance, e.g.
+  ``https://courses.mitxonline.mit.edu``.
+- **Client ID / Secret key** — from the OAuth2 application created above.
+- **edx_video_api_path** — leave at the default ``/api/val/v0/videos/``
+  unless the instance uses a custom path.
+
+Linking a collection to edX
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the collection admin or settings UI, set:
+
+- **edx_course_id** — the edX course run key, e.g.
+  ``course-v1:MITxT+7.00x+3T2024``.
+
+When ``edx_course_id`` is first saved on a collection that has no endpoint
+already linked, OVS **auto-assigns** an endpoint:
+
+- Course IDs containing ``:xpro+`` → endpoint whose ``base_url`` contains
+  ``.xpro.``
+- All other course IDs → endpoint whose ``base_url`` contains ``.learn.``
+
+You can also link or unlink endpoints manually via
+``/admin/ui/collectionedxendpoint/``.
+
+Syncing videos with edX
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Once a collection has an ``edx_course_id`` and at least one linked
+``EdxEndpoint``, click the **Sync Videos with edX** button in the collection
+view to push all ``COMPLETE`` videos.  The operation is handled
+asynchronously by Celery; the UI reports the Celery task ID so you can
+monitor progress.
+
+OVS obtains a short-lived JWT token from ``<base_url>/oauth2/access_token/``
+using the ``client_credentials`` grant, then POSTs each video's metadata to
+``<base_url>/api/val/v0/videos/``.
+
+Verify that the videos have been created at
+``<edx-base>/admin/edxval/video/`` on the edX instance.
+
+.. _Open edX: https://openedx.org/
+.. _edX Video Abstraction Layer (VAL): https://github.com/openedx/edx-val
 
 
 Thumbnail Upload Limits

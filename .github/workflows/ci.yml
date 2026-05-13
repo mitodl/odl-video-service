@@ -68,7 +68,6 @@ jobs:
           AWS_ROLE_NAME: fakeawsrolename
           CLOUDFRONT_KEY_ID: cfkeyid
           DROPBOX_KEY: foo_dropbox_key
-          ET_PIPELINE_ID: foo_et_pipeline_id
           FIELD_ENCRYPTION_KEY: jtma0CL1QMRLaJgjXNlJh3mtPNcgok0G5ajRCMZ_XNI=
           GA_DIMENSION_CAMERA: fake
           GA_KEYFILE_JSON: fake

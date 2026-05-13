@@ -209,6 +209,7 @@ The `web` service runs `uwsgi`, the `watch` service runs webpack in dev mode wit
 | `USE_KEYCLOAK` | Enable/disable Keycloak auth (default `True`) |
 | `VIDEO_S3_BUCKET` | Upload bucket |
 | `VIDEO_CLOUDFRONT_DIST` | CloudFront distribution ID |
+| `VIDEO_CDN_DISTRIBUTION_ID` | CloudFront CDN distribution ID (mandatory; used alongside `VIDEO_CLOUDFRONT_DIST`) |
 | `CLOUDFRONT_PRIVATE_KEY` | RSA private key for signed URLs (single-line, `\n` escaped) |
 | `FIELD_ENCRYPTION_KEY` | Key for `EncryptedTextField` fields |
 | `VIDEO_S3_TRANSCODE_ENDPOINT` | MediaConvert endpoint URL for your AWS region |
