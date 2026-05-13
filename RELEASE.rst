@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.89.0
+--------------
+
+- feat: replace video button added on collection list and video detail page (#1470)
+- Update dependency urllib3 to v2.7.0 [SECURITY] (#1471)
+
 Version 0.88.0 (Released May 13, 2026)
 --------------
 
