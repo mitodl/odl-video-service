@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.88.0
+Version 0.88.0 (Released May 13, 2026)
 --------------
 
 - "for_shorts" attribute and filter (#1468)
