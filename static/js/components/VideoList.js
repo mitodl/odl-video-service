@@ -17,7 +17,8 @@ export class VideoList extends React.Component<*, void> {
     showShareVideoDialog: Function,
     showVideoMenu: Function,
     hideVideoMenu: Function,
-    isVideoMenuOpen: Function
+    isVideoMenuOpen: Function,
+    onReplaceVideo?: Function
   }
 
   render() {
@@ -45,6 +46,11 @@ export class VideoList extends React.Component<*, void> {
         showVideoMenu={() => this.props.showVideoMenu(video.key)}
         hideVideoMenu={() => this.props.hideVideoMenu(video.key)}
         isMenuOpen={this.props.isVideoMenuOpen(video.key)}
+        onReplaceVideo={
+          this.props.onReplaceVideo ?
+            file => this.props.onReplaceVideo && this.props.onReplaceVideo(video.key, file) :
+            undefined
+        }
       />
     )
   }

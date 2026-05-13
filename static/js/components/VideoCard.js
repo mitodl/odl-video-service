@@ -6,7 +6,8 @@ import _ from "lodash"
 import Menu from "./material/Menu"
 import Card from "./material/Card"
 import { makeVideoThumbnailUrl, makeVideoUrl } from "../lib/urls"
-import { videoIsProcessing, videoHasError, saveToDropbox } from "../lib/video"
+import { videoIsProcessing, videoHasError, saveToDropbox, videoIsInFlight } from "../lib/video"
+import DropboxChooser from "react-dropbox-chooser"
 
 import type { Video } from "../flow/videoTypes"
 
@@ -18,15 +19,27 @@ type VideoCardProps = {
   showEditVideoDialog: Function,
   showShareVideoDialog: Function,
   showVideoMenu: Function,
-  hideVideoMenu: Function
+  hideVideoMenu: Function,
+  onReplaceVideo?: Function
 }
 
 const VideoCard = (props: VideoCardProps) => {
+  const { video, isAdmin, isMenuOpen, showShareVideoDialog,
+    showEditVideoDialog, showDeleteVideoDialog,
+    showVideoMenu, hideVideoMenu, onReplaceVideo } = props
+
+  let dropboxTriggerEl: ?HTMLElement = null
+  const triggerReplaceDropbox = () => {
+    if (dropboxTriggerEl) {
+      dropboxTriggerEl.click()
+    }
+  }
+
   let videoDisplay
-  const hasError = videoHasError(props.video),
-    isProcessing = videoIsProcessing(props.video)
+  const hasError = videoHasError(video),
+    isProcessing = videoIsProcessing(video)
   const headerClass = isProcessing || hasError ? "message" : "thumbnail",
-    videoUrl = makeVideoUrl(props.video.key)
+    videoUrl = makeVideoUrl(video.key)
 
   if (isProcessing) {
     videoDisplay = (
@@ -49,24 +62,24 @@ const VideoCard = (props: VideoCardProps) => {
   } else {
     videoDisplay = (
       <a href={videoUrl}>
-        <img src={makeVideoThumbnailUrl(props.video)} alt="" />
+        <img src={makeVideoThumbnailUrl(video)} alt="" />
       </a>
     )
   }
 
-  let menuItems = [
-    { label: "Share", action: props.showShareVideoDialog.bind(this) }
-  ]
+  let menuItems = [{ label: "Share", action: showShareVideoDialog }]
 
-  if (props.isAdmin) {
+  const inFlight = videoIsInFlight(video)
+
+  if (isAdmin) {
     menuItems = _.concat(
       menuItems,
-      { label: "Edit", action: props.showEditVideoDialog.bind(this) },
-      {
-        label:  "Save To Dropbox",
-        action: saveToDropbox.bind(this, props.video)
-      },
-      { label: "Delete", action: props.showDeleteVideoDialog.bind(this) }
+      { label: "Edit", action: showEditVideoDialog },
+      { label: "Save To Dropbox", action: () => saveToDropbox(video) },
+      ...(!inFlight && onReplaceVideo ?
+        [{ label: "Replace", action: triggerReplaceDropbox }] :
+        []),
+      { label: "Delete", action: showDeleteVideoDialog }
     )
   }
 
@@ -75,19 +88,34 @@ const VideoCard = (props: VideoCardProps) => {
       <div className={headerClass}>{videoDisplay}</div>
       <div className="video-card-body">
         <h2 className="mdc-typography--subheading2">
-          <a href={videoUrl} title={props.video.title}>
-            {props.video.title}
+          <a href={videoUrl} title={video.title}>
+            {video.title}
           </a>
         </h2>
       </div>
       <div className="actions">
         <Menu
-          key={props.video.key}
-          showMenu={props.showVideoMenu}
-          closeMenu={props.hideVideoMenu}
-          open={props.isMenuOpen}
+          key={video.key}
+          showMenu={showVideoMenu}
+          closeMenu={hideVideoMenu}
+          open={isMenuOpen}
           menuItems={menuItems}
         />
+        {isAdmin && onReplaceVideo && !inFlight && (
+          <div style={{ display: "none" }}>
+            <DropboxChooser
+              appKey={SETTINGS.dropbox_key}
+              success={files => onReplaceVideo(files[0])}
+              linkType="direct"
+              multiselect={false}
+              extensions={["video"]}
+            >
+              <button ref={el => {
+                dropboxTriggerEl = el
+              }}>replace</button>
+            </DropboxChooser>
+          </div>
+        )}
       </div>
     </Card>
   )

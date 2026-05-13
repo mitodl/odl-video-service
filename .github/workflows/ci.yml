@@ -84,6 +84,7 @@ jobs:
           VIDEO_S3_SUBTITLE_BUCKET: video-s3-subtitles
           VIDEO_S3_WATCH_BUCKET: video-s3-watch
           VIDEO_CLOUDFRONT_DIST: video-cf
+          VIDEO_CDN_DISTRIBUTION_ID: video-cdn-cf
           YT_ACCESS_TOKEN: fake
           YT_REFRESH_TOKEN: fake
           YT_CLIENT_ID: fake

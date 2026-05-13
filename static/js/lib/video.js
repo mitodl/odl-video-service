@@ -10,6 +10,8 @@ import {
   VIDEO_STATUS_TRANSCODE_FAILED_INTERNAL,
   VIDEO_STATUS_TRANSCODE_FAILED_VIDEO,
   VIDEO_STATUS_ERROR,
+  VIDEO_STATUS_RETRANSCODE_SCHEDULED,
+  VIDEO_STATUS_RETRANSCODING,
   ENCODING_HLS
 } from "../constants"
 import type { Video, VideoFile } from "../flow/videoTypes"
@@ -48,6 +50,20 @@ export const videoIsProcessing = R.compose(
     VIDEO_STATUS_CREATED,
     VIDEO_STATUS_UPLOADING,
     VIDEO_STATUS_TRANSCODING
+  ]),
+  R.prop("status")
+)
+
+// All states where an async chain (upload or retranscode) is actively in-flight.
+// Attempting a second replace while any of these are active would cause two
+// concurrent chains to race, with the slower one overwriting the faster one.
+export const videoIsInFlight = R.compose(
+  R.includes(R.__, [
+    VIDEO_STATUS_CREATED,
+    VIDEO_STATUS_UPLOADING,
+    VIDEO_STATUS_TRANSCODING,
+    VIDEO_STATUS_RETRANSCODE_SCHEDULED,
+    VIDEO_STATUS_RETRANSCODING
   ]),
   R.prop("status")
 )

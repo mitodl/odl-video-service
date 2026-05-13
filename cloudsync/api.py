@@ -46,6 +46,67 @@ ParsedVideoAttributes = namedtuple(
 )
 
 
+def _s3_uri_to_key(s3_uri: str) -> str:
+    """Convert 's3://bucket/key/path' to 'key/path'."""
+    parts = s3_uri.split("/", 3)
+    return parts[3] if len(parts) >= 4 else ""
+
+
+def _collect_output_keys(output_groups: list) -> list:
+    """
+    Extract S3 object keys from MediaConvert outputGroupDetails.
+
+    For HLS groups a directory wildcard (``<dir>/*``) is appended so that
+    individual ``.ts`` segment files — which are not listed in the job output —
+    are also invalidated.
+
+    ``RETRANSCODE_FOLDER`` is always stripped so that keys reflect the paths
+    actually served by CloudFront after ``move_s3_objects`` has relocated them.
+    """
+    keys = []
+    seen_wildcards = set()
+    for group in output_groups:
+        group_type = group.get("type", "")
+        for path in group.get("playlistFilePaths", []):
+            if key := _s3_uri_to_key(path):
+                keys.append(key.replace(RETRANSCODE_FOLDER, "", 1))
+        for output in group.get("outputDetails", []):
+            for path in output.get("outputFilePaths", []):
+                if key := _s3_uri_to_key(path):
+                    key = key.replace(RETRANSCODE_FOLDER, "", 1)
+                    keys.append(key)
+                    if "HLS_GROUP" in group_type:
+                        directory = key.rsplit("/", 1)[0]
+                        wildcard = f"{directory}/*"
+                        if wildcard not in seen_wildcards:
+                            keys.append(wildcard)
+                            seen_wildcards.add(wildcard)
+    return keys
+
+
+def _invalidate_cloudfront_paths(keys: list) -> None:
+    """Create a single CloudFront invalidation batch for a list of S3 object keys."""
+    dist_id = getattr(settings, "VIDEO_CDN_DISTRIBUTION_ID", "")
+    if not dist_id or not keys:
+        return
+    paths = [f"/{k}" for k in keys]
+    try:
+        cf_client = boto3.client("cloudfront")
+        cf_client.create_invalidation(
+            DistributionId=dist_id,
+            InvalidationBatch={
+                "Paths": {"Quantity": len(paths), "Items": paths},
+                "CallerReference": str(uuid4()),
+            },
+        )
+    except Exception:
+        log.exception(
+            "CloudFront invalidation failed",
+            distribution_id=dist_id,
+            path_count=len(paths),
+        )
+
+
 def process_transcode_results(results: dict) -> None:
     """
     Create VideoFile and VideoThumbnail objects for a Video based on AWS MediaConvert job output.
@@ -57,12 +118,15 @@ def process_transcode_results(results: dict) -> None:
     video_job = EncodeJob.objects.get(id=results.get("jobId"))
     video = Video.objects.get(id=video_job.object_id)
 
+    # Capture before update_status() changes it
+    is_retranscode = video.status == VideoStatus.RETRANSCODING
+
     # Update job state
     video_job.state = EncodeJob.State.COMPLETED
     video_job.message = results
     video_job.save()
 
-    if video.status == VideoStatus.RETRANSCODING:
+    if is_retranscode:
         # Move old transcoded files
         video_key = video.video_s3_prefix()
 
@@ -84,6 +148,9 @@ def process_transcode_results(results: dict) -> None:
 
     video.duration = get_duration_from_encode_job(results)
     video.update_status(VideoStatus.COMPLETE)
+
+    if is_retranscode:
+        _invalidate_cloudfront_paths(_collect_output_keys(output_groups))
 
     # Ensure content_type and object_id are set for the EncodeJob
     content_type = ContentType.objects.get_for_model(video)
@@ -680,26 +747,7 @@ def replace_thumbnail_in_s3(thumbnail, file_data):
     thumbnail.save(update_fields=["max_width", "max_height"])
 
     # Invalidate the CloudFront cache so the new image is served immediately.
-    dist_id = getattr(settings, "VIDEO_CLOUDFRONT_DIST", "")
-    if dist_id:
-        try:
-            cf_client = boto3.client("cloudfront")
-            cf_client.create_invalidation(
-                DistributionId=dist_id,
-                InvalidationBatch={
-                    "Paths": {
-                        "Quantity": 1,
-                        "Items": [f"/{thumbnail.s3_object_key}"],
-                    },
-                    "CallerReference": str(uuid4()),
-                },
-            )
-        except Exception:
-            log.exception(
-                "CloudFront invalidation failed for replaced thumbnail",
-                s3_object_key=thumbnail.s3_object_key,
-                distribution_id=dist_id,
-            )
+    _invalidate_cloudfront_paths([thumbnail.s3_object_key])
 
 
 def create_thumbnail_in_s3(video, file_data):

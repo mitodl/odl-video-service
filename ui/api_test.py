@@ -18,6 +18,7 @@ from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionEdxEndpointFactory,
     CollectionFactory,
+    VideoFactory,
     VideoFileFactory,
 )
 
@@ -129,6 +130,127 @@ def test_process_dropbox_data_wrong_collection():
                 "collection": uuid4().hex,
                 "files": [],
             }
+        )
+
+
+def test_replace_video_from_dropbox(mocker):
+    """
+    replace_video_from_dropbox should update source_url, reset video status,
+    and kick off the stream_to_s3 + retranscode_video chain.
+    """
+    mocked_chain = mocker.patch("ui.api.chain")
+    mocked_stream_to_s3 = mocker.patch("cloudsync.tasks.stream_to_s3")
+    mocked_retranscode = mocker.patch("cloudsync.tasks.retranscode_video")
+    video = VideoFactory()
+    dropbox_file = {
+        "link": "http://dropbox.example.com/new_video.mp4",
+        "name": "new_video.mp4",
+        "bytes": 12345678,
+        "isDir": False,
+        "thumbnailLink": "http://dropbox.example.com/new_video.mp4",
+        "icon": "https://dropbox.example.com/icon.png",
+    }
+
+    result = api.replace_video_from_dropbox(video.key, dropbox_file)
+
+    video.refresh_from_db()
+    assert video.source_url == dropbox_file["link"]
+    assert result == {"key": video.hexkey, "title": video.title}
+    mocked_chain.assert_called_once()
+    mocked_stream_to_s3.s.assert_called_once_with(video.id)
+    mocked_retranscode.si.assert_called_once_with(video.id)
+
+
+def test_replace_video_from_dropbox_different_extension(mocker):
+    """
+    When the replacement file has a different extension from the original
+    (e.g. .mp4 → .m4v), replace_video_from_dropbox must:
+      - repoint the original VideoFile's s3_object_key to the new key
+        (derived from the updated source_url) so stream_to_s3 writes there
+        and retranscode_video reads the correct object, and
+      - schedule async deletion of the now-stale old S3 object.
+    """
+    mocker.patch("ui.api.chain")
+    mocker.patch("cloudsync.tasks.stream_to_s3")
+    mocker.patch("cloudsync.tasks.retranscode_video")
+    mock_delete = mocker.patch("ui.models.delete_s3_objects")
+
+    # Create a video whose source URL (and therefore get_s3_key()) ends in .mp4.
+    video = VideoFactory(source_url="http://dropbox.example.com/original_video.mp4")
+    original_vf = VideoFileFactory(
+        video=video,
+        s3_object_key=video.get_s3_key(),
+        encoding=EncodingNames.ORIGINAL,
+    )
+    old_s3_key = original_vf.s3_object_key
+    assert old_s3_key.endswith(".mp4")
+
+    # Replacement file uses a different extension.
+    dropbox_file = {
+        "link": "http://dropbox.example.com/replacement_video.m4v",
+        "name": "replacement_video.m4v",
+        "bytes": 9876543,
+        "isDir": False,
+        "thumbnailLink": "http://dropbox.example.com/replacement_video.m4v",
+        "icon": "https://dropbox.example.com/icon.png",
+    }
+
+    api.replace_video_from_dropbox(video.key, dropbox_file)
+
+    video.refresh_from_db()
+    original_vf.refresh_from_db()
+
+    # source_url must point at the new file.
+    assert video.source_url == dropbox_file["link"]
+
+    # The VideoFile must now carry the new key so the chain uses the right object.
+    expected_new_key = video.get_s3_key()
+    assert expected_new_key.endswith(".m4v")
+    assert original_vf.s3_object_key == expected_new_key
+
+    # The stale old object must be queued for deletion.
+    mock_delete.delay.assert_called_once_with(original_vf.bucket_name, old_s3_key)
+
+
+def test_replace_video_from_dropbox_same_extension_no_delete(mocker):
+    """
+    When the replacement file has the same extension as the original, the
+    VideoFile key is unchanged and no S3 deletion is scheduled.
+    """
+    mocker.patch("ui.api.chain")
+    mocker.patch("cloudsync.tasks.stream_to_s3")
+    mocker.patch("cloudsync.tasks.retranscode_video")
+    mock_delete = mocker.patch("ui.models.delete_s3_objects")
+
+    video = VideoFactory(source_url="http://dropbox.example.com/original_video.mp4")
+    original_vf = VideoFileFactory(
+        video=video,
+        s3_object_key=video.get_s3_key(),
+        encoding=EncodingNames.ORIGINAL,
+    )
+    old_s3_key = original_vf.s3_object_key
+
+    dropbox_file = {
+        "link": "http://dropbox.example.com/replacement_video.mp4",
+        "name": "replacement_video.mp4",
+        "bytes": 9876543,
+        "isDir": False,
+        "thumbnailLink": "http://dropbox.example.com/replacement_video.mp4",
+        "icon": "https://dropbox.example.com/icon.png",
+    }
+
+    api.replace_video_from_dropbox(video.key, dropbox_file)
+
+    original_vf.refresh_from_db()
+    assert original_vf.s3_object_key == old_s3_key
+    mock_delete.delay.assert_not_called()
+
+
+def test_replace_video_from_dropbox_not_found():
+    """replace_video_from_dropbox raises Http404 when the video key does not exist."""
+    with pytest.raises(Http404):
+        api.replace_video_from_dropbox(
+            uuid4(), {"link": "http://example.com/video.mp4"}
         )
 
 

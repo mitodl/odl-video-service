@@ -69,6 +69,11 @@ urlpatterns = [
         name="upload-videos",
     ),
     path(
+        "api/v0/replace_video/",
+        views.ReplaceVideoFromDropbox.as_view(),
+        name="replace-video",
+    ),
+    path(
         "api/v0/upload_subtitles/",
         views.UploadVideoSubtitle.as_view(),
         name="upload-subtitles",

@@ -22,6 +22,9 @@ from PIL import Image
 from cloudsync import api
 from cloudsync.api import (
     RETRANSCODE_FOLDER,
+    _collect_output_keys,
+    _invalidate_cloudfront_paths,
+    _s3_uri_to_key,
     convert_image_to_jpeg,
     create_thumbnail_in_s3,
     move_s3_objects,
@@ -65,33 +68,20 @@ def file_object():
     return SimpleNamespace(name=filename, data=file_data)
 
 
-def test_get_error_type_from_et_erro():
-    """
-    Tests get_error_type_from_et_error
-    """
-    # weird strings
-    for str_error in (
-        "",
-        None,
-        "foo",
-        "1234foo",
-    ):
-        assert (
-            api.get_error_type_from_et_error(str_error)
-            == VideoStatus.TRANSCODE_FAILED_INTERNAL
-        )
-
-    # actual error like string that should be an internal error
-    assert (
-        api.get_error_type_from_et_error("1234 this is an internal error")
-        == VideoStatus.TRANSCODE_FAILED_INTERNAL
-    )
-
-    # actual error like string that should be a video error
-    assert (
-        api.get_error_type_from_et_error("4123 this is a video error")
-        == VideoStatus.TRANSCODE_FAILED_VIDEO
-    )
+@pytest.mark.parametrize(
+    "error_str, expected_status",
+    [
+        ("", VideoStatus.TRANSCODE_FAILED_INTERNAL),
+        (None, VideoStatus.TRANSCODE_FAILED_INTERNAL),
+        ("foo", VideoStatus.TRANSCODE_FAILED_INTERNAL),
+        ("1234foo", VideoStatus.TRANSCODE_FAILED_INTERNAL),
+        ("1234 this is an internal error", VideoStatus.TRANSCODE_FAILED_INTERNAL),
+        ("4123 this is a video error", VideoStatus.TRANSCODE_FAILED_VIDEO),
+    ],
+)
+def test_get_error_type_from_et_error(error_str, expected_status):
+    """Tests get_error_type_from_et_error for various input strings."""
+    assert api.get_error_type_from_et_error(error_str) == expected_status
 
 
 @pytest.mark.parametrize(
@@ -297,44 +287,42 @@ def test_process_watch(mocker):
     )
 
 
-def test_lecture_collection_slug():
-    """Tests for create_lecture_collection_slug"""
+@pytest.mark.parametrize(
+    "session, expected_slug",
+    [
+        ("Session", "Prefix-Session"),
+        (None, "Prefix"),
+    ],
+)
+def test_lecture_collection_slug(session, expected_slug):
+    """Tests for create_lecture_collection_slug with and without a session."""
     video_attrs = api.ParsedVideoAttributes(
         prefix="Prefix",
-        session="Session",
+        session=session,
         record_date=None,
         record_date_str="",
         name="MIT-0.000-2020-Fall-lec-mit-0000-2020sep28-0000-L09.mp4",
     )
-    assert api.create_lecture_collection_slug(video_attrs) == "Prefix-Session"
-    video_attrs_no_session = api.ParsedVideoAttributes(
-        prefix="Prefix",
-        session=None,
-        record_date=None,
-        record_date_str="",
-        name="MIT-0.000-2020-Fall-lec-mit-0000-2020sep28-0000-L09.mp4",
-    )
-    assert api.create_lecture_collection_slug(video_attrs_no_session) == "Prefix"
+    assert api.create_lecture_collection_slug(video_attrs) == expected_slug
 
 
-def test_lecture_video_title():
-    """Tests for create_lecture_video_slug"""
+@pytest.mark.parametrize(
+    "record_date, expected_title",
+    [
+        (datetime(2017, 1, 1), "Lecture - January 01, 2017"),
+        (None, "Lecture - 2017jan01"),
+    ],
+)
+def test_lecture_video_title(record_date, expected_title):
+    """Tests for create_lecture_video_title with and without a parsed record date."""
     video_attrs = api.ParsedVideoAttributes(
-        record_date=datetime(2017, 1, 1),
+        record_date=record_date,
         record_date_str="2017jan01",
         prefix="Prefix",
         session="Session",
         name="MIT-0.000-2020-Fall-lec-mit-0000-2020sep28-0000-L09.mp4",
     )
-    assert api.create_lecture_video_title(video_attrs) == "Lecture - January 01, 2017"
-    video_attrs_no_date = api.ParsedVideoAttributes(
-        record_date=None,
-        record_date_str="2017jan01",
-        prefix="Prefix",
-        session="Session",
-        name="MIT-0.000-2020-Fall-lec-mit-0000-2020sep28-0000-L09.mp4",
-    )
-    assert api.create_lecture_video_title(video_attrs_no_date) == "Lecture - 2017jan01"
+    assert api.create_lecture_video_title(video_attrs) == expected_title
 
 
 @pytest.mark.parametrize(
@@ -654,10 +642,10 @@ def test_replace_thumbnail_in_s3_updates_s3_and_model():
 
 
 @mock_aws
-@override_settings(VIDEO_CLOUDFRONT_DIST="EDIST123")
+@override_settings(VIDEO_CDN_DISTRIBUTION_ID="EDIST123")
 def test_replace_thumbnail_in_s3_invalidates_cloudfront(mocker):
     """
-    When VIDEO_CLOUDFRONT_DIST is set, a CloudFront invalidation is issued.
+    When VIDEO_CDN_DISTRIBUTION_ID is set, a CloudFront invalidation is issued.
     """
     mock_cf = mocker.MagicMock()
     mock_boto3 = mocker.patch("cloudsync.api.boto3")
@@ -870,3 +858,222 @@ def test_convert_image_to_jpeg_raises_for_unsupported_format():
     buf.seek(0)
     with pytest.raises(ValueError, match="Unsupported image format"):
         convert_image_to_jpeg(buf)
+
+
+# ---------------------------------------------------------------------------
+# Tests for _s3_uri_to_key
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "uri, expected",
+    [
+        ("s3://my-bucket/transcoded/abc/video.m3u8", "transcoded/abc/video.m3u8"),
+        ("s3://bucket/a/b/c/d/file.ts", "a/b/c/d/file.ts"),
+        ("s3://bucket/file.mp4", "file.mp4"),
+        ("", ""),
+        ("s3://bucket", ""),
+        ("s3://bucket/", ""),
+    ],
+)
+def test_s3_uri_to_key(uri, expected):
+    """_s3_uri_to_key extracts the S3 key from a URI, returning '' for degenerate inputs."""
+    assert _s3_uri_to_key(uri) == expected
+
+
+# ---------------------------------------------------------------------------
+# Tests for _collect_output_keys
+# ---------------------------------------------------------------------------
+
+
+def test_collect_output_keys_empty():
+    """Empty output groups list returns an empty list."""
+    assert _collect_output_keys([]) == []
+
+
+def test_collect_output_keys_hls_group():
+    """
+    HLS groups: playlist paths are collected and a directory wildcard is appended
+    for the segment files. The wildcard is only added once per directory.
+    """
+    output_groups = [
+        {
+            "type": "HLS_GROUP",
+            "playlistFilePaths": ["s3://bucket/transcoded/abc/video.m3u8"],
+            "outputDetails": [
+                {"outputFilePaths": ["s3://bucket/transcoded/abc/seg0.ts"]},
+                {"outputFilePaths": ["s3://bucket/transcoded/abc/seg1.ts"]},
+            ],
+        }
+    ]
+    keys = _collect_output_keys(output_groups)
+    assert "transcoded/abc/video.m3u8" in keys
+    assert "transcoded/abc/seg0.ts" in keys
+    assert "transcoded/abc/seg1.ts" in keys
+    # Wildcard for directory should appear exactly once
+    assert keys.count("transcoded/abc/*") == 1
+
+
+def test_collect_output_keys_file_group():
+    """
+    FILE_GROUP outputs: paths are collected but no wildcard is appended.
+    """
+    output_groups = [
+        {
+            "type": "FILE_GROUP",
+            "playlistFilePaths": [],
+            "outputDetails": [
+                {"outputFilePaths": ["s3://bucket/transcoded/abc/video.mp4"]},
+            ],
+        }
+    ]
+    keys = _collect_output_keys(output_groups)
+    assert keys == ["transcoded/abc/video.mp4"]
+    # No wildcards for file groups
+    assert not any(k.endswith("/*") for k in keys)
+
+
+def test_collect_output_keys_deduplicates_wildcards():
+    """
+    Multiple segments in the same directory must not produce duplicate wildcards.
+    """
+    output_groups = [
+        {
+            "type": "HLS_GROUP",
+            "playlistFilePaths": [],
+            "outputDetails": [
+                {
+                    "outputFilePaths": [
+                        "s3://b/dir/seg0.ts",
+                        "s3://b/dir/seg1.ts",
+                        "s3://b/dir/seg2.ts",
+                    ]
+                },
+            ],
+        }
+    ]
+    keys = _collect_output_keys(output_groups)
+    assert keys.count("dir/*") == 1
+
+
+def test_collect_output_keys_mixed_groups():
+    """A mix of HLS and FILE groups returns keys from all groups."""
+    output_groups = [
+        {
+            "type": "HLS_GROUP",
+            "playlistFilePaths": ["s3://bucket/hls/index.m3u8"],
+            "outputDetails": [],
+        },
+        {
+            "type": "FILE_GROUP",
+            "playlistFilePaths": [],
+            "outputDetails": [
+                {"outputFilePaths": ["s3://bucket/mp4/video.mp4"]},
+            ],
+        },
+    ]
+    keys = _collect_output_keys(output_groups)
+    assert "hls/index.m3u8" in keys
+    assert "mp4/video.mp4" in keys
+
+
+def test_collect_output_keys_strips_retranscode_folder():
+    """
+    Keys whose S3 paths begin with RETRANSCODE_FOLDER (``retranscode/``) are
+    stripped to their served equivalents so that CloudFront invalidation targets
+    the paths that the player actually fetches after move_s3_objects relocates
+    the files.  Keys that do not contain the prefix are returned unchanged.
+    """
+    output_groups = [
+        {
+            "type": "HLS_GROUP",
+            "playlistFilePaths": [
+                "s3://bucket/retranscode/transcoded/abc/__index.m3u8"
+            ],
+            "outputDetails": [
+                {
+                    "outputFilePaths": [
+                        "s3://bucket/retranscode/transcoded/abc/seg0.ts",
+                        "s3://bucket/retranscode/transcoded/abc/seg1.ts",
+                    ]
+                },
+            ],
+        },
+        {
+            "type": "FILE_GROUP",
+            "playlistFilePaths": [],
+            "outputDetails": [
+                {
+                    "outputFilePaths": [
+                        "s3://bucket/retranscode/transcoded/abc/video.mp4"
+                    ]
+                },
+            ],
+        },
+    ]
+    keys = _collect_output_keys(output_groups)
+
+    # Retranscode prefix must be stripped from every key
+    assert not any("retranscode/" in k for k in keys)
+
+    # HLS playlist
+    assert "transcoded/abc/__index.m3u8" in keys
+    # HLS segments
+    assert "transcoded/abc/seg0.ts" in keys
+    assert "transcoded/abc/seg1.ts" in keys
+    # Wildcard derived from the stripped path (not the retranscode path)
+    assert "transcoded/abc/*" in keys
+    assert keys.count("transcoded/abc/*") == 1
+    # MP4
+    assert "transcoded/abc/video.mp4" in keys
+
+
+# ---------------------------------------------------------------------------
+# Tests for _invalidate_cloudfront_paths
+# ---------------------------------------------------------------------------
+
+
+@override_settings(VIDEO_CDN_DISTRIBUTION_ID="DIST123")
+def test_invalidate_cloudfront_paths_sends_invalidation(mocker):
+    """When VIDEO_CDN_DISTRIBUTION_ID is set and keys are provided, a batch invalidation is created."""
+    mock_cf = mocker.MagicMock()
+    mocker.patch("cloudsync.api.boto3").client.return_value = mock_cf
+
+    _invalidate_cloudfront_paths(["transcoded/abc/video.m3u8", "transcoded/abc/*"])
+
+    mock_cf.create_invalidation.assert_called_once()
+    call_kwargs = mock_cf.create_invalidation.call_args[1]
+    assert call_kwargs["DistributionId"] == "DIST123"
+    items = call_kwargs["InvalidationBatch"]["Paths"]["Items"]
+    assert "/transcoded/abc/video.m3u8" in items
+    assert "/transcoded/abc/*" in items
+    assert call_kwargs["InvalidationBatch"]["Paths"]["Quantity"] == 2
+
+
+@pytest.mark.parametrize(
+    "dist_id, keys",
+    [
+        ("", ["some/key"]),  # dist not configured
+        ("DIST123", []),  # empty key list
+    ],
+)
+def test_invalidate_cloudfront_paths_no_op(mocker, settings, dist_id, keys):
+    """No CloudFront call is made when the dist is unset or the key list is empty."""
+    settings.VIDEO_CDN_DISTRIBUTION_ID = dist_id
+    mock_boto3 = mocker.patch("cloudsync.api.boto3")
+    _invalidate_cloudfront_paths(keys)
+    mock_boto3.client.assert_not_called()
+
+
+@override_settings(VIDEO_CDN_DISTRIBUTION_ID="DIST123")
+def test_invalidate_cloudfront_paths_swallows_exceptions(mocker):
+    """
+    If the CloudFront API call raises, the exception is caught and logged
+    rather than propagated to the caller.
+    """
+    mock_cf = mocker.MagicMock()
+    mock_cf.create_invalidation.side_effect = Exception("CF error")
+    mocker.patch("cloudsync.api.boto3").client.return_value = mock_cf
+
+    # Must not raise
+    _invalidate_cloudfront_paths(["transcoded/abc/video.m3u8"])

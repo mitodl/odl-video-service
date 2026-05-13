@@ -22,12 +22,13 @@ import VideoSubtitleCard from "../components/VideoSubtitleCard"
 import VideoSaverScript from "../components/VideoSaverScript"
 import { ConnectedVideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 import ToastOverlay from "./ToastOverlay"
+import DropboxChooser from "react-dropbox-chooser"
 
 import { actions } from "../actions"
 import { setDrawerOpen } from "../actions/commonUi"
 import { makeCollectionUrl } from "../lib/urls"
-import { saveToDropbox } from "../lib/video"
-import { videoIsProcessing, videoHasError } from "../lib/video"
+import { saveToDropbox, videoIsProcessing, videoHasError, videoIsInFlight } from "../lib/video"
+import { replaceVideoFromDropbox } from "../lib/api"
 import { DIALOGS, MM_DD_YYYY } from "../constants"
 import { initGA, sendGAPageView } from "../util/google_analytics"
 
@@ -138,6 +139,33 @@ export class VideoDetailPage extends React.Component<*, void> {
     dispatch(actions.videoUi.updateVideoJsSync(corner))
   }
 
+  handleReplaceVideo = async (file: Object) => {
+    const { dispatch, videoKey } = this.props
+    try {
+      await replaceVideoFromDropbox(videoKey, file)
+      dispatch(
+        actions.toast.addMessage({
+          message: {
+            key:     "replace-video-started",
+            content: "Video replacement has started. You will receive an email when it is ready.",
+            icon:    "check"
+          }
+        })
+      )
+      dispatch(actions.videos.get(videoKey))
+    } catch (error) {
+      dispatch(
+        actions.toast.addMessage({
+          message: {
+            key:     "replace-video-error",
+            content: "Failed to start video replacement. Please try again.",
+            icon:    "error"
+          }
+        })
+      )
+    }
+  }
+
   showDeleteSubtitlesDialog = (subtitlesKey: string | number) => {
     const { dispatch, showDialog } = this.props
     dispatch(actions.videoUi.setCurrentSubtitlesKey({ subtitlesKey }))
@@ -198,6 +226,14 @@ export class VideoDetailPage extends React.Component<*, void> {
                         >
                           Save To Dropbox
                         </Button>
+                        {!videoIsInFlight(video) && (
+                          <Button
+                            className="replace mdc-button--raised"
+                            onClick={() => this.replaceDropboxTriggerRef && this.replaceDropboxTriggerRef.click()}
+                          >
+                            Replace
+                          </Button>
+                        )}
                         <Button
                           className="delete mdc-button--raised"
                           onClick={showDialog.bind(this, DIALOGS.DELETE_VIDEO)}
@@ -210,6 +246,21 @@ export class VideoDetailPage extends React.Component<*, void> {
                         >
                           Show/Hide Analytics
                         </Button>
+                        {!videoIsInFlight(video) && (
+                          <div style={{ display: "none" }}>
+                            <DropboxChooser
+                              appKey={SETTINGS.dropbox_key}
+                              success={files => this.handleReplaceVideo(files[0])}
+                              linkType="direct"
+                              multiselect={false}
+                              extensions={["video"]}
+                            >
+                              <button ref={el => {
+                                this.replaceDropboxTriggerRef = el
+                              }}>replace</button>
+                            </DropboxChooser>
+                          </div>
+                        )}
                       </span>
                     )}
                   </div>

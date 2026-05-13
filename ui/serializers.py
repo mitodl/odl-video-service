@@ -527,6 +527,13 @@ class DropboxUploadSerializer(serializers.Serializer):
     files = DropboxFileSerializer(many=True)
 
 
+class ReplaceVideoSerializer(serializers.Serializer):
+    """Serializer for replacing an existing video with a new Dropbox file"""
+
+    video = serializers.UUIDField()
+    file = DropboxFileSerializer()
+
+
 class VideoSubtitleUploadSerializer(serializers.Serializer):
     """Caption File Serializer"""
 
