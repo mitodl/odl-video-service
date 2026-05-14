@@ -87,14 +87,14 @@ Migrations are excluded from ruff linting and formatting — never run ruff on m
 
 ```bash
 # ESLint
-npm run lint          # lint static/js
+yarn lint          # lint static/js
 
 # Format with prettier-eslint
-npm run fmt           # write changes
-npm run fmt:check     # check only (no writes)
+yarn fmt           # write changes
+yarn fmt:check     # check only (no writes)
 
 # SCSS lint
-npm run scss_lint
+yarn scss_lint
 ```
 
 ### Pre-commit (all checks)
