@@ -126,7 +126,7 @@ You will need:
    Store the returned HTTPS URL as ``VIDEO_S3_TRANSCODE_ENDPOINT`` in
    ``.env``, for example::
 
-       VIDEO_S3_TRANSCODE_ENDPOINT=https://XXXXXXXXXXXXXXX.mediaconvert.us-east-1.amazonaws.com
+       VIDEO_S3_TRANSCODE_ENDPOINT=https://<endpoint-id>.mediaconvert.<your-aws-region>.amazonaws.com
 
 2. **An IAM role** that MediaConvert can assume with read access to
    ``VIDEO_S3_BUCKET`` and write access to ``VIDEO_S3_TRANSCODE_BUCKET`` and
