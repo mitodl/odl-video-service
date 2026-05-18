@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.89.0
+Version 0.89.0 (Released May 18, 2026)
 --------------
 
 - feat: replace video button added on collection list and video detail page (#1470)
