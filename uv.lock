@@ -645,15 +645,15 @@ wheels = [
 
 [[package]]
 name = "django-redis"
-version = "5.4.0"
+version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "redis" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/83/9d/2272742fdd9d0a9f0b28cd995b0539430c9467a2192e4de2cea9ea6ad38c/django-redis-5.4.0.tar.gz", hash = "sha256:6a02abaa34b0fea8bf9b707d2c363ab6adc7409950b2db93602e6cb292818c42", size = 52567, upload-time = "2023-10-01T20:22:01.221Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/08/53/dbcfa1e528e0d6c39947092625b2c89274b5d88f14d357cee53c4d6dbbd4/django_redis-6.0.0.tar.gz", hash = "sha256:2d9cb12a20424a4c4dde082c6122f486628bae2d9c2bee4c0126a4de7fda00dd", size = 56904, upload-time = "2025-06-17T18:15:46.376Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b7/f1/63caad7c9222c26a62082f4f777de26389233b7574629996098bf6d25a4d/django_redis-5.4.0-py3-none-any.whl", hash = "sha256:ebc88df7da810732e2af9987f7f426c96204bf89319df4c6da6ca9a2942edd5b", size = 31119, upload-time = "2023-10-01T20:21:33.009Z" },
+    { url = "https://files.pythonhosted.org/packages/7e/79/055dfcc508cfe9f439d9f453741188d633efa9eab90fc78a67b0ab50b137/django_redis-6.0.0-py3-none-any.whl", hash = "sha256:20bf0063a8abee567eb5f77f375143c32810c8700c0674ced34737f8de4e36c0", size = 33687, upload-time = "2025-06-17T18:15:34.165Z" },
 ]
 
 [[package]]
@@ -1218,22 +1218,20 @@ wheels = [
 
 [[package]]
 name = "mitol-django-common"
-version = "2025.6.20"
+version = "2026.4.29"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "django-redis" },
     { name = "django-stubs" },
     { name = "django-webpack-loader" },
-    { name = "factory-boy" },
-    { name = "pytest" },
     { name = "pytz" },
     { name = "requests" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4b/0e/b4dda829f5119338da3f8c7bd63a2350131bd4f84bd2f0e373c34921f520/mitol_django_common-2025.6.20.tar.gz", hash = "sha256:5060a99537a571ec8e5b94a3972161a318ae60dc7df4154ebcc8cb5f29cfbdbb", size = 21695, upload-time = "2025-06-20T08:08:05.727Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/27/e6/a97f7e4bd28dac57cf9235627a506b2815e08dc34e01e853b941b03fe6d6/mitol_django_common-2026.4.29.tar.gz", hash = "sha256:f9845c2a953220d90f59296ab3599e485a4cf0296e702835ec809cf20df87912", size = 22704, upload-time = "2026-04-29T19:55:43.133Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/c2/d562e5e8721a1e4319f0ca78c7dc2fbe2fe796a58fda9aae44b4462a7a14/mitol_django_common-2025.6.20-py3-none-any.whl", hash = "sha256:a3a1d2ed1570cf905132651ab1338cf30924904c6f4d98af62e80cf9a25d4f54", size = 31511, upload-time = "2025-06-20T08:08:04.965Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/40/7932db5233542f59dedb6289c4c463bd8ca1a076cc19dc75862c2144b207/mitol_django_common-2026.4.29-py3-none-any.whl", hash = "sha256:cfa1af4f31fa76253d85356808ef197b93e6bf09bb0f431378963b298e8c9128", size = 32641, upload-time = "2026-04-29T19:55:42.264Z" },
 ]
 
 [[package]]
@@ -1402,7 +1400,7 @@ requires-dist = [
     { name = "django-encrypted-model-fields", specifier = ">=0.6.5,<0.7" },
     { name = "django-filter", specifier = ">=25.1,<26" },
     { name = "django-hijack", specifier = ">=3.7.1,<4" },
-    { name = "django-redis", specifier = ">=5.4.0,<5.5.0" },
+    { name = "django-redis", specifier = ">=6.0.0,<6.1.0" },
     { name = "django-webpack-loader", specifier = ">=3.0.0,<4" },
     { name = "djangorestframework", specifier = ">=3.11.2,<4" },
     { name = "google-api-python-client", specifier = ">=2.58.0,<3" },
