@@ -328,6 +328,16 @@ def prepare_results(video: Video, job: EncodeJob, results: str) -> dict:
     return results
 
 
+def _get_template_path(video: Video) -> str | None:
+    """
+    Return the portrait MediaConvert template path for a shorts video,
+    otherwise return None (default landscape template).
+    """
+    if video.collection.for_shorts:
+        return settings.TRANSCODE_JOB_TEMPLATE_PORTRAIT
+    return None
+
+
 def transcode_video(
     video: Video, video_file: VideoFile, generate_mp4_videofile: bool = False
 ) -> None:
@@ -365,6 +375,7 @@ def transcode_video(
                 "exclude_mp4": not generate_mp4_videofile,
                 "exclude_thumbnail": exclude_thumbnail,
             },
+            template_path=_get_template_path(video),
         )
         job_id = job.get("Job", {}).get("Id", job_id)
     except ClientError as exc:

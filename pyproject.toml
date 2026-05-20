@@ -23,7 +23,7 @@ dependencies = [
     "django==4.2.30",
     "django-encrypted-model-fields>=0.6.5,<0.7",
     "django-hijack>=3.7.1,<4",
-    "django-redis>=5.4.0,<5.5.0",
+    "django-redis>=6.0.0,<7",
     "django-webpack-loader>=3.0.0,<4",
     "djangorestframework>=3.11.2,<4",
     "google-api-python-client>=2.58.0,<3",
@@ -46,7 +46,7 @@ dependencies = [
     "mitol-django-observability>=2026.1.0",
     "urllib3>=2.0.0,<3",
     "uwsgi==2.0.31",
-    "mitol-django-transcoding>=2025.5.21,<2026",
+    "mitol-django-transcoding>=2025.5.21",
     "django-filter>=25.1,<26",
     "setuptools>=80.0.0,<81",
 ]
@@ -76,6 +76,9 @@ dev = [
 [tool.uv]
 package = false
 default-groups = "all"
+
+[tool.uv.sources]
+mitol-django-transcoding = { git = "https://github.com/mitodl/ol-django.git", rev = "ed8ad1ebcca0fecab63a108c8a58c3297b5041ff", subdirectory = "src/transcoding" }  # pragma: allowlist secret
 
 [tool.uv.build-backend]
 module-root = ""
