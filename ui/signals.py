@@ -85,7 +85,11 @@ def set_video_is_public_from_collection(sender, instance, created, **kwargs):
     """
     if created:
         collection = instance.collection
-        if getattr(collection, "is_public", False) and not instance.is_public:
+        if (
+            getattr(collection, "is_public", False)
+            and not getattr(collection, "include_in_learn", False)
+            and not instance.is_public
+        ):
             # Use update to avoid triggering signals again
             Video.objects.filter(pk=instance.pk).update(
                 is_public=True, is_private=False
