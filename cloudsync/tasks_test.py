@@ -384,6 +384,7 @@ def test_monitor_watch(mocker, user):
             "exclude_mp4": True,
             "exclude_thumbnail": False,
         },
+        template_path=None,
     )
     assert new_videofile.bucket_name == settings.VIDEO_S3_BUCKET
     with pytest.raises(ClientError):

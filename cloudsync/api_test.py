@@ -34,6 +34,7 @@ from cloudsync.api import (
 from cloudsync.conftest import MockBoto, MockClientMC
 from ui.constants import VideoStatus
 from ui.factories import (
+    CollectionFactory,
     EncodeJobFactory,
     UserFactory,
     VideoFactory,
@@ -284,6 +285,7 @@ def test_process_watch(mocker):
             "exclude_mp4": True,
             "exclude_thumbnail": False,
         },
+        template_path=None,
     )
 
 
@@ -361,6 +363,7 @@ def test_transcode_job(mocker, status, expected_status, exclude_thumbnail):
             "exclude_mp4": True,
             "exclude_thumbnail": exclude_thumbnail,
         },
+        template_path=None,
     )
     assert len(video.encode_jobs.all()) == 1
     assert mock_delete_objects.call_count == (
@@ -404,9 +407,69 @@ def test_transcode_job_failure(mocker, status, error_status, exclude_thumbnail):
         videofile.s3_object_key,
         destination_prefix=prefix,
         group_settings={"exclude_mp4": True, "exclude_thumbnail": exclude_thumbnail},
+        template_path=None,
     )
     assert len(video.encode_jobs.all()) == 1
     assert Video.objects.get(id=video.id).status == error_status
+
+
+@pytest.mark.parametrize(
+    "for_shorts,expected_template",
+    [
+        (True, "TRANSCODE_JOB_TEMPLATE_PORTRAIT"),
+        (False, None),
+    ],
+)
+def test_transcode_video_routes_shorts_to_portrait_template(
+    mocker, for_shorts, expected_template
+):
+    """
+    Videos in a for_shorts collection should be sent through the portrait
+    MediaConvert template; every other video uses the default landscape one
+    (signalled by template_path=None, which the transcoding library resolves
+    via settings.TRANSCODE_JOB_TEMPLATE).
+    """
+    collection = CollectionFactory.create(for_shorts=for_shorts)
+    video = VideoFactory.create(collection=collection, status=VideoStatus.UPLOADING)
+    videofile = VideoFileFactory.create(video=video)
+
+    mock_job = {"Job": {"Id": str(uuid.uuid4())}}
+    mock_encoder = mocker.patch(
+        "cloudsync.api.media_convert_job", return_value=mock_job
+    )
+    mocker.patch("ui.models.tasks")
+
+    api.transcode_video(video, videofile)
+
+    expected = getattr(settings, expected_template) if expected_template else None
+    assert mock_encoder.call_args.kwargs["template_path"] == expected
+
+
+def test_portrait_mediaconvert_outputs_are_taller_than_wide():
+    """
+    Guard against accidental landscape regression in the portrait template:
+    every output that declares Width and Height must have Height > Width.
+    """
+    import json
+    from pathlib import Path
+
+    template_path = Path(settings.BASE_DIR) / "config" / "mediaconvert_portrait.json"
+    template = json.loads(template_path.read_text())
+
+    sized_outputs = [
+        output
+        for group in template["Settings"]["OutputGroups"]
+        for output in group["Outputs"]
+        if "Width" in output.get("VideoDescription", {})
+        and "Height" in output["VideoDescription"]
+    ]
+    assert sized_outputs, "portrait template should declare sized outputs"
+    for output in sized_outputs:
+        vd = output["VideoDescription"]
+        assert vd["Height"] > vd["Width"], (
+            f"output {output.get('NameModifier')!r} is not portrait: "
+            f"{vd['Width']}x{vd['Height']}"
+        )
 
 
 @pytest.mark.parametrize("replace", [True, False])
