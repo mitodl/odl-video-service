@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.90.0
+--------------
+
+- Update ol-django transcoding version (#1478)
+- Use portrait aspect ratio when transcoding video shorts (#1476)
+- AGENTS.md and README docs updated (#1472)
+- Update dependency lodash to v4.18.1 [SECURITY] (#1443)
+
 Version 0.89.0 (Released May 18, 2026)
 --------------
 
