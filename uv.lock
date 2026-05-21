@@ -1219,7 +1219,7 @@ wheels = [
 [[package]]
 name = "mitol-django-common"
 version = "2026.4.29"
-source = { git = "https://github.com/mitodl/ol-django.git?subdirectory=src%2Fcommon&rev=ed8ad1ebcca0fecab63a108c8a58c3297b5041ff#ed8ad1ebcca0fecab63a108c8a58c3297b5041ff" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "django-redis" },
@@ -1228,6 +1228,10 @@ dependencies = [
     { name = "pytz" },
     { name = "requests" },
     { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/27/e6/a97f7e4bd28dac57cf9235627a506b2815e08dc34e01e853b941b03fe6d6/mitol_django_common-2026.4.29.tar.gz", hash = "sha256:f9845c2a953220d90f59296ab3599e485a4cf0296e702835ec809cf20df87912", size = 22704, upload-time = "2026-04-29T19:55:43.133Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/40/7932db5233542f59dedb6289c4c463bd8ca1a076cc19dc75862c2144b207/mitol_django_common-2026.4.29-py3-none-any.whl", hash = "sha256:cfa1af4f31fa76253d85356808ef197b93e6bf09bb0f431378963b298e8c9128", size = 32641, upload-time = "2026-04-29T19:55:42.264Z" },
 ]
 
 [[package]]
@@ -1251,13 +1255,17 @@ wheels = [
 
 [[package]]
 name = "mitol-django-transcoding"
-version = "2026.4.2"
-source = { git = "https://github.com/mitodl/ol-django.git?subdirectory=src%2Ftranscoding&rev=ed8ad1ebcca0fecab63a108c8a58c3297b5041ff#ed8ad1ebcca0fecab63a108c8a58c3297b5041ff" }
+version = "2026.5.21.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
     { name = "django" },
     { name = "django-stubs" },
     { name = "mitol-django-common" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/35/b2/64e2bb4c742f4c463b285258301cdbe4d1feacbea12aceab623ccb06e1fe/mitol_django_transcoding-2026.5.21.1.tar.gz", hash = "sha256:40882a0af3a94407b98443e6b620fe0679d50caf3dec5725f2737b0c2d3885eb", size = 6320, upload-time = "2026-05-21T19:20:24.019Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4b/ce/b864cbfb5b2854946d238e4c8f9002b63fa14ce81f8ec714e0c36f9af9b5/mitol_django_transcoding-2026.5.21.1-py3-none-any.whl", hash = "sha256:107c622b32726af88b62388a0ddbfaf34eb48571d5ee06da6cbd5cf9aea1087d", size = 9726, upload-time = "2026-05-21T19:20:23.243Z" },
 ]
 
 [[package]]
@@ -1402,7 +1410,7 @@ requires-dist = [
     { name = "httplib2", specifier = ">=0.31.0,<0.32" },
     { name = "ipython", specifier = ">=9.0.0,<10" },
     { name = "mitol-django-observability", specifier = ">=2026.1.0" },
-    { name = "mitol-django-transcoding", git = "https://github.com/mitodl/ol-django.git?subdirectory=src%2Ftranscoding&rev=ed8ad1ebcca0fecab63a108c8a58c3297b5041ff" },
+    { name = "mitol-django-transcoding", specifier = ">=2026.5.21.1,<2027" },
     { name = "pillow", specifier = ">=10.0.0,<13" },
     { name = "psycopg2", specifier = ">=2.9.10,<3" },
     { name = "pycountry", specifier = ">=24.0.0,<25" },
