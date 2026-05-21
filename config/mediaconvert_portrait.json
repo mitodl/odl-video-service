@@ -29,12 +29,12 @@
               "Container": "M3U8"
             },
             "VideoDescription": {
-              "Width": 576,
-              "Height": 1024,
+              "Width": 1080,
+              "Height": 1920,
               "CodecSettings": {
                 "Codec": "H_264",
                 "H264Settings": {
-                  "Bitrate": 1872000,
+                  "Bitrate": 4000000,
                   "RateControlMode": "CBR",
                   "GopSize": 90,
                   "GopSizeUnits": "FRAMES",
@@ -61,12 +61,12 @@
               "Container": "M3U8"
             },
             "VideoDescription": {
-              "Width": 540,
-              "Height": 960,
+              "Width": 720,
+              "Height": 1280,
               "CodecSettings": {
                 "Codec": "H_264",
                 "H264Settings": {
-                  "Bitrate": 1500000,
+                  "Bitrate": 2000000,
                   "RateControlMode": "CBR",
                   "GopSize": 90,
                   "GopSizeUnits": "FRAMES",
@@ -93,12 +93,12 @@
               "Container": "M3U8"
             },
             "VideoDescription": {
-              "Width": 224,
-              "Height": 400,
+              "Width": 540,
+              "Height": 960,
               "CodecSettings": {
                 "Codec": "H_264",
                 "H264Settings": {
-                  "Bitrate": 400000,
+                  "Bitrate": 1000000,
                   "RateControlMode": "CBR",
                   "GopSize": 90,
                   "GopSizeUnits": "FRAMES",
