@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.90.0
+Version 0.90.0 (Released May 21, 2026)
 --------------
 
 - Update ol-django transcoding version (#1478)
