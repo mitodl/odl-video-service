@@ -465,6 +465,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
               value={PERM_CHOICE_PUBLIC}
               selectedValue={editVideoForm.viewChoice}
               onChange={this.handleVideoViewPermClick}
+              disabled={defaultPerms}
               className="wideLabel"
             />
           )}

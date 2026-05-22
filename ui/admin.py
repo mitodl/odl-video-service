@@ -84,7 +84,11 @@ class CollectionAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         """Propagate is_public changes to all videos in the collection."""
         super().save_model(request, obj, form, change)
-        if change and "is_public" in form.changed_data:
+        if (
+            change
+            and "is_public" in form.changed_data
+            and not (obj.is_public and obj.include_in_learn)
+        ):
             obj.videos.update(is_public=obj.is_public, is_private=not obj.is_public)
 
 

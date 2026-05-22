@@ -130,3 +130,34 @@ def test_collection_schedule_retranscode_signal(
         Video.objects.get(id=video_with_file.id).schedule_retranscode
         is retranscode_enabled
     )
+
+
+@pytest.mark.parametrize(
+    ["collection_is_public", "include_in_learn", "expected_is_public"],
+    [
+        (True, False, True),  # public collection, not learn → auto-set public
+        (
+            True,
+            True,
+            False,
+        ),  # public collection, include_in_learn → do NOT auto-set public
+        (False, True, False),  # not public collection → stays private
+        (False, False, False),  # not public collection → stays private
+    ],
+)
+def test_set_video_is_public_from_collection(
+    collection_is_public, include_in_learn, expected_is_public
+):
+    """
+    New videos inherit is_public from their collection only when include_in_learn is False.
+    For collections with include_in_learn=True, videos must be made public explicitly.
+    """
+    collection = CollectionFactory(
+        is_public=collection_is_public, include_in_learn=include_in_learn
+    )
+    video = Video.objects.create(
+        collection=collection,
+        title="Test Video",
+        source_url="https://example.com/test.mp4",
+    )
+    assert Video.objects.get(pk=video.pk).is_public is expected_is_public
