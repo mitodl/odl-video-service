@@ -46,7 +46,7 @@ repos:
           - --exclude-files
           - "config/keycloak/*"
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.12"
+    rev: "v0.15.13"
     hooks:
       - id: ruff-format
         exclude: migrations/
