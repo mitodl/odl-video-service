@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.90.1
+Version 0.90.1 (Released May 26, 2026)
 --------------
 
 - fix: don't auto public learn collection videos (#1475)
