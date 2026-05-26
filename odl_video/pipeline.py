@@ -12,13 +12,15 @@ User = get_user_model()
 
 def assign_user_groups(strategy, details, backend, user=None, *args, **kwargs):
     """
-    Custom pipeline function to assign Django permissions based on Keycloak groups.
-    This runs after user creation/lookup to ensure permissions are properly assigned.
+    Custom pipeline function to override Django permissions for users in admin/staff Keycloak groups.
+    This runs after user creation/lookup to ensure permissions are properly assigned for those users.
+    Any Django user that is not in either Keycloak group will have their existing permissions
+    maintained, whether they are a superuser, staff, or regular user.
 
     Keycloak group mapping:
     - "Admin" group → Django superuser (is_superuser=True, is_staff=True)
     - "Staff" group → Django staff (is_staff=True)
-    - Any other group or no group → regular user (no special flags)
+    - Any other group or no group → no change to existing Django permissions
     """
     if not user:
         logger.debug("assign_user_groups called but no user provided")
@@ -43,17 +45,18 @@ def assign_user_groups(strategy, details, backend, user=None, *args, **kwargs):
     groups_lower = [group.lower() for group in groups]
 
     if "/admin" in groups_lower:
+        # A user in the keycloak "Admin" group should be a Django superuser and staff
         user.is_superuser = True
         user.is_staff = True
         logger.info(f"Assigned superuser and staff privileges to user {user.username}")
     elif "/staff" in groups_lower:
+        # A user in the keycloak "Staff" group should be a Django staff but not superuser
         user.is_superuser = False
         user.is_staff = True
         logger.info(f"Assigned staff privileges to user {user.username}")
     else:
-        user.is_superuser = False
-        user.is_staff = False
-        logger.info(f"Set regular user privileges for user {user.username}")
+        # Keep existing Django superuser/staff status, whatever it may be
+        logger.info(f"Maintaining current Django privileges for user {user.username}")
 
     # Only save if permissions changed
     if old_is_superuser != user.is_superuser or old_is_staff != user.is_staff:
