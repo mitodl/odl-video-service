@@ -36,7 +36,7 @@ def assign_user_groups(strategy, details, backend, user=None, *args, **kwargs):
             extra_groups = extra_data["user_groups"]
             groups.extend(extra_groups)
 
-    logger.info(f"Groups found for user {user.username}: {groups}")
+    logger.debug(f"Groups found for user {user.username}: {groups}")
 
     # Store current state to check if changes are needed
     old_is_superuser = user.is_superuser
@@ -48,26 +48,26 @@ def assign_user_groups(strategy, details, backend, user=None, *args, **kwargs):
         # A user in the keycloak "Admin" group should be a Django superuser and staff
         user.is_superuser = True
         user.is_staff = True
-        logger.info(f"Assigned superuser and staff privileges to user {user.username}")
+        logger.debug(f"Assigned superuser and staff privileges to user {user.username}")
     elif "/staff" in groups_lower:
         # A user in the keycloak "Staff" group should be a Django staff but not superuser
         user.is_superuser = False
         user.is_staff = True
-        logger.info(f"Assigned staff privileges to user {user.username}")
+        logger.debug(f"Assigned staff privileges to user {user.username}")
     else:
         # Keep existing Django superuser/staff status, whatever it may be
-        logger.info(f"Maintaining current Django privileges for user {user.username}")
+        logger.debug(f"Maintaining current Django privileges for user {user.username}")
 
     # Only save if permissions changed
     if old_is_superuser != user.is_superuser or old_is_staff != user.is_staff:
         try:
             user.save()
-            logger.info(
+            logger.debug(
                 f"Successfully updated permissions for user {user.username} - superuser: {user.is_superuser}, staff: {user.is_staff}"
             )
         except Exception as e:
             logger.error(f"Failed to save user {user.username}: {str(e)}")
     else:
-        logger.info(f"No permission changes needed for user {user.username}")
+        logger.debug(f"No permission changes needed for user {user.username}")
 
     return {"user": user}
