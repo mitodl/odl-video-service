@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.91.0
+Version 0.91.0 (Released June 03, 2026)
 --------------
 
 - Retain existing django permissions for users not in keycloak groups (#1491)
