@@ -33,8 +33,9 @@ def assign_user_groups(strategy, details, backend, user=None, *args, **kwargs):
         extra_data = social_user.extra_data
 
         if "user_groups" in extra_data:
-            extra_groups = extra_data["user_groups"]
-            groups.extend(extra_groups)
+            extra_groups = extra_data.get("user_groups") or []
+            if extra_groups:
+                groups.extend(extra_groups)
 
     logger.debug(f"Groups found for user {user.username}: {groups}")
 
