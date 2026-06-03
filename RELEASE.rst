@@ -1,6 +1,19 @@
 Release Notes
 =============
 
+Version 0.91.0
+--------------
+
+- Retain existing django permissions for users not in keycloak groups (#1491)
+- Update dependency postcss to v8.5.15 (#1486)
+- Update dependency chai to v6.2.2 (#1483)
+- Update dependency postcss-loader to v8.2.1 (#1487)
+- Update redis Docker tag to v8.6.2 (#1489)
+- Update nginx Docker tag to v1.29.7 (#1488)
+- Update dependency pytest to v9 [SECURITY] (#1448)
+- Update dependency social-auth-app-django to v5.6.0 [SECURITY] (#1477)
+- [pre-commit.ci] pre-commit autoupdate (#1474)
+
 Version 0.90.1 (Released May 26, 2026)
 --------------
 
