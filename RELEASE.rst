@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.92.0
+Version 0.92.0 (Released June 04, 2026)
 --------------
 
 - Handle null user_groups (#1494)
