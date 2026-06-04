@@ -1,6 +1,12 @@
 Release Notes
 =============
 
+Version 0.92.0
+--------------
+
+- Handle null user_groups (#1494)
+- Always render pytest output colorized
+
 Version 0.91.0 (Released June 03, 2026)
 --------------
 
