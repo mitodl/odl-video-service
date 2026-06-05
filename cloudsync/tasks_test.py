@@ -2,9 +2,11 @@
 Tests for tasks
 """
 
+import contextlib
 import io
 import os
 import random
+import re
 import string
 from types import SimpleNamespace
 from unittest.mock import PropertyMock, call
@@ -12,6 +14,7 @@ from unittest.mock import PropertyMock, call
 import boto3
 import celery
 import pytest
+from celery.exceptions import Retry
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.test import override_settings
@@ -130,34 +133,81 @@ def test_empty_video_id():
     assert not result
 
 
+def _lock_yielding(acquired):
+    """Build a drop-in upload_lock context manager that always yields ``acquired``."""
+
+    @contextlib.contextmanager
+    def _cm(*_args, **_kwargs):
+        yield acquired
+
+    return _cm
+
+
+def _register_dropbox(reqmocker, url, body, headers):
+    """Register a Dropbox-like endpoint: full body + headers on a plain GET, slices on Range."""
+
+    def _callback(request, context):
+        rng = request.headers.get("Range")
+        if rng:
+            match = re.match(r"bytes=(\d+)-(\d+)", rng)
+            start, end = int(match.group(1)), int(match.group(2))
+            context.status_code = 206
+            context.headers["Content-Range"] = f"bytes {start}-{end}/{len(body)}"
+            return body[start : end + 1]
+        context.status_code = 200
+        for header, value in headers.items():
+            context.headers[header] = value
+        return body
+
+    reqmocker.get(url, content=_callback)
+
+
+@mock_aws
 def test_happy_path(mocker, reqmocker, mock_video_headers, video):
-    """
-    Test that a file can be uploaded to a mocked S3 bucket.
-    """
-    mock_video_file = io.BytesIO(os.urandom(6250000))
-    reqmocker.get(
-        video.source_url,
-        headers=mock_video_headers,
-        body=mock_video_file,
-    )
-    mock_boto3 = mocker.patch("cloudsync.tasks.boto3")
-    mock_bucket = mock_boto3.resource.return_value.Bucket.return_value
+    """A Dropbox file is transferred to S3 via the resumable transfer."""
+    body = os.urandom(6250000)
+    headers = {**mock_video_headers, "Content-Length": str(len(body))}
+    _register_dropbox(reqmocker, video.source_url, body, headers)
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
+    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(True))
+    mocker.patch("celery.app.task.Task.update_state")
+
     stream_to_s3(video.id)
 
-    mock_bucket.upload_fileobj.assert_called_with(
-        Fileobj=mocker.ANY,
-        Key=video.get_s3_key(),
-        ExtraArgs={"ContentType": "video/mp4"},
-        Callback=mocker.ANY,
-        Config=mocker.ANY,
-    )
-    fileobj = mock_bucket.upload_fileobj.call_args[1]["Fileobj"]
-    # compare the first 50 bytes of each
-    actual = fileobj.read(50)
-    mock_video_file.seek(0)
-    expected = fileobj.read(50)
-    assert actual == expected
+    obj = s3.get_object(Bucket=settings.VIDEO_S3_BUCKET, Key=video.get_s3_key())
+    assert obj["Body"].read() == body
+    assert obj["ContentType"] == "video/mp4"
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOADING
+
+
+def test_stream_to_s3_retries_when_locked(mocker, reqmocker, mock_video_headers, video):
+    """When another worker holds the upload lock, the task backs off via retry."""
+    _register_dropbox(reqmocker, video.source_url, os.urandom(1000), mock_video_headers)
+    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(False))
+    mocker.patch("celery.app.task.Task.update_state")
+    retry = mocker.patch.object(stream_to_s3, "retry", side_effect=Retry)
+
+    with pytest.raises(Retry):
+        stream_to_s3(video.id)
+    retry.assert_called_once()
+
+
+@mock_aws
+def test_stream_to_s3_marks_failed_on_transfer_error(
+    mocker, reqmocker, mock_video_headers, video
+):
+    """A transfer error marks the video UPLOAD_FAILED and re-raises."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    _register_dropbox(reqmocker, video.source_url, os.urandom(1000), mock_video_headers)
+    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(True))
+    mocker.patch("celery.app.task.Task.update_state")
+    transfer = mocker.patch("cloudsync.tasks.DropboxToS3Transfer")
+    transfer.return_value.run.side_effect = RuntimeError("boom")
+
+    with pytest.raises(RuntimeError):
+        stream_to_s3(video.id)
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
 
 
 def test_upload_failure(mocker, reqmocker, mock_video_headers, video):

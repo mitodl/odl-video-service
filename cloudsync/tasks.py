@@ -8,13 +8,13 @@ from urllib.parse import unquote
 
 import boto3
 import requests
-from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from celery import Task, group, shared_task, states
 from django.conf import settings
 from googleapiclient.errors import HttpError
 
 from cloudsync.api import process_watch_file, refresh_status, transcode_video
+from cloudsync.dropbox_transfer import DropboxToS3Transfer, upload_lock
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.youtube import API_QUOTA_ERROR_MSG, YouTubeApi
 import structlog
@@ -90,12 +90,22 @@ def update_video_statuses(self):
             video.update_status(error)
 
 
-@shared_task(bind=True, base=VideoTask)
+@shared_task(
+    bind=True,
+    base=VideoTask,
+    acks_late=True,
+    reject_on_worker_lost=True,
+    max_retries=settings.DROPBOX_TRANSFER_LOCK_MAX_RETRIES,
+)
 def stream_to_s3(self, video_id):
     """
-    Stream the contents of the given URL to Amazon S3
-    """
+    Transfer a video's source file (a Dropbox shared link) to S3.
 
+    Drives a resumable, range-based multipart upload (see cloudsync.dropbox_transfer) so a
+    mid-transfer stall costs one part re-fetch instead of restarting a multi-GB upload, and a
+    worker killed mid-upload resumes from completed parts on redelivery. A Redis lock serializes
+    concurrent runs of the same upload, which acks_late redelivery can otherwise produce.
+    """
     if not video_id:
         return False
     try:
@@ -106,46 +116,61 @@ def stream_to_s3(self, video_id):
     video.update_status(VideoStatus.UPLOADING)
 
     task_id = self.get_task_id()
+    timeout = (
+        settings.DROPBOX_TRANSFER_CONNECT_TIMEOUT,
+        settings.DROPBOX_TRANSFER_READ_TIMEOUT,
+    )
     try:
-        response = requests.get(video.source_url, stream=True, timeout=60)
+        response = requests.get(video.source_url, stream=True, timeout=timeout)
         response.raise_for_status()
+        _, content_type, content_length = parse_content_metadata(response)
+        response.close()
     except requests.HTTPError:
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise
 
-    _, content_type, content_length = parse_content_metadata(response)
-
-    s3 = boto3.resource("s3")
-    bucket_name = settings.VIDEO_S3_BUCKET
-    bucket = s3.Bucket(bucket_name)
-    total_bytes_uploaded = 0
-
-    def callback(bytes_uploaded):
-        """
-        Callback function after upload
-        """
-        nonlocal total_bytes_uploaded
-        total_bytes_uploaded += bytes_uploaded
-        data = {
-            "uploaded": total_bytes_uploaded,
-            "total": content_length,
-        }
-        self.update_state(task_id=task_id, state="PROGRESS", meta=data)
-
-    config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
-    try:
-        bucket.upload_fileobj(
-            Fileobj=response.raw,
-            Key=video.get_s3_key(),
-            ExtraArgs={"ContentType": content_type},
-            Callback=callback,
-            Config=config,
+    def progress(uploaded, total):
+        """Report upload progress so the frontend progress bar keeps working."""
+        self.update_state(
+            task_id=task_id,
+            state="PROGRESS",
+            meta={"uploaded": uploaded, "total": total},
         )
-    except Exception:
-        video.update_status(VideoStatus.UPLOAD_FAILED)
-        self.update_state(task_id=task_id, state=states.FAILURE)
-        raise
+
+    def run_transfer():
+        """Run the resumable transfer, marking the video failed on any error."""
+        try:
+            DropboxToS3Transfer(
+                source_url=video.source_url,
+                bucket=settings.VIDEO_S3_BUCKET,
+                key=video.get_s3_key(),
+                content_type=content_type,
+                total=content_length,
+                s3_client=boto3.client("s3"),
+                part_size=settings.DROPBOX_TRANSFER_PART_SIZE_MB * 1024 * 1024,
+                max_range_attempts=settings.DROPBOX_TRANSFER_MAX_RANGE_ATTEMPTS,
+                connect_timeout=settings.DROPBOX_TRANSFER_CONNECT_TIMEOUT,
+                read_timeout=settings.DROPBOX_TRANSFER_READ_TIMEOUT,
+                backoff_base=settings.DROPBOX_TRANSFER_BACKOFF_BASE_SECONDS,
+                backoff_max=settings.DROPBOX_TRANSFER_BACKOFF_MAX_SECONDS,
+                progress_callback=progress,
+            ).run()
+        except Exception:
+            video.update_status(VideoStatus.UPLOAD_FAILED)
+            self.update_state(task_id=task_id, state=states.FAILURE)
+            raise
+
+    lock_key = f"stream_to_s3:lock:{video.id}"
+    with upload_lock(
+        self.app.backend.client,
+        lock_key,
+        settings.DROPBOX_TRANSFER_LOCK_TTL_SECONDS,
+    ) as acquired:
+        if not acquired:
+            log.info("upload already in progress; retrying later", video_id=video.id)
+            raise self.retry(countdown=settings.DROPBOX_TRANSFER_LOCK_RETRY_COUNTDOWN)
+        run_transfer()
 
 
 @shared_task(bind=True, base=VideoTask)
@@ -370,7 +395,7 @@ def parse_content_metadata(response):
     * The content length, as an integer number of bytes
     """
     file_name = None
-    content_disposition = response.headers["Content-Disposition"]
+    content_disposition = response.headers.get("Content-Disposition")
     if content_disposition:
         result = CONTENT_DISPOSITION_RE.search(content_disposition)
         if result:
@@ -378,9 +403,9 @@ def parse_content_metadata(response):
     if not file_name:
         file_name = unquote(os.path.basename(response.url))
 
-    content_type = response.headers["Content-Type"]
+    content_type = response.headers.get("Content-Type")
 
-    content_length = response.headers["Content-Length"]
+    content_length = response.headers.get("Content-Length")
     if content_length:
         content_length = int(content_length)
 
