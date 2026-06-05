@@ -115,14 +115,16 @@ def admin_request():
     return request
 
 
-def test_retry_upload_eligible_video(video_admin, admin_request):
+@pytest.mark.parametrize(
+    "initial_status", [VideoStatus.UPLOAD_FAILED, VideoStatus.UPLOADING]
+)
+def test_retry_upload_eligible_video(video_admin, admin_request, initial_status):
     """
-    retry_upload should reset an UPLOAD_FAILED video with a non-empty source_url
-    back to CREATED and kick off the stream_to_s3 + transcode_from_s3 chain.
+    retry_upload should reset videos in either UPLOAD_FAILED or UPLOADING status
+    (when they have a non-empty source_url) back to CREATED and kick off the
+    stream_to_s3 + transcode_from_s3 chain.
     """
-    video = VideoFactory(
-        status=VideoStatus.UPLOAD_FAILED, source_url="http://example.com/foo.mp4"
-    )
+    video = VideoFactory(status=initial_status, source_url="http://example.com/foo.mp4")
 
     with (
         patch("ui.admin.chain") as mocked_chain,
@@ -141,10 +143,10 @@ def test_retry_upload_eligible_video(video_admin, admin_request):
     mocked_chain.return_value.delay.assert_called_once()
 
 
-def test_retry_upload_skips_non_failed_status(video_admin, admin_request):
+def test_retry_upload_skips_ineligible_status(video_admin, admin_request):
     """
-    Videos not in UPLOAD_FAILED status must be skipped: no chain dispatched
-    and status left untouched.
+    Videos whose status is not in (UPLOAD_FAILED, UPLOADING) must be skipped:
+    no chain dispatched and status left untouched.
     """
     video = VideoFactory(
         status=VideoStatus.COMPLETE, source_url="http://example.com/foo.mp4"

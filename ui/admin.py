@@ -201,18 +201,26 @@ class VideoAdmin(admin.ModelAdmin):
     )
     actions = ["retry_upload"]
 
-    @admin.action(description="Retry upload for selected 'Upload failed' videos")
+    RETRY_ELIGIBLE_STATUSES = (VideoStatus.UPLOAD_FAILED, VideoStatus.UPLOADING)
+
+    @admin.action(
+        description="Retry upload for selected 'Upload failed' or 'Uploading' videos"
+    )
     def retry_upload(self, request, queryset):
         """
         Re-runs the stream_to_s3 + transcode_from_s3 chain for selected videos
-        whose status is 'Upload failed' and which have a non-empty source_url.
-        Videos that don't meet both conditions are skipped.
+        whose status is 'Upload failed' or 'Uploading' and which have a
+        non-empty source_url. Videos that don't meet both conditions are skipped.
+
+        Note: re-running for 'Uploading' is intended for videos stuck due to a
+        crashed worker. If a stream_to_s3 task is still actually in flight, this
+        will kick off a duplicate task on the same S3 key.
         """
         retried = 0
         skipped_status = 0
         skipped_no_source = 0
         for video in queryset:
-            if video.status != VideoStatus.UPLOAD_FAILED:
+            if video.status not in self.RETRY_ELIGIBLE_STATUSES:
                 skipped_status += 1
                 continue
             if not video.source_url:
@@ -234,7 +242,8 @@ class VideoAdmin(admin.ModelAdmin):
         if skipped_status:
             self.message_user(
                 request,
-                f"Skipped {skipped_status} video(s) not in 'Upload failed' status.",
+                f"Skipped {skipped_status} video(s) not in "
+                "'Upload failed' or 'Uploading' status.",
                 level=messages.WARNING,
             )
         if skipped_no_source:
