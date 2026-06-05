@@ -107,7 +107,7 @@ def stream_to_s3(self, video_id):
 
     task_id = self.get_task_id()
     try:
-        response = requests.get(video.source_url, stream=True, timeout=60)
+        response = requests.get(video.source_url, stream=True, timeout=120)
         response.raise_for_status()
     except requests.HTTPError:
         video.update_status(VideoStatus.UPLOAD_FAILED)
