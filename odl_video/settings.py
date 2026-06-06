@@ -498,6 +498,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "cloudsync.tasks.upload_youtube_videos",
         "schedule": get_int("YT_UPLOAD_FREQUENCY", 3600),
     },
+    "fail-stuck-uploading-videos": {
+        "task": "cloudsync.tasks.fail_stuck_uploading_videos",
+        "schedule": get_int("STUCK_UPLOAD_CHECK_FREQUENCY", 3600),  # hourly
+    },
 }
 
 if ENVIRONMENT.lower() == "dev":

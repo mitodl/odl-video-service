@@ -6,6 +6,7 @@ import io
 import os
 import random
 import string
+from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import PropertyMock, call
 
@@ -23,6 +24,7 @@ from cloudsync.conftest import MockBoto, MockHttpErrorResponse
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.tasks import (
     VideoTask,
+    fail_stuck_uploading_videos,
     monitor_watch_bucket,
     remove_youtube_caption,
     remove_youtube_video,
@@ -46,8 +48,75 @@ from ui.factories import (
     YouTubeVideoFactory,
 )
 from ui.models import TRANSCODE_PREFIX, Collection, Video, YouTubeVideo
+from ui.utils import now_in_utc
 
 pytestmark = pytest.mark.django_db
+
+
+def _make_uploading_video(updated_hours_ago, created_hours_ago=None):
+    """Create an UPLOADING video with backdated timestamps via .update()."""
+    if created_hours_ago is None:
+        created_hours_ago = updated_hours_ago
+    video = VideoFactory(status=VideoStatus.UPLOADING)
+    Video.objects.filter(pk=video.pk).update(
+        updated_at=now_in_utc() - timedelta(hours=updated_hours_ago),
+        created_at=now_in_utc() - timedelta(hours=created_hours_ago),
+    )
+    video.refresh_from_db()
+    return video
+
+
+def test_fail_stuck_uploading_recent_video_notifies(mocker):
+    """Stuck + recently created → UPLOAD_FAILED with an email."""
+    mocked_email = mocker.patch(
+        "mail.tasks.async_send_notification_email", autospec=True
+    )
+    video = _make_uploading_video(updated_hours_ago=2.5, created_hours_ago=2.5)
+
+    fail_stuck_uploading_videos.delay()
+
+    video.refresh_from_db()
+    assert video.status == VideoStatus.UPLOAD_FAILED
+    mocked_email.delay.assert_called_once_with(video.id)
+
+
+def test_fail_stuck_uploading_old_video_no_email(mocker):
+    """Stuck but created before the notify window → UPLOAD_FAILED, no email."""
+    mocked_email = mocker.patch(
+        "mail.tasks.async_send_notification_email", autospec=True
+    )
+    video = _make_uploading_video(updated_hours_ago=2, created_hours_ago=4)
+
+    fail_stuck_uploading_videos.delay()
+
+    video.refresh_from_db()
+    assert video.status == VideoStatus.UPLOAD_FAILED
+    assert mocked_email.delay.call_count == 0
+
+
+def test_fail_stuck_uploading_within_threshold_untouched(mocker):
+    """Recently-updated UPLOADING video (under threshold) is left alone."""
+    mocker.patch("mail.tasks.async_send_notification_email", autospec=True)
+    video = _make_uploading_video(updated_hours_ago=0.1)
+
+    fail_stuck_uploading_videos.delay()
+
+    video.refresh_from_db()
+    assert video.status == VideoStatus.UPLOADING
+
+
+def test_fail_stuck_uploading_ignores_other_statuses(mocker):
+    """Non-UPLOADING videos are never touched, however old."""
+    mocker.patch("mail.tasks.async_send_notification_email", autospec=True)
+    video = VideoFactory(status=VideoStatus.TRANSCODING)
+    Video.objects.filter(pk=video.pk).update(
+        updated_at=now_in_utc() - timedelta(hours=5)
+    )
+
+    fail_stuck_uploading_videos.delay()
+
+    video.refresh_from_db()
+    assert video.status == VideoStatus.TRANSCODING
 
 
 @pytest.fixture()
