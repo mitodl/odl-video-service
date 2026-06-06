@@ -524,19 +524,18 @@ class Video(TimestampedModel):
             ext=extension,
         )
 
-    def update_status(self, status, notify=True):
+    def update_status(self, status):
         """
         Assign and save the status of a Video
 
         Args:
             status(str): The status to assign the video
-            notify(bool): Send a notification email if true (and the status has one)
         """
         self.status = status
         if status == VideoStatus.RETRANSCODE_SCHEDULED:
             self.schedule_retranscode = False
         self.save()
-        if notify and status in tasks.STATUS_TO_NOTIFICATION.keys():
+        if status in tasks.STATUS_TO_NOTIFICATION.keys():
             tasks.async_send_notification_email.delay(self.id)
 
     def save(self, *args, **kwargs):

@@ -30,9 +30,7 @@ log = structlog.get_logger(__name__)
 CONTENT_DISPOSITION_RE = re.compile(r"filename\*=UTF-8''(?P<filename>[^ ]+)")
 
 # Fail videos stuck in UPLOADING past this many hours so they can be retried.
-STUCK_UPLOADING_THRESHOLD_HOURS = 2
-# Only email uploaders of videos created within this many hours.
-STUCK_UPLOADING_NOTIFY_HOURS = 3
+STUCK_UPLOADING_THRESHOLD_HOURS = 3
 
 
 class VideoTask(Task):
@@ -100,24 +98,19 @@ def update_video_statuses(self):
 def fail_stuck_uploading_videos():
     """
     Fail videos stuck in UPLOADING past the threshold so they can be retried.
-
-    Emails only uploaders of videos created within the notify window.
     """
     now = now_in_utc()
     threshold = now - timedelta(hours=STUCK_UPLOADING_THRESHOLD_HOURS)
-    notify_cutoff = now - timedelta(hours=STUCK_UPLOADING_NOTIFY_HOURS)
     stuck_videos = Video.objects.filter(
         status=VideoStatus.UPLOADING, updated_at__lt=threshold
     )
     for video in stuck_videos.iterator():
-        should_notify = video.created_at >= notify_cutoff
         log.info(
             "Failing video stuck in UPLOADING",
             video_id=video.id,
             uploading_since=video.updated_at.isoformat(),
-            notify=should_notify,
         )
-        video.update_status(VideoStatus.UPLOAD_FAILED, notify=should_notify)
+        video.update_status(VideoStatus.UPLOAD_FAILED)
 
 
 @shared_task(bind=True, base=VideoTask)

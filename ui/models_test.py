@@ -147,23 +147,6 @@ def test_video_update_status_email(video, mocker):
     assert mocked_send_email.delay.call_count == 0
 
 
-def test_video_update_status_notify_false(video, mocker):
-    """
-    update_status(notify=False) must not queue an email even for a status that
-    normally triggers one; the default (notify=True) still sends.
-    """
-    mocked_send_email = mocker.patch(
-        "mail.tasks.async_send_notification_email", return_value=FAKE_RSA, autospec=True
-    )
-    notifying_status = next(iter(tasks.STATUS_TO_NOTIFICATION))
-
-    video.update_status(notifying_status, notify=False)
-    assert mocked_send_email.delay.call_count == 0
-
-    video.update_status(notifying_status, notify=True)
-    mocked_send_email.delay.assert_called_once_with(video.id)
-
-
 @pytest.mark.parametrize(
     "token, current_expires_in, updated", [("token1", 0, True), ("token2", 1000, False)]
 )

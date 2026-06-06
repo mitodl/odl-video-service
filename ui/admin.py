@@ -2,18 +2,16 @@
 Admin for UI app
 """
 
+from collections import Counter
 from urllib.parse import urljoin
 
-from celery import chain
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.urls import reverse
 from django.utils.html import format_html
 
-from cloudsync import tasks
-from ui import models
-from ui.constants import VideoStatus
+from ui import api, models
 from ui.models import EncodeJob
 
 
@@ -207,51 +205,38 @@ class VideoAdmin(admin.ModelAdmin):
         description="Retry upload for selected 'Upload failed' or 'Uploading' videos"
     )
     def retry_upload(self, request, queryset):
-        """
-        Re-runs the stream_to_s3 + transcode_from_s3 chain for selected videos
-        whose status is 'Upload failed' or 'Uploading' and which have a
-        non-empty source_url. Videos that don't meet both conditions are skipped.
+        """Retry each selected 'Upload failed' video via api.retry_failed_upload and report outcomes."""
+        tally = Counter(api.retry_failed_upload(video) for video in queryset)
 
-        Note: re-running for 'Uploading' is intended for videos stuck due to a
-        crashed worker. If a stream_to_s3 task is still actually in flight, this
-        will kick off a duplicate task on the same S3 key.
-        """
-        retried = 0
-        skipped_status = 0
-        skipped_no_source = 0
-        for video in queryset:
-            if video.status not in self.RETRY_ELIGIBLE_STATUSES:
-                skipped_status += 1
-                continue
-            if not video.source_url:
-                skipped_no_source += 1
-                continue
-            video.update_status(VideoStatus.CREATED)
-            chain(
-                tasks.stream_to_s3.s(video.id),
-                tasks.transcode_from_s3.si(video.id),
-            ).delay()
-            retried += 1
+        def report(count, message, level):
+            if count:
+                self.message_user(request, message.format(n=count), level=level)
 
-        if retried:
-            self.message_user(
-                request,
-                f"Re-queued upload for {retried} video(s).",
-                level=messages.SUCCESS,
-            )
-        if skipped_status:
-            self.message_user(
-                request,
-                f"Skipped {skipped_status} video(s) not in "
-                "'Upload failed' or 'Uploading' status.",
-                level=messages.WARNING,
-            )
-        if skipped_no_source:
-            self.message_user(
-                request,
-                f"Skipped {skipped_no_source} video(s) without a source_url.",
-                level=messages.WARNING,
-            )
+        report(
+            tally["retried"],
+            "Re-queued upload for {n} video(s).",
+            messages.SUCCESS,
+        )
+        report(
+            tally["dispatch_failed"],
+            "Failed to re-queue {n} video(s); status left as 'Upload failed'.",
+            messages.ERROR,
+        )
+        report(
+            tally["skipped_status"] + tally["skipped_conflict"],
+            "Skipped {n} video(s) not in 'Upload failed' status.",
+            messages.WARNING,
+        )
+        report(
+            tally["skipped_no_source"],
+            "Skipped {n} video(s) without a source_url.",
+            messages.WARNING,
+        )
+        report(
+            tally["skipped_no_original"],
+            "Skipped {n} video(s) missing an original video file.",
+            messages.WARNING,
+        )
 
 
 class VideoFileAdmin(admin.ModelAdmin):

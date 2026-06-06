@@ -71,27 +71,13 @@ def test_fail_stuck_uploading_recent_video_notifies(mocker):
     mocked_email = mocker.patch(
         "mail.tasks.async_send_notification_email", autospec=True
     )
-    video = _make_uploading_video(updated_hours_ago=2.5, created_hours_ago=2.5)
+    video = _make_uploading_video(updated_hours_ago=3.5, created_hours_ago=3.5)
 
     fail_stuck_uploading_videos.delay()
 
     video.refresh_from_db()
     assert video.status == VideoStatus.UPLOAD_FAILED
     mocked_email.delay.assert_called_once_with(video.id)
-
-
-def test_fail_stuck_uploading_old_video_no_email(mocker):
-    """Stuck but created before the notify window → UPLOAD_FAILED, no email."""
-    mocked_email = mocker.patch(
-        "mail.tasks.async_send_notification_email", autospec=True
-    )
-    video = _make_uploading_video(updated_hours_ago=2, created_hours_ago=4)
-
-    fail_stuck_uploading_videos.delay()
-
-    video.refresh_from_db()
-    assert video.status == VideoStatus.UPLOAD_FAILED
-    assert mocked_email.delay.call_count == 0
 
 
 def test_fail_stuck_uploading_within_threshold_untouched(mocker):
