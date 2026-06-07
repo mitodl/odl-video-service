@@ -21,6 +21,7 @@ from googleapiclient.errors import HttpError, ResumableUploadError
 from moto import mock_aws
 from requests import HTTPError
 
+from cloudsync import dropbox_api
 from cloudsync.conftest import MockBoto, MockHttpErrorResponse
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.tasks import (
@@ -270,6 +271,22 @@ def test_upload_failure(mocker, video):
     )
     mocker.patch("cloudsync.tasks.boto3")
     with pytest.raises(HTTPError):
+        stream_to_s3(video.id)
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    mock_update.assert_called_once()
+    assert mock_update.call_args == call(state="FAILURE", task_id=None)
+
+
+def test_upload_auth_failure(mocker, video):
+    """Video is marked failed when Dropbox authentication errors."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        side_effect=dropbox_api.DropboxAuthError("token refresh failed"),
+    )
+    mocker.patch("cloudsync.tasks.boto3")
+    with pytest.raises(dropbox_api.DropboxAuthError):
         stream_to_s3(video.id)
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
     mock_update.assert_called_once()

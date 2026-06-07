@@ -129,7 +129,7 @@ def stream_to_s3(self, video_id):
     task_id = self.get_task_id()
     try:
         response = dropbox_api.stream_shared_link(video.source_url)
-    except requests.HTTPError:
+    except (requests.HTTPError, dropbox_api.DropboxAuthError):
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise
