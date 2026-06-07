@@ -199,11 +199,7 @@ class VideoAdmin(admin.ModelAdmin):
     )
     actions = ["retry_upload"]
 
-    RETRY_ELIGIBLE_STATUSES = (VideoStatus.UPLOAD_FAILED, VideoStatus.UPLOADING)
-
-    @admin.action(
-        description="Retry upload for selected 'Upload failed' or 'Uploading' videos"
-    )
+    @admin.action(description="Retry upload for selected 'Upload failed' videos")
     def retry_upload(self, request, queryset):
         """Retry each selected 'Upload failed' video via api.retry_failed_upload and report outcomes."""
         tally = Counter(api.retry_failed_upload(video) for video in queryset)

@@ -29,9 +29,6 @@ log = structlog.get_logger(__name__)
 
 CONTENT_DISPOSITION_RE = re.compile(r"filename\*=UTF-8''(?P<filename>[^ ]+)")
 
-# Fail videos stuck in UPLOADING past this many hours so they can be retried.
-STUCK_UPLOADING_THRESHOLD_HOURS = 3
-
 
 class VideoTask(Task):
     """
@@ -100,7 +97,7 @@ def fail_stuck_uploading_videos():
     Fail videos stuck in UPLOADING past the threshold so they can be retried.
     """
     now = now_in_utc()
-    threshold = now - timedelta(hours=STUCK_UPLOADING_THRESHOLD_HOURS)
+    threshold = now - timedelta(hours=settings.STUCK_UPLOADING_THRESHOLD_HOURS)
     stuck_videos = Video.objects.filter(
         status=VideoStatus.UPLOADING, updated_at__lt=threshold
     )

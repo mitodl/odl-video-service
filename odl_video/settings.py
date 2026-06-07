@@ -357,9 +357,6 @@ AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
 
 # Janitor: fail videos stuck in UPLOADING past the threshold so they can be retried.
 STUCK_UPLOADING_THRESHOLD_HOURS = get_int("STUCK_UPLOADING_THRESHOLD_HOURS", 2)
-# Only email uploaders of videos created within this window.
-STUCK_UPLOADING_NOTIFY_WINDOW_HOURS = get_int("STUCK_UPLOADING_NOTIFY_WINDOW_HOURS", 2)
-STUCK_UPLOADING_CHECK_FREQUENCY = get_int("STUCK_UPLOADING_CHECK_FREQUENCY", 3600)
 
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CDN_DISTRIBUTION_ID = get_string("VIDEO_CDN_DISTRIBUTION_ID", "")
@@ -506,7 +503,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     "fail-stuck-uploading-videos": {
         "task": "cloudsync.tasks.fail_stuck_uploading_videos",
-        "schedule": get_int("STUCK_UPLOAD_CHECK_FREQUENCY", 3600),  # hourly
+        "schedule": get_int("STUCK_UPLOADING_CHECK_FREQUENCY", 3600),
     },
 }
 
