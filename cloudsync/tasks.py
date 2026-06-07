@@ -2,10 +2,9 @@
 Tasks for cloudsync app
 """
 
-import os
+import json
+import mimetypes
 import re
-from datetime import timedelta
-from urllib.parse import unquote
 
 import boto3
 import requests
@@ -15,6 +14,7 @@ from celery import Task, group, shared_task, states
 from django.conf import settings
 from googleapiclient.errors import HttpError
 
+from cloudsync import dropbox_api
 from cloudsync.api import process_watch_file, refresh_status, transcode_video
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.youtube import API_QUOTA_ERROR_MSG, YouTubeApi
@@ -25,9 +25,6 @@ from ui.models import Collection, EncodeJob, Video, VideoSubtitle, YouTubeVideo
 from ui.utils import get_bucket, now_in_utc
 
 log = structlog.get_logger(__name__)
-
-
-CONTENT_DISPOSITION_RE = re.compile(r"filename\*=UTF-8''(?P<filename>[^ ]+)")
 
 
 class VideoTask(Task):
@@ -131,8 +128,7 @@ def stream_to_s3(self, video_id):
 
     task_id = self.get_task_id()
     try:
-        response = requests.get(video.source_url, stream=True, timeout=120)
-        response.raise_for_status()
+        response = dropbox_api.stream_shared_link(video.source_url)
     except requests.HTTPError:
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)
@@ -392,22 +388,18 @@ def parse_content_metadata(response):
     * The file name
     * The content type, as a string
     * The content length, as an integer number of bytes
+
+    For authenticated Dropbox downloads the metadata arrives in the
+    ``Dropbox-API-Result`` header with a generic octet-stream content type, so
+    the MIME type is derived from the file name.
     """
-    file_name = None
-    content_disposition = response.headers["Content-Disposition"]
-    if content_disposition:
-        result = CONTENT_DISPOSITION_RE.search(content_disposition)
-        if result:
-            file_name = unquote(result.group("filename"))
-    if not file_name:
-        file_name = unquote(os.path.basename(response.url))
-
-    content_type = response.headers["Content-Type"]
-
-    content_length = response.headers["Content-Length"]
-    if content_length:
-        content_length = int(content_length)
-
+    metadata = json.loads(response.headers["Dropbox-API-Result"])
+    file_name = metadata["name"]
+    content_type = mimetypes.guess_type(file_name)[0] or "application/octet-stream"
+    content_length = metadata.get("size")
+    if content_length is None:
+        header_length = response.headers.get("Content-Length")
+        content_length = int(header_length) if header_length else None
     return file_name, content_type, content_length
 
 

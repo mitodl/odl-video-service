@@ -106,7 +106,7 @@ const VideoCard = (props: VideoCardProps) => {
             <DropboxChooser
               appKey={SETTINGS.dropbox_key}
               success={files => onReplaceVideo(files[0])}
-              linkType="direct"
+              linkType="preview"
               multiselect={false}
               extensions={["video"]}
             >

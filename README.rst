@@ -153,13 +153,52 @@ You will need:
 Dropbox
 ~~~~~~~
 
-`Create an app on Dropbox <https://www.dropbox.com/developers/apps/create>`_,
-and store the app key in the file
-``.env``, like this:
+Videos are added through the Dropbox Chooser (in the browser) and then downloaded
+server-side into S3. Both halves use the same Dropbox app —
+`create one <https://www.dropbox.com/developers/apps/create>`_ or open the existing
+app.
+
+From the app's **Settings** tab, note the **App key** and **App secret** (click
+*Show*). On the app's **Permissions** tab, enable the ``sharing.read`` scope and
+click **Submit**. The server uses an authenticated Dropbox API call to download
+shared links, which avoids the throttling Dropbox applies to anonymous links.
+
+Next, mint a long-lived **refresh token**. Do this while signed into Dropbox as the
+account whose identity should carry the download traffic (your own account is fine;
+the token keeps working until that account is removed or the token is revoked).
+
+**1. Get an authorization code.** Open this URL (replace ``APP_KEY``), click
+**Allow**, and copy the code shown on the page. ``token_access_type=offline`` is what
+makes Dropbox return a refresh token; the code is single-use and expires within a
+few minutes.
+
+.. code-block:: text
+
+    https://www.dropbox.com/oauth2/authorize?client_id=APP_KEY&response_type=code&token_access_type=offline
+
+**2. Exchange it for a refresh token** (replace ``APP_KEY``, ``APP_SECRET``,
+``AUTH_CODE``):
+
+.. code-block:: bash
+
+    curl https://api.dropbox.com/oauth2/token \
+      -d code=AUTH_CODE \
+      -d grant_type=authorization_code \
+      -u APP_KEY:APP_SECRET
+
+Copy the ``refresh_token`` field from the JSON response. Ignore the ``access_token``
+it also returns — that one is short-lived and the app refreshes it automatically.
+
+Store the values in ``.env``:
 
 .. code-block:: ini
 
     DROPBOX_KEY=foo
+    DROPBOX_SECRET=foo_secret
+    DROPBOX_REFRESH_TOKEN=foo_refresh_token
+
+``DROPBOX_SECRET`` and ``DROPBOX_REFRESH_TOKEN`` are secrets — never expose them to
+the frontend.
 
 Keycloak (local authentication)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
