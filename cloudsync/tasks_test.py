@@ -293,6 +293,22 @@ def test_upload_auth_failure(mocker, video):
     assert mock_update.call_args == call(state="FAILURE", task_id=None)
 
 
+def test_upload_metadata_failure(mocker, video):
+    """Video is marked failed when the Dropbox metadata header is missing."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        return_value=SimpleNamespace(headers={}),
+    )
+    mocker.patch("cloudsync.tasks.boto3")
+    with pytest.raises(KeyError):
+        stream_to_s3(video.id)
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    mock_update.assert_called_once()
+    assert mock_update.call_args == call(state="FAILURE", task_id=None)
+
+
 def test_transcode_failures(mocker, videofile, mock_transcode, mock_failed_encode_job):
     """
     Test transcode task, verify there is an EncodeJob associated with the video to encode

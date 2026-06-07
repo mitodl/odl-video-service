@@ -129,12 +129,13 @@ def stream_to_s3(self, video_id):
     task_id = self.get_task_id()
     try:
         response = dropbox_api.stream_shared_link(video.source_url)
-    except (requests.HTTPError, dropbox_api.DropboxAuthError):
+        # KeyError/ValueError here mean the Dropbox metadata header is
+        # missing or malformed, which is still an upload failure.
+        _, content_type, content_length = parse_content_metadata(response)
+    except (requests.HTTPError, dropbox_api.DropboxAuthError, KeyError, ValueError):
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise
-
-    _, content_type, content_length = parse_content_metadata(response)
 
     s3 = boto3.resource("s3")
     bucket_name = settings.VIDEO_S3_BUCKET
