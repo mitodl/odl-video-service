@@ -107,7 +107,11 @@ def fail_stuck_uploading_videos():
             video_id=video.id,
             uploading_since=video.updated_at.isoformat(),
         )
-        video.update_status(VideoStatus.UPLOAD_FAILED)
+        try:
+            video.update_status(VideoStatus.UPLOAD_FAILED)
+        except Exception:
+            # Don't let one bad video abort the sweep of the rest.
+            log.exception("Failed to update stuck video status", video_id=video.id)
 
 
 @shared_task(bind=True, base=VideoTask)

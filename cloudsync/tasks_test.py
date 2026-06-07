@@ -105,6 +105,21 @@ def test_fail_stuck_uploading_ignores_other_statuses(mocker):
     assert video.status == VideoStatus.TRANSCODING
 
 
+def test_fail_stuck_uploading_continues_after_error(mocker):
+    """A failure on one video must not abort the sweep of the rest."""
+    mocker.patch("mail.tasks.async_send_notification_email", autospec=True)
+    _make_uploading_video(updated_hours_ago=3.5)
+    _make_uploading_video(updated_hours_ago=3.5)
+    mocked_update = mocker.patch(
+        "ui.models.Video.update_status", side_effect=[Exception("boom"), None]
+    )
+
+    fail_stuck_uploading_videos.delay()
+
+    # Both stuck videos were processed even though the first raised.
+    assert mocked_update.call_count == 2
+
+
 @pytest.fixture()
 def video():
     """Fixture to create a video"""
