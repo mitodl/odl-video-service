@@ -14,8 +14,10 @@ from unittest.mock import PropertyMock, call
 import boto3
 import celery
 import pytest
+import requests
 from botocore.exceptions import ClientError
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
 from googleapiclient.errors import HttpError, ResumableUploadError
 from moto import mock_aws
@@ -287,6 +289,45 @@ def test_upload_auth_failure(mocker, video):
     )
     mocker.patch("cloudsync.tasks.boto3")
     with pytest.raises(dropbox_api.DropboxAuthError):
+        stream_to_s3(video.id)
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    mock_update.assert_called_once()
+    assert mock_update.call_args == call(state="FAILURE", task_id=None)
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        requests.Timeout("read timed out"),
+        requests.ConnectionError("connection reset"),
+    ],
+)
+def test_upload_network_failure(mocker, video, exc):
+    """Video is marked failed when the download raises a network-level error."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        side_effect=exc,
+    )
+    mocker.patch("cloudsync.tasks.boto3")
+    with pytest.raises(type(exc)):
+        stream_to_s3(video.id)
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    mock_update.assert_called_once()
+    assert mock_update.call_args == call(state="FAILURE", task_id=None)
+
+
+def test_upload_misconfigured_failure(mocker, video):
+    """Video is marked failed when required Dropbox config is missing."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        side_effect=ImproperlyConfigured("DROPBOX_SECRET must be set"),
+    )
+    mocker.patch("cloudsync.tasks.boto3")
+    with pytest.raises(ImproperlyConfigured):
         stream_to_s3(video.id)
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
     mock_update.assert_called_once()

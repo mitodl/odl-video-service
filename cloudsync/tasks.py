@@ -7,7 +7,6 @@ import mimetypes
 import re
 
 import boto3
-import requests
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from celery import Task, group, shared_task, states
@@ -132,7 +131,7 @@ def stream_to_s3(self, video_id):
         # KeyError/ValueError here mean the Dropbox metadata header is
         # missing or malformed, which is still an upload failure.
         _, content_type, content_length = parse_content_metadata(response)
-    except (requests.HTTPError, dropbox_api.DropboxAuthError, KeyError, ValueError):
+    except Exception:
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise
