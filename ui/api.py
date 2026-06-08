@@ -13,9 +13,17 @@ from cloudsync import tasks
 import structlog
 from ui import models
 from ui.constants import VideoStatus
+from ui.encodings import EncodingNames
 from ui.utils import get_error_response_summary_dict
 
 log = structlog.get_logger(__name__)
+
+
+def dispatch_upload_chain(video_id):
+    """Kick off the chained stream_to_s3 → transcode_from_s3 tasks for a video."""
+    return chain(
+        tasks.stream_to_s3.s(video_id), tasks.transcode_from_s3.si(video_id)
+    ).delay()
 
 
 def process_dropbox_data(dropbox_upload_data):
@@ -47,15 +55,46 @@ def process_dropbox_data(dropbox_upload_data):
                 bucket_name=settings.VIDEO_S3_BUCKET,
             )
         # Kick off chained async celery tasks to transfer file to S3, then start a transcode job
-        chain(
-            tasks.stream_to_s3.s(video.id), tasks.transcode_from_s3.si(video.id)
-        ).delay()
+        dispatch_upload_chain(video.id)
 
         response_data[video.hexkey] = {
             "s3key": video.get_s3_key(),
             "title": video.title,
         }
     return response_data
+
+
+def retry_failed_upload(video):
+    """
+    Re-dispatch the upload chain for one UPLOAD_FAILED video; returns an outcome string.
+
+    Guards run before the status flip and dispatch failures revert it, so the video
+    is never left marooned.
+    """
+    if video.status != VideoStatus.UPLOAD_FAILED:
+        return "skipped_status"
+    if not video.source_url:
+        return "skipped_no_source"
+    if not video.videofile_set.filter(encoding=EncodingNames.ORIGINAL).exists():
+        return "skipped_no_original"
+
+    # Atomic compare-and-swap so two concurrent retries can't both dispatch a chain
+    # for the same video; only the caller that flips the row proceeds.
+    changed = models.Video.objects.filter(
+        pk=video.pk, status=VideoStatus.UPLOAD_FAILED
+    ).update(status=VideoStatus.CREATED)
+    if changed != 1:
+        return "skipped_conflict"
+
+    try:
+        dispatch_upload_chain(video.id)
+    except Exception:
+        models.Video.objects.filter(pk=video.pk).update(
+            status=VideoStatus.UPLOAD_FAILED
+        )
+        log.exception("Failed to dispatch retry upload chain", video_id=video.id)
+        return "dispatch_failed"
+    return "retried"
 
 
 def replace_video_from_dropbox(video_key, dropbox_file):

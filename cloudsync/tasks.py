@@ -4,6 +4,7 @@ Tasks for cloudsync app
 
 import os
 import re
+from datetime import timedelta
 from urllib.parse import unquote
 
 import boto3
@@ -21,7 +22,7 @@ import structlog
 from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.models import Collection, EncodeJob, Video, VideoSubtitle, YouTubeVideo
-from ui.utils import get_bucket
+from ui.utils import get_bucket, now_in_utc
 
 log = structlog.get_logger(__name__)
 
@@ -88,6 +89,29 @@ def update_video_statuses(self):
                 response=exc.response,
             )
             video.update_status(error)
+
+
+@shared_task
+def fail_stuck_uploading_videos():
+    """
+    Fail videos stuck in UPLOADING past the threshold so they can be retried.
+    """
+    now = now_in_utc()
+    threshold = now - timedelta(hours=settings.STUCK_UPLOADING_THRESHOLD_HOURS)
+    stuck_videos = Video.objects.filter(
+        status=VideoStatus.UPLOADING, updated_at__lt=threshold
+    )
+    for video in stuck_videos.iterator():
+        log.info(
+            "Failing video stuck in UPLOADING",
+            video_id=video.id,
+            uploading_since=video.updated_at.isoformat(),
+        )
+        try:
+            video.update_status(VideoStatus.UPLOAD_FAILED)
+        except Exception:
+            # Don't let one bad video abort the sweep of the rest.
+            log.exception("Failed to update stuck video status", video_id=video.id)
 
 
 @shared_task(bind=True, base=VideoTask)
