@@ -4,7 +4,6 @@ import json
 
 import pytest
 import requests
-from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
 
 from cloudsync import dropbox_api
@@ -45,13 +44,6 @@ def test_get_access_token_refreshes_and_caches(reqmocker):
     assert dropbox_api.get_access_token() == "tok-123"
     assert dropbox_api.get_access_token() == "tok-123"
     assert matcher.call_count == 1
-
-
-@override_settings(DROPBOX_KEY="", DROPBOX_SECRET="", DROPBOX_REFRESH_TOKEN="")
-def test_get_access_token_missing_config_raises():
-    """Missing credentials fail loudly rather than silently falling back."""
-    with pytest.raises(ImproperlyConfigured):
-        dropbox_api.get_access_token()
 
 
 @override_settings(**CREDS)

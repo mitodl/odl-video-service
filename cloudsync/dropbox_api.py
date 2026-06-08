@@ -7,7 +7,6 @@ import time
 
 import requests
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 
 OAUTH_TOKEN_URL = "https://api.dropbox.com/oauth2/token"
 SHARED_LINK_FILE_URL = "https://content.dropboxapi.com/2/sharing/get_shared_link_file"
@@ -24,16 +23,6 @@ class DropboxAuthError(Exception):
     """Raised when Dropbox rejects the service-account credentials."""
 
 
-def _require(name):
-    """Return a required Dropbox setting or raise if it is unset."""
-    value = getattr(settings, name, "")
-    if not value:
-        raise ImproperlyConfigured(
-            f"{name} must be set for authenticated Dropbox downloads"
-        )
-    return value
-
-
 def get_access_token(force_refresh=False):
     """Return a cached access token, refreshing from the refresh token when stale."""
     now = time.monotonic()
@@ -48,9 +37,9 @@ def get_access_token(force_refresh=False):
         OAUTH_TOKEN_URL,
         data={
             "grant_type": "refresh_token",
-            "refresh_token": _require("DROPBOX_REFRESH_TOKEN"),
+            "refresh_token": settings.DROPBOX_REFRESH_TOKEN,
         },
-        auth=(_require("DROPBOX_KEY"), _require("DROPBOX_SECRET")),
+        auth=(settings.DROPBOX_KEY, settings.DROPBOX_SECRET),
         timeout=30,
     )
     if resp.status_code != 200:
