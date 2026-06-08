@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.93.1
+--------------
+
+- Authenticated Dropbox API downloads, permanent URLs (#1497)
+- fix: add new action to retry upload failed videos (#1496)
+- Configure bump-my-version for Concourse release pipeline (#1449)
+
 Version 0.92.0 (Released June 04, 2026)
 --------------
 
