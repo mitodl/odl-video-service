@@ -106,3 +106,47 @@ def test_stream_shared_link_http_error_raises(mock_token, reqmocker):
     reqmocker.post(dropbox_api.SHARED_LINK_FILE_URL, status_code=409, text="not_found")
     with pytest.raises(requests.HTTPError):
         dropbox_api.stream_shared_link(SHARED_LINK)
+
+
+@override_settings(**CREDS)
+def test_stream_shared_link_retries_after_401(reqmocker):
+    """A 401 refreshes the cached token and retries the download once."""
+    token_matcher = reqmocker.post(
+        dropbox_api.OAUTH_TOKEN_URL,
+        [
+            {"json": {"access_token": "stale", "expires_in": 14400}},
+            {"json": {"access_token": "fresh", "expires_in": 14400}},
+        ],
+    )
+    reqmocker.post(
+        dropbox_api.SHARED_LINK_FILE_URL,
+        [
+            {"status_code": 401, "text": "expired_access_token"},
+            {
+                "content": b"video-bytes",
+                "headers": {
+                    "Dropbox-API-Result": json.dumps({"name": "v.mp4", "size": 11})
+                },
+            },
+        ],
+    )
+    resp = dropbox_api.stream_shared_link(SHARED_LINK)
+    assert resp.status_code == 200
+    assert token_matcher.call_count == 2
+    assert reqmocker.request_history[-1].headers["Authorization"] == "Bearer fresh"
+
+
+@override_settings(**CREDS)
+def test_stream_shared_link_raises_when_retry_still_401(reqmocker):
+    """A 401 that persists after refreshing the token surfaces as HTTPError."""
+    reqmocker.post(
+        dropbox_api.OAUTH_TOKEN_URL,
+        json={"access_token": "tok", "expires_in": 14400},
+    )
+    reqmocker.post(
+        dropbox_api.SHARED_LINK_FILE_URL,
+        status_code=401,
+        text="expired_access_token",
+    )
+    with pytest.raises(requests.HTTPError):
+        dropbox_api.stream_shared_link(SHARED_LINK)

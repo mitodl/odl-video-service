@@ -34,10 +34,14 @@ def _require(name):
     return value
 
 
-def get_access_token():
+def get_access_token(force_refresh=False):
     """Return a cached access token, refreshing from the refresh token when stale."""
     now = time.monotonic()
-    if _token_cache["access_token"] and now < _token_cache["expires_at"]:
+    if (
+        not force_refresh
+        and _token_cache["access_token"]
+        and now < _token_cache["expires_at"]
+    ):
         return _token_cache["access_token"]
 
     resp = requests.post(
@@ -67,16 +71,26 @@ def get_access_token():
     return access_token
 
 
-def stream_shared_link(url):
-    """Stream an authenticated Dropbox shared-link download; raises HTTPError on failure."""
-    response = requests.post(
+def _download(url, access_token):
+    """Issue the streamed download request with the given bearer token."""
+    return requests.post(
         SHARED_LINK_FILE_URL,
         headers={
-            "Authorization": f"Bearer {get_access_token()}",
+            "Authorization": f"Bearer {access_token}",
             "Dropbox-API-Arg": json.dumps({"url": url}),
         },
         stream=True,
         timeout=_DOWNLOAD_TIMEOUT,
     )
+
+
+def stream_shared_link(url):
+    """Stream an authenticated Dropbox shared-link download; raises HTTPError on failure."""
+    response = _download(url, get_access_token())
+    if response.status_code == 401:
+        # The cached token may have been revoked before its expiry; force a
+        # refresh and retry once before giving up.
+        response.close()
+        response = _download(url, get_access_token(force_refresh=True))
     response.raise_for_status()
     return response

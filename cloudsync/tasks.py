@@ -5,6 +5,7 @@ Tasks for cloudsync app
 import json
 import mimetypes
 import re
+from datetime import timedelta
 
 import boto3
 from boto3.s3.transfer import TransferConfig
