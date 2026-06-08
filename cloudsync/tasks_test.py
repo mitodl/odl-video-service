@@ -3,6 +3,7 @@ Tests for tasks
 """
 
 import io
+import json
 import os
 import random
 import string
@@ -13,6 +14,7 @@ from unittest.mock import PropertyMock, call
 import boto3
 import celery
 import pytest
+import requests
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.test import override_settings
@@ -20,12 +22,14 @@ from googleapiclient.errors import HttpError, ResumableUploadError
 from moto import mock_aws
 from requests import HTTPError
 
+from cloudsync import dropbox_api
 from cloudsync.conftest import MockBoto, MockHttpErrorResponse
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.tasks import (
     VideoTask,
     fail_stuck_uploading_videos,
     monitor_watch_bucket,
+    parse_content_metadata,
     remove_youtube_caption,
     remove_youtube_video,
     retranscode_video,
@@ -200,52 +204,129 @@ def test_empty_video_id():
     assert not result
 
 
-def test_happy_path(mocker, reqmocker, mock_video_headers, video):
-    """
-    Test that a file can be uploaded to a mocked S3 bucket.
-    """
+@pytest.mark.parametrize(
+    "api_result, extra_headers, expected",
+    [
+        (
+            {"name": "lecture.mp4", "size": 4096},
+            {},
+            ("lecture.mp4", "video/mp4", 4096),
+        ),
+        (
+            {"name": "clip.mov"},
+            {"Content-Length": "2048"},
+            ("clip.mov", "video/quicktime", 2048),
+        ),
+    ],
+    ids=["header_name_and_size", "size_fallback_to_content_length"],
+)
+def test_parse_content_metadata_dropbox(api_result, extra_headers, expected):
+    """Dropbox responses carry metadata in the Dropbox-API-Result header."""
+    response = SimpleNamespace(
+        headers={
+            "Dropbox-API-Result": json.dumps(api_result),
+            "Content-Type": "application/octet-stream",
+            **extra_headers,
+        },
+    )
+    assert parse_content_metadata(response) == expected
+
+
+def test_happy_path(mocker, video):
+    """A shared link is streamed to S3 via the authenticated Dropbox download."""
     mock_video_file = io.BytesIO(os.urandom(6250000))
-    reqmocker.get(
-        video.source_url,
-        headers=mock_video_headers,
-        body=mock_video_file,
+    fake_response = SimpleNamespace(
+        raw=mock_video_file,
+        url=video.source_url,
+        headers={
+            "Dropbox-API-Result": json.dumps({"name": "video.mp4", "size": 6250000}),
+            "Content-Type": "application/octet-stream",
+        },
+    )
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        return_value=fake_response,
     )
     mock_boto3 = mocker.patch("cloudsync.tasks.boto3")
     mock_bucket = mock_boto3.resource.return_value.Bucket.return_value
+
     stream_to_s3(video.id)
 
     mock_bucket.upload_fileobj.assert_called_with(
-        Fileobj=mocker.ANY,
+        Fileobj=mock_video_file,
         Key=video.get_s3_key(),
         ExtraArgs={"ContentType": "video/mp4"},
         Callback=mocker.ANY,
         Config=mocker.ANY,
     )
-    fileobj = mock_bucket.upload_fileobj.call_args[1]["Fileobj"]
-    # compare the first 50 bytes of each
-    actual = fileobj.read(50)
-    mock_video_file.seek(0)
-    expected = fileobj.read(50)
-    assert actual == expected
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOADING
 
 
-def test_upload_failure(mocker, reqmocker, mock_video_headers, video):
-    """
-    Test that video status is updated properly after an upload failure
-    """
+def test_upload_failure(mocker, video):
+    """Video is marked failed when the authenticated download errors."""
     mocker.patch("ui.models.tasks.async_send_notification_email")
     mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
-    mock_video_file = io.BytesIO(os.urandom(6250000))
-    reqmocker.get(
-        video.source_url,
-        headers=mock_video_headers,
-        body=mock_video_file,
-        status_code=500,
-        reason="access denied",
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        side_effect=HTTPError("access denied"),
     )
     mocker.patch("cloudsync.tasks.boto3")
     with pytest.raises(HTTPError):
+        stream_to_s3(video.id)
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    mock_update.assert_called_once()
+    assert mock_update.call_args == call(state="FAILURE", task_id=None)
+
+
+def test_upload_auth_failure(mocker, video):
+    """Video is marked failed when Dropbox authentication errors."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        side_effect=dropbox_api.DropboxAuthError("token refresh failed"),
+    )
+    mocker.patch("cloudsync.tasks.boto3")
+    with pytest.raises(dropbox_api.DropboxAuthError):
+        stream_to_s3(video.id)
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    mock_update.assert_called_once()
+    assert mock_update.call_args == call(state="FAILURE", task_id=None)
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        requests.Timeout("read timed out"),
+        requests.ConnectionError("connection reset"),
+    ],
+)
+def test_upload_network_failure(mocker, video, exc):
+    """Video is marked failed when the download raises a network-level error."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        side_effect=exc,
+    )
+    mocker.patch("cloudsync.tasks.boto3")
+    with pytest.raises(type(exc)):
+        stream_to_s3(video.id)
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    mock_update.assert_called_once()
+    assert mock_update.call_args == call(state="FAILURE", task_id=None)
+
+
+def test_upload_metadata_failure(mocker, video):
+    """Video is marked failed when the Dropbox metadata header is missing."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        return_value=SimpleNamespace(headers={}),
+    )
+    mocker.patch("cloudsync.tasks.boto3")
+    with pytest.raises(KeyError):
         stream_to_s3(video.id)
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
     mock_update.assert_called_once()

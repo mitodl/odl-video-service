@@ -68,6 +68,8 @@ jobs:
           AWS_ROLE_NAME: fakeawsrolename
           CLOUDFRONT_KEY_ID: cfkeyid
           DROPBOX_KEY: foo_dropbox_key
+          DROPBOX_SECRET: foo_dropbox_secret  # pragma: allowlist secret
+          DROPBOX_REFRESH_TOKEN: foo_dropbox_refresh_token  # pragma: allowlist secret
           FIELD_ENCRYPTION_KEY: jtma0CL1QMRLaJgjXNlJh3mtPNcgok0G5ajRCMZ_XNI=
           GA_DIMENSION_CAMERA: fake
           GA_KEYFILE_JSON: fake

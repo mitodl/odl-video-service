@@ -6,6 +6,7 @@ import os
 import re
 import uuid
 from datetime import datetime
+from urllib.parse import urlparse
 
 import boto3
 import factory
@@ -85,10 +86,17 @@ def test_video_model_s3keys(video):
     assert isinstance(video.key, uuid.UUID)
     s3key = video.get_s3_key()
     assert s3key is not None
-    _, extension = os.path.splitext(video.source_url.split("/")[-1])
+    path = urlparse(video.source_url).path
+    _, extension = os.path.splitext(path.split("/")[-1])
     assert s3key == "{uuid}/video{extension}".format(
         uuid=video.hexkey, extension=extension
     )
+
+
+def test_get_s3_key_strips_query_string(video):
+    """Preview-style Dropbox links carry a query string that must not pollute the extension."""
+    video.source_url = "https://www.dropbox.com/scl/fi/abc/lecture.mp4?rlkey=xyz&dl=0"
+    assert video.get_s3_key() == f"{video.hexkey}/video.mp4"
 
 
 def test_video_aws_integration(videofile):

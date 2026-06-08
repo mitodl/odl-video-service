@@ -152,7 +152,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
         key="upload"
         appKey={SETTINGS.dropbox_key}
         success={this.handleUpload.bind(this)}
-        linkType="direct"
+        linkType="preview"
         multiselect={true}
         extensions={["video"]}
       >

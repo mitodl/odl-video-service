@@ -303,8 +303,13 @@ NPLUSONE_LOG_LEVEL = logging.ERROR
 
 # LOGGING is provided by mitol-django-observability via import_settings_modules above
 
-# Dropbox key
+# Dropbox app credentials. DROPBOX_KEY (the app key) is also used by the browser
+# Chooser; DROPBOX_SECRET and DROPBOX_REFRESH_TOKEN authenticate server-side
+# shared-link downloads (sharing/get_shared_link_file) and must stay server-only —
+# never expose them to the frontend.
 DROPBOX_KEY = get_string("DROPBOX_KEY", "")
+DROPBOX_SECRET = get_string("DROPBOX_SECRET", "")
+DROPBOX_REFRESH_TOKEN = get_string("DROPBOX_REFRESH_TOKEN", "")
 
 # AWS S3 upload settings
 # the defaults values come from the default configuration in boto3.s3.transfer.TransferConfig
@@ -414,6 +419,8 @@ MANDATORY_SETTINGS = [
     "CLOUDFRONT_KEY_ID",
     "CLOUDFRONT_PRIVATE_KEY",
     "DROPBOX_KEY",
+    "DROPBOX_SECRET",
+    "DROPBOX_REFRESH_TOKEN",
     "GA_DIMENSION_CAMERA",
     "GA_KEYFILE_JSON",
     "GA_VIEW_ID",

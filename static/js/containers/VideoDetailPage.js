@@ -251,7 +251,7 @@ export class VideoDetailPage extends React.Component<*, void> {
                             <DropboxChooser
                               appKey={SETTINGS.dropbox_key}
                               success={files => this.handleReplaceVideo(files[0])}
-                              linkType="direct"
+                              linkType="preview"
                               multiselect={false}
                               extensions={["video"]}
                             >

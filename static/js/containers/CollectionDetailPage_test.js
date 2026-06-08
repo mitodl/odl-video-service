@@ -413,7 +413,7 @@ describe("CollectionDetailPage", () => {
         const chooser = renderUploadFrob().find("DropboxChooser")
         const expectedSimpleProps = {
           appKey:      SETTINGS.dropbox_key,
-          linkType:    "direct",
+          linkType:    "preview",
           multiselect: true,
           extensions:  ["video"]
         }

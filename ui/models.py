@@ -4,6 +4,7 @@ Models for UI app
 
 import os
 from datetime import timedelta
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import boto3
@@ -475,7 +476,8 @@ class Video(TimestampedModel):
         Returns:
             str: A unique S3 key including the user id as a virtual subfolder
         """
-        _, extension = os.path.splitext(self.source_url.split("/")[-1])
+        path = urlparse(self.source_url).path
+        _, extension = os.path.splitext(path.split("/")[-1])
         newkey = "{uuid}/video{ext}".format(uuid=str(self.hexkey), ext=extension)
         return newkey
 
