@@ -2,15 +2,16 @@
 Admin for UI app
 """
 
+from collections import Counter
 from urllib.parse import urljoin
 
 from django.conf import settings
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericTabularInline
 from django.urls import reverse
 from django.utils.html import format_html
 
-from ui import models
+from ui import api, models
 from ui.models import EncodeJob
 
 
@@ -196,6 +197,42 @@ class VideoAdmin(admin.ModelAdmin):
         "collection__title",
         "view_lists__name",
     )
+    actions = ["retry_upload"]
+
+    @admin.action(description="Retry upload for selected 'Upload failed' videos")
+    def retry_upload(self, request, queryset):
+        """Retry each selected 'Upload failed' video via api.retry_failed_upload and report outcomes."""
+        tally = Counter(api.retry_failed_upload(video) for video in queryset)
+
+        def report(count, message, level):
+            if count:
+                self.message_user(request, message.format(n=count), level=level)
+
+        report(
+            tally["retried"],
+            "Re-queued upload for {n} video(s).",
+            messages.SUCCESS,
+        )
+        report(
+            tally["dispatch_failed"],
+            "Failed to re-queue {n} video(s); status left as 'Upload failed'.",
+            messages.ERROR,
+        )
+        report(
+            tally["skipped_status"] + tally["skipped_conflict"],
+            "Skipped {n} video(s) not in 'Upload failed' status.",
+            messages.WARNING,
+        )
+        report(
+            tally["skipped_no_source"],
+            "Skipped {n} video(s) without a source_url.",
+            messages.WARNING,
+        )
+        report(
+            tally["skipped_no_original"],
+            "Skipped {n} video(s) missing an original video file.",
+            messages.WARNING,
+        )
 
 
 class VideoFileAdmin(admin.ModelAdmin):

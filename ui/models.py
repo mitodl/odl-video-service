@@ -530,7 +530,6 @@ class Video(TimestampedModel):
 
         Args:
             status(str): The status to assign the video
-            notify(bool): Send a notification if true
         """
         self.status = status
         if status == VideoStatus.RETRANSCODE_SCHEDULED:

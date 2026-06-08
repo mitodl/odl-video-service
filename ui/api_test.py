@@ -14,6 +14,7 @@ from django.http import Http404
 
 from odl_video.test_utils import any_instance_of
 from ui import api, models
+from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionEdxEndpointFactory,
@@ -516,3 +517,87 @@ def test_get_duration_from_encode_job():
     encode_job = {}
     duration = api.get_duration_from_encode_job(encode_job)
     assert duration == 0.0
+
+
+def test_retry_failed_upload_dispatches(mocker):
+    """An eligible UPLOAD_FAILED video is reset to CREATED and re-queued."""
+    mocked_chain = mocker.patch("ui.api.chain")
+    video = VideoFactory(status=VideoStatus.UPLOAD_FAILED)
+    VideoFileFactory(video=video, encoding=EncodingNames.ORIGINAL)
+
+    outcome = api.retry_failed_upload(video)
+
+    assert outcome == "retried"
+    video.refresh_from_db()
+    assert video.status == VideoStatus.CREATED
+    mocked_chain.return_value.delay.assert_called_once()
+
+
+def test_retry_failed_upload_skips_missing_original(mocker):
+    """Without an original VideoFile the chain would fail in transcode; skip it."""
+    mocked_chain = mocker.patch("ui.api.chain")
+    video = VideoFactory(status=VideoStatus.UPLOAD_FAILED)
+
+    outcome = api.retry_failed_upload(video)
+
+    assert outcome == "skipped_no_original"
+    video.refresh_from_db()
+    assert video.status == VideoStatus.UPLOAD_FAILED
+    mocked_chain.assert_not_called()
+
+
+def test_retry_failed_upload_reverts_on_dispatch_failure(mocker):
+    """If dispatch raises, the video is restored to UPLOAD_FAILED, not marooned."""
+    mocked_chain = mocker.patch("ui.api.chain")
+    mocked_chain.return_value.delay.side_effect = Exception("broker down")
+    video = VideoFactory(status=VideoStatus.UPLOAD_FAILED)
+    VideoFileFactory(video=video, encoding=EncodingNames.ORIGINAL)
+
+    outcome = api.retry_failed_upload(video)
+
+    assert outcome == "dispatch_failed"
+    video.refresh_from_db()
+    assert video.status == VideoStatus.UPLOAD_FAILED
+
+
+def test_retry_failed_upload_skips_conflict(mocker):
+    """
+    If the persisted row is no longer UPLOAD_FAILED when the atomic transition
+    runs (a concurrent retry grabbed it first), skip without dispatching.
+    """
+    mocked_chain = mocker.patch("ui.api.chain")
+    video = VideoFactory(status=VideoStatus.CREATED)
+    VideoFileFactory(video=video, encoding=EncodingNames.ORIGINAL)
+    # In-memory object looks eligible, but the persisted row is not UPLOAD_FAILED.
+    video.status = VideoStatus.UPLOAD_FAILED
+
+    outcome = api.retry_failed_upload(video)
+
+    assert outcome == "skipped_conflict"
+    mocked_chain.assert_not_called()
+    video.refresh_from_db()
+    assert video.status == VideoStatus.CREATED
+
+
+def test_retry_failed_upload_skips_non_failed(mocker):
+    """A video not in UPLOAD_FAILED status is skipped."""
+    mocked_chain = mocker.patch("ui.api.chain")
+    video = VideoFactory(status=VideoStatus.COMPLETE)
+
+    outcome = api.retry_failed_upload(video)
+
+    assert outcome == "skipped_status"
+    mocked_chain.assert_not_called()
+
+
+def test_retry_failed_upload_skips_no_source(mocker):
+    """A video without a source_url cannot be retried."""
+    mocked_chain = mocker.patch("ui.api.chain")
+    video = VideoFactory(status=VideoStatus.UPLOAD_FAILED)
+    models.Video.objects.filter(pk=video.pk).update(source_url="")
+    video.refresh_from_db()
+
+    outcome = api.retry_failed_upload(video)
+
+    assert outcome == "skipped_no_source"
+    mocked_chain.assert_not_called()
