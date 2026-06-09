@@ -133,34 +133,24 @@ def stream_to_s3(self, video_id):
         # KeyError/ValueError here mean the Dropbox metadata header is
         # missing or malformed, which is still an upload failure.
         _, content_type, content_length = parse_content_metadata(response)
-    except Exception:
-        # Close the streamed connection if metadata parsing failed after the
-        # download opened it.
-        if response is not None:
-            response.close()
-        video.update_status(VideoStatus.UPLOAD_FAILED)
-        self.update_state(task_id=task_id, state=states.FAILURE)
-        raise
 
-    s3 = boto3.resource("s3")
-    bucket_name = settings.VIDEO_S3_BUCKET
-    bucket = s3.Bucket(bucket_name)
-    total_bytes_uploaded = 0
+        s3 = boto3.resource("s3")
+        bucket = s3.Bucket(settings.VIDEO_S3_BUCKET)
+        total_bytes_uploaded = 0
 
-    def callback(bytes_uploaded):
-        """
-        Callback function after upload
-        """
-        nonlocal total_bytes_uploaded
-        total_bytes_uploaded += bytes_uploaded
-        data = {
-            "uploaded": total_bytes_uploaded,
-            "total": content_length,
-        }
-        self.update_state(task_id=task_id, state="PROGRESS", meta=data)
+        def callback(bytes_uploaded):
+            """
+            Callback function after upload
+            """
+            nonlocal total_bytes_uploaded
+            total_bytes_uploaded += bytes_uploaded
+            data = {
+                "uploaded": total_bytes_uploaded,
+                "total": content_length,
+            }
+            self.update_state(task_id=task_id, state="PROGRESS", meta=data)
 
-    config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
-    try:
+        config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
         bucket.upload_fileobj(
             Fileobj=response.raw,
             Key=video.get_s3_key(),
@@ -172,6 +162,11 @@ def stream_to_s3(self, video_id):
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise
+    finally:
+        # Always release the streamed Dropbox connection, including on the
+        # successful-upload path where nothing else closes it.
+        if response is not None:
+            response.close()
 
 
 @shared_task(bind=True, base=VideoTask)

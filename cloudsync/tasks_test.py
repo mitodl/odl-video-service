@@ -242,6 +242,7 @@ def test_happy_path(mocker, video):
             "Dropbox-API-Result": json.dumps({"name": "video.mp4", "size": 6250000}),
             "Content-Type": "application/octet-stream",
         },
+        close=lambda: None,
     )
     mocker.patch(
         "cloudsync.tasks.dropbox_api.stream_shared_link",
