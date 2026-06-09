@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.93.1
+Version 0.93.1 (Released June 09, 2026)
 --------------
 
 - Authenticated Dropbox API downloads, permanent URLs (#1497)
