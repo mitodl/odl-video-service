@@ -95,10 +95,10 @@ def fail_stuck_uploading_videos():
     """
     now = now_in_utc()
     threshold = now - timedelta(hours=settings.STUCK_UPLOADING_THRESHOLD_HOURS)
-    stuck_videos = Video.objects.filter(
-        status=VideoStatus.UPLOADING, updated_at__lt=threshold
+    stuck_videos = list(
+        Video.objects.filter(status=VideoStatus.UPLOADING, updated_at__lt=threshold)
     )
-    for video in stuck_videos.iterator():
+    for video in stuck_videos:
         log.info(
             "Failing video stuck in UPLOADING",
             video_id=video.id,
@@ -127,12 +127,17 @@ def stream_to_s3(self, video_id):
     video.update_status(VideoStatus.UPLOADING)
 
     task_id = self.get_task_id()
+    response = None
     try:
         response = dropbox_api.stream_shared_link(video.source_url)
         # KeyError/ValueError here mean the Dropbox metadata header is
         # missing or malformed, which is still an upload failure.
         _, content_type, content_length = parse_content_metadata(response)
     except Exception:
+        # Close the streamed connection if metadata parsing failed after the
+        # download opened it.
+        if response is not None:
+            response.close()
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise

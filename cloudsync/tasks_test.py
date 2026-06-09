@@ -323,7 +323,7 @@ def test_upload_metadata_failure(mocker, video):
     mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
     mocker.patch(
         "cloudsync.tasks.dropbox_api.stream_shared_link",
-        return_value=SimpleNamespace(headers={}),
+        return_value=SimpleNamespace(headers={}, close=lambda: None),
     )
     mocker.patch("cloudsync.tasks.boto3")
     with pytest.raises(KeyError):

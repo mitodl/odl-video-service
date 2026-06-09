@@ -81,5 +81,10 @@ def stream_shared_link(url):
         # refresh and retry once before giving up.
         response.close()
         response = _download(url, get_access_token(force_refresh=True))
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except Exception:
+        # Close the streamed connection before propagating the failure.
+        response.close()
+        raise
     return response
