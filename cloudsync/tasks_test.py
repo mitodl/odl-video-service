@@ -15,7 +15,7 @@ import boto3
 import celery
 import pytest
 import requests
-from celery.exceptions import Retry
+from celery.exceptions import MaxRetriesExceededError, Retry
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.test import override_settings
@@ -395,6 +395,33 @@ def test_lock_lost_mid_transfer_retries_without_marking_failed(mocker, video):
 
     retry.assert_called_once()
     assert Video.objects.get(id=video.id).status != VideoStatus.UPLOAD_FAILED
+
+
+@mock_aws
+def test_lock_lost_exhausted_retries_marks_failed(mocker, video):
+    """If lock-loss retries are exhausted, the video is marked failed immediately."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        return_value=_dropbox_metadata("video.mp4", 1000),
+    )
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
+    lock = _mock_lock(mocker)
+    lock.extend.side_effect = LockNotOwnedError("lock expired")
+    retry = mocker.patch.object(
+        stream_to_s3,
+        "retry",
+        side_effect=MaxRetriesExceededError("retry limit reached"),
+    )
+
+    with pytest.raises(MaxRetriesExceededError):
+        stream_to_s3(video.id)
+
+    retry.assert_called_once()
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    mock_update.assert_called_once_with(task_id=None, state="FAILURE")
 
 
 def test_upload_failure(mocker, video):

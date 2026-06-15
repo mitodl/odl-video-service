@@ -920,11 +920,12 @@ class S3Transfer:
 
     def run(self) -> None:
         """Transfer the source to S3, choosing the single-PUT or multipart path by size."""
-        total = self.total if self.total is not None else self._discover_total()
-        if total <= self.part_size:
-            self._put_single(total)
+        if self.total is None:
+            self.total = self._discover_total()
+        if self.total <= self.part_size:
+            self._put_single(self.total)
         else:
-            self._multipart(total)
+            self._multipart(self.total)
 
     def _put_single(self, total: int) -> None:
         """Upload a small file in one PUT."""
@@ -994,9 +995,11 @@ class S3Transfer:
             for older in existing[1:]:
                 self._abort(older["UploadId"])
             completed = self._completed_parts(chosen)
+            last_part_expected_size = self.total - (num_parts - 1) * self.part_size
             has_size_drift = any(
                 part_number > num_parts
                 or (part_number < num_parts and size != self.part_size)
+                or (part_number == num_parts and size != last_part_expected_size)
                 for part_number, (_etag, size) in completed.items()
             )
             if has_size_drift:

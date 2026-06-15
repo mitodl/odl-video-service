@@ -10,6 +10,7 @@ from datetime import timedelta
 import boto3
 from botocore.exceptions import ClientError
 from celery import Task, group, shared_task, states
+from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings
 from googleapiclient.errors import HttpError
 
@@ -209,7 +210,12 @@ def stream_to_s3(self, video_id):
     except TransferAbortedByCaller:
         # Another worker took the lock; let Celery retry rather than marking failed.
         log.warning("upload lock lost mid-transfer; retrying", video_id=video.id)
-        raise self.retry(countdown=SOURCE_TRANSFER_LOCK_RETRY_COUNTDOWN)
+        try:
+            raise self.retry(countdown=SOURCE_TRANSFER_LOCK_RETRY_COUNTDOWN)
+        except MaxRetriesExceededError:
+            video.update_status(VideoStatus.UPLOAD_FAILED)
+            self.update_state(task_id=task_id, state=states.FAILURE)
+            raise
     except Exception:
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)

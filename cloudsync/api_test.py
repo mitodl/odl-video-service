@@ -1405,11 +1405,35 @@ def test_part_size_drift_restarts_fresh(s3_client):
     assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
 
 
+def test_last_part_size_drift_restarts_fresh(s3_client):
+    """A completed last part whose size no longer matches total forces a clean restart."""
+    body = os.urandom(PART * 2 + 100)
+    create = s3_client.create_multipart_upload(
+        Bucket=BUCKET, Key=KEY, ContentType="video/mp4"
+    )
+    s3_client.upload_part(
+        Bucket=BUCKET,
+        Key=KEY,
+        PartNumber=3,
+        UploadId=create["UploadId"],
+        Body=os.urandom(200),
+    )
+    fetcher = FakeFetcher(body)
+
+    make_transfer(s3_client, fetcher, total=len(body)).run()
+
+    assert len(fetcher.ranges) == 3
+    assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
+
+
 def test_discovers_total_when_not_provided(s3_client):
     """With total=None the size is discovered from a ranged request's Content-Range."""
     body = os.urandom(2000)
-    make_transfer(s3_client, FakeFetcher(body), total=None).run()
+    transfer = make_transfer(s3_client, FakeFetcher(body), total=None)
 
+    transfer.run()
+
+    assert transfer.total == len(body)
     assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
 
 
