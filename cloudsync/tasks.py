@@ -8,9 +8,11 @@ import re
 from datetime import timedelta
 
 import boto3
+import requests
 from boto3.s3.transfer import TransferConfig
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 from celery import Task, group, shared_task, states
+from celery.utils.time import get_exponential_backoff_interval
 from django.conf import settings
 from googleapiclient.errors import HttpError
 
@@ -25,6 +27,24 @@ from ui.models import Collection, EncodeJob, Video, VideoSubtitle, YouTubeVideo
 from ui.utils import get_bucket, now_in_utc
 
 log = structlog.get_logger(__name__)
+
+
+def _should_retry_upload(exc):
+    """
+    True for transient upload errors worth retrying. Excludes permanent failures
+    like malformed Dropbox metadata (KeyError/ValueError), auth errors, and HTTP
+    4xx responses (e.g. a revoked or missing shared link), which won't fix
+    themselves on retry.
+    """
+    if isinstance(exc, (BotoCoreError, ClientError)):
+        return True
+    if isinstance(exc, requests.HTTPError):
+        # Only server-side (5xx) and throttling/timeout statuses are transient.
+        status = getattr(exc.response, "status_code", None)
+        return status is not None and (status >= 500 or status in (408, 429))
+    # Connection/timeout/chunked-encoding level errors are transient. Checked
+    # after HTTPError since HTTPError is also a RequestException.
+    return isinstance(exc, requests.exceptions.RequestException)
 
 
 class VideoTask(Task):
@@ -111,7 +131,13 @@ def fail_stuck_uploading_videos():
             log.exception("Failed to update stuck video status", video_id=video.id)
 
 
-@shared_task(bind=True, base=VideoTask)
+@shared_task(
+    bind=True,
+    base=VideoTask,
+    acks_late=True,
+    reject_on_worker_lost=True,
+    max_retries=settings.CLOUDSYNC_STREAM_S3_MAX_RETRIES,
+)
 def stream_to_s3(self, video_id):
     """
     Stream the contents of the given URL to Amazon S3
@@ -128,6 +154,11 @@ def stream_to_s3(self, video_id):
 
     task_id = self.get_task_id()
     response = None
+
+    def mark_failed():
+        video.update_status(VideoStatus.UPLOAD_FAILED)
+        self.update_state(task_id=task_id, state=states.FAILURE)
+
     try:
         response = dropbox_api.stream_shared_link(video.source_url)
         # KeyError/ValueError here mean the Dropbox metadata header is
@@ -137,18 +168,30 @@ def stream_to_s3(self, video_id):
         s3 = boto3.resource("s3")
         bucket = s3.Bucket(settings.VIDEO_S3_BUCKET)
         total_bytes_uploaded = 0
+        last_progress_refresh = None
 
         def callback(bytes_uploaded):
             """
             Callback function after upload
             """
-            nonlocal total_bytes_uploaded
+            nonlocal total_bytes_uploaded, last_progress_refresh
             total_bytes_uploaded += bytes_uploaded
             data = {
                 "uploaded": total_bytes_uploaded,
                 "total": content_length,
             }
             self.update_state(task_id=task_id, state="PROGRESS", meta=data)
+            # Keep updated_at fresh so the fail_stuck_uploading_videos janitor
+            # treats an actively streaming upload as alive rather than stuck.
+            # Throttled to avoid a DB write on every chunk callback.
+            now = now_in_utc()
+            if (
+                last_progress_refresh is None
+                or (now - last_progress_refresh).total_seconds()
+                >= settings.CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS
+            ):
+                last_progress_refresh = now
+                Video.objects.filter(id=video.id).update(updated_at=now)
 
         config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
         bucket.upload_fileobj(
@@ -158,9 +201,26 @@ def stream_to_s3(self, video_id):
             Callback=callback,
             Config=config,
         )
-    except Exception:
-        video.update_status(VideoStatus.UPLOAD_FAILED)
-        self.update_state(task_id=task_id, state=states.FAILURE)
+    except Exception as exc:
+        retryable = _should_retry_upload(exc)
+        if retryable and self.request.retries < self.max_retries:
+            countdown = get_exponential_backoff_interval(
+                factor=settings.CLOUDSYNC_STREAM_S3_RETRY_BACKOFF,
+                retries=self.request.retries,
+                maximum=settings.CLOUDSYNC_STREAM_S3_RETRY_MAX_BACKOFF,
+                full_jitter=True,
+            )
+            log.warning(
+                "Retrying stream_to_s3 after transient error",
+                video_id=video_id,
+                attempt=self.request.retries + 1,
+                countdown=countdown,
+                error=str(exc),
+            )
+            raise self.retry(exc=exc, countdown=countdown)
+        if retryable:
+            log.error("stream_to_s3 retries exhausted", video_id=video_id)
+        mark_failed()
         raise
     finally:
         # Always release the streamed Dropbox connection, including on the

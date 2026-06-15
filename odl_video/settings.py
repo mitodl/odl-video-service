@@ -363,6 +363,18 @@ AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
 # Janitor: fail videos stuck in UPLOADING past the threshold so they can be retried.
 STUCK_UPLOADING_THRESHOLD_HOURS = get_int("STUCK_UPLOADING_THRESHOLD_HOURS", 2)
 
+# stream_to_s3 retry tuning
+CLOUDSYNC_STREAM_S3_MAX_RETRIES = get_int("CLOUDSYNC_STREAM_S3_MAX_RETRIES", 2)
+CLOUDSYNC_STREAM_S3_RETRY_BACKOFF = get_int("CLOUDSYNC_STREAM_S3_RETRY_BACKOFF", 60)
+CLOUDSYNC_STREAM_S3_RETRY_MAX_BACKOFF = get_int(
+    "CLOUDSYNC_STREAM_S3_RETRY_MAX_BACKOFF", 600
+)
+# Minimum seconds between updated_at refreshes during an in-progress upload, so
+# the stuck-upload janitor sees actively streaming uploads as alive.
+CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS = get_int(
+    "CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS", 60
+)
+
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CDN_DISTRIBUTION_ID = get_string("VIDEO_CDN_DISTRIBUTION_ID", "")
 VIDEO_S3_BUCKET = AWS_STORAGE_BUCKET_NAME = get_string("VIDEO_S3_BUCKET", "")
@@ -495,6 +507,16 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = "UTC"
 CELERY_REDIS_MAX_CONNECTIONS = REDIS_MAX_CONNECTIONS
+
+# acks_late + reject_on_worker_lost on stream_to_s3 rely on broker redelivery if a
+# worker dies mid-upload. visibility_timeout must exceed the longest expected
+# successful upload, or a still-running upload gets redelivered to a second worker.
+# Default 3h. The fail_stuck_uploading_videos janitor is an *idle* timeout
+# (stream_to_s3 refreshes updated_at as it streams), so it only reaps genuinely
+# stalled uploads and does not conflict with this value.
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "visibility_timeout": get_int("CELERY_BROKER_VISIBILITY_TIMEOUT", 60 * 60 * 3),
+}
 CELERY_BEAT_SCHEDULE = {
     "update-youtube-statuses": {
         "task": "cloudsync.tasks.update_youtube_statuses",
