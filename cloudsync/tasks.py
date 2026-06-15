@@ -14,8 +14,13 @@ from django.conf import settings
 from googleapiclient.errors import HttpError
 
 from cloudsync import dropbox_api
-from cloudsync.api import process_watch_file, refresh_status, transcode_video
-from cloudsync.dropbox_transfer import DropboxToS3Transfer, upload_lock
+from cloudsync.api import (
+    S3Transfer,
+    process_watch_file,
+    refresh_status,
+    transcode_video,
+    upload_lock,
+)
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.youtube import API_QUOTA_ERROR_MSG, YouTubeApi
 import structlog
@@ -122,7 +127,7 @@ def stream_to_s3(self, video_id):
     """
     Transfer a video's source file (a Dropbox shared link) to S3.
 
-    Drives a resumable, range-based multipart upload (see cloudsync.dropbox_transfer) so a
+    Drives a resumable, range-based multipart upload (see cloudsync.api.S3Transfer) so a
     mid-transfer stall costs one part re-fetch instead of restarting a multi-GB upload, and a
     worker killed mid-upload resumes from completed parts on redelivery. Byte ranges are pulled
     through the authenticated Dropbox API (cloudsync.dropbox_api). A Redis lock serializes
@@ -176,14 +181,14 @@ def stream_to_s3(self, video_id):
     def run_transfer():
         """Run the resumable transfer, marking the video failed on any error."""
         try:
-            DropboxToS3Transfer(
+            S3Transfer(
                 bucket=settings.VIDEO_S3_BUCKET,
                 key=video.get_s3_key(),
                 content_type=content_type,
                 total=content_length,
                 s3_client=boto3.client("s3"),
                 range_fetcher=fetch_range,
-                part_size=settings.DROPBOX_TRANSFER_PART_SIZE_MB * 1024 * 1024,
+                part_size=settings.DROPBOX_TRANSFER_PART_SIZE_MB * settings.MB,
                 max_range_attempts=settings.DROPBOX_TRANSFER_MAX_RANGE_ATTEMPTS,
                 backoff_base=settings.DROPBOX_TRANSFER_BACKOFF_BASE_SECONDS,
                 backoff_max=settings.DROPBOX_TRANSFER_BACKOFF_MAX_SECONDS,

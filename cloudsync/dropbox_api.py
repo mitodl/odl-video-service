@@ -78,24 +78,13 @@ def _download(url, access_token, *, extra_headers=None, stream=True, timeout=Non
 
 def _download_with_refresh(url, *, extra_headers=None, stream=True, timeout=None):
     """Download from the content endpoint, refreshing the token once on a 401."""
-    response = _download(
-        url,
-        get_access_token(),
-        extra_headers=extra_headers,
-        stream=stream,
-        timeout=timeout,
-    )
+    kwargs = {"extra_headers": extra_headers, "stream": stream, "timeout": timeout}
+    response = _download(url, get_access_token(), **kwargs)
     if response.status_code == 401:
         # The cached token may have been revoked before its expiry; force a
         # refresh and retry once before giving up.
         response.close()
-        response = _download(
-            url,
-            get_access_token(force_refresh=True),
-            extra_headers=extra_headers,
-            stream=stream,
-            timeout=timeout,
-        )
+        response = _download(url, get_access_token(force_refresh=True), **kwargs)
     return response
 
 

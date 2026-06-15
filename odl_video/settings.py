@@ -363,7 +363,7 @@ AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
 # Janitor: fail videos stuck in UPLOADING past the threshold so they can be retried.
 STUCK_UPLOADING_THRESHOLD_HOURS = get_int("STUCK_UPLOADING_THRESHOLD_HOURS", 2)
 
-# Resumable Dropbox -> S3 transfer (see cloudsync/dropbox_transfer.py). Drives an S3
+# Resumable Dropbox -> S3 transfer (see cloudsync.api.S3Transfer). Drives an S3
 # multipart upload by fetching the source in byte ranges with per-range retries, so a
 # mid-transfer stall costs one part re-fetch instead of restarting a multi-GB upload.
 DROPBOX_TRANSFER_PART_SIZE_MB = get_int("DROPBOX_TRANSFER_PART_SIZE_MB", 32)

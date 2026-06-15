@@ -318,7 +318,7 @@ def test_stream_to_s3_marks_failed_on_transfer_error(mocker, video):
     )
     mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(True))
     mocker.patch("celery.app.task.Task.update_state")
-    transfer = mocker.patch("cloudsync.tasks.DropboxToS3Transfer")
+    transfer = mocker.patch("cloudsync.tasks.S3Transfer")
     transfer.return_value.run.side_effect = RuntimeError("boom")
 
     with pytest.raises(RuntimeError):
