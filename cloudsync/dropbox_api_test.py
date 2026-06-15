@@ -142,3 +142,52 @@ def test_stream_shared_link_raises_when_retry_still_401(reqmocker):
     )
     with pytest.raises(requests.HTTPError):
         dropbox_api.stream_shared_link(SHARED_LINK)
+
+
+@override_settings(**CREDS)
+def test_fetch_shared_link_range_sends_range_and_returns_partial(mock_token, reqmocker):
+    """A ranged fetch sends a Range header and returns the 206 response for the caller."""
+    reqmocker.post(
+        dropbox_api.SHARED_LINK_FILE_URL,
+        content=b"0123456789"[2:6],
+        status_code=206,
+        headers={"Content-Range": "bytes 2-5/10"},
+    )
+    resp = dropbox_api.fetch_shared_link_range(SHARED_LINK, 2, 5)
+    assert resp.status_code == 206
+    assert resp.content == b"2345"
+    sent = reqmocker.request_history[-1]
+    assert sent.headers["Range"] == "bytes=2-5"
+    assert sent.headers["Authorization"] == "Bearer tok"
+    assert json.loads(sent.headers["Dropbox-API-Arg"]) == {"url": SHARED_LINK}
+
+
+@override_settings(**CREDS)
+def test_fetch_shared_link_range_retries_after_401(reqmocker):
+    """A 401 on a ranged fetch refreshes the token and retries once."""
+    reqmocker.post(
+        dropbox_api.OAUTH_TOKEN_URL,
+        [
+            {"json": {"access_token": "stale", "expires_in": 14400}},
+            {"json": {"access_token": "fresh", "expires_in": 14400}},
+        ],
+    )
+    reqmocker.post(
+        dropbox_api.SHARED_LINK_FILE_URL,
+        [
+            {"status_code": 401, "text": "expired_access_token"},
+            {"content": b"abcd", "status_code": 206},
+        ],
+    )
+    resp = dropbox_api.fetch_shared_link_range(SHARED_LINK, 0, 3)
+    assert resp.status_code == 206
+    assert resp.content == b"abcd"
+    assert reqmocker.request_history[-1].headers["Authorization"] == "Bearer fresh"
+
+
+@override_settings(**CREDS)
+def test_fetch_shared_link_range_raises_on_error_status(mock_token, reqmocker):
+    """A non-partial error status (e.g. revoked link) surfaces as HTTPError."""
+    reqmocker.post(dropbox_api.SHARED_LINK_FILE_URL, status_code=409, text="not_found")
+    with pytest.raises(requests.HTTPError):
+        dropbox_api.fetch_shared_link_range(SHARED_LINK, 0, 3)

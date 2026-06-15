@@ -2,6 +2,7 @@
 Tests for tasks
 """
 
+import contextlib
 import io
 import json
 import os
@@ -15,6 +16,7 @@ import boto3
 import celery
 import pytest
 import requests
+from celery.exceptions import Retry
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.test import override_settings
@@ -232,35 +234,96 @@ def test_parse_content_metadata_dropbox(api_result, extra_headers, expected):
     assert parse_content_metadata(response) == expected
 
 
+def _lock_yielding(acquired):
+    """Build a drop-in upload_lock context manager that always yields ``acquired``."""
+
+    @contextlib.contextmanager
+    def _cm(*_args, **_kwargs):
+        yield acquired
+
+    return _cm
+
+
+def _dropbox_metadata(name, size, extra_headers=None):
+    """A fake stream_shared_link response carrying the Dropbox metadata header."""
+    headers = {
+        "Dropbox-API-Result": json.dumps({"name": name, "size": size}),
+        "Content-Type": "application/octet-stream",
+    }
+    if extra_headers:
+        headers.update(extra_headers)
+    return SimpleNamespace(headers=headers, close=lambda: None)
+
+
+def _range_fetcher_for(body):
+    """Build a fake fetch_shared_link_range returning 206 slices of ``body``."""
+
+    def _fetch(_url, start, end, timeout=None):
+        return SimpleNamespace(
+            status_code=206,
+            content=body[start : end + 1],
+            headers={"Content-Range": f"bytes {start}-{end}/{len(body)}"},
+        )
+
+    return _fetch
+
+
+@mock_aws
 def test_happy_path(mocker, video):
-    """A shared link is streamed to S3 via the authenticated Dropbox download."""
-    mock_video_file = io.BytesIO(os.urandom(6250000))
-    fake_response = SimpleNamespace(
-        raw=mock_video_file,
-        url=video.source_url,
-        headers={
-            "Dropbox-API-Result": json.dumps({"name": "video.mp4", "size": 6250000}),
-            "Content-Type": "application/octet-stream",
-        },
-        close=lambda: None,
-    )
+    """A shared link is transferred to S3 via the authenticated resumable transfer."""
+    body = os.urandom(6250000)
     mocker.patch(
         "cloudsync.tasks.dropbox_api.stream_shared_link",
-        return_value=fake_response,
+        return_value=_dropbox_metadata("video.mp4", len(body)),
     )
-    mock_boto3 = mocker.patch("cloudsync.tasks.boto3")
-    mock_bucket = mock_boto3.resource.return_value.Bucket.return_value
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.fetch_shared_link_range",
+        side_effect=_range_fetcher_for(body),
+    )
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
+    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(True))
+    mocker.patch("celery.app.task.Task.update_state")
 
     stream_to_s3(video.id)
 
-    mock_bucket.upload_fileobj.assert_called_with(
-        Fileobj=mock_video_file,
-        Key=video.get_s3_key(),
-        ExtraArgs={"ContentType": "video/mp4"},
-        Callback=mocker.ANY,
-        Config=mocker.ANY,
-    )
+    obj = s3.get_object(Bucket=settings.VIDEO_S3_BUCKET, Key=video.get_s3_key())
+    assert obj["Body"].read() == body
+    assert obj["ContentType"] == "video/mp4"
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOADING
+
+
+def test_stream_to_s3_retries_when_locked(mocker, video):
+    """When another worker holds the upload lock, the task backs off via retry."""
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        return_value=_dropbox_metadata("video.mp4", 1000),
+    )
+    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(False))
+    mocker.patch("celery.app.task.Task.update_state")
+    retry = mocker.patch.object(stream_to_s3, "retry", side_effect=Retry)
+
+    with pytest.raises(Retry):
+        stream_to_s3(video.id)
+    retry.assert_called_once()
+
+
+@mock_aws
+def test_stream_to_s3_marks_failed_on_transfer_error(mocker, video):
+    """A transfer error marks the video UPLOAD_FAILED and re-raises."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        return_value=_dropbox_metadata("video.mp4", 1000),
+    )
+    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(True))
+    mocker.patch("celery.app.task.Task.update_state")
+    transfer = mocker.patch("cloudsync.tasks.DropboxToS3Transfer")
+    transfer.return_value.run.side_effect = RuntimeError("boom")
+
+    with pytest.raises(RuntimeError):
+        stream_to_s3(video.id)
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
 
 
 def test_upload_failure(mocker, video):

@@ -60,31 +60,74 @@ def get_access_token(force_refresh=False):
     return access_token
 
 
-def _download(url, access_token):
-    """Issue the streamed download request with the given bearer token."""
+def _download(url, access_token, *, extra_headers=None, stream=True, timeout=None):
+    """Issue a download request to the content endpoint with the given bearer token."""
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Dropbox-API-Arg": json.dumps({"url": url}),
+    }
+    if extra_headers:
+        headers.update(extra_headers)
     return requests.post(
         SHARED_LINK_FILE_URL,
-        headers={
-            "Authorization": f"Bearer {access_token}",
-            "Dropbox-API-Arg": json.dumps({"url": url}),
-        },
-        stream=True,
-        timeout=_DOWNLOAD_TIMEOUT,
+        headers=headers,
+        stream=stream,
+        timeout=timeout or _DOWNLOAD_TIMEOUT,
     )
 
 
-def stream_shared_link(url):
-    """Stream an authenticated Dropbox shared-link download; raises HTTPError on failure."""
-    response = _download(url, get_access_token())
+def _download_with_refresh(url, *, extra_headers=None, stream=True, timeout=None):
+    """Download from the content endpoint, refreshing the token once on a 401."""
+    response = _download(
+        url,
+        get_access_token(),
+        extra_headers=extra_headers,
+        stream=stream,
+        timeout=timeout,
+    )
     if response.status_code == 401:
         # The cached token may have been revoked before its expiry; force a
         # refresh and retry once before giving up.
         response.close()
-        response = _download(url, get_access_token(force_refresh=True))
+        response = _download(
+            url,
+            get_access_token(force_refresh=True),
+            extra_headers=extra_headers,
+            stream=stream,
+            timeout=timeout,
+        )
+    return response
+
+
+def stream_shared_link(url):
+    """Stream an authenticated Dropbox shared-link download; raises HTTPError on failure."""
+    response = _download_with_refresh(url)
     try:
         response.raise_for_status()
     except Exception:
         # Close the streamed connection before propagating the failure.
         response.close()
         raise
+    return response
+
+
+def fetch_shared_link_range(url, start, end, *, timeout=None):
+    """
+    Download the inclusive byte range ``start..end`` of a shared link via the authenticated API.
+
+    Returns the ``requests.Response`` (status 206, or 200 if the server ignored the range) so
+    the caller can validate the status and read ``.content``; the caller owns retry/backoff.
+    Raises ``requests.HTTPError`` only on a 4xx/5xx that is not a partial-content response.
+    """
+    response = _download_with_refresh(
+        url,
+        extra_headers={"Range": f"bytes={start}-{end}"},
+        stream=False,
+        timeout=timeout,
+    )
+    if response.status_code not in (200, 206):
+        try:
+            response.raise_for_status()
+        finally:
+            response.close()
     return response

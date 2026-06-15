@@ -363,6 +363,27 @@ AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
 # Janitor: fail videos stuck in UPLOADING past the threshold so they can be retried.
 STUCK_UPLOADING_THRESHOLD_HOURS = get_int("STUCK_UPLOADING_THRESHOLD_HOURS", 2)
 
+# Resumable Dropbox -> S3 transfer (see cloudsync/dropbox_transfer.py). Drives an S3
+# multipart upload by fetching the source in byte ranges with per-range retries, so a
+# mid-transfer stall costs one part re-fetch instead of restarting a multi-GB upload.
+DROPBOX_TRANSFER_PART_SIZE_MB = get_int("DROPBOX_TRANSFER_PART_SIZE_MB", 32)
+DROPBOX_TRANSFER_MAX_RANGE_ATTEMPTS = get_int("DROPBOX_TRANSFER_MAX_RANGE_ATTEMPTS", 5)
+DROPBOX_TRANSFER_BACKOFF_BASE_SECONDS = get_int(
+    "DROPBOX_TRANSFER_BACKOFF_BASE_SECONDS", 2
+)
+DROPBOX_TRANSFER_BACKOFF_MAX_SECONDS = get_int(
+    "DROPBOX_TRANSFER_BACKOFF_MAX_SECONDS", 60
+)
+DROPBOX_TRANSFER_CONNECT_TIMEOUT = get_int("DROPBOX_TRANSFER_CONNECT_TIMEOUT", 30)
+DROPBOX_TRANSFER_READ_TIMEOUT = get_int("DROPBOX_TRANSFER_READ_TIMEOUT", 120)
+# Lock TTL bounds how long a dead worker's lock lingers before another may resume; the
+# retry settings bound how long a redelivered duplicate waits for the holder to finish.
+DROPBOX_TRANSFER_LOCK_TTL_SECONDS = get_int("DROPBOX_TRANSFER_LOCK_TTL_SECONDS", 3600)
+DROPBOX_TRANSFER_LOCK_MAX_RETRIES = get_int("DROPBOX_TRANSFER_LOCK_MAX_RETRIES", 15)
+DROPBOX_TRANSFER_LOCK_RETRY_COUNTDOWN = get_int(
+    "DROPBOX_TRANSFER_LOCK_RETRY_COUNTDOWN", 60
+)
+
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CDN_DISTRIBUTION_ID = get_string("VIDEO_CDN_DISTRIBUTION_ID", "")
 VIDEO_S3_BUCKET = AWS_STORAGE_BUCKET_NAME = get_string("VIDEO_S3_BUCKET", "")
