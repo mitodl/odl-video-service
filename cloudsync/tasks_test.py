@@ -21,12 +21,14 @@ from django.test import override_settings
 from googleapiclient.errors import HttpError, ResumableUploadError
 from moto import mock_aws
 from requests import HTTPError
+from urllib3.exceptions import ProtocolError as Urllib3ProtocolError
 
 from cloudsync import dropbox_api
 from cloudsync.conftest import MockBoto, MockHttpErrorResponse
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.tasks import (
     VideoTask,
+    _should_retry_upload,
     fail_stuck_uploading_videos,
     monitor_watch_bucket,
     parse_content_metadata,
@@ -298,20 +300,34 @@ def _http_error(status):
     return err
 
 
+def _client_error(status, code="SomeError"):
+    """Build a botocore ClientError with the given HTTP status and error code."""
+    return ClientError(
+        {"Error": {"Code": code}, "ResponseMetadata": {"HTTPStatusCode": status}},
+        "PutObject",
+    )
+
+
 TRANSIENT_UPLOAD_ERRORS = [
     requests.Timeout("read timed out"),
     requests.ConnectionError("connection reset"),
-    ClientError({"Error": {}}, "PutObject"),
+    _client_error(503, "ServiceUnavailable"),
+    _client_error(400, "RequestTimeout"),  # transient despite 4xx status
     _http_error(503),
     _http_error(429),
+    ConnectionError("connection reset by peer"),  # builtin socket error
+    Urllib3ProtocolError("connection broken"),  # raw-stream transport error
 ]
 
-# 4xx (except throttling/timeout) and statusless HTTP errors are permanent.
-PERMANENT_HTTP_ERRORS = [
+# 4xx (except throttling/timeout), statusless HTTP errors, and permanent S3
+# errors are not retried.
+PERMANENT_UPLOAD_ERRORS = [
     _http_error(401),
     _http_error(403),
     _http_error(404),
     HTTPError("no response attached"),
+    _client_error(403, "AccessDenied"),
+    _client_error(404, "NoSuchBucket"),
 ]
 
 
@@ -344,17 +360,42 @@ def test_upload_retries_exhausted(mocker, video, exc):
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
 
 
-@pytest.mark.parametrize("exc", PERMANENT_HTTP_ERRORS)
-def test_upload_permanent_http_error_fails_fast(mocker, video, exc):
-    """4xx (and statusless) HTTP errors fail immediately without retrying."""
+@pytest.mark.parametrize("exc", PERMANENT_UPLOAD_ERRORS)
+def test_upload_permanent_error_fails_fast(mocker, video, exc):
+    """Permanent errors (4xx, statusless, AccessDenied) fail without retrying."""
     mocker.patch("ui.models.tasks.async_send_notification_email")
     mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
     mocker.patch("cloudsync.tasks.dropbox_api.stream_shared_link", side_effect=exc)
     mocker.patch("cloudsync.tasks.boto3")
     # retries=0 but the error is permanent, so it raises the error, not Retry.
-    with pytest.raises(HTTPError):
+    with pytest.raises(type(exc)):
         stream_to_s3.apply((video.id,), retries=0, throw=True).get()
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+
+
+@pytest.mark.parametrize(
+    "exc, expected",
+    [
+        (_client_error(503, "ServiceUnavailable"), True),
+        (_client_error(400, "RequestTimeout"), True),  # transient code, 4xx status
+        (_client_error(403, "AccessDenied"), False),
+        (_client_error(404, "NoSuchBucket"), False),
+        (_http_error(503), True),
+        (_http_error(429), True),
+        (_http_error(404), False),
+        (HTTPError("no response attached"), False),
+        (requests.ConnectionError("reset"), True),
+        (ConnectionError("builtin socket reset"), True),
+        (TimeoutError("builtin timeout"), True),
+        (Urllib3ProtocolError("connection broken"), True),
+        (KeyError("Dropbox-API-Result"), False),
+        (ValueError("bad metadata"), False),
+        (dropbox_api.DropboxAuthError("token refresh failed"), False),
+    ],
+)
+def test_should_retry_upload_classification(exc, expected):
+    """Transient transport errors retry; permanent/auth/metadata errors do not."""
+    assert _should_retry_upload(exc) is expected
 
 
 def test_stream_to_s3_task_config():

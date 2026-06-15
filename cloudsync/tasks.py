@@ -5,16 +5,26 @@ Tasks for cloudsync app
 import json
 import mimetypes
 import re
+import threading
 from datetime import timedelta
 
 import boto3
 import requests
 from boto3.s3.transfer import TransferConfig
-from botocore.exceptions import BotoCoreError, ClientError
+from botocore.exceptions import (
+    BotoCoreError,
+    ClientError,
+    ConnectionClosedError,
+    HTTPClientError,
+)
+from botocore.exceptions import ConnectionError as BotoConnectionError
 from celery import Task, group, shared_task, states
 from celery.utils.time import get_exponential_backoff_interval
 from django.conf import settings
+from django.db import connection
 from googleapiclient.errors import HttpError
+from urllib3.exceptions import ProtocolError as Urllib3ProtocolError
+from urllib3.exceptions import TimeoutError as Urllib3TimeoutError
 
 from cloudsync import dropbox_api
 from cloudsync.api import process_watch_file, refresh_status, transcode_video
@@ -29,22 +39,62 @@ from ui.utils import get_bucket, now_in_utc
 log = structlog.get_logger(__name__)
 
 
+# botocore transport errors worth retrying — connection drops and read/connect
+# timeouts — as opposed to permanent ones like NoCredentialsError.
+_TRANSIENT_BOTOCORE_ERRORS = (
+    BotoConnectionError,
+    ConnectionClosedError,
+    HTTPClientError,
+)
+# S3 error codes that are transient even when their HTTP status is not 5xx
+# (e.g. RequestTimeout is a 400).
+_TRANSIENT_S3_ERROR_CODES = frozenset(
+    {
+        "RequestTimeout",
+        "RequestTimeTooSkewed",
+        "SlowDown",
+        "InternalError",
+        "ServiceUnavailable",
+        "ThrottlingException",
+        "Throttling",
+    }
+)
+# Socket/transport errors raised while boto3 streams from response.raw (the
+# urllib3 socket); these are NOT requests.RequestException subclasses.
+_TRANSIENT_STREAM_ERRORS = (
+    ConnectionError,  # builtin: ConnectionReset/BrokenPipe/etc.
+    TimeoutError,  # builtin
+    Urllib3ProtocolError,
+    Urllib3TimeoutError,
+)
+
+
+def _is_transient_http_status(status):
+    """5xx, plus request-timeout (408) and too-many-requests (429), are transient."""
+    return status is not None and (status >= 500 or status in (408, 429))
+
+
 def _should_retry_upload(exc):
     """
-    True for transient upload errors worth retrying. Excludes permanent failures
-    like malformed Dropbox metadata (KeyError/ValueError), auth errors, and HTTP
-    4xx responses (e.g. a revoked or missing shared link), which won't fix
-    themselves on retry.
+    True for transient upload errors worth retrying. Permanent failures fail fast:
+    malformed Dropbox metadata (KeyError/ValueError), auth errors, HTTP 4xx (e.g. a
+    revoked or missing shared link), and permanent S3 errors (AccessDenied,
+    NoSuchBucket, ...).
     """
-    if isinstance(exc, (BotoCoreError, ClientError)):
-        return True
+    if isinstance(exc, ClientError):
+        meta = exc.response.get("ResponseMetadata", {})
+        if _is_transient_http_status(meta.get("HTTPStatusCode")):
+            return True
+        return exc.response.get("Error", {}).get("Code") in _TRANSIENT_S3_ERROR_CODES
+    if isinstance(exc, BotoCoreError):
+        return isinstance(exc, _TRANSIENT_BOTOCORE_ERRORS)
     if isinstance(exc, requests.HTTPError):
-        # Only server-side (5xx) and throttling/timeout statuses are transient.
-        status = getattr(exc.response, "status_code", None)
-        return status is not None and (status >= 500 or status in (408, 429))
-    # Connection/timeout/chunked-encoding level errors are transient. Checked
-    # after HTTPError since HTTPError is also a RequestException.
-    return isinstance(exc, requests.exceptions.RequestException)
+        return _is_transient_http_status(getattr(exc.response, "status_code", None))
+    if isinstance(exc, requests.exceptions.RequestException):
+        # requests-level connection/timeout/chunked-encoding errors are transient.
+        # Checked after HTTPError, since HTTPError is also a RequestException.
+        return True
+    return isinstance(exc, _TRANSIENT_STREAM_ERRORS)
 
 
 class VideoTask(Task):
@@ -169,29 +219,44 @@ def stream_to_s3(self, video_id):
         bucket = s3.Bucket(settings.VIDEO_S3_BUCKET)
         total_bytes_uploaded = 0
         last_progress_refresh = None
+        # boto3's s3transfer invokes this callback concurrently from a thread
+        # pool, so guard the shared progress state.
+        progress_lock = threading.Lock()
 
         def callback(bytes_uploaded):
             """
             Callback function after upload
             """
             nonlocal total_bytes_uploaded, last_progress_refresh
-            total_bytes_uploaded += bytes_uploaded
-            data = {
-                "uploaded": total_bytes_uploaded,
-                "total": content_length,
-            }
-            self.update_state(task_id=task_id, state="PROGRESS", meta=data)
-            # Keep updated_at fresh so the fail_stuck_uploading_videos janitor
-            # treats an actively streaming upload as alive rather than stuck.
-            # Throttled to avoid a DB write on every chunk callback.
             now = now_in_utc()
-            if (
-                last_progress_refresh is None
-                or (now - last_progress_refresh).total_seconds()
-                >= settings.CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS
-            ):
-                last_progress_refresh = now
-                Video.objects.filter(id=video.id).update(updated_at=now)
+            with progress_lock:
+                total_bytes_uploaded += bytes_uploaded
+                uploaded = total_bytes_uploaded
+                should_refresh = (
+                    last_progress_refresh is None
+                    or (now - last_progress_refresh).total_seconds()
+                    >= settings.CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS
+                )
+                if should_refresh:
+                    last_progress_refresh = now
+            self.update_state(
+                task_id=task_id,
+                state="PROGRESS",
+                meta={"uploaded": uploaded, "total": content_length},
+            )
+            if should_refresh:
+                # Keep updated_at fresh so the fail_stuck_uploading_videos janitor
+                # treats an actively streaming upload as alive rather than stuck.
+                # Throttled (above) to avoid a DB write on every chunk callback.
+                try:
+                    Video.objects.filter(id=video.id).update(updated_at=now)
+                finally:
+                    # When invoked from an s3transfer worker thread, Django opens
+                    # a thread-local connection nothing else will close; close it
+                    # here to avoid leaking connections. Leave the main task's
+                    # connection alone.
+                    if threading.current_thread() is not threading.main_thread():
+                        connection.close()
 
         config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
         bucket.upload_fileobj(
