@@ -9,12 +9,14 @@ import re
 import time
 from pathlib import Path
 from collections import namedtuple
+from collections.abc import Callable, Iterator
 from datetime import datetime
 from urllib.parse import quote
 from uuid import uuid4
 
 import boto3
 import pytz
+import redis
 import requests
 from boto3.s3.transfer import TransferConfig
 from PIL import ExifTags, Image, ImageOps
@@ -883,7 +885,7 @@ class TransferError(Exception):
 
 
 @contextlib.contextmanager
-def upload_lock(redis_client, lock_key, ttl):
+def upload_lock(redis_client: redis.Redis, lock_key: str, ttl: int) -> Iterator[bool]:
     """
     Best-effort distributed lock serializing concurrent runs of the same upload.
 
@@ -916,17 +918,17 @@ class S3Transfer:
     def __init__(
         self,
         *,
-        bucket,
-        key,
-        content_type,
-        total,
+        bucket: str,
+        key: str,
+        content_type: str,
+        total: int | None,
         s3_client,
-        range_fetcher,
-        part_size,
-        max_range_attempts=5,
-        backoff_base=2,
-        backoff_max=60,
-        progress_callback=None,
+        range_fetcher: Callable[[int, int], requests.Response],
+        part_size: int,
+        max_range_attempts: int = 5,
+        backoff_base: float = 2,
+        backoff_max: float = 60,
+        progress_callback: Callable[[int, int], None] | None = None,
     ):
         self.bucket = bucket
         self.key = key
@@ -943,7 +945,7 @@ class S3Transfer:
         self.backoff_max = backoff_max
         self.progress_callback = progress_callback
 
-    def run(self):
+    def run(self) -> None:
         """Transfer the source to S3, choosing the single-PUT or multipart path by size."""
         total = self.total if self.total is not None else self._discover_total()
         if total <= self.part_size:
@@ -951,7 +953,7 @@ class S3Transfer:
         else:
             self._multipart(total)
 
-    def _put_single(self, total):
+    def _put_single(self, total: int) -> None:
         """Upload a small file in one PUT."""
         body = self._fetch_range(0, total - 1)
         self.s3.put_object(
@@ -959,7 +961,7 @@ class S3Transfer:
         )
         self._report(len(body), total)
 
-    def _multipart(self, total):
+    def _multipart(self, total: int) -> None:
         """Upload a large file as an S3 multipart upload, one byte range per part."""
         num_parts = math.ceil(total / self.part_size)
         upload_id, completed = self._resume_or_create(num_parts)
@@ -998,7 +1000,9 @@ class S3Transfer:
             self._abort(upload_id)
             raise
 
-    def _resume_or_create(self, num_parts):
+    def _resume_or_create(
+        self, num_parts: int
+    ) -> tuple[str, dict[int, tuple[str, int]]]:
         """
         Adopt an in-progress multipart upload for this key if one exists, else create one.
 
@@ -1020,13 +1024,13 @@ class S3Transfer:
                 return chosen, completed
         return self._create_upload(), {}
 
-    def _existing_uploads_for_key(self):
+    def _existing_uploads_for_key(self) -> list[dict]:
         """In-progress multipart uploads for this exact key, newest first."""
         response = self.s3.list_multipart_uploads(Bucket=self.bucket, Prefix=self.key)
         uploads = [u for u in response.get("Uploads", []) if u["Key"] == self.key]
         return sorted(uploads, key=lambda u: u["Initiated"], reverse=True)
 
-    def _completed_parts(self, upload_id):
+    def _completed_parts(self, upload_id: str) -> dict[int, tuple[str, int]]:
         """Map of part number -> (etag, size) for parts already uploaded to ``upload_id``."""
         parts = {}
         marker = 0
@@ -1043,7 +1047,9 @@ class S3Transfer:
                 return parts
             marker = response["NextPartNumberMarker"]
 
-    def _has_size_drift(self, completed, num_parts):
+    def _has_size_drift(
+        self, completed: dict[int, tuple[str, int]], num_parts: int
+    ) -> bool:
         """True if any non-final completed part no longer matches the configured part size."""
         for part_number, (_etag, size) in completed.items():
             if part_number > num_parts:
@@ -1052,13 +1058,13 @@ class S3Transfer:
                 return True
         return False
 
-    def _create_upload(self):
+    def _create_upload(self) -> str:
         """Create a new multipart upload and return its id."""
         return self.s3.create_multipart_upload(
             Bucket=self.bucket, Key=self.key, ContentType=self.content_type
         )["UploadId"]
 
-    def _abort(self, upload_id):
+    def _abort(self, upload_id: str) -> None:
         """Abort a multipart upload, logging (not raising) if the abort itself fails."""
         try:
             self.s3.abort_multipart_upload(
@@ -1067,7 +1073,7 @@ class S3Transfer:
         except ClientError:
             log.exception("failed to abort multipart upload", key=self.key)
 
-    def _fetch_range(self, start, end):
+    def _fetch_range(self, start: int, end: int) -> bytes:
         """
         Fetch ``bytes=start-end`` from the source with retries and exponential backoff.
 
@@ -1098,12 +1104,12 @@ class S3Transfer:
                 self._sleep_backoff(attempt)
         raise last_error
 
-    def _sleep_backoff(self, attempt):
+    def _sleep_backoff(self, attempt: int) -> None:
         """Sleep for an exponentially growing, jittered delay before the next attempt."""
         delay = min(self.backoff_max, self.backoff_base * (2 ** (attempt - 1)))
         time.sleep(delay + random.uniform(0, delay / 2))
 
-    def _discover_total(self):
+    def _discover_total(self) -> int:
         """Determine the total size from a ranged request's Content-Range header."""
         response = self.range_fetcher(0, 0)
         match = re.match(
@@ -1113,7 +1119,7 @@ class S3Transfer:
             raise TransferError("could not determine total size of source")
         return int(match.group(1))
 
-    def _report(self, uploaded, total):
+    def _report(self, uploaded: int, total: int) -> None:
         """Invoke the progress callback, if any, with cumulative bytes and the total."""
         if self.progress_callback:
             self.progress_callback(uploaded, total)

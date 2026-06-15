@@ -23,7 +23,7 @@ class DropboxAuthError(Exception):
     """Raised when Dropbox rejects the service-account credentials."""
 
 
-def get_access_token(force_refresh=False):
+def get_access_token(force_refresh: bool = False) -> str:
     """Return a cached access token, refreshing from the refresh token when stale."""
     now = time.monotonic()
     if (
@@ -60,7 +60,14 @@ def get_access_token(force_refresh=False):
     return access_token
 
 
-def _download(url, access_token, *, extra_headers=None, stream=True, timeout=None):
+def _download(
+    url: str,
+    access_token: str,
+    *,
+    extra_headers: dict[str, str] | None = None,
+    stream: bool = True,
+    timeout: float | tuple[float, float] | None = None,
+) -> requests.Response:
     """Issue a download request to the content endpoint with the given bearer token."""
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -76,7 +83,13 @@ def _download(url, access_token, *, extra_headers=None, stream=True, timeout=Non
     )
 
 
-def _download_with_refresh(url, *, extra_headers=None, stream=True, timeout=None):
+def _download_with_refresh(
+    url: str,
+    *,
+    extra_headers: dict[str, str] | None = None,
+    stream: bool = True,
+    timeout: float | tuple[float, float] | None = None,
+) -> requests.Response:
     """Download from the content endpoint, refreshing the token once on a 401."""
     kwargs = {"extra_headers": extra_headers, "stream": stream, "timeout": timeout}
     response = _download(url, get_access_token(), **kwargs)
@@ -88,7 +101,7 @@ def _download_with_refresh(url, *, extra_headers=None, stream=True, timeout=None
     return response
 
 
-def stream_shared_link(url):
+def stream_shared_link(url: str) -> requests.Response:
     """Stream an authenticated Dropbox shared-link download; raises HTTPError on failure."""
     response = _download_with_refresh(url)
     try:
@@ -100,7 +113,13 @@ def stream_shared_link(url):
     return response
 
 
-def fetch_shared_link_range(url, start, end, *, timeout=None):
+def fetch_shared_link_range(
+    url: str,
+    start: int,
+    end: int,
+    *,
+    timeout: float | tuple[float, float] | None = None,
+) -> requests.Response:
     """
     Download the inclusive byte range ``start..end`` of a shared link via the authenticated API.
 
