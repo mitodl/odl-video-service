@@ -31,9 +31,9 @@ from cloudsync.api import (
     create_thumbnail_in_s3,
     move_s3_objects,
     replace_thumbnail_in_s3,
-    upload_lock,
     upload_subtitle_to_s3,
 )
+from cloudsync.exceptions import TransferError
 from cloudsync.conftest import MockBoto, MockClientMC
 from ui.constants import VideoStatus
 from ui.factories import (
@@ -1300,6 +1300,49 @@ def test_exhausted_retries_aborts_multipart_and_raises(s3_client, mocker):
     assert s3_client.list_multipart_uploads(Bucket=BUCKET).get("Uploads", []) == []
 
 
+def test_fetch_range_wrong_byte_count_retries_then_raises(s3_client, mocker):
+    """If the fetcher returns fewer bytes than requested (e.g. Dropbox ignored Range), it retries and raises."""
+    mocker.patch("cloudsync.api.time.sleep")
+    full_body = os.urandom(PART * 2)
+
+    def bad_fetcher(start, end):
+        # Simulates Dropbox returning 200 with the full body instead of the requested range.
+        return SimpleNamespace(
+            status_code=200,
+            content=full_body,
+            headers={"Content-Type": "video/mp4"},
+        )
+
+    with pytest.raises(TransferError, match="expected .* bytes"):
+        make_transfer(s3_client, bad_fetcher, total=PART).run()
+
+
+def test_fetch_range_wrong_byte_count_retries_then_succeeds(s3_client, mocker):
+    """After a wrong-byte-count response, a successful retry with correct bytes completes the upload."""
+    mocker.patch("cloudsync.api.time.sleep")
+    body = os.urandom(2000)
+    full_body = os.urandom(len(body) * 2)
+    calls = []
+
+    def fetcher(start, end):
+        calls.append((start, end))
+        if len(calls) == 1:
+            # First attempt: return wrong size (full body instead of the range).
+            return SimpleNamespace(
+                status_code=200,
+                content=full_body,
+                headers={"Content-Type": "video/mp4"},
+            )
+        return SimpleNamespace(
+            status_code=206,
+            content=body[start : end + 1],
+            headers={"Content-Range": f"bytes {start}-{end}/{len(body)}"},
+        )
+
+    make_transfer(s3_client, fetcher, total=len(body)).run()
+    assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
+
+
 # --- C2: cross-execution resume + size discovery ---
 
 
@@ -1370,37 +1413,37 @@ def test_discovers_total_when_not_provided(s3_client):
     assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
 
 
-# --- upload lock (serializes concurrent runs of the same upload under acks_late) ---
+def test_discovers_total_retries_on_transient_error(s3_client, mocker):
+    """_discover_total retries on RequestException and succeeds on the next attempt."""
+    mocker.patch("cloudsync.api.time.sleep")
+    body = os.urandom(2000)
+    calls = []
+
+    def fetcher(start, end):
+        calls.append((start, end))
+        if len(calls) == 1:
+            raise requests.exceptions.ConnectionError("transient")
+        return SimpleNamespace(
+            status_code=206,
+            content=body[start : end + 1],
+            headers={"Content-Range": f"bytes {start}-{end}/{len(body)}"},
+        )
+
+    make_transfer(s3_client, fetcher, total=None).run()
+    assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
 
 
-class FakeRedis:
-    """Minimal redis stand-in for the lock: set() returns truthy only when it 'acquires'."""
+def test_discovers_total_raises_on_200(s3_client, mocker):
+    """_discover_total raises TransferError if Dropbox returns 200 (ignoring Range) for the discovery probe."""
+    mocker.patch("cloudsync.api.time.sleep")
+    body = os.urandom(2000)
 
-    def __init__(self, acquire=True):
-        self._acquire = acquire
-        self.set_calls = []
-        self.deleted = []
+    def fetcher(start, end):
+        return SimpleNamespace(
+            status_code=200,
+            content=body,
+            headers={"Content-Type": "video/mp4"},
+        )
 
-    def set(self, key, value, nx=False, ex=None):  # noqa: A003
-        self.set_calls.append((key, value, nx, ex))
-        return True if self._acquire else None
-
-    def delete(self, key):
-        self.deleted.append(key)
-
-
-def test_upload_lock_acquired_yields_true_and_releases():
-    """When the lock is acquired it yields True and is released on exit."""
-    redis = FakeRedis(acquire=True)
-    with upload_lock(redis, "lock-key", 60) as acquired:
-        assert acquired is True
-    assert redis.set_calls == [("lock-key", b"1", True, 60)]
-    assert redis.deleted == ["lock-key"]
-
-
-def test_upload_lock_not_acquired_yields_false_and_does_not_release():
-    """When the lock is already held it yields False and does not delete the key."""
-    redis = FakeRedis(acquire=False)
-    with upload_lock(redis, "lock-key", 60) as acquired:
-        assert acquired is False
-    assert redis.deleted == []
+    with pytest.raises(TransferError, match="expected 206"):
+        make_transfer(s3_client, fetcher, total=None).run()

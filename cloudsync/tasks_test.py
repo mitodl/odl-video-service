@@ -2,7 +2,6 @@
 Tests for tasks
 """
 
-import contextlib
 import io
 import json
 import os
@@ -27,7 +26,10 @@ from requests import HTTPError
 from cloudsync import dropbox_api
 from cloudsync.conftest import MockBoto, MockHttpErrorResponse
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
+from redis.exceptions import LockNotOwnedError
+
 from cloudsync.tasks import (
+    SOURCE_TRANSFER_LOCK_TTL_SECONDS,
     VideoTask,
     fail_stuck_uploading_videos,
     monitor_watch_bucket,
@@ -234,14 +236,12 @@ def test_parse_content_metadata_dropbox(api_result, extra_headers, expected):
     assert parse_content_metadata(response) == expected
 
 
-def _lock_yielding(acquired):
-    """Build a drop-in upload_lock context manager that always yields ``acquired``."""
-
-    @contextlib.contextmanager
-    def _cm(*_args, **_kwargs):
-        yield acquired
-
-    return _cm
+def _mock_lock(mocker, *, acquired=True):
+    """Patch the backend Redis client's lock() to return a mock that acquires/not."""
+    lock = mocker.MagicMock()
+    lock.acquire.return_value = acquired
+    mocker.patch.object(stream_to_s3.app.backend.client, "lock", return_value=lock)
+    return lock
 
 
 def _dropbox_metadata(name, size, extra_headers=None):
@@ -282,7 +282,7 @@ def test_happy_path(mocker, video):
     )
     s3 = boto3.client("s3", region_name="us-east-1")
     s3.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
-    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(True))
+    lock = _mock_lock(mocker)
     mocker.patch("celery.app.task.Task.update_state")
 
     stream_to_s3(video.id)
@@ -291,6 +291,9 @@ def test_happy_path(mocker, video):
     assert obj["Body"].read() == body
     assert obj["ContentType"] == "video/mp4"
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOADING
+    # Lock is renewed (reset, not extended) before each range fetch, then released.
+    lock.extend.assert_called_with(SOURCE_TRANSFER_LOCK_TTL_SECONDS, replace_ttl=True)
+    lock.release.assert_called_once()
 
 
 def test_stream_to_s3_uses_transfer_defaults(mocker, video):
@@ -299,7 +302,7 @@ def test_stream_to_s3_uses_transfer_defaults(mocker, video):
         "cloudsync.tasks.dropbox_api.stream_shared_link",
         return_value=_dropbox_metadata("video.mp4", 1000),
     )
-    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(True))
+    _mock_lock(mocker)
     mocker.patch("celery.app.task.Task.update_state")
     transfer = mocker.patch("cloudsync.tasks.S3Transfer")
 
@@ -323,13 +326,34 @@ def test_stream_to_s3_retries_when_locked(mocker, video):
         "cloudsync.tasks.dropbox_api.stream_shared_link",
         return_value=_dropbox_metadata("video.mp4", 1000),
     )
-    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(False))
+    _mock_lock(mocker, acquired=False)
     mocker.patch("celery.app.task.Task.update_state")
     retry = mocker.patch.object(stream_to_s3, "retry", side_effect=Retry)
 
     with pytest.raises(Retry):
         stream_to_s3(video.id)
     retry.assert_called_once()
+
+
+def test_stream_to_s3_retries_when_locked_before_metadata_side_effects(mocker, video):
+    """A duplicate worker does not touch Dropbox or video status when the lock is held."""
+    initial_status = video.status
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    stream_shared_link = mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        side_effect=HTTPError("transient metadata failure"),
+    )
+    _mock_lock(mocker, acquired=False)
+    mock_update = mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    retry = mocker.patch.object(stream_to_s3, "retry", side_effect=Retry)
+
+    with pytest.raises(Retry):
+        stream_to_s3(video.id)
+
+    retry.assert_called_once()
+    stream_shared_link.assert_not_called()
+    mock_update.assert_not_called()
+    assert Video.objects.get(id=video.id).status == initial_status
 
 
 @mock_aws
@@ -340,7 +364,7 @@ def test_stream_to_s3_marks_failed_on_transfer_error(mocker, video):
         "cloudsync.tasks.dropbox_api.stream_shared_link",
         return_value=_dropbox_metadata("video.mp4", 1000),
     )
-    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(True))
+    lock = _mock_lock(mocker)
     mocker.patch("celery.app.task.Task.update_state")
     transfer = mocker.patch("cloudsync.tasks.S3Transfer")
     transfer.return_value.run.side_effect = RuntimeError("boom")
@@ -348,6 +372,29 @@ def test_stream_to_s3_marks_failed_on_transfer_error(mocker, video):
     with pytest.raises(RuntimeError):
         stream_to_s3(video.id)
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOAD_FAILED
+    # Lock is always released, even on error.
+    lock.release.assert_called_once()
+
+
+@mock_aws
+def test_lock_lost_mid_transfer_retries_without_marking_failed(mocker, video):
+    """If the lock TTL expires mid-transfer, the task retries and the video is not marked failed."""
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        return_value=_dropbox_metadata("video.mp4", 1000),
+    )
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.create_bucket(Bucket=settings.VIDEO_S3_BUCKET)
+    lock = _mock_lock(mocker)
+    lock.extend.side_effect = LockNotOwnedError("lock expired")
+    mocker.patch("celery.app.task.Task.update_state")
+    retry = mocker.patch.object(stream_to_s3, "retry", side_effect=Retry)
+
+    with pytest.raises(Retry):
+        stream_to_s3(video.id)
+
+    retry.assert_called_once()
+    assert Video.objects.get(id=video.id).status != VideoStatus.UPLOAD_FAILED
 
 
 def test_upload_failure(mocker, video):
@@ -358,6 +405,7 @@ def test_upload_failure(mocker, video):
         "cloudsync.tasks.dropbox_api.stream_shared_link",
         side_effect=HTTPError("access denied"),
     )
+    _mock_lock(mocker)
     mocker.patch("cloudsync.tasks.boto3")
     with pytest.raises(HTTPError):
         stream_to_s3(video.id)
@@ -374,6 +422,7 @@ def test_upload_auth_failure(mocker, video):
         "cloudsync.tasks.dropbox_api.stream_shared_link",
         side_effect=dropbox_api.DropboxAuthError("token refresh failed"),
     )
+    _mock_lock(mocker)
     mocker.patch("cloudsync.tasks.boto3")
     with pytest.raises(dropbox_api.DropboxAuthError):
         stream_to_s3(video.id)
@@ -397,6 +446,7 @@ def test_upload_network_failure(mocker, video, exc):
         "cloudsync.tasks.dropbox_api.stream_shared_link",
         side_effect=exc,
     )
+    _mock_lock(mocker)
     mocker.patch("cloudsync.tasks.boto3")
     with pytest.raises(type(exc)):
         stream_to_s3(video.id)
@@ -413,6 +463,7 @@ def test_upload_metadata_failure(mocker, video):
         "cloudsync.tasks.dropbox_api.stream_shared_link",
         return_value=SimpleNamespace(headers={}, close=lambda: None),
     )
+    _mock_lock(mocker)
     mocker.patch("cloudsync.tasks.boto3")
     with pytest.raises(KeyError):
         stream_to_s3(video.id)

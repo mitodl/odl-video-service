@@ -1,6 +1,5 @@
 """APIs for coudsync app"""
 
-import contextlib
 import io
 import json
 import math
@@ -9,14 +8,13 @@ import re
 import time
 from pathlib import Path
 from collections import namedtuple
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from datetime import datetime
 from urllib.parse import quote
 from uuid import uuid4
 
 import boto3
 import pytz
-import redis
 import requests
 from boto3.s3.transfer import TransferConfig
 from PIL import ExifTags, Image, ImageOps
@@ -28,7 +26,7 @@ from django.db import transaction
 from mitol.transcoding.api import media_convert_job
 
 import structlog
-from cloudsync.exceptions import TransferError
+from cloudsync.exceptions import TransferAbortedByCaller, TransferError
 from ui.api import get_duration_from_encode_job
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
@@ -58,26 +56,6 @@ S3_TRANSFER_PART_SIZE = 32 * 1024 * 1024
 S3_TRANSFER_MAX_RANGE_ATTEMPTS = 5
 S3_TRANSFER_BACKOFF_BASE_SECONDS = 2
 S3_TRANSFER_BACKOFF_MAX_SECONDS = 60
-
-
-@contextlib.contextmanager
-def upload_lock(redis_client: redis.Redis, lock_key: str, ttl: int) -> Iterator[bool]:
-    """
-    Best-effort distributed lock serializing concurrent runs of the same upload.
-
-    Under ``acks_late`` a long upload can be redelivered to a second worker while the first is
-    still running; this lock keeps them from racing the same multipart upload. Yields ``True``
-    if acquired (and releases on exit), ``False`` otherwise.
-    """
-    acquired = bool(redis_client.set(lock_key, b"1", nx=True, ex=ttl))
-    try:
-        yield acquired
-    finally:
-        if acquired:
-            try:
-                redis_client.delete(lock_key)
-            except Exception:  # noqa: BLE001 - releasing the lock must never mask the result
-                log.warning("failed to release upload lock", lock_key=lock_key)
 
 
 def _s3_uri_to_key(s3_uri: str) -> str:
@@ -989,6 +967,10 @@ class S3Transfer:
                     ]
                 },
             )
+        except TransferAbortedByCaller:
+            # Caller stopped the transfer deliberately (e.g. lock lost to another worker).
+            # Leave the multipart upload intact so the new owner can resume it.
+            raise
         except Exception:
             # Drop already-uploaded parts so they don't linger and incur storage cost.
             # A hard worker kill bypasses this; the bucket lifecycle rule is the backstop.
@@ -1081,7 +1063,13 @@ class S3Transfer:
                     raise TransferError(
                         f"unexpected status {response.status_code} for bytes {start}-{end}"
                     )
-                return response.content
+                data = response.content
+                expected = end - start + 1
+                if len(data) != expected:
+                    raise TransferError(
+                        f"expected {expected} bytes for bytes {start}-{end}, got {len(data)}"
+                    )
+                return data
             except (requests.exceptions.RequestException, TransferError) as exc:
                 last_error = exc
                 if attempt >= self.max_range_attempts:
@@ -1103,13 +1091,29 @@ class S3Transfer:
 
     def _discover_total(self) -> int:
         """Determine the total size from a ranged request's Content-Range header."""
-        response = self.range_fetcher(0, 0)
-        match = re.match(
-            r"bytes \d+-\d+/(\d+)", response.headers.get("Content-Range", "")
-        )
-        if not match:
-            raise TransferError("could not determine total size of source")
-        return int(match.group(1))
+        last_error = None
+        for attempt in range(1, self.max_range_attempts + 1):
+            try:
+                response = self.range_fetcher(0, 0)
+                if response.status_code != 206:
+                    raise TransferError(
+                        f"expected 206 for size discovery, got {response.status_code}"
+                    )
+                match = re.match(
+                    r"bytes \d+-\d+/(\d+)", response.headers.get("Content-Range", "")
+                )
+                if not match:
+                    raise TransferError("could not determine total size of source")
+                return int(match.group(1))
+            except (requests.exceptions.RequestException, TransferError) as exc:
+                last_error = exc
+                if attempt >= self.max_range_attempts:
+                    break
+                log.warning(
+                    "retrying total size discovery", attempt=attempt, error=str(exc)
+                )
+                self._sleep_backoff(attempt)
+        raise last_error
 
     def _report(self, uploaded: int, total: int) -> None:
         """Invoke the progress callback, if any, with cumulative bytes and the total."""

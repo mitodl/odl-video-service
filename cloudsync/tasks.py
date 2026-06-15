@@ -19,9 +19,10 @@ from cloudsync.api import (
     process_watch_file,
     refresh_status,
     transcode_video,
-    upload_lock,
 )
-from cloudsync.exceptions import TranscodeTargetDoesNotExist
+from redis.exceptions import LockNotOwnedError
+
+from cloudsync.exceptions import TranscodeTargetDoesNotExist, TransferAbortedByCaller
 from cloudsync.youtube import API_QUOTA_ERROR_MSG, YouTubeApi
 import structlog
 from ui.constants import StreamSource, VideoStatus, YouTubeStatus
@@ -33,7 +34,7 @@ log = structlog.get_logger(__name__)
 
 SOURCE_TRANSFER_CONNECT_TIMEOUT = 30
 SOURCE_TRANSFER_READ_TIMEOUT = 120
-SOURCE_TRANSFER_LOCK_TTL_SECONDS = 3600
+SOURCE_TRANSFER_LOCK_TTL_SECONDS = 600
 SOURCE_TRANSFER_LOCK_MAX_RETRIES = 15
 SOURCE_TRANSFER_LOCK_RETRY_COUNTDOWN = 60
 
@@ -146,71 +147,78 @@ def stream_to_s3(self, video_id):
     except (Video.DoesNotExist, Video.MultipleObjectsReturned):
         log.error("Exception retrieving video", video_id=video_id)
         raise
-    video.update_status(VideoStatus.UPLOADING)
 
     task_id = self.get_task_id()
+    lock_key = f"stream_to_s3:lock:{video.id}"
+    lock = self.app.backend.client.lock(
+        lock_key, timeout=SOURCE_TRANSFER_LOCK_TTL_SECONDS
+    )
+    if not lock.acquire(blocking=False):
+        log.info("upload already in progress; retrying later", video_id=video.id)
+        raise self.retry(countdown=SOURCE_TRANSFER_LOCK_RETRY_COUNTDOWN)
+
     try:
-        response = dropbox_api.stream_shared_link(video.source_url)
+        video.update_status(VideoStatus.UPLOADING)
+        response = None
         try:
+            response = dropbox_api.stream_shared_link(video.source_url)
             # KeyError/ValueError here mean the Dropbox metadata header is
             # missing or malformed, which is still an upload failure.
             _, content_type, content_length = parse_content_metadata(response)
         finally:
             # Only the metadata headers are needed; the byte ranges are fetched
             # separately, so release this streamed connection immediately.
-            response.close()
+            if response is not None:
+                response.close()
+
+        def progress(uploaded, total):
+            """Report upload progress so the frontend progress bar keeps working."""
+            self.update_state(
+                task_id=task_id,
+                state="PROGRESS",
+                meta={"uploaded": uploaded, "total": total},
+            )
+
+        def fetch_range(start, end):
+            """Fetch ``bytes=start-end`` of the source via the authenticated Dropbox API."""
+            try:
+                lock.extend(SOURCE_TRANSFER_LOCK_TTL_SECONDS, replace_ttl=True)
+            except LockNotOwnedError:
+                # TTL expired and another worker acquired the lock. Stop without
+                # aborting the multipart upload so the new owner can resume it.
+                raise TransferAbortedByCaller("upload lock lost to another worker")
+            return dropbox_api.fetch_shared_link_range(
+                video.source_url,
+                start,
+                end,
+                timeout=(
+                    SOURCE_TRANSFER_CONNECT_TIMEOUT,
+                    SOURCE_TRANSFER_READ_TIMEOUT,
+                ),
+            )
+
+        S3Transfer(
+            bucket=settings.VIDEO_S3_BUCKET,
+            key=video.get_s3_key(),
+            content_type=content_type,
+            total=content_length,
+            s3_client=boto3.client("s3"),
+            range_fetcher=fetch_range,
+            progress_callback=progress,
+        ).run()
+    except TransferAbortedByCaller:
+        # Another worker took the lock; let Celery retry rather than marking failed.
+        log.warning("upload lock lost mid-transfer; retrying", video_id=video.id)
+        raise self.retry(countdown=SOURCE_TRANSFER_LOCK_RETRY_COUNTDOWN)
     except Exception:
         video.update_status(VideoStatus.UPLOAD_FAILED)
         self.update_state(task_id=task_id, state=states.FAILURE)
         raise
-
-    def progress(uploaded, total):
-        """Report upload progress so the frontend progress bar keeps working."""
-        self.update_state(
-            task_id=task_id,
-            state="PROGRESS",
-            meta={"uploaded": uploaded, "total": total},
-        )
-
-    def fetch_range(start, end):
-        """Fetch ``bytes=start-end`` of the source via the authenticated Dropbox API."""
-        return dropbox_api.fetch_shared_link_range(
-            video.source_url,
-            start,
-            end,
-            timeout=(
-                SOURCE_TRANSFER_CONNECT_TIMEOUT,
-                SOURCE_TRANSFER_READ_TIMEOUT,
-            ),
-        )
-
-    def run_transfer():
-        """Run the resumable transfer, marking the video failed on any error."""
+    finally:
         try:
-            S3Transfer(
-                bucket=settings.VIDEO_S3_BUCKET,
-                key=video.get_s3_key(),
-                content_type=content_type,
-                total=content_length,
-                s3_client=boto3.client("s3"),
-                range_fetcher=fetch_range,
-                progress_callback=progress,
-            ).run()
-        except Exception:
-            video.update_status(VideoStatus.UPLOAD_FAILED)
-            self.update_state(task_id=task_id, state=states.FAILURE)
-            raise
-
-    lock_key = f"stream_to_s3:lock:{video.id}"
-    with upload_lock(
-        self.app.backend.client,
-        lock_key,
-        SOURCE_TRANSFER_LOCK_TTL_SECONDS,
-    ) as acquired:
-        if not acquired:
-            log.info("upload already in progress; retrying later", video_id=video.id)
-            raise self.retry(countdown=SOURCE_TRANSFER_LOCK_RETRY_COUNTDOWN)
-        run_transfer()
+            lock.release()
+        except Exception:  # noqa: BLE001 - releasing the lock must never mask the result
+            log.warning("failed to release upload lock", lock_key=lock_key)
 
 
 @shared_task(bind=True, base=VideoTask)
