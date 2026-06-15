@@ -293,6 +293,30 @@ def test_happy_path(mocker, video):
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOADING
 
 
+def test_stream_to_s3_uses_transfer_defaults(mocker, video):
+    """Transfer tuning is owned by S3Transfer constants, not task kwargs/settings."""
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link",
+        return_value=_dropbox_metadata("video.mp4", 1000),
+    )
+    mocker.patch("cloudsync.tasks.upload_lock", _lock_yielding(True))
+    mocker.patch("celery.app.task.Task.update_state")
+    transfer = mocker.patch("cloudsync.tasks.S3Transfer")
+
+    stream_to_s3(video.id)
+
+    assert set(transfer.call_args.kwargs) == {
+        "bucket",
+        "key",
+        "content_type",
+        "total",
+        "s3_client",
+        "range_fetcher",
+        "progress_callback",
+    }
+    transfer.return_value.run.assert_called_once()
+
+
 def test_stream_to_s3_retries_when_locked(mocker, video):
     """When another worker holds the upload lock, the task backs off via retry."""
     mocker.patch(

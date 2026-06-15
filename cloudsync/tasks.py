@@ -31,6 +31,12 @@ from ui.utils import get_bucket, now_in_utc
 
 log = structlog.get_logger(__name__)
 
+SOURCE_TRANSFER_CONNECT_TIMEOUT = 30
+SOURCE_TRANSFER_READ_TIMEOUT = 120
+SOURCE_TRANSFER_LOCK_TTL_SECONDS = 3600
+SOURCE_TRANSFER_LOCK_MAX_RETRIES = 15
+SOURCE_TRANSFER_LOCK_RETRY_COUNTDOWN = 60
+
 
 class VideoTask(Task):
     """
@@ -121,7 +127,7 @@ def fail_stuck_uploading_videos():
     base=VideoTask,
     acks_late=True,
     reject_on_worker_lost=True,
-    max_retries=settings.DROPBOX_TRANSFER_LOCK_MAX_RETRIES,
+    max_retries=SOURCE_TRANSFER_LOCK_MAX_RETRIES,
 )
 def stream_to_s3(self, video_id):
     """
@@ -173,8 +179,8 @@ def stream_to_s3(self, video_id):
             start,
             end,
             timeout=(
-                settings.DROPBOX_TRANSFER_CONNECT_TIMEOUT,
-                settings.DROPBOX_TRANSFER_READ_TIMEOUT,
+                SOURCE_TRANSFER_CONNECT_TIMEOUT,
+                SOURCE_TRANSFER_READ_TIMEOUT,
             ),
         )
 
@@ -188,10 +194,6 @@ def stream_to_s3(self, video_id):
                 total=content_length,
                 s3_client=boto3.client("s3"),
                 range_fetcher=fetch_range,
-                part_size=settings.DROPBOX_TRANSFER_PART_SIZE_MB * settings.MB,
-                max_range_attempts=settings.DROPBOX_TRANSFER_MAX_RANGE_ATTEMPTS,
-                backoff_base=settings.DROPBOX_TRANSFER_BACKOFF_BASE_SECONDS,
-                backoff_max=settings.DROPBOX_TRANSFER_BACKOFF_MAX_SECONDS,
                 progress_callback=progress,
             ).run()
         except Exception:
@@ -203,11 +205,11 @@ def stream_to_s3(self, video_id):
     with upload_lock(
         self.app.backend.client,
         lock_key,
-        settings.DROPBOX_TRANSFER_LOCK_TTL_SECONDS,
+        SOURCE_TRANSFER_LOCK_TTL_SECONDS,
     ) as acquired:
         if not acquired:
             log.info("upload already in progress; retrying later", video_id=video.id)
-            raise self.retry(countdown=settings.DROPBOX_TRANSFER_LOCK_RETRY_COUNTDOWN)
+            raise self.retry(countdown=SOURCE_TRANSFER_LOCK_RETRY_COUNTDOWN)
         run_transfer()
 
 

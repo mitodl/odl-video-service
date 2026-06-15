@@ -28,6 +28,7 @@ from django.db import transaction
 from mitol.transcoding.api import media_convert_job
 
 import structlog
+from cloudsync.exceptions import TransferError
 from ui.api import get_duration_from_encode_job
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
@@ -51,6 +52,32 @@ ParsedVideoAttributes = namedtuple(
     "ParsedVideoAttributes",
     ["prefix", "session", "record_date", "record_date_str", "name"],
 )
+# S3 requires every part except the last to be at least 5 MiB.
+S3_MIN_PART_SIZE = 5 * 1024 * 1024
+S3_TRANSFER_PART_SIZE = 32 * 1024 * 1024
+S3_TRANSFER_MAX_RANGE_ATTEMPTS = 5
+S3_TRANSFER_BACKOFF_BASE_SECONDS = 2
+S3_TRANSFER_BACKOFF_MAX_SECONDS = 60
+
+
+@contextlib.contextmanager
+def upload_lock(redis_client: redis.Redis, lock_key: str, ttl: int) -> Iterator[bool]:
+    """
+    Best-effort distributed lock serializing concurrent runs of the same upload.
+
+    Under ``acks_late`` a long upload can be redelivered to a second worker while the first is
+    still running; this lock keeps them from racing the same multipart upload. Yields ``True``
+    if acquired (and releases on exit), ``False`` otherwise.
+    """
+    acquired = bool(redis_client.set(lock_key, b"1", nx=True, ex=ttl))
+    try:
+        yield acquired
+    finally:
+        if acquired:
+            try:
+                redis_client.delete(lock_key)
+            except Exception:  # noqa: BLE001 - releasing the lock must never mask the result
+                log.warning("failed to release upload lock", lock_key=lock_key)
 
 
 def _s3_uri_to_key(s3_uri: str) -> str:
@@ -876,34 +903,6 @@ def cleanup_and_upsert_video_file(
     )
 
 
-# S3 requires every part except the last to be at least 5 MiB.
-S3_MIN_PART_SIZE = 5 * 1024 * 1024
-
-
-class TransferError(Exception):
-    """Raised when the source returns an unexpected response and cannot be transferred."""
-
-
-@contextlib.contextmanager
-def upload_lock(redis_client: redis.Redis, lock_key: str, ttl: int) -> Iterator[bool]:
-    """
-    Best-effort distributed lock serializing concurrent runs of the same upload.
-
-    Under ``acks_late`` a long upload can be redelivered to a second worker while the first is
-    still running; this lock keeps them from racing the same multipart upload. Yields ``True``
-    if acquired (and releases on exit), ``False`` otherwise.
-    """
-    acquired = bool(redis_client.set(lock_key, b"1", nx=True, ex=ttl))
-    try:
-        yield acquired
-    finally:
-        if acquired:
-            try:
-                redis_client.delete(lock_key)
-            except Exception:  # noqa: BLE001 - releasing the lock must never mask the result
-                log.warning("failed to release upload lock", lock_key=lock_key)
-
-
 class S3Transfer:
     """
     Resumable, bounded-memory transfer of a remote file to S3.
@@ -924,10 +923,6 @@ class S3Transfer:
         total: int | None,
         s3_client,
         range_fetcher: Callable[[int, int], requests.Response],
-        part_size: int,
-        max_range_attempts: int = 5,
-        backoff_base: float = 2,
-        backoff_max: float = 60,
         progress_callback: Callable[[int, int], None] | None = None,
     ):
         self.bucket = bucket
@@ -939,10 +934,10 @@ class S3Transfer:
         # .headers, fetching the inclusive byte range from the source. Auth and
         # transport live in the caller (e.g. cloudsync.dropbox_api); retries live here.
         self.range_fetcher = range_fetcher
-        self.part_size = max(part_size, S3_MIN_PART_SIZE)
-        self.max_range_attempts = max_range_attempts
-        self.backoff_base = backoff_base
-        self.backoff_max = backoff_max
+        self.part_size = max(S3_TRANSFER_PART_SIZE, S3_MIN_PART_SIZE)
+        self.max_range_attempts = S3_TRANSFER_MAX_RANGE_ATTEMPTS
+        self.backoff_base = S3_TRANSFER_BACKOFF_BASE_SECONDS
+        self.backoff_max = S3_TRANSFER_BACKOFF_MAX_SECONDS
         self.progress_callback = progress_callback
 
     def run(self) -> None:

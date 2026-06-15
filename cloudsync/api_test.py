@@ -1152,6 +1152,12 @@ KEY = "abcd1234/video.mp4"
 PART = 5 * 1024 * 1024  # S3 minimum part size, keeps test bodies small
 
 
+@pytest.fixture(autouse=True)
+def use_small_transfer_parts(monkeypatch):
+    """Keep S3Transfer test payloads small while production uses its fixed constant."""
+    monkeypatch.setattr(api, "S3_TRANSFER_PART_SIZE", PART, raising=False)
+
+
 @pytest.fixture
 def s3_client():
     """A moto-backed S3 client with the upload bucket already created."""
@@ -1203,7 +1209,7 @@ class FakeFetcher:
         )
 
 
-def make_transfer(s3_client, fetcher, *, total, part_size=PART, **kwargs):
+def make_transfer(s3_client, fetcher, *, total, progress_callback=None):
     """Construct a transfer with test defaults."""
     return S3Transfer(
         bucket=BUCKET,
@@ -1212,8 +1218,7 @@ def make_transfer(s3_client, fetcher, *, total, part_size=PART, **kwargs):
         total=total,
         s3_client=s3_client,
         range_fetcher=fetcher,
-        part_size=part_size,
-        **kwargs,
+        progress_callback=progress_callback,
     )
 
 
@@ -1277,7 +1282,7 @@ def test_retries_range_on_transient_error_then_succeeds(s3_client, mocker):
     body = os.urandom(2000)
     fetcher = FakeFetcher(body, script=[requests.exceptions.ConnectionError()])
 
-    make_transfer(s3_client, fetcher, total=len(body), max_range_attempts=3).run()
+    make_transfer(s3_client, fetcher, total=len(body)).run()
 
     assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
     sleep.assert_called_once()
@@ -1289,7 +1294,7 @@ def test_exhausted_retries_aborts_multipart_and_raises(s3_client, mocker):
     fetcher = FakeFetcher(always_raise=requests.exceptions.ConnectionError())
 
     with pytest.raises(requests.exceptions.RequestException):
-        make_transfer(s3_client, fetcher, total=PART * 2, max_range_attempts=2).run()
+        make_transfer(s3_client, fetcher, total=PART * 2).run()
 
     # no orphaned in-progress multipart upload is left behind
     assert s3_client.list_multipart_uploads(Bucket=BUCKET).get("Uploads", []) == []
