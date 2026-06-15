@@ -310,6 +310,7 @@ def test_stream_to_s3_uses_transfer_defaults(mocker, video):
 
     assert set(transfer.call_args.kwargs) == {
         "bucket",
+        "checkpoint_callback",
         "key",
         "content_type",
         "total",
@@ -318,6 +319,10 @@ def test_stream_to_s3_uses_transfer_defaults(mocker, video):
         "progress_callback",
     }
     transfer.return_value.run.assert_called_once()
+    transfer.call_args.kwargs["checkpoint_callback"]()
+    stream_to_s3.app.backend.client.lock.return_value.extend.assert_called_with(
+        SOURCE_TRANSFER_LOCK_TTL_SECONDS, replace_ttl=True
+    )
 
 
 def test_stream_to_s3_retries_when_locked(mocker, video):

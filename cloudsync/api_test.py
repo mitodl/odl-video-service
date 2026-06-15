@@ -1199,6 +1199,7 @@ class FakeFetcher:
             action = self._script.pop(0)
             if isinstance(action, Exception):
                 raise action
+            return action
         return SimpleNamespace(
             status_code=206,
             content=self.body[start : end + 1],
@@ -1209,7 +1210,9 @@ class FakeFetcher:
         )
 
 
-def make_transfer(s3_client, fetcher, *, total, progress_callback=None):
+def make_transfer(
+    s3_client, fetcher, *, total, progress_callback=None, checkpoint_callback=None
+):
     """Construct a transfer with test defaults."""
     return S3Transfer(
         bucket=BUCKET,
@@ -1219,6 +1222,7 @@ def make_transfer(s3_client, fetcher, *, total, progress_callback=None):
         s3_client=s3_client,
         range_fetcher=fetcher,
         progress_callback=progress_callback,
+        checkpoint_callback=checkpoint_callback,
     )
 
 
@@ -1300,6 +1304,21 @@ def test_exhausted_retries_aborts_multipart_and_raises(s3_client, mocker):
     assert s3_client.list_multipart_uploads(Bucket=BUCKET).get("Uploads", []) == []
 
 
+def test_fetch_range_closes_response(s3_client, mocker):
+    """A ranged response is closed after its content is read."""
+    body = os.urandom(2000)
+    response = SimpleNamespace(
+        status_code=206,
+        content=body,
+        headers={"Content-Range": f"bytes 0-{len(body) - 1}/{len(body)}"},
+        close=mocker.Mock(),
+    )
+
+    make_transfer(s3_client, lambda _start, _end: response, total=len(body)).run()
+
+    response.close.assert_called_once()
+
+
 def test_fetch_range_wrong_byte_count_retries_then_raises(s3_client, mocker):
     """If the fetcher returns fewer bytes than requested (e.g. Dropbox ignored Range), it retries and raises."""
     mocker.patch("cloudsync.api.time.sleep")
@@ -1340,6 +1359,22 @@ def test_fetch_range_wrong_byte_count_retries_then_succeeds(s3_client, mocker):
         )
 
     make_transfer(s3_client, fetcher, total=len(body)).run()
+    assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
+
+
+def test_multipart_transfer_runs_s3_checkpoints(s3_client):
+    """Multipart uploads invoke checkpoints around S3 upload/complete operations."""
+    body = os.urandom(PART * 2 + 1234)
+    checkpoints = []
+
+    make_transfer(
+        s3_client,
+        FakeFetcher(body),
+        total=len(body),
+        checkpoint_callback=lambda: checkpoints.append(len(checkpoints)),
+    ).run()
+
+    assert len(checkpoints) == 7
     assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
 
 
@@ -1435,6 +1470,22 @@ def test_discovers_total_when_not_provided(s3_client):
 
     assert transfer.total == len(body)
     assert s3_client.get_object(Bucket=BUCKET, Key=KEY)["Body"].read() == body
+
+
+def test_discovers_total_closes_response(s3_client, mocker):
+    """The size-discovery response is closed after reading Content-Range."""
+    body = os.urandom(2000)
+    discovery_response = SimpleNamespace(
+        status_code=206,
+        content=b"x",
+        headers={"Content-Range": f"bytes 0-0/{len(body)}"},
+        close=mocker.Mock(),
+    )
+    fetcher = FakeFetcher(body, script=[discovery_response])
+
+    make_transfer(s3_client, fetcher, total=None).run()
+
+    discovery_response.close.assert_called_once()
 
 
 def test_discovers_total_retries_on_transient_error(s3_client, mocker):

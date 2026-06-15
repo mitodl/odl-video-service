@@ -180,14 +180,18 @@ def stream_to_s3(self, video_id):
                 meta={"uploaded": uploaded, "total": total},
             )
 
-        def fetch_range(start, end):
-            """Fetch ``bytes=start-end`` of the source via the authenticated Dropbox API."""
+        def renew_lock():
+            """Renew the upload lock, aborting this worker if ownership was lost."""
             try:
                 lock.extend(SOURCE_TRANSFER_LOCK_TTL_SECONDS, replace_ttl=True)
             except LockNotOwnedError:
                 # TTL expired and another worker acquired the lock. Stop without
                 # aborting the multipart upload so the new owner can resume it.
                 raise TransferAbortedByCaller("upload lock lost to another worker")
+
+        def fetch_range(start, end):
+            """Fetch ``bytes=start-end`` of the source via the authenticated Dropbox API."""
+            renew_lock()
             return dropbox_api.fetch_shared_link_range(
                 video.source_url,
                 start,
@@ -206,6 +210,7 @@ def stream_to_s3(self, video_id):
             s3_client=boto3.client("s3"),
             range_fetcher=fetch_range,
             progress_callback=progress,
+            checkpoint_callback=renew_lock,
         ).run()
     except TransferAbortedByCaller:
         # Another worker took the lock; let Celery retry rather than marking failed.

@@ -902,6 +902,7 @@ class S3Transfer:
         s3_client,
         range_fetcher: Callable[[int, int], requests.Response],
         progress_callback: Callable[[int, int], None] | None = None,
+        checkpoint_callback: Callable[[], None] | None = None,
     ):
         self.bucket = bucket
         self.key = key
@@ -917,6 +918,7 @@ class S3Transfer:
         self.backoff_base = S3_TRANSFER_BACKOFF_BASE_SECONDS
         self.backoff_max = S3_TRANSFER_BACKOFF_MAX_SECONDS
         self.progress_callback = progress_callback
+        self.checkpoint_callback = checkpoint_callback
 
     def run(self) -> None:
         """Transfer the source to S3, choosing the single-PUT or multipart path by size."""
@@ -930,6 +932,7 @@ class S3Transfer:
     def _put_single(self, total: int) -> None:
         """Upload a small file in one PUT."""
         body = self._fetch_range(0, total - 1)
+        self._checkpoint()
         self.s3.put_object(
             Bucket=self.bucket, Key=self.key, Body=body, ContentType=self.content_type
         )
@@ -948,6 +951,7 @@ class S3Transfer:
                 start = (part_number - 1) * self.part_size
                 end = min(start + self.part_size, total) - 1
                 body = self._fetch_range(start, end)
+                self._checkpoint()
                 response = self.s3.upload_part(
                     Bucket=self.bucket,
                     Key=self.key,
@@ -955,9 +959,11 @@ class S3Transfer:
                     UploadId=upload_id,
                     Body=body,
                 )
+                self._checkpoint()
                 parts[part_number] = response["ETag"]
                 bytes_done += len(body)
                 self._report(bytes_done, total)
+            self._checkpoint()
             self.s3.complete_multipart_upload(
                 Bucket=self.bucket,
                 Key=self.key,
@@ -1060,6 +1066,7 @@ class S3Transfer:
         """
         last_error = None
         for attempt in range(1, self.max_range_attempts + 1):
+            response = None
             try:
                 response = self.range_fetcher(start, end)
                 if response.status_code not in (200, 206):
@@ -1085,6 +1092,11 @@ class S3Transfer:
                     error=str(exc),
                 )
                 self._sleep_backoff(attempt)
+            finally:
+                if response is not None:
+                    close = getattr(response, "close", None)
+                    if close:
+                        close()
         raise last_error
 
     def _sleep_backoff(self, attempt: int) -> None:
@@ -1096,6 +1108,7 @@ class S3Transfer:
         """Determine the total size from a ranged request's Content-Range header."""
         last_error = None
         for attempt in range(1, self.max_range_attempts + 1):
+            response = None
             try:
                 response = self.range_fetcher(0, 0)
                 if response.status_code != 206:
@@ -1116,9 +1129,19 @@ class S3Transfer:
                     "retrying total size discovery", attempt=attempt, error=str(exc)
                 )
                 self._sleep_backoff(attempt)
+            finally:
+                if response is not None:
+                    close = getattr(response, "close", None)
+                    if close:
+                        close()
         raise last_error
 
     def _report(self, uploaded: int, total: int) -> None:
         """Invoke the progress callback, if any, with cumulative bytes and the total."""
         if self.progress_callback:
             self.progress_callback(uploaded, total)
+
+    def _checkpoint(self) -> None:
+        """Invoke the checkpoint callback, if any, around long S3 operations."""
+        if self.checkpoint_callback:
+            self.checkpoint_callback()
