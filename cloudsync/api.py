@@ -1017,52 +1017,49 @@ class S3Transfer:
             for older in existing[1:]:
                 self._abort(older["UploadId"])
             completed = self._completed_parts(chosen)
-            if self._has_size_drift(completed, num_parts):
+            has_size_drift = any(
+                part_number > num_parts
+                or (part_number < num_parts and size != self.part_size)
+                for part_number, (_etag, size) in completed.items()
+            )
+            if has_size_drift:
                 log.info("multipart part size drift; restarting upload", key=self.key)
                 self._abort(chosen)
             else:
                 return chosen, completed
-        return self._create_upload(), {}
+        return (
+            self.s3.create_multipart_upload(
+                Bucket=self.bucket, Key=self.key, ContentType=self.content_type
+            )["UploadId"],
+            {},
+        )
 
     def _existing_uploads_for_key(self) -> list[dict]:
         """In-progress multipart uploads for this exact key, newest first."""
-        response = self.s3.list_multipart_uploads(Bucket=self.bucket, Prefix=self.key)
-        uploads = [u for u in response.get("Uploads", []) if u["Key"] == self.key]
+        pages = self.s3.get_paginator("list_multipart_uploads").paginate(
+            Bucket=self.bucket,
+            Prefix=self.key,
+        )
+        uploads = [
+            upload
+            for page in pages
+            for upload in page.get("Uploads", [])
+            if upload["Key"] == self.key
+        ]
         return sorted(uploads, key=lambda u: u["Initiated"], reverse=True)
 
     def _completed_parts(self, upload_id: str) -> dict[int, tuple[str, int]]:
         """Map of part number -> (etag, size) for parts already uploaded to ``upload_id``."""
         parts = {}
-        marker = 0
-        while True:
-            response = self.s3.list_parts(
-                Bucket=self.bucket,
-                Key=self.key,
-                UploadId=upload_id,
-                PartNumberMarker=marker,
-            )
+        pages = self.s3.get_paginator("list_parts").paginate(
+            Bucket=self.bucket,
+            Key=self.key,
+            UploadId=upload_id,
+        )
+        for response in pages:
             for part in response.get("Parts", []):
                 parts[part["PartNumber"]] = (part["ETag"], part["Size"])
-            if not response.get("IsTruncated"):
-                return parts
-            marker = response["NextPartNumberMarker"]
-
-    def _has_size_drift(
-        self, completed: dict[int, tuple[str, int]], num_parts: int
-    ) -> bool:
-        """True if any non-final completed part no longer matches the configured part size."""
-        for part_number, (_etag, size) in completed.items():
-            if part_number > num_parts:
-                return True
-            if part_number < num_parts and size != self.part_size:
-                return True
-        return False
-
-    def _create_upload(self) -> str:
-        """Create a new multipart upload and return its id."""
-        return self.s3.create_multipart_upload(
-            Bucket=self.bucket, Key=self.key, ContentType=self.content_type
-        )["UploadId"]
+        return parts
 
     def _abort(self, upload_id: str) -> None:
         """Abort a multipart upload, logging (not raising) if the abort itself fails."""
