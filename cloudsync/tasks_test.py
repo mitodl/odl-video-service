@@ -475,6 +475,24 @@ def test_upload_lock_contention_skips(mocker, video, upload_lock):
     assert Video.objects.get(id=video.id).status != VideoStatus.UPLOADING
 
 
+def test_upload_lock_contention_suppresses_chain(mocker, video, upload_lock):
+    """Giving up must not advance the chain, or transcode_from_s3 would run on an
+    object this task never uploaded (and poison the video out of UPLOADING)."""
+    upload_lock.acquire.return_value = False
+    mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+
+    # .run() (not __call__) so self.request is the context we push here; __call__
+    # would push its own bare request on top, mirroring nothing about a real worker.
+    stream_to_s3.push_request(chain=["transcode_from_s3"], callbacks=["cb"])
+    try:
+        result = stream_to_s3.run(video.id)
+        assert result is False
+        assert stream_to_s3.request.chain is None
+        assert stream_to_s3.request.callbacks is None
+    finally:
+        stream_to_s3.pop_request()
+
+
 def test_upload_releases_lock_on_error(mocker, video, upload_lock):
     """The lock is released even when the upload fails."""
     mocker.patch("ui.models.tasks.async_send_notification_email")

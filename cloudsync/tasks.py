@@ -222,6 +222,10 @@ def stream_to_s3(self, video_id):
             "stream_to_s3 skipped; another worker holds the upload lock",
             video_id=video_id,
         )
+        # Don't advance the chain: the worker that owns the upload transcodes via
+        # its own chain. Returning normally would otherwise run transcode_from_s3
+        # on an incomplete object and poison the video out of UPLOADING.
+        self.request.chain = self.request.callbacks = None
         return False
 
     video.update_status(VideoStatus.UPLOADING)
