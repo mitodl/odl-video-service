@@ -1324,7 +1324,7 @@ wheels = [
 
 [[package]]
 name = "odl-video-service"
-version = "0.92.0"
+version = "2026.6.16.1"
 source = { virtual = "." }
 dependencies = [
     { name = "beautifulsoup4" },
