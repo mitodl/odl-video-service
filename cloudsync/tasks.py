@@ -42,32 +42,33 @@ log = structlog.get_logger(__name__)
 
 # botocore transport errors worth retrying — connection drops and read/connect
 # timeouts — as opposed to permanent ones like NoCredentialsError.
-_TRANSIENT_BOTOCORE_ERRORS = (
+TRANSIENT_BOTOCORE_ERRORS = (
     BotoConnectionError,
     ConnectionClosedError,
     HTTPClientError,
 )
 # S3 error codes that are transient even when their HTTP status is not 5xx
 # (e.g. RequestTimeout is a 400).
-_TRANSIENT_S3_ERROR_CODES = frozenset(
+TRANSIENT_S3_ERROR_CODES = frozenset(
     {
         "RequestTimeout",
         "RequestTimeTooSkewed",
-        "SlowDown",
-        "InternalError",
-        "ServiceUnavailable",
         "ThrottlingException",
         "Throttling",
     }
 )
 # Socket/transport errors raised while boto3 streams from response.raw (the
 # urllib3 socket); these are NOT requests.RequestException subclasses.
-_TRANSIENT_STREAM_ERRORS = (
+TRANSIENT_STREAM_ERRORS = (
     ConnectionError,  # builtin: ConnectionReset/BrokenPipe/etc.
     TimeoutError,  # builtin
     Urllib3ProtocolError,
     Urllib3TimeoutError,
 )
+
+UPLOAD_PROGRESS_REFRESH_SECONDS = 60
+# TTL must exceed the refresh interval; doubled for headroom
+UPLOAD_LOCK_TTL = max(120, UPLOAD_PROGRESS_REFRESH_SECONDS * 2)
 
 
 def _is_transient_http_status(status):
@@ -86,16 +87,16 @@ def _should_retry_upload(exc):
         meta = exc.response.get("ResponseMetadata", {})
         if _is_transient_http_status(meta.get("HTTPStatusCode")):
             return True
-        return exc.response.get("Error", {}).get("Code") in _TRANSIENT_S3_ERROR_CODES
+        return exc.response.get("Error", {}).get("Code") in TRANSIENT_S3_ERROR_CODES
     if isinstance(exc, BotoCoreError):
-        return isinstance(exc, _TRANSIENT_BOTOCORE_ERRORS)
+        return isinstance(exc, TRANSIENT_BOTOCORE_ERRORS)
     if isinstance(exc, requests.HTTPError):
         return _is_transient_http_status(getattr(exc.response, "status_code", None))
     if isinstance(exc, requests.exceptions.RequestException):
         # requests-level connection/timeout/chunked-encoding errors are transient.
         # Checked after HTTPError, since HTTPError is also a RequestException.
         return True
-    return isinstance(exc, _TRANSIENT_STREAM_ERRORS)
+    return isinstance(exc, TRANSIENT_STREAM_ERRORS)
 
 
 class VideoTask(Task):
@@ -191,7 +192,7 @@ def _video_upload_lock(app, video_id):
     """
     return app.backend.client.lock(
         f"stream_to_s3:lock:{video_id}",
-        timeout=settings.CLOUDSYNC_STREAM_S3_LOCK_TTL,
+        timeout=UPLOAD_LOCK_TTL,
         thread_local=False,
     )
 
@@ -233,10 +234,6 @@ def stream_to_s3(self, video_id):
     task_id = self.get_task_id()
     response = None
 
-    def mark_failed():
-        video.update_status(VideoStatus.UPLOAD_FAILED)
-        self.update_state(task_id=task_id, state=states.FAILURE)
-
     try:
         response = dropbox_api.stream_shared_link(video.source_url)
         # KeyError/ValueError here mean the Dropbox metadata header is
@@ -263,7 +260,7 @@ def stream_to_s3(self, video_id):
                 should_refresh = (
                     last_progress_refresh is None
                     or (now - last_progress_refresh).total_seconds()
-                    >= settings.CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS
+                    >= UPLOAD_PROGRESS_REFRESH_SECONDS
                 )
                 if should_refresh:
                     last_progress_refresh = now
@@ -322,7 +319,8 @@ def stream_to_s3(self, video_id):
             raise self.retry(exc=exc, countdown=countdown)
         if retryable:
             log.error("stream_to_s3 retries exhausted", video_id=video_id)
-        mark_failed()
+        video.update_status(VideoStatus.UPLOAD_FAILED)
+        self.update_state(task_id=task_id, state=states.FAILURE)
         raise
     finally:
         # Always release the streamed Dropbox connection, including on the

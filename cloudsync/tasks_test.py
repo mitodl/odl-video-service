@@ -28,6 +28,7 @@ from cloudsync.conftest import MockBoto, MockHttpErrorResponse
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.tasks import (
     VideoTask,
+    UPLOAD_LOCK_TTL,
     _should_retry_upload,
     _video_upload_lock,
     fail_stuck_uploading_videos,
@@ -445,7 +446,7 @@ def test_video_upload_lock_uses_ttl_and_key(mocker):
     # s3transfer worker threads, so the token must be shared across threads.
     app.backend.client.lock.assert_called_once_with(
         "stream_to_s3:lock:42",
-        timeout=settings.CLOUDSYNC_STREAM_S3_LOCK_TTL,
+        timeout=UPLOAD_LOCK_TTL,
         thread_local=False,
     )
 

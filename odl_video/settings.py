@@ -369,20 +369,6 @@ CLOUDSYNC_STREAM_S3_RETRY_BACKOFF = get_int("CLOUDSYNC_STREAM_S3_RETRY_BACKOFF",
 CLOUDSYNC_STREAM_S3_RETRY_MAX_BACKOFF = get_int(
     "CLOUDSYNC_STREAM_S3_RETRY_MAX_BACKOFF", 600
 )
-# Minimum seconds between updated_at refreshes during an in-progress upload, so
-# the stuck-upload janitor sees actively streaming uploads as alive.
-CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS = get_int(
-    "CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS", 60
-)
-
-# Per-video lock serializing concurrent stream_to_s3 runs (acks_late can deliver
-# one upload to two workers). A short lease the progress callback heartbeats, so
-# it must exceed the refresh interval and frees itself soon after a worker dies.
-CLOUDSYNC_STREAM_S3_LOCK_TTL = get_int(
-    "CLOUDSYNC_STREAM_S3_LOCK_TTL",
-    max(120, CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS * 2),
-)
-
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CDN_DISTRIBUTION_ID = get_string("VIDEO_CDN_DISTRIBUTION_ID", "")
 VIDEO_S3_BUCKET = AWS_STORAGE_BUCKET_NAME = get_string("VIDEO_S3_BUCKET", "")
