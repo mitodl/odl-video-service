@@ -23,6 +23,7 @@ from celery.utils.time import get_exponential_backoff_interval
 from django.conf import settings
 from django.db import connection
 from googleapiclient.errors import HttpError
+from redis.exceptions import LockError
 from urllib3.exceptions import ProtocolError as Urllib3ProtocolError
 from urllib3.exceptions import TimeoutError as Urllib3TimeoutError
 
@@ -181,6 +182,20 @@ def fail_stuck_uploading_videos():
             log.exception("Failed to update stuck video status", video_id=video.id)
 
 
+def _video_upload_lock(app, video_id):
+    """
+    Non-blocking redis lock serializing concurrent uploads of one video.
+
+    thread_local=False: acquired on the task thread but reacquired/released from
+    s3transfer callback threads.
+    """
+    return app.backend.client.lock(
+        f"stream_to_s3:lock:{video_id}",
+        timeout=settings.CLOUDSYNC_STREAM_S3_LOCK_TTL,
+        thread_local=False,
+    )
+
+
 @shared_task(
     bind=True,
     base=VideoTask,
@@ -200,6 +215,15 @@ def stream_to_s3(self, video_id):
     except (Video.DoesNotExist, Video.MultipleObjectsReturned):
         log.error("Exception retrieving video", video_id=video_id)
         raise
+
+    lock = _video_upload_lock(self.app, video_id)
+    if not lock.acquire(blocking=False):
+        log.debug(
+            "stream_to_s3 skipped; another worker holds the upload lock",
+            video_id=video_id,
+        )
+        return False
+
     video.update_status(VideoStatus.UPLOADING)
 
     task_id = self.get_task_id()
@@ -245,6 +269,15 @@ def stream_to_s3(self, video_id):
                 meta={"uploaded": uploaded, "total": content_length},
             )
             if should_refresh:
+                # Heartbeat the lease so a short TTL survives a long upload.
+                # Best-effort: if already lost, another worker owns it now.
+                try:
+                    lock.reacquire()
+                except LockError:
+                    log.warning(
+                        "stream_to_s3 lost upload lock during heartbeat",
+                        video_id=video.id,
+                    )
                 # Keep updated_at fresh so the fail_stuck_uploading_videos janitor
                 # treats an actively streaming upload as alive rather than stuck.
                 # Throttled (above) to avoid a DB write on every chunk callback.
@@ -292,6 +325,14 @@ def stream_to_s3(self, video_id):
         # successful-upload path where nothing else closes it.
         if response is not None:
             response.close()
+        # Release the upload lock.
+        try:
+            lock.release()
+        except LockError:
+            log.warning(
+                "stream_to_s3 upload lock already released or expired",
+                video_id=video_id,
+            )
 
 
 @shared_task(bind=True, base=VideoTask)

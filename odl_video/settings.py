@@ -375,6 +375,14 @@ CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS = get_int(
     "CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS", 60
 )
 
+# Per-video lock serializing concurrent stream_to_s3 runs (acks_late can deliver
+# one upload to two workers). A short lease the progress callback heartbeats, so
+# it must exceed the refresh interval and frees itself soon after a worker dies.
+CLOUDSYNC_STREAM_S3_LOCK_TTL = get_int(
+    "CLOUDSYNC_STREAM_S3_LOCK_TTL",
+    max(120, CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS * 2),
+)
+
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CDN_DISTRIBUTION_ID = get_string("VIDEO_CDN_DISTRIBUTION_ID", "")
 VIDEO_S3_BUCKET = AWS_STORAGE_BUCKET_NAME = get_string("VIDEO_S3_BUCKET", "")
@@ -508,14 +516,11 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = "UTC"
 CELERY_REDIS_MAX_CONNECTIONS = REDIS_MAX_CONNECTIONS
 
-# acks_late + reject_on_worker_lost on stream_to_s3 rely on broker redelivery if a
-# worker dies mid-upload. visibility_timeout must exceed the longest expected
-# successful upload, or a still-running upload gets redelivered to a second worker.
-# Default 3h. The fail_stuck_uploading_videos janitor is an *idle* timeout
-# (stream_to_s3 refreshes updated_at as it streams), so it only reaps genuinely
-# stalled uploads and does not conflict with this value.
+# Redis-broker redelivery window for unacked messages. The per-video lock (not
+# this value) prevents concurrent double-uploads, so it can be short for faster
+# crash recovery; floor is the longest task ETA/countdown (retry backoffs, ~10m).
 CELERY_BROKER_TRANSPORT_OPTIONS = {
-    "visibility_timeout": get_int("CELERY_BROKER_VISIBILITY_TIMEOUT", 60 * 60 * 3),
+    "visibility_timeout": get_int("CELERY_BROKER_VISIBILITY_TIMEOUT", 60 * 60),
 }
 CELERY_BEAT_SCHEDULE = {
     "update-youtube-statuses": {

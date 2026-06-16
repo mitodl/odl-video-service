@@ -29,6 +29,7 @@ from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.tasks import (
     VideoTask,
     _should_retry_upload,
+    _video_upload_lock,
     fail_stuck_uploading_videos,
     monitor_watch_bucket,
     parse_content_metadata,
@@ -57,6 +58,19 @@ from ui.models import TRANSCODE_PREFIX, Collection, Video, YouTubeVideo
 from ui.utils import now_in_utc
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def upload_lock(mocker):
+    """Replace the redis client backing stream_to_s3's per-video upload lock so
+    tests never touch a real Redis. The lock is acquired by default; lock-specific
+    tests flip ``acquire.return_value`` or assert on release/reacquire."""
+    lock = mocker.MagicMock()
+    lock.acquire.return_value = True
+    client = mocker.MagicMock()
+    client.lock.return_value = lock
+    mocker.patch.object(stream_to_s3.app.backend, "client", client)
+    return lock
 
 
 def _make_uploading_video(updated_hours_ago, created_hours_ago=None):
@@ -403,6 +417,101 @@ def test_stream_to_s3_task_config():
     assert stream_to_s3.acks_late is True
     assert stream_to_s3.reject_on_worker_lost is True
     assert stream_to_s3.max_retries == settings.CLOUDSYNC_STREAM_S3_MAX_RETRIES
+
+
+def _stub_happy_upload(mocker, size=1024):
+    """Wire up dropbox + boto3 mocks for a successful stream_to_s3 run."""
+    fake_response = SimpleNamespace(
+        raw=io.BytesIO(os.urandom(size)),
+        url="https://dropbox.example/file",
+        headers={
+            "Dropbox-API-Result": json.dumps({"name": "video.mp4", "size": size}),
+            "Content-Type": "application/octet-stream",
+        },
+        close=lambda: None,
+    )
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link", return_value=fake_response
+    )
+    mock_boto3 = mocker.patch("cloudsync.tasks.boto3")
+    return mock_boto3.resource.return_value.Bucket.return_value
+
+
+def test_video_upload_lock_uses_ttl_and_key(mocker):
+    """The lock is namespaced per video and leased for the configured TTL."""
+    app = mocker.MagicMock()
+    _video_upload_lock(app, 42)
+    # thread_local=False: acquired in the task thread but reacquired/released from
+    # s3transfer worker threads, so the token must be shared across threads.
+    app.backend.client.lock.assert_called_once_with(
+        "stream_to_s3:lock:42",
+        timeout=settings.CLOUDSYNC_STREAM_S3_LOCK_TTL,
+        thread_local=False,
+    )
+
+
+def test_upload_acquires_and_releases_lock(mocker, video, upload_lock):
+    """A successful upload acquires the lock non-blocking and releases it."""
+    mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    _stub_happy_upload(mocker)
+
+    stream_to_s3(video.id)
+
+    upload_lock.acquire.assert_called_once_with(blocking=False)
+    upload_lock.release.assert_called_once()
+
+
+def test_upload_lock_contention_skips(mocker, video, upload_lock):
+    """If the lock is held, give up immediately: another worker owns the upload."""
+    upload_lock.acquire.return_value = False
+    mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mock_bucket = _stub_happy_upload(mocker)
+
+    result = stream_to_s3(video.id)
+
+    assert result is False
+    mock_bucket.upload_fileobj.assert_not_called()
+    upload_lock.release.assert_not_called()
+    assert Video.objects.get(id=video.id).status != VideoStatus.UPLOADING
+
+
+def test_upload_releases_lock_on_error(mocker, video, upload_lock):
+    """The lock is released even when the upload fails."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch(
+        "cloudsync.tasks.dropbox_api.stream_shared_link", side_effect=_http_error(403)
+    )
+    mocker.patch("cloudsync.tasks.boto3")
+
+    with pytest.raises(HTTPError):
+        stream_to_s3.apply((video.id,), retries=0, throw=True).get()
+
+    upload_lock.release.assert_called_once()
+
+
+def test_lock_release_error_is_swallowed(mocker, video, upload_lock):
+    """A LockError on release (lease lost) must not surface as a task failure."""
+    from redis.exceptions import LockError
+
+    upload_lock.release.side_effect = LockError("not owned")
+    mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    _stub_happy_upload(mocker)
+
+    stream_to_s3(video.id)  # does not raise
+
+
+def test_progress_callback_heartbeats_lock(mocker, video, upload_lock):
+    """The throttled progress callback extends the lock lease (heartbeat)."""
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mock_bucket = _stub_happy_upload(mocker)
+
+    stream_to_s3(video.id)
+
+    callback = mock_bucket.upload_fileobj.call_args.kwargs["Callback"]
+    callback(512)
+    upload_lock.reacquire.assert_called()
 
 
 def test_upload_auth_failure(mocker, video):
