@@ -8854,9 +8854,9 @@ webidl-conversions@^8.0.0:
   integrity sha512-n4W4YFyz5JzOfQeA8oN7dUYpR+MBP3PIUsn2jLjWXwK5ASUzt0Jc/A5sAUZoCYFJRGF0FBKJ+1JjN43rNdsQzA==
 
 webpack-bundle-tracker@^3.2.1:
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/webpack-bundle-tracker/-/webpack-bundle-tracker-3.2.1.tgz#01213c5a7543b9cba15d35127c94bac8cc23c947"
-  integrity sha512-N1bi1Kok4kexXUvez2Jwrq2SpA4xm6JZfqK9L5hXNbe3E5pR4oS7UYgOq1ALapP89oRjHXc3fzblqDqo+zag2A==
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/webpack-bundle-tracker/-/webpack-bundle-tracker-3.2.4.tgz#03818920d3e0f2196fba1da88bf5a9148c9bd664"
+  integrity sha512-ki8+AJ+qH6JFGVTZquy8+fkilPqbExSHqmZOSfFcEGlhodUcc63KfmmVJuUrVqBYn4R+/h3JATUrRO0pXvZ+UA==
 
 webpack-cli@^6.0.1:
   version "6.0.1"
