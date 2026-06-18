@@ -42,6 +42,11 @@ from ui.utils import get_bucket, now_in_utc
 log = structlog.get_logger(__name__)
 
 
+class _UploadLockLost(Exception):
+    """Raised from the progress callback when stream_to_s3 loses its upload lock
+    mid-stream, so the upload aborts before two workers can write the same key."""
+
+
 # botocore transport errors worth retrying — connection drops and read/connect
 # timeouts — as opposed to permanent ones like NoCredentialsError.
 TRANSIENT_BOTOCORE_ERRORS = (
@@ -67,10 +72,6 @@ TRANSIENT_STREAM_ERRORS = (
     Urllib3ProtocolError,
     Urllib3TimeoutError,
 )
-
-UPLOAD_PROGRESS_REFRESH_SECONDS = 60
-# TTL must exceed the refresh interval; doubled for headroom
-UPLOAD_LOCK_TTL = max(120, UPLOAD_PROGRESS_REFRESH_SECONDS * 2)
 
 
 def _is_transient_http_status(status):
@@ -194,7 +195,7 @@ def _video_upload_lock(app, video_id):
     """
     return app.backend.client.lock(
         f"stream_to_s3:lock:{video_id}",
-        timeout=UPLOAD_LOCK_TTL,
+        timeout=settings.CLOUDSYNC_STREAM_S3_LOCK_TTL,
         thread_local=False,
     )
 
@@ -258,29 +259,28 @@ def stream_to_s3(self, video_id):
             now = now_in_utc()
             with progress_lock:
                 total_bytes_uploaded += bytes_uploaded
-                uploaded = total_bytes_uploaded
                 should_refresh = (
                     last_progress_refresh is None
                     or (now - last_progress_refresh).total_seconds()
-                    >= UPLOAD_PROGRESS_REFRESH_SECONDS
+                    >= settings.CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS
                 )
                 if should_refresh:
                     last_progress_refresh = now
             self.update_state(
                 task_id=task_id,
                 state="PROGRESS",
-                meta={"uploaded": uploaded, "total": content_length},
+                meta={"uploaded": total_bytes_uploaded, "total": content_length},
             )
             if should_refresh:
-                # Heartbeat the lease so a short TTL survives a long upload.
-                # Best-effort: if already lost, another worker owns it now.
+                # Heartbeat the lease so a short TTL survives a long upload. If we
+                # can't reacquire, another worker now owns the lock and may be
+                # streaming the same key — abort this upload rather than letting two
+                # workers write concurrently. Redelivery/retry re-enters normal lock
+                # acquisition so exactly one worker proceeds.
                 try:
                     lock.reacquire()
-                except LockError:
-                    log.warning(
-                        "stream_to_s3 lost upload lock during heartbeat",
-                        video_id=video.id,
-                    )
+                except LockError as exc:
+                    raise _UploadLockLost from exc
                 # Keep updated_at fresh so the fail_stuck_uploading_videos janitor
                 # treats an actively streaming upload as alive rather than stuck.
                 # Throttled (above) to avoid a DB write on every chunk callback.
@@ -302,6 +302,16 @@ def stream_to_s3(self, video_id):
             Callback=callback,
             Config=config,
         )
+    except _UploadLockLost:
+        # Another worker owns the lock now and is driving this upload (and its
+        # transcode chain). Give up quietly: don't fail the video, don't retry,
+        # and don't advance the chain, mirroring the can't-acquire path above.
+        log.warning(
+            "stream_to_s3 lost upload lock mid-stream; another worker owns it",
+            video_id=video_id,
+        )
+        self.request.chain = self.request.callbacks = None
+        return False
     except Exception as exc:
         retryable = _should_retry_upload(exc)
         if retryable and self.request.retries < self.max_retries:

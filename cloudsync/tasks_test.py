@@ -28,7 +28,6 @@ from cloudsync.conftest import MockBoto, MockHttpErrorResponse
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.tasks import (
     VideoTask,
-    UPLOAD_LOCK_TTL,
     _should_retry_upload,
     _video_upload_lock,
     fail_stuck_uploading_videos,
@@ -446,7 +445,7 @@ def test_video_upload_lock_uses_ttl_and_key(mocker):
     # s3transfer worker threads, so the token must be shared across threads.
     app.backend.client.lock.assert_called_once_with(
         "stream_to_s3:lock:42",
-        timeout=UPLOAD_LOCK_TTL,
+        timeout=settings.CLOUDSYNC_STREAM_S3_LOCK_TTL,
         thread_local=False,
     )
 
@@ -531,6 +530,35 @@ def test_progress_callback_heartbeats_lock(mocker, video, upload_lock):
     callback = mock_bucket.upload_fileobj.call_args.kwargs["Callback"]
     callback(512)
     upload_lock.reacquire.assert_called()
+
+
+def test_upload_aborts_when_lock_lost_mid_stream(mocker, video, upload_lock):
+    """If the lease is lost mid-upload, abort rather than letting two workers write
+    the same key: no UPLOAD_FAILED, no retry, and the chain is suppressed so the
+    worker that now owns the lock drives transcode."""
+    from redis.exceptions import LockError
+
+    upload_lock.reacquire.side_effect = LockError("lost")
+    mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mock_bucket = _stub_happy_upload(mocker)
+    # Real s3transfer fires Callback from ReadFileChunk.read(), so a raising callback
+    # propagates out of upload_fileobj. Mirror that: invoke the callback inline.
+    mock_bucket.upload_fileobj.side_effect = lambda *a, **kw: kw["Callback"](1024)
+    retry = mocker.patch.object(stream_to_s3, "retry")
+
+    chain = [{"options": {"task_id": "transcode-task-id"}}]
+    stream_to_s3.push_request(chain=chain, callbacks=["cb"])
+    try:
+        result = stream_to_s3.run(video.id)
+        assert result is False
+        assert stream_to_s3.request.chain is None
+        assert stream_to_s3.request.callbacks is None
+    finally:
+        stream_to_s3.pop_request()
+
+    retry.assert_not_called()
+    assert Video.objects.get(id=video.id).status == VideoStatus.UPLOADING
+    upload_lock.release.assert_called_once()
 
 
 def test_upload_auth_failure(mocker, video):
