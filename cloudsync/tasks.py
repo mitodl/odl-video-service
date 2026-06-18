@@ -14,18 +14,20 @@ from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import (
     BotoCoreError,
     ClientError,
+    ConnectionError as BotoConnectionError,
     ConnectionClosedError,
     HTTPClientError,
 )
-from botocore.exceptions import ConnectionError as BotoConnectionError
 from celery import Task, group, shared_task, states
 from celery.utils.time import get_exponential_backoff_interval
 from django.conf import settings
 from django.db import connection
 from googleapiclient.errors import HttpError
 from redis.exceptions import LockError
-from urllib3.exceptions import ProtocolError as Urllib3ProtocolError
-from urllib3.exceptions import TimeoutError as Urllib3TimeoutError
+from urllib3.exceptions import (
+    ProtocolError as Urllib3ProtocolError,
+    TimeoutError as Urllib3TimeoutError,
+)
 
 from cloudsync import dropbox_api
 from cloudsync.api import process_watch_file, refresh_status, transcode_video
