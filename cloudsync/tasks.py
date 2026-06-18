@@ -102,6 +102,29 @@ def _should_retry_upload(exc):
     return isinstance(exc, TRANSIENT_STREAM_ERRORS)
 
 
+def _retry_after_seconds(exc, retries: int) -> int:
+    """Return the Retry-After wait (seconds) from a 429 throttle response, else use exponential backoff."""
+    seconds = None
+    response = getattr(exc, "response", None)
+    if response and getattr(response, "status_code", None) == 429:
+        headers = getattr(response, "headers", None) or {}
+        value = headers.get("Retry-After", None)
+        if value:
+            try:
+                seconds = int(value)
+            except (TypeError, ValueError):
+                log.warning("Invalid Retry-After header value; ignoring")
+    if seconds is None:
+        # No valid Retry-After header; use exponential backoff with jitter.
+        seconds = get_exponential_backoff_interval(
+            factor=settings.CLOUDSYNC_STREAM_S3_RETRY_BACKOFF,
+            retries=retries,
+            maximum=settings.CLOUDSYNC_STREAM_S3_RETRY_MAX_BACKOFF,
+            full_jitter=True,
+        )
+    return seconds
+
+
 class VideoTask(Task):
     """
     Custom Celery Task class for video uploads and transcodes
@@ -315,12 +338,7 @@ def stream_to_s3(self, video_id):
     except Exception as exc:
         retryable = _should_retry_upload(exc)
         if retryable and self.request.retries < self.max_retries:
-            countdown = get_exponential_backoff_interval(
-                factor=settings.CLOUDSYNC_STREAM_S3_RETRY_BACKOFF,
-                retries=self.request.retries,
-                maximum=settings.CLOUDSYNC_STREAM_S3_RETRY_MAX_BACKOFF,
-                full_jitter=True,
-            )
+            countdown = _retry_after_seconds(exc, self.request.retries)
             log.warning(
                 "Retrying stream_to_s3 after transient error",
                 video_id=video_id,

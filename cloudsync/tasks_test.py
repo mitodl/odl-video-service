@@ -358,6 +358,59 @@ def test_upload_transient_error_retries(mocker, video, exc):
     assert Video.objects.get(id=video.id).status == VideoStatus.UPLOADING
 
 
+@pytest.mark.parametrize(
+    "retry_after, expected_countdown",
+    [
+        ("42", 42),  # honored verbatim
+        ("0", 0),  # Dropbox may say retry immediately
+        ("99999", 99999),  # honored verbatim, no upper cap
+    ],
+)
+def test_upload_honors_retry_after_header(
+    mocker, video, retry_after, expected_countdown
+):
+    """A throttle response's Retry-After header (seconds) drives the retry
+    countdown verbatim, instead of exponential backoff."""
+    err = HTTPError("429 throttled")
+    err.response = SimpleNamespace(
+        status_code=429, headers={"Retry-After": retry_after}
+    )
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch("cloudsync.tasks.dropbox_api.stream_shared_link", side_effect=err)
+    mocker.patch("cloudsync.tasks.boto3")
+    backoff = mocker.patch("cloudsync.tasks.get_exponential_backoff_interval")
+    retry = mocker.patch.object(
+        stream_to_s3, "retry", side_effect=celery.exceptions.Retry("retry")
+    )
+    with pytest.raises(celery.exceptions.Retry):
+        stream_to_s3.apply((video.id,), retries=0, throw=True).get()
+    assert retry.call_args.kwargs["countdown"] == expected_countdown
+    # The header overrides exponential backoff entirely.
+    backoff.assert_not_called()
+
+
+def test_upload_ignores_retry_after_for_non_429(mocker, video):
+    """Retry-After is honored only for 429 throttles. A transient 503 carrying the
+    header still uses exponential backoff, not the header value."""
+    err = HTTPError("503 unavailable")
+    err.response = SimpleNamespace(status_code=503, headers={"Retry-After": "42"})
+    mocker.patch("ui.models.tasks.async_send_notification_email")
+    mocker.patch("cloudsync.tasks.stream_to_s3.update_state")
+    mocker.patch("cloudsync.tasks.dropbox_api.stream_shared_link", side_effect=err)
+    mocker.patch("cloudsync.tasks.boto3")
+    backoff = mocker.patch(
+        "cloudsync.tasks.get_exponential_backoff_interval", return_value=7
+    )
+    retry = mocker.patch.object(
+        stream_to_s3, "retry", side_effect=celery.exceptions.Retry("retry")
+    )
+    with pytest.raises(celery.exceptions.Retry):
+        stream_to_s3.apply((video.id,), retries=0, throw=True).get()
+    assert retry.call_args.kwargs["countdown"] == 7
+    backoff.assert_called_once()
+
+
 @pytest.mark.parametrize("exc", TRANSIENT_UPLOAD_ERRORS)
 def test_upload_retries_exhausted(mocker, video, exc):
     """Once retries are exhausted the original error fails the video."""
