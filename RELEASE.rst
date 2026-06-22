@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.94.0
+Version 0.94.0 (Released June 22, 2026)
 --------------
 
 - Add retries to stream_to_s3 upload task (#1517)
