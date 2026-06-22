@@ -1,6 +1,33 @@
 Release Notes
 =============
 
+Version 0.94.0
+--------------
+
+- Add retries to stream_to_s3 upload task (#1517)
+- Update dependency autoprefixer to v10.5.0 (#1509)
+- Update dependency webpack-bundle-tracker to v3.2.4 (#1507)
+- Update dependency video.js to v8.23.7 (#1506)
+- Update dependency sass-loader to v16.0.8 (#1505)
+- Update dependency sanitize-filename to v1.6.4 (#1504)
+- Update dependency mocha to v11.7.6 (#1485)
+- Update dependency css-loader to v7.1.4 (#1484)
+- [pre-commit.ci] pre-commit autoupdate (#1518)
+- Update dependency cryptography to v48 [SECURITY] (#1519)
+- Align docker nodejs versions (#1515)
+- Update codecov/codecov-action digest to fb8b358 (#1482)
+- Update actions/checkout digest to df4cb1c (#1503)
+- Update actions/setup-node digest to 48b55a0 (#1481)
+- Update actions/cache digest to 27d5ce7 (#1440)
+- Update Node.js (#1511)
+- Update astral-sh/setup-uv action to v8 (#1513)
+- Some minor enhancements (#1501)
+- Update postgres Docker tag to v18.4 (#1512)
+- Update nginx Docker tag to v1.31.1 (#1510)
+- Update codecov/codecov-action action to v6 (#1514)
+- Update redis Docker tag to v8.6.3 (#1508)
+- [pre-commit.ci] pre-commit autoupdate (#1490)
+
 Version 0.93.1 (Released June 09, 2026)
 --------------
 
