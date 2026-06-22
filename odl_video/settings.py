@@ -8,6 +8,7 @@ import platform
 from urllib.parse import urljoin
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from mitol.common.envs import import_settings_modules
 from redbeat import RedBeatScheduler
 
@@ -363,6 +364,45 @@ AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
 # Janitor: fail videos stuck in UPLOADING past the threshold so they can be retried.
 STUCK_UPLOADING_THRESHOLD_HOURS = get_int("STUCK_UPLOADING_THRESHOLD_HOURS", 2)
 
+# stream_to_s3 retry tuning
+CLOUDSYNC_STREAM_S3_MAX_RETRIES = get_int("CLOUDSYNC_STREAM_S3_MAX_RETRIES", 2)
+CLOUDSYNC_STREAM_S3_RETRY_BACKOFF = get_int("CLOUDSYNC_STREAM_S3_RETRY_BACKOFF", 60)
+CLOUDSYNC_STREAM_S3_RETRY_MAX_BACKOFF = get_int(
+    "CLOUDSYNC_STREAM_S3_RETRY_MAX_BACKOFF", 600
+)
+# How often the stream_to_s3 progress callback refreshes updated_at (janitor
+# heartbeat) and reacquires its lock lease. Must stay below the janitor threshold
+# so a healthy long-running upload isn't reaped as stuck.
+CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS = get_int(
+    "CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS", 60
+)
+# Redis-broker redelivery window for unacked messages (also applied to
+# CELERY_BROKER_TRANSPORT_OPTIONS below). The per-video lock — not this value —
+# prevents concurrent double-uploads, so it can be short for faster crash
+# recovery; floor is the longest task ETA (retry backoffs, ~10m).
+CELERY_BROKER_VISIBILITY_TIMEOUT = get_int("CELERY_BROKER_VISIBILITY_TIMEOUT", 60 * 60)
+# Per-video upload lock lease. Must exceed the refresh interval so the heartbeat
+# can reacquire before expiry, and must stay below CELERY_BROKER_VISIBILITY_TIMEOUT
+# so a dead worker's lock expires before redelivery (letting the retry re-acquire).
+CLOUDSYNC_STREAM_S3_LOCK_TTL = get_int("CLOUDSYNC_STREAM_S3_LOCK_TTL", 120)
+
+if CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS >= STUCK_UPLOADING_THRESHOLD_HOURS * 3600:
+    raise ImproperlyConfigured(
+        "CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS must be below the janitor "
+        "threshold (STUCK_UPLOADING_THRESHOLD_HOURS) or healthy uploads get reaped."
+    )
+if CLOUDSYNC_STREAM_S3_LOCK_TTL <= CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS:
+    raise ImproperlyConfigured(
+        "CLOUDSYNC_STREAM_S3_LOCK_TTL must exceed "
+        "CLOUDSYNC_UPLOAD_PROGRESS_REFRESH_SECONDS so the lock heartbeat can "
+        "reacquire before the lease expires."
+    )
+if CLOUDSYNC_STREAM_S3_LOCK_TTL >= CELERY_BROKER_VISIBILITY_TIMEOUT:
+    raise ImproperlyConfigured(
+        "CLOUDSYNC_STREAM_S3_LOCK_TTL must stay below "
+        "CELERY_BROKER_VISIBILITY_TIMEOUT so a dead worker's lock expires "
+        "before its task is redelivered."
+    )
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CDN_DISTRIBUTION_ID = get_string("VIDEO_CDN_DISTRIBUTION_ID", "")
 VIDEO_S3_BUCKET = AWS_STORAGE_BUCKET_NAME = get_string("VIDEO_S3_BUCKET", "")
@@ -495,6 +535,10 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TIMEZONE = "UTC"
 CELERY_REDIS_MAX_CONNECTIONS = REDIS_MAX_CONNECTIONS
+
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "visibility_timeout": CELERY_BROKER_VISIBILITY_TIMEOUT,
+}
 CELERY_BEAT_SCHEDULE = {
     "update-youtube-statuses": {
         "task": "cloudsync.tasks.update_youtube_statuses",
