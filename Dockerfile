@@ -7,7 +7,7 @@ RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline && \
     yarn build && \
     node node_modules/webpack/bin/webpack.js --config  webpack.config.prod.js --bail
 
-FROM python:3.13.6-bullseye AS base
+FROM python:3.13.6-bullseye@sha256:f58f33e0563f2ba81c7afe6259cd912f0c33413da93c75cc3a70a941c17afa8c AS base
 # Add package files, install updated node and pip
 WORKDIR /tmp
 
@@ -21,7 +21,7 @@ RUN apt-get update && \
     apt-get purge
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+COPY --from=ghcr.io/astral-sh/uv:latest@sha256:99ea34acedc870ba4ad11a1f540a1c04267c9f30aadc465a94406f52dfda2c36 /uv /uvx /usr/local/bin/
 
 # Add, and run as, non-root user.
 RUN mkdir /src
