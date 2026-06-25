@@ -62,7 +62,7 @@ services:
       sleep 3 &&
       python3 manage.py collectstatic --noinput &&
       python3 manage.py migrate --noinput &&
-      granian --interface wsgi --host 0.0.0.0 --port 8087 --workers 2 odl_video.wsgi:application'
+      exec granian --interface wsgi --host 0.0.0.0 --port 8087 --workers 2 odl_video.wsgi:application'
     ports:
       - "8087:8087"
     links:
