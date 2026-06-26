@@ -45,10 +45,10 @@ dependencies = [
     "structlog>=25.0.0,<26",
     "mitol-django-observability>=2026.1.0",
     "urllib3>=2.0.0,<3",
-    "uwsgi==2.0.31",
     "mitol-django-transcoding>=2026.5.21.1,<2027",
     "django-filter>=25.1,<26",
     "setuptools>=80.0.0,<81",
+    "granian>=2.5.4,<3",
 ]
 
 [dependency-groups]
