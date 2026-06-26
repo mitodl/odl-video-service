@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.94.1
+--------------
+
+- feat: adopt mitodl/ol-python-base:3.13, BuildKit cache mounts, granian (#1502)
+- Update dependency @babel/core to v7.29.6 [SECURITY] (#1521)
+- [pre-commit.ci] pre-commit autoupdate (#1525)
+- Pin dependencies (#1522)
+
 Version 0.94.0 (Released June 22, 2026)
 --------------
 
