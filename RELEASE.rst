@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.94.1
+Version 0.94.1 (Released July 01, 2026)
 --------------
 
 - feat: adopt mitodl/ol-python-base:3.13, BuildKit cache mounts, granian (#1502)
