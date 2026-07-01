@@ -18,6 +18,16 @@ urlpatterns = [
         include(
             [
                 path(
+                    "",
+                    HealthCheckView.as_view(
+                        checks=[
+                            *BASE_CHECKS,
+                            MIGRATIONS_CHECK,
+                            "health_check.contrib.celery.Ping",
+                        ]
+                    ),
+                ),
+                path(
                     "startup/",
                     HealthCheckView.as_view(checks=[*BASE_CHECKS, MIGRATIONS_CHECK]),
                 ),
