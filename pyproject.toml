@@ -49,6 +49,7 @@ dependencies = [
     "django-filter>=25.1,<26",
     "setuptools>=80.0.0,<81",
     "granian>=2.5.4,<3",
+    "django-aqueduct[vault,mitol]",
 ]
 
 [dependency-groups]
@@ -76,6 +77,10 @@ dev = [
 [tool.uv]
 package = false
 default-groups = "all"
+
+[tool.uv.sources]
+# TODO: switch to a published PyPI version once django-aqueduct is released.
+django-aqueduct = { path = "/home/tmacey/code/mit/apps/maintained/django-aqueduct/.claude/worktrees/aqueduct-integration", editable = true }
 
 [tool.uv.build-backend]
 module-root = ""

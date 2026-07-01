@@ -219,6 +219,30 @@ The `web` service runs `uwsgi`, the `watch` service runs webpack in dev mode wit
 | `MAILGUN_URL` / `MAILGUN_KEY` | Email delivery |
 | `ODL_VIDEO_DB_DISABLE_SSL` | Set `True` for local dev without SSL on Postgres |
 
+### Opt-in django-aqueduct settings modules
+
+`odl_video.settings` remains the default and is untouched — nothing below changes
+its behavior. Two additional, opt-in settings modules exist for projects that
+want typed/validated settings via [django-aqueduct](https://github.com/mitodl/django-aqueduct):
+
+- `odl_video.aqueduct_settings` — a Pydantic `BaseSettings` model
+  (`AqueductSettings`) that mirrors `odl_video/settings.py` field-for-field,
+  including its cross-field validation (e.g. the `CLOUDSYNC_*`/`CELERY_BROKER_VISIBILITY_TIMEOUT`
+  timing checks) and derived values (Keycloak URLs, CloudFront/static URLs,
+  the `FEATURE_*` env scan, etc.) as `model_validator`s. It also defines
+  `DevAqueductSettings`, which layers a Vault (OIDC) source on top for local
+  dev without a `.env` file.
+- `odl_video.settings_aqueduct` / `odl_video.settings_aqueduct_dev` — thin
+  shims that call `django_aqueduct.configure_django_settings(...)` with
+  `AqueductSettings` / `DevAqueductSettings` respectively.
+
+Select one by setting `DJANGO_SETTINGS_MODULE=odl_video.settings_aqueduct` (or
+`..._aqueduct_dev`) instead of the default `odl_video.settings`. See the
+comments at the top of `odl_video/aqueduct_settings.py` for known limitations
+(a few settings — e.g. `CELERY_BEAT_SCHEDULE` frequencies, `USE_KEYCLOAK`/`DEBUG`-conditional
+app/middleware lists — are static generation-time snapshots rather than fully
+re-derived).
+
 ---
 
 ## Common Gotchas for AI Agents
