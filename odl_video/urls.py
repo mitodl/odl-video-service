@@ -24,6 +24,7 @@ urlpatterns = [
         lambda request: redirect("/logout/", permanent=False),
         name="admin_logout",
     ),
+    re_path(r"^health/", include("health_check.urls")),
     re_path(r"^admin/", admin.site.urls),
     path("", include("ui.urls")),
     path("", include("cloudsync.urls")),

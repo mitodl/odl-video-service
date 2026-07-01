@@ -84,6 +84,12 @@ INSTALLED_APPS = [
     "hijack.contrib.admin",
     "encrypted_model_fields",
     # "social_django",
+    "health_check",
+    "health_check.cache",
+    "health_check.contrib.migrations",
+    "health_check.contrib.celery_ping",
+    "health_check.contrib.redis",
+    "health_check.contrib.db_heartbeat",
 ]
 
 DISABLE_WEBPACK_LOADER_STATS = get_bool("DISABLE_WEBPACK_LOADER_STATS", False)
@@ -414,9 +420,38 @@ THUMBNAIL_UPLOAD_MAX_HEIGHT = get_int("THUMBNAIL_UPLOAD_MAX_HEIGHT", 360)
 THUMBNAIL_UPLOAD_MAX_SIZE = get_int("THUMBNAIL_UPLOAD_MAX_SIZE", 1024 * 1024)
 VIDEO_S3_WATCH_BUCKET = get_string("VIDEO_S3_WATCH_BUCKET", "")
 
-# server-status
-STATUS_TOKEN = get_string("STATUS_TOKEN", "")
-HEALTH_CHECK = ["CELERY", "REDIS", "POSTGRES", "CERTIFICATE"]
+HEALTH_CHECK = {
+    "SUBSETS": {
+        # The 'startup' subset includes checks that must pass before the application can
+        # start.
+        "startup": [
+            "MigrationsHealthCheck",  # Ensures database migrations are applied.
+            "CacheBackend",  # Verifies the cache backend is operational.
+            "RedisHealthCheck",  # Confirms Redis is reachable and functional.
+            "DatabaseHeartBeatCheck",  # Checks the database connection is alive.
+        ],
+        # The 'liveness' subset includes checks to determine if the application is
+        # running.
+        "liveness": ["DatabaseHeartBeatCheck"],  # Minimal check to ensure the app is
+        # alive.
+        # The 'readiness' subset includes checks to determine if the application is
+        # ready to serve requests.
+        "readiness": [
+            "CacheBackend",  # Ensures the cache is ready for use.
+            "RedisHealthCheck",  # Confirms Redis is ready for use.
+            "DatabaseHeartBeatCheck",  # Verifies the database is ready for queries.
+        ],
+        # The 'full' subset includes all available health checks for a comprehensive
+        # status report.
+        "full": [
+            "MigrationsHealthCheck",  # Ensures database migrations are applied.
+            "CacheBackend",  # Verifies the cache backend is operational.
+            "RedisHealthCheck",  # Confirms Redis is reachable and functional.
+            "DatabaseHeartBeatCheck",  # Checks the database connection is alive.
+            "CeleryPingHealthCheck",  # Verifies Celery workers are responsive.
+        ],
+    }
+}
 
 ADWORDS_CONVERSION_ID = get_string("ADWORDS_CONVERSION_ID", "")
 GA_DIMENSION_CAMERA = get_string("GA_DIMENSION_CAMERA", "")
