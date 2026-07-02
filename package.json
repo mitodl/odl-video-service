@@ -89,7 +89,7 @@
     "redux-hammock": "^0.3.0",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^3.0.0",
-    "rmwc": "^1.4.1",
+    "rmwc": "^14.0.0",
     "sanitize-filename": "^1.6.1",
     "sass": "1.69.5",
     "sass-lint": "^1.10.2",
