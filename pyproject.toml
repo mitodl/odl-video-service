@@ -79,10 +79,6 @@ dev = [
 package = false
 default-groups = "all"
 
-[tool.uv.sources]
-# TODO: switch to a published PyPI version once django-aqueduct is released.
-django-aqueduct = { path = "/home/tmacey/code/mit/apps/maintained/django-aqueduct/.claude/worktrees/aqueduct-integration", editable = true }
-
 [tool.uv.build-backend]
 module-root = ""
 
