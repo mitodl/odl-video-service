@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.94.2
+--------------
+
+- Update dependency social-auth-app-django to v5.6.0 [SECURITY] (#1527)
+- [pre-commit.ci] pre-commit autoupdate (#1529)
+- Replace dead server-status config with django-health-check (#1530)
+
 Version 0.94.1 (Released July 01, 2026)
 --------------
 
