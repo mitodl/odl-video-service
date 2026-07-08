@@ -839,9 +839,9 @@ class AqueductSettings(BaseSettings):
     YT_CLIENT_ID: str = Field()
     YT_CLIENT_SECRET: str = Field()
     YT_REFRESH_TOKEN: str = Field()
-    # Was `get_string("KEYCLOAK_SVC_ADMIN_PASSWORD", "odl-video-secret-2025")`
-    # in odl_video/settings.py — a hardcoded fallback secret committed to git.
-    # Required here; the value must come from the environment / Vault.
+    # In odl_video/settings.py this was read with a hardcoded fallback secret
+    # committed to git. Made required here (no default); the value must come
+    # from the environment / Vault.
     KEYCLOAK_SVC_ADMIN_PASSWORD: str = Field()
 
     # Secret-shaped names are generated with `default=None` (REDACTED), but
@@ -853,7 +853,15 @@ class AqueductSettings(BaseSettings):
     FIELD_ENCRYPTION_KEY: str = Field(default="")
     OPENEDX_API_CLIENT_SECRET: str = Field(default="")
     SENTRY_DSN: str = Field(default="")
-    SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL: str = Field(default="")
+    # Keep the env alias on the override: without it pydantic-settings falls
+    # back to matching the field name (which happens to equal the env var here,
+    # so it still worked), but stating it explicitly matches the generated
+    # field and keeps KEYCLOAK_SERVER_URL / KEYCLOAK_REALM derivation reading
+    # the real env value instead of the dev fallbacks.
+    SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL: str = Field(
+        default="",
+        validation_alias=AliasChoices("SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL"),
+    )
     SOCIAL_AUTH_KEYCLOAK_SECRET: str = Field(default="")
     STATUS_TOKEN: str = Field(default="")
 
@@ -1077,7 +1085,14 @@ class AqueductSettings(BaseSettings):
         # derivations.first_url / derivations.redis_cache
         self.CELERY_BROKER_URL = dv.first_url(self.CELERY_BROKER_URL, self.REDIS_URL)
         self.CELERY_RESULT_BACKEND = self.REDIS_URL
-        self.CELERY_REDBEAT_REDIS_URL = self.CELERY_BROKER_URL
+        # Respect an explicitly-set CELERY_REDBEAT_REDIS_URL (e.g. a distinct
+        # TLS "lowercase literal" URL) instead of silently discarding it; fall
+        # back to the broker URL only when it is unset. Legacy assigned it
+        # unconditionally from CELERY_BROKER_URL, so the unset case is
+        # unchanged and parity holds.
+        self.CELERY_REDBEAT_REDIS_URL = dv.first_url(
+            self.CELERY_REDBEAT_REDIS_URL, self.CELERY_BROKER_URL
+        )
         self.CELERY_REDIS_MAX_CONNECTIONS = self.REDIS_MAX_CONNECTIONS
         self.CELERY_BROKER_TRANSPORT_OPTIONS = {
             "visibility_timeout": self.CELERY_BROKER_VISIBILITY_TIMEOUT,
