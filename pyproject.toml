@@ -50,7 +50,7 @@ dependencies = [
     "django-filter>=25.1,<26",
     "setuptools>=80.0.0,<81",
     "granian>=2.5.4,<3",
-    "django-aqueduct[vault,mitol,derivations]>=0.7.0",
+    "django-aqueduct[vault,mitol,derivations]>=0.8.0",
 ]
 
 [dependency-groups]

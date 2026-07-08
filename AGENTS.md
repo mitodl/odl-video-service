@@ -233,10 +233,17 @@ want typed/validated settings via [django-aqueduct](https://github.com/mitodl/dj
   fields, cross-field timing validation, the conditional
   `INSTALLED_APPS`/`MIDDLEWARE`/`CELERY_BEAT_SCHEDULE` branches, derivations
   from `django_aqueduct.derivations`) live in the
-  `# >>> aqueduct:preserved:*` region and survive regeneration. It also
-  defines `DevAqueductSettings`, which layers a Vault source configured
-  entirely from `VAULT_*` env vars (`django_aqueduct.sources.dev`) on top
-  for local dev without a `.env` file.
+  `# >>> aqueduct:preserved:*` region and survive regeneration. List/dict
+  settings fed non-JSON env values (comma-separated, Python-literal) are
+  parsed by the generator-emitted `NoDecode` + `_aqueduct_decode_*_fields`
+  validators in the `aqueduct:generated:container_decoders` region, so no
+  custom env source is needed. The preserved region also reverts 0.8.0's
+  unconditional `*_URL` → `AnyUrl` promotion back to `str` for these fields:
+  they are injected verbatim into `django.conf.settings` and consumed as
+  strings by Django/redis/celery (and several are relative paths or URL
+  names, which `AnyUrl` rejects). It also defines `DevAqueductSettings`,
+  which layers a Vault source configured entirely from `VAULT_*` env vars
+  (`django_aqueduct.sources.dev`) on top for local dev without a `.env` file.
 - `odl_video.settings_aqueduct` / `odl_video.settings_aqueduct_dev` — thin
   shims that call `django_aqueduct.configure_django_settings(...)` with
   `AqueductSettings` / `DevAqueductSettings` respectively, using the
@@ -250,8 +257,14 @@ Generation and drift/parity checks are configured in `[tool.aqueduct]` in
 `pyproject.toml`:
 
 ```bash
-# Regenerate (merges into managed regions, preserves hand-written code)
-uv run python manage.py generate_aqueduct_settings
+# Regenerate (merges into managed regions, preserves hand-written code).
+# --enrich-usage is a safe static AST scan of app code for `settings.X`
+# comparisons that would justify a Literal/range constraint (currently a
+# no-op for this codebase, but re-run it so new comparison sites are picked
+# up). Do NOT use --enrich-runtime (it imports the settings module).
+uv run python manage.py generate_aqueduct_settings \
+    --enrich-usage ui --enrich-usage cloudsync --enrich-usage mail \
+    --enrich-usage odl_video --enrich-usage techtv2ovs
 # CI drift check for the generated regions
 uv run python manage.py generate_aqueduct_settings --check
 # Parity gate: model vs odl_video.settings under the same environment
