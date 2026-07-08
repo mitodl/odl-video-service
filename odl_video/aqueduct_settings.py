@@ -16,7 +16,7 @@ import platform
 from typing import Annotated, Any
 
 from odl_video.envs import get_int, get_string
-from pydantic import AliasChoices, AnyUrl, Field, field_serializer, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from redbeat import RedBeatScheduler
 
@@ -214,7 +214,7 @@ class AqueductSettings(BaseSettings):
     CELERY_BROKER_TRANSPORT_OPTIONS: Any = Field(
         default=None
     )  # DERIVED: reproduce in a @model_validator (conditional/computed value)
-    CELERY_BROKER_URL: AnyUrl | None = Field(
+    CELERY_BROKER_URL: str | None = Field(
         default=None, validation_alias=AliasChoices("CELERY_BROKER_URL")
     )  # REDACTED: name looks secret-like — set via a source, not here
     CELERY_BROKER_VISIBILITY_TIMEOUT: int = Field(
@@ -355,9 +355,6 @@ class AqueductSettings(BaseSettings):
         default="", validation_alias=AliasChoices("GA_TRACKING_ID")
     )
     GA_VIEW_ID: str = Field(default="", validation_alias=AliasChoices("GA_VIEW_ID"))
-    HEALTH_CHECK: Annotated[list[Any], NoDecode] = Field(
-        default_factory=lambda: ["CELERY", "REDIS", "POSTGRES", "CERTIFICATE"]
-    )
     HIJACK_ALLOW_GET_REQUESTS: bool = Field(default=True)
     HIJACK_INSERT_BEFORE: str = Field(default="</body>", description="Hijack")
     HIJACK_LOGOUT_REDIRECT_URL: str = Field(default="/admin/auth/user")
@@ -382,6 +379,7 @@ class AqueductSettings(BaseSettings):
             "hijack",
             "hijack.contrib.admin",
             "encrypted_model_fields",
+            "health_check",
         ],
     )
     INTERNAL_IPS: Any = Field(
@@ -428,9 +426,9 @@ class AqueductSettings(BaseSettings):
     MAILGUN_RECIPIENT_OVERRIDE: str | None = Field(
         default=None, validation_alias=AliasChoices("MAILGUN_RECIPIENT_OVERRIDE")
     )
-    MAILGUN_URL: AnyUrl | None = Field(
+    MAILGUN_URL: str | None = Field(
         default=None, validation_alias=AliasChoices("MAILGUN_URL")
-    )  # TODO: refine type
+    )
     MANDATORY_SETTINGS: Annotated[list[Any], NoDecode] = Field(
         default_factory=lambda: [
             "AWS_ACCESS_KEY_ID",
@@ -503,11 +501,11 @@ class AqueductSettings(BaseSettings):
     NPLUSONE_LOG_LEVEL: Any = Field(
         default_factory=lambda: logging.ERROR
     )  # TODO: refine type
-    ODL_VIDEO_BASE_URL: AnyUrl | None = Field(
+    ODL_VIDEO_BASE_URL: str | None = Field(
         default=None,
         validation_alias=AliasChoices("ODL_VIDEO_BASE_URL"),
         description="the full URL of the current application is mandatory",
-    )  # TODO: refine type
+    )
     ODL_VIDEO_FEATURES_PREFIX: str = Field(
         default="FEATURE_", validation_alias=AliasChoices("ODL_VIDEO_FEATURES_PREFIX")
     )
@@ -537,7 +535,7 @@ class AqueductSettings(BaseSettings):
     REDIS_MAX_CONNECTIONS: int = Field(
         default=65000, validation_alias=AliasChoices("REDIS_MAX_CONNECTIONS")
     )
-    REDIS_URL: AnyUrl | None = Field(
+    REDIS_URL: str | None = Field(
         default=None,
         validation_alias=AliasChoices("REDIS_URL"),
         description="Celery\nhttp://docs.celeryproject.org/en/latest/django/first-steps-with-django.html\nA note of REDIS_URL and CELERY_BROKER_URL formats for connections utilzing TLS\nFor connections NOT utilzing TLS, setting JUST 'REDIS_URL' should be sufficient.\nFor connections that DO utilize TLS, we need to make some special accomodations\nfor how two different methods of connecting to Redis are used.\nREDIS_URL Format (aka 'uppercase constant')\nrediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=CERT_REQUIRED  #pragma: allowlist secret\nCELERY_BROKER_URL Format (aka 'lowercase literal')\nrediss://<username>:<password>@<redis-hostname>:6379/<DB#>?ssl_cert_reqs=required  #pragma: allowlist secret\nCACHES.REDIS.LOCATION= lowercase literal\nCELERY_RESULT_BACKEND = uppercase constant\nCELERY_REDBEAT_REDIS_URL = lowercase literal",  # noqa: E501
@@ -578,7 +576,7 @@ class AqueductSettings(BaseSettings):
     SESSION_ENGINE: str = Field(
         default="django.contrib.sessions.backends.signed_cookies"
     )
-    SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL: AnyUrl | None = Field(
+    SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL: str | None = Field(
         default=None,
         validation_alias=AliasChoices("SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL"),
     )  # REDACTED: name looks secret-like — set via a source, not here
@@ -629,11 +627,6 @@ class AqueductSettings(BaseSettings):
         default=None
     )  # DERIVED: reproduce in a @model_validator (conditional/computed value)
     STATIC_URL: str = Field(default="/static/")
-    STATUS_TOKEN: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("STATUS_TOKEN"),
-        description="server-status",
-    )  # REDACTED: name looks secret-like — set via a source, not here
     STUCK_UPLOADING_THRESHOLD_HOURS: int = Field(
         default=2,
         validation_alias=AliasChoices("STUCK_UPLOADING_THRESHOLD_HOURS"),
@@ -672,11 +665,11 @@ class AqueductSettings(BaseSettings):
         validation_alias=AliasChoices("ODL_VIDEO_USE_WEBPACK_DEV_SERVER"),
         description="Request files from the webpack dev server",
     )
-    VERSION: str = Field(default="0.94.1")
+    VERSION: str = Field(default="0.94.2")
     VIDEO_CDN_DISTRIBUTION_ID: str = Field(
         default="", validation_alias=AliasChoices("VIDEO_CDN_DISTRIBUTION_ID")
     )
-    VIDEO_CLOUDFRONT_BASE_URL: AnyUrl | None = Field(
+    VIDEO_CLOUDFRONT_BASE_URL: str | None = Field(
         default=None, validation_alias=AliasChoices("VIDEO_CLOUDFRONT_BASE_URL")
     )  # DERIVED: reproduce in a @model_validator (conditional/computed value)
     VIDEO_CLOUDFRONT_DIST: str = Field(
@@ -732,7 +725,6 @@ class AqueductSettings(BaseSettings):
     @field_validator(
         "ALLOWED_HOSTS",
         "CELERY_ACCEPT_CONTENT",
-        "HEALTH_CHECK",
         "INSTALLED_APPS",
         "MANDATORY_SETTINGS",
         "MIDDLEWARE",
@@ -778,21 +770,6 @@ class AqueductSettings(BaseSettings):
         return ast.literal_eval(value)
 
     # <<< aqueduct:generated:container_decoders
-
-    # >>> aqueduct:generated:url_serializers
-    @field_serializer(
-        "CELERY_BROKER_URL",
-        "MAILGUN_URL",
-        "ODL_VIDEO_BASE_URL",
-        "REDIS_URL",
-        "SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL",
-        "VIDEO_CLOUDFRONT_BASE_URL",
-        when_used="always",
-    )
-    def _aqueduct_serialize_url_fields(self, value: object) -> object:
-        return str(value) if value is not None else None
-
-    # <<< aqueduct:generated:url_serializers
 
     # >>> aqueduct:preserved:validators
     # ------------------------------------------------------------------ #
@@ -863,7 +840,6 @@ class AqueductSettings(BaseSettings):
         validation_alias=AliasChoices("SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL"),
     )
     SOCIAL_AUTH_KEYCLOAK_SECRET: str = Field(default="")
-    STATUS_TOKEN: str = Field(default="")
 
     # DATABASE_URL / ODL_VIDEO_DB_CONN_MAX_AGE / ODL_VIDEO_DB_DISABLE_SSL are
     # only ever read inline in odl_video/settings.py while building

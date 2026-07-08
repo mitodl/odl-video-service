@@ -238,16 +238,17 @@ want typed/validated settings via [django-aqueduct](https://github.com/mitodl/dj
   bare `[*]`) are parsed by the generator-emitted `NoDecode` +
   `_aqueduct_decode_*_fields` validators in the
   `aqueduct:generated:container_decoders` region, so no custom env source is
-  needed. `*_URL` fields are promoted to `pydantic.AnyUrl` via opt-in
-  `enrich_url_types` (0.9.0): only fields whose default validates as an
-  absolute URL (or is `None`/derived) are promoted, conventionally-relative
-  Django settings (`STATIC_URL`, `LOGIN_URL`, `*_REDIRECT_URL`) are
-  denylisted, and a generated `field_serializer` (the
-  `aqueduct:generated:url_serializers` region) keeps `model_dump()` emitting
-  `str` so Django/redis/celery consumers are unaffected. It also defines
-  `DevAqueductSettings`, which layers a Vault source configured entirely from
-  `VAULT_*` env vars (`django_aqueduct.sources.dev`) on top for local dev
-  without a `.env` file.
+  needed. `*_URL` fields are kept as plain `str` — `enrich_url_types` is
+  left OFF. 0.9.0's opt-in `pydantic.AnyUrl` promotion serializes top-level
+  fields back to `str`, but a promoted field still holds an `AnyUrl` *object*
+  at runtime, which breaks two consumers here: the in-validator Redis/Celery
+  fallback chain calls `.strip()` on `CELERY_BROKER_URL` (an `AnyUrl` has no
+  `.strip()`), and that value is nested into the `CACHES` dict where the
+  field serializer never reaches, leaving an `AnyUrl` where redis expects a
+  `str`. `str` is the correct type for a Django settings-injection model. It
+  also defines `DevAqueductSettings`, which layers a Vault source configured
+  entirely from `VAULT_*` env vars (`django_aqueduct.sources.dev`) on top for
+  local dev without a `.env` file.
 - `odl_video.settings_aqueduct` / `odl_video.settings_aqueduct_dev` — thin
   shims that call `django_aqueduct.configure_django_settings(...)` with
   `AqueductSettings` / `DevAqueductSettings` respectively, using the
