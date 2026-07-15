@@ -48,7 +48,7 @@ dependencies = [
     "urllib3>=2.0.0,<3",
     "mitol-django-transcoding>=2026.5.21.1,<2027",
     "django-filter>=25.1,<26",
-    "setuptools>=80.0.0,<81",
+    "setuptools>=83,<84",
     "granian>=2.5.4,<3",
 ]
 
