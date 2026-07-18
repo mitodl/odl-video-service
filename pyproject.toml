@@ -50,6 +50,7 @@ dependencies = [
     "django-filter>=25.1,<26",
     "setuptools>=83,<84",
     "granian>=2.5.4,<3",
+    "django-aqueduct[vault,mitol,derivations]>=0.9.0",
 ]
 
 [dependency-groups]
@@ -73,6 +74,71 @@ dev = [
     "ruff>=0.15.5,<0.16",
     "mitol-drf-lint==2026.4.2",
 ]
+
+[tool.aqueduct]
+# Codegen v2: static AST discovery of odl_video/settings.py plus the mitol
+# EnvParser registry. Regenerate (merges into the managed regions of the
+# output file, preserving hand-written code) with:
+#   uv run python manage.py generate_aqueduct_settings
+# CI drift check: add `--check`. Parity against the legacy module:
+#   uv run python manage.py check_aqueduct_settings
+modules = ["odl_video.settings"]
+output = "odl_video/aqueduct_settings.py"
+include_envparser = true
+class_name = "AqueductSettings"
+extra = "allow"
+# enrich_url_types stays OFF: *_URL fields are kept as `str`. 0.9.0's opt-in
+# AnyUrl promotion serializes top-level fields back to str, but a promoted
+# field still holds an AnyUrl *object* at runtime — which breaks two consumers
+# here: (1) the in-validator Redis/Celery fallback chain calls `.strip()` on
+# CELERY_BROKER_URL (AnyUrl has no `.strip()` -> AttributeError at
+# instantiation when CELERY_BROKER_URL is set), and (2) that value is nested
+# into the CACHES dict, where the field_serializer does not reach, leaving an
+# AnyUrl object where redis expects a str. Plain `str` is the correct type for
+# a Django settings-injection model.
+enrich_url_types = false
+parity_model = "odl_video.aqueduct_settings:AqueductSettings"
+parity_legacy = "odl_video.settings"
+# Deliberate divergences, documented in odl_video/aqueduct_settings.py:
+#  - LOGGING / LOG_LEVEL / DJANGO_LOG_LEVEL are injected by
+#    mitol.observability.settings.logging via import_settings_modules in the
+#    settings_aqueduct*.py shims (LOGGING's formatter factory must read
+#    django.conf.settings.DEBUG at logging-configuration time).
+#  - AWS_S3_CUSTOM_DOMAIN: the model always defines it (None when
+#    STATIC_CLOUDFRONT_DIST is unset); the legacy module only defines it
+#    inside the CLOUDFRONT_DIST branch.
+#  - DATABASE_URL / ODL_VIDEO_DB_*: the legacy module reads these inline
+#    while building DEFAULT_DATABASE_CONFIG and never exports them as
+#    settings; the model declares them as fields so they stay configurable
+#    through the source chain.
+# DATABASES / DEFAULT_DATABASE_CONFIG are NO LONGER ignored: 0.9.0's parity
+# check subset-compares dict settings (the model's keys must appear in the
+# legacy dict; Django-injected extras like ATOMIC_REQUESTS are tolerated),
+# and derivations.database_config is SQLite-safe, so they now compare clean.
+parity_ignore = [
+    "LOGGING",
+    "LOG_LEVEL",
+    "DJANGO_LOG_LEVEL",
+    "AWS_S3_CUSTOM_DOMAIN",
+    "DATABASE_URL",
+    "ODL_VIDEO_DB_CONN_MAX_AGE",
+    "ODL_VIDEO_DB_DISABLE_SSL",
+]
+
+[tool.ruff.format]
+# django-aqueduct 0.8.1 made generated output ruff-format-stable and dropped
+# its blanket `# ruff: noqa`, so odl_video/aqueduct_settings.py is now LINTED
+# like any other file (the F-string/import/preserved-region code is covered).
+# One field defeats format-stability: CELERY_BEAT_SCHEDULE's default is a
+# *verbatim* multi-line dict expression captured from odl_video/settings.py
+# (it contains inline get_int(...) reads, so it is an EXPR, not a literal the
+# renderer can re-explode). It is emitted with the original source indentation,
+# which ruff-format re-nests — and because it lives in an
+# `aqueduct:generated:*` region, that reformat would trip the
+# `generate_aqueduct_settings --check` drift gate on every run. Excluding the
+# file from *formatting only* (lint still applies) keeps the generator
+# authoritative while retaining lint coverage.
+exclude = ["odl_video/aqueduct_settings.py"]
 
 [tool.uv]
 package = false
