@@ -1,6 +1,20 @@
 Release Notes
 =============
 
+Version 0.94.3 (Released July 24, 2026)
+--------------
+
+- Update dependency cryptography to v49 (#1548)
+- Update dependency autoprefixer to v10.5.2 (#1542)
+- Update dependency uv_build to >=0.11.26,<0.12.0 (#1546)
+- Update dependency postcss to v8.5.17 (#1543)
+- Update dependency video.js to v8.23.9 (#1544)
+- Update astral-sh/setup-uv action to v8.2.0 (#1545)
+- Update dependency setuptools to v83 [SECURITY] (#1538)
+- [pre-commit.ci] pre-commit autoupdate (#1536)
+- Update dependency httplib2 to >=0.32,<0.33 [SECURITY] (#1537)
+- Update dependency Pillow to v12.3.0 [SECURITY] (#1535)
+
 Version 0.94.2 (Released July 08, 2026)
 --------------
 
