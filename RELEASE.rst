@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.94.3
+Version 0.94.3 (Released July 24, 2026)
 --------------
 
 - Update dependency cryptography to v49 (#1548)
