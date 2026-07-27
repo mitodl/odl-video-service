@@ -28,4 +28,4 @@ def debug_task(self):
     """
     Task for debugging purposes
     """
-    print("Request: {0!r}".format(self.request))
+    print(f"Request: {self.request!r}")

@@ -7,6 +7,7 @@ import re
 from urllib.parse import urljoin
 
 import requests
+import structlog
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -16,7 +17,6 @@ from rest_framework import status
 
 from mail.exceptions import SendBatchException
 from mail.utils import chunks
-import structlog
 
 log = structlog.get_logger(__name__)
 
@@ -54,7 +54,7 @@ class MailgunClient:
         Returns:
             requests.Response: HTTP response
         """
-        mailgun_url = "{}/{}".format(settings.MAILGUN_URL, endpoint)
+        mailgun_url = f"{settings.MAILGUN_URL}/{endpoint}"
         email_params = cls.default_params()
         email_params.update(params)
         # Update 'from' address if sender_name was specified
@@ -207,11 +207,11 @@ def render_email_templates(template_name, context):
         (str, str, str): tuple of the templates for subject, text_body, html_body
     """
     subject_text = render_to_string(
-        "{}/subject.txt".format(template_name), context
+        f"{template_name}/subject.txt", context
     ).rstrip()
 
     context.update({"subject": subject_text})
-    html_text = render_to_string("{}/body.html".format(template_name), context)
+    html_text = render_to_string(f"{template_name}/body.html", context)
 
     # pynliner internally uses bs4, which we can now modify the inlined version into a plaintext version
     # this avoids parsing the body twice in bs4

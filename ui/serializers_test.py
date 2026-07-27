@@ -63,7 +63,7 @@ def test_collection_serializer_validation_fake_admin_lists(mocker):
             raise_exception=True
         )
     assert exc.match(
-        "Group does not exist: {}".format(collection.admin_lists.first().name)
+        f"Group does not exist: {collection.admin_lists.first().name}"
     )
 
 
@@ -82,7 +82,7 @@ def test_collection_serializer_validation_fake_view_lists(mocker):
             raise_exception=True
         )
     assert exc.match(
-        "Group does not exist: {}".format(collection.view_lists.first().name)
+        f"Group does not exist: {collection.view_lists.first().name}"
     )
 
 

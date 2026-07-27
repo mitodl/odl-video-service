@@ -204,7 +204,7 @@ class EncodeJobFactory(DjangoModelFactory):
     content_type = LazyAttribute(
         lambda obj: ContentType.objects.get_for_model(obj.video)
     )
-    message = LazyFunction(lambda: {})
+    message = LazyFunction(dict)
 
     class Meta:
         model = EncodeJob

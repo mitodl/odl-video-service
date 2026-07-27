@@ -46,7 +46,5 @@ class Command(BaseCommand):
         credentials = flow.credentials
 
         self.stdout.write(
-            "YT_ACCESS_TOKEN={}\nYT_REFRESH_TOKEN={}\n".format(
-                credentials.token, credentials.refresh_token
-            )
+            f"YT_ACCESS_TOKEN={credentials.token}\nYT_REFRESH_TOKEN={credentials.refresh_token}\n"
         )

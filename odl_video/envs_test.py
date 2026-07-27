@@ -96,10 +96,7 @@ def test_get_int():
                     get_int(key, 1234)
                 assert ex.value.args[
                     0
-                ] == "Expected value in {key}={value} to be an int".format(
-                    key=key,
-                    value=value,
-                )
+                ] == f"Expected value in {key}={value} to be an int"
 
         assert get_int("missing", "default") == "default"
 
@@ -118,10 +115,7 @@ def test_get_bool():
                     get_bool(key, 1234)
                 assert ex.value.args[
                     0
-                ] == "Expected value in {key}={value} to be a boolean".format(
-                    key=key,
-                    value=value,
-                )
+                ] == f"Expected value in {key}={value} to be a boolean"
 
         assert get_int("missing", "default") == "default"
 
@@ -139,10 +133,7 @@ def test_get_list_of_str():
                     get_list_of_str(key, ["noth", "ing"])
                 assert ex.value.args[
                     0
-                ] == "Expected value in {key}={value} to be a list of str".format(
-                    key=key,
-                    value=value,
-                )
+                ] == f"Expected value in {key}={value} to be a list of str"
 
         assert get_list_of_str("missing", "default") == "default"
 

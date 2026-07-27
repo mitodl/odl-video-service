@@ -88,9 +88,7 @@ def test_video_model_s3keys(video):
     assert s3key is not None
     path = urlparse(video.source_url).path
     _, extension = os.path.splitext(path.split("/")[-1])
-    assert s3key == "{uuid}/video{extension}".format(
-        uuid=video.hexkey, extension=extension
-    )
+    assert s3key == f"{video.hexkey}/video{extension}"
 
 
 def test_get_s3_key_strips_query_string(video):
@@ -108,7 +106,7 @@ def test_video_aws_integration(videofile):
     assert s3_obj.key == videofile.s3_object_key
     s3_url = videofile.s3_url
     assert isinstance(s3_url, str)
-    assert s3_url.startswith("https://{}/".format(settings.AWS_S3_DOMAIN))
+    assert s3_url.startswith(f"https://{settings.AWS_S3_DOMAIN}/")
     cf_url = videofile.cloudfront_url
     assert isinstance(cf_url, str)
     assert cf_url.startswith("https://video-cf.cloudfront.net/")
@@ -121,9 +119,7 @@ def test_video_transcode_key(videofile):
     preset = "pre01"
     assert videofile.video.transcode_key(
         preset
-    ) == "transcoded/{uuid}/video_{preset}".format(
-        uuid=str(videofile.video.hexkey), preset=preset
-    )
+    ) == f"transcoded/{videofile.video.hexkey!s}/video_{preset}"
 
 
 def test_video_status(video):
@@ -416,7 +412,7 @@ def test_download_mp4(encodings, download):
     video = VideoFactory()
     for encoding in encodings:
         VideoFileFactory(
-            video=video, s3_object_key="{}.mp4".format(encoding), encoding=encoding
+            video=video, s3_object_key=f"{encoding}.mp4", encoding=encoding
         )
     if not download:
         assert video.download is None

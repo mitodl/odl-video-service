@@ -4,6 +4,7 @@ Handles permission mapping based on Keycloak groups.
 """
 
 import logging
+
 from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ def assign_user_groups(strategy, details, backend, user=None, *args, **kwargs):
                 f"Successfully updated permissions for user {user.username} - superuser: {user.is_superuser}, staff: {user.is_staff}"
             )
         except Exception as e:
-            logger.error(f"Failed to save user {user.username}: {str(e)}")
+            logger.error(f"Failed to save user {user.username}: {e!s}")
     else:
         logger.debug(f"No permission changes needed for user {user.username}")
 

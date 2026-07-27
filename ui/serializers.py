@@ -11,8 +11,8 @@ from rest_framework.settings import api_settings
 from ui import models
 from ui import permissions as ui_permissions
 from ui.encodings import EncodingNames
-from ui.utils import has_common_lists
 from ui.keycloak_utils import get_keycloak_client
+from ui.utils import has_common_lists
 
 User = get_user_model()
 

@@ -57,9 +57,7 @@ class Command(BaseCommand):
         video_files = list(VideoFile.objects.filter(**filters).all())
         if not video_files:
             raise CommandError(
-                "No HLS-encoded VideoFiles found that match the given parameters ({})".format(
-                    filters
-                )
+                f"No HLS-encoded VideoFiles found that match the given parameters ({filters})"
             )
 
         self.stdout.write("Attempting to post video(s) to edX...")
@@ -78,11 +76,7 @@ class Command(BaseCommand):
             for _, resp in good_responses.items():
                 self.stdout.write(
                     self.style.SUCCESS(
-                        "Video successfully added to edX – VideoFile: {} ({}), edX url: {}".format(
-                            video_file.video.title,
-                            video_file.pk,
-                            resp.url,
-                        )
+                        f"Video successfully added to edX – VideoFile: {video_file.video.title} ({video_file.pk}), edX url: {resp.url}"
                     )
                 )
             for edx_endpoint, resp in bad_responses.items():
@@ -92,11 +86,6 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.ERROR(
                         "Request to add HLS video to edX failed – "
-                        "VideoFile: {} ({}), edX url: {}, API response: {}".format(
-                            video_file.video.title,
-                            video_file.pk,
-                            edx_endpoint.full_api_url,
-                            resp_summary,
-                        )
+                        f"VideoFile: {video_file.video.title} ({video_file.pk}), edX url: {edx_endpoint.full_api_url}, API response: {resp_summary}"
                     )
                 )

@@ -18,8 +18,8 @@ from ui.utils import (
     get_google_analytics_client,
     get_keycloak_client,
     get_video_analytics,
-    has_common_groups,
     group_members,
+    has_common_groups,
     multi_urljoin,
     parse_google_analytics_response,
     partition,
@@ -605,7 +605,7 @@ def test_send_refresh_request(mocker):
     url = "http://test.url"
     mock_post = mocker.patch("ui.utils.requests.post")
     send_refresh_request(url, client_id, client_secret)
-    expected_token_url = "{}/oauth2/access_token/".format(url)
+    expected_token_url = f"{url}/oauth2/access_token/"
     expected_data = {
         "grant_type": "client_credentials",
         "client_id": client_id,

@@ -2,20 +2,21 @@
 ui celery tasks
 """
 
+from itertools import groupby
+
 import celery
+import structlog
 from celery import shared_task
 from django.db.models import Q
 from django.utils import timezone
-from itertools import groupby
 
 from mail.utils import chunks
-import structlog
 from odl_video.celery import app
-from ui.keycloak_utils import KeycloakUser, build_keycloak_manager
-from ui.management.commands.keycloak_command_utils import record_exception
 from ui import api as ovs_api
 from ui.api import update_video_on_edx
 from ui.encodings import EncodingNames
+from ui.keycloak_utils import KeycloakUser, build_keycloak_manager
+from ui.management.commands.keycloak_command_utils import record_exception
 from ui.models import VideoFile
 
 log = structlog.get_logger(__name__)

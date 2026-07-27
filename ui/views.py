@@ -3,14 +3,13 @@
 import json
 from urllib.parse import urlencode
 
+import django_filters.rest_framework
 import structlog
-
 from django.conf import settings
+from django.contrib.auth import get_user_model, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import redirect_to_login
-from django.contrib.auth import logout
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponse
@@ -19,7 +18,6 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
-import django_filters.rest_framework
 from rest_framework import (
     authentication,
     generics,
@@ -37,12 +35,11 @@ from rest_framework.views import APIView
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
 from techtv2ovs.models import TechTVVideo
-from ui import api
+from ui import api, serializers
 from ui import permissions as ui_permissions
-from ui import serializers
-from ui.filters import CollectionFilter, PublicVideoFilter
 from ui.constants import EDX_ADMIN_GROUP, VideoStatus
 from ui.encodings import EncodingNames
+from ui.filters import CollectionFilter, PublicVideoFilter
 from ui.models import (
     Collection,
     CollectionEdxEndpoint,
@@ -54,7 +51,6 @@ from ui.models import (
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import UserSerializer, VideoSerializer
 from ui.tasks import post_collection_videos_to_edx
-
 from ui.templatetags.render_bundle import public_path
 from ui.utils import (
     generate_mock_video_analytics_data,

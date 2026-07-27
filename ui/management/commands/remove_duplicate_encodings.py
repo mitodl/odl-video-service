@@ -31,10 +31,10 @@ or when the transcoding process creates multiple VideoFile records for the same 
 """
 
 from django.core.management.base import BaseCommand
-from django.db.models import Count
 from django.db import transaction
+from django.db.models import Count
 
-from ui.models import Video, VideoFile, Collection
+from ui.models import Collection, Video, VideoFile
 
 
 class Command(BaseCommand):
@@ -66,7 +66,7 @@ class Command(BaseCommand):
             help="Show what would be deleted without actually deleting",
         )
 
-    def handle(self, *args, **options):  # noqa: ARG002
+    def handle(self, *args, **options):
         video_ids = options.get("video_ids", [])
         collection_ids = options.get("collection_ids", [])
         all_videos = options.get("all", False)

@@ -3,7 +3,6 @@ Tests for ui/api.py
 """
 
 from types import SimpleNamespace
-
 from uuid import uuid4
 
 import factory
@@ -64,7 +63,7 @@ def test_process_dropbox_data_happy_path(mocker):
     input_data = {
         "collection": collection.hexkey,
         "files": [
-            {"name": name, "link": "http://example.com/{}".format(name)}
+            {"name": name, "link": f"http://example.com/{name}"}
             for name in (
                 "foo",
                 "bar",
@@ -265,7 +264,7 @@ def test_post_video_to_edx(mocker, reqmocker, edx_api_scenario):
             "POST",
             edx_endpoint.full_api_url,
             headers={
-                "Authorization": "JWT {}".format(edx_endpoint.access_token),
+                "Authorization": f"JWT {edx_endpoint.access_token}",
             },
             status_code=200,
         )
@@ -315,7 +314,7 @@ def test_post_same_video_to_edx(mocker, reqmocker, edx_api_scenario):
             "POST",
             edx_endpoint.full_api_url,
             headers={
-                "Authorization": "JWT {}".format(edx_endpoint.access_token),
+                "Authorization": f"JWT {edx_endpoint.access_token}",
             },
             status_code=400,
         )
@@ -328,7 +327,7 @@ def test_post_same_video_to_edx(mocker, reqmocker, edx_api_scenario):
             "PATCH",
             edx_endpoint.full_api_url + str(edx_api_scenario.video_file_hls.video.key),
             headers={
-                "Authorization": "JWT {}".format(edx_endpoint.access_token),
+                "Authorization": f"JWT {edx_endpoint.access_token}",
             },
             status_code=200,
         )
@@ -400,7 +399,7 @@ def test_post_video_to_edx_bad_resp(mocker, reqmocker, edx_api_scenario):
         "POST",
         collection_endpoint.full_api_url,
         headers={
-            "Authorization": "JWT {}".format(collection_endpoint.access_token),
+            "Authorization": f"JWT {collection_endpoint.access_token}",
         },
         status_code=403,
     )
@@ -426,7 +425,7 @@ def test_update_video_on_edx(
             "PATCH",
             edx_endpoint.full_api_url + str(edx_api_scenario.video_file_hls.video.key),
             headers={
-                "Authorization": "JWT {}".format(edx_endpoint.access_token),
+                "Authorization": f"JWT {edx_endpoint.access_token}",
             },
             status_code=200,
         )
@@ -481,7 +480,7 @@ def test_update_video_on_edx_bad_response(mocker, reqmocker, edx_api_scenario):
         "PATCH",
         video_partial_update_url,
         headers={
-            "Authorization": "JWT {}".format(edx_api_scenario.collection_endpoint),
+            "Authorization": f"JWT {edx_api_scenario.collection_endpoint}",
         },
         status_code=403,
     )
@@ -492,7 +491,7 @@ def test_update_video_on_edx_bad_response(mocker, reqmocker, edx_api_scenario):
     patched_log_exception.assert_called_once()
     assert "Can not update video to edX" == patched_log_exception.call_args[0][0]
     assert list(response.keys())[0] == video_partial_update_url
-    assert getattr(list(response.values())[0], "ok") is False
+    assert list(response.values())[0].ok is False
 
 
 def test_get_duration_from_encode_job():
