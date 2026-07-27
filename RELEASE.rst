@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 0.94.4
+--------------
+
+- Pin dependencies (#1528)
+- Update nginx:1.31.1 Docker digest to 608a100 (#1523)
+- Update actions/cache digest to caa2961 (#1534)
+- Update actions/setup-node digest to 2499707 (#1539)
+- [pre-commit.ci] pre-commit autoupdate (#1550)
+- Update postgres:18.4 Docker digest to 3a82e1f
+
 Version 0.94.3 (Released July 24, 2026)
 --------------
 
