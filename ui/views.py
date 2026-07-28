@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import redirect_to_login
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
@@ -865,7 +865,7 @@ class PotentialCollectionOwners(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            except Exception:
+            except ValidationError:
                 return Response(
                     {"error": f"Invalid collection key format: {collection_key}"},
                     status=status.HTTP_400_BAD_REQUEST,
