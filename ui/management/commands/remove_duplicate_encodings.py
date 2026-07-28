@@ -237,7 +237,9 @@ class Command(BaseCommand):
                                 # Delete the VideoFile (S3 cleanup happens via Django signals)
                                 file_to_delete.delete()
                             duplicates_removed += 1
-                        except Exception as exc:
+                        # Best-effort: report and carry on so one undeletable
+                        # VideoFile does not abandon the rest of the sweep.
+                        except Exception as exc:  # noqa: BLE001
                             self.stderr.write(
                                 self.style.ERROR(
                                     f"  Failed to delete VideoFile ID {file_to_delete.id}: {exc}"
