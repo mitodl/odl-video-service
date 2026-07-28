@@ -30,7 +30,7 @@ FAKE = faker.Factory.create()
 class UserFactory(DjangoModelFactory):
     """Factory for User"""
 
-    username = Sequence(lambda n: "user_%d" % n)
+    username = Sequence(lambda n: f"user_{n}")
     email = FuzzyText(suffix="@example.com")
 
     class Meta:
@@ -61,7 +61,7 @@ class CollectionFactory(DjangoModelFactory):
     description = FAKE.text()
     owner = SubFactory(UserFactory)
     schedule_retranscode = False
-    edx_course_id = Sequence(lambda n: "course-v1:fake+course+%d" % n)
+    edx_course_id = Sequence(lambda n: f"course-v1:fake+course+{n}")
 
     class Meta:
         model = models.Collection
