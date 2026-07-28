@@ -93,9 +93,7 @@ class HasCollectionPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        return not (
-            request.method == "POST" and not is_staff_or_superuser(request.user)
-        )
+        return request.method != "POST" or is_staff_or_superuser(request.user)
 
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
@@ -127,10 +125,8 @@ class IsCollectionOwner(BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
-        if request.user == obj.owner or request.user.is_superuser:
-            return True
         # this should check for keycloak groups as well
-        return False
+        return request.user == obj.owner or request.user.is_superuser
 
 
 class CanUploadToCollection(BasePermission):
