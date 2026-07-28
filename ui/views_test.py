@@ -856,8 +856,8 @@ def test_upload_subtitles(logged_in_apiclient, mocker):
         "s3_object_key": expected_subtitle_key,
         "language_name": "English",
     }
-    for key in expected_data:
-        assert expected_data[key] == response.data[key]
+    for key, value in expected_data.items():
+        assert value == response.data[key]
     assert (
         VideoSubtitle.objects.get(id=response.data["id"]).video.youtube_id
         == yt_video.id
@@ -892,8 +892,8 @@ def test_upload_subtitles_srt(logged_in_apiclient, mocker):
         "s3_object_key": expected_subtitle_key,
         "language_name": "English",
     }
-    for key in expected_data:
-        assert expected_data[key] == response.data[key]
+    for key, value in expected_data.items():
+        assert value == response.data[key]
     assert (
         VideoSubtitle.objects.get(id=response.data["id"]).video.youtube_id
         == yt_video.id
