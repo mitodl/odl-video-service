@@ -146,7 +146,10 @@ class MailgunClient:
                 responses.append(response)
             except ImproperlyConfigured:
                 raise
-            except Exception as exception:
+            # Deliberately broad: every per-batch failure is collected and
+            # re-raised together as SendBatchException below, so one bad batch
+            # does not stop the remaining batches from being sent.
+            except Exception as exception:  # noqa: BLE001
                 exception_pairs.append((emails, exception))
 
         if exception_pairs:
