@@ -2,17 +2,15 @@
 
 import textwrap
 
+import structlog
 from celery import shared_task
 from django.conf import settings
 
 from mail import api
 from mail.api import context_for_video, render_email_templates
 from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
-
-import structlog
-
-from ui.utils import has_common_lists
 from ui.keycloak_utils import get_keycloak_client
+from ui.utils import has_common_lists
 
 log = structlog.get_logger(__name__)
 

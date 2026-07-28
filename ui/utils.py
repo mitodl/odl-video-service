@@ -5,27 +5,25 @@ import itertools
 import json
 import random
 import re
-from typing import List, Dict, Set
 from urllib.parse import urljoin
 
 import boto3
 import pytz
 import requests
+import structlog
 from django.conf import settings
 from google.oauth2.service_account import (
     Credentials as ServiceAccountCredentials,
 )
 from googleapiclient.discovery import build
 
-import structlog
 from ui.exceptions import GoogleAnalyticsException
-
 from ui.keycloak_utils import get_keycloak_client
 
 log = structlog.get_logger(__name__)
 
 
-def query_user_groups(email: str) -> List[str]:
+def query_user_groups(email: str) -> list[str]:
     """
     Get a list of all groups a user is a member of.
 
@@ -39,7 +37,7 @@ def query_user_groups(email: str) -> List[str]:
     return list(set(client.get_user_groups(email)))
 
 
-def _groups_from_social_auth(user) -> Set[str] | None:
+def _groups_from_social_auth(user) -> set[str] | None:
     """Return the user's group names cached in their Keycloak social-auth record.
 
     The Keycloak ``GroupMembershipProtocolMapper`` (``full_path=True``) stores
@@ -66,7 +64,7 @@ def _groups_from_social_auth(user) -> Set[str] | None:
     if not isinstance(raw, list):
         return None
 
-    groups: Set[str] = set()
+    groups: set[str] = set()
     for entry in raw:
         if not isinstance(entry, str):
             continue
@@ -78,7 +76,7 @@ def _groups_from_social_auth(user) -> Set[str] | None:
     return groups if groups else None
 
 
-def user_groups(user) -> Set[str]:
+def user_groups(user) -> set[str]:
     """
     Return the set of Keycloak group names the user belongs to.
 
@@ -99,19 +97,19 @@ def user_groups(user) -> Set[str]:
     # Per-request memoisation: avoid repeated DB (or API) lookups within the
     # same request when multiple permission checks run for the same user.
     if hasattr(user, "_keycloak_groups_cache"):
-        return user._keycloak_groups_cache  # noqa: SLF001
+        return user._keycloak_groups_cache
 
     cached = _groups_from_social_auth(user)
     if cached is not None:
-        user._keycloak_groups_cache = cached  # noqa: SLF001
+        user._keycloak_groups_cache = cached
         return cached
 
     groups = set(query_user_groups(user.email))
-    user._keycloak_groups_cache = groups  # noqa: SLF001
+    user._keycloak_groups_cache = groups
     return groups
 
 
-def group_members(group_name: str) -> List[Dict]:
+def group_members(group_name: str) -> list[dict]:
     """
     Get a list of all users in a given group
 

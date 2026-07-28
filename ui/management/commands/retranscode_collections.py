@@ -1,12 +1,13 @@
 """Management command to schedule retranscoding for collections with multiple filtering options"""
 
 from datetime import datetime
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Count
-from django.utils.dateparse import parse_datetime
 from django.utils import timezone
-from django.conf import settings
+from django.utils.dateparse import parse_datetime
 
 from ui.models import Collection, Video
 

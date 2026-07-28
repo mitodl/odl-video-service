@@ -3,6 +3,7 @@ API methods
 """
 
 import requests
+import structlog
 from celery import chain
 from django.conf import settings
 from django.db import transaction
@@ -10,7 +11,6 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 from cloudsync import tasks
-import structlog
 from ui import models
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
@@ -185,7 +185,7 @@ def post_video_to_edx(video_files):
                     "duration": duration,
                 },
                 headers={
-                    "Authorization": "JWT {}".format(edx_endpoint.access_token),
+                    "Authorization": f"JWT {edx_endpoint.access_token}",
                 },
             )
             if resp.status_code == 400:
@@ -246,7 +246,7 @@ def update_video_on_edx(video_key, encoded_videos=None):
                 video_partial_update_url,
                 json=payload,
                 headers={
-                    "Authorization": "JWT {}".format(edx_endpoint.access_token),
+                    "Authorization": f"JWT {edx_endpoint.access_token}",
                 },
             )
             resp.raise_for_status()

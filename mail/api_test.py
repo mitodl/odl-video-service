@@ -81,9 +81,7 @@ class MailAPITests(TestCase):
         if sender_name is not None:
             self.assertEqual(
                 called_kwargs["data"]["from"],
-                "{sender_name} <{email}>".format(
-                    sender_name=sender_name, email=settings.EMAIL_SUPPORT
-                ),
+                f"{sender_name} <{settings.EMAIL_SUPPORT}>",
             )
         else:
             self.assertEqual(called_kwargs["data"]["from"], settings.EMAIL_SUPPORT)
@@ -120,7 +118,7 @@ class MailAPITests(TestCase):
         """
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         chunked_emails_to = [
             recipient_tuples[i : i + chunk_size]
@@ -160,7 +158,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), {"letter": letter})
+            (f"{letter}@example.com", {"letter": letter})
             for letter in string.ascii_letters
         ]
         chunked_emails_to = [
@@ -222,7 +220,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         assert len(recipient_tuples) == 52
         with override_settings(
@@ -252,7 +250,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         chunked_emails_to = [
             recipient_tuples[i : i + chunk_size]
@@ -300,7 +298,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_pairs = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         with self.assertRaises(ImproperlyConfigured) as ex:
             MailgunClient.send_batch(
@@ -344,9 +342,7 @@ class MailAPITests(TestCase):
         if sender_name is not None:
             self.assertEqual(
                 called_kwargs["data"]["from"],
-                "{sender_name} <{email}>".format(
-                    sender_name=sender_name, email=settings.EMAIL_SUPPORT
-                ),
+                f"{sender_name} <{settings.EMAIL_SUPPORT}>",
             )
         else:
             self.assertEqual(called_kwargs["data"]["from"], settings.EMAIL_SUPPORT)

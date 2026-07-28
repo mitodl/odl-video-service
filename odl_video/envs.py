@@ -48,10 +48,7 @@ def get_bool(name, default):
         return False
 
     raise EnvironmentVariableParseException(
-        "Expected value in {name}={value} to be a boolean".format(
-            name=name,
-            value=value,
-        )
+        f"Expected value in {name}={value} to be a boolean"
     )
 
 
@@ -75,10 +72,7 @@ def get_int(name, default):
         parsed_value = int(value)
     except ValueError as ex:
         raise EnvironmentVariableParseException(
-            "Expected value in {name}={value} to be an int".format(
-                name=name,
-                value=value,
-            )
+            f"Expected value in {name}={value} to be an int"
         ) from ex
 
     return parsed_value
@@ -101,10 +95,7 @@ def get_list_of_str(name, default):
         return default
 
     parse_exception = EnvironmentVariableParseException(
-        "Expected value in {name}={value} to be a list of str".format(
-            name=name,
-            value=value,
-        )
+        f"Expected value in {name}={value} to be a list of str"
     )
 
     try:

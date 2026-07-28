@@ -40,7 +40,7 @@ settings_file = args.settings_file
 config = ConfigParser(interpolation=ExtendedInterpolation())
 try:
     config.read(settings_file)
-except IOError:
+except OSError:
     sys.exit("[-] Failed to read settings file")
 
 # Configure logbook logging
@@ -107,7 +107,7 @@ def verify_s3_bucket_exists(s3_bucket_name):
         objects in bucket otherwise error and exit on any issues trying
         to list objects in bucket.
     """
-    ls_s3_bucket_cmd = "aws s3api head-bucket --bucket {}".format(s3_bucket_name)
+    ls_s3_bucket_cmd = f"aws s3api head-bucket --bucket {s3_bucket_name}"
     try:
         subprocess.run(
             ls_s3_bucket_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -167,7 +167,7 @@ def notify_slack_channel(slack_message):
             },
         )
     except (requests.exceptions.RequestException, NameError) as err:
-        logger.warn("Failed to notify slack channel with following error: {}", err)
+        logger.warning("Failed to notify slack channel with following error: {}", err)
 
 
 def sync_local_to_s3(
@@ -189,9 +189,7 @@ def sync_local_to_s3(
             f"computer: *{computer_name}*"
         )
         sys.exit("[-] Nothing to sync. Folder empty")
-    s3_sync_cmd = 'aws s3 sync {} s3://{} > "{}"'.format(
-        local_video_records_done_folder, s3_bucket_name, s3_sync_result_file
-    )
+    s3_sync_cmd = f'aws s3 sync {local_video_records_done_folder} s3://{s3_bucket_name} > "{s3_sync_result_file}"'
     try:
         cmd_output = subprocess.run(
             s3_sync_cmd,

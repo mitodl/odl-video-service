@@ -325,15 +325,13 @@ CLOUDFRONT_KEY_ID = get_string("CLOUDFRONT_KEY_ID", "")
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CLOUDFRONT_BASE_URL = get_string(
     "VIDEO_CLOUDFRONT_BASE_URL",
-    "https://{}.cloudfront.net/".format(VIDEO_CLOUDFRONT_DIST),
+    f"https://{VIDEO_CLOUDFRONT_DIST}.cloudfront.net/",
 )
 
 CLOUDFRONT_DIST = get_string("STATIC_CLOUDFRONT_DIST", None)
 if CLOUDFRONT_DIST:
-    STATIC_URL = urljoin(
-        "https://{dist}.cloudfront.net".format(dist=CLOUDFRONT_DIST), STATIC_URL
-    )
-    AWS_S3_CUSTOM_DOMAIN = "{dist}.cloudfront.net".format(dist=CLOUDFRONT_DIST)
+    STATIC_URL = urljoin(f"https://{CLOUDFRONT_DIST}.cloudfront.net", STATIC_URL)
+    AWS_S3_CUSTOM_DOMAIN = f"{CLOUDFRONT_DIST}.cloudfront.net"
 
 AWS_ACCESS_KEY_ID = get_string("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = get_string("AWS_SECRET_ACCESS_KEY", "")

@@ -547,7 +547,7 @@ def test_collection_viewset_detail_404(logged_in_apiclient, collection_key, logg
     client, _ = logged_in_apiclient
     if not logged_in:
         client.logout()
-    response = client.get("/collections/{}".format(collection_key))
+    response = client.get(f"/collections/{collection_key}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -1304,7 +1304,7 @@ def test_videos_pagination(mocker, logged_in_apiclient):
     result = client.get(url)
     assert len(result.data["results"]) == min(page_size, len(videos))
     for i in range(1, 3):
-        paged_url = url + "?page={}".format(i)
+        paged_url = url + f"?page={i}"
         result = client.get(paged_url)
         assert len(result.data["results"]) == min(
             page_size, max(0, len(videos) - page_size * (i - 1))
@@ -1330,7 +1330,7 @@ def test_videos_pagination_constrain_collection(mocker, logged_in_apiclient):
     expected_videos = videos_by_collection_key[target_collection.hexkey]
     assert len(result.data["results"]) == min(page_size, len(expected_videos))
     for i in range(1, 3):
-        paged_url = url + "?page={}".format(i)
+        paged_url = url + f"?page={i}"
         result = client.get(paged_url)
         assert len(result.data["results"]) == min(
             page_size, max(0, len(expected_videos) - page_size * (i - 1))
@@ -1345,14 +1345,14 @@ def test_videos_default_ordering(mocker, logged_in_apiclient):
     collection = CollectionFactory(owner=user)
     VideoFactory.create_batch(10, collection=collection)
     url = reverse("models-api:video-list")
-    p1_response = client.get("{}?page=1".format(url))
+    p1_response = client.get(f"{url}?page=1")
     assert len(p1_response.data["results"]) == 5
     for i in range(4):
         current_video_date = p1_response.data["results"][i]["created_at"]
         next_video_date = p1_response.data["results"][i + 1]["created_at"]
         assert current_video_date >= next_video_date
 
-    p2_response = client.get("{}?page=2".format(url))
+    p2_response = client.get(f"{url}?page=2")
     last_entry_data = p1_response.data["results"][-1]["created_at"]
     first_entry_data = p2_response.data["results"][0]["created_at"]
     assert last_entry_data >= first_entry_data
@@ -1371,14 +1371,14 @@ def test_videos_ordering(mocker, logged_in_apiclient, field):
     collection = CollectionFactory(owner=user)
     VideoFactory.create_batch(10, collection=collection)
     url = reverse("models-api:video-list")
-    p1_response = client.get("{}?page=1&ordering={}".format(url, field))
+    p1_response = client.get(f"{url}?page=1&ordering={field}")
     assert len(p1_response.data["results"]) == 5
     for i in range(4):
         assert (
             p1_response.data["results"][i][field].lower()
             <= p1_response.data["results"][i + 1][field].lower()
         )
-    p2_response = client.get("{}?page=2&ordering={}".format(url, field))
+    p2_response = client.get(f"{url}?page=2&ordering={field}")
     assert (
         p1_response.data["results"][-1][field].lower()
         <= p2_response.data["results"][0][field].lower()
@@ -1403,7 +1403,7 @@ def test_collection_pagination(mocker, logged_in_apiclient):
     result = client.get(url)
     assert len(result.data["results"]) == min(page_size, len(collections))
     for i in range(1, 3):
-        paged_url = url + "?page={}".format(i)
+        paged_url = url + f"?page={i}"
         result = client.get(paged_url)
         assert len(result.data["results"]) == min(
             page_size, max(0, len(collections) - page_size * (i - 1))
@@ -1418,14 +1418,14 @@ def test_collection_ordering(mocker, logged_in_apiclient, field):
     client, user = logged_in_apiclient
     CollectionFactory.create_batch(10, owner=user)
     url = reverse("models-api:collection-list")
-    p1_response = client.get("{}?page=1&ordering={}".format(url, field))
+    p1_response = client.get(f"{url}?page=1&ordering={field}")
     assert len(p1_response.data["results"]) == 5
     for i in range(4):
         assert (
             p1_response.data["results"][i][field].lower()
             <= p1_response.data["results"][i + 1][field].lower()
         )
-    p2_response = client.get("{}?page=2&ordering={}".format(url, field))
+    p2_response = client.get(f"{url}?page=2&ordering={field}")
     assert (
         p1_response.data["results"][-1][field].lower()
         <= p2_response.data["results"][0][field].lower()

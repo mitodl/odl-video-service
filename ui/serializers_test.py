@@ -62,9 +62,7 @@ def test_collection_serializer_validation_fake_admin_lists(mocker):
         serializers.CollectionSerializer(data=serialized_data).is_valid(
             raise_exception=True
         )
-    assert exc.match(
-        "Group does not exist: {}".format(collection.admin_lists.first().name)
-    )
+    assert exc.match(f"Group does not exist: {collection.admin_lists.first().name}")
 
 
 def test_collection_serializer_validation_fake_view_lists(mocker):
@@ -81,9 +79,7 @@ def test_collection_serializer_validation_fake_view_lists(mocker):
         serializers.CollectionSerializer(data=serialized_data).is_valid(
             raise_exception=True
         )
-    assert exc.match(
-        "Group does not exist: {}".format(collection.view_lists.first().name)
-    )
+    assert exc.match(f"Group does not exist: {collection.view_lists.first().name}")
 
 
 def test_collection_serializer_validate_title():

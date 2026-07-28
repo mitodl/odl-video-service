@@ -1,10 +1,11 @@
 """Management command to sync video keys with edX"""
 
+import uuid
 from datetime import datetime
 from urllib.parse import urlencode
+
 import requests
 from django.core.management.base import BaseCommand
-import uuid
 
 from ui.models import Collection, Video
 

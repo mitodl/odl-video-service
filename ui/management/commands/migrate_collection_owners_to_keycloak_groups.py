@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from django.core.management.base import BaseCommand, CommandError
 
-from ui.models import Collection
 from ui.management.commands.keycloak_command_utils import (
     add_keycloak_arguments,
     build_keycloak_manager,
@@ -25,6 +24,7 @@ from ui.management.commands.keycloak_command_utils import (
     print_summary,
     record_exception,
 )
+from ui.models import Collection
 
 
 def get_owner_admin_group_pairs(limit_groups=None):
@@ -81,7 +81,7 @@ class Command(BaseCommand):
         try:
             manager = build_keycloak_manager(keycloak_config)
             manager.get_groups()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise CommandError(f"Failed to connect to Keycloak: {exc}") from exc
 
         limit_groups = parse_comma_list(options.get("limit_groups"))

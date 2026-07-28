@@ -4,11 +4,11 @@ Permissions for ui app
 
 import uuid
 
+import structlog
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
-import structlog
 from ui.models import Collection
 from ui.utils import has_common_lists
 
@@ -148,8 +148,6 @@ class CanUploadToCollection(BasePermission):
         try:
             uuid.UUID(collection_key)
         except ValueError as exc:
-            raise ValidationError(
-                "wrong UUID format for {}".format(collection_key)
-            ) from exc
+            raise ValidationError(f"wrong UUID format for {collection_key}") from exc
         collection = Collection.objects.filter(key=collection_key)
         return len(collection) > 0 and has_admin_permission(collection.first(), request)
