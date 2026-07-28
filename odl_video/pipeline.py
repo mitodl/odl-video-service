@@ -66,7 +66,10 @@ def assign_user_groups(strategy, details, backend, user=None, *args, **kwargs):
             logger.debug(
                 f"Successfully updated permissions for user {user.username} - superuser: {user.is_superuser}, staff: {user.is_staff}"
             )
-        except Exception as e:
+        # Deliberately broad: this runs inside the social-auth login pipeline, so
+        # a failed privilege sync must be logged rather than allowed to lock the
+        # user out of signing in.
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to save user {user.username}: {e!s}")
     else:
         logger.debug(f"No permission changes needed for user {user.username}")
