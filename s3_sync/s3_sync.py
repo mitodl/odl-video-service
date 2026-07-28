@@ -75,8 +75,8 @@ def verify_local_folders_exist():
     """
     for folder in config["Paths"].values():
         if not os.path.exists(folder):
-            logger.error("Missing folder: ", folder)
-            sys.exit("[-] Missing folder: ", folder)
+            logger.error("Missing folder: {}", folder)
+            sys.exit(f"[-] Missing folder: {folder}")
 
 
 def verify_aws_cli_installed(aws_cli_binary):
@@ -224,7 +224,7 @@ def move_files_to_synced_folder(
         operation.
     """
     if not os.path.exists(s3_sync_result_file):
-        logger.warning("Could not find S3 sync results file", s3_sync_result_file)
+        logger.warning("Could not find S3 sync results file {}", s3_sync_result_file)
         sys.exit("[-] Could not find S3 sync results file")
     with open(s3_sync_result_file, encoding="utf-8") as file_name:
         s3_sync_result_data = file_name.read()
@@ -239,8 +239,8 @@ def move_files_to_synced_folder(
                 f"lecutre capture computer *{computer_name}* to S3: \n"
                 f"`{file_name}`"
             )
-        except OSError as err:
-            logger.exception("Failed to copy or remove local file", err)
+        except OSError:
+            logger.exception("Failed to copy or remove local file {}", file_name)
 
 
 def main():

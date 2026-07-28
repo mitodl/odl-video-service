@@ -94,6 +94,10 @@ ignore = [
 # Tests legitimately assert on bare Exception and use naive datetimes in
 # parametrize data.
 "*_test.py" = ["B017", "DTZ001"]
+# This standalone script logs through logbook, whose Logger formats with
+# str.format-style "{}" placeholders. PLE1205 counts printf-style "%s"
+# placeholders and so reports every correct brace-style call as an error.
+"s3_sync/s3_sync.py" = ["PLE1205"]
 
 [build-system]
 requires = ["uv_build>=0.11.26,<0.12.0"]
