@@ -39,9 +39,7 @@ class UtilTests(unittest.TestCase):
         """
         count = 113
         input_range = range(count)
-        chunk_output = []
-        for chunk in chunks(input_range, chunk_size=10):
-            chunk_output.append(chunk)
+        chunk_output = list(chunks(input_range, chunk_size=10))
         assert len(chunk_output) == ceil(113 / 10)
 
         range_list = []
