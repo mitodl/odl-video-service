@@ -530,7 +530,10 @@ def parse_lecture_video_filename(filename):
     else:
         prefix, recording_date_str, _, _, session = matches.groups()
         try:
-            record_date = datetime.strptime(recording_date_str, "%Y%b%d")
+            # A lecture-capture filename encodes a bare calendar date with no
+            # timezone, and the value is only ever strftime'd into a video
+            # title, so there is no correct tzinfo to attach here.
+            record_date = datetime.strptime(recording_date_str, "%Y%b%d")  # noqa: DTZ007
         except ValueError:
             record_date = None
     return ParsedVideoAttributes(
@@ -841,7 +844,9 @@ def cleanup_and_upsert_video_file(
                     s3_object_key=vf.s3_object_key,
                 )
                 vf.delete()
-            except Exception as exc:
+            # Best-effort cleanup: one failed delete must not abort the rest of
+            # the loop or the update_or_create below.
+            except Exception as exc:  # noqa: BLE001
                 log.error(
                     "Failed to delete duplicate VideoFile",
                     video_id=video.id,
