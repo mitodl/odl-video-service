@@ -46,16 +46,17 @@ repos:
           - --exclude-files
           - "config/keycloak/*"
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.22"
+    rev: "v0.16.0"
     hooks:
-      - id: ruff-format
-        exclude: migrations/
-      - id: ruff
+      # ruff-check runs first: its fixes can leave lines that need reformatting,
+      # so ruff-format must have the last word.
+      - id: ruff-check
         exclude: migrations/
         types_or: [python, pyi]
         args:
-          - --extend-ignore=D1
           - --fix
+      - id: ruff-format
+        exclude: migrations/
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1
     hooks:

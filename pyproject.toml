@@ -70,7 +70,7 @@ dev = [
     "pytest-pep8>=1.0.6,<2",
     "requests-mock>=1.10.0,<2",
     "semantic-version>=2.10.0,<3",
-    "ruff>=0.15.5,<0.16",
+    "ruff>=0.16,<0.17",
     "mitol-drf-lint==2026.4.2",
 ]
 
@@ -80,6 +80,20 @@ default-groups = "all"
 
 [tool.uv.build-backend]
 module-root = ""
+
+[tool.ruff.lint]
+# ruff 0.16 expanded its default rule set from 59 rules to 413. We adopt those
+# defaults rather than pinning the old set, with the exceptions below.
+ignore = [
+    # Django idiom: ModelAdmin/Model/FilterSet class attributes such as
+    # `list_display`, `readonly_fields` and `Meta.fields` are mutable by design.
+    "RUF012",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests legitimately assert on bare Exception and use naive datetimes in
+# parametrize data.
+"*_test.py" = ["B017", "DTZ001"]
 
 [build-system]
 requires = ["uv_build>=0.11.26,<0.12.0"]
