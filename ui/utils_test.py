@@ -274,7 +274,7 @@ def test_has_common_groups(mocker):
     Test that has_common_groups returns the correct boolean value
     """
     mock_user_groups = mocker.patch("ui.utils.user_groups")
-    mock_user_groups.return_value = set(["a", "b"])
+    mock_user_groups.return_value = {"a", "b"}
     user = factories.UserFactory()
     assert has_common_groups(user, ["b", "c"]) is True
     assert has_common_groups(user, ["c"]) is False

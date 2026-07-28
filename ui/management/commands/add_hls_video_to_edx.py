@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 "Please provide --video-file-id or --video-title, not both"
             )
 
-        filters = dict(encoding=EncodingNames.HLS)
+        filters = {"encoding": EncodingNames.HLS}
         if options["video_file_id"]:
             filters["pk"] = options["video_file_id"]
         else:
@@ -73,7 +73,7 @@ class Command(BaseCommand):
                 for endpoint, resp in response_dict.items()
                 if endpoint not in good_responses
             }
-            for _, resp in good_responses.items():
+            for resp in good_responses.values():
                 self.stdout.write(
                     self.style.SUCCESS(
                         f"Video successfully added to edX – VideoFile: {video_file.video.title} ({video_file.pk}), edX url: {resp.url}"

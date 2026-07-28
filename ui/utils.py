@@ -327,8 +327,8 @@ def parse_google_analytics_response(ga_response):
             times.add(time_)
             channels.add(channel)
     return {
-        "times": sorted(list(times)),
-        "channels": sorted(list(channels)),
+        "times": sorted(times),
+        "channels": sorted(channels),
         "is_multichannel": is_multichannel,
         "views_at_times": views_at_times,
     }
@@ -347,8 +347,8 @@ def generate_mock_video_analytics_data(n=24, seed=42):
         for t in times
     }
     return {
-        "times": sorted(list(times)),
-        "channels": sorted(list(channels)),
+        "times": sorted(times),
+        "channels": sorted(channels),
         "views_at_times": views_at_times,
     }
 
@@ -366,10 +366,10 @@ def multi_urljoin(url_base, *url_parts, add_trailing_slash=False):
     Returns:
         str: Valid slash-separated URL
     """
-    stripped_url_parts = map(lambda part: part.strip("/"), url_parts)
+    stripped_url_parts = (part.strip("/") for part in url_parts)
     url_path = "/".join(stripped_url_parts)
     if add_trailing_slash or (url_parts and url_parts[-1].endswith("/")):
-        url_path = "".join((url_path, "/"))
+        url_path = f"{url_path}/"
     return urljoin(url_base, url_path)
 
 

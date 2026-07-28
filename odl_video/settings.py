@@ -221,7 +221,7 @@ WSGI_APPLICATION = "odl_video.wsgi.application"
 # https://github.com/kennethreitz/dj-database-url
 DEFAULT_DATABASE_CONFIG = dj_database_url.parse(
     get_string(
-        "DATABASE_URL", "sqlite:///{0}".format(os.path.join(BASE_DIR, "db.sqlite3"))
+        "DATABASE_URL", "sqlite:///{}".format(os.path.join(BASE_DIR, "db.sqlite3"))
     )
 )
 DEFAULT_DATABASE_CONFIG["CONN_MAX_AGE"] = get_int("ODL_VIDEO_DB_CONN_MAX_AGE", 0)
@@ -350,15 +350,15 @@ AWS_S3_UPLOAD_MAX_IO_QUEUE = get_int("AWS_S3_UPLOAD_MAX_IO_QUEUE", 100)
 AWS_S3_UPLOAD_IO_CHUNKSIZE_KB = get_int("AWS_S3_UPLOAD_IO_CHUNKSIZE_KB", 256)
 AWS_S3_UPLOAD_USE_THREADS = get_bool("AWS_S3_UPLOAD_USE_THREADS", True)
 
-AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
-    multipart_threshold=AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB * MB,
-    multipart_chunksize=AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB * MB,
-    max_concurrency=AWS_S3_UPLOAD_MAX_CONCURRENCY,
-    num_download_attempts=AWS_S3_UPLOAD_NUM_DOWNLOAD_ATTEMPTS,
-    max_io_queue=AWS_S3_UPLOAD_MAX_IO_QUEUE,
-    io_chunksize=AWS_S3_UPLOAD_IO_CHUNKSIZE_KB * KB,
-    use_threads=AWS_S3_UPLOAD_USE_THREADS,
-)
+AWS_S3_UPLOAD_TRANSFER_CONFIG = {
+    "multipart_threshold": AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB * MB,
+    "multipart_chunksize": AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB * MB,
+    "max_concurrency": AWS_S3_UPLOAD_MAX_CONCURRENCY,
+    "num_download_attempts": AWS_S3_UPLOAD_NUM_DOWNLOAD_ATTEMPTS,
+    "max_io_queue": AWS_S3_UPLOAD_MAX_IO_QUEUE,
+    "io_chunksize": AWS_S3_UPLOAD_IO_CHUNKSIZE_KB * KB,
+    "use_threads": AWS_S3_UPLOAD_USE_THREADS,
+}
 
 # Janitor: fail videos stuck in UPLOADING past the threshold so they can be retried.
 STUCK_UPLOADING_THRESHOLD_HOURS = get_int("STUCK_UPLOADING_THRESHOLD_HOURS", 2)

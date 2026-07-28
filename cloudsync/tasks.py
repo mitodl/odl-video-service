@@ -525,7 +525,7 @@ def remove_youtube_caption(self, video_id, language):
     """
     video = Video.objects.get(id=video_id)
     captions = YouTubeApi().list_captions(video.youtube_id)
-    if language in captions.keys():
+    if language in captions:
         YouTubeApi().delete_caption(captions[language])
 
 

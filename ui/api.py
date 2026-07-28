@@ -193,7 +193,7 @@ def post_video_to_edx(video_files):
                     "Video already exists on edX, updating instead",
                 )
                 update_resp = update_video_on_edx(video_key, encoded_videos)
-                resp = list(update_resp.values())[0]
+                resp = next(iter(update_resp.values()))
             else:
                 resp.raise_for_status()
         except requests.exceptions.RequestException as exc:
@@ -267,15 +267,14 @@ def get_duration_from_encode_job(encode_job):
         duration: float
     """
     duration = 0.0
-    if encode_job:
-        if output_groups := encode_job.get("outputGroupDetails", []):
-            # Get the first output group
-            output_group = output_groups[0]
-            if outputs := output_group.get("outputDetails", []):
-                # Get the first output
-                output = outputs[0]
-                duration_in_ms = output.get("durationInMs", 0)
-                # Convert milliseconds to seconds
-                duration = duration_in_ms / 1000.0
+    if encode_job and (output_groups := encode_job.get("outputGroupDetails", [])):
+        # Get the first output group
+        output_group = output_groups[0]
+        if outputs := output_group.get("outputDetails", []):
+            # Get the first output
+            output = outputs[0]
+            duration_in_ms = output.get("durationInMs", 0)
+            # Convert milliseconds to seconds
+            duration = duration_in_ms / 1000.0
 
     return duration

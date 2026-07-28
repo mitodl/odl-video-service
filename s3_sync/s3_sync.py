@@ -109,9 +109,7 @@ def verify_s3_bucket_exists(s3_bucket_name):
     """
     ls_s3_bucket_cmd = f"aws s3api head-bucket --bucket {s3_bucket_name}"
     try:
-        subprocess.run(
-            ls_s3_bucket_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
+        subprocess.run(ls_s3_bucket_cmd, check=True, capture_output=True)
     except subprocess.SubprocessError:
         logger.exception("Failed to list specified s3 bucket: {}", s3_bucket_name)
         sys.exit("[-] Failed to list specified s3 bucket")
@@ -195,8 +193,7 @@ def sync_local_to_s3(
             s3_sync_cmd,
             check=True,
             shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
     except subprocess.SubprocessError as err:
         logger.exception("Failed to sync local files to s3 bucket")

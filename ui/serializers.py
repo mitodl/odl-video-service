@@ -543,7 +543,7 @@ class VideoSubtitleUploadSerializer(serializers.Serializer):
 
     def validate_filename(self, value):
         """Validate that the filename has a .srt or .vtt extension"""
-        if not (value.endswith(".srt") or value.endswith(".vtt")):
+        if not (value.endswith((".srt", ".vtt"))):
             raise serializers.ValidationError(
                 "Only .srt and .vtt subtitle files are supported."
             )

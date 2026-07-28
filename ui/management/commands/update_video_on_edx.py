@@ -45,7 +45,7 @@ class Command(BaseCommand):
                 raise CommandError("This video key doesn't exist")
             response = batch_update_video_on_edx_chunked([video_key])
             self.stdout.write(
-                f"Video updated to edX {list(response.values())[0]} - edx url: {list(response.keys())[0]} \n"
+                f"Video updated to edX {next(iter(response.values()))} - edx url: {next(iter(response.keys()))} \n"
             )
         elif options["all"]:
             collection_ids = CollectionEdxEndpoint.objects.values_list("id", flat=True)

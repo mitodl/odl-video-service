@@ -490,8 +490,8 @@ def test_update_video_on_edx_bad_response(mocker, reqmocker, edx_api_scenario):
     assert mocked_requests.call_count == 1
     patched_log_exception.assert_called_once()
     assert "Can not update video to edX" == patched_log_exception.call_args[0][0]
-    assert list(response.keys())[0] == video_partial_update_url
-    assert list(response.values())[0].ok is False
+    assert next(iter(response.keys())) == video_partial_update_url
+    assert next(iter(response.values())).ok is False
 
 
 def test_get_duration_from_encode_job():

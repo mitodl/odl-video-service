@@ -93,10 +93,9 @@ class HasCollectionPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        if request.method == "POST":
-            if not is_staff_or_superuser(request.user):
-                return False
-        return True
+        return not (
+            request.method == "POST" and not is_staff_or_superuser(request.user)
+        )
 
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:

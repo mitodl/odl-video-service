@@ -110,8 +110,8 @@ class KeycloakManager:
         self,
         method: str,
         endpoint: str,
-        params: dict = None,
-        json_data: dict = None,
+        params: dict | None = None,
+        json_data: dict | None = None,
         _retry: bool = False,
     ) -> dict:
         """
@@ -180,7 +180,7 @@ class KeycloakManager:
             raise
 
     # GROUP MANAGEMENT METHODS
-    def get_groups(self, params: dict = None) -> list[dict]:
+    def get_groups(self, params: dict | None = None) -> list[dict]:
         """Get all groups in the realm"""
         endpoint = f"/admin/realms/{self.realm}/groups"
         return self._make_api_request("get", endpoint, params)
@@ -328,7 +328,7 @@ class KeycloakManager:
             ) from exc
 
     # USER MANAGEMENT METHODS
-    def get_users(self, max_users: int = 999, search: str = None) -> list[dict]:
+    def get_users(self, max_users: int = 999, search: str | None = None) -> list[dict]:
         """Get all users in the realm"""
         endpoint = f"/admin/realms/{self.realm}/users"
         params = {"max": max_users}

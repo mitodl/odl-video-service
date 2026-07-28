@@ -531,7 +531,7 @@ class Video(TimestampedModel):
         if status == VideoStatus.RETRANSCODE_SCHEDULED:
             self.schedule_retranscode = False
         self.save()
-        if status in tasks.STATUS_TO_NOTIFICATION.keys():
+        if status in tasks.STATUS_TO_NOTIFICATION:
             tasks.async_send_notification_email.delay(self.id)
 
     def save(self, *args, **kwargs):

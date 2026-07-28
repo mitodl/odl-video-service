@@ -58,7 +58,7 @@ def send_notification_email(video):
     Args:
         video (ui.models.Video): a video object
     """
-    if video.status not in STATUS_TO_NOTIFICATION.keys():
+    if video.status not in STATUS_TO_NOTIFICATION:
         log.error(
             "Unexpected video status",
             video_hexkey=video.hexkey,

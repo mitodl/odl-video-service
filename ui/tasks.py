@@ -26,11 +26,9 @@ log = structlog.get_logger(__name__)
 def post_video_to_edx(video_id):
     """Loads a VideoFile and calls our API method to add it to edX"""
     video_files = sorted(
-        list(
-            VideoFile.objects.filter(
-                ~Q(encoding=EncodingNames.ORIGINAL), video=video_id
-            ).select_related("video__collection")
-        ),
+        VideoFile.objects.filter(
+            ~Q(encoding=EncodingNames.ORIGINAL), video=video_id
+        ).select_related("video__collection"),
         key=lambda vf: vf.id,
     )
     if not video_files:
