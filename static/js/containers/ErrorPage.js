@@ -40,7 +40,8 @@ export default class ErrorPage extends React.Component<*, void> {
             continues to happen please{" "}
           <a href={`mailto:${SETTINGS.support_email_address}`}>
               Contact Support
-          </a>.
+          </a>
+            .
         </span>
       )
     }

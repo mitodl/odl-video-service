@@ -1,13 +1,18 @@
 // eslint-disable-next-line no-redeclare
 /* global require:false, module:false */
-import { compose, legacy_createStore as createStore, applyMiddleware } from "redux"
-import { thunk } from "redux-thunk"  // Updated import
+import {
+  compose,
+  legacy_createStore as createStore,
+  applyMiddleware
+} from "redux"
+import { thunk } from "redux-thunk" // Updated import
 import { createLogger } from "redux-logger"
 
 import rootReducer from "../reducers"
 
 const composeEnhancers =
-  (typeof window !== 'undefined' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
+  (typeof window !== "undefined" &&
+    window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
   compose
 
 let createStoreWithMiddleware
@@ -16,9 +21,7 @@ if (process.env.NODE_ENV !== "production") {
     applyMiddleware(thunk, createLogger())
   )(createStore)
 } else {
-  createStoreWithMiddleware = compose(
-    applyMiddleware(thunk)
-  )(createStore)
+  createStoreWithMiddleware = compose(applyMiddleware(thunk))(createStore)
 }
 
 // @flow

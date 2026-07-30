@@ -31,9 +31,10 @@ const makeConfigForVideo = (
   startTime: number
 ): Object => ({
   autoplay: false,
-  poster:   !useYouTube && video.videothumbnail_set.length > 0 ?
-    video.videothumbnail_set[0].cloudfront_url :
-    undefined,
+  poster:
+    !useYouTube && video.videothumbnail_set.length > 0 ?
+      video.videothumbnail_set[0].cloudfront_url :
+      undefined,
   controls:    true,
   fluid:       embedded || false,
   playsinline: true,
@@ -297,7 +298,7 @@ class VideoPlayer extends React.Component<*, void> {
     if (action === "timeupdate") {
       // Track amount played in increments of 60 seconds
       const currentTime = this.player.currentTime()
-      const nearestMinute = parseInt((currentTime - currentTime % 60) / 60)
+      const nearestMinute = parseInt((currentTime - (currentTime % 60)) / 60)
       if (this.lastMinuteTracked !== nearestMinute) {
         sendGAEvent(
           "video",

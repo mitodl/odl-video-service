@@ -10,7 +10,6 @@ import { videoAnalyticsEndpoint } from "../reducers/videoAnalytics"
 import { syncCollectionEdXEndpoint } from "../reducers/syncCollectionEdX"
 import { potentialCollectionOwnersEndpoint } from "../reducers/potentialCollectionOwners"
 
-
 export const endpoints = [
   collectionsListEndpoint,
   collectionsEndpoint,

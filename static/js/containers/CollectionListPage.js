@@ -79,7 +79,7 @@ export class CollectionListPage extends React.Component<*, void> {
   renderSearchInput() {
     // Get initial search value from URL if present
     const params = new URLSearchParams(window.location.search)
-    const searchQuery = params.get('search') || ''
+    const searchQuery = params.get("search") || ""
 
     return (
       <div className="collection-search">
@@ -105,14 +105,14 @@ export class CollectionListPage extends React.Component<*, void> {
     // Update URL with search params
     const params = new URLSearchParams(window.location.search)
     if (searchText) {
-      params.set('search', searchText)
+      params.set("search", searchText)
     } else {
-      params.delete('search')
+      params.delete("search")
     }
 
     // Push new URL without reloading the page
     const newUrl = `${window.location.pathname}?${params.toString()}`
-    window.history.pushState({ path: newUrl }, '', newUrl)
+    window.history.pushState({ path: newUrl }, "", newUrl)
 
     // Trigger a re-fetch of collections with the search parameter
     this.props.dispatch(actions.collectionsPagination.getPage({ page: 1 }))
@@ -148,7 +148,8 @@ export class CollectionListPage extends React.Component<*, void> {
                   {collection.title}
                 </Link>
                 <span className="mdc-list-item__secondary-text">
-                  {collection.video_count} Videos | Owner: {collection.owner_info.username}
+                  {collection.video_count} Videos | Owner:{" "}
+                  {collection.owner_info.username}
                 </span>
               </span>
             </li>

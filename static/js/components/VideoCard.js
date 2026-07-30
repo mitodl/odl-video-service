@@ -6,7 +6,12 @@ import _ from "lodash"
 import Menu from "./material/Menu"
 import Card from "./material/Card"
 import { makeVideoThumbnailUrl, makeVideoUrl } from "../lib/urls"
-import { videoIsProcessing, videoHasError, saveToDropbox, videoIsInFlight } from "../lib/video"
+import {
+  videoIsProcessing,
+  videoHasError,
+  saveToDropbox,
+  videoIsInFlight
+} from "../lib/video"
 import DropboxChooser from "react-dropbox-chooser"
 
 import type { Video } from "../flow/videoTypes"
@@ -24,9 +29,17 @@ type VideoCardProps = {
 }
 
 const VideoCard = (props: VideoCardProps) => {
-  const { video, isAdmin, isMenuOpen, showShareVideoDialog,
-    showEditVideoDialog, showDeleteVideoDialog,
-    showVideoMenu, hideVideoMenu, onReplaceVideo } = props
+  const {
+    video,
+    isAdmin,
+    isMenuOpen,
+    showShareVideoDialog,
+    showEditVideoDialog,
+    showDeleteVideoDialog,
+    showVideoMenu,
+    hideVideoMenu,
+    onReplaceVideo
+  } = props
 
   let dropboxTriggerEl: ?HTMLElement = null
   const triggerReplaceDropbox = () => {
@@ -110,9 +123,13 @@ const VideoCard = (props: VideoCardProps) => {
               multiselect={false}
               extensions={["video"]}
             >
-              <button ref={el => {
-                dropboxTriggerEl = el
-              }}>replace</button>
+              <button
+                ref={el => {
+                  dropboxTriggerEl = el
+                }}
+              >
+                replace
+              </button>
             </DropboxChooser>
           </div>
         )}

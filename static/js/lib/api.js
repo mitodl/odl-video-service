@@ -51,7 +51,11 @@ export function getVideo(videoKey: string) {
 }
 
 export function getPotentialCollectionOwners(collectionKey: string) {
-  return fetchJSONWithCSRF(`/api/v0/potential_collection_owners/?collection_key=${encodeURI(collectionKey)}`)
+  return fetchJSONWithCSRF(
+    `/api/v0/potential_collection_owners/?collection_key=${encodeURI(
+      collectionKey
+    )}`
+  )
 }
 
 export function updateVideo(videoKey: string, payload: VideoUpdatePayload) {

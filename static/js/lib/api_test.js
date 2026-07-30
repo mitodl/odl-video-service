@@ -146,7 +146,11 @@ describe("api", () => {
     const fetchFormStub = sandbox.stub(fetchFuncs, "fetchWithCSRF")
     const video = makeVideo()
     const formData = new FormData()
-    formData.append("thumbnail", new Blob(["fake-image"], { type: "image/jpeg" }), "thumb.jpg")
+    formData.append(
+      "thumbnail",
+      new Blob(["fake-image"], { type: "image/jpeg" }),
+      "thumb.jpg"
+    )
     fetchFormStub.returns(Promise.resolve("{}"))
 
     await uploadThumbnail(video.key, formData)

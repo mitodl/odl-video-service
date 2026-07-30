@@ -131,7 +131,8 @@ export const sectionFAQs = {
             rel="noopener noreferrer"
           >
             https://ist.mit.edu/email-lists
-          </a>.
+          </a>
+          .
         </div>
       </div>
     ),
@@ -188,7 +189,8 @@ export const sectionFAQs = {
             rel="noopener noreferrer"
           >
             https://w3c.github.io/webvtt/
-          </a>.
+          </a>
+          .
         </div>
         <div>
           Once uploaded, you should see the captions when you play your video
@@ -206,10 +208,12 @@ export const sectionFAQs = {
           rel="noopener noreferrer"
         >
           PlayMedia
-        </a>,{" "}
+        </a>
+        ,{" "}
         <a href="http://www.rev.com" target="_blank" rel="noopener noreferrer">
           Rev
-        </a>, or you can try some free services:{" "}
+        </a>
+        , or you can try some free services:{" "}
         <a
           href="http://www.amara.org"
           target="_blank"
@@ -224,8 +228,9 @@ export const sectionFAQs = {
           rel="noopener noreferrer"
         >
           DotSub.com
-        </a>. Make sure you request a WebVTT file, which you can then upload on
-        your video page.
+        </a>
+        . Make sure you request a WebVTT file, which you can then upload on your
+        video page.
       </div>
     ),
     "I have a question that isn't on the FAQ": (

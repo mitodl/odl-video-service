@@ -4,7 +4,10 @@ import * as R from "ramda"
 
 import * as api from "../lib/api"
 import type { Collection, CollectionList } from "../flow/collectionTypes"
-import { CLEAR_COLLECTION_ERRORS, CLEAR_COLLECTION_DATA } from "../actions/collectionUi"
+import {
+  CLEAR_COLLECTION_ERRORS,
+  CLEAR_COLLECTION_DATA
+} from "../actions/collectionUi"
 
 export const collectionsListEndpoint = {
   name:               "collectionsList",
