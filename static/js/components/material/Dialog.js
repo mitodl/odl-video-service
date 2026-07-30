@@ -44,10 +44,9 @@ export default class Dialog extends React.Component<*, void> {
     this.destroyMdc()
   }
 
-  // eslint-disable-next-line react/no-deprecated
-  componentWillReceiveProps(nextProps: DialogProps) {
-    if (this.props.open !== nextProps.open) {
-      if (nextProps.open) {
+  componentDidUpdate(prevProps: DialogProps) {
+    if (prevProps.open !== this.props.open) {
+      if (this.props.open) {
         this.showMdc()
       } else {
         this.destroyMdc()

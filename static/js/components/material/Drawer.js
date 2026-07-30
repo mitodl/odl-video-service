@@ -58,11 +58,10 @@ class Drawer extends React.Component<*, void> {
     }
   }
 
-  // eslint-disable-next-line react/no-deprecated
-  componentWillReceiveProps(nextProps: DrawerProps) {
+  componentDidUpdate(prevProps: DrawerProps) {
     if (this.drawer) {
-      if (this.props.open !== nextProps.open) {
-        this.drawer.open = nextProps.open
+      if (prevProps.open !== this.props.open) {
+        this.drawer.open = this.props.open
       }
     }
   }
