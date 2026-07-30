@@ -7229,13 +7229,6 @@ raw-body@^3.0.2:
     iconv-lite "~0.7.0"
     unpipe "~1.0.0"
 
-react-addons-shallow-compare@^15.6.0:
-  version "15.6.3"
-  resolved "https://registry.yarnpkg.com/react-addons-shallow-compare/-/react-addons-shallow-compare-15.6.3.tgz#28a94b0dfee71530852c66a69053d59a1baf04cb"
-  integrity sha512-EDJbgKTtGRLhr3wiGDXK/+AEJ59yqGS+tKE6mue0aNXT6ZMR7VJbbzIiT6akotmHg1BLj46ElJSb+NBMp80XBg==
-  dependencies:
-    object-assign "^4.1.0"
-
 react-document-title@^2.0.3:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/react-document-title/-/react-document-title-2.0.3.tgz#bbf922a0d71412fc948245e4283b2412df70f2b9"
