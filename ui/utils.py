@@ -341,7 +341,7 @@ def generate_mock_video_analytics_data(n=24, seed=42):
     """
     local_random = random.Random(seed)
     times = list(range(int(n)))
-    channels = ["camera%s" % (i + 1) for i in range(4)]
+    channels = [f"camera{i + 1}" for i in range(4)]
     views_at_times = {
         t: {channel: local_random.randint(0, 100) for channel in channels}
         for t in times

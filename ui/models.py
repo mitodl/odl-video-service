@@ -512,13 +512,9 @@ class Video(TimestampedModel):
         Returns:
             str: S3 object key
         """
-        return "{prefix}/{key}/subtitles_{key}_{dt}_{lang}.{ext}".format(
-            prefix=prefix,
-            key=self.hexkey,
-            dt=dttm.strftime("%Y%m%d%H%M%S"),
-            lang=language,
-            ext=extension,
-        )
+        key = self.hexkey
+        dt = dttm.strftime("%Y%m%d%H%M%S")
+        return f"{prefix}/{key}/subtitles_{key}_{dt}_{language}.{extension}"
 
     def update_status(self, status):
         """

@@ -212,11 +212,11 @@ def test_video_subtitle_key():
     """Tests that the correct subtitle key is returned for a language"""
     video = VideoFactory(key="8494dafc-3665-4960-8e00-9790574ec93a")
     now = datetime.now(tz=pytz.UTC)
+    key = "8494dafc366549608e009790574ec93a"
+    dt = now.strftime("%Y%m%d%H%M%S")
     assert (
         re.fullmatch(
-            "subtitles/8494dafc366549608e009790574ec93a/subtitles_8494dafc366549608e009790574ec93a_{}_en.vtt".format(
-                now.strftime("%Y%m%d%H%M%S")
-            ),
+            f"subtitles/{key}/subtitles_{key}_{dt}_en.vtt",
             video.subtitle_key(now, "en"),
         )
         is not None
@@ -228,11 +228,11 @@ def test_video_subtitle_key_with_extension(extension):
     """Tests that the correct subtitle key is returned for different file extensions"""
     video = VideoFactory(key="8494dafc-3665-4960-8e00-9790574ec93a")
     now = datetime.now(tz=pytz.UTC)
+    key = "8494dafc366549608e009790574ec93a"
+    dt = now.strftime("%Y%m%d%H%M%S")
     assert (
         re.fullmatch(
-            "subtitles/8494dafc366549608e009790574ec93a/subtitles_8494dafc366549608e009790574ec93a_{}_{}.{}".format(
-                now.strftime("%Y%m%d%H%M%S"), "en", extension
-            ),
+            f"subtitles/{key}/subtitles_{key}_{dt}_en.{extension}",
             video.subtitle_key(now, "en", extension=extension),
         )
         is not None

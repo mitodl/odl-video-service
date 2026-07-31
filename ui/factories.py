@@ -101,9 +101,7 @@ class VideoFactory(DjangoModelFactory):
     collection = SubFactory(CollectionFactory)
     title = FuzzyText(prefix="Video ")
     description = Faker("text")
-    source_url = "{url}{file_name}".format(
-        url=FAKE.url(), file_name=FAKE.file_name("video")
-    )
+    source_url = f"{FAKE.url()}{FAKE.file_name('video')}"
     multiangle = False
     schedule_retranscode = False
 
@@ -151,7 +149,7 @@ class VideoThumbnailFactory(DjangoModelFactory):
 
     video = SubFactory(VideoFactory)
     s3_object_key = LazyAttribute(
-        lambda obj: "{}/{}".format(obj.video.hexkey, FAKE.file_name("image"))
+        lambda obj: f"{obj.video.hexkey}/{FAKE.file_name('image')}"
     )
     bucket_name = settings.VIDEO_S3_BUCKET
     max_width = FuzzyInteger(low=1)

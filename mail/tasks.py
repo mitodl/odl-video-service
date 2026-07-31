@@ -119,7 +119,7 @@ def _send_debug_email(video=None, email_kwargs=None):
     Sends a debug email to the support email.
     """
     debug_email_kwargs = {
-        "subject": "DEBUG:{}".format(email_kwargs["subject"]),
+        "subject": f"DEBUG:{email_kwargs['subject']}",
         "html_body": None,
         "text_body": _generate_debug_email_body(video=video, email_kwargs=email_kwargs),
         "recipient": settings.EMAIL_SUPPORT,

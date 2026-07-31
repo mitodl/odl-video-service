@@ -170,7 +170,7 @@ def test_send_debug_email(mocker):
         video=video, email_kwargs=mock_email_kwargs
     )
     mocked_mailgun.send_individual_email.assert_called_once_with(
-        subject="DEBUG:{}".format(mock_email_kwargs["subject"]),
+        subject=f"DEBUG:{mock_email_kwargs['subject']}",
         html_body=None,
         text_body=mocked_generate_debug_email_body.return_value,
         recipient=settings.EMAIL_SUPPORT,

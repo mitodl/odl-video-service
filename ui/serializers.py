@@ -38,7 +38,7 @@ def validate_keycloak_groups(lists):
 
     if bad_lists:
         raise serializers.ValidationError(
-            "Group does not exist: {}".format(",".join(bad_lists))
+            f"Group does not exist: {','.join(bad_lists)}"
         )
     return lists
 

@@ -59,9 +59,7 @@ class MailgunClient:
         email_params.update(params)
         # Update 'from' address if sender_name was specified
         if sender_name is not None:
-            email_params["from"] = "{sender_name} <{email}>".format(
-                sender_name=sender_name, email=email_params["from"]
-            )
+            email_params["from"] = f"{sender_name} <{email_params['from']}>"
         response = request_func(
             mailgun_url, auth=cls._basic_auth_credentials, data=email_params
         )
@@ -218,7 +216,7 @@ def render_email_templates(template_name, context):
     # this avoids parsing the body twice in bs4
     soup = BeautifulSoup(html_text, "html5lib")
     for link in soup.find_all("a"):
-        link.replace_with("{} ({})".format(link.string, link.attrs["href"]))
+        link.replace_with(f"{link.string} ({link.attrs['href']})")
 
     # clear any surviving style and title tags, so their contents don't get printed
     for style in soup.find_all(["style", "title"]):

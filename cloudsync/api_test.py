@@ -164,9 +164,8 @@ def test_parse_lecture_video_filename(
     """
     Test that a tuple of video attributes title is correctly parsed for a video file.
     """
-    filename = "{}-lec-mit-0000-{}-0404{}.mp4".format(
-        course_prefix, date_str, "" if not session else f"-{session}"
-    )
+    session_suffix = f"-{session}" if session else ""
+    filename = f"{course_prefix}-lec-mit-0000-{date_str}-0404{session_suffix}.mp4"
     expected_parsed_attrs = api.ParsedVideoAttributes(
         prefix=course_prefix,
         session=session,
