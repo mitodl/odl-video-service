@@ -38,9 +38,10 @@ settings_file = args.settings_file
 
 # Read settings_file
 config = ConfigParser(interpolation=ExtendedInterpolation())
-try:
-    config.read(settings_file)
-except OSError:
+# ConfigParser.read() swallows OSError per filename and returns the list of
+# files it managed to parse, so a missing or unreadable file has to be detected
+# from that return value rather than from an exception.
+if not config.read(settings_file):
     sys.exit("[-] Failed to read settings file")
 
 # Configure logbook logging
