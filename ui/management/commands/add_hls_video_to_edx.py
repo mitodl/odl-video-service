@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 "Please provide --video-file-id or --video-title, not both"
             )
 
-        filters = dict(encoding=EncodingNames.HLS)
+        filters = {"encoding": EncodingNames.HLS}
         if options["video_file_id"]:
             filters["pk"] = options["video_file_id"]
         else:
@@ -57,9 +57,7 @@ class Command(BaseCommand):
         video_files = list(VideoFile.objects.filter(**filters).all())
         if not video_files:
             raise CommandError(
-                "No HLS-encoded VideoFiles found that match the given parameters ({})".format(
-                    filters
-                )
+                f"No HLS-encoded VideoFiles found that match the given parameters ({filters})"
             )
 
         self.stdout.write("Attempting to post video(s) to edX...")
@@ -75,14 +73,10 @@ class Command(BaseCommand):
                 for endpoint, resp in response_dict.items()
                 if endpoint not in good_responses
             }
-            for _, resp in good_responses.items():
+            for resp in good_responses.values():
                 self.stdout.write(
                     self.style.SUCCESS(
-                        "Video successfully added to edX – VideoFile: {} ({}), edX url: {}".format(
-                            video_file.video.title,
-                            video_file.pk,
-                            resp.url,
-                        )
+                        f"Video successfully added to edX – VideoFile: {video_file.video.title} ({video_file.pk}), edX url: {resp.url}"
                     )
                 )
             for edx_endpoint, resp in bad_responses.items():
@@ -92,11 +86,6 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.ERROR(
                         "Request to add HLS video to edX failed – "
-                        "VideoFile: {} ({}), edX url: {}, API response: {}".format(
-                            video_file.video.title,
-                            video_file.pk,
-                            edx_endpoint.full_api_url,
-                            resp_summary,
-                        )
+                        f"VideoFile: {video_file.video.title} ({video_file.pk}), edX url: {edx_endpoint.full_api_url}, API response: {resp_summary}"
                     )
                 )

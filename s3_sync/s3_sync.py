@@ -38,9 +38,10 @@ settings_file = args.settings_file
 
 # Read settings_file
 config = ConfigParser(interpolation=ExtendedInterpolation())
-try:
-    config.read(settings_file)
-except IOError:
+# ConfigParser.read() swallows OSError per filename and returns the list of
+# files it managed to parse, so a missing or unreadable file has to be detected
+# from that return value rather than from an exception.
+if not config.read(settings_file):
     sys.exit("[-] Failed to read settings file")
 
 # Configure logbook logging
@@ -75,8 +76,8 @@ def verify_local_folders_exist():
     """
     for folder in config["Paths"].values():
         if not os.path.exists(folder):
-            logger.error("Missing folder: ", folder)
-            sys.exit("[-] Missing folder: ", folder)
+            logger.error("Missing folder: {}", folder)
+            sys.exit(f"[-] Missing folder: {folder}")
 
 
 def verify_aws_cli_installed(aws_cli_binary):
@@ -107,11 +108,9 @@ def verify_s3_bucket_exists(s3_bucket_name):
         objects in bucket otherwise error and exit on any issues trying
         to list objects in bucket.
     """
-    ls_s3_bucket_cmd = "aws s3api head-bucket --bucket {}".format(s3_bucket_name)
+    ls_s3_bucket_cmd = f"aws s3api head-bucket --bucket {s3_bucket_name}"
     try:
-        subprocess.run(
-            ls_s3_bucket_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
+        subprocess.run(ls_s3_bucket_cmd, check=True, capture_output=True)
     except subprocess.SubprocessError:
         logger.exception("Failed to list specified s3 bucket: {}", s3_bucket_name)
         sys.exit("[-] Failed to list specified s3 bucket")
@@ -167,7 +166,7 @@ def notify_slack_channel(slack_message):
             },
         )
     except (requests.exceptions.RequestException, NameError) as err:
-        logger.warn("Failed to notify slack channel with following error: {}", err)
+        logger.warning("Failed to notify slack channel with following error: {}", err)
 
 
 def sync_local_to_s3(
@@ -189,16 +188,13 @@ def sync_local_to_s3(
             f"computer: *{computer_name}*"
         )
         sys.exit("[-] Nothing to sync. Folder empty")
-    s3_sync_cmd = 'aws s3 sync {} s3://{} > "{}"'.format(
-        local_video_records_done_folder, s3_bucket_name, s3_sync_result_file
-    )
+    s3_sync_cmd = f'aws s3 sync {local_video_records_done_folder} s3://{s3_bucket_name} > "{s3_sync_result_file}"'
     try:
         cmd_output = subprocess.run(
             s3_sync_cmd,
             check=True,
             shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
         )
     except subprocess.SubprocessError as err:
         logger.exception("Failed to sync local files to s3 bucket")
@@ -229,7 +225,7 @@ def move_files_to_synced_folder(
         operation.
     """
     if not os.path.exists(s3_sync_result_file):
-        logger.warning("Could not find S3 sync results file", s3_sync_result_file)
+        logger.warning("Could not find S3 sync results file {}", s3_sync_result_file)
         sys.exit("[-] Could not find S3 sync results file")
     with open(s3_sync_result_file, encoding="utf-8") as file_name:
         s3_sync_result_data = file_name.read()
@@ -244,8 +240,8 @@ def move_files_to_synced_folder(
                 f"lecutre capture computer *{computer_name}* to S3: \n"
                 f"`{file_name}`"
             )
-        except OSError as err:
-            logger.exception("Failed to copy or remove local file", err)
+        except OSError:
+            logger.exception("Failed to copy or remove local file {}", file_name)
 
 
 def main():

@@ -30,7 +30,7 @@ FAKE = faker.Factory.create()
 class UserFactory(DjangoModelFactory):
     """Factory for User"""
 
-    username = Sequence(lambda n: "user_%d" % n)
+    username = Sequence(lambda n: f"user_{n}")
     email = FuzzyText(suffix="@example.com")
 
     class Meta:
@@ -61,7 +61,7 @@ class CollectionFactory(DjangoModelFactory):
     description = FAKE.text()
     owner = SubFactory(UserFactory)
     schedule_retranscode = False
-    edx_course_id = Sequence(lambda n: "course-v1:fake+course+%d" % n)
+    edx_course_id = Sequence(lambda n: f"course-v1:fake+course+{n}")
 
     class Meta:
         model = models.Collection
@@ -101,9 +101,7 @@ class VideoFactory(DjangoModelFactory):
     collection = SubFactory(CollectionFactory)
     title = FuzzyText(prefix="Video ")
     description = Faker("text")
-    source_url = "{url}{file_name}".format(
-        url=FAKE.url(), file_name=FAKE.file_name("video")
-    )
+    source_url = f"{FAKE.url()}{FAKE.file_name('video')}"
     multiangle = False
     schedule_retranscode = False
 
@@ -151,7 +149,7 @@ class VideoThumbnailFactory(DjangoModelFactory):
 
     video = SubFactory(VideoFactory)
     s3_object_key = LazyAttribute(
-        lambda obj: "{}/{}".format(obj.video.hexkey, FAKE.file_name("image"))
+        lambda obj: f"{obj.video.hexkey}/{FAKE.file_name('image')}"
     )
     bucket_name = settings.VIDEO_S3_BUCKET
     max_width = FuzzyInteger(low=1)
@@ -204,7 +202,7 @@ class EncodeJobFactory(DjangoModelFactory):
     content_type = LazyAttribute(
         lambda obj: ContentType.objects.get_for_model(obj.video)
     )
-    message = LazyFunction(lambda: {})
+    message = LazyFunction(dict)
 
     class Meta:
         model = EncodeJob

@@ -6,14 +6,13 @@ import time
 from tempfile import NamedTemporaryFile
 
 import boto3
+import structlog
 from django.conf import settings
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 from smart_open.http import SeekableBufferedInputBase
-
-import structlog
 
 log = structlog.get_logger(__name__)
 
@@ -50,7 +49,7 @@ def resumable_upload(request, max_retries=10):
         try:
             _, response = request.next_chunk()
             if response is not None and "id" not in response:
-                raise YouTubeUploadException("YouTube upload failed: %s" % response)
+                raise YouTubeUploadException(f"YouTube upload failed: {response}")
         except HttpError as e:
             if e.resp.status in retry_statuses:
                 error = e
@@ -180,14 +179,14 @@ class YouTubeApi:
         """
         request = self.client.captions().insert(
             part="snippet",
-            body=dict(
-                snippet=dict(
-                    videoId=video_id,
-                    language=caption.language,
-                    name=caption.language_name,
-                    isDraft=False,
-                )
-            ),
+            body={
+                "snippet": {
+                    "videoId": video_id,
+                    "language": caption.language,
+                    "name": caption.language_name,
+                    "isDraft": False,
+                }
+            },
             media_body=media_body,
         )
         return resumable_upload(request)
@@ -205,10 +204,10 @@ class YouTubeApi:
         """
         request = self.client.captions().update(
             part="snippet",
-            body=dict(
-                id=caption_id,
-                snippet=dict(isDraft=False),
-            ),
+            body={
+                "id": caption_id,
+                "snippet": {"isDraft": False},
+            },
             media_body=media_body,
         )
         return resumable_upload(request)
@@ -241,13 +240,13 @@ class YouTubeApi:
         """
         videofile = video.original_video or video.transcoded_videos[0]
 
-        request_body = dict(
-            snippet=dict(
-                title=strip_bad_chars(video.title)[:100],
-                description=strip_bad_chars(video.description)[:5000],
-            ),
-            status=dict(privacyStatus=privacy),
-        )
+        request_body = {
+            "snippet": {
+                "title": strip_bad_chars(video.title)[:100],
+                "description": strip_bad_chars(video.description)[:5000],
+            },
+            "status": {"privacyStatus": privacy},
+        }
 
         with SeekableBufferedInputBase(
             videofile.bucket_name, videofile.s3_object_key

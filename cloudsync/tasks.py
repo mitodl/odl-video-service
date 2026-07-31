@@ -10,13 +10,16 @@ from datetime import timedelta
 
 import boto3
 import requests
+import structlog
 from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import (
     BotoCoreError,
     ClientError,
-    ConnectionError as BotoConnectionError,
     ConnectionClosedError,
     HTTPClientError,
+)
+from botocore.exceptions import (
+    ConnectionError as BotoConnectionError,
 )
 from celery import Task, group, shared_task, states
 from celery.utils.time import get_exponential_backoff_interval
@@ -26,6 +29,8 @@ from googleapiclient.errors import HttpError
 from redis.exceptions import LockError
 from urllib3.exceptions import (
     ProtocolError as Urllib3ProtocolError,
+)
+from urllib3.exceptions import (
     TimeoutError as Urllib3TimeoutError,
 )
 
@@ -33,7 +38,6 @@ from cloudsync import dropbox_api
 from cloudsync.api import process_watch_file, refresh_status, transcode_video
 from cloudsync.exceptions import TranscodeTargetDoesNotExist
 from cloudsync.youtube import API_QUOTA_ERROR_MSG, YouTubeApi
-import structlog
 from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.models import Collection, EncodeJob, Video, VideoSubtitle, YouTubeVideo
@@ -521,7 +525,7 @@ def remove_youtube_caption(self, video_id, language):
     """
     video = Video.objects.get(id=video_id)
     captions = YouTubeApi().list_captions(video.youtube_id)
-    if language in captions.keys():
+    if language in captions:
         YouTubeApi().delete_caption(captions[language])
 
 

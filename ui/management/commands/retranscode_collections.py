@@ -1,12 +1,13 @@
 """Management command to schedule retranscoding for collections with multiple filtering options"""
 
-from datetime import datetime
+from datetime import UTC, datetime
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Count
-from django.utils.dateparse import parse_datetime
 from django.utils import timezone
-from django.conf import settings
+from django.utils.dateparse import parse_datetime
 
 from ui.models import Collection, Video
 
@@ -179,13 +180,13 @@ class Command(BaseCommand):
 
         # Try parsing as date only (YYYY-MM-DD)
         try:
-            parsed_date = datetime.strptime(date_string, "%Y-%m-%d")
+            parsed_date = datetime.strptime(date_string, "%Y-%m-%d").replace(tzinfo=UTC)
             # For "created-after", use start of day; for "created-before", use end of day
             if argument_name == "created-before":
                 parsed_date = parsed_date.replace(
                     hour=23, minute=59, second=59, microsecond=999999
                 )
-            return timezone.make_aware(parsed_date, timezone.utc)
+            return parsed_date
         except ValueError:
             raise CommandError(
                 f"Invalid date format for --{argument_name}: '{date_string}'. "

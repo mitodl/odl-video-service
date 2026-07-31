@@ -113,10 +113,9 @@ def sync_youtube(video):
         video(ui.models.Video): The video that should be uploaded or deleted from Youtube.
     """
     yt_video = video.youtubevideo if hasattr(video, "youtubevideo") else None
-    if yt_video is not None:
-        if (
-            video.is_public is False
-            or video.collection.stream_source == StreamSource.CLOUDFRONT
-            or yt_video.status in (YouTubeStatus.FAILED, YouTubeStatus.REJECTED)
-        ):
-            YouTubeVideo.objects.get(id=yt_video.id).delete()
+    if yt_video is not None and (
+        video.is_public is False
+        or video.collection.stream_source == StreamSource.CLOUDFRONT
+        or yt_video.status in (YouTubeStatus.FAILED, YouTubeStatus.REJECTED)
+    ):
+        YouTubeVideo.objects.get(id=yt_video.id).delete()

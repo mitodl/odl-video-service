@@ -4,11 +4,11 @@ Permissions for ui app
 
 import uuid
 
+import structlog
 from django.contrib.auth import get_user_model
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
-import structlog
 from ui.models import Collection
 from ui.utils import has_common_lists
 
@@ -93,10 +93,7 @@ class HasCollectionPermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        if request.method == "POST":
-            if not is_staff_or_superuser(request.user):
-                return False
-        return True
+        return request.method != "POST" or is_staff_or_superuser(request.user)
 
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
@@ -128,10 +125,8 @@ class IsCollectionOwner(BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
-        if request.user == obj.owner or request.user.is_superuser:
-            return True
         # this should check for keycloak groups as well
-        return False
+        return request.user == obj.owner or request.user.is_superuser
 
 
 class CanUploadToCollection(BasePermission):
@@ -148,8 +143,6 @@ class CanUploadToCollection(BasePermission):
         try:
             uuid.UUID(collection_key)
         except ValueError as exc:
-            raise ValidationError(
-                "wrong UUID format for {}".format(collection_key)
-            ) from exc
+            raise ValidationError(f"wrong UUID format for {collection_key}") from exc
         collection = Collection.objects.filter(key=collection_key)
         return len(collection) > 0 and has_admin_permission(collection.first(), request)

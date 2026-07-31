@@ -64,7 +64,7 @@ class MailAPITests(TestCase):
         )
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
-        assert list(called_args)[0] == "{}/{}".format(settings.MAILGUN_URL, "messages")
+        assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
         assert called_kwargs["auth"] == ("api", settings.MAILGUN_KEY)
         assert called_kwargs["data"]["html"].startswith("html")
         assert called_kwargs["data"]["text"].startswith("text")
@@ -81,9 +81,7 @@ class MailAPITests(TestCase):
         if sender_name is not None:
             self.assertEqual(
                 called_kwargs["data"]["from"],
-                "{sender_name} <{email}>".format(
-                    sender_name=sender_name, email=settings.EMAIL_SUPPORT
-                ),
+                f"{sender_name} <{settings.EMAIL_SUPPORT}>",
             )
         else:
             self.assertEqual(called_kwargs["data"]["from"], settings.EMAIL_SUPPORT)
@@ -101,7 +99,7 @@ class MailAPITests(TestCase):
         )
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
-        assert list(called_args)[0] == "{}/{}".format(settings.MAILGUN_URL, "messages")
+        assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
         assert called_kwargs["auth"] == ("api", settings.MAILGUN_KEY)
         assert called_kwargs["data"]["html"] == "html"
         assert called_kwargs["data"]["subject"] == "subject"
@@ -120,7 +118,7 @@ class MailAPITests(TestCase):
         """
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         chunked_emails_to = [
             recipient_tuples[i : i + chunk_size]
@@ -134,9 +132,7 @@ class MailAPITests(TestCase):
         assert mock_post.call_count == 6
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
-            assert list(called_args)[0] == "{}/{}".format(
-                settings.MAILGUN_URL, "messages"
-            )
+            assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
             assert called_kwargs["data"]["html"].startswith("html")
             assert called_kwargs["data"]["text"].startswith("text")
             assert called_kwargs["data"]["subject"] == "email subject"
@@ -160,7 +156,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), {"letter": letter})
+            (f"{letter}@example.com", {"letter": letter})
             for letter in string.ascii_letters
         ]
         chunked_emails_to = [
@@ -186,9 +182,7 @@ class MailAPITests(TestCase):
 
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
-            assert list(called_args)[0] == "{}/{}".format(
-                settings.MAILGUN_URL, "messages"
-            )
+            assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
             assert called_kwargs["data"]["html"].startswith("html")
             assert called_kwargs["data"]["text"].startswith("text")
             assert called_kwargs["data"]["subject"] == "email subject"
@@ -222,7 +216,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         assert len(recipient_tuples) == 52
         with override_settings(
@@ -252,7 +246,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_tuples = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         chunked_emails_to = [
             recipient_tuples[i : i + chunk_size]
@@ -267,9 +261,7 @@ class MailAPITests(TestCase):
         assert mock_post.call_count == 6
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
-            assert list(called_args)[0] == "{}/{}".format(
-                settings.MAILGUN_URL, "messages"
-            )
+            assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
             assert called_kwargs["data"]["html"].startswith("html")
             assert called_kwargs["data"]["text"].startswith("text")
             assert called_kwargs["data"]["subject"] == "email subject"
@@ -300,7 +292,7 @@ class MailAPITests(TestCase):
 
         chunk_size = 10
         recipient_pairs = [
-            ("{0}@example.com".format(letter), None) for letter in string.ascii_letters
+            (f"{letter}@example.com", None) for letter in string.ascii_letters
         ]
         with self.assertRaises(ImproperlyConfigured) as ex:
             MailgunClient.send_batch(
@@ -332,7 +324,7 @@ class MailAPITests(TestCase):
         assert response.status_code == HTTP_200_OK
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
-        assert list(called_args)[0] == "{}/{}".format(settings.MAILGUN_URL, "messages")
+        assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
         assert called_kwargs["auth"] == ("api", settings.MAILGUN_KEY)
         assert called_kwargs["data"]["html"].startswith("html")
         assert called_kwargs["data"]["text"].startswith("text")
@@ -344,9 +336,7 @@ class MailAPITests(TestCase):
         if sender_name is not None:
             self.assertEqual(
                 called_kwargs["data"]["from"],
-                "{sender_name} <{email}>".format(
-                    sender_name=sender_name, email=settings.EMAIL_SUPPORT
-                ),
+                f"{sender_name} <{settings.EMAIL_SUPPORT}>",
             )
         else:
             self.assertEqual(called_kwargs["data"]["from"], settings.EMAIL_SUPPORT)

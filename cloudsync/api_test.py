@@ -4,9 +4,9 @@ Tests for api
 
 import io
 import os
+import uuid
 from datetime import datetime
 from types import SimpleNamespace
-import uuid
 
 import boto3
 import pytest
@@ -164,9 +164,8 @@ def test_parse_lecture_video_filename(
     """
     Test that a tuple of video attributes title is correctly parsed for a video file.
     """
-    filename = "{}-lec-mit-0000-{}-0404{}.mp4".format(
-        course_prefix, date_str, "" if not session else "-{}".format(session)
-    )
+    session_suffix = f"-{session}" if session else ""
+    filename = f"{course_prefix}-lec-mit-0000-{date_str}-0404{session_suffix}.mp4"
     expected_parsed_attrs = api.ParsedVideoAttributes(
         prefix=course_prefix,
         session=session,
@@ -223,9 +222,8 @@ def test_watch_s3_error():
     s3c.create_bucket(Bucket=settings.VIDEO_S3_WATCH_BUCKET)
     bucket = s3.Bucket(settings.VIDEO_S3_WATCH_BUCKET)
     bucket.upload_fileobj(io.BytesIO(os.urandom(6250000)), filename)
-    with transaction.atomic():
-        with pytest.raises(ClientError):
-            api.process_watch_file(filename)
+    with transaction.atomic(), pytest.raises(ClientError):
+        api.process_watch_file(filename)
     assert not Video.objects.filter(title=filename).exists()
 
 

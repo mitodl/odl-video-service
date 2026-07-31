@@ -7,6 +7,7 @@ import re
 from urllib.parse import urljoin
 
 import requests
+import structlog
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -16,7 +17,6 @@ from rest_framework import status
 
 from mail.exceptions import SendBatchException
 from mail.utils import chunks
-import structlog
 
 log = structlog.get_logger(__name__)
 
@@ -54,14 +54,12 @@ class MailgunClient:
         Returns:
             requests.Response: HTTP response
         """
-        mailgun_url = "{}/{}".format(settings.MAILGUN_URL, endpoint)
+        mailgun_url = f"{settings.MAILGUN_URL}/{endpoint}"
         email_params = cls.default_params()
         email_params.update(params)
         # Update 'from' address if sender_name was specified
         if sender_name is not None:
-            email_params["from"] = "{sender_name} <{email}>".format(
-                sender_name=sender_name, email=email_params["from"]
-            )
+            email_params["from"] = f"{sender_name} <{email_params['from']}>"
         response = request_func(
             mailgun_url, auth=cls._basic_auth_credentials, data=email_params
         )
@@ -146,7 +144,10 @@ class MailgunClient:
                 responses.append(response)
             except ImproperlyConfigured:
                 raise
-            except Exception as exception:
+            # Deliberately broad: every per-batch failure is collected and
+            # re-raised together as SendBatchException below, so one bad batch
+            # does not stop the remaining batches from being sent.
+            except Exception as exception:  # noqa: BLE001
                 exception_pairs.append((emails, exception))
 
         if exception_pairs:
@@ -206,18 +207,16 @@ def render_email_templates(template_name, context):
     Returns:
         (str, str, str): tuple of the templates for subject, text_body, html_body
     """
-    subject_text = render_to_string(
-        "{}/subject.txt".format(template_name), context
-    ).rstrip()
+    subject_text = render_to_string(f"{template_name}/subject.txt", context).rstrip()
 
     context.update({"subject": subject_text})
-    html_text = render_to_string("{}/body.html".format(template_name), context)
+    html_text = render_to_string(f"{template_name}/body.html", context)
 
     # pynliner internally uses bs4, which we can now modify the inlined version into a plaintext version
     # this avoids parsing the body twice in bs4
     soup = BeautifulSoup(html_text, "html5lib")
     for link in soup.find_all("a"):
-        link.replace_with("{} ({})".format(link.string, link.attrs["href"]))
+        link.replace_with(f"{link.string} ({link.attrs['href']})")
 
     # clear any surviving style and title tags, so their contents don't get printed
     for style in soup.find_all(["style", "title"]):

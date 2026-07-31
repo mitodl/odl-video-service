@@ -2,11 +2,10 @@
 Keycloak Management Utility
 """
 
-import requests
-from typing import List, Dict, Optional
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 
+import requests
 from django.conf import settings
 
 from ui.exceptions import KeycloakException
@@ -37,10 +36,10 @@ class KeycloakUser:
     last_name: str = ""
     enabled: bool = True
     email_verified: bool = False
-    password: Optional[str] = None
+    password: str | None = None
     temporary_password: bool = True
-    groups: Optional[List[str]] = None
-    attributes: Optional[Dict[str, List[str]]] = None
+    groups: list[str] | None = None
+    attributes: dict[str, list[str]] | None = None
 
 
 class KeycloakManager:
@@ -97,7 +96,7 @@ class KeycloakManager:
             logger.error(f"Failed to get Keycloak admin token: {exc}")
             raise
 
-    def get_headers(self) -> Dict[str, str]:
+    def get_headers(self) -> dict[str, str]:
         """Get headers with authorization token"""
         if not self.access_token:
             self.get_admin_token()
@@ -111,10 +110,10 @@ class KeycloakManager:
         self,
         method: str,
         endpoint: str,
-        params: Dict = None,
-        json_data: Dict = None,
+        params: dict | None = None,
+        json_data: dict | None = None,
         _retry: bool = False,
-    ) -> Dict:
+    ) -> dict:
         """
         Make an API request to Keycloak
 
@@ -181,18 +180,18 @@ class KeycloakManager:
             raise
 
     # GROUP MANAGEMENT METHODS
-    def get_groups(self, params: Dict = None) -> List[Dict]:
+    def get_groups(self, params: dict | None = None) -> list[dict]:
         """Get all groups in the realm"""
         endpoint = f"/admin/realms/{self.realm}/groups"
         return self._make_api_request("get", endpoint, params)
 
-    def find_group_by_name(self, group_name: str) -> Optional[Dict]:
+    def find_group_by_name(self, group_name: str) -> dict | None:
         """Find a group by name"""
         params = {"search": group_name, "exact": "true"}
         groups = self.get_groups(params)
         return groups[0] if groups else None
 
-    def create_group(self, group_name: str, attributes: Optional[Dict] = None) -> Dict:
+    def create_group(self, group_name: str, attributes: dict | None = None) -> dict:
         """Create a new group"""
         endpoint = f"/admin/realms/{self.realm}/groups"
 
@@ -205,12 +204,12 @@ class KeycloakManager:
 
         return self.find_group_by_name(group_name)
 
-    def get_group_members(self, group_id: str) -> List[Dict]:
+    def get_group_members(self, group_id: str) -> list[dict]:
         """Get all members of a specific group"""
         endpoint = f"/admin/realms/{self.realm}/groups/{group_id}/members"
         return self._make_api_request("get", endpoint)
 
-    def get_group_details(self, group_id: str) -> Dict:
+    def get_group_details(self, group_id: str) -> dict:
         """
         Get detailed information about a group including its attributes
 
@@ -242,7 +241,7 @@ class KeycloakManager:
         group = self.find_group_by_name(group_name)
         return bool(group)
 
-    def get_user_groups_by_user_id(self, user_id: str) -> List[Dict]:
+    def get_user_groups_by_user_id(self, user_id: str) -> list[dict]:
         """
         Get all groups a user belongs to by user ID
 
@@ -255,7 +254,7 @@ class KeycloakManager:
         endpoint = f"/admin/realms/{self.realm}/users/{user_id}/groups"
         return self._make_api_request("get", endpoint)
 
-    def get_user_groups(self, email: str) -> List[str]:
+    def get_user_groups(self, email: str) -> list[str]:
         """
         Get a list of all groups a user is a member of
 
@@ -281,7 +280,7 @@ class KeycloakManager:
                 f"Something went wrong with getting groups for user {email}"
             ) from exc
 
-    def get_group_members_by_name(self, group_name: str) -> List[Dict]:
+    def get_group_members_by_name(self, group_name: str) -> list[dict]:
         """
         Get all members of a specific group by group name
 
@@ -304,7 +303,7 @@ class KeycloakManager:
                 f"Something went wrong with getting members for group {group_name}"
             ) from exc
 
-    def get_group_attributes_by_name(self, group_name: str) -> Dict:
+    def get_group_attributes_by_name(self, group_name: str) -> dict:
         """
         Get attributes of a specific group by group name
 
@@ -329,7 +328,7 @@ class KeycloakManager:
             ) from exc
 
     # USER MANAGEMENT METHODS
-    def get_users(self, max_users: int = 999, search: str = None) -> List[Dict]:
+    def get_users(self, max_users: int = 999, search: str | None = None) -> list[dict]:
         """Get all users in the realm"""
         endpoint = f"/admin/realms/{self.realm}/users"
         params = {"max": max_users}
@@ -338,7 +337,7 @@ class KeycloakManager:
 
         return self._make_api_request("get", endpoint, params=params)
 
-    def find_user_by_email(self, email: str) -> Optional[Dict]:
+    def find_user_by_email(self, email: str) -> dict | None:
         """Find a user by email"""
         endpoint = f"/admin/realms/{self.realm}/users"
         params = {"email": email, "exact": "true"}
@@ -346,7 +345,7 @@ class KeycloakManager:
         users = self._make_api_request("get", endpoint, params=params)
         return users[0] if users else None
 
-    def create_user(self, user: KeycloakUser) -> Dict:
+    def create_user(self, user: KeycloakUser) -> dict:
         """Create a new user"""
         user_data = {
             "username": user.username,

@@ -2,25 +2,25 @@
 
 import io
 import json
-from pathlib import Path
 import re
 from collections import namedtuple
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import quote
 from uuid import uuid4
 
 import boto3
 import pytz
+import structlog
 from boto3.s3.transfer import TransferConfig
-from PIL import ExifTags, Image, ImageOps
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from mitol.transcoding.api import media_convert_job
+from PIL import ExifTags, Image, ImageOps
 
-import structlog
 from ui.api import get_duration_from_encode_job
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
@@ -421,7 +421,7 @@ def create_lecture_collection_slug(video_attributes):
     return (
         video_attributes.prefix
         if not video_attributes.session
-        else "{}-{}".format(video_attributes.prefix, video_attributes.session)
+        else f"{video_attributes.prefix}-{video_attributes.session}"
     )
 
 
@@ -438,9 +438,7 @@ def create_lecture_video_title(video_attributes):
         else video_attributes.record_date.strftime("%B %d, %Y")
     )
     return (
-        "Lecture - {}".format(video_title_date)
-        if video_title_date
-        else video_attributes.name
+        f"Lecture - {video_title_date}" if video_title_date else video_attributes.name
     )
 
 
@@ -463,11 +461,7 @@ def process_watch_file(s3_filename):
     )
     with transaction.atomic():
         video = Video.objects.create(
-            source_url="https://{}/{}/{}".format(
-                settings.AWS_S3_DOMAIN,
-                settings.VIDEO_S3_WATCH_BUCKET,
-                quote(s3_filename),
-            ),
+            source_url=f"https://{settings.AWS_S3_DOMAIN}/{settings.VIDEO_S3_WATCH_BUCKET}/{quote(s3_filename)}",
             collection=collection,
             title=create_lecture_video_title(video_attributes),
             multiangle=True,  # Assume all videos in watch bucket are multi-angle
@@ -536,7 +530,10 @@ def parse_lecture_video_filename(filename):
     else:
         prefix, recording_date_str, _, _, session = matches.groups()
         try:
-            record_date = datetime.strptime(recording_date_str, "%Y%b%d")
+            # A lecture-capture filename encodes a bare calendar date with no
+            # timezone, and the value is only ever strftime'd into a video
+            # title, so there is no correct tzinfo to attach here.
+            record_date = datetime.strptime(recording_date_str, "%Y%b%d")  # noqa: DTZ007
         except ValueError:
             record_date = None
     return ParsedVideoAttributes(
@@ -777,9 +774,7 @@ def create_thumbnail_in_s3(video, file_data):
     """
     jpeg_data, width, height = convert_image_to_jpeg(file_data)
     bucket_name = settings.VIDEO_S3_THUMBNAIL_BUCKET
-    s3_key = "thumbnails/{video_key}/video_thumbnail.0000000.jpg".format(
-        video_key=video.hexkey,
-    )
+    s3_key = f"thumbnails/{video.hexkey}/video_thumbnail.0000000.jpg"
     s3 = boto3.resource("s3")
     bucket = s3.Bucket(bucket_name)
     config = TransferConfig(**settings.AWS_S3_UPLOAD_TRANSFER_CONFIG)
@@ -849,7 +844,9 @@ def cleanup_and_upsert_video_file(
                     s3_object_key=vf.s3_object_key,
                 )
                 vf.delete()
-            except Exception as exc:
+            # Best-effort cleanup: one failed delete must not abort the rest of
+            # the loop or the update_or_create below.
+            except Exception as exc:  # noqa: BLE001
                 log.error(
                     "Failed to delete duplicate VideoFile",
                     video_id=video.id,

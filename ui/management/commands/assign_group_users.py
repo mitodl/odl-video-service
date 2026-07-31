@@ -53,7 +53,7 @@ class Command(BaseCommand):
         try:
             manager = build_keycloak_manager(keycloak_config)
             manager.get_groups()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise CommandError(f"Failed to connect to Keycloak: {exc}") from exc
 
         group = manager.find_group_by_name(group_name)

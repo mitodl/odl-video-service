@@ -220,9 +220,7 @@ WSGI_APPLICATION = "odl_video.wsgi.application"
 # For URL structure:
 # https://github.com/kennethreitz/dj-database-url
 DEFAULT_DATABASE_CONFIG = dj_database_url.parse(
-    get_string(
-        "DATABASE_URL", "sqlite:///{0}".format(os.path.join(BASE_DIR, "db.sqlite3"))
-    )
+    get_string("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'db.sqlite3')}")
 )
 DEFAULT_DATABASE_CONFIG["CONN_MAX_AGE"] = get_int("ODL_VIDEO_DB_CONN_MAX_AGE", 0)
 
@@ -325,15 +323,13 @@ CLOUDFRONT_KEY_ID = get_string("CLOUDFRONT_KEY_ID", "")
 VIDEO_CLOUDFRONT_DIST = get_string("VIDEO_CLOUDFRONT_DIST", "")
 VIDEO_CLOUDFRONT_BASE_URL = get_string(
     "VIDEO_CLOUDFRONT_BASE_URL",
-    "https://{}.cloudfront.net/".format(VIDEO_CLOUDFRONT_DIST),
+    f"https://{VIDEO_CLOUDFRONT_DIST}.cloudfront.net/",
 )
 
 CLOUDFRONT_DIST = get_string("STATIC_CLOUDFRONT_DIST", None)
 if CLOUDFRONT_DIST:
-    STATIC_URL = urljoin(
-        "https://{dist}.cloudfront.net".format(dist=CLOUDFRONT_DIST), STATIC_URL
-    )
-    AWS_S3_CUSTOM_DOMAIN = "{dist}.cloudfront.net".format(dist=CLOUDFRONT_DIST)
+    STATIC_URL = urljoin(f"https://{CLOUDFRONT_DIST}.cloudfront.net", STATIC_URL)
+    AWS_S3_CUSTOM_DOMAIN = f"{CLOUDFRONT_DIST}.cloudfront.net"
 
 AWS_ACCESS_KEY_ID = get_string("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = get_string("AWS_SECRET_ACCESS_KEY", "")
@@ -352,15 +348,15 @@ AWS_S3_UPLOAD_MAX_IO_QUEUE = get_int("AWS_S3_UPLOAD_MAX_IO_QUEUE", 100)
 AWS_S3_UPLOAD_IO_CHUNKSIZE_KB = get_int("AWS_S3_UPLOAD_IO_CHUNKSIZE_KB", 256)
 AWS_S3_UPLOAD_USE_THREADS = get_bool("AWS_S3_UPLOAD_USE_THREADS", True)
 
-AWS_S3_UPLOAD_TRANSFER_CONFIG = dict(
-    multipart_threshold=AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB * MB,
-    multipart_chunksize=AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB * MB,
-    max_concurrency=AWS_S3_UPLOAD_MAX_CONCURRENCY,
-    num_download_attempts=AWS_S3_UPLOAD_NUM_DOWNLOAD_ATTEMPTS,
-    max_io_queue=AWS_S3_UPLOAD_MAX_IO_QUEUE,
-    io_chunksize=AWS_S3_UPLOAD_IO_CHUNKSIZE_KB * KB,
-    use_threads=AWS_S3_UPLOAD_USE_THREADS,
-)
+AWS_S3_UPLOAD_TRANSFER_CONFIG = {
+    "multipart_threshold": AWS_S3_UPLOAD_MULTIPART_THRESHOLD_MB * MB,
+    "multipart_chunksize": AWS_S3_UPLOAD_MULTIPART_CHUNKSIZE_MB * MB,
+    "max_concurrency": AWS_S3_UPLOAD_MAX_CONCURRENCY,
+    "num_download_attempts": AWS_S3_UPLOAD_NUM_DOWNLOAD_ATTEMPTS,
+    "max_io_queue": AWS_S3_UPLOAD_MAX_IO_QUEUE,
+    "io_chunksize": AWS_S3_UPLOAD_IO_CHUNKSIZE_KB * KB,
+    "use_threads": AWS_S3_UPLOAD_USE_THREADS,
+}
 
 # Janitor: fail videos stuck in UPLOADING past the threshold so they can be retried.
 STUCK_UPLOADING_THRESHOLD_HOURS = get_int("STUCK_UPLOADING_THRESHOLD_HOURS", 2)

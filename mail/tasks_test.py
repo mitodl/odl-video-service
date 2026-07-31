@@ -34,7 +34,7 @@ def test_get_recipients_for_video(mocker):
     lists = KeycloakGroupFactory.create_batch(3)
     video = VideoFactory(collection__admin_lists=lists)
     list_attributes = [{"mail_list": ["false"]}, {"mail_list": ["true"]}, None]
-    group_members = [{"email": "{}@mit.edu".format(lists[1].name)}]
+    group_members = [{"email": f"{lists[1].name}@mit.edu"}]
     list_emails = [group_members[0]["email"]]
     mocker.patch("mail.tasks.has_common_lists", return_value=False)
     mock_client().get_group_members_by_name.return_value = group_members
@@ -105,14 +105,12 @@ def test_send_notification_email_happy_path(mocker):
     )
     tasks.send_notification_email(video)
     mocked_mailgun.send_batch.assert_called_once_with(
-        **{
-            "subject": subject,
-            "html_body": html,
-            "text_body": text,
-            "recipients": [(video.collection.owner.email, {})],
-            "sender_address": settings.EMAIL_SUPPORT,
-            "raise_for_status": True,
-        }
+        subject=subject,
+        html_body=html,
+        text_body=text,
+        recipients=[(video.collection.owner.email, {})],
+        sender_address=settings.EMAIL_SUPPORT,
+        raise_for_status=True,
     )
 
 
@@ -172,12 +170,10 @@ def test_send_debug_email(mocker):
         video=video, email_kwargs=mock_email_kwargs
     )
     mocked_mailgun.send_individual_email.assert_called_once_with(
-        **{
-            "subject": "DEBUG:{}".format(mock_email_kwargs["subject"]),
-            "html_body": None,
-            "text_body": mocked_generate_debug_email_body.return_value,
-            "recipient": settings.EMAIL_SUPPORT,
-        }
+        subject=f"DEBUG:{mock_email_kwargs['subject']}",
+        html_body=None,
+        text_body=mocked_generate_debug_email_body.return_value,
+        recipient=settings.EMAIL_SUPPORT,
     )
 
 

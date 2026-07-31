@@ -108,7 +108,7 @@ def test_upload_video_long_fields(mocker):
     youtube_mocker = mocker.patch("cloudsync.youtube.build")
     mock_upload = youtube_mocker().videos.return_value.insert
     YouTubeApi().upload_video(video)
-    called_args, called_kwargs = mock_upload.call_args
+    _called_args, called_kwargs = mock_upload.call_args
     assert called_kwargs["body"]["snippet"]["title"] == title[:100]
     assert called_kwargs["body"]["snippet"]["description"] == desc[:5000]
 

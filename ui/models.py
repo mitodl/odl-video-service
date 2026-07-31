@@ -37,7 +37,7 @@ def delete_s3_objects(self, bucket_name, key, as_filter=False):
         key(str): S3 key or key prefix
         as_filter(bool): Filter the bucket by the key
     """
-    print("BUCKET NAME {}".format(bucket_name))
+    print(f"BUCKET NAME {bucket_name}")
     bucket = get_bucket(bucket_name)
     if not as_filter:
         bucket.delete_objects(Delete={"Objects": [{"Key": key}]})
@@ -69,7 +69,7 @@ class KeycloakGroup(TimestampedModel):
         return self.name
 
     def __repr__(self):
-        return "<KeycloakGroup: {self.name!r}>".format(self=self)
+        return f"<KeycloakGroup: {self.name!r}>"
 
 
 class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
@@ -123,14 +123,10 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
             self.update_access_token(response)
 
     def __str__(self):
-        return "{} - {}".format(self.name, self.base_url)
+        return f"{self.name} - {self.base_url}"
 
     def __repr__(self):
-        return (
-            '<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}">'.format(
-                self=self
-            )
-        )
+        return f'<EdxEndpoint: name="{self.name!r}", base_url="{self.base_url!r}">'
 
 
 class CollectionManager(TimestampedModelManager):
@@ -229,9 +225,7 @@ class Collection(TimestampedModel):
         return self.title
 
     def __repr__(self):
-        return '<Collection: title="{self.title!r}", owner={self.owner.username!r}>'.format(
-            self=self
-        )
+        return f'<Collection: title="{self.title!r}", owner={self.owner.username!r}>'
 
     @property
     def hexkey(self):
@@ -478,7 +472,7 @@ class Video(TimestampedModel):
         """
         path = urlparse(self.source_url).path
         _, extension = os.path.splitext(path.split("/")[-1])
-        newkey = "{uuid}/video{ext}".format(uuid=str(self.hexkey), ext=extension)
+        newkey = f"{self.hexkey!s}/video{extension}"
         return newkey
 
     def transcode_key(self, preset=None):
@@ -518,13 +512,9 @@ class Video(TimestampedModel):
         Returns:
             str: S3 object key
         """
-        return "{prefix}/{key}/subtitles_{key}_{dt}_{lang}.{ext}".format(
-            prefix=prefix,
-            key=self.hexkey,
-            dt=dttm.strftime("%Y%m%d%H%M%S"),
-            lang=language,
-            ext=extension,
-        )
+        key = self.hexkey
+        dt = dttm.strftime("%Y%m%d%H%M%S")
+        return f"{prefix}/{key}/subtitles_{key}_{dt}_{language}.{extension}"
 
     def update_status(self, status):
         """
@@ -537,7 +527,7 @@ class Video(TimestampedModel):
         if status == VideoStatus.RETRANSCODE_SCHEDULED:
             self.schedule_retranscode = False
         self.save()
-        if status in tasks.STATUS_TO_NOTIFICATION.keys():
+        if status in tasks.STATUS_TO_NOTIFICATION:
             tasks.async_send_notification_email.delay(self.id)
 
     def save(self, *args, **kwargs):
@@ -551,7 +541,7 @@ class Video(TimestampedModel):
         return self.title or "<untitled video>"
 
     def __repr__(self):
-        return "<Video: {self.title!r} {self.key!r}>".format(self=self)
+        return f"<Video: {self.title!r} {self.key!r}>"
 
 
 class VideoS3(TimestampedModel):
@@ -583,10 +573,8 @@ class VideoS3(TimestampedModel):
         Returns:
             str: URL
         """
-        return "https://{domain}/{bucket}/{key}".format(
-            domain=settings.AWS_S3_DOMAIN,
-            bucket=self.bucket_name,
-            key=self.s3_object_key,
+        return (
+            f"https://{settings.AWS_S3_DOMAIN}/{self.bucket_name}/{self.s3_object_key}"
         )
 
     @property
@@ -610,9 +598,7 @@ class VideoS3(TimestampedModel):
         distribution = settings.VIDEO_CLOUDFRONT_DIST
         if not distribution:
             raise RuntimeError("Missing required setting: VIDEO_CLOUDFRONT_DIST")
-        return "https://{dist}.cloudfront.net/{key}".format(
-            dist=distribution, key=self.s3_object_key
-        )
+        return f"https://{distribution}.cloudfront.net/{self.s3_object_key}"
 
     def delete_from_s3(self):
         """
@@ -656,12 +642,10 @@ class VideoFile(VideoS3):
         )
 
     def __str__(self):
-        return "{}: {} encoding".format(self.video.title, self.encoding)
+        return f"{self.video.title}: {self.encoding} encoding"
 
     def __repr__(self):
-        return "<VideoFile: {self.video.title!r} {self.s3_object_key!r} {self.encoding!r}>".format(
-            self=self
-        )
+        return f"<VideoFile: {self.video.title!r} {self.s3_object_key!r} {self.encoding!r}>"
 
 
 class VideoThumbnail(VideoS3):
@@ -674,12 +658,10 @@ class VideoThumbnail(VideoS3):
     max_height = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
-        return "{}: {}".format(self.video.title, self.s3_object_key)
+        return f"{self.video.title}: {self.s3_object_key}"
 
     def __repr__(self):
-        return "<VideoThumbnail: {self.s3_object_key!r} {self.max_width!r} {self.max_height!r}>".format(
-            self=self
-        )
+        return f"<VideoThumbnail: {self.s3_object_key!r} {self.max_width!r} {self.max_height!r}>"
 
     class Meta:
         ordering = ["-created_at"]
@@ -705,12 +687,10 @@ class VideoSubtitle(VideoS3):
         return languages.get(alpha_2=self.language).name
 
     def __str__(self):
-        return "{}: {}: {}".format(self.video.title, self.s3_object_key, self.language)
+        return f"{self.video.title}: {self.s3_object_key}: {self.language}"
 
     def __repr__(self):
-        return "<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >".format(
-            self=self
-        )
+        return f"<VideoSubtitle: {self.s3_object_key!r} {self.language!r} >"
 
 
 class YouTubeVideo(TimestampedModel):
@@ -723,9 +703,9 @@ class YouTubeVideo(TimestampedModel):
     )
 
     def __repr__(self):
-        return "<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >".format(
-            self=self
+        return (
+            f"<YouTubeVideo: {self.id!r} {self.video.title!r} {self.video.hexkey!r} >"
         )
 
     def __str__(self):
-        return "{}: {}: {}".format(self.id, self.video.title, self.video.hexkey)
+        return f"{self.id}: {self.video.title}: {self.video.hexkey}"

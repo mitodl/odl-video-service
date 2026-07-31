@@ -11,8 +11,8 @@ from rest_framework.settings import api_settings
 from ui import models
 from ui import permissions as ui_permissions
 from ui.encodings import EncodingNames
-from ui.utils import has_common_lists
 from ui.keycloak_utils import get_keycloak_client
+from ui.utils import has_common_lists
 
 User = get_user_model()
 
@@ -38,7 +38,7 @@ def validate_keycloak_groups(lists):
 
     if bad_lists:
         raise serializers.ValidationError(
-            "Group does not exist: {}".format(",".join(bad_lists))
+            f"Group does not exist: {','.join(bad_lists)}"
         )
     return lists
 
@@ -543,7 +543,7 @@ class VideoSubtitleUploadSerializer(serializers.Serializer):
 
     def validate_filename(self, value):
         """Validate that the filename has a .srt or .vtt extension"""
-        if not (value.endswith(".srt") or value.endswith(".vtt")):
+        if not (value.endswith((".srt", ".vtt"))):
             raise serializers.ValidationError(
                 "Only .srt and .vtt subtitle files are supported."
             )

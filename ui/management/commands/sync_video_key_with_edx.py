@@ -1,10 +1,11 @@
 """Management command to sync video keys with edX"""
 
+import uuid
 from datetime import datetime
 from urllib.parse import urlencode
+
 import requests
 from django.core.management.base import BaseCommand
-import uuid
 
 from ui.models import Collection, Video
 
@@ -39,7 +40,9 @@ class Command(BaseCommand):
                 )
                 try:
                     edx_endpoint.refresh_access_token()
-                except Exception as exc:
+                # Best-effort: an unreachable or misconfigured endpoint is
+                # reported and skipped so the remaining endpoints still sync.
+                except Exception as exc:  # noqa: BLE001
                     self.stdout.write(
                         self.style.ERROR(
                             f"Can not refresh access token for edX endpoint {edx_endpoint.name} and url {edx_endpoint.base_url}"

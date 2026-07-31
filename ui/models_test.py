@@ -88,9 +88,7 @@ def test_video_model_s3keys(video):
     assert s3key is not None
     path = urlparse(video.source_url).path
     _, extension = os.path.splitext(path.split("/")[-1])
-    assert s3key == "{uuid}/video{extension}".format(
-        uuid=video.hexkey, extension=extension
-    )
+    assert s3key == f"{video.hexkey}/video{extension}"
 
 
 def test_get_s3_key_strips_query_string(video):
@@ -108,7 +106,7 @@ def test_video_aws_integration(videofile):
     assert s3_obj.key == videofile.s3_object_key
     s3_url = videofile.s3_url
     assert isinstance(s3_url, str)
-    assert s3_url.startswith("https://{}/".format(settings.AWS_S3_DOMAIN))
+    assert s3_url.startswith(f"https://{settings.AWS_S3_DOMAIN}/")
     cf_url = videofile.cloudfront_url
     assert isinstance(cf_url, str)
     assert cf_url.startswith("https://video-cf.cloudfront.net/")
@@ -119,10 +117,9 @@ def test_video_transcode_key(videofile):
     Test that the Video.transcode_key method returns expected results
     """
     preset = "pre01"
-    assert videofile.video.transcode_key(
-        preset
-    ) == "transcoded/{uuid}/video_{preset}".format(
-        uuid=str(videofile.video.hexkey), preset=preset
+    assert (
+        videofile.video.transcode_key(preset)
+        == f"transcoded/{videofile.video.hexkey!s}/video_{preset}"
     )
 
 
@@ -215,11 +212,11 @@ def test_video_subtitle_key():
     """Tests that the correct subtitle key is returned for a language"""
     video = VideoFactory(key="8494dafc-3665-4960-8e00-9790574ec93a")
     now = datetime.now(tz=pytz.UTC)
+    key = "8494dafc366549608e009790574ec93a"
+    dt = now.strftime("%Y%m%d%H%M%S")
     assert (
         re.fullmatch(
-            "subtitles/8494dafc366549608e009790574ec93a/subtitles_8494dafc366549608e009790574ec93a_{}_en.vtt".format(
-                now.strftime("%Y%m%d%H%M%S")
-            ),
+            f"subtitles/{key}/subtitles_{key}_{dt}_en.vtt",
             video.subtitle_key(now, "en"),
         )
         is not None
@@ -231,11 +228,11 @@ def test_video_subtitle_key_with_extension(extension):
     """Tests that the correct subtitle key is returned for different file extensions"""
     video = VideoFactory(key="8494dafc-3665-4960-8e00-9790574ec93a")
     now = datetime.now(tz=pytz.UTC)
+    key = "8494dafc366549608e009790574ec93a"
+    dt = now.strftime("%Y%m%d%H%M%S")
     assert (
         re.fullmatch(
-            "subtitles/8494dafc366549608e009790574ec93a/subtitles_8494dafc366549608e009790574ec93a_{}_{}.{}".format(
-                now.strftime("%Y%m%d%H%M%S"), "en", extension
-            ),
+            f"subtitles/{key}/subtitles_{key}_{dt}_en.{extension}",
             video.subtitle_key(now, "en", extension=extension),
         )
         is not None
@@ -416,7 +413,7 @@ def test_download_mp4(encodings, download):
     video = VideoFactory()
     for encoding in encodings:
         VideoFileFactory(
-            video=video, s3_object_key="{}.mp4".format(encoding), encoding=encoding
+            video=video, s3_object_key=f"{encoding}.mp4", encoding=encoding
         )
     if not download:
         assert video.download is None

@@ -3,7 +3,6 @@
 import pytest
 import requests
 
-
 _COMMAND_MANAGER_TARGETS = (
     "ui.management.commands.keycloak_command_utils.build_keycloak_manager",
     "ui.management.commands.migrate_moira_to_keycloak.build_keycloak_manager",

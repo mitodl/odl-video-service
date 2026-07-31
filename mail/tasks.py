@@ -2,17 +2,15 @@
 
 import textwrap
 
+import structlog
 from celery import shared_task
 from django.conf import settings
 
 from mail import api
 from mail.api import context_for_video, render_email_templates
 from mail.constants import STATUS_TO_NOTIFICATION, STATUSES_THAT_TRIGGER_DEBUG_EMAIL
-
-import structlog
-
-from ui.utils import has_common_lists
 from ui.keycloak_utils import get_keycloak_client
+from ui.utils import has_common_lists
 
 log = structlog.get_logger(__name__)
 
@@ -60,7 +58,7 @@ def send_notification_email(video):
     Args:
         video (ui.models.Video): a video object
     """
-    if video.status not in STATUS_TO_NOTIFICATION.keys():
+    if video.status not in STATUS_TO_NOTIFICATION:
         log.error(
             "Unexpected video status",
             video_hexkey=video.hexkey,
@@ -121,7 +119,7 @@ def _send_debug_email(video=None, email_kwargs=None):
     Sends a debug email to the support email.
     """
     debug_email_kwargs = {
-        "subject": "DEBUG:{}".format(email_kwargs["subject"]),
+        "subject": f"DEBUG:{email_kwargs['subject']}",
         "html_body": None,
         "text_body": _generate_debug_email_body(video=video, email_kwargs=email_kwargs),
         "recipient": settings.EMAIL_SUPPORT,
