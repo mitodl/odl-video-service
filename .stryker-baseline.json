@@ -1,0 +1,28 @@
+{
+  "_comment": "Mutation score baseline for the Enzyme->RTL migration (mitodl/hq#12637). Recorded on React 15 + Enzyme BEFORE any bulk conversion, so regressions during hq#12638 are attributable. scripts/test/ledger.sh fails when the computed score drops below mutationScore - tolerance. Raise these numbers only in a reviewed commit that explains why.",
+  "_howToReproduce": "npm run mutation   (~26 min, inPlace: never run on uncommitted work)",
+  "_scoreDefinition": "detected / valid, where detected = Killed + Timeout, and valid excludes Ignored, CompileError and RuntimeError. This matches Stryker's own reported figure exactly; ledger.sh uses the same arithmetic.",
+
+  "recordedOn": "2026-07-31",
+  "recordedOnCommit": "f2efc5b",
+  "reactVersion": "15.6.1",
+  "enzymeTestFiles": 31,
+  "passingTests": 492,
+
+  "mutationScore": 48.81,
+  "coveredScore": 56.8,
+  "tolerance": 2.0,
+
+  "files": 81,
+  "totalMutants": 2785,
+  "killed": 1178,
+  "timeout": 171,
+  "survived": 1026,
+  "noCoverage": 389,
+  "runtimeError": 21,
+  "runtimeSeconds": 1585,
+
+  "_interpretation": "48.81% is the fraction of all injected bugs the suite detects; 56.8% is the fraction it detects in code the tests actually execute. The 389 no-coverage mutants are the gap between them. This is a reference line, NOT a grade to improve -- its only job is to reveal a conversion that keeps the test count while weakening the assertions.",
+  "_expectDrift": "Converting .instance() assertions to behavioural ones can legitimately kill fewer mutants while being the better test, because RTL cannot reach private methods Enzyme could. Treat a drop as a prompt to look, not proof of a defect. That is what tolerance is for.",
+  "_weakestAreas": "store 0.00, data 3.85, constants.js 11.76, util 16.79, actions 31.88, components 44.58. Pre-existing gaps in the Enzyme suite, not in scope for the migration to fix."
+}
