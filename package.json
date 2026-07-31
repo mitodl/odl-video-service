@@ -123,6 +123,7 @@
     "scss_lint": "node ./node_modules/sass-lint/bin/sass-lint.js --verbose --no-exit",
     "test": "./scripts/test/js_test.sh",
     "mutation": "stryker run",
+    "ledger": "./scripts/test/ledger.sh",
     "coverage": "COVERAGE=1 ./scripts/test/js_test.sh",
     "codecov": "CODECOV=1 ./scripts/test/js_test.sh",
     "watch": "WATCH=1 ./scripts/test/js_test.sh",
