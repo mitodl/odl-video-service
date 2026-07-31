@@ -64,9 +64,7 @@ class MailAPITests(TestCase):
         )
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
-        assert next(iter(called_args)) == "{}/{}".format(
-            settings.MAILGUN_URL, "messages"
-        )
+        assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
         assert called_kwargs["auth"] == ("api", settings.MAILGUN_KEY)
         assert called_kwargs["data"]["html"].startswith("html")
         assert called_kwargs["data"]["text"].startswith("text")
@@ -101,9 +99,7 @@ class MailAPITests(TestCase):
         )
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
-        assert next(iter(called_args)) == "{}/{}".format(
-            settings.MAILGUN_URL, "messages"
-        )
+        assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
         assert called_kwargs["auth"] == ("api", settings.MAILGUN_KEY)
         assert called_kwargs["data"]["html"] == "html"
         assert called_kwargs["data"]["subject"] == "subject"
@@ -136,9 +132,7 @@ class MailAPITests(TestCase):
         assert mock_post.call_count == 6
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
-            assert next(iter(called_args)) == "{}/{}".format(
-                settings.MAILGUN_URL, "messages"
-            )
+            assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
             assert called_kwargs["data"]["html"].startswith("html")
             assert called_kwargs["data"]["text"].startswith("text")
             assert called_kwargs["data"]["subject"] == "email subject"
@@ -188,9 +182,7 @@ class MailAPITests(TestCase):
 
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
-            assert next(iter(called_args)) == "{}/{}".format(
-                settings.MAILGUN_URL, "messages"
-            )
+            assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
             assert called_kwargs["data"]["html"].startswith("html")
             assert called_kwargs["data"]["text"].startswith("text")
             assert called_kwargs["data"]["subject"] == "email subject"
@@ -269,9 +261,7 @@ class MailAPITests(TestCase):
         assert mock_post.call_count == 6
         for call_num, args in enumerate(mock_post.call_args_list):
             called_args, called_kwargs = args
-            assert next(iter(called_args)) == "{}/{}".format(
-                settings.MAILGUN_URL, "messages"
-            )
+            assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
             assert called_kwargs["data"]["html"].startswith("html")
             assert called_kwargs["data"]["text"].startswith("text")
             assert called_kwargs["data"]["subject"] == "email subject"
@@ -334,9 +324,7 @@ class MailAPITests(TestCase):
         assert response.status_code == HTTP_200_OK
         assert mock_post.called
         called_args, called_kwargs = mock_post.call_args
-        assert next(iter(called_args)) == "{}/{}".format(
-            settings.MAILGUN_URL, "messages"
-        )
+        assert called_args[0] == f"{settings.MAILGUN_URL}/messages"
         assert called_kwargs["auth"] == ("api", settings.MAILGUN_KEY)
         assert called_kwargs["data"]["html"].startswith("html")
         assert called_kwargs["data"]["text"].startswith("text")

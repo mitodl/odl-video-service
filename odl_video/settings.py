@@ -220,9 +220,7 @@ WSGI_APPLICATION = "odl_video.wsgi.application"
 # For URL structure:
 # https://github.com/kennethreitz/dj-database-url
 DEFAULT_DATABASE_CONFIG = dj_database_url.parse(
-    get_string(
-        "DATABASE_URL", "sqlite:///{}".format(os.path.join(BASE_DIR, "db.sqlite3"))
-    )
+    get_string("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'db.sqlite3')}")
 )
 DEFAULT_DATABASE_CONFIG["CONN_MAX_AGE"] = get_int("ODL_VIDEO_DB_CONN_MAX_AGE", 0)
 
