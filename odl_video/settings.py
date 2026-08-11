@@ -101,6 +101,7 @@ MIDDLEWARE = [
     "hijack.middleware.HijackUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "odl_video.middleware.RobotsTagMiddleware",
 ]
 
 # enable the nplusone profiler only in debug mode
