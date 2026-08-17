@@ -46,7 +46,7 @@ repos:
           - --exclude-files
           - "config/keycloak/*"
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.16.0"
+    rev: "v0.16.3"
     hooks:
       # ruff-check runs first: its fixes can leave lines that need reformatting,
       # so ruff-format must have the last word.
