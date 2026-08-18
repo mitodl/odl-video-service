@@ -303,6 +303,18 @@ NPLUSONE_LOG_LEVEL = logging.ERROR
 
 # LOGGING is provided by mitol-django-observability via import_settings_modules above
 
+# OpenTelemetry configuration (consumed by mitol-django-observability).
+# Tracing turns on when either this setting or the OTEL_EXPORTER_OTLP_ENDPOINT
+# environment variable is set -- those two and no others; the signal-specific
+# OTEL_EXPORTER_OTLP_TRACES_ENDPOINT is not consulted by the released library.
+# There is no flag to disable it.
+#
+# The value the library hands to the exporter is used verbatim, so this carries
+# the full signal path (.../v1/traces) rather than a base URL. service.name comes
+# from the OTEL_SERVICE_NAME environment variable, which the library reads
+# directly, so it needs no setting here.
+OPENTELEMETRY_ENDPOINT = get_string("OPENTELEMETRY_ENDPOINT", None)
+
 # Dropbox app credentials. DROPBOX_KEY (the app key) is also used by the browser
 # Chooser; DROPBOX_SECRET and DROPBOX_REFRESH_TOKEN authenticate server-side
 # shared-link downloads (sharing/get_shared_link_file) and must stay server-only —
