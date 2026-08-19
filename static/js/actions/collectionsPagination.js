@@ -25,7 +25,7 @@ actionCreators.getPage = (opts: { page: number }) => {
   const thunk = async (dispatch: Dispatch) => {
     // Get filters from URL parameters
     const params = new URLSearchParams(window.location.search)
-    const searchQuery = params.get('search')
+    const searchQuery = params.get("search")
     // Construct query parameters
     const queryParams = { page }
     if (searchQuery) queryParams.search = searchQuery

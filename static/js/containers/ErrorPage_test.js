@@ -2,16 +2,16 @@
 /* global SETTINGS */
 import React from "react"
 import sinon from "sinon"
-import { mount } from "enzyme"
 import { assert } from "chai"
+import { within } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
-import { Provider } from "react-redux"
 
 import * as api from "../lib/api"
 import ErrorPage from "./ErrorPage"
 import { actions } from "../actions"
 import rootReducer from "../reducers"
 import { makeCollection } from "../factories/collection"
+import renderWithProviders from "../testUtils/renderWithProviders"
 
 describe("ErrorPage", () => {
   let sandbox, store, collections, listenForActions
@@ -32,7 +32,7 @@ describe("ErrorPage", () => {
   })
 
   const renderPage = async (props = {}) => {
-    let wrapper
+    let result
 
     await listenForActions(
       [
@@ -40,15 +40,10 @@ describe("ErrorPage", () => {
         actions.collectionsList.get.successType
       ],
       () => {
-        wrapper = mount(
-          <Provider store={store}>
-            <ErrorPage {...props} />
-          </Provider>
-        )
+        result = renderWithProviders(<ErrorPage {...props} />, { store })
       }
     )
-    if (!wrapper) throw new Error("Never will happen, make flow happy")
-    return wrapper
+    return result
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -72,21 +67,21 @@ describe("ErrorPage", () => {
   ]) {
     it(`renders an error for status=${status}`, async () => {
       SETTINGS.status_code = status
-      const wrapper = await renderPage()
-      assert.equal(
-        wrapper
-          .find(".error-page .title")
-          .text()
-          .trim(),
-        title
-      )
-      assert.equal(
-        wrapper
-          .find(".error-page .message")
-          .text()
-          .trim(),
-        message
-      )
+      const { container } = await renderPage()
+      const errorPageEl = container.querySelector(".error-page")
+      assert.isNotNull(errorPageEl, "expected a .error-page element to render")
+
+      // Scoped to .error-page so this can't match text elsewhere on the
+      // page (e.g. the footer or drawer) that happens to coincide.
+      assert.isNotNull(within(errorPageEl).getByText(title))
+
+      // The message is deliberately not queried with getByText: for status
+      // 500 the copy is split across a <span>, an <a>, and a trailing text
+      // node, so no single element holds the whole string. textContent is
+      // the documented RTL fallback for that case.
+      const messageEl = errorPageEl.querySelector(".message")
+      assert.isNotNull(messageEl, "expected a .message element to render")
+      assert.equal(messageEl.textContent.trim(), message)
     })
   }
 })

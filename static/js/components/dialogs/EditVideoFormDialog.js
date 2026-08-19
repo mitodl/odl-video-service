@@ -172,7 +172,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   handleThumbnailChange = (event: Object) => {
     const file = event.target.files[0]
     if (!file) return
-    if (file.type !== "image/jpeg" && file.type !== "image/jpg" && file.type !== "image/png") {
+    if (
+      file.type !== "image/jpeg" &&
+      file.type !== "image/jpg" &&
+      file.type !== "image/png"
+    ) {
       const { thumbnailPreviewUrl } = this.state
       if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
       this.setState({
@@ -187,11 +191,12 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       const { thumbnailPreviewUrl } = this.state
       if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
       const maxBytes = SETTINGS.thumbnail_upload_max_size
-      const maxSizeStr = maxBytes >= 1024 * 1024 ?
-        `${Math.floor(maxBytes / (1024 * 1024))} MB` :
-        maxBytes >= 1024 ?
-          `${Math.floor(maxBytes / 1024)} KB` :
-          `${maxBytes} bytes`
+      const maxSizeStr =
+        maxBytes >= 1024 * 1024 ?
+          `${Math.floor(maxBytes / (1024 * 1024))} MB` :
+          maxBytes >= 1024 ?
+            `${Math.floor(maxBytes / 1024)} KB` :
+            `${maxBytes} bytes`
       this.setState({
         thumbnailError:      `This image is too large (max ${maxSizeStr}). Please reduce the file size and try again.`,
         thumbnailFile:       null,
@@ -366,7 +371,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             <p
               style={{ color: "#666", margin: "4px 0 0 0", fontSize: "0.8em" }}
             >
-              JPEG or PNG, max {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
+              JPEG or PNG, max{" "}
+              {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
             </p>
           )}
         </div>

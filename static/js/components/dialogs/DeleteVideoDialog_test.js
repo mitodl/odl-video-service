@@ -190,9 +190,7 @@ describe("DeleteVideoDialogTests", () => {
         generateCommonConfirmDeletionTests()
 
         it("assigns window.location", () => {
-          const expectedLocation = `someOrigin/collections/${
-            video.collection_key
-          }/`
+          const expectedLocation = `someOrigin/collections/${video.collection_key}/`
           assert.equal(stubs.window.location, expectedLocation)
         })
       })

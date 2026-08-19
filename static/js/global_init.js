@@ -1,5 +1,5 @@
 // Define globals we would usually get from Django
-import ReactDOM from "react-dom"
+import { cleanup } from "@testing-library/react"
 import { makeVideo } from "./factories/video"
 
 // For setting up enzyme with react adapter.
@@ -43,16 +43,25 @@ if (!Object.entries) {
 }
 
 // cleanup after each test run
-// eslint-disable-next-line mocha/no-top-level-hooks
-afterEach(function() {
-  const node = document.querySelector("#integration_test_div")
-  if (node) {
-    ReactDOM.unmountComponentAtNode(node)
-  }
+// Exported so teardown_test.js can exercise this exact function without
+// depending on mocha's hook ordering between two separate `it` blocks.
+export function resetTestEnvironment() {
+  // Unmount React trees before detaching the DOM. RTL's auto-cleanup would
+  // still unmount without this -- it holds a direct reference to its own
+  // container, so the innerHTML reset below does not prevent it -- but that
+  // ordering means componentWillUnmount runs against an already-detached
+  // node. Dialog/Drawer/Menu call MDC .destroy() there and VideoPlayer
+  // disposes its video.js player, so they should see an attached DOM.
+  // Calling cleanup() explicitly also removes any dependence on mocha's
+  // hook registration order. It is a no-op when RTL rendered nothing.
+  cleanup()
   document.body.innerHTML = ""
   global.SETTINGS = _createSettings()
   window.location = "http://fake/"
-})
+}
+
+// eslint-disable-next-line mocha/no-top-level-hooks
+afterEach(resetTestEnvironment)
 
 // enable chai-as-promised
 import chai from "chai"

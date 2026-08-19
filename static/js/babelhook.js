@@ -1,6 +1,6 @@
 const { babelSharedLoader } = require("../../webpack.config.shared")
 const whatwgURL = require("whatwg-url")
-const { v4: uuidv4 } = require('uuid')
+const { v4: uuidv4 } = require("uuid")
 require("babel-polyfill")
 
 // Update presets to use Babel 7 format for testing
@@ -28,7 +28,7 @@ URL.createObjectURL = function() {
 function copyProps(src, target) {
   Object.defineProperties(target, {
     ...Object.getOwnPropertyDescriptors(src),
-    ...Object.getOwnPropertyDescriptors(target),
+    ...Object.getOwnPropertyDescriptors(target)
   })
 }
 
@@ -41,14 +41,17 @@ window.EventTarget.prototype.dispatchEvent = function(event) {
     return originalDispatchEvent.call(this, event)
   } catch (error) {
     // If it fails due to invalid event type, create a proper event
-    if (error.message.includes('not of type \'Event\'') || error.message.includes('parameter 1 is not of type \'Event\'')) {
-      let eventName = 'custom'
+    if (
+      error.message.includes("not of type 'Event'") ||
+      error.message.includes("parameter 1 is not of type 'Event'")
+    ) {
+      let eventName = "custom"
       let eventData = {}
 
-      if (typeof event === 'string') {
+      if (typeof event === "string") {
         eventName = event
-      } else if (event && typeof event === 'object') {
-        eventName = event.type || event.name || 'custom'
+      } else if (event && typeof event === "object") {
+        eventName = event.type || event.name || "custom"
         eventData = event
       }
 
@@ -79,13 +82,13 @@ const windowProxy = new Proxy(window, {
     }
 
     return Reflect.set(target, prop, value)
-  },
+  }
 })
 
 global.window = windowProxy
 global.document = windowProxy.document
 global.navigator = {
-  userAgent: "node.js",
+  userAgent: "node.js"
 }
 global.requestAnimationFrame = function(callback) {
   return setTimeout(callback, 0)

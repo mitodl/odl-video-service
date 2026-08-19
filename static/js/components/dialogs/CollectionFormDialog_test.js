@@ -53,12 +53,14 @@ describe("CollectionFormDialog", () => {
     uiState = INITIAL_UI_STATE
 
     // Mock the users API response
-    sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
-      users: [
-        { id: 1, username: "user1", email: "user1@example.com" },
-        { id: 2, username: "user2", email: "user2@example.com" }
-      ]
-    }))
+    sandbox.stub(api, "getPotentialCollectionOwners").returns(
+      Promise.resolve({
+        users: [
+          { id: 1, username: "user1", email: "user1@example.com" },
+          { id: 2, username: "user2", email: "user2@example.com" }
+        ]
+      })
+    )
   })
 
   afterEach(() => {
@@ -75,7 +77,7 @@ describe("CollectionFormDialog", () => {
             open={true}
             hideDialog={hideDialogStub}
             isEdxCourseAdmin={true}
-            collectionKey={'00000000-0000-0000-0000-000000000000'}
+            collectionKey={"00000000-0000-0000-0000-000000000000"}
             {...props}
           />
         </div>
@@ -138,7 +140,8 @@ describe("CollectionFormDialog", () => {
       it("stores form submission errors in state", async () => {
         const wrapper = await renderComponent()
         let expectedActionTypes
-        const expectedErrorMessage = "Failed to parse URL from /api/v0/collections/"
+        const expectedErrorMessage =
+          "Failed to parse URL from /api/v0/collections/"
         if (isNew) {
           expectedActionTypes = [
             actions.collectionsList.post.requestType,
@@ -434,7 +437,11 @@ describe("CollectionFormDialog", () => {
           apiStub.firstCall.args[0] :
           apiStub.firstCall.args[1]
 
-        assert.equal(payloadArg.owner, 2, "Owner ID should be 2 in the API request")
+        assert.equal(
+          payloadArg.owner,
+          2,
+          "Owner ID should be 2 in the API request"
+        )
       })
 
       it("fetches users on component mount", async () => {
@@ -442,21 +449,25 @@ describe("CollectionFormDialog", () => {
         sandbox.restore()
 
         // Create a new getPotentialCollectionOwnersStub
-        sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
-          users: [
-            { id: 1, username: "user1", email: "user1@example.com" },
-            { id: 2, username: "user2", email: "user2@example.com" }
-          ]
-        }))
+        sandbox.stub(api, "getPotentialCollectionOwners").returns(
+          Promise.resolve({
+            users: [
+              { id: 1, username: "user1", email: "user1@example.com" },
+              { id: 2, username: "user2", email: "user2@example.com" }
+            ]
+          })
+        )
 
         // Create a dispatch stub that returns the expected data
         const dispatchStub = sandbox.stub()
-        dispatchStub.returns(Promise.resolve({
-          users: [
-            { id: 1, username: "user1", email: "user1@example.com" },
-            { id: 2, username: "user2", email: "user2@example.com" }
-          ]
-        }))
+        dispatchStub.returns(
+          Promise.resolve({
+            users: [
+              { id: 1, username: "user1", email: "user1@example.com" },
+              { id: 2, username: "user2", email: "user2@example.com" }
+            ]
+          })
+        )
 
         const wrapper = shallow(
           <UnconnectedCollectionFormDialog
@@ -464,7 +475,7 @@ describe("CollectionFormDialog", () => {
             history={{ push: sandbox.stub() }}
             collectionUi={{ isNew: true }}
             collectionForm={{}}
-            collectionKey={'00000000-0000-0000-0000-000000000000'}
+            collectionKey={"00000000-0000-0000-0000-000000000000"}
           />
         )
 
@@ -477,12 +488,14 @@ describe("CollectionFormDialog", () => {
         // Reinitialize the sandbox with the global stubs for other tests
         sandbox.restore()
         sandbox = sinon.createSandbox()
-        sandbox.stub(api, "getPotentialCollectionOwners").returns(Promise.resolve({
-          users: [
-            { id: 1, username: "user1", email: "user1@example.com" },
-            { id: 2, username: "user2", email: "user2@example.com" }
-          ]
-        }))
+        sandbox.stub(api, "getPotentialCollectionOwners").returns(
+          Promise.resolve({
+            users: [
+              { id: 1, username: "user1", email: "user1@example.com" },
+              { id: 2, username: "user2", email: "user2@example.com" }
+            ]
+          })
+        )
       })
 
       it("handles API errors when fetching users", async () => {
@@ -502,7 +515,7 @@ describe("CollectionFormDialog", () => {
             history={{ push: sandbox.stub() }}
             collectionUi={{ isNew: true }}
             collectionForm={{}}
-            collectionKey={'00000000-0000-0000-0000-000000000000'}
+            collectionKey={"00000000-0000-0000-0000-000000000000"}
           />
         )
 
@@ -539,7 +552,10 @@ describe("CollectionFormDialog", () => {
 
         sinon.assert.notCalled(dispatchStub)
         assert.equal(wrapper.state().users.length, 0)
-        sinon.assert.calledWithMatch(consoleLogStub, "No collection key provided, skipping potential owner fetch.")
+        sinon.assert.calledWithMatch(
+          consoleLogStub,
+          "No collection key provided, skipping potential owner fetch."
+        )
       })
     })
   }

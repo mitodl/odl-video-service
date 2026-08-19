@@ -27,7 +27,12 @@ import DropboxChooser from "react-dropbox-chooser"
 import { actions } from "../actions"
 import { setDrawerOpen } from "../actions/commonUi"
 import { makeCollectionUrl } from "../lib/urls"
-import { saveToDropbox, videoIsProcessing, videoHasError, videoIsInFlight } from "../lib/video"
+import {
+  saveToDropbox,
+  videoIsProcessing,
+  videoHasError,
+  videoIsInFlight
+} from "../lib/video"
 import { replaceVideoFromDropbox } from "../lib/api"
 import { DIALOGS, MM_DD_YYYY } from "../constants"
 import { initGA, sendGAPageView } from "../util/google_analytics"
@@ -70,7 +75,13 @@ export class VideoDetailPage extends React.Component<*, void> {
   }
 
   updateRequirements = () => {
-    const { dispatch, videoKey, needsUpdate, video, collectionNeedsUpdate } = this.props
+    const {
+      dispatch,
+      videoKey,
+      needsUpdate,
+      video,
+      collectionNeedsUpdate
+    } = this.props
 
     if (needsUpdate) {
       dispatch(actions.videos.get(videoKey))
@@ -147,8 +158,9 @@ export class VideoDetailPage extends React.Component<*, void> {
         actions.toast.addMessage({
           message: {
             key:     "replace-video-started",
-            content: "Video replacement has started. You will receive an email when it is ready.",
-            icon:    "check"
+            content:
+              "Video replacement has started. You will receive an email when it is ready.",
+            icon: "check"
           }
         })
       )
@@ -229,7 +241,10 @@ export class VideoDetailPage extends React.Component<*, void> {
                         {!videoIsInFlight(video) && (
                           <Button
                             className="replace mdc-button--raised"
-                            onClick={() => this.replaceDropboxTriggerRef && this.replaceDropboxTriggerRef.click()}
+                            onClick={() =>
+                              this.replaceDropboxTriggerRef &&
+                              this.replaceDropboxTriggerRef.click()
+                            }
                           >
                             Replace
                           </Button>
@@ -250,14 +265,20 @@ export class VideoDetailPage extends React.Component<*, void> {
                           <div style={{ display: "none" }}>
                             <DropboxChooser
                               appKey={SETTINGS.dropbox_key}
-                              success={files => this.handleReplaceVideo(files[0])}
+                              success={files =>
+                                this.handleReplaceVideo(files[0])
+                              }
                               linkType="preview"
                               multiselect={false}
                               extensions={["video"]}
                             >
-                              <button ref={el => {
-                                this.replaceDropboxTriggerRef = el
-                              }}>replace</button>
+                              <button
+                                ref={el => {
+                                  this.replaceDropboxTriggerRef = el
+                                }}
+                              >
+                                replace
+                              </button>
                             </DropboxChooser>
                           </div>
                         )}
@@ -404,12 +425,15 @@ const mapStateToProps = (state, ownProps) => {
   const needsUpdate = !videos.processing && !videos.loaded
 
   // Get the collection if video exists
-  const collection = video && collections.data && collections.data.key === video.collection_key ?
-    collections.data :
-    null
+  const collection =
+    video && collections.data && collections.data.key === video.collection_key ?
+      collections.data :
+      null
 
   // Only fetch collection if not processing, not loaded, and we don't have it
-  const collectionNeedsUpdate = video && video.collection_key &&
+  const collectionNeedsUpdate =
+    video &&
+    video.collection_key &&
     !collections.processing &&
     !collections.loaded &&
     !collection

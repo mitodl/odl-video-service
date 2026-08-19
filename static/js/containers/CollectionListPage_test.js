@@ -59,7 +59,7 @@ describe("CollectionListPage", () => {
       [
         actions.collectionsList.get.requestType,
         actions.collectionsList.get.successType,
-        collectionsPaginationActions.constants.REQUEST_GET_PAGE,
+        collectionsPaginationActions.constants.REQUEST_GET_PAGE
       ],
       () => {
         wrapper = mount(
@@ -114,7 +114,10 @@ describe("CollectionListPage", () => {
     it("has video counts per collection", async () => {
       const wrapper = await renderPage()
       const counts = wrapper.find(".mdc-list-item__secondary-text")
-      assert.equal(counts.at(0).text(), `${collections[0].video_count} Videos | Owner: ${collections[0].owner_info.username}`)
+      assert.equal(
+        counts.at(0).text(),
+        `${collections[0].video_count} Videos | Owner: ${collections[0].owner_info.username}`
+      )
     })
   })
 

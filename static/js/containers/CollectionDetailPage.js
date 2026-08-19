@@ -28,7 +28,10 @@ import type { Video } from "../flow/videoTypes"
 import type { CommonUiState } from "../reducers/commonUi"
 import * as commonUiActions from "../actions/commonUi"
 import VideoSaverScript from "../components/VideoSaverScript"
-import { clearCollectionErrors, clearCollectionData } from "../actions/collectionUi"
+import {
+  clearCollectionErrors,
+  clearCollectionData
+} from "../actions/collectionUi"
 import { replaceVideoFromDropbox } from "../lib/api"
 
 export class CollectionDetailPage extends React.Component<*, void> {
@@ -108,7 +111,9 @@ export class CollectionDetailPage extends React.Component<*, void> {
               {`${collection.title} (${videos.length})`}
             </h1>
             <div className="collection-owner">
-              <span className="mdc-typography--subheading1">Owner: {collection.owner_info.username}</span>
+              <span className="mdc-typography--subheading1">
+                Owner: {collection.owner_info.username}
+              </span>
             </div>
           </div>
           {this.renderTools(isCollectionAdmin)}
@@ -124,7 +129,11 @@ export class CollectionDetailPage extends React.Component<*, void> {
   }
 
   renderAdminTools() {
-    return [this.renderSettingsFrob(), this.renderSyncWithEdXFrob(), this.renderUploadFrob()]
+    return [
+      this.renderSettingsFrob(),
+      this.renderSyncWithEdXFrob(),
+      this.renderUploadFrob()
+    ]
   }
 
   renderSettingsFrob() {
@@ -177,7 +186,9 @@ export class CollectionDetailPage extends React.Component<*, void> {
         className="sync-edx-btn mdc-button--unelevated mdc-ripple-upgraded"
         onClick={this.handleSyncWithEdX.bind(this)}
       >
-        <i className="material-icons" style={{marginRight: "8px"}}>sync</i>
+        <i className="material-icons" style={{ marginRight: "8px" }}>
+          sync
+        </i>
         Sync Videos with edX
       </Button>
     )
@@ -196,24 +207,29 @@ export class CollectionDetailPage extends React.Component<*, void> {
     const { dispatch, collection } = this.props
     try {
       await replaceVideoFromDropbox(videoKey, file)
-      dispatch(actions.toast.addMessage({
-        message: {
-          key:     "replace-video-started",
-          content: "Video replacement has started. You will receive an email when it is ready.",
-          icon:    "check"
-        }
-      }))
+      dispatch(
+        actions.toast.addMessage({
+          message: {
+            key:     "replace-video-started",
+            content:
+              "Video replacement has started. You will receive an email when it is ready.",
+            icon: "check"
+          }
+        })
+      )
       if (collection) {
         dispatch(actions.collections.get(collection.key))
       }
     } catch (error) {
-      dispatch(actions.toast.addMessage({
-        message: {
-          key:     "replace-video-error",
-          content: "Failed to start video replacement. Please try again.",
-          icon:    "error"
-        }
-      }))
+      dispatch(
+        actions.toast.addMessage({
+          message: {
+            key:     "replace-video-error",
+            content: "Failed to start video replacement. Please try again.",
+            icon:    "error"
+          }
+        })
+      )
     }
   }
 
@@ -232,13 +248,16 @@ export class CollectionDetailPage extends React.Component<*, void> {
       await syncCollectionVideosWithEdX(collectionKey)
 
       // Show success message to the user
-      dispatch(actions.toast.addMessage({
-        message: {
-          key:     "scheduled-sync",
-          content: "Videos are being synced with edX. This may take a few minutes.",
-          icon:    "check"
-        }
-      }))
+      dispatch(
+        actions.toast.addMessage({
+          message: {
+            key:     "scheduled-sync",
+            content:
+              "Videos are being synced with edX. This may take a few minutes.",
+            icon: "check"
+          }
+        })
+      )
     } catch (error) {
       // Extract error message if available
       let errorMessage = "Failed to sync videos with edX"
@@ -248,13 +267,15 @@ export class CollectionDetailPage extends React.Component<*, void> {
       }
 
       // Show error message to the user
-      dispatch(actions.toast.addMessage({
-        message: {
-          key:     "sync-error",
-          content: errorMessage,
-          icon:    "error"
-        }
-      }))
+      dispatch(
+        actions.toast.addMessage({
+          message: {
+            key:     "sync-error",
+            content: errorMessage,
+            icon:    "error"
+          }
+        })
+      )
     }
   }
 
@@ -281,7 +302,9 @@ export class CollectionDetailPage extends React.Component<*, void> {
         showVideoMenu={this.showVideoMenu.bind(this)}
         hideVideoMenu={this.hideVideoMenu.bind(this)}
         isVideoMenuOpen={this.isVideoMenuOpen.bind(this)}
-        onReplaceVideo={isAdmin ? this.handleReplaceVideo.bind(this) : undefined}
+        onReplaceVideo={
+          isAdmin ? this.handleReplaceVideo.bind(this) : undefined
+        }
       />
     )
   }
@@ -354,7 +377,8 @@ export const mapStateToProps = (state: any, ownProps: any) => {
   const { collections, commonUi } = state
 
   const collectionKey = match.params.collectionKey
-  const collection = collections.data && collections.data.key ? collections.data : null
+  const collection =
+    collections.data && collections.data.key ? collections.data : null
   const collectionError = collections.error || null
   const collectionChanged = collection && collection.key !== collectionKey
   const isCollectionAdmin = collection && collection.is_admin

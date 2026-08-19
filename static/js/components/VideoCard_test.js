@@ -71,9 +71,7 @@ describe("VideoCard", () => {
     ]
   ].forEach(
     ([adminPermissionSetting, expectedControlLabels, testDescriptor]) => {
-      it(`${testDescriptor} should be shown ${
-        expectedControlLabels.length
-      } option(s) for video controls`, () => {
+      it(`${testDescriptor} should be shown ${expectedControlLabels.length} option(s) for video controls`, () => {
         const isAdmin = adminPermissionSetting
         const wrapper = renderComponent({ isAdmin: isAdmin })
         const menuItems = wrapper.find("Menu").props().menuItems
@@ -86,7 +84,10 @@ describe("VideoCard", () => {
   )
 
   it("executes the right handlers for video actions (edit/share/etc.)", () => {
-    const wrapper = renderComponent({ isAdmin: true, onReplaceVideo: sandbox.stub() })
+    const wrapper = renderComponent({
+      isAdmin:        true,
+      onReplaceVideo: sandbox.stub()
+    })
     const menuItems = wrapper.find("Menu").props().menuItems
     menuItems[0].action()
     sinon.assert.called(showShareVideoDialogStub)
@@ -141,7 +142,10 @@ describe("VideoCard", () => {
 
     it("does not show Replace menu item when onReplaceVideo prop is absent, even if not in-flight", () => {
       videoIsInFlightStub.returns(false)
-      const wrapper = renderComponent({ isAdmin: true, onReplaceVideo: undefined })
+      const wrapper = renderComponent({
+        isAdmin:        true,
+        onReplaceVideo: undefined
+      })
       const menuItems = wrapper.find("Menu").props().menuItems
       assert.isFalse(menuItems.some(item => item.label === "Replace"))
     })

@@ -59,7 +59,10 @@ describe("CollectionDetailPage", () => {
     describe("when selecting collection", () => {
       const testDefs = [
         { opts: { loaded: true, data: undefined }, expected: null },
-        { opts: { loaded: true, data: { key: "somedata" } }, expected: { key: "somedata" } },
+        {
+          opts:     { loaded: true, data: { key: "somedata" } },
+          expected: { key: "somedata" }
+        },
         { opts: { loaded: false, data: undefined }, expected: null },
         { opts: { loaded: false, data: {} }, expected: null }
       ]
@@ -340,7 +343,11 @@ describe("CollectionDetailPage", () => {
 
     describe("renderAdminTools", () => {
       beforeEach(() => {
-        stubRenderingMethods(["renderSettingsFrob", "renderSyncWithEdXFrob", "renderUploadFrob"])
+        stubRenderingMethods([
+          "renderSettingsFrob",
+          "renderSyncWithEdXFrob",
+          "renderUploadFrob"
+        ])
       })
 
       const renderAdminTools = ({ extraProps = {} } = {}) => {
@@ -724,7 +731,9 @@ describe("CollectionDetailPage", () => {
         event = {
           preventDefault: sandbox.stub()
         }
-        sandbox.stub(require("../lib/api"), "syncCollectionVideosWithEdX").returns(Promise.resolve())
+        sandbox
+          .stub(require("../lib/api"), "syncCollectionVideosWithEdX")
+          .returns(Promise.resolve())
         page = new CollectionDetailPage(props)
       })
 
@@ -748,8 +757,9 @@ describe("CollectionDetailPage", () => {
           actions.toast.addMessage({
             message: {
               key:     "scheduled-sync",
-              content: "Videos are being synced with edX. This may take a few minutes.",
-              icon:    "check"
+              content:
+                "Videos are being synced with edX. This may take a few minutes.",
+              icon: "check"
             }
           })
         )
@@ -757,7 +767,9 @@ describe("CollectionDetailPage", () => {
 
       it("dispatches error toast message when API call fails", async () => {
         const error = { error: "Custom error message" }
-        require("../lib/api").syncCollectionVideosWithEdX.returns(Promise.reject(error))
+        require("../lib/api").syncCollectionVideosWithEdX.returns(
+          Promise.reject(error)
+        )
 
         await page.handleSyncWithEdX(event)
         sinon.assert.calledWith(
@@ -773,7 +785,9 @@ describe("CollectionDetailPage", () => {
       })
 
       it("dispatches generic error message when API call fails without error details", async () => {
-        require("../lib/api").syncCollectionVideosWithEdX.returns(Promise.reject({}))
+        require("../lib/api").syncCollectionVideosWithEdX.returns(
+          Promise.reject({})
+        )
 
         await page.handleSyncWithEdX(event)
         sinon.assert.calledWith(
@@ -796,7 +810,9 @@ describe("CollectionDetailPage", () => {
 
         const result = await page.handleSyncWithEdX(event)
         assert.isNull(result)
-        sinon.assert.notCalled(require("../lib/api").syncCollectionVideosWithEdX)
+        sinon.assert.notCalled(
+          require("../lib/api").syncCollectionVideosWithEdX
+        )
       })
     })
 
@@ -816,7 +832,10 @@ describe("CollectionDetailPage", () => {
       it("displays the owner username", () => {
         const ownerElement = wrapper.find(".collection-owner")
         assert.isTrue(ownerElement.exists())
-        assert.include(ownerElement.text(), `Owner: ${collection.owner_info.username}`)
+        assert.include(
+          ownerElement.text(),
+          `Owner: ${collection.owner_info.username}`
+        )
       })
     })
   })

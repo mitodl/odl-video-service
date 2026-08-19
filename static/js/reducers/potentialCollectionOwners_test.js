@@ -34,7 +34,11 @@ describe("Users reducer", () => {
     ]
 
     await listenForActions(expectedActions, () => {
-      return store.dispatch(actions.potentialCollectionOwners.get('b0b7fcb6fd644b5hy6de7b1ce3f2bb7be'))
+      return store.dispatch(
+        actions.potentialCollectionOwners.get(
+          "b0b7fcb6fd644b5hy6de7b1ce3f2bb7be"
+        )
+      )
     })
 
     assert.isTrue(getStub.calledOnce)
@@ -60,9 +64,15 @@ describe("Users reducer", () => {
 
     // The dispatch itself should throw an error, not the listenForActions
     await listenForActions(expectedActions, () => {
-      return store.dispatch(actions.potentialCollectionOwners.get('b0b7fcb6fd644b5hy6de7b1ce3f2bb7be')).catch(() => {
-        return Promise.resolve()
-      })
+      return store
+        .dispatch(
+          actions.potentialCollectionOwners.get(
+            "b0b7fcb6fd644b5hy6de7b1ce3f2bb7be"
+          )
+        )
+        .catch(() => {
+          return Promise.resolve()
+        })
     })
 
     // Verify error state instead of trying to catch the error

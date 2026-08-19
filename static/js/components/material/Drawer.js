@@ -58,11 +58,10 @@ class Drawer extends React.Component<*, void> {
     }
   }
 
-  // eslint-disable-next-line react/no-deprecated
-  componentWillReceiveProps(nextProps: DrawerProps) {
+  componentDidUpdate(prevProps: DrawerProps) {
     if (this.drawer) {
-      if (this.props.open !== nextProps.open) {
-        this.drawer.open = nextProps.open
+      if (prevProps.open !== this.props.open) {
+        this.drawer.open = this.props.open
       }
     }
   }
@@ -84,7 +83,9 @@ class Drawer extends React.Component<*, void> {
             >
               {SETTINGS.email ?
                 SETTINGS.email :
-                SETTINGS.user ? SETTINGS.user : "Not logged in"}
+                SETTINGS.user ?
+                  SETTINGS.user :
+                  "Not logged in"}
             </a>
           </nav>
           <header className="mdc-drawer__header">

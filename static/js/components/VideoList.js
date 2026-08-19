@@ -48,7 +48,9 @@ export class VideoList extends React.Component<*, void> {
         isMenuOpen={this.props.isVideoMenuOpen(video.key)}
         onReplaceVideo={
           this.props.onReplaceVideo ?
-            file => this.props.onReplaceVideo && this.props.onReplaceVideo(video.key, file) :
+            file =>
+              this.props.onReplaceVideo &&
+                this.props.onReplaceVideo(video.key, file) :
             undefined
         }
       />
