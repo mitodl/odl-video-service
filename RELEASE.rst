@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.94.4
+Version 0.94.4 (Released August 19, 2026)
 --------------
 
 - Pin dependencies (#1528)
