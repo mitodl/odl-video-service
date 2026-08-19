@@ -1025,6 +1025,14 @@ def test_terms_page(mocker, logged_in_client):
     assert b"Terms of Service" in response.content
 
 
+def test_terms_page_is_noindex(mocker, logged_in_client):
+    """Pages should tell search engines not to index them (see mitodl/hq#12798)"""
+    mocker.patch("ui.keycloak_utils.get_keycloak_client")
+    client, _ = logged_in_client
+    response = client.get(reverse("terms-react-view"))
+    assert b'<meta name="robots" content="noindex, nofollow">' in response.content
+
+
 def test_video_viewset_analytics(mocker, logged_in_apiclient):
     """
     Tests to retrieve video analytics
