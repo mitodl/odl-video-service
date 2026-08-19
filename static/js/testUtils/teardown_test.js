@@ -2,27 +2,23 @@ import React from "react"
 import { assert } from "chai"
 import { render } from "@testing-library/react"
 
-let unmountCount = 0
-
-class UnmountRecorder extends React.Component {
-  componentWillUnmount() {
-    unmountCount += 1
-  }
-
-  render() {
-    return <div>mounted</div>
-  }
-}
+import { makeUnmountRecorder } from "./unmountRecorder"
+import { resetTestEnvironment } from "../global_init"
 
 describe("global teardown", () => {
-  it("mounts a component and lets the afterEach hook run", () => {
-    render(<UnmountRecorder />)
-    assert.equal(unmountCount, 0)
-  })
+  it("unmounts the RTL tree when the shared afterEach hook runs", () => {
+    const { UnmountRecorder, getUnmountCount } = makeUnmountRecorder()
 
-  it("unmounted the previous test's tree before this test started", () => {
+    render(<UnmountRecorder />)
+    assert.equal(getUnmountCount(), 0)
+
+    // Call the exact function mocha's afterEach hook invokes, rather than
+    // relying on running a second `it` block after this one -- that would
+    // pass or fail depending on whether this file is run in isolation.
+    resetTestEnvironment()
+
     assert.equal(
-      unmountCount,
+      getUnmountCount(),
       1,
       "componentWillUnmount did not fire -- global_init.js wiped the DOM " +
         "before RTL could unmount, so cleanup is not running"

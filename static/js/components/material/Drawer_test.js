@@ -174,4 +174,63 @@ describe("Drawer", () => {
       .click()
     sinon.assert.calledWith(onDrawerCloseStub)
   })
+
+  describe("open prop transitions", () => {
+    // componentDidUpdate replaced componentWillReceiveProps here.
+    // Drawer_test.js never toggled `open` before, so a regression in this
+    // comparison would still pass every other test in this file.
+    class Harness extends React.Component {
+      constructor(props) {
+        super(props)
+        this.state = { open: props.initialOpen }
+      }
+
+      setOpen = (open: boolean) => this.setState({ open })
+
+      render() {
+        return (
+          <Provider store={store}>
+            <Drawer open={this.state.open} onDrawerClose={() => {}} />
+          </Provider>
+        )
+      }
+    }
+
+    const renderHarness = async (initialOpen: boolean) => {
+      let wrapper
+      await listenForActions(
+        [
+          actions.collectionsList.get.requestType,
+          actions.collectionsList.get.successType
+        ],
+        () => {
+          wrapper = mount(<Harness initialOpen={initialOpen} />)
+        }
+      )
+      if (!wrapper) {
+        throw new Error("Never will happen, make flow happy")
+      }
+      wrapper.update()
+      return wrapper
+    }
+
+    it("updates the underlying MDC drawer's open state as the open prop toggles, including a reopen", async () => {
+      const wrapper = await renderHarness(false)
+      const harness = wrapper.instance()
+      const drawerInstance = wrapper.find("Drawer").instance()
+      assert.isFalse(drawerInstance.drawer.open)
+
+      harness.setOpen(true)
+      wrapper.update()
+      assert.isTrue(drawerInstance.drawer.open)
+
+      harness.setOpen(false)
+      wrapper.update()
+      assert.isFalse(drawerInstance.drawer.open)
+
+      harness.setOpen(true)
+      wrapper.update()
+      assert.isTrue(drawerInstance.drawer.open)
+    })
+  })
 })

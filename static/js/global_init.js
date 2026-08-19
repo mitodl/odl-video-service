@@ -43,8 +43,9 @@ if (!Object.entries) {
 }
 
 // cleanup after each test run
-// eslint-disable-next-line mocha/no-top-level-hooks
-afterEach(function() {
+// Exported so teardown_test.js can exercise this exact function without
+// depending on mocha's hook ordering between two separate `it` blocks.
+export function resetTestEnvironment() {
   // Unmount React trees before detaching the DOM. RTL's auto-cleanup would
   // still unmount without this -- it holds a direct reference to its own
   // container, so the innerHTML reset below does not prevent it -- but that
@@ -57,7 +58,10 @@ afterEach(function() {
   document.body.innerHTML = ""
   global.SETTINGS = _createSettings()
   window.location = "http://fake/"
-})
+}
+
+// eslint-disable-next-line mocha/no-top-level-hooks
+afterEach(resetTestEnvironment)
 
 // enable chai-as-promised
 import chai from "chai"

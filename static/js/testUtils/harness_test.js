@@ -2,6 +2,8 @@ import React from "react"
 import { assert } from "chai"
 import { render, screen, fireEvent, cleanup } from "@testing-library/react"
 
+import { makeUnmountRecorder } from "./unmountRecorder"
+
 class Greeter extends React.Component {
   render() {
     return <h1>Hello {this.props.name}</h1>
@@ -69,20 +71,10 @@ describe("RTL harness on React 15 without act()", () => {
   })
 
   it("fires componentWillUnmount on cleanup()", () => {
-    let unmounted = 0
+    const { UnmountRecorder, getUnmountCount } = makeUnmountRecorder()
 
-    class Recorder extends React.Component {
-      componentWillUnmount() {
-        unmounted += 1
-      }
-
-      render() {
-        return <div>mounted</div>
-      }
-    }
-
-    render(<Recorder />)
+    render(<UnmountRecorder />)
     cleanup()
-    assert.equal(unmounted, 1)
+    assert.equal(getUnmountCount(), 1)
   })
 })
