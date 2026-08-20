@@ -44,7 +44,7 @@ dependencies = [
     "smart-open>=7.1.0,<8",
     "social-auth-app-django>=5.4.0,<6",
     "structlog>=25.0.0,<26",
-    "mitol-django-observability>=2026.1.0",
+    "mitol-django-observability>=2026.8.19",
     # OTel instrumentors. mitol-django-observability auto-discovers these through
     # the `opentelemetry_instrumentor` entry point group; without them it stands
     # up a TracerProvider that nothing ever feeds, which looks exactly like a
