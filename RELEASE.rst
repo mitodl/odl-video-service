@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.94.5
+Version 0.94.5 (Released August 21, 2026)
 --------------
 
 - feat(observability): make the OTel tracing that is already wired up actually emit (#1577)
