@@ -137,3 +137,7 @@ ENV/
 
 # Docker Secrets
 secrets/
+
+# Stryker mutation testing reports
+reports/
+.stryker-tmp/
