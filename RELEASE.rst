@@ -1,6 +1,26 @@
 Release Notes
 =============
 
+Version 0.94.5 (Released August 21, 2026)
+--------------
+
+- feat(observability): make the OTel tracing that is already wired up actually emit (#1577)
+- Add React testing library in parallel to Enzyme to start Enzyme depreciation for React 18 updgrade (#1564)
+- Block search engines from indexing OVS (#1576)
+- Harden GitHub Actions supply chain security with zizmor + 7-day dependency cool-down (#1571)
+- Update nginx Docker tag to v1.31.3 (#1569)
+- Update actions/checkout digest to d23441a (#1551)
+- Update dependency autoprefixer to v10.5.4 (#1552)
+- Update dependency sass to v1.102.0 (#1562)
+- Update dependency social-auth-app-django to v5.6.0 [SECURITY] (#1567)
+- Adopt ruff 0.16 and its expanded default rule set (#1563)
+- Update dependency @sentry/browser to v10.68.0
+- Update dependency express to v5.2.1
+- Update dependency babel-loader to v10.1.1
+- Update dependency postcss to v8.5.23
+- Update babel monorepo to v7.29.7
+- Update astral-sh/setup-uv action to v8.3.2 (#1556)
+
 Version 0.94.4 (Released August 19, 2026)
 --------------
 
