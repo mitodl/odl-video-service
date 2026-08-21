@@ -38,7 +38,7 @@ describe("ShareVideoDialog", () => {
 
   it("shows the correct content", () => {
     const video = makeVideo()
-    const { container } = renderComponent({ video: video })
+    renderComponent({ video: video })
     assert.equal(
       screen.getByLabelText("Video URL").value,
       `http://fake/videos/${video.key}/`
@@ -50,16 +50,16 @@ describe("ShareVideoDialog", () => {
           `<iframe src="http://fake/videos/${video.key}/embed/"`
         )
     )
-    assert.isNull(container.querySelector("#video-openedx-url"))
+    assert.isNull(screen.queryByLabelText("Open edX video URL"))
   })
 
   it("shows cloudfront_url if the value is set", () => {
     const video = makeVideo()
     const cloudfrontUrl = "https://fake.cloudfront.net/fake_key"
     video.cloudfront_url = cloudfrontUrl
-    const { container } = renderComponent({ video: video })
+    renderComponent({ video: video })
     assert.equal(
-      container.querySelector("#video-openedx-url").value,
+      screen.getByLabelText("Open edX video URL").value,
       cloudfrontUrl
     )
   })
@@ -67,9 +67,19 @@ describe("ShareVideoDialog", () => {
     it("adds time in seconds to the links only if checkbox is checked", async () => {
       const video = makeVideo()
       renderComponent({ video: video })
-      if (checked) {
+      const checkbox = screen.getByRole("checkbox")
+
+      // The checkbox starts unchecked. For the `true` case, click once to
+      // check it. For the `false` case, click twice (check, then uncheck)
+      // so the explicit "false" dispatch through the real onChange handler
+      // is actually exercised rather than just asserting on the untouched
+      // default render.
+      await listenForActions([SET_SHARE_VIDEO_TIME_ENABLED], () => {
+        fireEvent.click(checkbox)
+      })
+      if (!checked) {
         await listenForActions([SET_SHARE_VIDEO_TIME_ENABLED], () => {
-          fireEvent.click(screen.getByRole("checkbox"))
+          fireEvent.click(checkbox)
         })
       }
       assert.equal(
@@ -113,10 +123,10 @@ describe("ShareVideoDialog", () => {
     const video = makeVideo()
     video["cloudfront_url"] = url
     store.dispatch(setSelectedVideoKey(video.key))
-    const { container } = renderComponent({
+    renderComponent({
       video:      null,
       collection: { videos: [video] }
     })
-    assert.equal(container.querySelector("#video-openedx-url").value, url)
+    assert.equal(screen.getByLabelText("Open edX video URL").value, url)
   })
 })
