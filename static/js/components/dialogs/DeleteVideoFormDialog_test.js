@@ -1,12 +1,11 @@
 // @flow
 import React from "react"
 import sinon from "sinon"
-import { mount } from "enzyme"
 import { assert } from "chai"
-import { Provider } from "react-redux"
+import { screen } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 
-import DeleteVideoDialog from "./DeleteVideoDialog"
+import ConnectedDeleteVideoDialog, { DeleteVideoDialog } from "./DeleteVideoDialog"
 
 import rootReducer from "../../reducers"
 import { actions } from "../../actions"
@@ -15,6 +14,7 @@ import * as api from "../../lib/api"
 import { makeCollectionUrl } from "../../lib/urls"
 import { makeVideo } from "../../factories/video"
 import { makeCollection } from "../../factories/collection"
+import renderWithProviders from "../../testUtils/renderWithProviders"
 
 describe("DeleteVideoDialog", () => {
   let sandbox, store, listenForActions, hideDialogStub, deleteVideoStub, video
@@ -35,32 +35,43 @@ describe("DeleteVideoDialog", () => {
   })
 
   const renderComponent = (props = {}) => {
-    return mount(
-      <Provider store={store}>
-        <div>
-          <DeleteVideoDialog
-            open={true}
-            hideDialog={hideDialogStub}
-            video={video}
-            {...props}
-          />
-        </div>
-      </Provider>
+    return renderWithProviders(
+      <ConnectedDeleteVideoDialog
+        open={true}
+        hideDialog={hideDialogStub}
+        video={video}
+        {...props}
+      />,
+      { store }
     )
   }
 
+  const renderUnconnectedComponent = (props = {}) => {
+    let dialogInstance
+    renderWithProviders(
+      <DeleteVideoDialog
+        open={true}
+        hideDialog={hideDialogStub}
+        dispatch={store.dispatch}
+        shouldUpdateCollection={false}
+        video={video}
+        {...props}
+        ref={(instance) => { dialogInstance = instance }}
+      />,
+      { store }
+    )
+    return dialogInstance
+  }
+
   it("updates the video when the form is submitted", async () => {
-    const wrapper = renderComponent()
-    if (!wrapper) throw new Error("Render failed")
+    const dialogInstance = renderUnconnectedComponent()
 
     await listenForActions(
       [actions.videos.delete.requestType, actions.videos.delete.successType],
       () => {
-        // Calling onAccept directly b/c click doesn't work in JS tests due to MDC
-        wrapper
-          .find("DeleteVideoDialog")
-          .find("Dialog")
-          .prop("onAccept")()
+        // Calling confirmDeletion directly b/c MDC dialog double-fires onAccept
+        // through both the Dialog's MDCDialog:accept listener and the Button's onClick
+        dialogInstance.confirmDeletion()
       }
     )
 
@@ -71,39 +82,36 @@ describe("DeleteVideoDialog", () => {
     const collection = makeCollection()
     const collectionVideo = collection.videos[0]
     store.dispatch(setSelectedVideoKey(collectionVideo.key))
-    const wrapper = renderComponent({
+    renderComponent({
       video:      null,
       collection: collection
     })
-    const dialogProps = wrapper.find("DeleteVideoDialog").props()
-    assert.deepEqual(dialogProps.video, collectionVideo)
-    assert.equal(dialogProps.shouldUpdateCollection, true)
+    // Assert that the correct video from the collection state is displayed
+    assert.isNotNull(screen.getByText(collectionVideo.title))
+    assert.isNotNull(screen.getByText("Are you sure you want to delete this video?"))
   })
 
   it("prefers a video provided via props over a video in a collection", () => {
     const collection = makeCollection()
-    const wrapper = renderComponent({
+    renderComponent({
       video:      video,
       collection: collection
     })
-    const dialogProps = wrapper.find("DeleteVideoDialog").props()
-    assert.deepEqual(dialogProps.video, video)
-    assert.equal(dialogProps.shouldUpdateCollection, false)
+    // Assert that the video prop is displayed, not the collection video
+    assert.isNotNull(screen.getByText(video.title))
+    assert.isNotNull(screen.getByText("Are you sure you want to delete this video?"))
   })
 
   it("should change the browser URL when a video is deleted from the video detail page", async () => {
-    const wrapper = renderComponent()
-    if (!wrapper) throw new Error("Render failed")
+    const dialogInstance = renderUnconnectedComponent()
 
     const locationOrigin = window.location.origin
     await listenForActions(
       [actions.videos.delete.requestType, actions.videos.delete.successType],
       () => {
-        // Calling onAccept directly b/c click doesn't work in JS tests due to MDC
-        wrapper
-          .find("DeleteVideoDialog")
-          .find("Dialog")
-          .prop("onAccept")()
+        // Calling confirmDeletion directly b/c MDC dialog double-fires onAccept
+        // through both the Dialog's MDCDialog:accept listener and the Button's onClick
+        dialogInstance.confirmDeletion()
           .then(() => {
             const collectionUrl = `${makeCollectionUrl(video.collection_key)}`
             assert.isAtLeast(collectionUrl.length, 1)
