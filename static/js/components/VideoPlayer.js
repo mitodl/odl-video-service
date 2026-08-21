@@ -5,9 +5,12 @@ import React from "react"
 import * as R from "ramda"
 import _ from "lodash"
 import type { Dispatch } from "redux"
-import { makeVideoSubtitleUrl } from "../lib/urls"
 import { videojs } from "../lib/video"
-import type { Video, VideoSubtitle } from "../flow/videoTypes"
+import {
+  VideoPlayerController,
+  isFullscreen
+} from "../lib/video_player_controller"
+import type { Video } from "../flow/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
 import { sendGAEvent, setCustomDimension } from "../util/google_analytics"
@@ -73,29 +76,6 @@ const makeConfigForVideo = (
   }
 })
 
-const drawCanvasImage = function(canvas, videoNode, shiftX, shiftY) {
-  const x = shiftX ? Math.floor(videoNode.videoWidth / 2) : 0
-  const y = shiftY ? Math.floor(videoNode.videoHeight / 2) : 0
-  const context = canvas.getContext("2d")
-  context.drawImage(
-    videoNode,
-    x,
-    y,
-    Math.floor(videoNode.videoWidth / 2),
-    Math.floor(videoNode.videoHeight / 2),
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  )
-  setTimeout(drawCanvasImage, 20, canvas, videoNode, shiftX, shiftY)
-}
-
-const isFullscreen = function() {
-  // $FlowFixMe
-  return document[FULLSCREEN_API.fullscreenElement]
-}
-
 class VideoPlayer extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
@@ -108,156 +88,14 @@ class VideoPlayer extends React.Component<*, void> {
   }
 
   player: Object
-  videoNode: ?HTMLVideoElement
-  videoContainer: ?HTMLDivElement
-  cameras: ?HTMLDivElement
+  controller: VideoPlayerController = new VideoPlayerController()
   lastMinuteTracked: ?number
-  aspectRatio: number
 
-  updateSubtitles() {
-    const { video } = this.props
-    if (this.player) {
-      // Remove existing tracks for deleted subtitles
-      const tracks = this.player.textTracks()
-      const subtitleUrls = video.videosubtitle_set.map(
-        (subtitle: VideoSubtitle) => makeVideoSubtitleUrl(subtitle)
-      )
-      const trackUrls = []
-      for (let idx = 0; idx < tracks.length; idx++) {
-        if (tracks[idx] && !subtitleUrls.includes(tracks[idx].src)) {
-          this.player.removeRemoteTextTrack(tracks[idx])
-        } else {
-          trackUrls.push(tracks[idx].src)
-        }
-      }
-      // Add tracks for any new subtitles associated with the video
-      video.videosubtitle_set.forEach((subtitle: VideoSubtitle) => {
-        const subUrl = makeVideoSubtitleUrl(subtitle)
-        if (!trackUrls.includes(subUrl)) {
-          this.player.addRemoteTextTrack(
-            {
-              kind:    "captions",
-              src:     subUrl,
-              srcLang: subtitle.language,
-              label:   subtitle.language_name
-            },
-            true
-          )
-        }
-        // Add listeners to each track
-        const player = this.player
-        for (let idx = 0; idx < this.player.textTracks().length; idx++) {
-          if (!trackUrls.includes(tracks[idx].src)) {
-            tracks[idx].addEventListener("modechange", function() {
-              sendGAEvent(
-                "video",
-                `Subtitles ${this.label} ${this.mode}`,
-                video.key,
-                player.currentTime()
-              )
-            })
-          }
-        }
-      })
-    }
-  }
+  updateSubtitles = () => this.controller.updateSubtitles(this.props.video)
 
-  drawCanvas(canvas: HTMLCanvasElement, shiftX: boolean, shiftY: boolean) {
-    if (!this.videoNode) {
-      // make flow happy
-      throw new Error("Missing videoNode")
-    }
-    const { offsetWidth, offsetHeight } = this.videoNode
-    canvas.width = Math.floor(offsetWidth / 4) - 2
-    canvas.height = Math.floor(offsetHeight / 4) - 2
-    if (canvas && this.videoNode) {
-      drawCanvasImage(canvas, this.videoNode, shiftX, shiftY)
-    }
-  }
+  cropVideo = () => this.controller.cropVideo(this.props.selectedCorner)
 
-  configureCameras() {
-    if (this.cameras) {
-      const canvasElements = this.cameras.getElementsByTagName("canvas")
-      Object.keys(CANVASES).forEach(corner => {
-        this.drawCanvas(
-          // $FlowFixMe - corner does not have to be a number
-          canvasElements[corner],
-          CANVASES[corner].shiftX,
-          CANVASES[corner].shiftY
-        )
-      })
-    }
-  }
-
-  resizeYouTube = () => {
-    const { embed } = this.props
-    if (!isFullscreen() && !embed) {
-      if (!this.aspectRatio) {
-        this.aspectRatio =
-          this.player.currentWidth() / this.player.currentHeight()
-      }
-      // $FlowFixMe videoContainer is not going to be null
-      const maxWidth = this.videoContainer.clientWidth
-      this.player.width(maxWidth)
-      const maxHeight = window
-        .getComputedStyle(this.videoContainer)
-        .maxHeight.replace("px", "")
-      this.player.height(Math.min(maxHeight, maxWidth / this.aspectRatio))
-    }
-  }
-
-  cropVideo = () => {
-    const { selectedCorner } = this.props
-    const shiftX = CANVASES[selectedCorner].shiftX
-    const shiftY = CANVASES[selectedCorner].shiftY
-    const transformProps = [
-      "transform",
-      "WebkitTransform",
-      "MozTransform",
-      "msTransform",
-      "OTransform"
-    ]
-
-    const prop =
-      transformProps.find(
-        property => this.player.el_.style[property] !== undefined
-      ) || transformProps[0]
-    const aspectRatio = this.player.videoWidth() / this.player.videoHeight()
-    let videoWidth = Math.min(
-      parseInt(window.getComputedStyle(this.videoNode).maxHeight) * aspectRatio,
-      window.innerWidth,
-      screen.width
-    )
-    if (isNaN(videoWidth) || isFullscreen()) {
-      videoWidth = Math.min(window.innerWidth, screen.width)
-    }
-    const canvasWidth = Math.floor(videoWidth / 4)
-    videoWidth = Math.floor(
-      videoWidth - (canvasWidth - canvasWidth / aspectRatio / 3)
-    )
-
-    if (!this.videoContainer) {
-      // Make flow happy
-      throw new Error("Missing videoContainer")
-    }
-    this.videoContainer.style.maxWidth = `${videoWidth}px`
-    // $FlowFixMe videoContainer.parentElement is not going to be null
-    this.videoContainer.parentElement.style.width = `${videoWidth +
-      canvasWidth}px`
-    const left = Math.round(this.player.currentWidth() / (shiftX ? -2 : 2))
-    const top = Math.round(this.player.currentHeight() / (shiftY ? -2 : 2))
-
-    if (!this.videoNode) {
-      // Make flow happy
-      throw new Error("Missing videoNode")
-    }
-
-    this.videoNode.style.left = `${left}px`
-    this.videoNode.style.top = `${top}px`
-    // $FlowFixMe prop does not have to be a number
-    this.videoNode.style[prop] = "scale(2)"
-    this.configureCameras()
-  }
+  resizeYouTube = () => this.controller.resizeYouTube(this.props.embed)
 
   toggleFullscreen = () => {
     const fullscreen = isFullscreen()
@@ -266,7 +104,9 @@ class VideoPlayer extends React.Component<*, void> {
       document[FULLSCREEN_API.exitFullscreen]()
     } else {
       // $FlowFixMe videoContainer.parentElement is not going to be null
-      this.videoContainer.parentElement[FULLSCREEN_API.requestFullscreen]()
+      this.controller.videoContainer.parentElement[
+        FULLSCREEN_API.requestFullscreen
+      ]()
     }
     this.player.el_.dispatchEvent(
       new Event(`fullscreen ${fullscreen ? "off" : "on"}`)
@@ -369,7 +209,7 @@ class VideoPlayer extends React.Component<*, void> {
     const params = new URLSearchParams(window.location.search)
     const startTime = parseInt(params.get("start")) || 0
     this.player = videojs(
-      this.videoNode,
+      this.controller.videoNode,
       makeConfigForVideo(video, useYouTube, embed, startTime),
       function onPlayerReady() {
         this.enableTouchActivity()
@@ -404,6 +244,7 @@ class VideoPlayer extends React.Component<*, void> {
         self.updateSubtitles()
       }
     )
+    this.controller.player = this.player
     if (SETTINGS.FEATURES.VIDEOJS_ANNOTATIONS) {
       this.player.annotationComments({
         annotationsObjects: [],
@@ -453,12 +294,12 @@ class VideoPlayer extends React.Component<*, void> {
           className={`video-odl-medium ${
             video.multiangle ? "video-odl-multiangle" : ""
           } ${embed ? "video-odl-embed" : ""}`}
-          ref={node => (this.videoContainer = node)}
+          ref={node => (this.controller.videoContainer = node)}
           style={{ position: "relative" }}
         >
           <div data-vjs-player className="vjs-big-play-centered">
             <video
-              ref={node => (this.videoNode = node)}
+              ref={node => (this.controller.videoNode = node)}
               className={`video-js vjs-default-skin ${
                 embed ? "video-odl-embed" : ""
               }`}
@@ -469,7 +310,10 @@ class VideoPlayer extends React.Component<*, void> {
           {this.props.overlayChildren}
         </div>
         {video.multiangle && (
-          <div ref={node => (this.cameras = node)} className="camera-bar">
+          <div
+            ref={node => (this.controller.cameras = node)}
+            className="camera-bar"
+          >
             {Object.keys(CANVASES).map(corner => (
               <div key={corner}>
                 <canvas
