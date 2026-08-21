@@ -5,7 +5,9 @@ import { assert } from "chai"
 import { screen } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 
-import ConnectedDeleteVideoDialog, { DeleteVideoDialog } from "./DeleteVideoDialog"
+import ConnectedDeleteVideoDialog, {
+  DeleteVideoDialog
+} from "./DeleteVideoDialog"
 
 import rootReducer from "../../reducers"
 import { actions } from "../../actions"
@@ -56,7 +58,9 @@ describe("DeleteVideoDialog", () => {
         shouldUpdateCollection={false}
         video={video}
         {...props}
-        ref={(instance) => { dialogInstance = instance }}
+        ref={instance => {
+          dialogInstance = instance
+        }}
       />,
       { store }
     )
@@ -88,7 +92,9 @@ describe("DeleteVideoDialog", () => {
     })
     // Assert that the correct video from the collection state is displayed
     assert.isNotNull(screen.getByText(collectionVideo.title))
-    assert.isNotNull(screen.getByText("Are you sure you want to delete this video?"))
+    assert.isNotNull(
+      screen.getByText("Are you sure you want to delete this video?")
+    )
   })
 
   it("prefers a video provided via props over a video in a collection", () => {
@@ -99,7 +105,9 @@ describe("DeleteVideoDialog", () => {
     })
     // Assert that the video prop is displayed, not the collection video
     assert.isNotNull(screen.getByText(video.title))
-    assert.isNotNull(screen.getByText("Are you sure you want to delete this video?"))
+    assert.isNotNull(
+      screen.getByText("Are you sure you want to delete this video?")
+    )
   })
 
   it("should change the browser URL when a video is deleted from the video detail page", async () => {
@@ -111,12 +119,11 @@ describe("DeleteVideoDialog", () => {
       () => {
         // Calling confirmDeletion directly b/c MDC dialog double-fires onAccept
         // through both the Dialog's MDCDialog:accept listener and the Button's onClick
-        dialogInstance.confirmDeletion()
-          .then(() => {
-            const collectionUrl = `${makeCollectionUrl(video.collection_key)}`
-            assert.isAtLeast(collectionUrl.length, 1)
-            assert.equal(window.location, `${locationOrigin}${collectionUrl}`)
-          })
+        dialogInstance.confirmDeletion().then(() => {
+          const collectionUrl = `${makeCollectionUrl(video.collection_key)}`
+          assert.isAtLeast(collectionUrl.length, 1)
+          assert.equal(window.location, `${locationOrigin}${collectionUrl}`)
+        })
       }
     )
   })
