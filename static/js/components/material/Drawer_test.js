@@ -2,16 +2,16 @@
 /* global SETTINGS: false */
 import React from "react"
 import { assert } from "chai"
-import { mount } from "enzyme"
+import { fireEvent } from "@testing-library/react"
 import sinon from "sinon"
 import configureTestStore from "redux-asserts"
-import { Provider } from "react-redux"
 import rootReducer from "../../reducers"
 import * as api from "../../lib/api"
 import { actions } from "../../actions"
 import Drawer from "./Drawer"
 import { makeCollection } from "../../factories/collection"
 import { makeCollectionUrl } from "../../lib/urls"
+import renderWithProviders from "../../testUtils/renderWithProviders"
 import type { Collection } from "../../flow/collectionTypes"
 
 describe("Drawer", () => {
@@ -37,69 +37,73 @@ describe("Drawer", () => {
   })
 
   const renderDrawer = async (props = {}) => {
-    let wrapper
+    let result
     await listenForActions(
       [
         actions.collectionsList.get.requestType,
         actions.collectionsList.get.successType
       ],
       () => {
-        wrapper = mount(
-          <Provider store={store}>
-            <Drawer {...props} />
-          </Provider>
-        )
+        result = renderWithProviders(<Drawer {...props} />, { store })
       }
     )
-    if (!wrapper) {
+    if (!result) {
       throw new Error("Never will happen, make flow happy")
     }
-    wrapper.update()
-    return wrapper
+    return result
   }
 
   it("drawer element is rendered with the correct user", async () => {
-    const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(0)
-    assert.isTrue(drawerNode.text().startsWith("foo@mit.edu"))
+    const { container } = await renderDrawer()
+    const drawerNode = container.querySelectorAll(".mdc-list-item.mdc-link")[0]
+    assert.isTrue(drawerNode.textContent.startsWith("foo@mit.edu"))
   })
 
   it("shows the username if the email is not present", async () => {
     SETTINGS.email = null
-    const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(0)
-    assert.isTrue(drawerNode.text().startsWith("foo_user"))
+    const { container } = await renderDrawer()
+    const drawerNode = container.querySelectorAll(".mdc-list-item.mdc-link")[0]
+    assert.isTrue(drawerNode.textContent.startsWith("foo_user"))
   })
 
   it("shows logout button", async () => {
-    const wrapper = await renderDrawer()
-    assert.isTrue(wrapper.find(".mdc-list-item.logout").exists())
+    const { container } = await renderDrawer()
+    assert.isNotNull(container.querySelector(".mdc-list-item.logout"))
   })
 
   describe("when user is not logged", () => {
-    let wrapper
+    let container
 
     beforeEach(async () => {
       SETTINGS.email = null
       SETTINGS.user = null
-      wrapper = await renderDrawer()
+      ;({ container } = await renderDrawer())
     })
 
-    it("shows a message if the user is not logged in", async () => {
-      const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(0)
-      assert.isTrue(drawerNode.text().startsWith("Not logged in"))
+    it("shows a message if the user is not logged in", () => {
+      const drawerNode = container.querySelectorAll(
+        ".mdc-list-item.mdc-link"
+      )[0]
+      assert.isTrue(drawerNode.textContent.startsWith("Not logged in"))
     })
 
     it("does not show log out button", () => {
-      assert.isFalse(wrapper.find(".mdc-list-item.logout").exists())
+      assert.isNull(container.querySelector(".mdc-list-item.logout"))
     })
   })
 
   it("drawer element is rendered with collections", async () => {
-    const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(2)
-    assert.equal(drawerNode.props().href, "/logout/")
-    assert.isTrue(drawerNode.text().endsWith("Log out"))
+    const { container } = await renderDrawer()
+    const drawerNode = container.querySelectorAll(".mdc-list-item.mdc-link")[2]
+    assert.equal(drawerNode.getAttribute("href"), "/logout/")
+    assert.isTrue(drawerNode.textContent.endsWith("Log out"))
+  })
+
+  it("drawer element is rendered with a logout link", async () => {
+    const { container } = await renderDrawer()
+    const drawerNode = container.querySelectorAll(".mdc-list-item.mdc-link")[2]
+    assert.equal(drawerNode.getAttribute("href"), "/logout/")
+    assert.isTrue(drawerNode.textContent.endsWith("Log out"))
   })
 
   describe("when there are > 10 collections", () => {
@@ -112,27 +116,29 @@ describe("Drawer", () => {
     })
 
     it("drawer element is rendered with max of 10 collections", async () => {
-      const wrapper = await renderDrawer()
-      const items = wrapper.find(".mdc-list-item.mdc-list-item--activated")
+      const { container } = await renderDrawer()
+      const items = container.querySelectorAll(
+        ".mdc-list-item.mdc-list-item--activated"
+      )
       assert.equal(items.length, 10)
       ;[0, 1, 3, 9].forEach(function(col) {
-        const drawerNode = items.at(col)
+        const drawerNode = items[col]
         assert.equal(
-          drawerNode.text(),
+          drawerNode.textContent,
           `${collections[col].title} (${collections[col].video_count})`
         )
         assert.equal(
-          drawerNode.props().href,
+          drawerNode.getAttribute("href"),
           makeCollectionUrl(collections[col].key)
         )
       })
     })
 
     it("has 'more...' button that links to collections page", async () => {
-      const wrapper = await renderDrawer()
-      const moreButton = wrapper.find(".more-collections-button")
-      assert.equal(moreButton.length, 1)
-      assert.equal(moreButton.prop("href"), "/collections/")
+      const { container } = await renderDrawer()
+      const moreButton = container.querySelector(".more-collections-button")
+      assert.isNotNull(moreButton)
+      assert.equal(moreButton.getAttribute("href"), "/collections/")
     })
   })
 
@@ -146,16 +152,9 @@ describe("Drawer", () => {
     })
 
     it("does not have 'more...' button", async () => {
-      const wrapper = await renderDrawer()
-      assert.isFalse(wrapper.find(".more-collections-button").exists())
+      const { container } = await renderDrawer()
+      assert.isNull(container.querySelector(".more-collections-button"))
     })
-  })
-
-  it("drawer element is rendered with a logout link", async () => {
-    const wrapper = await renderDrawer()
-    const drawerNode = wrapper.find(".mdc-list-item.mdc-link").at(2)
-    assert.equal(drawerNode.props().href, "/logout/")
-    assert.isTrue(drawerNode.text().endsWith("Log out"))
   })
 
   it("fetches requirements on load", async () => {
@@ -165,13 +164,10 @@ describe("Drawer", () => {
 
   it("closes the drawer if the user is clicked", async () => {
     const onDrawerCloseStub = sandbox.stub()
-    const wrapper = await renderDrawer({
+    const { container } = await renderDrawer({
       onDrawerClose: onDrawerCloseStub
     })
-    wrapper
-      .find("#collapse_item")
-      .instance()
-      .click()
+    fireEvent.click(container.querySelector("#collapse_item"))
     sinon.assert.calledWith(onDrawerCloseStub)
   })
 
@@ -179,58 +175,29 @@ describe("Drawer", () => {
     // componentDidUpdate replaced componentWillReceiveProps here.
     // Drawer_test.js never toggled `open` before, so a regression in this
     // comparison would still pass every other test in this file.
-    class Harness extends React.Component {
-      constructor(props) {
-        super(props)
-        this.state = { open: props.initialOpen }
-      }
-
-      setOpen = (open: boolean) => this.setState({ open })
-
-      render() {
-        return (
-          <Provider store={store}>
-            <Drawer open={this.state.open} onDrawerClose={() => {}} />
-          </Provider>
-        )
-      }
-    }
-
-    const renderHarness = async (initialOpen: boolean) => {
-      let wrapper
-      await listenForActions(
-        [
-          actions.collectionsList.get.requestType,
-          actions.collectionsList.get.successType
-        ],
-        () => {
-          wrapper = mount(<Harness initialOpen={initialOpen} />)
-        }
-      )
-      if (!wrapper) {
-        throw new Error("Never will happen, make flow happy")
-      }
-      wrapper.update()
-      return wrapper
-    }
-
+    //
+    // The old Enzyme version needed a stateful `Harness` component solely so
+    // a *real* prop change would flow down through the redux-connect()'d
+    // Drawer -- Enzyme's wrapper.setProps() only re-renders the mount root
+    // (the Harness), not a nested connected component. RTL's rerender()
+    // re-renders new props through the existing tree (still wrapped in the
+    // same Provider, via renderWithProviders), so no Harness is needed.
     it("updates the underlying MDC drawer's open state as the open prop toggles, including a reopen", async () => {
-      const wrapper = await renderHarness(false)
-      const harness = wrapper.instance()
-      const drawerInstance = wrapper.find("Drawer").instance()
-      assert.isFalse(drawerInstance.drawer.open)
+      const { container, rerender } = await renderDrawer({
+        open:          false,
+        onDrawerClose: () => {}
+      })
+      const drawerRoot = container.querySelector(".mdc-drawer")
+      assert.isFalse(drawerRoot.classList.contains("mdc-drawer--open"))
 
-      harness.setOpen(true)
-      wrapper.update()
-      assert.isTrue(drawerInstance.drawer.open)
+      rerender(<Drawer open={true} onDrawerClose={() => {}} />)
+      assert.isTrue(drawerRoot.classList.contains("mdc-drawer--open"))
 
-      harness.setOpen(false)
-      wrapper.update()
-      assert.isFalse(drawerInstance.drawer.open)
+      rerender(<Drawer open={false} onDrawerClose={() => {}} />)
+      assert.isFalse(drawerRoot.classList.contains("mdc-drawer--open"))
 
-      harness.setOpen(true)
-      wrapper.update()
-      assert.isTrue(drawerInstance.drawer.open)
+      rerender(<Drawer open={true} onDrawerClose={() => {}} />)
+      assert.isTrue(drawerRoot.classList.contains("mdc-drawer--open"))
     })
   })
 })
