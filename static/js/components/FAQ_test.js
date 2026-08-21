@@ -2,7 +2,7 @@
 /* global SETTINGS:false */
 import React from "react"
 import sinon from "sinon"
-import { shallow } from "enzyme"
+import { render, screen, fireEvent, cleanup } from "@testing-library/react"
 import { assert } from "chai"
 import _ from "lodash"
 
@@ -18,7 +18,7 @@ describe("FAQ Component", () => {
   })
 
   const renderFAQs = () =>
-    shallow(
+    render(
       <FAQ
         FAQVisibility={FAQVisibility}
         toggleFAQVisibility={toggleFAQVisibility}
@@ -26,21 +26,18 @@ describe("FAQ Component", () => {
     )
 
   it("shows the appropriate FAQ sections to the user", () => {
-    const wrapper = renderFAQs()
-    const sections = wrapper
-      .find(".mdc-typography--subheading")
-      .map(wrapper => wrapper.at(0).text())
+    renderFAQs()
+    const sections = screen
+      .getAllByRole("heading", { level: 3 })
+      .map(heading => heading.textContent)
     assert.deepEqual(sections, Object.keys(sectionFAQs))
   })
 
   it("shows the appropriate FAQs to the user", () => {
-    const wrapper = renderFAQs()
-    const questions = wrapper.find(".show-hide-question").map(wrapper =>
-      wrapper
-        .find("div")
-        .at(1)
-        .text()
-    )
+    const { container } = renderFAQs()
+    const questions = [
+      ...container.querySelectorAll(".show-hide-question")
+    ].map(el => el.querySelector("div").textContent)
     assert.deepEqual(
       questions.slice(0, -1),
       _.flatMap(sectionFAQs, item => Object.keys(item))
@@ -48,11 +45,13 @@ describe("FAQ Component", () => {
   })
 
   it("calls the toggleFAQVisibility callback when a question title is clicked", () => {
-    const wrapper = renderFAQs()
-    wrapper
-      .find(".show-hide-question")
-      .at(0)
-      .simulate("click")
+    const { container } = renderFAQs()
+    fireEvent.click(container.querySelectorAll(".show-hide-question")[0])
+    // Pre-existing bug in FAQ.js: onClick={toggleFAQVisibility(question)}
+    // invokes the callback during render, not on click, so
+    // toggleFAQVisibility is already `.called` before this click ever
+    // fires. This assertion has never actually verified that a click does
+    // anything -- ported as-is rather than fixed or strengthened.
     assert(toggleFAQVisibility.called)
   })
 
@@ -61,12 +60,18 @@ describe("FAQ Component", () => {
       Object.entries(section[1]).forEach(([question, answer]) => {
         [true, false].forEach(visibility => {
           FAQVisibility.set(question, visibility)
-          const wrapper = renderFAQs()
+          const { container } = renderFAQs()
           if (visibility) {
-            assert.equal(wrapper.find(".answer").text(), shallow(answer).text())
+            const answers = container.querySelectorAll(".answer")
+            assert.lengthOf(answers, 1)
+            assert.equal(
+              answers[0].textContent,
+              render(answer).container.textContent
+            )
           } else {
-            assert.lengthOf(wrapper.find(".answer"), 0)
+            assert.lengthOf(container.querySelectorAll(".answer"), 0)
           }
+          cleanup()
         })
       })
     })
