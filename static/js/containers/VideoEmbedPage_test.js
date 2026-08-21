@@ -61,7 +61,7 @@ describe("VideoEmbedPage", () => {
     })
   })
 
-  it("renders a VideoPlayer component", async () => {
+  it("passes the correct video and selectedCorner to VideoPlayer", async () => {
     // VideoPlayer doesn't expose the `video` or `selectedCorner` props it
     // receives anywhere RTL-observable (no title/source text in its DOM
     // output) unless the video is a multiangle video, in which case it

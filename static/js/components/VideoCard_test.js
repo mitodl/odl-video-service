@@ -104,7 +104,7 @@ describe("VideoCard", () => {
     sinon.assert.called(showEditVideoDialogStub)
     fireEvent.click(menuItems[2])
     sinon.assert.called(dropboxSaveMenuStub)
-    // Replace triggers the hidden dropbox button — just verify the item exists
+    // Replace triggers the hidden dropbox button — fire the click, then verify the item's label
     fireEvent.click(menuItems[3])
     assert.equal(menuItems[3].textContent, "Replace")
     fireEvent.click(menuItems[4])

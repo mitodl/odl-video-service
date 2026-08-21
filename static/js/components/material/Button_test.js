@@ -19,7 +19,7 @@ describe("Button test", () => {
     assert.include(container.firstChild.className, "my-awesome-button")
   })
 
-  it("should splat in other props", () => {
+  it("should invoke a passed-through onClick handler when clicked", () => {
     const onClick = sinon.spy()
     renderButton({ onClick })
     fireEvent.click(screen.getByRole("button"))
