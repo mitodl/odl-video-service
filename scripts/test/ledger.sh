@@ -36,11 +36,14 @@ TESTS=${TESTS:-0}
 check "passing tests" "$TESTS" ge 492
 
 # May only decrease. This is the migration's actual progress metric.
-# Cap is 33, not the original 31: #1564 added Dialog_test.js and Menu_test.js
+# Cap was 33, not the original 31: #1564 added Dialog_test.js and Menu_test.js
 # (Enzyme, for previously-untested Material components) before this ledger
 # existed to gate them.
+# 33 -> 28 (Tier 1, hq#12638) -> 16 (Tier 2, hq#12638). Remaining 16 =
+# VideoPlayer (hq#12639) + AnalyticsChart/ProgressSlider + Tier 3's 13 files
+# (hq#12640).
 ENZYME=$(grep -rl 'from "enzyme"' static/js --include='*_test.js' 2>/dev/null | wc -l | tr -d ' ')
-check "enzyme test files" "$ENZYME" le 33
+check "enzyme test files" "$ENZYME" le 16
 
 # data-testid is the escape hatch that turns an RTL migration back into
 # implementation-coupled testing. 86 .find("ComponentName") selectors exist in

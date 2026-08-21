@@ -1,7 +1,7 @@
 // @flow
 import React from "react"
 import sinon from "sinon"
-import { shallow } from "enzyme"
+import { render, fireEvent } from "@testing-library/react"
 import { assert } from "chai"
 
 import Paginator from "./Paginator"
@@ -28,21 +28,21 @@ describe("Paginator", () => {
   })
 
   const renderComponent = (overrides = {}) => {
-    return shallow(<Paginator {...props} {...overrides} />)
+    return render(<Paginator {...props} {...overrides} />)
   }
 
   it("shows current page", () => {
-    const wrapper = renderComponent()
+    const { container } = renderComponent()
     assert.equal(
-      wrapper.find(".paginator-current-page").text(),
+      container.querySelector(".paginator-current-page").textContent,
       props.currentPage
     )
   })
 
   it("shows total pages", () => {
-    const wrapper = renderComponent()
+    const { container } = renderComponent()
     assert.equal(
-      wrapper.find(".paginator-total-pages").text(),
+      container.querySelector(".paginator-total-pages").textContent,
       props.totalPages
     )
   })
@@ -57,16 +57,16 @@ describe("Paginator", () => {
     })
 
     it("triggers onClickNext when next button clicked", () => {
-      const wrapper = renderComponent()
+      const { container } = renderComponent()
       sinon.assert.notCalled(stubs.onClickNext)
-      wrapper.find(".paginator-next-button").simulate("click")
+      fireEvent.click(container.querySelector(".paginator-next-button"))
       sinon.assert.called(stubs.onClickNext)
     })
 
     it("triggers onClickPrev when prev button clicked", () => {
-      const wrapper = renderComponent()
+      const { container } = renderComponent()
       sinon.assert.notCalled(stubs.onClickPrev)
-      wrapper.find(".paginator-prev-button").simulate("click")
+      fireEvent.click(container.querySelector(".paginator-prev-button"))
       sinon.assert.called(stubs.onClickPrev)
     })
   })
@@ -81,12 +81,12 @@ describe("Paginator", () => {
     })
 
     it("disables the next button", () => {
-      const wrapper = renderComponent()
+      const { container } = renderComponent()
       sinon.assert.notCalled(stubs.onClickNext)
-      const nextButton = wrapper.find(".paginator-next-button")
-      nextButton.simulate("click")
+      const nextButton = container.querySelector(".paginator-next-button")
+      fireEvent.click(nextButton)
       sinon.assert.notCalled(stubs.onClickNext)
-      assert.isTrue(nextButton.hasClass("disabled"))
+      assert.isTrue(nextButton.classList.contains("disabled"))
     })
   })
 
@@ -100,12 +100,12 @@ describe("Paginator", () => {
     })
 
     it("disables the prev button", () => {
-      const wrapper = renderComponent()
+      const { container } = renderComponent()
       sinon.assert.notCalled(stubs.onClickPrev)
-      const prevButton = wrapper.find(".paginator-prev-button")
-      prevButton.simulate("click")
+      const prevButton = container.querySelector(".paginator-prev-button")
+      fireEvent.click(prevButton)
       sinon.assert.notCalled(stubs.onClickPrev)
-      assert.isTrue(prevButton.hasClass("disabled"))
+      assert.isTrue(prevButton.classList.contains("disabled"))
     })
   })
 })

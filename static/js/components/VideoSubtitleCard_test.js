@@ -1,7 +1,7 @@
 // @flow
 import React from "react"
 import sinon from "sinon"
-import { shallow } from "enzyme"
+import { render, fireEvent } from "@testing-library/react"
 import { assert } from "chai"
 
 import { makeVideoSubtitleUrl } from "../lib/urls"
@@ -24,7 +24,7 @@ describe("VideoSubtitleCard", () => {
   })
 
   const renderComponent = (props = {}) =>
-    shallow(
+    render(
       <VideoSubtitleCard
         video={video}
         isAdmin={true}
@@ -41,23 +41,23 @@ describe("VideoSubtitleCard", () => {
       shouldShow
     )} be shown for ${testDescriptor}`, () => {
       const isAdmin = adminPermissionSetting
-      const wrapper = renderComponent({ isAdmin: isAdmin })
-      assert.equal(wrapper.find(".delete-btn").exists(), shouldShow)
+      const { container } = renderComponent({ isAdmin: isAdmin })
+      assert.equal(Boolean(container.querySelector(".delete-btn")), shouldShow)
     })
   })
 
   it("handles a delete button and upload button click", () => {
-    const wrapper = renderComponent({ isAdmin: true })
-    wrapper.find(".delete-btn").prop("onClick")()
+    const { container } = renderComponent({ isAdmin: true })
+    fireEvent.click(container.querySelector(".delete-btn"))
     sinon.assert.called(deleteStub)
-    wrapper.find("#video-subtitle").prop("onChange")()
+    fireEvent.change(container.querySelector("#video-subtitle"))
     sinon.assert.called(uploadStub)
   })
 
   it("displays the correct download link", () => {
-    const wrapper = renderComponent()
+    const { container } = renderComponent()
     assert.equal(
-      wrapper.find(".download-link").prop("href"),
+      container.querySelector(".download-link").getAttribute("href"),
       makeVideoSubtitleUrl(video.videosubtitle_set[0])
     )
   })

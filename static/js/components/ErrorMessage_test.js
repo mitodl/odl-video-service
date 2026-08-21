@@ -1,24 +1,24 @@
 // @flow
 import React from "react"
-import { shallow } from "enzyme"
+import { render } from "@testing-library/react"
 import { assert } from "chai"
 
 import ErrorMessage from "./ErrorMessage"
 
 describe("ErrorMessage", () => {
   const renderComponent = (extraProps = {}) => {
-    return shallow(<ErrorMessage {...extraProps} />)
+    return render(<ErrorMessage {...extraProps} />)
   }
 
   it("has odl-error-message className", () => {
-    const wrapper = renderComponent({
+    const { container } = renderComponent({
       className: "some-class"
     })
-    assert.equal(wrapper.get(0).props.className, "odl-error-message some-class")
+    assert.equal(container.firstChild.className, "odl-error-message some-class")
   })
 
   it("renders children", () => {
-    const wrapper = renderComponent({
+    const { container } = renderComponent({
       children: [
         <div key="a" className="a">
           a
@@ -28,7 +28,7 @@ describe("ErrorMessage", () => {
         </div>
       ]
     })
-    assert.isTrue(wrapper.find(".a").exists())
-    assert.isTrue(wrapper.find(".b").exists())
+    assert.isNotNull(container.querySelector(".a"))
+    assert.isNotNull(container.querySelector(".b"))
   })
 })

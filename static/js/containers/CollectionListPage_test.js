@@ -2,9 +2,8 @@
 /* global SETTINGS: true */
 import React from "react"
 import sinon from "sinon"
-import { mount } from "enzyme"
+import { screen, fireEvent, render } from "@testing-library/react"
 import { assert } from "chai"
-import { Provider } from "react-redux"
 import configureTestStore from "redux-asserts"
 import { MemoryRouter, Route } from "react-router"
 
@@ -19,6 +18,7 @@ import { SHOW_DIALOG } from "../actions/commonUi"
 import rootReducer from "../reducers"
 import { makeCollection } from "../factories/collection"
 import { DIALOGS } from "../constants"
+import renderWithProviders from "../testUtils/renderWithProviders"
 
 describe("CollectionListPage", () => {
   let sandbox, store, collections, listenForActions, collectionsPagination
@@ -53,7 +53,7 @@ describe("CollectionListPage", () => {
   })
 
   const renderPage = async (props = {}) => {
-    let wrapper
+    let rendered
 
     await listenForActions(
       [
@@ -62,84 +62,79 @@ describe("CollectionListPage", () => {
         collectionsPaginationActions.constants.REQUEST_GET_PAGE
       ],
       () => {
-        wrapper = mount(
+        rendered = renderWithProviders(
           <MemoryRouter>
             <Route>
-              <Provider store={store}>
-                <CollectionListPage {...props} />
-              </Provider>
+              <CollectionListPage {...props} />
             </Route>
-          </MemoryRouter>
+          </MemoryRouter>,
+          { store }
         )
       }
     )
-    if (!wrapper) throw new Error("Never will happen, make flow happy")
-    wrapper.update()
-    return wrapper
+    if (!rendered) throw new Error("Never will happen, make flow happy")
+    return rendered
   }
 
   const renderUnconnectedPage = (props = {}) => {
     props = { collectionsPagination, ...props }
-    const wrapper = mount(<UnconnectedCollectionListPage {...props} />)
-    if (!wrapper) throw new Error("Never will happen, make flow happy")
-    wrapper.update()
-    return wrapper
+    return render(<UnconnectedCollectionListPage {...props} />)
   }
 
   it("doesn't show the create collection button if SETTINGS.is_app_admin is false", async () => {
     SETTINGS.is_app_admin = false
-    const wrapper = await renderPage()
-    assert.lengthOf(wrapper.find(".create-collection-button"), 0)
+    await renderPage()
+    assert.isNull(screen.queryByText(/Create New Collection/i))
   })
 
   it("opens a dialog to create a new collection", async () => {
     SETTINGS.is_app_admin = true
-    const wrapper = await renderPage()
+    await renderPage()
     const state = await listenForActions([SHOW_DIALOG, SET_IS_NEW], () => {
-      wrapper
-        .find(".collection-list-content .create-collection-button")
-        .simulate("click")
+      fireEvent.click(screen.getByText(/Create New Collection/i))
     })
     assert.isTrue(state.collectionUi.isNew)
     assert.isTrue(state.commonUi.dialogVisibility[DIALOGS.COLLECTION_FORM])
   })
 
   it("has a toolbar whose handler will dispatch an action to open the drawer", async () => {
-    const wrapper = await renderPage()
-    wrapper.find(".menu-button").simulate("click")
+    const { container } = await renderPage()
+    fireEvent.click(container.querySelector(".menu-button"))
     assert.isTrue(store.getState().commonUi.drawerOpen)
   })
 
   describe("when page has loaded", () => {
     it("has video counts per collection", async () => {
-      const wrapper = await renderPage()
-      const counts = wrapper.find(".mdc-list-item__secondary-text")
+      const { container } = await renderPage()
+      const counts = container.querySelectorAll(
+        ".mdc-list-item__secondary-text"
+      )
       assert.equal(
-        counts.at(0).text(),
+        counts[0].textContent,
         `${collections[0].video_count} Videos | Owner: ${collections[0].owner_info.username}`
       )
     })
   })
 
   it("has paginator", async () => {
-    const wrapper = await renderPage()
-    const paginator = wrapper.find("Paginator")
+    const { container } = await renderPage()
+    const paginator = container.querySelectorAll(".paginator")
     assert.equal(paginator.length, 1)
   })
 
   describe("when page.status is loading", () => {
     it("renders loading indicator", () => {
       collectionsPagination.currentPageData.status = "LOADING"
-      const wrapper = renderUnconnectedPage()
-      assert.exists(wrapper.find("LoadingIndicator"))
+      renderUnconnectedPage()
+      assert.exists(screen.getByText(/Loading/i))
     })
   })
 
   describe("when page.status is error", () => {
     it("renders error indicator", () => {
       collectionsPagination.currentPageData.status = "ERROR"
-      const wrapper = renderUnconnectedPage()
-      assert.isTrue(wrapper.find("ErrorMessage").exists())
+      renderUnconnectedPage()
+      assert.exists(screen.getByText(/unable to load the data/i))
     })
   })
 })
