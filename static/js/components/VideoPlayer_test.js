@@ -327,11 +327,16 @@ describe("VideoPlayer", () => {
     }
     wrapper.instance().videoContainer = containerStub
 
-    wrapper.instance().toggleFullscreen()
-    assert.equal(
-      wrapper.instance().player.el_.dispatchEvent.getCalls()[0].args[0].type,
-      "fullscreen off"
-    )
+    try {
+      wrapper.instance().toggleFullscreen()
+      assert.equal(
+        wrapper.instance().player.el_.dispatchEvent.getCalls()[0].args[0].type,
+        "fullscreen off"
+      )
+    } finally {
+      // $FlowFixMe
+      delete document[FULLSCREEN_API.fullscreenElement]
+    }
   })
   ;[
     "play",
