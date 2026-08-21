@@ -101,12 +101,10 @@ describe("VideoPlayerController", () => {
   it("resizeYouTube does nothing in fullscreen", () => {
     controller.player = playerStub
     controller.videoContainer = containerStub
-    // $FlowFixMe
     document[FULLSCREEN_API.fullscreenElement] = () => true
     try {
       controller.resizeYouTube(false)
     } finally {
-      // $FlowFixMe
       delete document[FULLSCREEN_API.fullscreenElement]
     }
     sinon.assert.notCalled(playerStub.width)
@@ -222,12 +220,10 @@ describe("VideoPlayerController", () => {
 
   it("isFullscreen reflects the document fullscreen element", () => {
     assert.isNotOk(isFullscreen())
-    // $FlowFixMe
     document[FULLSCREEN_API.fullscreenElement] = () => true
     try {
       assert.isOk(isFullscreen())
     } finally {
-      // $FlowFixMe
       delete document[FULLSCREEN_API.fullscreenElement]
     }
   })
