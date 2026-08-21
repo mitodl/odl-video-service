@@ -3,7 +3,7 @@
 import React from "react"
 import { assert } from "chai"
 import sinon from "sinon"
-import { mount } from "enzyme"
+import { render, screen } from "@testing-library/react"
 
 import { actions } from "../actions"
 
@@ -66,7 +66,9 @@ describe("withVideoAnalytics", () => {
     describe("WrappedComponent", () => {
       class DummyComponent extends React.Component<*, void> {
         render() {
-          return <div>DummyComponent</div>
+          return (
+            <div data-received={JSON.stringify(this.props)}>DummyComponent</div>
+          )
         }
       }
 
@@ -83,14 +85,14 @@ describe("withVideoAnalytics", () => {
 
         describe("when needsUpdate is true", () => {
           it("calls update", () => {
-            mount(<WrappedComponent needsUpdate={true} />)
+            render(<WrappedComponent needsUpdate={true} />)
             sinon.assert.called(stubs.update)
           })
         })
 
         describe("when needsUpdate is false", () => {
           it("does not call update", () => {
-            mount(<WrappedComponent needsUpdate={false} />)
+            render(<WrappedComponent needsUpdate={false} />)
             sinon.assert.notCalled(stubs.update)
           })
         })
@@ -108,7 +110,7 @@ describe("withVideoAnalytics", () => {
 
         it("dispatches action with video.key", () => {
           const videoKey = "someVideoKey"
-          mount(
+          render(
             <WrappedComponent
               dispatch={stubs.dispatch}
               needsUpdate={true}
@@ -131,15 +133,17 @@ describe("withVideoAnalytics", () => {
           }
           const video = { some: "video" }
           const videoAnalytics = { some: "videoAnalytics" }
-          const wrapper = mount(
+          render(
             <WrappedComponent
               {...extraProps}
               video={video}
               videoAnalytics={videoAnalytics}
             />
           )
-          const wrapped = wrapper.find("DummyComponent")
-          assert.deepEqual(wrapped.props(), {
+          const received = JSON.parse(
+            screen.getByText("DummyComponent").dataset.received
+          )
+          assert.deepEqual(received, {
             ...extraProps,
             video,
             videoAnalytics
