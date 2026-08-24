@@ -2,7 +2,7 @@
 import React from "react"
 import _ from "lodash"
 import sinon from "sinon"
-import { shallow } from "enzyme"
+import { render } from "@testing-library/react"
 import { assert } from "chai"
 import { makeVideo } from "../factories/video"
 
@@ -30,21 +30,29 @@ describe("VideoList", () => {
   })
 
   const renderComponent = (overrides = {}) => {
-    return shallow(<VideoList {...props} {...overrides} />)
+    return render(<VideoList {...props} {...overrides} />)
   }
 
   describe("render", () => {
     it("renders a VideoCard for each video", () => {
-      sandbox.stub(VideoList.prototype, "renderVideoCard").callsFake(video => {
-        return <div className="mocked-renderVideoCard" key={video.key} />
-      })
-      const wrapper = renderComponent()
-      const videos = wrapper.instance().props.videos
-      const videoCards = wrapper.find(".mocked-renderVideoCard")
-      assert.equal(videoCards.length, videos.length)
+      // Real full mount, no stubbing of renderVideoCard: the original
+      // Enzyme test stubbed it out and read back React `key`s via
+      // `shallow`, an implementation-detail delegation fact (React keys
+      // aren't serialized to the DOM, so no RTL equivalent exists -- Rule
+      // 26 DOM capture of a real mount confirmed the rendered markup
+      // carries titles instead). Asserting one VideoCard title per video,
+      // in order, is the user-visible outcome that delegation fact stood
+      // in for, and is safe: VideoCard_test.js already mounts real
+      // VideoCard trees (MDC Menu + DropboxChooser) with no stderr, and
+      // `makeVideo()` defaults to VIDEO_STATUS_COMPLETE so
+      // videoIsProcessing/videoHasError are false without stubbing
+      // `../lib/video`.
+      const { container } = renderComponent()
+      const titleLinks = container.querySelectorAll(".video-card-body h2 a")
+      assert.equal(titleLinks.length, props.videos.length)
       assert.deepEqual(
-        videoCards.map(videoCard => videoCard.key()),
-        videos.map(video => video.key)
+        Array.from(titleLinks).map(link => link.textContent),
+        props.videos.map(video => video.title)
       )
     })
   })
