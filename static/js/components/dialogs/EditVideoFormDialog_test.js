@@ -159,16 +159,34 @@ describe("EditVideoFormDialog", () => {
       // "view-only-me"/"view-logged-in-only" radios are rendered HTML
       // `disabled` on a fresh mount (defaultPerms is true until an override
       // choice is made -- see EditVideoFormDialog.js's renderPermissions).
-      // Spiked empirically (see task-5-report.md, Spike B): a real
-      // `fireEvent.click` on jsdom still invokes the React onChange handler
-      // for a `disabled` radio in this React 15 setup (React's checkbox/
-      // radio change-detection listens on the "click" event and does not
-      // gate on the DOM `disabled` attribute), so no "drive the override
-      // radio first" workaround is needed here -- this is a direct,
-      // mechanical port of the Enzyme `simulate("change", ...)` behavior.
+      // `fireEvent.click` dispatches a MouseEvent via `dispatchEvent`, which
+      // bypasses the browser's disabled-control activation gate -- unlike a
+      // real user click (`element.click()`), which does NOT fire on a
+      // disabled control. So these two rows must first drive the always-
+      // enabled override radio to PERM_CHOICE_OVERRIDE (a real user
+      // interaction), which is what actually removes the `disabled`
+      // attribute, before touching the target radio -- matching what a real
+      // user can do, and proven reachable below via an explicit
+      // not-disabled assertion.
+      if (
+        selector === "#video-view-perms-view-only-me" ||
+        selector === "#video-view-perms-view-logged-in-only"
+      ) {
+        fireEvent.click(
+          screen.getByLabelText(
+            "Override collection permissions for this video"
+          )
+        )
+      }
       const target = labelText ?
         screen.getByLabelText(labelText) :
         document.querySelector(selector)
+      if (interaction === "click") {
+        assert.isFalse(
+          target.disabled,
+          `${selector} must not be disabled before a user can click it`
+        )
+      }
       const state = await listenForActions([actionType], () => {
         if (interaction === "click") {
           fireEvent.click(target)
