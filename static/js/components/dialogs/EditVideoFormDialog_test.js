@@ -2,9 +2,8 @@
 /* global SETTINGS: false */
 import React from "react"
 import sinon from "sinon"
-import { mount } from "enzyme"
 import { assert } from "chai"
-import { Provider } from "react-redux"
+import { screen, fireEvent } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 import _ from "lodash"
 
@@ -19,6 +18,7 @@ import { INITIAL_UI_STATE } from "../../reducers/videoUi"
 import * as api from "../../lib/api"
 import { makeVideo } from "../../factories/video"
 import { makeCollection } from "../../factories/collection"
+import renderWithProviders from "../../testUtils/renderWithProviders"
 import {
   PERM_CHOICE_LISTS,
   PERM_CHOICE_LOGGED_IN,
@@ -47,12 +47,12 @@ const {
 } = videoUiActions.actionCreators
 
 describe("EditVideoFormDialog", () => {
-  let sandbox, store, listenForActions, hideDialogStub, video
-  const selectors = {
-    SUBMIT_BTN:  "button.mdc-dialog__footer__button--accept",
-    TITLE_INPUT: "#video-title",
-    DESC_INPUT:  "#video-description"
-  }
+  let sandbox,
+    store,
+    listenForActions,
+    hideDialogStub,
+    video,
+    originalEnableVideoPermissions
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
@@ -60,55 +60,46 @@ describe("EditVideoFormDialog", () => {
     listenForActions = store.createListenForActions()
     hideDialogStub = sandbox.stub()
     video = makeVideo()
+    // Hygiene fix (test-file-only, not a production change): this file
+    // mutates the global SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS flag
+    // directly in most tests below with no reset, which is a latent
+    // cross-test/cross-file leak (flagged in the conversion dossier). Save
+    // and restore it so this file can't affect any other spec file's
+    // assumed default.
+    originalEnableVideoPermissions = SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS
   })
 
   afterEach(() => {
     sandbox.restore()
+    SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = originalEnableVideoPermissions
   })
 
   const renderComponent = (props = {}) => {
-    return mount(
-      <Provider store={store}>
-        <div>
-          <EditVideoFormDialog
-            open={true}
-            hideDialog={hideDialogStub}
-            video={video}
-            videoUi={INITIAL_UI_STATE}
-            {...props}
-          />
-        </div>
-      </Provider>
+    return renderWithProviders(
+      <EditVideoFormDialog
+        open={true}
+        hideDialog={hideDialogStub}
+        video={video}
+        videoUi={INITIAL_UI_STATE}
+        {...props}
+      />,
+      { store }
     )
   }
 
   it("initializes the form when given a video that doesn't match the current form key", async () => {
-    let wrapper
     store.dispatch(initEditVideoForm({ key: "mismatching-key" }))
     const previousFormState = store.getState().videoUi.editVideoForm
     await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
-      wrapper = renderComponent()
+      renderComponent()
     })
-    if (!wrapper) throw new Error("Render failed")
 
     assert.notEqual(
       previousFormState.key,
       store.getState().videoUi.editVideoForm.key
     )
-    assert.equal(
-      wrapper
-        .find(selectors.TITLE_INPUT)
-        .hostNodes()
-        .prop("value"),
-      video.title
-    )
-    assert.equal(
-      wrapper
-        .find(selectors.DESC_INPUT)
-        .hostNodes()
-        .prop("value"),
-      video.description
-    )
+    assert.equal(screen.getByLabelText("Title").value, video.title)
+    assert.equal(screen.getByLabelText("Description").value, video.description)
   })
 
   it("doesn't re-initialize the form when given a video that matches the current form key", () => {
@@ -119,46 +110,71 @@ describe("EditVideoFormDialog", () => {
   })
 
   // eslint-disable-next-line no-unused-vars
-  for (const [selector, prop, actionType, newValue] of [
-    ["#video-title", "title", SET_EDIT_VIDEO_TITLE, "new title"],
+  for (const [selector, prop, actionType, newValue, labelText, interaction] of [
+    [
+      "#video-title",
+      "title",
+      SET_EDIT_VIDEO_TITLE,
+      "new title",
+      "Title",
+      "change"
+    ],
     [
       "#video-description",
       "description",
       SET_EDIT_VIDEO_DESC,
-      "new description"
+      "new description",
+      "Description",
+      "change"
     ],
-    ["#view-moira-input", "viewLists", SET_VIEW_LISTS, "a,b,c"],
+    ["#view-moira-input", "viewLists", SET_VIEW_LISTS, "a,b,c", null, "change"],
     [
       "#video-view-perms-override-view-collection-override",
       "overrideChoice",
       SET_PERM_OVERRIDE_CHOICE,
-      PERM_CHOICE_OVERRIDE
+      PERM_CHOICE_OVERRIDE,
+      "Override collection permissions for this video",
+      "click"
     ],
     [
       "#video-view-perms-view-only-me",
       "viewChoice",
       SET_VIEW_CHOICE,
-      PERM_CHOICE_NONE
+      PERM_CHOICE_NONE,
+      "Only you and other admins",
+      "click"
     ],
     [
       "#video-view-perms-view-logged-in-only",
       "viewChoice",
       SET_VIEW_CHOICE,
-      PERM_CHOICE_LOGGED_IN
+      PERM_CHOICE_LOGGED_IN,
+      "MIT Touchstone",
+      "click"
     ]
   ]) {
     it(`sets ${prop}`, async () => {
       SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = true
-      const wrapper = await renderComponent()
+      renderComponent()
+      // "view-only-me"/"view-logged-in-only" radios are rendered HTML
+      // `disabled` on a fresh mount (defaultPerms is true until an override
+      // choice is made -- see EditVideoFormDialog.js's renderPermissions).
+      // Spiked empirically (see task-5-report.md, Spike B): a real
+      // `fireEvent.click` on jsdom still invokes the React onChange handler
+      // for a `disabled` radio in this React 15 setup (React's checkbox/
+      // radio change-detection listens on the "click" event and does not
+      // gate on the DOM `disabled` attribute), so no "drive the override
+      // radio first" workaround is needed here -- this is a direct,
+      // mechanical port of the Enzyme `simulate("change", ...)` behavior.
+      const target = labelText ?
+        screen.getByLabelText(labelText) :
+        document.querySelector(selector)
       const state = await listenForActions([actionType], () => {
-        wrapper
-          .find(selector)
-          .hostNodes()
-          .simulate("change", {
-            target: {
-              value: newValue
-            }
-          })
+        if (interaction === "click") {
+          fireEvent.click(target)
+        } else {
+          fireEvent.change(target, { target: { value: newValue } })
+        }
       })
       assert.equal(state.videoUi.editVideoForm[prop], newValue)
     })
@@ -172,27 +188,27 @@ describe("EditVideoFormDialog", () => {
     "#video-view-perms-view-only-me",
     "#video-view-perms-view-logged-in-only"
   ]) {
-    it(`permissions field ${selector} not present if feature is disabled`, async () => {
+    it(`permissions field ${selector} not present if feature is disabled`, () => {
       SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false
-      const wrapper = await renderComponent()
-      assert.equal(wrapper.find(selector).hostNodes().length, 0)
+      // Note: "#video-view-perms-view-public" is absent from every render
+      // in this file regardless of the feature flag, because
+      // renderComponent() never passes a `collection` prop with
+      // `is_public: true` (collectionIsPublic is always falsy here) -- this
+      // assertion still validly proves absence, it just isn't proof that
+      // the feature flag specifically controls *that* radio's visibility.
+      const { container } = renderComponent()
+      assert.isNull(container.querySelector(selector))
     })
   }
 
   it(`updates the video when form is submitted and video permissions are disabled`, async () => {
     SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false
-    let wrapper
     const updateVideoStub = sandbox
       .stub(api, "updateVideo")
       .returns(Promise.resolve(video))
     await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
-      wrapper = renderComponent()
+      renderComponent()
     })
-    if (!wrapper) throw new Error("Render failed")
-    sandbox.stub(
-      wrapper.find("EditVideoFormDialog").instance(),
-      "addToastMessage"
-    )
     // set title and description, check the values that updateVideoStub is called with
     const newValues = {
       title:       "New Title",
@@ -200,33 +216,50 @@ describe("EditVideoFormDialog", () => {
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))
-    await listenForActions([actions.videos.patch.requestType], () => {
-      // Calling onAccept directly b/c click doesn't work in JS tests due to MDC
-      // $FlowFixMe: Flow... come on. 'wrapper' cannot be undefined at this point.
-      wrapper
-        .find("EditVideoFormDialog")
-        .find("Dialog")
-        .prop("onAccept")()
-    })
+    // Real click on the "Save Changes" button, replacing the old
+    // `.find("Dialog").prop("onAccept")()` call. Spiked empirically (see
+    // task-5-report.md, Spike A): EditVideoFormDialog renders its Dialog
+    // with validateOnClick={true}, so Dialog.js omits the
+    // "mdc-dialog__footer__button--accept" class from the button; MDCDialog's
+    // foundation only emits "MDCDialog:accept" (and thus only re-invokes
+    // onAccept a second time) for a click that lands on an element carrying
+    // that exact class (see @material/dialog's ACCEPT_BTN/ACCEPT_SELECTOR
+    // constants), so a real click here fires onAccept exactly once, through
+    // the Button's plain onClick alone -- confirmed by counting
+    // api.updateVideo's call count after a single click.
+    //
+    // The former `sandbox.stub(wrapper.find("EditVideoFormDialog").instance(),
+    // "addToastMessage")` is dropped (see the file's own "adds toast message
+    // on submit" test below, which already proves this pattern): instead of
+    // stubbing out the trailing addToastMessage/onClose chain, this awaits
+    // it in full so nothing keeps dispatching after RTL's automatic
+    // unmount.
+    await listenForActions(
+      [
+        actions.videos.patch.requestType,
+        actions.videos.patch.successType,
+        INIT_EDIT_VIDEO_FORM,
+        toastActions.constants.ADD_MESSAGE,
+        CLEAR_VIDEO_FORM,
+        INIT_EDIT_VIDEO_FORM
+      ],
+      () => {
+        fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      }
+    )
 
     sinon.assert.calledWith(updateVideoStub, video.key, newValues)
   })
 
   it(`updates the video when form is submitted and video permissions are enabled`, async () => {
     SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = true
-    let wrapper
     const updateVideoStub = sandbox
       .stub(api, "updateVideo")
       .returns(Promise.resolve(video))
     await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
-      wrapper = renderComponent()
+      renderComponent()
     })
-    if (!wrapper) throw new Error("Render failed")
     // set permission override & view choices, check the values that updateVideoStub is called with
-    sandbox.stub(
-      wrapper.find("EditVideoFormDialog").instance(),
-      "addToastMessage"
-    )
     const newValues = {
       title:             "New Title",
       description:       "New Description",
@@ -241,25 +274,8 @@ describe("EditVideoFormDialog", () => {
     store.dispatch(setViewChoice(PERM_CHOICE_LISTS))
     store.dispatch(setViewLists(_.map(newValues.view_lists).join(",")))
 
-    await listenForActions([actions.videos.patch.requestType], () => {
-      // Calling onAccept directly b/c click doesn't work in JS tests due to MDC
-      // $FlowFixMe: Flow... come on. 'wrapper' cannot be undefined at this point.
-      wrapper
-        .find("EditVideoFormDialog")
-        .find("Dialog")
-        .prop("onAccept")()
-    })
-
-    sinon.assert.calledWith(updateVideoStub, video.key, newValues)
-  })
-
-  it(`adds toast message on submit`, async () => {
-    let wrapper
-    sandbox.stub(api, "updateVideo").returns(Promise.resolve(video))
-    await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
-      wrapper = renderComponent()
-    })
-    if (!wrapper) throw new Error("Render failed")
+    // See the previous test for the click/onAccept and full-chain-await
+    // rationale (both apply identically here).
     await listenForActions(
       [
         actions.videos.patch.requestType,
@@ -270,12 +286,29 @@ describe("EditVideoFormDialog", () => {
         INIT_EDIT_VIDEO_FORM
       ],
       () => {
-        // Calling onAccept directly b/c click doesn't work in JS tests due to MDC
-        // $FlowFixMe: Flow... come on. 'wrapper' cannot be undefined at this point.
-        wrapper
-          .find("EditVideoFormDialog")
-          .find("Dialog")
-          .prop("onAccept")()
+        fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      }
+    )
+
+    sinon.assert.calledWith(updateVideoStub, video.key, newValues)
+  })
+
+  it(`adds toast message on submit`, async () => {
+    sandbox.stub(api, "updateVideo").returns(Promise.resolve(video))
+    await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+      renderComponent()
+    })
+    await listenForActions(
+      [
+        actions.videos.patch.requestType,
+        actions.videos.patch.successType,
+        INIT_EDIT_VIDEO_FORM,
+        toastActions.constants.ADD_MESSAGE,
+        CLEAR_VIDEO_FORM,
+        INIT_EDIT_VIDEO_FORM
+      ],
+      () => {
+        fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
       }
     )
     assert.deepEqual(store.getState().toast.messages, [
@@ -288,42 +321,97 @@ describe("EditVideoFormDialog", () => {
   })
 
   it("stores form submission errors in state", async () => {
-    const wrapper = await renderComponent()
+    renderComponent()
     const expectedErrorMessage = "Failed to parse URL from /api/v0/"
     const expectedActionTypes = [
       actions.videos.patch.requestType,
       "RECEIVE_PATCH_VIDEOS_FAILURE",
       SET_VIDEO_FORM_ERRORS
     ]
+    // Note: this assertion's error text ("Failed to parse URL from
+    // /api/v0/") is a jsdom/node `fetch` implementation detail (no
+    // api.updateVideo stub here, so the real fetch runs against a relative
+    // URL and rejects), not application logic -- pre-existing fragility
+    // carried over unchanged from the Enzyme version, flagged in case it
+    // needs updating if the fetch polyfill ever changes.
     await listenForActions(expectedActionTypes, () => {
-      // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
-      wrapper.find("Dialog").prop("onAccept")()
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
     })
     const actualError = store.getState().videoUi.errors
     assert.include(actualError.message, expectedErrorMessage)
   })
 
-  it("can get a video from the collection state when no video is provided to the component directly", () => {
+  it("can get a video from the collection state when no video is provided to the component directly", async () => {
     const collection = makeCollection()
     const collectionVideo = collection.videos[0]
     store.dispatch(setSelectedVideoKey(collectionVideo.key))
-    const wrapper = renderComponent({
-      video:      null,
-      collection: collection
+
+    // `video`/`shouldUpdateCollection` are connect()-injected props on the
+    // unconnected class, which isn't named-exported and can't be
+    // introspected directly under RTL. Both facts are re-expressed as
+    // observable behavior instead (see task-5-report.md / conversion
+    // dossier): which video mapStateToProps picked is proven by the
+    // rendered Title input; shouldUpdateCollection's only effect is
+    // submitForm's `dispatch(actions.collections.get(video.collection_key))`,
+    // observed here by stubbing that action creator directly (so no real
+    // network call is made and no extra request/success actions need to be
+    // awaited).
+    await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+      renderComponent({ video: null, collection })
     })
-    const dialogProps = wrapper.find("EditVideoFormDialog").props()
-    assert.deepEqual(dialogProps.video, collectionVideo)
-    assert.equal(dialogProps.shouldUpdateCollection, true)
+    assert.equal(screen.getByLabelText("Title").value, collectionVideo.title)
+
+    sandbox.stub(api, "updateVideo").returns(Promise.resolve(collectionVideo))
+    const collectionsGetStub = sandbox
+      .stub(actions.collections, "get")
+      .returns({ type: "NOOP" })
+
+    await listenForActions(
+      [
+        actions.videos.patch.requestType,
+        actions.videos.patch.successType,
+        INIT_EDIT_VIDEO_FORM,
+        "NOOP",
+        toastActions.constants.ADD_MESSAGE,
+        CLEAR_VIDEO_FORM,
+        INIT_EDIT_VIDEO_FORM
+      ],
+      () => {
+        fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      }
+    )
+    sinon.assert.calledWith(collectionsGetStub, collectionVideo.collection_key)
   })
 
-  it("prefers a video provided via props over a video in a collection", () => {
+  it("prefers a video provided via props over a video in a collection", async () => {
     const collection = makeCollection()
-    const wrapper = renderComponent({
-      video:      video,
-      collection: collection
+
+    await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+      renderComponent({ video, collection })
     })
-    const dialogProps = wrapper.find("EditVideoFormDialog").props()
-    assert.deepEqual(dialogProps.video, video)
-    assert.equal(dialogProps.shouldUpdateCollection, false)
+    assert.equal(screen.getByLabelText("Title").value, video.title)
+
+    // shouldUpdateCollection === false here (an explicit `video` prop wins
+    // over `collection` in mapStateToProps) -- proven by observing that
+    // submitting never calls actions.collections.get.
+    sandbox.stub(api, "updateVideo").returns(Promise.resolve(video))
+    const collectionsGetStub = sandbox
+      .stub(actions.collections, "get")
+      .returns({ type: "NOOP" })
+
+    await listenForActions(
+      [
+        actions.videos.patch.requestType,
+        actions.videos.patch.successType,
+        INIT_EDIT_VIDEO_FORM,
+        toastActions.constants.ADD_MESSAGE,
+        CLEAR_VIDEO_FORM,
+        INIT_EDIT_VIDEO_FORM
+      ],
+      () => {
+        fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      }
+    )
+    sinon.assert.notCalled(collectionsGetStub)
   })
 })
