@@ -49,8 +49,9 @@ check "passing tests" "$TESTS" ge 492
 # 12 -> 11 (AnalyticsChart_test.js converted, Tier 3 E4b/E5, hq#12640).
 # 11 -> 10 (AnalyticsInfoTable_test.js converted, Tier 3 E4b/E5, hq#12640).
 # 10 -> 9 (ProgressSlider_test.js converted, Tier 3 E4b/E5, hq#12640).
+# 9 -> 8 (ToastOverlay_test.js converted, Task 3 of E4b/E5, hq#12640).
 ENZYME=$(grep -rl 'from "enzyme"' static/js --include='*_test.js' 2>/dev/null | wc -l | tr -d ' ')
-check "enzyme test files" "$ENZYME" le 9
+check "enzyme test files" "$ENZYME" le 8
 
 # data-testid is the escape hatch that turns an RTL migration back into
 # implementation-coupled testing. 86 .find("ComponentName") selectors exist in
