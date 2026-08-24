@@ -1,13 +1,11 @@
 // @flow
 import React from "react"
 import sinon from "sinon"
-import { mount, shallow } from "enzyme"
 import { assert } from "chai"
-import { Provider } from "react-redux"
+import { screen, fireEvent, within, waitFor } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 
 import CollectionFormDialog from "./CollectionFormDialog"
-import { CollectionFormDialog as UnconnectedCollectionFormDialog } from "./CollectionFormDialog"
 
 import rootReducer from "../../reducers"
 import { actions } from "../../actions"
@@ -40,9 +38,16 @@ import * as api from "../../lib/api"
 import { getCollectionForm } from "../../lib/collection"
 import { makeCollection } from "../../factories/collection"
 import { makeCollectionUrl } from "../../lib/urls"
+import renderWithProviders from "../../testUtils/renderWithProviders"
 
 describe("CollectionFormDialog", () => {
-  let sandbox, store, listenForActions, hideDialogStub, collection, uiState
+  let sandbox,
+    store,
+    listenForActions,
+    hideDialogStub,
+    collection,
+    uiState,
+    getPotentialCollectionOwnersStub
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
@@ -53,41 +58,70 @@ describe("CollectionFormDialog", () => {
     uiState = INITIAL_UI_STATE
 
     // Mock the users API response
-    sandbox.stub(api, "getPotentialCollectionOwners").returns(
-      Promise.resolve({
-        users: [
-          { id: 1, username: "user1", email: "user1@example.com" },
-          { id: 2, username: "user2", email: "user2@example.com" }
-        ]
-      })
-    )
+    getPotentialCollectionOwnersStub = sandbox
+      .stub(api, "getPotentialCollectionOwners")
+      .returns(
+        Promise.resolve({
+          users: [
+            { id: 1, username: "user1", email: "user1@example.com" },
+            { id: 2, username: "user2", email: "user2@example.com" }
+          ]
+        })
+      )
   })
 
   afterEach(() => {
     sandbox.restore()
   })
 
-  const renderComponent = (props = {}) => {
-    return mount(
-      <Provider store={store}>
-        <div>
-          <CollectionFormDialog
-            collectionUi={uiState}
-            collection={collection}
-            open={true}
-            hideDialog={hideDialogStub}
-            isEdxCourseAdmin={true}
-            collectionKey={"00000000-0000-0000-0000-000000000000"}
-            {...props}
-          />
-        </div>
-      </Provider>
+  const renderComponent = (props = {}) =>
+    renderWithProviders(
+      <CollectionFormDialog
+        collectionUi={uiState}
+        collection={collection}
+        open={true}
+        hideDialog={hideDialogStub}
+        isEdxCourseAdmin={true}
+        collectionKey={"00000000-0000-0000-0000-000000000000"}
+        {...props}
+      />,
+      { store }
     )
+
+  // componentDidMount kicks off the potential-owners fetch, which dispatches
+  // a REQUEST action synchronously and a RECEIVE_..._SUCCESS a few
+  // microtasks later. redux-asserts' listenForActions matches the cumulative
+  // action list as a strict set, so those two actions must be fully drained
+  // *before* any listenForActions window opens below -- otherwise they can
+  // land inside the window and make it hang or reject. Waiting for the two
+  // rendered <option>s is the user-visible signal that the fetch completed;
+  // it is also the direct replacement for the old `wrapper.state().users`
+  // reads (state.users has exactly one consumer: the Owner <option> list).
+  const renderDialog = async (props = {}) => {
+    const result = renderComponent(props)
+    await waitFor(() => assert.lengthOf(screen.getAllByRole("option"), 2))
+    return result
+  }
+
+  // "Only owner"/"Moira Lists" labels and the Moira placeholder each appear
+  // twice (view group + admin group), so every query below is scoped to the
+  // right <section class="permission-group"> via its heading.
+  const permSection = heading =>
+    screen
+      .getByRole("heading", { name: heading })
+      .closest("section.permission-group")
+  const VIEW = "Who can view videos?"
+  const ADMIN = "Who can upload/edit videos?"
+  const PERM_LABEL = {
+    [PERM_CHOICE_NONE]:  "Only owner",
+    [PERM_CHOICE_LISTS]: "Moira Lists"
   }
 
   // eslint-disable-next-line no-unused-vars
   for (const isNew of [true, false]) {
     describe(`with isNew=${String(isNew)}`, () => {
+      const submitText = isNew ? "Create Collection" : "Save"
+
       beforeEach(() => {
         if (isNew) {
           store.dispatch(showNewCollectionDialog())
@@ -97,48 +131,81 @@ describe("CollectionFormDialog", () => {
       })
 
       // eslint-disable-next-line no-unused-vars
-      for (const [selector, prop, actionType, newValue] of [
-        ["#collection-title", "title", SET_COLLECTION_TITLE, "new title"],
+      for (const [prop, actionType, newValue, getTarget, interaction] of [
         [
-          "#collection-desc",
+          "title",
+          SET_COLLECTION_TITLE,
+          "new title",
+          () => screen.getByLabelText("Collection Title"),
+          "change"
+        ],
+        [
           "description",
           SET_COLLECTION_DESC,
-          "new description"
+          "new description",
+          () => screen.getByLabelText("Description (optional)"),
+          "change"
         ],
         [
-          "#view-perms-view-only-me",
           "viewChoice",
           SET_VIEW_CHOICE,
-          isNew ? PERM_CHOICE_LISTS : PERM_CHOICE_NONE
+          isNew ? PERM_CHOICE_LISTS : PERM_CHOICE_NONE,
+          () =>
+            within(permSection(VIEW)).getByRole("radio", {
+              name: PERM_LABEL[isNew ? PERM_CHOICE_LISTS : PERM_CHOICE_NONE]
+            }),
+          "click"
         ],
-        ["#view-moira-input", "viewLists", SET_VIEW_LISTS, "a,b,c"],
-        ["#collection-owner", "ownerId", SET_OWNER_ID, 2],
         [
-          "#admin-perms-admin-only-me",
+          "viewLists",
+          SET_VIEW_LISTS,
+          "a,b,c",
+          () =>
+            within(permSection(VIEW)).getByPlaceholderText(/Add Moira list/),
+          "change"
+        ],
+        [
+          "ownerId",
+          SET_OWNER_ID,
+          2,
+          () => screen.getByRole("combobox", { name: "Owner" }),
+          "change"
+        ],
+        [
           "adminChoice",
           SET_ADMIN_CHOICE,
-          isNew ? PERM_CHOICE_LISTS : PERM_CHOICE_NONE
+          isNew ? PERM_CHOICE_LISTS : PERM_CHOICE_NONE,
+          () =>
+            within(permSection(ADMIN)).getByRole("radio", {
+              name: PERM_LABEL[isNew ? PERM_CHOICE_LISTS : PERM_CHOICE_NONE]
+            }),
+          "click"
         ],
-        ["#admin-moira-input", "adminLists", SET_ADMIN_LISTS, "a,b,c"]
+        [
+          "adminLists",
+          SET_ADMIN_LISTS,
+          "a,b,c",
+          () =>
+            within(permSection(ADMIN)).getByPlaceholderText(/Add Moira list/),
+          "change"
+        ]
       ]) {
         it(`sets ${prop}`, async () => {
-          const wrapper = await renderComponent()
+          await renderDialog()
+          const target = getTarget()
           const state = await listenForActions([actionType], () => {
-            wrapper
-              .find(selector)
-              .hostNodes()
-              .simulate("change", {
-                target: {
-                  value: newValue
-                }
-              })
+            if (interaction === "click") {
+              fireEvent.click(target)
+            } else {
+              fireEvent.change(target, { target: { value: String(newValue) } })
+            }
           })
           assert.equal(getCollectionForm(state.collectionUi)[prop], newValue)
         })
       }
 
       it("stores form submission errors in state", async () => {
-        const wrapper = await renderComponent()
+        await renderDialog()
         let expectedActionTypes
         const expectedErrorMessage =
           "Failed to parse URL from /api/v0/collections/"
@@ -158,8 +225,7 @@ describe("CollectionFormDialog", () => {
           ]
         }
         await listenForActions(expectedActionTypes, () => {
-          // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
-          wrapper.find("Dialog").prop("onAccept")()
+          fireEvent.click(screen.getByRole("button", { name: submitText }))
         })
 
         const actualError = store.getState().collectionUi.errors
@@ -170,7 +236,7 @@ describe("CollectionFormDialog", () => {
         const listInput = "list1,list2,list3"
         const expectedListRequestData = ["list1", "list2", "list3"]
         const historyPushStub = sandbox.stub()
-        const wrapper = await renderComponent({
+        await renderDialog({
           history: {
             push: historyPushStub
           }
@@ -211,8 +277,7 @@ describe("CollectionFormDialog", () => {
         }
 
         await listenForActions(expectedActionTypes, () => {
-          // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
-          wrapper.find("Dialog").prop("onAccept")()
+          fireEvent.click(screen.getByRole("button", { name: submitText }))
         })
 
         const expectedRequestPayload = {
@@ -243,12 +308,15 @@ describe("CollectionFormDialog", () => {
       })
 
       it("does not send edx course id in the API request if isEdxCourseAdmin=false", async () => {
-        const wrapper = await renderComponent({
+        await renderDialog({
           isEdxCourseAdmin: false,
           history:          {
             push: sandbox.stub()
           }
         })
+        // The field itself is conditionally rendered -- the visible half of
+        // the same behaviour the payload assertion below pins on the wire.
+        assert.isNull(screen.queryByLabelText("edx Course ID"))
 
         store.dispatch(setAdminChoice(PERM_CHOICE_NONE))
         store.dispatch(setViewChoice(PERM_CHOICE_NONE))
@@ -276,8 +344,7 @@ describe("CollectionFormDialog", () => {
         }
 
         await listenForActions(expectedActionTypes, () => {
-          // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
-          wrapper.find("Dialog").prop("onAccept")()
+          fireEvent.click(screen.getByRole("button", { name: submitText }))
         })
 
         const payloadArg = isNew ?
@@ -288,7 +355,7 @@ describe("CollectionFormDialog", () => {
 
       it("adds toast messages", async () => {
         const historyPushStub = sandbox.stub()
-        const wrapper = await renderComponent({
+        await renderDialog({
           history: {
             push: historyPushStub
           }
@@ -316,8 +383,7 @@ describe("CollectionFormDialog", () => {
         }
 
         const state = await listenForActions(expectedActionTypes, () => {
-          // Calling click handler directly due to MDC limitations (can't use enzyme's 'simulate')
-          wrapper.find("Dialog").prop("onAccept")()
+          fireEvent.click(screen.getByRole("button", { name: submitText }))
         })
 
         if (isNew) {
@@ -340,53 +406,47 @@ describe("CollectionFormDialog", () => {
       })
 
       it("updates collections list for drawer", async () => {
-        const stubs = {
-          // Stub dispatch to return collection, per isNew=true condition.
-          dispatch: sandbox.stub().returns(Promise.resolve(collection)),
-          history:  {
-            push: sandbox.stub()
-          },
-          collectionsListGet:  sandbox.stub(actions.collectionsList, "get"),
-          collectionsListPost: sandbox
-            .stub(actions.collectionsList, "post")
-            .returns(Promise.resolve(collection)),
-          collectionsPatch: sandbox
-            .stub(actions.collections, "patch")
-            .returns(Promise.resolve())
+        const historyPushStub = sandbox.stub()
+        await renderDialog({
+          history: {
+            push: historyPushStub
+          }
+        })
+        const getCollectionsStub = sandbox
+          .stub(api, "getCollections")
+          .returns(Promise.resolve({}))
+        if (isNew) {
+          sandbox
+            .stub(api, "createCollection")
+            .returns(Promise.resolve(collection))
+        } else {
+          sandbox
+            .stub(api, "updateCollection")
+            .returns(Promise.resolve(collection))
         }
-        const wrapper = shallow(
-          <UnconnectedCollectionFormDialog
-            dispatch={stubs.dispatch}
-            history={stubs.history}
-            collectionUi={{ isNew }}
-            collectionForm={{}}
-          />
-        )
-        await wrapper.instance().submitForm()
-        sinon.assert.calledWith(
-          stubs.dispatch,
-          stubs.collectionsListGet.returnValues[0]
-        )
+
+        fireEvent.click(screen.getByRole("button", { name: submitText }))
+
+        // A successful submit re-fetches the collection list so the nav
+        // drawer updates (CollectionFormDialog.js's submitForm). Asserting
+        // that api.getCollections -- the real boundary behind
+        // actions.collectionsList.get() -- was reached is a strictly
+        // stronger check than the old `calledWith(dispatch, undefined)`,
+        // which passed against an unconfigured stub's return value.
+        await waitFor(() => sinon.assert.called(getCollectionsStub))
       })
 
       it("renders the owner dropdown and can change value", async () => {
-        const wrapper = renderComponent()
-        // Wait for component to fetch users
-        await new Promise(resolve => setTimeout(resolve, 10))
-        wrapper.update()
+        await renderDialog()
 
-        const select = wrapper.find("#collection-owner").hostNodes()
-        assert.ok(select.exists(), "Owner dropdown should be rendered")
-
-        // Check options are rendered correctly
-        const options = select.find("option")
+        const options = screen.getAllByRole("option")
         assert.equal(options.length, 2, "Should have 2 user options")
-        assert.equal(options.at(0).text(), "user1 (user1@example.com)")
-        assert.equal(options.at(1).text(), "user2 (user2@example.com)")
+        assert.equal(options[0].textContent, "user1 (user1@example.com)")
+        assert.equal(options[1].textContent, "user2 (user2@example.com)")
 
         // Test changing the selected owner
         await listenForActions([SET_OWNER_ID], () => {
-          select.simulate("change", {
+          fireEvent.change(screen.getByRole("combobox", { name: "Owner" }), {
             target: {
               value: "2"
             }
@@ -398,7 +458,7 @@ describe("CollectionFormDialog", () => {
       })
 
       it("sends the owner in the API request when it is set", async () => {
-        const wrapper = await renderComponent({
+        await renderDialog({
           history: {
             push: sandbox.stub()
           }
@@ -430,7 +490,7 @@ describe("CollectionFormDialog", () => {
         }
 
         await listenForActions(expectedActionTypes, () => {
-          wrapper.find("Dialog").prop("onAccept")()
+          fireEvent.click(screen.getByRole("button", { name: submitText }))
         })
 
         const payloadArg = isNew ?
@@ -445,113 +505,58 @@ describe("CollectionFormDialog", () => {
       })
 
       it("fetches users on component mount", async () => {
-        // We need to restore the default stub to avoid conflicts
-        sandbox.restore()
+        await renderDialog()
 
-        // Create a new getPotentialCollectionOwnersStub
-        sandbox.stub(api, "getPotentialCollectionOwners").returns(
-          Promise.resolve({
-            users: [
-              { id: 1, username: "user1", email: "user1@example.com" },
-              { id: 2, username: "user2", email: "user2@example.com" }
-            ]
-          })
-        )
-
-        // Create a dispatch stub that returns the expected data
-        const dispatchStub = sandbox.stub()
-        dispatchStub.returns(
-          Promise.resolve({
-            users: [
-              { id: 1, username: "user1", email: "user1@example.com" },
-              { id: 2, username: "user2", email: "user2@example.com" }
-            ]
-          })
-        )
-
-        const wrapper = shallow(
-          <UnconnectedCollectionFormDialog
-            dispatch={dispatchStub}
-            history={{ push: sandbox.stub() }}
-            collectionUi={{ isNew: true }}
-            collectionForm={{}}
-            collectionKey={"00000000-0000-0000-0000-000000000000"}
-          />
-        )
-
-        // Wait for componentDidMount to finish
-        await new Promise(resolve => setTimeout(resolve, 10))
-
-        sinon.assert.called(dispatchStub)
-        assert.equal(wrapper.state().users.length, 2)
-
-        // Reinitialize the sandbox with the global stubs for other tests
-        sandbox.restore()
-        sandbox = sinon.createSandbox()
-        sandbox.stub(api, "getPotentialCollectionOwners").returns(
-          Promise.resolve({
-            users: [
-              { id: 1, username: "user1", email: "user1@example.com" },
-              { id: 2, username: "user2", email: "user2@example.com" }
-            ]
-          })
+        // state.users has exactly one consumer -- the Owner <option> list
+        // rendered above by renderDialog's waitFor -- so the two rendered
+        // options *are* "fetchPotentialCollectionOwners populated state.users
+        // with 2 users". This assertion on the api stub is a stronger
+        // boundary than the old `sinon.assert.called(dispatchStub)`: it also
+        // pins the collectionKey that was actually sent to the api layer.
+        sinon.assert.calledWith(
+          getPotentialCollectionOwnersStub,
+          "00000000-0000-0000-0000-000000000000"
         )
       })
 
       it("handles API errors when fetching users", async () => {
-        // Restore the original stub and create a new one that rejects
-        sandbox.restore()
-
-        // Create a dispatch stub that rejects the promise
-        const dispatchStub = sandbox.stub()
-        dispatchStub.returns(Promise.reject(new Error("Failed to fetch users")))
-
-        // Create a stub for console.error
+        getPotentialCollectionOwnersStub.returns(
+          Promise.reject(new Error("Failed to fetch users"))
+        )
+        // console.error writes to stderr, and scripts/test/js_test.sh's
+        // allowlist is frozen -- "Error fetching users:" is not in it, so
+        // this stub must exist before the render below.
         const consoleErrorStub = sandbox.stub(console, "error")
 
-        const wrapper = shallow(
-          <UnconnectedCollectionFormDialog
-            dispatch={dispatchStub}
-            history={{ push: sandbox.stub() }}
-            collectionUi={{ isNew: true }}
-            collectionForm={{}}
-            collectionKey={"00000000-0000-0000-0000-000000000000"}
-          />
+        // No <option>s will ever render here (the fetch rejects), so use a
+        // bare render -- renderDialog's waitFor would time out.
+        await listenForActions(
+          [
+            actions.potentialCollectionOwners.get.requestType,
+            actions.potentialCollectionOwners.get.failureType,
+            SET_COLLECTION_FORM_ERRORS,
+            CLEAR_COLLECTION_ERRORS
+          ],
+          () => {
+            renderComponent()
+          }
         )
 
-        // Create a stub for handleError
-        const handleErrorStub = sandbox.stub()
-        wrapper.instance().handleError = handleErrorStub
-
-        // Call fetchPotentialCollectionOwners manually
-        await wrapper.instance().fetchPotentialCollectionOwners()
-
-        // Verify console.error was called
-        sinon.assert.called(consoleErrorStub)
-
-        // Verify handleError was called
-        sinon.assert.called(handleErrorStub)
+        sinon.assert.calledWithMatch(consoleErrorStub, "Error fetching users:")
+        assert.equal(
+          store.getState().collectionUi.errors.message,
+          "Failed to fetch users"
+        )
       })
 
-      it("does not fetch users when collectionKey is not provided", async () => {
-        sandbox.restore()
-
-        const dispatchStub = sandbox.stub()
-
+      it("does not fetch users when collectionKey is not provided", () => {
         const consoleLogStub = sandbox.stub(console, "log")
 
-        const wrapper = shallow(
-          <UnconnectedCollectionFormDialog
-            dispatch={dispatchStub}
-            history={{ push: sandbox.stub() }}
-            collectionUi={{ isNew: true }}
-            collectionForm={{}}
-          />
-        )
-        await new Promise(resolve => setTimeout(resolve, 10))
+        renderComponent({ collectionKey: undefined })
 
-        sinon.assert.notCalled(dispatchStub)
-        assert.equal(wrapper.state().users.length, 0)
+        sinon.assert.notCalled(getPotentialCollectionOwnersStub)
+        assert.lengthOf(screen.queryAllByRole("option"), 0)
+        assert.isNotNull(screen.getByRole("combobox", { name: "Owner" }))
         sinon.assert.calledWithMatch(
           consoleLogStub,
           "No collection key provided, skipping potential owner fetch."
