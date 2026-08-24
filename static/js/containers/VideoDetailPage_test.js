@@ -2,22 +2,25 @@
 import React from "react"
 import sinon from "sinon"
 import moment from "moment"
-import { mount, shallow } from "enzyme"
 import { assert } from "chai"
-import { Provider } from "react-redux"
+import { render, fireEvent } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 
 import VideoDetailPage from "./VideoDetailPage"
 import { VideoDetailPage as UnwrappedVideoDetailPage } from "./VideoDetailPage"
+import ConnectedVideoPlayerDefault from "../components/VideoPlayer"
+import { ConnectedVideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 
 import * as api from "../lib/api"
 import { actions } from "../actions"
 import * as toastActions from "../actions/toast"
 import * as videoUiActions from "../actions/videoUi"
+import { SHOW_DIALOG } from "../actions/commonUi"
 import rootReducer from "../reducers"
 import * as libVideo from "../lib/video"
 import { makeVideo } from "../factories/video"
 import { makeCollectionUrl } from "../lib/urls"
+import renderWithProviders from "../testUtils/renderWithProviders"
 import {
   DIALOGS,
   MM_DD_YYYY,
@@ -28,7 +31,13 @@ import {
 import type { Video } from "../flow/videoTypes"
 
 describe("VideoDetailPage", () => {
-  let sandbox, store, getVideoStub, dropboxStub, video: Video, listenForActions
+  let sandbox,
+    store,
+    getVideoStub,
+    dropboxStub,
+    video: Video,
+    listenForActions,
+    playerStub
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
@@ -41,8 +50,43 @@ describe("VideoDetailPage", () => {
     sandbox
       .stub(api, "getCollections")
       .returns(Promise.resolve({ results: [] }))
+    // Mounting the (real, connected) analytics overlay for the first time
+    // -- i.e. toggling analyticsOverlayIsVisible true -- triggers
+    // withVideoAnalytics' componentDidUpdate -> videoAnalytics.get fetch.
+    // Left permanently pending: nothing below asserts on the fetched data
+    // itself (that's AnalyticsPane/VideoAnalyticsOverlay's own test
+    // coverage), only on the request firing and on the outer wiring, so
+    // there's nothing to gain from resolving it and real risk (an
+    // unmocked-shape success payload reaching AnalyticsPane) in doing so.
+    sandbox.stub(api, "getVideoAnalytics").returns(new Promise(() => {}))
 
-    sandbox.stub(libVideo, "videojs")
+    // Bare (no .returns()) is not enough for this file: unlike VideoPlayer's
+    // own tests, VideoDetailPage re-renders its <VideoPlayer> child (a new
+    // element, same underlying player) on every store dispatch that touches
+    // videoUi/videos state -- toggling the analytics overlay, opening the
+    // drawer, uploading a subtitle, etc. all trigger it. Each such re-render
+    // runs VideoPlayer's componentDidUpdate -> updateSubtitles(), which calls
+    // this.player.textTracks()/addRemoteTextTrack()/removeRemoteTextTrack().
+    // Without those, most tests below throw
+    // "this.player.textTracks is not a function" the moment they dispatch
+    // anything post-mount. Verified empirically (spike B) -- see the task
+    // report. dispose is required too: RTL unmounts after every test, so
+    // componentWillUnmount's real this.player.dispose() call now runs.
+    playerStub = {
+      tracks:      [],
+      currentTime: sandbox.stub(),
+      dispose:     sandbox.stub(),
+      textTracks:  function() {
+        return this.tracks
+      },
+      removeRemoteTextTrack: function(track) {
+        this.tracks.splice(this.tracks.indexOf(track), 1)
+      },
+      addRemoteTextTrack: function(track) {
+        this.tracks.push({ src: track.src, addEventListener: function() {} })
+      }
+    }
+    sandbox.stub(libVideo, "videojs").returns(playerStub)
   })
 
   afterEach(() => {
@@ -50,7 +94,7 @@ describe("VideoDetailPage", () => {
   })
 
   const renderPage = async (props = {}) => {
-    let wrapper
+    let result
     await listenForActions(
       [
         actions.videos.get.requestType,
@@ -58,33 +102,34 @@ describe("VideoDetailPage", () => {
         videoUiActions.constants.SET_CURRENT_VIDEO_KEY
       ],
       () => {
-        wrapper = mount(
-          <Provider store={store}>
-            <VideoDetailPage videoKey={video.key} {...props} />
-          </Provider>
+        result = renderWithProviders(
+          <VideoDetailPage videoKey={video.key} {...props} />,
+          { store }
         )
       }
     )
-    if (!wrapper) {
+    if (!result) {
       throw new Error("Never will happen, make flow happy")
     }
-    wrapper.update()
-    return wrapper
+    return result
   }
 
-  const renderPageShallow = (props = {}) => {
-    const propsWithDefaults = {
-      dispatch:    sandbox.spy(),
-      video,
-      videoKey:    video.key,
-      needsUpdate: false,
-      commonUi:    {},
-      videoUi:     {},
-      showDialog:  sandbox.spy(),
-      isAdmin:     false,
-      ...props
-    }
-    return shallow(<UnwrappedVideoDetailPage {...propsWithDefaults} />)
+  // Renders the unconnected class directly, with a ref callback to capture
+  // the instance -- for tests that only care about a method's own behavior
+  // and need no store or child rendering at all (mirrors the old
+  // renderPageShallow, which used `shallow()` + `.instance()` for exactly
+  // this purpose).
+  const renderUnwrappedWithRef = (props = {}) => {
+    let instance
+    render(
+      <UnwrappedVideoDetailPage
+        ref={r => {
+          instance = r
+        }}
+        {...props}
+      />
+    )
+    return instance
   }
 
   it("fetches requirements on load", async () => {
@@ -97,145 +142,172 @@ describe("VideoDetailPage", () => {
     assert.equal(store.getState().videoUi.currentVideoKey, video.key)
   })
 
-  it("renders the video player", () => {
-    const videoUi = { corner: "someCorner" }
-    const pageWrapper = renderPageShallow({ videoUi })
-    const pageInstance = pageWrapper.instance()
-    const overlayChildrenStub = sandbox.stub(
-      pageInstance,
-      "renderOverlayChildren"
-    )
-    const videoPlayerWrapper = shallow(pageInstance.renderVideoPlayer(video))
-    const videoPlayerProps = videoPlayerWrapper.find("#video-player").props()
-    assert.equal(videoPlayerProps.video, video)
-    assert.equal(videoPlayerProps.selectedCorner, videoUi.corner)
-    assert.equal(
-      videoPlayerProps.overlayChildren,
-      overlayChildrenStub.returnValues[0]
-    )
-  })
+  it("renders the video player", async () => {
+    // Pinned so the DOM shape below (no camera-box markup) is deterministic
+    // -- makeVideo()'s multiangle is a coin flip, and multiangle-driven
+    // markup is irrelevant to what this test checks (VideoPlayer_test.js
+    // owns that coverage).
+    video.multiangle = false
 
-  describe("renderOverlayChildren", () => {
-    it("includes renderAnalyticsOverlay result", () => {
-      const pageWrapper = renderPageShallow()
-      const pageInstance = pageWrapper.instance()
-      const renderAnalyticsOverlayStub = sandbox.stub(
-        pageInstance,
-        "renderAnalyticsOverlay"
-      )
-      const actualOverlayChildren = pageInstance.renderOverlayChildren()
-      assert.equal(
-        actualOverlayChildren[0],
-        renderAnalyticsOverlayStub.returnValues[0]
-      )
-    })
+    // Spying on the *connected* default export's prototype.render, not the
+    // pre-connect class (which isn't exported) -- confirmed empirically
+    // (spike A, see task report) that react-redux v5's Connect wrapper is a
+    // real ES6 class here, and `this.props` on that instance is exactly the
+    // ownProps VideoDetailPage passed to <VideoPlayer>, i.e. video,
+    // cornerFunc, selectedCorner, overlayChildren, videoPlayerRef, id.
+    const spy = sandbox.spy(ConnectedVideoPlayerDefault.prototype, "render")
+    const { container } = await renderPage()
+
+    assert.equal(spy.lastCall.thisValue.props.video, video)
+
+    store.dispatch(actions.videoUi.updateVideoJsSync("someCorner"))
+    assert.equal(spy.lastCall.thisValue.props.selectedCorner, "someCorner")
+
+    // overlayChildren: rather than stubbing renderOverlayChildren (no seam
+    // to reach it on a HOC-connected instance), assert the wiring end to end
+    // through real DOM -- this is what renderVideoPlayer -> overlayChildren
+    // -> renderOverlayChildren -> renderAnalyticsOverlay actually produces.
+    assert.isNull(container.querySelector(".analytics-overlay-container"))
+    store.dispatch(actions.videoUi.toggleAnalyticsOverlay())
+    assert.isNotNull(container.querySelector(".analytics-overlay-container"))
   })
 
   it("shows the video title, description and upload date, and link to collection", async () => {
-    const wrapper = await renderPage()
-    assert.equal(wrapper.find(".video-title").text(), video.title)
-    assert.equal(wrapper.find(".video-description").text(), video.description)
+    const { container } = await renderPage()
+    assert.equal(
+      container.querySelector(".video-title").textContent,
+      video.title
+    )
+    assert.equal(
+      container.querySelector(".video-description").textContent,
+      video.description
+    )
     const formatted = moment(video.created_at).format(MM_DD_YYYY)
-    assert.equal(wrapper.find(".upload-date").text(), `Uploaded ${formatted}`)
-    const link = wrapper.find(".collection-link")
-    assert.equal(link.props().href, makeCollectionUrl(video.collection_key))
-    assert.equal(link.text(), video.collection_title)
+    assert.equal(
+      container.querySelector(".upload-date").textContent,
+      `Uploaded ${formatted}`
+    )
+    const link = container.querySelector(".collection-link")
+    assert.equal(
+      link.getAttribute("href"),
+      makeCollectionUrl(video.collection_key)
+    )
+    assert.equal(link.textContent, video.collection_title)
   })
 
-  it("shows an error message if in an error state", async () => {
+  // These two test names were swapped relative to what they actually assert
+  // in the pre-conversion Enzyme file -- carried-over naming bug, not
+  // introduced here. Fixed here since it's a pure rename (dossier flagged,
+  // see commit message): the first exercises the processing branch, the
+  // second the error branch.
+  it("indicates video is processing if it, well, is", async () => {
     video.status = VIDEO_STATUS_TRANSCODING
-    const wrapper = await renderPage()
+    const { container } = await renderPage()
     assert.equal(
-      wrapper.find(".video-message").text(),
+      container.querySelector(".video-message").textContent,
       "Video is processing, check back later"
     )
   })
 
-  it("indicates video is processing if it, well, is", async () => {
+  it("shows an error message if in an error state", async () => {
     video.status = VIDEO_STATUS_ERROR
-    const wrapper = await renderPage()
+    const { container } = await renderPage()
     assert.equal(
-      wrapper.find(".video-message").text(),
+      container.querySelector(".video-message").textContent,
       "Something went wrong :("
     )
   })
 
   it("includes the share button and dialog", async () => {
-    const wrapper = await renderPage()
-    assert.isTrue(wrapper.find(".share").exists())
-    assert.isTrue(wrapper.find("ShareVideoDialog").exists())
+    const { container } = await renderPage()
+    assert.isNotNull(container.querySelector(".share"))
+    assert.isNotNull(container.querySelector("#share-video-dialog"))
   })
 
   it("does not include buttons for privileged functionality when lacking permission", async () => {
-    const wrapper = await renderPage({ isAdmin: false })
-    assert.isFalse(wrapper.find(".analytics").exists())
-    assert.isFalse(wrapper.find(".edit").exists())
-    assert.isFalse(wrapper.find(".dropbox").exists())
-    assert.isFalse(wrapper.find(".delete").exists())
+    const { container } = await renderPage({ isAdmin: false })
+    assert.isNull(container.querySelector(".analytics"))
+    assert.isNull(container.querySelector(".edit"))
+    assert.isNull(container.querySelector(".dropbox"))
+    assert.isNull(container.querySelector(".delete"))
   })
 
-  describe("analytics button", async () => {
-    const _findAnalyticsButton = wrapper => {
-      return wrapper.find(".analytics").hostNodes()
-    }
-
+  describe("analytics button", () => {
     it("includes the analytics button when the user has correct permissions", async () => {
-      const wrapper = await renderPage({ isAdmin: true })
-      assert.isTrue(_findAnalyticsButton(wrapper).exists())
+      const { container } = await renderPage({ isAdmin: true })
+      assert.isNotNull(container.querySelector(".analytics"))
     })
 
     it("onClick calls toggleAnalyticsOverlay", async () => {
-      const wrapper = await renderPage({ isAdmin: true })
-      const pageInstance = wrapper.find("VideoDetailPage").instance()
-      const toggleStub = sandbox.stub(pageInstance, "toggleAnalyticsOverlay")
-      const analyticsButton = _findAnalyticsButton(wrapper)
-      sinon.assert.notCalled(toggleStub)
-      analyticsButton.simulate("click")
-      sinon.assert.called(toggleStub)
+      // Behavioral rewrite: the old test drilled to the instance via
+      // wrapper.find("VideoDetailPage").instance() (no RTL analog) to stub
+      // toggleAnalyticsOverlay and assert it was called. This asserts the
+      // real, stronger, user-visible effect instead -- the store state the
+      // handler actually flips.
+      const { container } = await renderPage({ isAdmin: true })
+      assert.isFalse(store.getState().videoUi.analyticsOverlayIsVisible)
+      await listenForActions(
+        [
+          videoUiActions.constants.TOGGLE_ANALYTICS_OVERLAY,
+          // Mounting <ConnectedVideoAnalyticsOverlay> for the first time
+          // (analyticsOverlayIsVisible flips true) triggers its own
+          // componentDidUpdate -> needsUpdate -> videoAnalytics.get fetch.
+          actions.videoAnalytics.get.requestType
+        ],
+        () => {
+          fireEvent.click(container.querySelector(".analytics"))
+        }
+      )
+      assert.isTrue(store.getState().videoUi.analyticsOverlayIsVisible)
     })
   })
 
   it("includes the edit button and dialog when the user has correct permissions", async () => {
-    const wrapper = await renderPage({ isAdmin: true })
-    assert.isTrue(wrapper.find(".edit").exists())
-    assert.isTrue(wrapper.find("EditVideoFormDialog").exists())
+    const { container } = await renderPage({ isAdmin: true })
+    assert.isNotNull(container.querySelector(".edit"))
+    assert.isNotNull(container.querySelector("#edit-video-form-dialog"))
   })
 
   it("includes the delete button and dialog when the user has correct permissions", async () => {
-    const wrapper = await renderPage({ isAdmin: true })
-    assert.isTrue(wrapper.find(".delete").exists())
-    assert.isTrue(wrapper.find("DeleteVideoDialog").exists())
+    const { container } = await renderPage({ isAdmin: true })
+    assert.isNotNull(container.querySelector(".delete"))
+    assert.isNotNull(container.querySelector("#delete-video-dialog"))
   })
 
   it("includes the dropbox button that triggers dialog when the user has correct permissions", async () => {
-    const wrapper = await renderPage({ isAdmin: true })
-    const dropboxButton = wrapper.find(".dropbox").hostNodes()
-    assert.isTrue(dropboxButton.exists())
-    dropboxButton.simulate("click")
+    const { container } = await renderPage({ isAdmin: true })
+    const dropboxButton = container.querySelector(".dropbox")
+    assert.isNotNull(dropboxButton)
+    fireEvent.click(dropboxButton)
     sinon.assert.called(dropboxStub)
   })
 
   it("has a toolbar whose handler will dispatch an action to open the drawer", async () => {
-    const wrapper = await renderPage()
-    wrapper.find(".menu-button").simulate("click")
+    const { container } = await renderPage()
+    fireEvent.click(container.querySelector(".menu-button"))
     assert.isTrue(store.getState().commonUi.drawerOpen)
   })
 
   it("has a Subtitles card", async () => {
-    const wrapper = await renderPage()
-    assert.isTrue(wrapper.find(".video-subtitle-card").exists())
+    const { container } = await renderPage()
+    assert.isNotNull(container.querySelector(".video-subtitle-card"))
   })
 
   describe("when upload button selects file", () => {
-    let createSubtitleStub, wrapper, file
+    let createSubtitleStub, container, file
 
     beforeEach(async () => {
       createSubtitleStub = sandbox
         .stub(api, "createSubtitle")
         .returns(Promise.resolve())
-      wrapper = await renderPage({ isAdmin: true })
-      const uploadBtn = wrapper.find(".video-subtitle-card .upload-input")
+      ;({ container } = await renderPage({ isAdmin: true }))
+      const uploadInput = container.querySelector(
+        ".video-subtitle-card .upload-input"
+      )
       file = new File(["foo"], "filename.vtt")
+      // Pre-existing test smell carried over unchanged: mutates the redux
+      // state object in place. Works only because nothing in this chain
+      // freezes state.
       store.getState().videoUi.videoSubtitleForm.video = video.key
       await listenForActions(
         [
@@ -248,7 +320,7 @@ describe("VideoDetailPage", () => {
           videoUiActions.constants.SET_UPLOAD_SUBTITLE
         ],
         () => {
-          uploadBtn.prop("onChange")({ target: { files: [file] } })
+          fireEvent.change(uploadInput, { target: { files: [file] } })
         }
       )
     })
@@ -276,20 +348,30 @@ describe("VideoDetailPage", () => {
   })
 
   describe("when subtitle delete button is clicked", () => {
-    let showDeleteSubtitlesDialogStub
-
-    beforeEach(async () => {
-      const wrapper = await renderPage({ isAdmin: true })
-      const instance = wrapper.find("VideoDetailPage").instance()
-      showDeleteSubtitlesDialogStub = sandbox.stub(
-        instance,
-        "showDeleteSubtitlesDialog"
+    it("sets currentSubtitlesKey and opens the delete-subtitles dialog", async () => {
+      // Behavioral rewrite: the old test drilled to the instance via
+      // wrapper.find("VideoDetailPage").instance() to stub
+      // showDeleteSubtitlesDialog and assert it was called with the
+      // subtitle's id, then never even inspected the DOM effect. This
+      // fires a real click and asserts the two real effects
+      // showDeleteSubtitlesDialog produces: the store key it sets, and the
+      // dialog it opens.
+      const { container } = await renderPage({ isAdmin: true })
+      const deleteBtn = container.querySelectorAll(".delete-btn")[0]
+      await listenForActions(
+        [videoUiActions.constants.SET_CURRENT_SUBTITLES_KEY, SHOW_DIALOG],
+        () => {
+          fireEvent.click(deleteBtn)
+        }
       )
-      const deleteBtns = wrapper.find(".delete-btn")
-      deleteBtns.at(0).prop("onClick")()
-      sinon.assert.calledWith(
-        showDeleteSubtitlesDialogStub,
+      assert.equal(
+        store.getState().videoUi.currentSubtitlesKey,
         video.videosubtitle_set[0].id
+      )
+      assert.isTrue(
+        container
+          .querySelector("#delete-subtitles-dialog")
+          .classList.contains("mdc-dialog--open")
       )
     })
   })
@@ -297,6 +379,7 @@ describe("VideoDetailPage", () => {
   describe("showDeleteSubtitlesDialog", () => {
     let stubs, instance
     const subtitlesKey = "someSubtitleKey"
+
     beforeEach(() => {
       stubs = {
         dispatch:               sandbox.stub(),
@@ -306,13 +389,14 @@ describe("VideoDetailPage", () => {
           "setCurrentSubtitlesKey"
         )
       }
-      const props = {
+      // No `video` prop -- VideoDetailPage.render()'s `if (!video) return
+      // null` guard means this mounts no children (no store/Provider
+      // needed), same shape as the old shallow-render props object.
+      instance = renderUnwrappedWithRef({
         dispatch:   stubs.dispatch,
         showDialog: stubs.showDialog,
         isAdmin:    true
-      }
-      const wrapper = shallow(<UnwrappedVideoDetailPage {...props} />)
-      instance = wrapper.instance()
+      })
       instance.showDeleteSubtitlesDialog(subtitlesKey)
     })
 
@@ -330,52 +414,63 @@ describe("VideoDetailPage", () => {
   })
 
   describe("renderAnalyticsOverlay", () => {
-    let pageInstance, overlayEl
+    let spy
 
     beforeEach(async () => {
-      pageInstance = renderPageShallow({
-        videoUi: {
-          analyticsOverlayIsVisible: true,
-          videoTime:                 42,
-          duration:                  42
-        }
-      }).instance()
-      const overlayWrapper = shallow(pageInstance.renderAnalyticsOverlay())
-      overlayEl = overlayWrapper.find("#video-analytics-overlay")
+      // Same technique as "renders the video player" above, applied to the
+      // other connected child this container builds props for by hand.
+      // Confirmed empirically (spike A) that this fires and that
+      // `this.props` on the Connect instance is exactly the ownProps
+      // VideoDetailPage passed to <ConnectedVideoAnalyticsOverlay>.
+      spy = sandbox.spy(ConnectedVideoAnalyticsOverlay.prototype, "render")
+      await renderPage()
+      store.dispatch(actions.videoUi.toggleAnalyticsOverlay())
+      store.dispatch(actions.videoUi.setVideoTime(42))
+      store.dispatch(actions.videoUi.setVideoDuration(42))
     })
 
     it("renders analytics overlay with expected props", () => {
-      assert.equal(overlayEl.prop("video"), pageInstance.props.video)
-      assert.equal(
-        overlayEl.prop("currentTime"),
-        pageInstance.props.videoUi.videoTime
-      )
-      assert.equal(
-        overlayEl.prop("duration"),
-        pageInstance.props.videoUi.duration
-      )
+      assert.equal(spy.lastCall.thisValue.props.video, video)
+      assert.equal(spy.lastCall.thisValue.props.currentTime, 42)
+      assert.equal(spy.lastCall.thisValue.props.duration, 42)
     })
 
     it("passes setVideoTime", () => {
-      const setVideoTimeStub = sandbox.stub(pageInstance, "setVideoTime")
-      overlayEl.prop("setVideoTime")("argA", "argB")
-      sinon.assert.calledWith(setVideoTimeStub, "argA", "argB")
+      // Stronger than the original (which only proved setVideoTime was
+      // *called*): this is the same videoPlayerRef contract
+      // VideoPlayer_test.js's "exposes setCurrentTime through
+      // videoPlayerRef" documents, exercised end to end through the real
+      // player stub.
+      spy.lastCall.thisValue.props.setVideoTime(99)
+      sinon.assert.calledWith(playerStub.currentTime, 99)
     })
 
     it("passes closeOverlay", () => {
-      assert.equal(
-        overlayEl.prop("onClose"),
-        pageInstance.toggleAnalyticsOverlay
-      )
+      // Behavioral rewrite: rather than an identity check against an
+      // instance method (no instance in play here), call the captured prop
+      // and assert the real effect it produces.
+      assert.isTrue(store.getState().videoUi.analyticsOverlayIsVisible)
+      spy.lastCall.thisValue.props.onClose()
+      assert.isFalse(store.getState().videoUi.analyticsOverlayIsVisible)
     })
 
     it("passes showCloseButton", () => {
-      assert.isTrue(overlayEl.prop("showCloseButton"))
+      assert.isTrue(spy.lastCall.thisValue.props.showCloseButton)
     })
   })
 
   it("has toast message", async () => {
-    const wrapper = await renderPage()
-    assert.isTrue(wrapper.find("Connect(ToastOverlay)").exists())
+    // Reinterpreted: the old assertion only proved a <ToastOverlay/>
+    // element was present in the tree (it renders null with no messages,
+    // so this was never a DOM-observable fact and has no RTL equivalent).
+    // This seeds a real message and asserts it actually surfaces.
+    const { container } = await renderPage()
+    store.dispatch(
+      actions.toast.addMessage({
+        message: { key: "x", content: "Hello", icon: "check" }
+      })
+    )
+    assert.isNotNull(container.querySelector(".toast-overlay"))
+    assert.isNotNull(container.querySelector(".toast-message"))
   })
 })
