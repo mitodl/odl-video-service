@@ -238,6 +238,7 @@ describe("VideoPlayer", () => {
     // clickCamera awaits cornerFunc before cropping
     await Promise.resolve()
     sinon.assert.calledOnce(cropStub)
+    sinon.assert.calledWith(cropStub, Object.keys(CANVASES)[0])
   })
 
   it("updates subtitles on the controller when the video prop changes", () => {
@@ -467,6 +468,23 @@ describe("VideoPlayer", () => {
       images[0].onerror()
       sinon.assert.callCount(playerStub.src, sources.length > 0 ? 1 : 0)
     })
+  })
+
+  it("calls controller.resizeYouTube with the embed prop on loadedmetadata when useYouTube", () => {
+    const images = captureImages()
+    const resizeStub = sandbox.stub(
+      VideoPlayerController.prototype,
+      "resizeYouTube"
+    )
+    video.is_public = true
+    video.youtube_id = "asdJ4y"
+    video.multiangle = false
+    renderPlayer({ embed: true })
+    const ready = readyPlayer()
+    fireReadyEvent(ready, "loadedmetadata")
+    sinon.assert.calledWith(resizeStub, true)
+    // sanity: the useYouTube path really ran (checkYouTube's thumbnail check)
+    assert.equal(images.length, 1)
   })
 
   it("renders overlayChildren", () => {
