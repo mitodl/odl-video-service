@@ -151,7 +151,7 @@ describe("AnalyticsChartTests", () => {
 
     describe("when it unmounts", () => {
       it("removes resize handler", () => {
-        const tearDownStub = sandbox.stub(
+        const tearDownStub = sandbox.spy(
           AnalyticsChart.prototype,
           "_tearDownResizeHandler"
         )

@@ -2,7 +2,7 @@
 import React from "react"
 import { assert } from "chai"
 import sinon from "sinon"
-import { screen, render } from "@testing-library/react"
+import { screen, render, fireEvent, waitFor } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 
 import { DeleteSubtitlesDialog, mapStateToProps } from "./DeleteSubtitlesDialog"
@@ -109,6 +109,44 @@ describe("DeleteSubtitlesDialogTests", () => {
         // Closest visible proxy for "open was truthy": Dialog only sets an
         // inline `display: none` style when `open` is falsy.
         assert.isNull(dialogEl.getAttribute("style"))
+      })
+    })
+
+    describe("accept button wiring", () => {
+      let store, deleteSubtitleStub
+
+      beforeEach(() => {
+        store = configureTestStore(rootReducer)
+        deleteSubtitleStub = sandbox
+          .stub(api, "deleteSubtitle")
+          .returns(Promise.resolve())
+        sandbox
+          .stub(api, "getVideo")
+          .returns(Promise.resolve(makeVideo(video.key)))
+      })
+
+      it("wires the Yes, Delete button to onConfirmDeletion", async () => {
+        renderWithProviders(
+          <DeleteSubtitlesDialog
+            {...defaultProps()}
+            dispatch={store.dispatch}
+          />,
+          { store }
+        )
+
+        // Dialog.js's MDCDialog:accept listener AND the submit Button's React
+        // onClick both fire onAccept when validateOnClick is absent, so a
+        // real click double-dispatches onConfirmDeletion. That is a known,
+        // deferred issue (see the commit message / hq#12639 dossier) -- this
+        // test asserts `calledWith`, never `calledOnce`, so the double-fire
+        // doesn't make it flaky or wrong. This test exists to prove the
+        // button is actually WIRED to onConfirmDeletion, which the
+        // render-only test above cannot show.
+        fireEvent.click(screen.getByRole("button", { name: "Yes, Delete" }))
+
+        await waitFor(() =>
+          sinon.assert.calledWith(deleteSubtitleStub, subtitlesFile.id)
+        )
       })
     })
 
