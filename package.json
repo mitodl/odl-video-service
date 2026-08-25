@@ -43,8 +43,6 @@
     "chai-as-promised": "^8.0.0",
     "codecov": "^3.7.1",
     "css-loader": "^7.0.0",
-    "enzyme": "^3.11.0",
-    "enzyme-adapter-react-15": "^1.4.4",
     "eslint": "6.8.0",
     "eslint-config-google": "^0.14.0",
     "eslint-config-mitodl": "^0.2.0",
@@ -137,6 +135,7 @@
     "@stryker-mutator/mocha-runner": "9.6.1",
     "@testing-library/dom": "8.20.1",
     "@testing-library/react": "12.1.5",
-    "@testing-library/user-event": "14.6.1"
+    "@testing-library/user-event": "14.6.1",
+    "raf": "^3.4.1"
   }
 }
