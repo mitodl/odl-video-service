@@ -58,8 +58,11 @@ check "passing tests" "$TESTS" ge 492
 # 3 -> 2 (VideoDetailPage_test.js converted, Task 6 of E4b/E5, hq#12640).
 # 2 -> 1 (CollectionFormDialog_test.js converted, Task 7 of E4b/E5, hq#12640;
 # this file held the migration's last two .state() reads).
+# 1 -> 0 (CollectionDetailPage_test.js converted, Task 8 of E4b/E5, hq#12640 --
+# the last Enzyme test file in the repo). The check stays here permanently as a
+# le 0 regression guard: it is now what stops Enzyme coming back.
 ENZYME=$(grep -rl 'from "enzyme"' static/js --include='*_test.js' 2>/dev/null | wc -l | tr -d ' ')
-check "enzyme test files" "$ENZYME" le 1
+check "enzyme test files" "$ENZYME" le 0
 
 # data-testid is the escape hatch that turns an RTL migration back into
 # implementation-coupled testing. 86 .find("ComponentName") selectors exist in
