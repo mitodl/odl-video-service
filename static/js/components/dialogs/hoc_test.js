@@ -12,7 +12,12 @@ import { SHOW_DIALOG, HIDE_DIALOG } from "../../actions/commonUi"
 import renderWithProviders from "../../testUtils/renderWithProviders"
 
 describe("Dialog higher-order component", () => {
-  let store, listenForActions, dialogConfigs
+  // dialogProps holds the props withDialogs last handed to the dialog
+  // component, captured by reference in TestDialog's render. The dialog's
+  // behaviour is asserted through the DOM below; this is only for the props
+  // with no rendered form -- `hideDialog` is a callback, so "a function was
+  // supplied" is not otherwise observable.
+  let store, listenForActions, dialogConfigs, dialogProps
   const dialogName = "some_dialog_name"
 
   class TestContainerPage extends React.Component {
@@ -32,6 +37,7 @@ describe("Dialog higher-order component", () => {
 
   class TestDialog extends React.Component {
     render() {
+      dialogProps = this.props
       return (
         <Dialog
           title="Test Dialog"
@@ -53,6 +59,7 @@ describe("Dialog higher-order component", () => {
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     dialogConfigs = [{ name: dialogName, component: TestDialog }]
+    dialogProps = undefined
   })
 
   const renderTestComponentWithDialogs = (extraProps = {}) => {
@@ -78,6 +85,8 @@ describe("Dialog higher-order component", () => {
     renderTestComponentWithDialogs()
     assert.exists(screen.queryByText("Fake Dialog"))
     assert.isFalse(isDialogOpen())
+    assert.isFalse(dialogProps.open)
+    assert.isFunction(dialogProps.hideDialog)
   })
 
   it("should render dialogs that use lazily evaluated component", () => {
@@ -85,6 +94,8 @@ describe("Dialog higher-order component", () => {
     renderTestComponentWithDialogs()
     assert.exists(screen.queryByText("Fake Dialog"))
     assert.isFalse(isDialogOpen())
+    assert.isFalse(dialogProps.open)
+    assert.isFunction(dialogProps.hideDialog)
   })
 
   it("should provide a function that lets the wrapped component launch the dialog", async () => {
