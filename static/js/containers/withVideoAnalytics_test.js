@@ -64,13 +64,24 @@ describe("withVideoAnalytics", () => {
     })
 
     describe("WrappedComponent", () => {
+      // The props DummyComponent was last rendered with, captured by
+      // reference. Serialising them into a data-* attribute instead would
+      // silently drop every function-valued prop (JSON.stringify omits
+      // them), and the one prop this HOC exists to strip -- `dispatch` --
+      // is a function. A regression that forwarded it would then be
+      // invisible to the deepEqual below.
+      let receivedProps
+
       class DummyComponent extends React.Component<*, void> {
         render() {
-          return (
-            <div data-received={JSON.stringify(this.props)}>DummyComponent</div>
-          )
+          receivedProps = this.props
+          return <div>DummyComponent</div>
         }
       }
+
+      beforeEach(() => {
+        receivedProps = undefined
+      })
 
       const WrappedComponent = withVideoAnalytics(DummyComponent)
 
@@ -133,21 +144,28 @@ describe("withVideoAnalytics", () => {
           }
           const video = { some: "video" }
           const videoAnalytics = { some: "videoAnalytics" }
+          const dispatch = sandbox.spy()
           render(
             <WrappedComponent
               {...extraProps}
+              dispatch={dispatch}
+              needsUpdate={false}
               video={video}
               videoAnalytics={videoAnalytics}
             />
           )
-          const received = JSON.parse(
-            screen.getByText("DummyComponent").dataset.received
-          )
-          assert.deepEqual(received, {
+          assert.exists(screen.getByText("DummyComponent"))
+          // Exact prop set: the HOC omits `needsUpdate` and `dispatch`, so
+          // both are passed in here to make that omission an assertion
+          // rather than an assumption. deepEqual fails on an extra key, so
+          // forwarding either one is caught.
+          assert.deepEqual(receivedProps, {
             ...extraProps,
             video,
             videoAnalytics
           })
+          assert.notProperty(receivedProps, "dispatch")
+          assert.notProperty(receivedProps, "needsUpdate")
         })
       })
     })
