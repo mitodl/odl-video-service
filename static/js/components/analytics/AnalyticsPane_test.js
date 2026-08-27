@@ -5,6 +5,8 @@ import { render, waitFor } from "@testing-library/react"
 
 import AnalyticsPane from "./AnalyticsPane"
 
+import suppressVictoryKeyWarning from "../../testUtils/suppressVictoryKeyWarning"
+
 import { makeVideoAnalyticsData } from "../../factories/videoAnalytics"
 import { makeVideo } from "../../factories/video"
 
@@ -13,29 +15,10 @@ describe("AnalyticsPane", () => {
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
-    // AnalyticsChart mounts a real Victory (0.27.2) chart. VictoryAxis's own
-    // tick-rendering code omits a `key` prop on an array of children, which
-    // React reports via console.error on every mount. Enzyme's shallow
-    // rendering never mounted this child, so the defect -- which lives
-    // entirely inside Victory, not in AnalyticsChart's usage of it or in
-    // anything asserted below -- was never exercised before. The rendered
-    // SVG is unaffected; only this one known, harmless message is
-    // filtered so it doesn't fail the test run's console-output check. Any
-    // other console.error still comes through and fails the test.
-    const originalConsoleError = console.error.bind(console)
-    sandbox.stub(console, "error").callsFake((...args) => {
-      const [message] = args
-      if (
-        typeof message === "string" &&
-        message.includes(
-          'Each child in an array or iterator should have a unique "key" prop'
-        ) &&
-        message.includes("VictoryAxis")
-      ) {
-        return
-      }
-      originalConsoleError(...args)
-    })
+    // AnalyticsChart mounts a real Victory chart whose VictoryAxis emits a
+    // spurious React "unique key prop" warning; see the helper for why it
+    // is filtered here and nowhere else.
+    suppressVictoryKeyWarning(sandbox)
     props = {
       analyticsData: makeVideoAnalyticsData(),
       video:         makeVideo(),
@@ -67,10 +50,96 @@ describe("AnalyticsPane", () => {
       return svg
     })
 
-  it("renders chart", async () => {
+  // Helper for the x-axis tick labels the chart actually draws. AnalyticsChart
+  // gives VictoryAxis every entry in analyticsData.times as a tick value, but
+  // its ConditionalLabel only renders a label for every fifth minute.
+  const expectedTimeLabels = analyticsData =>
+    analyticsData.times.filter(t => t % 5 === 0).map(t => `${t}m`)
+
+  const timeAxisLabels = svg =>
+    Array.from(svg.querySelectorAll("text"))
+      .map(el => el.textContent)
+      .filter(text => /^\d+m$/.test(text))
+
+  it("renders chart from the analytics data", async () => {
     const { container } = renderComponent()
     const svg = await waitForChart(container)
-    assert.isNotNull(svg)
+
+    // One stacked bar per channel per minute -- derived from the props, so a
+    // wrong analyticsData reaching AnalyticsChart changes this count.
+    const { channels, times } = props.analyticsData
+    assert.lengthOf(
+      svg.querySelectorAll("g.chart-body path"),
+      channels.length * times.length,
+      "expected one bar per channel per time"
+    )
+    assert.deepEqual(
+      timeAxisLabels(svg),
+      expectedTimeLabels(props.analyticsData)
+    )
+    // Note: AnalyticsPane also passes `currentTime` to AnalyticsChart, but
+    // AnalyticsChart omits it from everything it renders, so there is nothing
+    // in this svg to assert it against. Its observable effects are covered by
+    // the table and progress-slider tests below.
+  })
+
+  it("re-renders the chart when the analytics data changes shape", async () => {
+    // Same assertions against a deliberately different dataset (one channel,
+    // 6 minutes instead of four channels and 24), so the counts above can't
+    // pass as constants that happen to match the default factory.
+    const analyticsData = makeVideoAnalyticsData(6, false)
+    const { container } = renderComponent({ analyticsData })
+    const svg = await waitForChart(container)
+
+    assert.lengthOf(svg.querySelectorAll("g.chart-body path"), 6)
+    assert.deepEqual(timeAxisLabels(svg), ["0m", "5m"])
+  })
+
+  // Recovers the chart's x-axis domain maximum, in minutes, from the rendered
+  // geometry. AnalyticsChart sets that domain to [0, duration / 60], and
+  // nothing else in the svg records `duration`, so this is what makes the
+  // duration reaching AnalyticsChart an assertion instead of an assumption.
+  //
+  // The horizontal axis line spans the full domain in pixels, and a tick for
+  // minute t is drawn at x1 + (t / domainMax) * (x2 - x1). Both are read from
+  // the DOM, so the pixel span itself (which jsdom reports without layout)
+  // cancels out and only the domain is asserted on.
+  const xAxisDomainMaxMinutes = svg => {
+    const axisLine = Array.from(svg.querySelectorAll("line")).find(line => {
+      const [x1, x2, y1, y2] = ["x1", "x2", "y1", "y2"].map(attr =>
+        line.getAttribute(attr)
+      )
+      return y1 !== null && y1 === y2 && x1 !== x2
+    })
+    assert.isDefined(axisLine, "expected a horizontal x-axis line")
+    const x1 = Number(axisLine.getAttribute("x1"))
+    const x2 = Number(axisLine.getAttribute("x2"))
+
+    const tickMinute = 5
+    const tickX = Array.from(svg.querySelectorAll("text")).find(
+      el => el.textContent === `${tickMinute}m`
+    )
+    assert.isDefined(tickX, `expected a ${tickMinute}m tick label`)
+
+    return (tickMinute * (x2 - x1)) / (Number(tickX.getAttribute("x")) - x1)
+  }
+
+  it("scales the chart's x axis to the video duration", async () => {
+    const { container } = renderComponent()
+    const svg = await waitForChart(container)
+    assert.closeTo(
+      xAxisDomainMaxMinutes(svg),
+      props.duration / 60,
+      0.01,
+      "expected the x axis to span the video duration in minutes"
+    )
+  })
+
+  it("rescales the chart's x axis for a different duration", async () => {
+    const duration = 10 * 60
+    const { container } = renderComponent({ duration })
+    const svg = await waitForChart(container)
+    assert.closeTo(xAxisDomainMaxMinutes(svg), 10, 0.01)
   })
 
   it("renders progress slider", async () => {
