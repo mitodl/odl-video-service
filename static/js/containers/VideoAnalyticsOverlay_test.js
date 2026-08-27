@@ -10,6 +10,7 @@ import { makeVideoAnalyticsData } from "../factories/videoAnalytics"
 
 import { VideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 import { actions } from "../actions"
+import suppressVictoryKeyWarning from "../testUtils/suppressVictoryKeyWarning"
 
 describe("VideoAnalyticsOverlay", () => {
   let props, sandbox
@@ -17,29 +18,10 @@ describe("VideoAnalyticsOverlay", () => {
   beforeEach(() => {
     sandbox = sinon.createSandbox()
     // AnalyticsPane (rendered whenever there's data, no error, and it's not
-    // loading) mounts a real Victory (0.27.2) chart via AnalyticsChart.
-    // VictoryAxis's own tick-rendering code omits a `key` prop on an array
-    // of children, which React reports via console.error on every mount.
-    // Enzyme's shallow rendering never mounted this child, so the defect --
-    // which lives entirely inside Victory, not in this file's usage of it
-    // or in anything asserted below -- was never exercised before. The
-    // rendered SVG is unaffected; only this one known, harmless message is
-    // filtered so it doesn't fail the test run's console-output check. Any
-    // other console.error still comes through and fails the test.
-    const originalConsoleError = console.error.bind(console)
-    sandbox.stub(console, "error").callsFake((...args) => {
-      const [message] = args
-      if (
-        typeof message === "string" &&
-        message.includes(
-          'Each child in an array or iterator should have a unique "key" prop'
-        ) &&
-        message.includes("VictoryAxis")
-      ) {
-        return
-      }
-      originalConsoleError(...args)
-    })
+    // loading) mounts a real Victory chart via AnalyticsChart, whose
+    // VictoryAxis emits a spurious React "unique key prop" warning; see the
+    // helper for why it is filtered here and nowhere else.
+    suppressVictoryKeyWarning(sandbox)
     const video = makeVideo()
     props = {
       video,
