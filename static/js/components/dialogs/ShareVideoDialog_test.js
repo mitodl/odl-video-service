@@ -1,9 +1,8 @@
 // @flow
 import React from "react"
 import sinon from "sinon"
-import { mount } from "enzyme"
 import { assert } from "chai"
-import { Provider } from "react-redux"
+import { screen, fireEvent } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 
 import ShareVideoDialog from "./ShareVideoDialog"
@@ -12,6 +11,7 @@ import rootReducer from "../../reducers"
 import { setSelectedVideoKey } from "../../actions/collectionUi"
 import { makeVideo } from "../../factories/video"
 import * as videoUiActions from "../../actions/videoUi"
+import renderWithProviders from "../../testUtils/renderWithProviders"
 
 const { SET_SHARE_VIDEO_TIME_ENABLED } = videoUiActions.constants
 
@@ -30,77 +30,65 @@ describe("ShareVideoDialog", () => {
   })
 
   const renderComponent = (props = {}) => {
-    return mount(
-      <Provider store={store}>
-        <div>
-          <ShareVideoDialog
-            open={true}
-            hideDialog={hideDialogStub}
-            {...props}
-          />
-        </div>
-      </Provider>
+    return renderWithProviders(
+      <ShareVideoDialog open={true} hideDialog={hideDialogStub} {...props} />,
+      { store }
     )
   }
 
-  it("shows the correct content", async () => {
+  it("shows the correct content", () => {
     const video = makeVideo()
-    const wrapper = renderComponent({ video: video })
+    renderComponent({ video: video })
     assert.equal(
-      wrapper
-        .find("#video-url")
-        .hostNodes()
-        .props().value,
+      screen.getByLabelText("Video URL").value,
       `http://fake/videos/${video.key}/`
     )
     assert.isTrue(
-      wrapper
-        .find("#video-embed-code")
-        .hostNodes()
-        .props()
+      screen
+        .getByLabelText("Embed HTML")
         .value.startsWith(
           `<iframe src="http://fake/videos/${video.key}/embed/"`
         )
     )
-    assert.isFalse(wrapper.find("#video-openedx-url").exists())
+    assert.isNull(screen.queryByLabelText("Open edX video URL"))
   })
 
-  it("shows cloudfront_url if the value is set", async () => {
+  it("shows cloudfront_url if the value is set", () => {
     const video = makeVideo()
     const cloudfrontUrl = "https://fake.cloudfront.net/fake_key"
     video.cloudfront_url = cloudfrontUrl
+    renderComponent({ video: video })
     assert.equal(
-      renderComponent({ video: video })
-        .find("#video-openedx-url")
-        .hostNodes()
-        .props().value,
+      screen.getByLabelText("Open edX video URL").value,
       cloudfrontUrl
     )
   })
   ;[false, true].forEach(function(checked) {
     it("adds time in seconds to the links only if checkbox is checked", async () => {
       const video = makeVideo()
-      const wrapper = renderComponent({ video: video })
+      renderComponent({ video: video })
+      const checkbox = screen.getByRole("checkbox")
+
+      // The checkbox starts unchecked. For the `true` case, click once to
+      // check it. For the `false` case, click twice (check, then uncheck)
+      // so the explicit "false" dispatch through the real onChange handler
+      // is actually exercised rather than just asserting on the untouched
+      // default render.
       await listenForActions([SET_SHARE_VIDEO_TIME_ENABLED], () => {
-        // Calling onAccept directly b/c click doesn't work in JS tests due to MDC
-        wrapper
-          .find("ShareVideoDialog")
-          .find("Dialog")
-          .find('input[type="checkbox"]')
-          .simulate("change", { target: { checked } })
+        fireEvent.click(checkbox)
       })
+      if (!checked) {
+        await listenForActions([SET_SHARE_VIDEO_TIME_ENABLED], () => {
+          fireEvent.click(checkbox)
+        })
+      }
       assert.equal(
-        wrapper
-          .find("#video-url")
-          .hostNodes()
-          .props().value,
+        screen.getByLabelText("Video URL").value,
         `http://fake/videos/${video.key}/${checked ? "?start=0" : ""}`
       )
       assert.isTrue(
-        wrapper
-          .find("#video-embed-code")
-          .hostNodes()
-          .props()
+        screen
+          .getByLabelText("Embed HTML")
           .value.startsWith(
             `<iframe src="http://fake/videos/${video.key}/embed/${
               checked ? "?start=0" : ""
@@ -112,15 +100,21 @@ describe("ShareVideoDialog", () => {
 
   it("gets the video key from a video object provided as a prop", () => {
     const video = makeVideo()
-    const wrapper = renderComponent({ video: video })
-    assert.equal(wrapper.find("ShareVideoDialog").prop("videoKey"), video.key)
+    renderComponent({ video: video })
+    assert.equal(
+      screen.getByLabelText("Video URL").value,
+      `http://fake/videos/${video.key}/`
+    )
   })
 
   it("gets the video key from the collection UI state if a video object isn't passed in", () => {
     const videoKey = "video-key"
     store.dispatch(setSelectedVideoKey(videoKey))
-    const wrapper = renderComponent({ video: null })
-    assert.equal(wrapper.find("ShareVideoDialog").prop("videoKey"), videoKey)
+    renderComponent({ video: null })
+    assert.equal(
+      screen.getByLabelText("Video URL").value,
+      `http://fake/videos/${videoKey}/`
+    )
   })
 
   it("gets the video from the state using SelectedVideoKey if a video object isn't passed in", () => {
@@ -129,10 +123,10 @@ describe("ShareVideoDialog", () => {
     const video = makeVideo()
     video["cloudfront_url"] = url
     store.dispatch(setSelectedVideoKey(video.key))
-    const wrapper = renderComponent({
+    renderComponent({
       video:      null,
       collection: { videos: [video] }
     })
-    assert.equal(wrapper.find("ShareVideoDialog").prop("cloudfrontUrl"), url)
+    assert.equal(screen.getByLabelText("Open edX video URL").value, url)
   })
 })

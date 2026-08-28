@@ -1,36 +1,37 @@
 // @flow
 import React from "react"
-import { shallow } from "enzyme"
+import { render, screen, fireEvent } from "@testing-library/react"
 import { assert } from "chai"
+import sinon from "sinon"
 
 import Button from "./Button"
 
 describe("Button test", () => {
-  const renderButton = (props = {}) => shallow(<Button {...props} />)
+  const renderButton = (props = {}) => render(<Button {...props} />)
 
   it("should render a button, with appropriate classes", () => {
-    const wrapper = renderButton()
-    assert.deepEqual(wrapper.props().className, "mdc-button")
+    const { container } = renderButton()
+    assert.deepEqual(container.firstChild.className, "mdc-button")
   })
 
   it("should stick a className on, if provided", () => {
-    const wrapper = renderButton({ className: "my-awesome-button" })
-    assert.include(wrapper.props().className, "my-awesome-button")
+    const { container } = renderButton({ className: "my-awesome-button" })
+    assert.include(container.firstChild.className, "my-awesome-button")
   })
 
-  it("should splat in other props", () => {
-    const awesomeCallback = () => "function!"
-    const wrapper = renderButton({ onClick: awesomeCallback })
-    assert.equal(wrapper.props().onClick, awesomeCallback)
+  it("should invoke a passed-through onClick handler when clicked", () => {
+    const onClick = sinon.spy()
+    renderButton({ onClick })
+    fireEvent.click(screen.getByRole("button"))
+    assert.isTrue(onClick.called)
   })
 
   it("should render children", () => {
-    const wrapper = shallow(
+    render(
       <Button>
         <div>HEY THERE!</div>
       </Button>
     )
-    assert.equal(wrapper.text(), "HEY THERE!")
-    assert.lengthOf(wrapper.find("div"), 1)
+    assert.exists(screen.getByText("HEY THERE!"))
   })
 })

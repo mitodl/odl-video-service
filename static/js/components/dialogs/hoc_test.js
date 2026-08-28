@@ -1,8 +1,6 @@
 import React from "react"
-import sinon from "sinon"
 import { assert } from "chai"
-import { mount } from "enzyme"
-import { Provider } from "react-redux"
+import { screen, fireEvent } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 import * as R from "ramda"
 import { connect } from "react-redux"
@@ -11,14 +9,16 @@ import Dialog from "../material/Dialog"
 import { withDialogs } from "./hoc"
 import rootReducer from "../../reducers"
 import { SHOW_DIALOG, HIDE_DIALOG } from "../../actions/commonUi"
+import renderWithProviders from "../../testUtils/renderWithProviders"
 
 describe("Dialog higher-order component", () => {
-  let sandbox, store, listenForActions, dialogConfigs
+  // dialogProps holds the props withDialogs last handed to the dialog
+  // component, captured by reference in TestDialog's render. The dialog's
+  // behaviour is asserted through the DOM below; this is only for the props
+  // with no rendered form -- `hideDialog` is a callback, so "a function was
+  // supplied" is not otherwise observable.
+  let store, listenForActions, dialogConfigs, dialogProps
   const dialogName = "some_dialog_name"
-  const selectors = {
-    OPEN_BTN:  "#open-btn",
-    CLOSE_BTN: ".cancel-button"
-  }
 
   class TestContainerPage extends React.Component {
     render() {
@@ -37,6 +37,7 @@ describe("Dialog higher-order component", () => {
 
   class TestDialog extends React.Component {
     render() {
+      dialogProps = this.props
       return (
         <Dialog
           title="Test Dialog"
@@ -48,20 +49,17 @@ describe("Dialog higher-order component", () => {
           open={this.props.open}
         >
           Fake Dialog
+          {this.props.newProp ? <span>{this.props.newProp}</span> : null}
         </Dialog>
       )
     }
   }
 
   beforeEach(() => {
-    sandbox = sinon.createSandbox()
     store = configureTestStore(rootReducer)
     listenForActions = store.createListenForActions()
     dialogConfigs = [{ name: dialogName, component: TestDialog }]
-  })
-
-  afterEach(() => {
-    sandbox.restore()
+    dialogProps = undefined
   })
 
   const renderTestComponentWithDialogs = (extraProps = {}) => {
@@ -72,62 +70,59 @@ describe("Dialog higher-order component", () => {
       })),
       withDialogs(dialogConfigs)
     )(TestContainerPage)
-    return mount(
-      <Provider store={store}>
-        <WrappedTestContainerPage dispatch={store.dispatch} />
-      </Provider>
+    return renderWithProviders(
+      <WrappedTestContainerPage dispatch={store.dispatch} />,
+      { store }
     )
   }
 
+  const isDialogOpen = () =>
+    document
+      .querySelector("#test-dialog")
+      .classList.contains("mdc-dialog--open")
+
   it("should render the specified dialogs with specific props", () => {
-    const wrapper = renderTestComponentWithDialogs()
-    const testDialog = wrapper.find("TestDialog")
-    assert.isTrue(testDialog.exists())
-    assert.isFalse(testDialog.props().open)
-    assert.isFunction(testDialog.props().hideDialog)
+    renderTestComponentWithDialogs()
+    assert.exists(screen.queryByText("Fake Dialog"))
+    assert.isFalse(isDialogOpen())
+    assert.isFalse(dialogProps.open)
+    assert.isFunction(dialogProps.hideDialog)
   })
 
   it("should render dialogs that use lazily evaluated component", () => {
     dialogConfigs = [{ name: dialogName, getComponent: () => TestDialog }]
-    const wrapper = renderTestComponentWithDialogs()
-    const testDialog = wrapper.find("TestDialog")
-    assert.isTrue(testDialog.exists())
-    assert.isFalse(testDialog.props().open)
-    assert.isFunction(testDialog.props().hideDialog)
+    renderTestComponentWithDialogs()
+    assert.exists(screen.queryByText("Fake Dialog"))
+    assert.isFalse(isDialogOpen())
+    assert.isFalse(dialogProps.open)
+    assert.isFunction(dialogProps.hideDialog)
   })
 
   it("should provide a function that lets the wrapped component launch the dialog", async () => {
-    const wrapper = renderTestComponentWithDialogs()
-    let testDialog = wrapper.find("TestDialog")
-    assert.isFalse(testDialog.prop("open"))
-    assert.isFalse(testDialog.find("Dialog").prop("open"))
+    renderTestComponentWithDialogs()
+    assert.isFalse(isDialogOpen())
 
-    return await listenForActions([SHOW_DIALOG], () => {
-      wrapper.find(selectors.OPEN_BTN).prop("onClick")()
-    }).then(() => {
-      wrapper.update()
-      testDialog = wrapper.find("TestDialog")
-      assert.isTrue(testDialog.prop("open"))
-      assert.isTrue(testDialog.find("Dialog").prop("open"))
+    await listenForActions([SHOW_DIALOG], () => {
+      fireEvent.click(screen.getByRole("button", { name: "Open Dialog" }))
     })
+
+    assert.isTrue(isDialogOpen())
   })
 
   it("should provide a function that lets the wrapped component hide the dialog", async () => {
-    const wrapper = renderTestComponentWithDialogs()
+    renderTestComponentWithDialogs()
+
     await listenForActions([SHOW_DIALOG, HIDE_DIALOG], () => {
-      wrapper.find(selectors.OPEN_BTN).prop("onClick")()
-      wrapper.find("Dialog").prop("hideDialog")()
+      fireEvent.click(screen.getByRole("button", { name: "Open Dialog" }))
+      fireEvent.click(screen.getByRole("button", { name: "Close" }))
     })
   })
 
-  it("should pass additional props to the dialog component if they are defined", async () => {
-    const wrapper = renderTestComponentWithDialogs({
+  it("should pass additional props to the dialog component if they are defined", () => {
+    renderTestComponentWithDialogs({
       dialogProps: { [dialogName]: { newProp: "newPropValue" } }
     })
-    const testDialog = wrapper.find("TestDialog")
-    assert.isTrue(testDialog.exists())
-    const addedPropValue = testDialog.prop("newProp")
-    assert.isString(addedPropValue)
-    assert.equal(addedPropValue, "newPropValue")
+    assert.exists(screen.queryByText("Fake Dialog"))
+    assert.exists(screen.getByText("newPropValue"))
   })
 })

@@ -3,7 +3,7 @@
 import React from "react"
 import { assert } from "chai"
 import sinon from "sinon"
-import { mount } from "enzyme"
+import { render, screen } from "@testing-library/react"
 
 import { actions } from "../actions"
 
@@ -64,11 +64,24 @@ describe("withVideoAnalytics", () => {
     })
 
     describe("WrappedComponent", () => {
+      // The props DummyComponent was last rendered with, captured by
+      // reference. Serialising them into a data-* attribute instead would
+      // silently drop every function-valued prop (JSON.stringify omits
+      // them), and the one prop this HOC exists to strip -- `dispatch` --
+      // is a function. A regression that forwarded it would then be
+      // invisible to the deepEqual below.
+      let receivedProps
+
       class DummyComponent extends React.Component<*, void> {
         render() {
+          receivedProps = this.props
           return <div>DummyComponent</div>
         }
       }
+
+      beforeEach(() => {
+        receivedProps = undefined
+      })
 
       const WrappedComponent = withVideoAnalytics(DummyComponent)
 
@@ -83,14 +96,14 @@ describe("withVideoAnalytics", () => {
 
         describe("when needsUpdate is true", () => {
           it("calls update", () => {
-            mount(<WrappedComponent needsUpdate={true} />)
+            render(<WrappedComponent needsUpdate={true} />)
             sinon.assert.called(stubs.update)
           })
         })
 
         describe("when needsUpdate is false", () => {
           it("does not call update", () => {
-            mount(<WrappedComponent needsUpdate={false} />)
+            render(<WrappedComponent needsUpdate={false} />)
             sinon.assert.notCalled(stubs.update)
           })
         })
@@ -108,7 +121,7 @@ describe("withVideoAnalytics", () => {
 
         it("dispatches action with video.key", () => {
           const videoKey = "someVideoKey"
-          mount(
+          render(
             <WrappedComponent
               dispatch={stubs.dispatch}
               needsUpdate={true}
@@ -131,19 +144,28 @@ describe("withVideoAnalytics", () => {
           }
           const video = { some: "video" }
           const videoAnalytics = { some: "videoAnalytics" }
-          const wrapper = mount(
+          const dispatch = sandbox.spy()
+          render(
             <WrappedComponent
               {...extraProps}
+              dispatch={dispatch}
+              needsUpdate={false}
               video={video}
               videoAnalytics={videoAnalytics}
             />
           )
-          const wrapped = wrapper.find("DummyComponent")
-          assert.deepEqual(wrapped.props(), {
+          assert.exists(screen.getByText("DummyComponent"))
+          // Exact prop set: the HOC omits `needsUpdate` and `dispatch`, so
+          // both are passed in here to make that omission an assertion
+          // rather than an assumption. deepEqual fails on an extra key, so
+          // forwarding either one is caught.
+          assert.deepEqual(receivedProps, {
             ...extraProps,
             video,
             videoAnalytics
           })
+          assert.notProperty(receivedProps, "dispatch")
+          assert.notProperty(receivedProps, "needsUpdate")
         })
       })
     })
