@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+Version 0.95.0
+--------------
+
+- OVS React 18:  Convert Tier 1 + Tier 2 Enzyme tests to RTL (#1580)
+- Update dependency cryptography to v50 [SECURITY] (#1574)
+- Update dependency django to v5 [SECURITY] (#1575)
+- Mutation baseline and CI ledger (Phase 0) (#1565)
+- chore(deps): mitol-django-observability 2026.3.11 -> 2026.8.19 (#1578)
+
 Version 0.94.5 (Released August 21, 2026)
 --------------
 
