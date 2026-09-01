@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-Version 0.95.0
+Version 0.95.0 (Released September 01, 2026)
 --------------
 
 - OVS React 18:  Convert Tier 1 + Tier 2 Enzyme tests to RTL (#1580)
