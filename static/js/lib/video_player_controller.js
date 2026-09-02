@@ -36,7 +36,7 @@ const drawCanvasImage = function(canvas, videoNode, shiftX, shiftY) {
  * with plain stubs and no renderer.
  */
 export class VideoPlayerController {
-  player: Object
+  player: ?Object
   videoNode: ?HTMLVideoElement
   videoContainer: ?HTMLDivElement
   cameras: ?HTMLDivElement
@@ -122,7 +122,9 @@ export class VideoPlayerController {
         this.aspectRatio =
           this.player.currentWidth() / this.player.currentHeight()
       }
-      // $FlowFixMe videoContainer is not going to be null
+      // resizeYouTube only runs from player callbacks registered in
+      // onPlayerReady, by which point render() has set videoContainer.
+      // $FlowFixMe Flow cannot narrow the ref across that indirection
       const maxWidth = this.videoContainer.clientWidth
       this.player.width(maxWidth)
       const maxHeight = window
@@ -166,7 +168,9 @@ export class VideoPlayerController {
       throw new Error("Missing videoContainer")
     }
     this.videoContainer.style.maxWidth = `${videoWidth}px`
-    // $FlowFixMe videoContainer.parentElement is not going to be null
+    // videoContainer is the .video-odl-medium div, which render() always
+    // emits inside .video-odl-center, so parentElement is never null.
+    // $FlowFixMe Flow cannot prove that from the ref's type
     this.videoContainer.parentElement.style.width = `${videoWidth +
       canvasWidth}px`
     const left = Math.round(this.player.currentWidth() / (shiftX ? -2 : 2))

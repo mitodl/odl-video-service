@@ -100,13 +100,21 @@ class VideoPlayer extends React.Component<*, void> {
   toggleFullscreen = () => {
     const fullscreen = isFullscreen()
     if (fullscreen) {
+      // FULLSCREEN_API resolves to whichever vendor-prefixed key this browser
+      // supports, so the property is not in Flow's HTMLDocument definition.
       // $FlowFixMe
       document[FULLSCREEN_API.exitFullscreen]()
     } else {
-      // $FlowFixMe videoContainer.parentElement is not going to be null
-      this.controller.videoContainer.parentElement[
-        FULLSCREEN_API.requestFullscreen
-      ]()
+      const { videoContainer } = this.controller
+      if (!videoContainer) {
+        // Make flow happy -- toggleFullscreen is only reachable from the
+        // control bar, which video.js builds after render() sets the ref.
+        throw new Error("Missing videoContainer")
+      }
+      // videoContainer is the .video-odl-medium div, which render() always
+      // emits inside .video-odl-center, so parentElement is never null.
+      // $FlowFixMe Flow cannot prove that from the ref's type
+      videoContainer.parentElement[FULLSCREEN_API.requestFullscreen]()
     }
     this.player.el_.dispatchEvent(
       new Event(`fullscreen ${fullscreen ? "off" : "on"}`)

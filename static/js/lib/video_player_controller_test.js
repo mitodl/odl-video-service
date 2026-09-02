@@ -8,6 +8,7 @@ import { makeVideo, makeVideoSubtitle } from "../factories/video"
 import { makeVideoSubtitleUrl } from "./urls"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
+import { makePlayerStub } from "../testUtils/playerStub"
 
 describe("VideoPlayerController", () => {
   let sandbox,
@@ -23,34 +24,15 @@ describe("VideoPlayerController", () => {
     sandbox = sinon.createSandbox()
     sandbox.stub(global, "setTimeout")
     gaEventStub = sandbox.stub(ga, "event")
-    playerStub = {
-      el_: {
-        style:         {},
-        dispatchEvent: sandbox.stub()
-      },
-      tracks:        [],
-      on:            sandbox.stub(),
-      tech_:         {},
-      width:         sandbox.stub(),
-      height:        sandbox.stub(),
-      currentTime:   () => 630.5,
-      videoWidth:    () => 640,
-      videoHeight:   () => 360,
-      currentWidth:  () => 1280,
-      currentHeight: () => 720,
-      textTracks:    function() {
-        return this.tracks
-      },
-      removeRemoteTextTrack: function(track) {
-        this.tracks.splice(this.tracks.indexOf(track), 1)
-      },
-      addRemoteTextTrack: function(track) {
-        this.tracks.push({ src: track.src, addEventListener: sandbox.stub() })
-      }
-    }
+    playerStub = makePlayerStub(sandbox)
     containerStub = { style: {}, parentElement: { style: {} } }
     nodeStub = { style: {} }
+    // The refs VideoPlayer's render() and componentDidMount assign. Tests
+    // that care about a specific shape override the one ref they exercise.
     controller = new VideoPlayerController()
+    controller.player = playerStub
+    controller.videoNode = nodeStub
+    controller.videoContainer = containerStub
   })
 
   afterEach(() => {
@@ -60,9 +42,6 @@ describe("VideoPlayerController", () => {
   it("cropVideo modifies style and calls configureCameras", () => {
     sandbox.stub(window, "getComputedStyle").returns({ maxHeight: 600 })
     const configureStub = sandbox.stub(controller, "configureCameras")
-    controller.player = playerStub
-    controller.videoNode = nodeStub
-    controller.videoContainer = containerStub
     controller.cropVideo(Object.keys(CANVASES)[0])
     assert.deepEqual(controller.videoNode.style, {
       left:      "640px",
@@ -74,8 +53,6 @@ describe("VideoPlayerController", () => {
   ;[1000, 4000].forEach(function(videoWidth) {
     it(`resizeYouTube modifies the video width and height (container ${videoWidth})`, () => {
       sandbox.stub(window, "getComputedStyle").returns({ maxHeight: "700px" })
-      controller.player = playerStub
-      controller.videoNode = nodeStub
       controller.videoContainer = {
         style:         {},
         parentElement: { style: {} },
@@ -91,16 +68,12 @@ describe("VideoPlayerController", () => {
   })
 
   it("resizeYouTube does nothing when embedded", () => {
-    controller.player = playerStub
-    controller.videoContainer = containerStub
     controller.resizeYouTube(true)
     sinon.assert.notCalled(playerStub.width)
     sinon.assert.notCalled(playerStub.height)
   })
 
   it("resizeYouTube does nothing in fullscreen", () => {
-    controller.player = playerStub
-    controller.videoContainer = containerStub
     document[FULLSCREEN_API.fullscreenElement] = () => true
     try {
       controller.resizeYouTube(false)
@@ -181,7 +154,6 @@ describe("VideoPlayerController", () => {
     const captionToDelete = makeVideoSubtitle(video.key, "es")
     const captionToAdd = makeVideoSubtitle(video.key, "fr")
     video.videosubtitle_set.push(captionToDelete)
-    controller.player = playerStub
     controller.updateSubtitles(video)
     assert.equal(playerStub.tracks.length, 2)
     assert.equal(playerStub.tracks[0].src, makeVideoSubtitleUrl(captionToKeep))
@@ -197,7 +169,6 @@ describe("VideoPlayerController", () => {
   })
 
   it("updateSubtitles sends a GA event when a track's mode changes", () => {
-    controller.player = playerStub
     controller.updateSubtitles(video)
     const track = playerStub.tracks[0]
     const call = track.addEventListener
@@ -214,6 +185,9 @@ describe("VideoPlayerController", () => {
   })
 
   it("updateSubtitles does nothing without a player", () => {
+    // videojs() has not returned yet, so componentDidMount has not assigned
+    // the player -- a componentDidUpdate in that window must be a no-op.
+    controller.player = null
     controller.updateSubtitles(video)
     assert.equal(playerStub.tracks.length, 0)
   })

@@ -21,6 +21,7 @@ import { CANVASES } from "../constants"
 import { expect } from "../util/test_utils"
 import rootReducer from "../reducers"
 import renderWithProviders from "../testUtils/renderWithProviders"
+import { makePlayerStub } from "../testUtils/playerStub"
 
 global.URLSearchParams = URLSearchParams
 
@@ -104,38 +105,7 @@ describe("VideoPlayer", () => {
     cornerFunction = sandbox.stub()
     gaEventStub = sandbox.stub(ga, "event")
     gaSetStub = sandbox.stub(ga, "set")
-    playerStub = {
-      el_: {
-        style:         {},
-        dispatchEvent: sandbox.stub()
-      },
-      tracks:        [],
-      on:            sandbox.stub(),
-      tech_:         {},
-      // RTL unmounts after every test, so componentWillUnmount -- which the
-      // Enzyme tests never reached -- now disposes the player for real.
-      dispose:       sandbox.stub(),
-      reset:         sandbox.stub().returns(playerStub),
-      src:           sandbox.stub().returns(playerStub),
-      fluid:         sandbox.stub().returns(playerStub),
-      width:         sandbox.stub(),
-      height:        sandbox.stub(),
-      currentTime:   () => 630.5,
-      duration:      () => 2400.0,
-      videoWidth:    () => 640,
-      videoHeight:   () => 360,
-      currentWidth:  () => 1280,
-      currentHeight: () => 720,
-      textTracks:    function() {
-        return this.tracks
-      },
-      removeRemoteTextTrack: function(track) {
-        this.tracks.splice(this.tracks.indexOf(track), 1)
-      },
-      addRemoteTextTrack: function(track) {
-        this.tracks.push({ src: track.src, addEventListener: function() {} })
-      }
-    }
+    playerStub = makePlayerStub(sandbox)
     videojsStub = sandbox.stub(libVideo, "videojs").returns(playerStub)
     store = configureTestStore(rootReducer)
     dispatchSpy = sandbox.spy(store, "dispatch")
