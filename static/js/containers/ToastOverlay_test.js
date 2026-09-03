@@ -6,7 +6,12 @@ import { assert } from "chai"
 import sinon from "sinon"
 
 import type { ToastMessage as ToastMessageType } from "../flow/toastTypes"
-import { ToastOverlay, ToastMessage, mapStateToProps } from "./ToastOverlay"
+import {
+  ToastOverlay,
+  ToastMessage,
+  mapStateToProps,
+  DELAY_MS
+} from "./ToastOverlay"
 
 describe("ToastOverlayTests", () => {
   let sandbox
@@ -160,6 +165,39 @@ describe("ToastOverlayTests", () => {
         container.querySelector(".message-content").textContent,
         message.content
       )
+    })
+
+    // ToastMessage's dismissal timer had no test before R1, and
+    // componentDidMount had no matching componentWillUnmount, so the
+    // callback could dispatch against an unmounted component. React 15
+    // never reported that; React 16 does. These two tests pin both halves:
+    // the timer still dismisses, and it no longer fires after unmount.
+    describe("dismissal timer", () => {
+      it("dispatches removeMessage after DELAY_MS", () => {
+        // Install the clock before rendering, or componentDidMount's
+        // setTimeout escapes onto the real one.
+        const clock = sandbox.useFakeTimers()
+        const removeMessage = sandbox.stub()
+        const message = generateMessage()
+
+        renderComponent({ message, removeMessage })
+
+        assert.isFalse(removeMessage.called)
+        clock.tick(DELAY_MS)
+        assert.isTrue(removeMessage.calledOnce)
+        assert.deepEqual(removeMessage.firstCall.args, [{ key: message.key }])
+      })
+
+      it("does not dispatch removeMessage after unmounting", () => {
+        const clock = sandbox.useFakeTimers()
+        const removeMessage = sandbox.stub()
+
+        const { unmount } = renderComponent({ removeMessage })
+        unmount()
+        clock.tick(DELAY_MS)
+
+        assert.isFalse(removeMessage.called)
+      })
     })
 
     describe("icon", () => {
