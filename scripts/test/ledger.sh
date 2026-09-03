@@ -70,7 +70,7 @@ check "passing tests" "$TESTS" ge 505
 # guarantee this check's comment claims. This also catches require() form and
 # scans every .js file under static/js, not just tests. Verified to return
 # zero on the current tree and to NOT match the jsdom-setup provenance
-# comment at static/js/babelhook.js:9 ("adapted from
+# comment at static/js/babelhook.js:22 ("adapted from
 # https://airbnb.io/enzyme/docs/..."), which mentions Enzyme without
 # importing it.
 ENZYME=$(grep -rlE 'from .enzyme.|require\(.enzyme.\)' static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
@@ -107,6 +107,31 @@ check "FlowFixMe occurrences" "$FLOWFIX" le 22
 # in a check whose whole value is having none.
 ALLOWLIST=$(grep -c 'grep -v' scripts/test/js_test.sh)
 check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
+
+# The same guarantee for the other suppression surface. Capping js_test.sh at 5
+# and then leaving testUtils/suppressVendorLifecycleWarnings.js uncapped would
+# just relocate the erosion one file over: a seventh entry could be added with
+# no threshold move, no comment discipline and no reviewer signal.
+#
+# Frozen at the six deprecated-lifecycle warnings React 16.9 emits for
+# vendored components today (Phase R1, hq#12641):
+#   2x victory 0.27.2                -> Task 7 of this PR (victory 0.27 -> 37)
+#   1x rmwc 1.9.4                    -> R2, which drops rmwc entirely
+#   2x react-router 4.3.1            -> no phase yet
+#   1x react-document-title 2.0.3    -> no phase yet (react-side-effect 1.2.0
+#                                       is unmaintained; needs a different
+#                                       component, not an upgrade)
+# A seventh entry is a new suppression and needs the same justification an
+# allowlist line would. Task 7 must lower this to 4 when it deletes the two
+# victory rows.
+#
+# Counts data rows only: the pattern requires leading whitespace, the
+# `lifecycle:` key and a quoted value, so no prose in that file's docstring --
+# which does discuss lifecycles at length -- can inflate it. Verified to
+# return 6 on the current tree.
+VENDORSUPP=$(grep -cE '^[[:space:]]+lifecycle: *"' \
+	static/js/testUtils/suppressVendorLifecycleWarnings.js)
+check "vendor lifecycle suppressions" "$VENDORSUPP" le 6
 
 # Mutation score, when a baseline has been recorded and a report exists.
 # The full run takes 30-90 minutes, so this is a per-phase or nightly check --
