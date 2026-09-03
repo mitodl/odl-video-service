@@ -7,36 +7,27 @@ import { makeVideoAnalyticsData } from "../../factories/videoAnalytics"
 import { ConditionalLabel, AnalyticsChart } from "./AnalyticsChart"
 import { shouldIf } from "../../lib/test_utils"
 
+import suppressVictoryKeyWarning from "../../testUtils/suppressVictoryKeyWarning"
+
 describe("AnalyticsChartTests", () => {
   let analyticsData, padding, getColorForChannelStub, props, sandbox
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
-    // AnalyticsChart mounts a real Victory (0.27.2) chart. VictoryAxis's own
-    // tick-rendering code omits a `key` prop on an array of children, which
-    // React reports via console.error on every mount. Enzyme's shallow
-    // rendering never mounted this child, so the defect -- which lives
-    // entirely inside Victory, not in AnalyticsChart's usage of it or in
-    // anything asserted below -- was never exercised before. The rendered
-    // SVG is unaffected; only this one known, harmless message is
-    // filtered so it doesn't fail the test run's console-output check. Any
-    // other console.error still comes through and fails the test.
-    const originalConsoleError = console.error.bind(console)
-    sandbox.stub(console, "error").callsFake((...args) => {
-      const [message] = args
-      if (
-        typeof message === "string" &&
-        message.includes(
-          'Each child in an array or iterator should have a unique "key" prop'
-        ) &&
-        message.includes("VictoryAxis")
-      ) {
-        return
-      }
-      originalConsoleError(...args)
-    })
+    // AnalyticsChart mounts a real Victory chart whose VictoryAxis emits a
+    // spurious React "unique key prop" warning; see the helper for why it
+    // is filtered here and nowhere else. This used to be an inline copy of
+    // the helper's logic; the duplicate went stale when React 16 reworded
+    // the message, so the two call sites now share one implementation.
+    suppressVictoryKeyWarning(sandbox)
     analyticsData = makeVideoAnalyticsData(10)
-    padding = 2
+    // Must be the {top, bottom, left, right} object AnalyticsPane passes as
+    // CHART_PADDING. A bare number is a valid Victory `padding`, but
+    // AnalyticsChart also reads padding.left/right/top/bottom directly --
+    // for the clip-path rect's width/height and the dependent axis's
+    // offsetX -- so a number made all four NaN. React 15 rendered NaN
+    // attributes silently; React 16 reports each one.
+    padding = { top: 10, bottom: 60, left: 75, right: 20 }
     getColorForChannelStub = sandbox.stub()
     props = {
       analyticsData,

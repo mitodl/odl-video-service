@@ -100,8 +100,13 @@ check "FlowFixMe occurrences" "$FLOWFIX" le 22
 
 # Frozen. Adding a line here is how React 18 act() warnings get silenced --
 # turning a real signal about un-batched state updates into future flaky tests.
+# le 7 -> le 5 (Phase R1, hq#12641): the PropTypes and createClass lines
+# suppressed React 15.5-era warnings that cannot fire on React 16, since both
+# were removed from the react package and nothing in static/js references
+# either. Leaving the cap at 7 would have left two slots of silent headroom
+# in a check whose whole value is having none.
 ALLOWLIST=$(grep -c 'grep -v' scripts/test/js_test.sh)
-check "js_test.sh allowlist lines" "$ALLOWLIST" le 7
+check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
 
 # Mutation score, when a baseline has been recorded and a report exists.
 # The full run takes 30-90 minutes, so this is a per-phase or nightly check --

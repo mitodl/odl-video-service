@@ -13,9 +13,22 @@
  * test run's console-output check. Every other console.error still comes
  * through and still fails the run.
  *
+ * React 16 reworded the message and split it across console.error's format
+ * arguments: the first argument carries the "Each child in a list" text with
+ * `%s` placeholders, and the owner -- "Check the render method of
+ * `VictoryAxis`." -- arrives as a later argument. So the guard has to look at
+ * the format string for the defect and at the remaining arguments for the
+ * owner. Matching the owner phrase rather than the bare component name keeps
+ * this as narrow as it was on React 15: React appends a component stack as
+ * the final argument, and that stack names VictoryAxis for *any* warning
+ * raised anywhere inside a chart.
+ *
  * Call from a `beforeEach` with the sandbox that a matching `afterEach`
  * restores -- there is no separate teardown to remember.
  */
+const KEY_WARNING = 'Each child in a list should have a unique "key" prop'
+const VICTORY_AXIS_OWNER = "Check the render method of `VictoryAxis`."
+
 export default function suppressVictoryKeyWarning(sandbox) {
   const originalConsoleError = console.error.bind(console)
 
@@ -23,10 +36,10 @@ export default function suppressVictoryKeyWarning(sandbox) {
     const [message] = args
     if (
       typeof message === "string" &&
-      message.includes(
-        'Each child in an array or iterator should have a unique "key" prop'
-      ) &&
-      message.includes("VictoryAxis")
+      message.includes(KEY_WARNING) &&
+      args.some(
+        arg => typeof arg === "string" && arg.includes(VICTORY_AXIS_OWNER)
+      )
     ) {
       return
     }

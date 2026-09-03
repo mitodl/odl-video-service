@@ -9,9 +9,15 @@ import suppressVictoryKeyWarning from "./suppressVictoryKeyWarning"
 describe("suppressVictoryKeyWarning", () => {
   let sandbox, passedThrough, originalConsoleError
 
-  const victoryMessage =
-    'Warning: Each child in an array or iterator should have a unique "key" ' +
-    "prop. Check the render method of `VictoryAxis`."
+  // Exactly how React 16.14 calls console.error for this defect: a format
+  // string with %s placeholders, the owner info, an empty child-owner slot,
+  // and the component stack appended last.
+  const victoryFormat =
+    'Warning: Each child in a list should have a unique "key" prop.%s%s ' +
+    "See https://fb.me/react-warning-keys for more information.%s"
+  const victoryOwner = "\n\nCheck the render method of `VictoryAxis`."
+  const victoryStack = "\n    in Axis\n    in VictoryAxis"
+  const victoryArgs = [victoryFormat, victoryOwner, "", victoryStack]
 
   beforeEach(() => {
     passedThrough = []
@@ -33,7 +39,7 @@ describe("suppressVictoryKeyWarning", () => {
   })
 
   it("swallows Victory's key warning", () => {
-    console.error(victoryMessage)
+    console.error(...victoryArgs)
     assert.lengthOf(passedThrough, 0)
   })
 
@@ -42,10 +48,18 @@ describe("suppressVictoryKeyWarning", () => {
     assert.deepEqual(passedThrough, [["Warning: something actually broke"]])
   })
 
+  // The stack deliberately still names VictoryAxis: React appends it as the
+  // last argument for anything rendered inside a chart, so a key warning
+  // owned by a different component has to keep failing the run even then.
   it("passes through a key warning from another component", () => {
-    const message = victoryMessage.replace("VictoryAxis", "VideoCard")
-    console.error(message)
-    assert.deepEqual(passedThrough, [[message]])
+    const args = [
+      victoryFormat,
+      victoryOwner.replace("VictoryAxis", "VideoCard"),
+      "",
+      `\n    in VideoCard${victoryStack}`
+    ]
+    console.error(...args)
+    assert.deepEqual(passedThrough, [args])
   })
 
   it("passes through an unrelated VictoryAxis warning", () => {
