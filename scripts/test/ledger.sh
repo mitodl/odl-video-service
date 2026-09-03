@@ -141,13 +141,13 @@ check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
 # no threshold move, no comment discipline and no reviewer signal.
 #
 # Frozen at the deprecated-lifecycle warnings React 16.9 emits for vendored
-# components today (Phase R1, hq#12641):
-#   1x rmwc 1.9.4                    -> R2, which drops rmwc entirely
+# components today (Phase R1, hq#12641; rmwc's row removed in Phase R2,
+# hq#12642 -- see below):
 #   2x react-router 4.3.1            -> no phase yet
 #   1x react-document-title 2.0.3    -> no phase yet (react-side-effect 1.2.0
 #                                       is unmaintained; needs a different
 #                                       component, not an upgrade)
-# A fifth entry is a new suppression and needs the same justification an
+# A fourth entry is a new suppression and needs the same justification an
 # allowlist line would.
 #
 # le 6 -> le 4 (Task 7 of Phase R1, hq#12641): victory 37 uses none of the
@@ -162,7 +162,7 @@ check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
 # that file's docstring does discuss lifecycles at length -- can inflate it. An
 # indented STARLESS line inside a block comment still could; that direction is
 # fail-safe (a spurious FAIL, which a reader then reads), and there is no such
-# line today. Verified to return 4 on the current tree.
+# line today. Verified to return 3 on the current tree.
 #
 # The file must exist. `grep` on a missing path prints to stderr and yields an
 # empty VENDORSUPP, which `[[ -le ]]` arithmetic-evaluates as 0 -- so the check
@@ -181,7 +181,13 @@ if [[ ! -f $SUPPFILE ]]; then
 	FAIL=1
 else
 	VENDORSUPP=$(grep -cE '^[[:space:]]+lifecycle: *"' "$SUPPFILE" 2>/dev/null)
-	check "vendor lifecycle suppressions" "${VENDORSUPP:-0}" le 4
+	# le 4 -> le 3 (Phase R2, hq#12642): rmwc is deleted entirely, and its
+	# sole row -- the one predicting this removal in its own `removedBy`
+	# field -- goes with it. Because this check is `le`, leaving the cap at
+	# 4 would have PASSED while re-opening the one slot of headroom this
+	# check exists to deny, so the cap moves with the row, in the same
+	# commit, per this file's own rule.
+	check "vendor lifecycle suppressions" "${VENDORSUPP:-0}" le 3
 
 	# Rows are not the only thing that can grow. Under set-membership matching
 	# (Ruling 10), WIDENING an existing row -- adding a name to its
@@ -192,12 +198,12 @@ else
 	# operator widening a row is already editing. This puts the second guard
 	# here, where moving it requires a comment in the same commit.
 	#
-	# Frozen at the names those four rows excuse today (Phase R1 final fix
-	# wave, hq#12641): 1x rmwc (LinearProgress), 3x react-router
-	# componentWillMount (MemoryRouter, Route, Router), 2x react-router
-	# componentWillReceiveProps (Route, Router), 1x react-document-title
-	# (SideEffect(DocumentTitle)) = 7. Removing a row lowers this in the same
-	# commit, exactly as the row cap does.
+	# Frozen at the names those three rows excuse today (Phase R1 final fix
+	# wave, hq#12641; rmwc's 1x LinearProgress removed in Phase R2,
+	# hq#12642): 3x react-router componentWillMount (MemoryRouter, Route,
+	# Router), 2x react-router componentWillReceiveProps (Route, Router),
+	# 1x react-document-title (SideEffect(DocumentTitle)) = 6. Removing a
+	# row lowers this in the same commit, exactly as the row cap does.
 	#
 	# awk, not `grep -oE '"[^"]+"' | wc -l` over the `components: [` line:
 	# prettier keeps a short array on one line but wraps a long one to one item
@@ -216,7 +222,11 @@ else
 		}
 		END { print names + 0 }
 	' "$SUPPFILE")
-	check "vendor suppressed component names" "${VENDORNAMES:-0}" le 7
+	# le 7 -> le 6 (Phase R2, hq#12642): rmwc's row excused exactly one name
+	# (LinearProgress). Removing the row without lowering this cap would
+	# have PASSED anyway under `le`, silently re-opening that one slot, so
+	# the cap moves with the row, in the same commit.
+	check "vendor suppressed component names" "${VENDORNAMES:-0}" le 6
 fi
 
 # Mutation score, when a baseline has been recorded and a report exists.

@@ -78,12 +78,6 @@
  */
 
 export const VENDOR_LIFECYCLE_WARNINGS = [
-  {
-    dependency: "rmwc 1.9.4 (Base/withFoundation HOC)",
-    removedBy:  "R2, which drops rmwc entirely",
-    lifecycle:  "componentWillReceiveProps",
-    components: ["LinearProgress"]
-  },
   // CARRIER DATA (see "HOW TO REMOVE A ROW" above): these three names are
   // KNOWN_CWM_GROUP in suppressVendorLifecycleWarnings_test.js, where four
   // pass-through cases use them as the part of the message that WOULD be

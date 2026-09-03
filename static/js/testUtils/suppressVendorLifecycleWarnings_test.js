@@ -52,7 +52,6 @@ const CWU =
   "Warning: componentWillUpdate has been renamed, and is not recommended for use. See https://fb.me/react-unsafe-component-lifecycles for details.\n\n* Move data fetching code or side effects to componentDidUpdate.\n* Rename componentWillUpdate to UNSAFE_componentWillUpdate to suppress this warning in non-strict mode. In React 17.x, only the UNSAFE_ name will work. To rename all deprecated lifecycles to their new names, you can run `npx react-codemod rename-unsafe-lifecycles` in your project source folder.\n\nPlease update the following components: %s"
 
 const EXPECTED_TABLE = [
-  { lifecycle: "componentWillReceiveProps", components: ["LinearProgress"] },
   {
     lifecycle:  "componentWillMount",
     components: ["MemoryRouter", "Route", "Router"]
@@ -140,7 +139,7 @@ describe("suppressVendorLifecycleWarnings", () => {
 
   // The anti-tautology check. Compares the real table against the literal copy
   // above, so no entry can be added, removed, renamed or widened without a
-  // test failing -- which is what the four suppression cases below, on their
+  // test failing -- which is what the three suppression cases below, on their
   // own, cannot detect.
   it("suppresses exactly the vendored warnings recorded in this file", () => {
     assert.deepEqual(
@@ -221,10 +220,6 @@ describe("suppressVendorLifecycleWarnings", () => {
   // One case per known warning, with the component list written out here
   // rather than read from the table.
   describe("suppresses the known vendor warnings", () => {
-    it("rmwc's LinearProgress", () => {
-      swallows(CWRP, "LinearProgress")
-    })
-
     it("react-router's componentWillMount group", () => {
       swallows(CWM, "MemoryRouter, Route, Router")
     })
@@ -270,13 +265,6 @@ describe("suppressVendorLifecycleWarnings", () => {
 
     it("an unknown component on its own", () => {
       passesThrough(CWM, "VideoPlayer")
-    })
-
-    // Known sets are per-lifecycle. LinearProgress is excused for
-    // componentWillReceiveProps only; if it ever warns for componentWillMount
-    // that is a change worth seeing.
-    it("a name that is known for a different lifecycle", () => {
-      passesThrough(CWM, "LinearProgress")
     })
 
     it("a lifecycle that is not in the table", () => {
