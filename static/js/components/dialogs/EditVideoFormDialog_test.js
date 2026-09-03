@@ -290,8 +290,11 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -332,8 +335,11 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -354,8 +360,11 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -423,8 +432,11 @@ describe("EditVideoFormDialog", () => {
         INIT_EDIT_VIDEO_FORM,
         "NOOP",
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -455,13 +467,45 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
       }
     )
     sinon.assert.notCalled(collectionsGetStub)
+  })
+
+  it("does not re-seed the form from stale props while closing", async () => {
+    /*
+     * A regression test for the close path. Clearing the form re-renders this
+     * still-mounted dialog, and checkActiveVideo used to answer that render by
+     * writing `props.video` straight back in. On the collection page that prop
+     * is the collection's copy of the video, which right after a save has not
+     * been refetched yet - so the form ended up holding the pre-save values,
+     * and held on to them, since checkActiveVideo only re-initializes when the
+     * video *key* changes. Reopening the dialog then showed the old values.
+     */
+    const collection = makeCollection()
+    const collectionVideo = collection.videos[0]
+    store.dispatch(setSelectedVideoKey(collectionVideo.key))
+    renderComponent({ video: null, collection: collection })
+    assert.equal(
+      store.getState().videoUi.editVideoForm.key,
+      collectionVideo.key,
+      "form was not seeded, so this test cannot observe the close"
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+
+    await waitFor(() => sinon.assert.called(hideDialogStub))
+    assert.isNull(
+      store.getState().videoUi.editVideoForm.key,
+      "the form was re-seeded while closing"
+    )
   })
 })

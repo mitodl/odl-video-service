@@ -67,11 +67,36 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     thumbnailError:      null
   }
 
+  /*
+   * True while this dialog is closing itself.
+   *
+   * onClose clears the form, and that dispatch re-renders the dialog, which
+   * stays mounted while closed - withDialogs only flips `open`. Without this
+   * flag the clear is undone immediately: editVideoForm.key is back to null,
+   * which is exactly the condition checkActiveVideo re-seeds on, so it writes
+   * `props.video` into the form again. On the collection page that prop is the
+   * collection's own copy of the video, and submitForm has only just *asked*
+   * for the collection to be refetched - so the value re-seeded is the one from
+   * before the save. Nothing corrects it afterwards either, because
+   * checkActiveVideo only re-initializes when the video *key* changes, and the
+   * key has not changed. The next open of the dialog would show the pre-save
+   * values.
+   *
+   * Guarding on `open` alone would not do: the dispatch that hides the dialog
+   * and the dispatch that clears the form are separate, so their order would
+   * decide whether the bug appears.
+   */
+  closing = false
+
   componentDidMount() {
     this.checkActiveVideo()
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps: DialogProps) {
+    // A fresh open ends the close, and the form should track props again.
+    if (this.props.open && !prevProps.open) {
+      this.closing = false
+    }
     this.checkActiveVideo()
   }
 
@@ -81,6 +106,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       video,
       videoUi: { editVideoForm }
     } = this.props
+    if (this.closing) {
+      return
+    }
     if (open && video && video.key !== editVideoForm.key) {
       this.initializeFormWithVideo(video)
     }
@@ -228,6 +256,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       thumbnailPreviewUrl: null,
       thumbnailError:      null
     })
+    this.closing = true
     dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }
