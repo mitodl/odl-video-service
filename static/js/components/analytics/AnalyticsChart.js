@@ -33,7 +33,7 @@ export class AnalyticsChart extends React.Component {
   }
   componentDidMount() {
     this._setupResizeHandler()
-    setTimeout(() => this._updateDimensions(), 200)
+    this._dimensionsTimer = setTimeout(() => this._updateDimensions(), 200)
   }
 
   _setupResizeHandler() {
@@ -58,6 +58,11 @@ export class AnalyticsChart extends React.Component {
   }
 
   componentWillUnmount() {
+    clearTimeout(this._dimensionsTimer)
+    // removeEventListener does not drop a throttled call that is already
+    // queued; without cancel() a trailing invocation still calls setState
+    // after unmount.
+    this._resizeHandler.cancel()
     this._tearDownResizeHandler()
   }
 
