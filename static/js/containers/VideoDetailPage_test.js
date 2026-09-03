@@ -199,6 +199,7 @@ describe("VideoDetailPage", () => {
     // Descriptions are rich text, sanitized server-side on write (ui/html.py),
     // so the page injects them rather than escaping them.
     video.description = '<p>see the <a href="https://mit.edu">notes</a></p>'
+    video.description_format = "html"
     const { container } = await renderPage()
     const description = container.querySelector(".video-description")
     assert.equal(description.querySelectorAll("a").length, 1)
@@ -207,6 +208,21 @@ describe("VideoDetailPage", () => {
       "https://mit.edu"
     )
     assert.equal(description.textContent, "see the notes")
+  })
+
+  it("renders a plain-text description as text, keeping its line breaks", async () => {
+    /*
+     * The format on the record decides this, not the value. Injecting a legacy
+     * plain-text description as markup is what truncates it: a browser reads
+     * `<b to a` as an unterminated tag and drops everything after it.
+     */
+    video.description = "Compare <b to a.\nSecond line."
+    video.description_format = "text"
+    const { container } = await renderPage()
+    const description = container.querySelector(".video-description")
+    assert.equal(description.textContent, "Compare <b to a.\nSecond line.")
+    assert.lengthOf(description.querySelectorAll("b"), 0)
+    assert.isTrue(description.classList.contains("description-plain-text"))
   })
 
   // These two test names were swapped relative to what they actually assert

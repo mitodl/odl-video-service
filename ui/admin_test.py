@@ -14,7 +14,7 @@ from ui.admin import (
     VideoAdmin,
     VideoAdminForm,
 )
-from ui.constants import VideoStatus
+from ui.constants import DescriptionFormat, VideoStatus
 from ui.encodings import EncodingNames
 from ui.factories import CollectionFactory, VideoFactory, VideoFileFactory
 from ui.models import Collection, Video
@@ -247,21 +247,27 @@ DIRTY_DESCRIPTION = (
 CLEAN_DESCRIPTION = "<p>Keep <strong>this</strong></p><p>and this</p>"
 
 
-def _collection_form(description):
+def _collection_form(description, description_format=DescriptionFormat.HTML):
     """Build a bound CollectionAdminForm with the given description"""
     owner = VideoFactory.create().collection.owner
     return CollectionAdminForm(
-        data={"title": "A series", "description": description, "owner": owner.id}
+        data={
+            "title": "A series",
+            "description": description,
+            "description_format": description_format,
+            "owner": owner.id,
+        }
     )
 
 
-def _video_form(description):
+def _video_form(description, description_format=DescriptionFormat.HTML):
     """Build a bound VideoAdminForm with the given description"""
     video = VideoFactory.create()
     return VideoAdminForm(
         data={
             "title": video.title,
             "description": description,
+            "description_format": description_format,
             "collection": video.collection.id,
             "source_url": video.source_url,
             "status": video.status,
@@ -374,3 +380,33 @@ def test_collection_admin_uses_the_validating_form():
     """The form is actually attached, not just defined"""
     assert CollectionAdmin.form is CollectionAdminForm
     assert VideoAdmin.form is VideoAdminForm
+
+
+@pytest.mark.django_db
+def test_admin_form_leaves_a_plain_text_description_alone():
+    """
+    Plain text is stored as typed, not checked against the allowlist.
+
+    `Compare <b to a` is not an admin trying to write markup, and refusing it -
+    or worse, sanitizing the rest of the sentence away - would make the field
+    unusable for the descriptions that are already in the table.
+    """
+    legacy = "Compare <b to a. See &copy; notes.\n\nQ&A after."
+    form = _collection_form(legacy, description_format=DescriptionFormat.TEXT)
+    form.is_valid()
+    assert "description" not in form.errors
+    assert form.cleaned_data["description"] == legacy
+
+
+@pytest.mark.django_db
+def test_admin_form_checks_a_heading_only_when_it_is_rich_text():
+    """The same value is an error as rich text and fine as plain text"""
+    heading = "<h2>Session notes</h2>"
+
+    as_html = _collection_form(heading)
+    as_html.is_valid()
+    assert "<h2>" in " ".join(as_html.errors["description"])
+
+    as_text = _collection_form(heading, description_format=DescriptionFormat.TEXT)
+    as_text.is_valid()
+    assert "description" not in as_text.errors

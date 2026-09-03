@@ -8,6 +8,7 @@ import _ from "lodash"
 import DocumentTitle from "react-document-title"
 
 import WithDrawer from "./WithDrawer"
+import Description from "../components/material/Description"
 import VideoList from "../components/VideoList"
 import Button from "../components/material/Button"
 import EditVideoFormDialog from "../components/dialogs/EditVideoFormDialog"
@@ -117,7 +118,10 @@ export class CollectionDetailPage extends React.Component<*, void> {
             </div>
           </div>
           {this.renderTools(isCollectionAdmin)}
-          {this.renderDescription(collection.description)}
+          {this.renderDescription(
+            collection.description,
+            collection.description_format
+          )}
         </header>
         {this.renderVideos(videos, isCollectionAdmin)}
       </div>
@@ -279,16 +283,15 @@ export class CollectionDetailPage extends React.Component<*, void> {
     }
   }
 
-  renderDescription(description: ?string) {
+  renderDescription(description: ?string, descriptionFormat: ?string) {
     if (_.isEmpty(description)) {
       return null
     }
-    // Descriptions are rich text. Safe to inject: every write path sanitizes
-    // against the allowlist in ui/html.py before the value is stored.
     return (
-      <div
+      <Description
+        description={description}
+        descriptionFormat={descriptionFormat}
         className="description"
-        dangerouslySetInnerHTML={{ __html: description || "" }}
       />
     )
   }

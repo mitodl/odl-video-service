@@ -15,6 +15,7 @@ import {
   setViewChoice,
   setViewLists,
   setCollectionDesc,
+  setCollectionDescFormat,
   setCollectionTitle,
   setEdxCourseId,
   setOwnerId,
@@ -208,8 +209,13 @@ describe("CollectionFormDialog", () => {
         const editor = () =>
           document.querySelector("#collection-desc .ProseMirror")
 
-        // The editor engine is a split chunk, so it arrives after mount.
+        /*
+         * The rich-text editor only appears for a description that is already
+         * rich text; a plain-text one gets a textarea until an author upgrades
+         * it. The editor engine is a split chunk, so it arrives after mount.
+         */
         const renderWithEditor = async (props = {}) => {
+          store.dispatch(setCollectionDescFormat("html"))
           const result = await renderDialog(props)
           await waitFor(() => assert.isNotNull(editor()))
           return result
@@ -314,13 +320,14 @@ describe("CollectionFormDialog", () => {
         })
 
         const expectedRequestPayload = {
-          title:             "new title",
-          description:       "new description",
-          view_lists:        expectedListRequestData,
-          admin_lists:       expectedListRequestData,
-          edx_course_id:     "edx-course-id",
-          owner:             1,
-          is_logged_in_only: false
+          title:              "new title",
+          description:        "new description",
+          description_format: "text",
+          view_lists:         expectedListRequestData,
+          admin_lists:        expectedListRequestData,
+          edx_course_id:      "edx-course-id",
+          owner:              1,
+          is_logged_in_only:  false
         }
 
         if (isNew) {

@@ -10,7 +10,7 @@ from googleapiclient.errors import HttpError
 
 from cloudsync.conftest import MockHttpErrorResponse
 from cloudsync.youtube import YouTubeApi, YouTubeUploadException, strip_bad_chars
-from ui.constants import VideoStatus
+from ui.constants import DescriptionFormat, VideoStatus
 from ui.factories import VideoFactory, VideoFileFactory, VideoSubtitleFactory
 
 pytestmark = pytest.mark.django_db
@@ -252,6 +252,7 @@ def test_upload_video_flattens_rich_text_description(mocker):
             '<p>Next steps:</p><ul><li><a href="https://learn.mit.edu/x">'
             "Continue the series</a></li></ul>"
         ),
+        description_format=DescriptionFormat.HTML,
         is_public=True,
         status=VideoStatus.COMPLETE,
     )
@@ -270,3 +271,28 @@ def test_upload_video_flattens_rich_text_description(mocker):
     assert "How compliance markets price emissions." in description
     # the list still reads as a list
     assert "• Continue the series" in description
+
+
+def test_upload_video_passes_a_plain_text_description_through(mocker):
+    """
+    A description still in plain text is uploaded as typed.
+
+    Flattening it as HTML would read `a <b to c` as an unterminated tag and
+    delete the rest of the description; strip_bad_chars removes the angle
+    brackets, and that is all this value needs.
+    """
+    video = VideoFactory.create(
+        title="Carbon Markets",
+        description="Compare <b to a.\n\nSee the notes.",
+        is_public=True,
+        status=VideoStatus.COMPLETE,
+    )
+    VideoFileFactory(video=video)
+    mocker.patch("cloudsync.youtube.resumable_upload")
+    youtube_mocker = mocker.patch("cloudsync.youtube.build")
+    mock_upload = youtube_mocker().videos.return_value.insert
+    YouTubeApi().upload_video(video)
+    _called_args, called_kwargs = mock_upload.call_args
+    description = called_kwargs["body"]["snippet"]["description"]
+
+    assert description == "Compare b to a.\n\nSee the notes."

@@ -19,8 +19,12 @@ does not offer headings (see static/js/lib/editor.js, which builds the toolbar
 from the same vocabulary).
 """
 
+import re
+
 import nh3
 from bs4 import BeautifulSoup
+
+from ui.constants import DescriptionFormat
 
 # Must stay a subset of Learn's ALLOWED_HTML_TAGS_WITH_LINKS.
 ALLOWED_DESCRIPTION_TAGS = frozenset(
@@ -164,3 +168,151 @@ def description_to_text(value):
         if line or (out and out[-1]):
             out.append(line)
     return "\n".join(out).strip()
+
+
+# A description "looks like HTML" if it opens one of the tags the editor can
+# produce. Deliberately narrow: a description that merely mentions "<3" is prose.
+#
+# Only ever consulted at upgrade time, where an author sees the result in the
+# editor before saving. Nothing renders on the strength of this guess - what a
+# description *is* comes from Collection/Video.description_format, which is
+# recorded rather than inferred.
+#
+# The tag has to be *well formed* to count. An earlier version of this ended in
+# `[^>]*>`, which let `<b` in "Compare <b to a for the notes." run on until the
+# `>` of some later tag and match the whole span as one enormous tag - so a
+# plain-text description was mistaken for markup and sanitized, and nh3 dropped
+# the words in between. What follows the tag name must therefore be the end of
+# the tag, or the start of an attribute.
+LOOKS_LIKE_HTML_RE = re.compile(
+    r"</?(?:p|br|strong|em|b|i|u|ul|ol|li|a|blockquote)"
+    r"(?:\s*/?>|\s+[a-zA-Z-]+\s*=)",
+    re.IGNORECASE,
+)
+
+_ESCAPES = (("&", "&amp;"), ("<", "&lt;"), (">", "&gt;"))
+
+
+def looks_like_html(value):
+    """
+    Guess whether a description was written as markup.
+
+    Args:
+        value (str or None): the stored description
+
+    Returns:
+        bool: True if it opens a tag the editor can produce
+    """
+    return bool(value) and bool(LOOKS_LIKE_HTML_RE.search(value))
+
+
+def plaintext_to_html(value):
+    """
+    Wrap plain text in the markup that renders it identically.
+
+    Escaped first, so text is never reinterpreted as markup: `a <b to c` has to
+    survive as those characters rather than opening a tag and swallowing the rest
+    of the description. Blank lines become paragraphs and single newlines become
+    `<br>`, because in plain text those carried the only structure there was.
+
+    Args:
+        value (str or None): plain-text description
+
+    Returns:
+        str: HTML rendering the same words with the same line structure
+    """
+    if not value:
+        return ""
+    text = value.strip()
+    if not text:
+        return ""
+    for raw, escaped in _ESCAPES:
+        text = text.replace(raw, escaped)
+    # Normalize line endings before splitting so CRLF input doesn't leave a
+    # stray \r inside the output.
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    blocks = [block.strip("\n") for block in re.split(r"\n\s*\n", text)]
+    return "".join(
+        "<p>{}</p>".format(block.replace("\n", "<br>"))
+        for block in blocks
+        if block.strip()
+    )
+
+
+def upgrade_description(value):
+    """
+    Convert a plain-text description to the rich text equivalent.
+
+    For the author-initiated upgrade in the edit dialog. Two kinds of value
+    arrive here, and neither can be passed through untouched:
+
+      * genuine plain text -> escaped and wrapped (`plaintext_to_html`).
+      * markup someone pasted into the old plain-text field -> sanitized. These
+        values were never checked against an allowlist, because the field was
+        plain text and React escaped it at render, so a legacy description
+        holding `onerror=` becomes live markup the moment it is rendered as
+        rich text. It is cleaned here rather than trusted.
+
+    Args:
+        value (str or None): the stored plain-text description
+
+    Returns:
+        str: rich-text HTML, safe to render
+    """
+    if not value:
+        return ""
+    if looks_like_html(value):
+        return sanitize_description(value)
+    return plaintext_to_html(value)
+
+
+def description_as_plain_text(value, description_format):
+    """
+    Flatten any stored description to plain text, whatever format it is in.
+
+    For consumers that cannot take markup at all - the YouTube description push
+    in cloudsync.youtube, where tags would be shown to viewers verbatim.
+
+    A plain-text description is returned as-is rather than parsed: running it
+    through the HTML flattener would read `a <b to c` as a tag and delete the
+    rest of the description.
+
+    Args:
+        value (str or None): the stored description
+        description_format (str): the row's DescriptionFormat
+
+    Returns:
+        str: plain text
+    """
+    if not value:
+        return ""
+    if description_format == DescriptionFormat.HTML:
+        return description_to_text(value)
+    return value
+
+
+def description_as_html(value, description_format):
+    """
+    Render any stored description as HTML, whatever format it is in.
+
+    For consumers that can only take markup - MIT Learn renders the public API's
+    `description` with `dangerouslySetInnerHTML`, so a plain-text value sent
+    as-is would lose its line breaks and be truncated at the first `<`.
+
+    Plain text is escaped rather than upgraded: this is a read, and a read must
+    not quietly reinterpret a legacy value as markup. `upgrade_description` is
+    the only path that does that, and only when an author asks.
+
+    Args:
+        value (str or None): the stored description
+        description_format (str): the row's DescriptionFormat
+
+    Returns:
+        str: HTML
+    """
+    if not value:
+        return ""
+    if description_format == DescriptionFormat.HTML:
+        # Sanitized on write; see RichTextDescriptionMixin.
+        return value
+    return plaintext_to_html(value)

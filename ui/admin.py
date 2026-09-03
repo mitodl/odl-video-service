@@ -15,6 +15,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from ui import api, models
+from ui.constants import DescriptionFormat
 from ui.html import (
     ALLOWED_DESCRIPTION_ATTRIBUTES,
     ALLOWED_DESCRIPTION_TAGS,
@@ -53,7 +54,9 @@ class RichTextDescriptionAdminForm(forms.ModelForm):
         if field is None:
             return
         field.help_text = format_html(
-            "Rich text. Allowed tags: {tags}. Links keep only "
+            "Checked as rich text only when <em>Description format</em> is "
+            "\u201cRich text\u201d; a plain-text description is stored exactly as "
+            "typed. Allowed tags: {tags}. Links keep only "
             "<code>href</code> and <code>title</code>; every other attribute is "
             "dropped. Headings are <strong>not</strong> supported - MIT Learn "
             "strips them. Prefer editing descriptions in the OVS collection or "
@@ -68,9 +71,9 @@ class RichTextDescriptionAdminForm(forms.ModelForm):
             }
         )
 
-    def clean_description(self):
+    def clean(self):
         """
-        Reject a description only when sanitizing would *lose* something.
+        Reject a rich-text description only when sanitizing would *lose* something.
 
         nh3 also normalizes harmlessly - it adds rel="noopener noreferrer" to
         every anchor and closes an unclosed tag - and refusing those would make
@@ -79,16 +82,24 @@ class RichTextDescriptionAdminForm(forms.ModelForm):
         scheme is the admin's intent silently disappearing, and that is worth an
         error. Tidying is accepted and stored in its tidied form.
 
+        A plain-text description is left exactly as typed: it is rendered
+        escaped, so there is nothing to strip, and running it through the
+        allowlist would lose text rather than protect anything.
+
         Returns:
-            str: the sanitized description
+            dict: the cleaned data, with `description` in its tidied form
 
         Raises:
             forms.ValidationError: naming what would have been lost
         """
-        raw = self.cleaned_data.get("description") or ""
+        cleaned_data = super().clean()
+        if cleaned_data.get("description_format") != DescriptionFormat.HTML:
+            return cleaned_data
+
+        raw = cleaned_data.get("description") or ""
         cleaned = sanitize_description(raw)
         if not raw.strip() or cleaned == raw:
-            return cleaned
+            return cleaned_data
 
         problems = []
 
@@ -131,13 +142,18 @@ class RichTextDescriptionAdminForm(forms.ModelForm):
 
         if problems:
             raise forms.ValidationError(
-                "This description was not saved, because publishing it would "
-                "change it: " + "; and ".join(problems) + "."
+                {
+                    "description": (
+                        "This description was not saved, because publishing it "
+                        "would change it: " + "; and ".join(problems) + "."
+                    )
+                }
             )
 
         # Nothing lost - nh3 only tidied the markup (closed a tag, added
         # rel="noopener noreferrer"). Store the tidied version.
-        return cleaned
+        cleaned_data["description"] = cleaned
+        return cleaned_data
 
 
 class CollectionAdminForm(RichTextDescriptionAdminForm):

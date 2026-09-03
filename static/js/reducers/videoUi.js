@@ -1,7 +1,7 @@
 // @flow
 import type { Action } from "../flow/reduxTypes"
 import { constants } from "../actions/videoUi"
-import { CANVASES } from "../constants"
+import { CANVASES, DESCRIPTION_FORMAT_TEXT } from "../constants"
 import type { VideoUiState } from "../flow/videoTypes"
 import { PERM_CHOICE_COLLECTION, PERM_CHOICE_NONE } from "../lib/dialog"
 
@@ -27,12 +27,14 @@ const {
 } = constants
 
 export const INITIAL_EDIT_VIDEO_FORM_STATE = {
-  key:            null,
-  title:          "",
-  description:    "",
-  overrideChoice: PERM_CHOICE_COLLECTION,
-  viewChoice:     PERM_CHOICE_NONE,
-  viewLists:      null
+  key:                null,
+  title:              "",
+  description:        "",
+  // Plain text until the record says otherwise; see DESCRIPTION_FORMAT_TEXT.
+  description_format: DESCRIPTION_FORMAT_TEXT,
+  overrideChoice:     PERM_CHOICE_COLLECTION,
+  viewChoice:         PERM_CHOICE_NONE,
+  viewLists:          null
 }
 
 export const INITIAL_UPLOAD_SUBTITLE_FORM_STATE = {

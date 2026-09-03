@@ -14,7 +14,7 @@ from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload, MediaIoBaseUpload
 from smart_open.http import SeekableBufferedInputBase
 
-from ui.html import description_to_text
+from ui.html import description_as_plain_text
 
 log = structlog.get_logger(__name__)
 
@@ -245,13 +245,16 @@ class YouTubeApi:
         request_body = {
             "snippet": {
                 "title": strip_bad_chars(video.title)[:100],
-                # Descriptions are rich text (HTML) but YouTube's is plain text,
+                # A rich-text description is HTML but YouTube's is plain text,
                 # so flatten before stripping: strip_bad_chars only deletes the
                 # angle brackets, which would leave the tag names behind as
-                # visible words ("p Hi strong there /strong").
-                "description": strip_bad_chars(description_to_text(video.description))[
-                    :5000
-                ],
+                # visible words ("p Hi strong there /strong"). A description
+                # still in plain text is passed through untouched.
+                "description": strip_bad_chars(
+                    description_as_plain_text(
+                        video.description, video.description_format
+                    )
+                )[:5000],
             },
             "status": {"privacyStatus": privacy},
         }

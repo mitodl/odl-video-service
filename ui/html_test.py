@@ -2,17 +2,20 @@
 Tests for rich-text description sanitizing
 """
 
-import importlib
-
 import pytest
 
+from ui.constants import DescriptionFormat
 from ui.html import (
     ALLOWED_DESCRIPTION_ATTRIBUTES,
     ALLOWED_DESCRIPTION_TAGS,
     attributes_in,
+    description_as_html,
     description_to_text,
+    looks_like_html,
+    plaintext_to_html,
     sanitize_description,
     tags_in,
+    upgrade_description,
 )
 
 # A copy of mit-learn's main.constants.ALLOWED_HTML_TAGS_WITH_LINKS. Learn's ETL
@@ -185,159 +188,211 @@ class TestDescriptionToText:
         assert description_to_text("just some text") == "just some text"
 
 
-class TestPlaintextMigration:
-    """The 0044 data migration's plain-text-to-HTML conversion"""
-
-    @staticmethod
-    def _module():
-        return importlib.import_module("ui.migrations.0044_richtext_descriptions")
+class TestPlaintextToHtml:
+    """Rendering a plain-text description as the markup that looks the same"""
 
     def test_escapes_ampersand(self):
-        """
-        "Sessions 1 & 2" must not become a broken entity once the field is
-        rendered as markup.
-        """
-        module = self._module()
-        assert module.plaintext_to_html("Sessions 1 & 2") == "<p>Sessions 1 &amp; 2</p>"
+        """An & is escaped so it cannot be read as the start of an entity"""
+        assert plaintext_to_html("Sessions 1 & 2") == "<p>Sessions 1 &amp; 2</p>"
 
     def test_escapes_angle_brackets(self):
-        """Legacy text containing < or > is escaped, not interpreted"""
-        module = self._module()
-        assert module.plaintext_to_html("x < y") == "<p>x &lt; y</p>"
+        """
+        Text containing < is escaped, not interpreted.
+
+        Left alone this is the one that silently eats content: a browser reads
+        `<b to a` as an unterminated tag and drops everything after it.
+        """
+        assert plaintext_to_html("x < y") == "<p>x &lt; y</p>"
+        assert (
+            plaintext_to_html("Compare <b to a. Then stop.")
+            == "<p>Compare &lt;b to a. Then stop.</p>"
+        )
 
     def test_blank_lines_become_paragraphs(self):
         """Author-typed paragraph breaks are preserved"""
-        module = self._module()
-        assert module.plaintext_to_html("one\n\ntwo") == "<p>one</p><p>two</p>"
+        assert plaintext_to_html("one\n\ntwo") == "<p>one</p><p>two</p>"
 
     def test_single_newlines_become_br(self):
         """Single newlines are line breaks within a paragraph"""
-        module = self._module()
-        assert module.plaintext_to_html("one\ntwo") == "<p>one<br>two</p>"
+        assert plaintext_to_html("one\ntwo") == "<p>one<br>two</p>"
 
     def test_crlf_is_normalized(self):
         """Windows line endings must not leave \\r inside the output"""
-        module = self._module()
-        assert "\r" not in module.plaintext_to_html("one\r\n\r\ntwo")
+        assert "\r" not in plaintext_to_html("one\r\n\r\ntwo")
 
-    @pytest.mark.parametrize("value", ["", "   ", "\n\n"])
+    @pytest.mark.parametrize("value", ["", "   ", "\n\n", None])
     def test_empty(self, value):
         """Nothing to convert gives an empty string"""
-        module = self._module()
-        assert module.plaintext_to_html(value) == ""
+        assert plaintext_to_html(value) == ""
 
     def test_output_survives_the_sanitizer(self):
         """
-        Whatever the migration writes must itself be valid per the allowlist,
-        or the first save after the migration would change the stored value.
+        What this produces must itself be valid per the allowlist, or the first
+        save after an upgrade would change the stored value again.
         """
-        module = self._module()
-        converted = module.plaintext_to_html("A & B\nsecond line\n\nnew para")
+        converted = plaintext_to_html("A & B\nsecond line\n\nnew para")
         assert sanitize_description(converted) == converted
 
-    def test_already_html_is_detected(self):
-        """Rows already holding markup are skipped, so nothing double-escapes"""
-        module = self._module()
-        assert module.HTML_TAG_RE.search("<p>already</p>")
-        assert module.HTML_TAG_RE.search('<a href="https://x">link</a>')
+
+class TestLooksLikeHtml:
+    """The guess used only at upgrade time, where an author sees the result"""
 
     @pytest.mark.parametrize(
-        "value", ["I <3 this", "a > b", "plain text", "5 < 6 & 7 > 2"]
+        "value",
+        [
+            "<p>already</p>",
+            '<a href="https://x">link</a>',
+            "text with <br> in it",
+            "<STRONG>upper</STRONG>",
+        ],
     )
-    def test_plain_text_not_mistaken_for_html(self, value):
-        """A description that merely mentions angle brackets is still plain text"""
-        module = self._module()
-        assert not module.HTML_TAG_RE.search(value)
+    def test_markup_is_detected(self, value):
+        """A value opening a tag the editor can produce reads as markup"""
+        assert looks_like_html(value)
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "I <3 this",
+            "a > b",
+            "plain text",
+            "5 < 6 & 7 > 2",
+            "",
+            None,
+            "<h2>only</h2>",
+            # A regression. This used to match: the pattern ended in `[^>]*>`,
+            # so `<b` ran on until the `>` of the img tag further down and the
+            # whole span matched as one enormous tag. The description was then
+            # taken for markup and sanitized, and nh3 dropped every word
+            # between the two - "Compare <b></b>" was all that survived.
+            'Compare <b to a for the notes.\n\n<img src=x onerror="x">',
+            "Compare <b to a. Then 5 > 3.",
+        ],
+    )
+    def test_plain_text_is_not(self, value):
+        """
+        A description that merely mentions angle brackets is still plain text.
+
+        `<h2>` is in here deliberately: the editor cannot produce it, so a value
+        holding only headings is treated as text and gets escaped rather than
+        upgraded into markup the allowlist would drop anyway.
+        """
+        assert not looks_like_html(value)
 
 
-@pytest.mark.django_db
-class TestMigrationAgainstRows:
-    """The 0044 migration applied to real Collection/Video rows"""
+class TestUpgradeDescription:
+    """The author-initiated conversion from plain text to rich text"""
 
-    @staticmethod
-    def _migration():
-        return importlib.import_module("ui.migrations.0044_richtext_descriptions")
-
-    def test_converts_plain_text_rows(self):
-        """A legacy plain-text description becomes HTML"""
-        from django.apps import apps
-
-        from ui.factories import CollectionFactory, VideoFactory
-
-        collection = CollectionFactory.create(
-            description="Sessions 1 & 2\n\nSecond para"
+    def test_converts_plain_text(self):
+        """Line structure survives the upgrade"""
+        assert (
+            upgrade_description("Sessions 1 & 2\n\nSecond para")
+            == "<p>Sessions 1 &amp; 2</p><p>Second para</p>"
         )
-        video = VideoFactory.create(description="Line one\nLine two")
 
-        self._migration().convert(apps, None)
-
-        collection.refresh_from_db()
-        video.refresh_from_db()
-        assert collection.description == "<p>Sessions 1 &amp; 2</p><p>Second para</p>"
-        assert video.description == "<p>Line one<br>Line two</p>"
-
-    def test_does_not_escape_existing_html(self):
+    def test_does_not_escape_existing_markup(self):
         """
-        Rows already holding markup are sanitized, never escaped - running this
-        after some rows have been edited in the new editor must not turn their
-        tags into visible text.
+        A value that already holds markup is sanitized, never escaped.
+
+        Someone pasted HTML into the old plain-text field; upgrading it should
+        give them their formatting, not their tags as visible text.
         """
-        from django.apps import apps
-
-        from ui.factories import VideoFactory
-
         html = (
             '<p>Already <strong>rich</strong> <a href="https://x.mit.edu">text</a></p>'
         )
-        video = VideoFactory.create(description=html)
-
-        self._migration().convert(apps, None)
-
-        video.refresh_from_db()
-        assert "&lt;" not in video.description
-        assert "<strong>rich</strong>" in video.description
-        assert 'href="https://x.mit.edu"' in video.description
+        upgraded = upgrade_description(html)
+        assert "&lt;" not in upgraded
+        assert "<strong>rich</strong>" in upgraded
+        assert 'href="https://x.mit.edu"' in upgraded
         # sanitizing is the only thing that changed it, and only by adding rel
-        assert video.description == sanitize_description(html)
+        assert upgraded == sanitize_description(html)
 
     def test_is_idempotent(self):
-        """Running the migration twice leaves the same value"""
-        from django.apps import apps
+        """Upgrading an upgraded value leaves it alone"""
+        once = upgrade_description("A & B")
+        assert upgrade_description(once) == once
 
-        from ui.factories import VideoFactory
+    def test_does_not_lose_words_to_a_stray_angle_bracket(self):
+        """
+        The regression worth a test of its own: a plain-text description holding
+        `<b` and, further on, a `>` was taken for markup, and sanitizing then
+        deleted every word between the two.
+        """
+        upgraded = upgrade_description(
+            'Compare <b to a for the notes.\n\n<img src=x onerror="x">'
+        )
+        assert "Compare &lt;b to a for the notes." in upgraded
+        assert "img src=x" in upgraded
+        assert "<b>" not in upgraded
 
-        video = VideoFactory.create(description="A & B")
-        migration = self._migration()
-        migration.convert(apps, None)
-        video.refresh_from_db()
-        once = video.description
-        migration.convert(apps, None)
-        video.refresh_from_db()
-        assert video.description == once
+    @pytest.mark.parametrize("value", ["", None])
+    def test_empty(self, value):
+        """Nothing to upgrade gives an empty string"""
+        assert upgrade_description(value) == ""
 
-    def test_reverse_restores_plain_text(self):
-        """The migration is reversible"""
-        from django.apps import apps
+    @pytest.mark.parametrize(
+        ("value", "must_not_contain"),
+        [
+            ("<p>hi</p><script>alert(1)</script>", "script"),
+            ("Read <b>this</b> <img src=x onerror=alert(1)>", "onerror"),
+            ('<p onmouseover="alert(1)">hover</p>', "onmouseover"),
+            ('<a href="javascript:alert(1)">x</a>', "javascript"),
+        ],
+    )
+    def test_legacy_payloads_are_cleaned(self, value, must_not_contain):
+        """
+        Legacy markup was never checked against the allowlist - the field was
+        plain text and React escaped it at render - so upgrading a row is the
+        moment it has to be cleaned, not trusted.
+        """
+        assert must_not_contain not in upgrade_description(value).lower()
 
-        from ui.factories import VideoFactory
 
-        video = VideoFactory.create(description="Sessions 1 & 2\n\nSecond para")
-        migration = self._migration()
-        migration.convert(apps, None)
-        migration.unconvert(apps, None)
-        video.refresh_from_db()
-        assert video.description == "Sessions 1 & 2\n\nSecond para"
+class TestDescriptionAsHtml:
+    """Serving any stored description to a consumer that can only take markup"""
 
-    def test_empty_descriptions_untouched(self):
-        """Rows with no description are left as they are"""
-        from django.apps import apps
+    def test_rich_text_is_passed_through(self):
+        """Already markup, already sanitized on write"""
+        html = "<p>a <strong>b</strong></p>"
+        assert description_as_html(html, DescriptionFormat.HTML) == html
 
-        from ui.factories import VideoFactory
+    def test_plain_text_is_escaped_not_upgraded(self):
+        """
+        A read must not reinterpret a legacy value as markup.
 
-        video = VideoFactory.create(description="")
-        self._migration().convert(apps, None)
-        video.refresh_from_db()
-        assert video.description == ""
+        Escaping keeps every character the author typed, and keeps a stored
+        payload inert; `upgrade_description` is the only path that promotes text
+        to markup, and only when an author asks for it.
+        """
+        assert (
+            description_as_html("a <b to c", DescriptionFormat.TEXT)
+            == "<p>a &lt;b to c</p>"
+        )
+
+    def test_plain_text_keeps_its_line_breaks(self):
+        """The breaks are the only structure plain text had"""
+        assert (
+            description_as_html("one\ntwo", DescriptionFormat.TEXT)
+            == "<p>one<br>two</p>"
+        )
+
+    def test_stored_payload_in_a_text_row_is_inert(self):
+        """
+        The format defaults to text, so this is the shape every pre-existing row
+        has - including any that happen to hold markup.
+        """
+        served = description_as_html(
+            '<img src=x onerror="alert(1)">', DescriptionFormat.TEXT
+        )
+        # The angle brackets are escaped, so this is text on the page rather
+        # than an element with a handler on it.
+        assert served == '<p>&lt;img src=x onerror="alert(1)"&gt;</p>'
+        assert "<img" not in served
+
+    @pytest.mark.parametrize("value", ["", None])
+    def test_empty(self, value):
+        """Nothing stored gives an empty string"""
+        assert description_as_html(value, DescriptionFormat.TEXT) == ""
 
 
 class TestRelativeHrefs:
@@ -395,121 +450,3 @@ class TestParsedInspection:
         """Nothing in, nothing out"""
         assert attributes_in("") == set()
         assert tags_in(None) == set()
-
-
-@pytest.mark.django_db
-class TestMigrationSanitizesLegacyMarkup:
-    """
-    Legacy descriptions holding markup were never sanitized - the field was
-    plain text and React escaped it at render. Once it is rendered as HTML they
-    are live markup, so the migration has to clean them, not skip them.
-    """
-
-    @staticmethod
-    def _migration():
-        return importlib.import_module("ui.migrations.0044_richtext_descriptions")
-
-    @pytest.mark.parametrize(
-        ("legacy", "must_not_contain"),
-        [
-            ("<p>hi</p><script>alert(1)</script>", "script"),
-            ("Read <b>this</b> <img src=x onerror=alert(1)>", "onerror"),
-            ('<p onmouseover="alert(1)">hover</p>', "onmouseover"),
-            ('<a href="javascript:alert(1)">x</a>', "javascript"),
-            ('<a href="//evil.example/x">x</a>', "evil.example"),
-        ],
-    )
-    def test_legacy_payloads_are_stripped(self, legacy, must_not_contain):
-        """A legacy row holding a payload must not survive the migration"""
-        from django.apps import apps
-
-        from ui.factories import VideoFactory
-
-        video = VideoFactory.create(description=legacy)
-        self._migration().convert(apps, None)
-        video.refresh_from_db()
-        assert must_not_contain not in video.description
-
-    def test_legitimate_legacy_markup_is_preserved(self):
-        """Cleaning must not throw away markup that was already fine"""
-        from django.apps import apps
-
-        from ui.factories import VideoFactory
-
-        video = VideoFactory.create(
-            description='<p>legit <a href="https://x.mit.edu">link</a></p>'
-        )
-        self._migration().convert(apps, None)
-        video.refresh_from_db()
-        assert "<p>legit " in video.description
-        assert 'href="https://x.mit.edu"' in video.description
-
-    def test_every_row_is_safe_afterwards(self):
-        """
-        The invariant that matters: after the migration, no description differs
-        from its own sanitized form.
-        """
-        from django.apps import apps
-
-        from ui.factories import CollectionFactory, VideoFactory
-
-        CollectionFactory.create(description="<p>ok</p><script>bad()</script>")
-        VideoFactory.create(description="plain & simple")
-        VideoFactory.create(description='<p onclick="x()">handler</p>')
-
-        self._migration().convert(apps, None)
-
-        from ui.models import Collection, Video
-
-        for model in (Collection, Video):
-            for obj in model.objects.exclude(description="").exclude(description=None):
-                assert obj.description == sanitize_description(obj.description), (
-                    f"{model.__name__} {obj.pk} is not sanitized"
-                )
-
-
-@pytest.mark.django_db
-class TestMigrationReverseKeepsLinkTargets:
-    """A rollback must not discard urls - they are unrecoverable"""
-
-    @staticmethod
-    def _migration():
-        return importlib.import_module("ui.migrations.0044_richtext_descriptions")
-
-    def test_href_is_kept_alongside_the_text(self):
-        """<a href="u">t</a> becomes "t (u)" rather than just "t\""""
-        from django.apps import apps
-
-        from ui.factories import VideoFactory
-
-        video = VideoFactory.create(
-            description='<p>See <a href="https://climate.mit.edu">the primers</a></p>'
-        )
-        self._migration().unconvert(apps, None)
-        video.refresh_from_db()
-        assert "the primers (https://climate.mit.edu)" in video.description
-
-    def test_list_items_do_not_run_together(self):
-        """</li><li> is a line boundary, not nothing"""
-        from django.apps import apps
-
-        from ui.factories import VideoFactory
-
-        video = VideoFactory.create(description="<ul><li>one</li><li>two</li></ul>")
-        self._migration().unconvert(apps, None)
-        video.refresh_from_db()
-        assert "onetwo" not in video.description
-        assert "one\ntwo" in video.description
-
-    def test_a_link_whose_text_is_the_url_is_not_duplicated(self):
-        """No "https://x (https://x)\""""
-        from django.apps import apps
-
-        from ui.factories import VideoFactory
-
-        video = VideoFactory.create(
-            description='<p><a href="https://x.mit.edu">https://x.mit.edu</a></p>'
-        )
-        self._migration().unconvert(apps, None)
-        video.refresh_from_db()
-        assert video.description == "https://x.mit.edu"

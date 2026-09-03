@@ -13,6 +13,7 @@ import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from "./dialog"
 
 import type { Collection } from "../flow/collectionTypes"
 import type { RestState } from "../flow/restTypes"
+import { DESCRIPTION_FORMAT_TEXT } from "../constants"
 
 describe("collection library function", () => {
   describe("getActiveCollectionDetail ", () => {
@@ -72,17 +73,18 @@ describe("collection library function", () => {
 
   it("makes a new form without a collection", () => {
     assert.deepEqual(makeInitializedForm(), {
-      key:         "",
-      title:       "",
-      description: "",
-      adminChoice: PERM_CHOICE_NONE,
-      adminLists:  "",
-      viewChoice:  PERM_CHOICE_NONE,
-      viewLists:   "",
-      edxCourseId: "",
-      videoCount:  0,
-      ownerId:     null,
-      ownerInfo:   {
+      key:                "",
+      title:              "",
+      description:        "",
+      description_format: DESCRIPTION_FORMAT_TEXT,
+      adminChoice:        PERM_CHOICE_NONE,
+      adminLists:         "",
+      viewChoice:         PERM_CHOICE_NONE,
+      viewLists:          "",
+      edxCourseId:        "",
+      videoCount:         0,
+      ownerId:            null,
+      ownerInfo:          {
         id:       null,
         username: "",
         email:    ""
@@ -93,17 +95,18 @@ describe("collection library function", () => {
   it("makes a new form with an existing collection", () => {
     const collection = makeCollection()
     assert.deepEqual(makeInitializedForm(collection), {
-      key:         collection.key,
-      title:       collection.title,
-      description: collection.description,
-      adminChoice: PERM_CHOICE_LISTS,
-      adminLists:  collection.admin_lists.join(","),
-      viewChoice:  PERM_CHOICE_LISTS,
-      viewLists:   collection.view_lists.join(","),
-      edxCourseId: collection.edx_course_id,
-      videoCount:  collection.video_count,
-      ownerId:     collection.owner || null,
-      ownerInfo:   collection.owner_info || {
+      key:                collection.key,
+      title:              collection.title,
+      description:        collection.description,
+      description_format: collection.description_format,
+      adminChoice:        PERM_CHOICE_LISTS,
+      adminLists:         collection.admin_lists.join(","),
+      viewChoice:         PERM_CHOICE_LISTS,
+      viewLists:          collection.view_lists.join(","),
+      edxCourseId:        collection.edx_course_id,
+      videoCount:         collection.video_count,
+      ownerId:            collection.owner || null,
+      ownerInfo:          collection.owner_info || {
         id:       null,
         username: "",
         email:    ""

@@ -5,6 +5,7 @@ import {
   INIT_COLLECTION_FORM,
   SET_COLLECTION_TITLE,
   SET_COLLECTION_DESC,
+  SET_COLLECTION_DESC_FORMAT,
   SET_VIEW_CHOICE,
   SET_VIEW_LISTS,
   SET_ADMIN_CHOICE,
@@ -16,21 +17,24 @@ import {
   CLEAR_COLLECTION_FORM,
   SET_COLLECTION_FORM_ERRORS
 } from "../actions/collectionUi"
+import { DESCRIPTION_FORMAT_TEXT } from "../constants"
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 import { getFormKey } from "../lib/collection"
 
 import type { CollectionUiState } from "../flow/collectionTypes"
 
 export const INITIAL_COLLECTION_FORM_STATE = {
-  key:         "",
-  title:       "",
-  description: "",
-  viewChoice:  PERM_CHOICE_NONE,
-  viewLists:   null,
-  adminChoice: PERM_CHOICE_NONE,
-  adminLists:  null,
-  edxCourseId: "",
-  ownerId:     null
+  key:                "",
+  title:              "",
+  description:        "",
+  // Plain text until the record says otherwise; see DESCRIPTION_FORMAT_TEXT.
+  description_format: DESCRIPTION_FORMAT_TEXT,
+  viewChoice:         PERM_CHOICE_NONE,
+  viewLists:          null,
+  adminChoice:        PERM_CHOICE_NONE,
+  adminLists:         null,
+  edxCourseId:        "",
+  ownerId:            null
 }
 
 export const INITIAL_UI_STATE = {
@@ -69,6 +73,8 @@ const reducer = (
     return updateCollectionForm(state, "title", action.payload)
   case SET_COLLECTION_DESC:
     return updateCollectionForm(state, "description", action.payload)
+  case SET_COLLECTION_DESC_FORMAT:
+    return updateCollectionForm(state, "description_format", action.payload)
   case SET_VIEW_CHOICE:
     return updateCollectionForm(state, "viewChoice", action.payload)
   case SET_VIEW_LISTS:

@@ -88,6 +88,7 @@ describe("EditVideoFormDialog", () => {
   }
 
   it("initializes the form when given a video that doesn't match the current form key", async () => {
+    video.description_format = "html"
     store.dispatch(initEditVideoForm({ key: "mismatching-key" }))
     const previousFormState = store.getState().videoUi.editVideoForm
     await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
@@ -208,8 +209,11 @@ describe("EditVideoFormDialog", () => {
     const editor = () =>
       document.querySelector("#video-description .ProseMirror")
 
+    // The rich-text editor only appears for a description that is already
+    // rich text; a plain-text one gets a textarea until an author upgrades it.
     // The editor engine is a split chunk, so it arrives after mount.
     const renderWithEditor = async (props = {}) => {
+      video.description_format = "html"
       const result = renderComponent(props)
       await waitFor(() => assert.isNotNull(editor()))
       return result
@@ -221,6 +225,52 @@ describe("EditVideoFormDialog", () => {
         fireEvent.click(screen.getByRole("button", { name: "Bulleted list" }))
       })
       assert.include(state.videoUi.editVideoForm.description, "<ul>")
+    })
+
+    it("upgrades through the server and swaps in the editor", async () => {
+      /*
+       * The conversion is the server's: it is the only place that knows how to
+       * escape plain text and how to clean markup someone once pasted into the
+       * old field. So this asserts the request and that the response is what
+       * puts the rich-text editor on screen - not any client-side conversion.
+       */
+      video.description = "line one\nline two"
+      video.description_format = "text"
+      renderComponent()
+      const upgraded = {
+        ...video,
+        description:        "<p>line one<br>line two</p>",
+        description_format: "html"
+      }
+      const patchStub = sandbox
+        .stub(api, "updateVideo")
+        .returns(Promise.resolve(upgraded))
+
+      fireEvent.click(document.querySelector(".description-upgrade__button"))
+
+      await waitFor(() => sinon.assert.called(patchStub))
+      sinon.assert.calledWith(patchStub, video.key, {
+        description:        "line one\nline two",
+        description_format: "html"
+      })
+      await waitFor(() => assert.isNotNull(editor()))
+      assert.include(editor().innerHTML, "line one")
+      assert.isNull(document.querySelector("textarea"))
+    })
+
+    it("keeps the textarea and explains an upgrade that failed", async () => {
+      video.description_format = "text"
+      renderComponent()
+      sandbox
+        .stub(api, "updateVideo")
+        .returns(Promise.reject(new Error("nope")))
+
+      fireEvent.click(document.querySelector(".description-upgrade__button"))
+
+      await waitFor(() =>
+        assert.isNotNull(document.querySelector(".description-upgrade__error"))
+      )
+      assert.isNotNull(document.querySelector("textarea"))
     })
 
     it("shows the stored description as markup", async () => {
@@ -261,8 +311,9 @@ describe("EditVideoFormDialog", () => {
     })
     // set title and description, check the values that updateVideoStub is called with
     const newValues = {
-      title:       "New Title",
-      description: "New Description"
+      title:              "New Title",
+      description:        "New Description",
+      description_format: "text"
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))
@@ -314,12 +365,13 @@ describe("EditVideoFormDialog", () => {
     })
     // set permission override & view choices, check the values that updateVideoStub is called with
     const newValues = {
-      title:             "New Title",
-      description:       "New Description",
-      is_public:         false,
-      is_private:        false,
-      is_logged_in_only: false,
-      view_lists:        ["my-moira-list1", "my-moira-list2"]
+      title:              "New Title",
+      description:        "New Description",
+      description_format: "text",
+      is_public:          false,
+      is_private:         false,
+      is_logged_in_only:  false,
+      view_lists:         ["my-moira-list1", "my-moira-list2"]
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))
