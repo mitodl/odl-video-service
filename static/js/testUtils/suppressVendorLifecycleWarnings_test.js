@@ -56,11 +56,7 @@ const EXPECTED_TABLE = [
     lifecycle:  "componentWillMount",
     components: ["MemoryRouter", "Route", "Router"]
   },
-  { lifecycle: "componentWillReceiveProps", components: ["Route", "Router"] },
-  {
-    lifecycle:  "componentWillMount",
-    components: ["SideEffect(DocumentTitle)"]
-  }
+  { lifecycle: "componentWillReceiveProps", components: ["Route", "Router"] }
 ]
 
 /**
@@ -91,15 +87,18 @@ const EXPECTED_TABLE = [
  */
 const KNOWN_CWM_GROUP = "MemoryRouter, Route, Router"
 
-/**
- * A componentWillMount group spanning TWO table rows from two different
- * dependencies (react-router and react-document-title). Its case exists to
- * prove that React's per-commit flush merging names across dependencies still
- * matches, so it needs at least two rows to share one lifecycle. If either
- * contributing row leaves, its guard below fails and says so; the case itself
- * would also fail, so unlike the four above this one is self-announcing.
- */
-const CROSS_DEPENDENCY_CWM_GROUP = `${KNOWN_CWM_GROUP}, SideEffect(DocumentTitle)`
+// CROSS_DEPENDENCY_CWM_GROUP removed here, Phase R2, mitodl/hq#12642: it
+// proved that a per-commit flush merging componentWillMount names across two
+// *different* dependencies still matches, which requires two coexisting
+// componentWillMount rows. react-router's and react-document-title's were the
+// only two; react-document-title's row is gone (replaced by
+// static/js/components/DocumentTitle.js), so the table holds only one
+// componentWillMount dependency and the case is no longer expressible. Its
+// test case ("suppresses a group merged across two dependencies") and guard
+// ("CROSS_DEPENDENCY_CWM_GROUP still spans two dependencies") were removed
+// with it. Restore all three together if a second componentWillMount
+// dependency is ever added back -- do not rewrite this as a single-dependency
+// case that keeps the old name; that would pass while asserting nothing.
 
 describe("suppressVendorLifecycleWarnings", () => {
   let passedThrough, originalConsoleWarn, restore
@@ -194,27 +193,6 @@ describe("suppressVendorLifecycleWarnings", () => {
           "nothing. See the comment on KNOWN_CWM_GROUP."
       )
     })
-
-    it("CROSS_DEPENDENCY_CWM_GROUP still spans two dependencies", () => {
-      const names = new Set(CROSS_DEPENDENCY_CWM_GROUP.split(", "))
-      const dependencies = new Set(
-        VENDOR_LIFECYCLE_WARNINGS.filter(
-          entry =>
-            entry.lifecycle === "componentWillMount" &&
-            entry.components.some(name => names.has(name))
-        ).map(entry => entry.dependency)
-      )
-      assert.isAtLeast(
-        dependencies.size,
-        2,
-        "CROSS_DEPENDENCY_CWM_GROUP no longer draws componentWillMount names " +
-          `from two different dependencies (found ${dependencies.size}). ` +
-          "Rebuild it from two surviving componentWillMount rows belonging " +
-          "to different dependencies; if only one such row is left, the " +
-          "'merged across two dependencies' case is no longer expressible " +
-          "and should be deleted along with this guard and the constant."
-      )
-    })
   })
 
   // One case per known warning, with the component list written out here
@@ -228,9 +206,10 @@ describe("suppressVendorLifecycleWarnings", () => {
       swallows(CWRP, "Route, Router")
     })
 
-    it("react-document-title's SideEffect(DocumentTitle)", () => {
-      swallows(CWM, "SideEffect(DocumentTitle)")
-    })
+    // react-document-title's SideEffect(DocumentTitle) case removed here,
+    // Phase R2, mitodl/hq#12642: its row is gone from the table, so
+    // SideEffect(DocumentTitle) is no longer a known name and this warning
+    // would no longer be suppressed.
   })
 
   // React groups these per commit flush, so the same components arrive in
@@ -246,9 +225,9 @@ describe("suppressVendorLifecycleWarnings", () => {
       swallows(CWM, "Route")
     })
 
-    it("suppresses a group merged across two dependencies", () => {
-      swallows(CWM, CROSS_DEPENDENCY_CWM_GROUP)
-    })
+    // "suppresses a group merged across two dependencies" removed here,
+    // Phase R2, mitodl/hq#12642, along with CROSS_DEPENDENCY_CWM_GROUP -- see
+    // the comment where that constant stood, above.
   })
 
   describe("passes through everything else", () => {

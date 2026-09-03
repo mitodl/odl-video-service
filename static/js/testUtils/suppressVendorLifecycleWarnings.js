@@ -97,19 +97,13 @@ export const VENDOR_LIFECYCLE_WARNINGS = [
     removedBy:  "no phase yet; 5.0 moved these to getDerivedStateFromProps",
     lifecycle:  "componentWillReceiveProps",
     components: ["Route", "Router"]
-  },
-  // CARRIER DATA: the second half of CROSS_DEPENDENCY_CWM_GROUP in the test
-  // file. That case proves a flush merging names across dependencies still
-  // matches, so it needs this row and the react-router componentWillMount row
-  // above to coexist. Remove either and the case becomes inexpressible; its
-  // guard test fails and says what to do.
-  {
-    dependency: "react-document-title 2.0.3, via react-side-effect 1.2.0",
-    removedBy:
-      "no phase yet; react-side-effect 1.2.0 is unmaintained, so this needs a different title component rather than an upgrade",
-    lifecycle:  "componentWillMount",
-    components: ["SideEffect(DocumentTitle)"]
   }
+  // react-document-title 2.0.3 (via react-side-effect 1.2.0) removed here,
+  // Phase R2, mitodl/hq#12642: replaced with static/js/components/
+  // DocumentTitle.js, so nothing is left to excuse. Its row's
+  // componentWillMount entry was the second half of
+  // CROSS_DEPENDENCY_CWM_GROUP in the test file, which is now deleted rather
+  // than rebased -- see that file for why.
 ]
 
 // react-dom's printWarning prepends "Warning: " to the format string and

@@ -2,7 +2,7 @@
 import React from "react"
 import { connect } from "react-redux"
 import type { Dispatch } from "redux"
-import DocumentTitle from "react-document-title"
+import DocumentTitle from "../components/DocumentTitle"
 
 import { actions } from "../actions"
 import VideoPlayer from "../components/VideoPlayer"

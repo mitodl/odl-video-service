@@ -69,7 +69,6 @@
     "prettier-eslint-cli": "^5.0.0",
     "ramda": "^0.32.0",
     "react": "16.14.0",
-    "react-document-title": "^2.0.3",
     "react-dom": "16.14.0",
     "react-dropbox-chooser": "^0.0.5",
     "react-ga": "^3.0.0",

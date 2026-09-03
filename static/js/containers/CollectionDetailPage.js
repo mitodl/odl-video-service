@@ -5,7 +5,7 @@ import { connect } from "react-redux"
 import type { Dispatch } from "redux"
 import * as R from "ramda"
 import _ from "lodash"
-import DocumentTitle from "react-document-title"
+import DocumentTitle from "../components/DocumentTitle"
 
 import WithDrawer from "./WithDrawer"
 import VideoList from "../components/VideoList"
