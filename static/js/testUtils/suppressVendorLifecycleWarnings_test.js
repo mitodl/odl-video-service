@@ -23,10 +23,17 @@ import suppressVendorLifecycleWarnings, {
  * the tautology this file exists to avoid. Any edit to the real table has to
  * be made here too, which is the point: it cannot happen silently.
  *
- * Task 7 of this PR (victory 0.27 -> 37) already deleted the two victory rows
- * from EXPECTED_TABLE and their two suppression cases, alongside the same
- * deletions in the helper and the ledger cap move 6 -> 4. A later row leaves
- * the same way.
+ * HOW A ROW LEAVES THIS TABLE
+ *
+ * Phase R1's victory 0.27 -> 37 bump (mitodl/hq#12641) deleted the two victory
+ * rows that used to head EXPECTED_TABLE, together with their two suppression
+ * cases, the matching rows in the helper, and ledger.sh's cap (6 -> 4) -- all
+ * in one commit. A later row leaves the same way.
+ *
+ * It also had to rebase five cases whose *data* happened to be victory
+ * component names. That is the non-obvious part, and it is why
+ * KNOWN_CWM_GROUP below exists and is guarded by a test rather than a comment;
+ * read the block above that constant before deleting any row.
  */
 
 // Copied verbatim from react-dom 16.14.0. Includes the "Warning: " prefix that
@@ -54,6 +61,44 @@ const EXPECTED_TABLE = [
     components: ["SideEffect(DocumentTitle)"]
   }
 ]
+
+/**
+ * A component list that the table DOES know for componentWillMount, used as
+ * the carrier data for cases whose subject is something else entirely.
+ *
+ * Four cases below assert that a message passes through for a stated reason --
+ * an unknown name in the group, a lifecycle absent from the table, a
+ * non-string format argument, or being on console.error rather than
+ * console.warn. Each is only a real test if the *rest* of the message would
+ * otherwise have been suppressed. Feed them names the table does not know and
+ * they still pass, but for the wrong reason, testing nothing. That is exactly
+ * how they were left when these cases were first written against victory
+ * names and victory was then removed from the table.
+ *
+ * So this group must stay in the table for componentWillMount. It belongs to
+ * the react-router row, whose `removedBy` reads "no phase yet" -- meaning
+ * whoever removes react-router will be someone with no reason to know any of
+ * this. Hence the guard tests in "the carrier data these cases depend on"
+ * below: delete that row without touching this constant and they fail loudly,
+ * naming the fix. The fix is to REBASE this constant onto whatever
+ * componentWillMount names still remain in the table -- never to delete these
+ * cases, and never to relax the guard.
+ *
+ * Named, still-literal constants rather than a value derived from the imported
+ * table: deriving it would restore the tautology this whole file exists to
+ * avoid, and CWM/CWRP/CWU above set the same precedent.
+ */
+const KNOWN_CWM_GROUP = "MemoryRouter, Route, Router"
+
+/**
+ * A componentWillMount group spanning TWO table rows from two different
+ * dependencies (react-router and react-document-title). Its case exists to
+ * prove that React's per-commit flush merging names across dependencies still
+ * matches, so it needs at least two rows to share one lifecycle. If either
+ * contributing row leaves, its guard below fails and says so; the case itself
+ * would also fail, so unlike the four above this one is self-announcing.
+ */
+const CROSS_DEPENDENCY_CWM_GROUP = `${KNOWN_CWM_GROUP}, SideEffect(DocumentTitle)`
 
 describe("suppressVendorLifecycleWarnings", () => {
   let passedThrough, originalConsoleWarn, restore
@@ -112,6 +157,65 @@ describe("suppressVendorLifecycleWarnings", () => {
     })
   })
 
+  // The vacuity guard. The cases further down that assert a message PASSES
+  // THROUGH only test their stated reason while their carrier names are ones
+  // the table would otherwise excuse; if those names stop being known, the
+  // cases keep passing and start testing nothing. The deepEqual check above
+  // does not catch that -- it guards the table, not the data these cases feed
+  // it. These two do, and they fail with instructions rather than a puzzle.
+  //
+  // Deliberately the only place in this file that reads the imported table to
+  // decide something. It is not the tautology the header warns about: it
+  // asserts a relationship BETWEEN the table and this file's test data, which
+  // is precisely the coupling that has silently broken once already.
+  describe("the carrier data these cases depend on", () => {
+    const namesKnownFor = lifecycle =>
+      new Set(
+        VENDOR_LIFECYCLE_WARNINGS.filter(
+          entry => entry.lifecycle === lifecycle
+        ).flatMap(entry => entry.components)
+      )
+
+    it("KNOWN_CWM_GROUP is still known for componentWillMount", () => {
+      const known = namesKnownFor("componentWillMount")
+      const unknown = KNOWN_CWM_GROUP.split(", ").filter(
+        name => !known.has(name)
+      )
+      assert.deepEqual(
+        unknown,
+        [],
+        `KNOWN_CWM_GROUP names ${unknown.join(", ")}, which the table no ` +
+          "longer excuses for componentWillMount. A row was removed without " +
+          "rebasing this constant. REBASE KNOWN_CWM_GROUP onto component " +
+          "names from a surviving componentWillMount row -- do not delete " +
+          "the pass-through cases that use it, and do not delete this guard: " +
+          "without known carrier names those cases pass while asserting " +
+          "nothing. See the comment on KNOWN_CWM_GROUP."
+      )
+    })
+
+    it("CROSS_DEPENDENCY_CWM_GROUP still spans two dependencies", () => {
+      const names = new Set(CROSS_DEPENDENCY_CWM_GROUP.split(", "))
+      const dependencies = new Set(
+        VENDOR_LIFECYCLE_WARNINGS.filter(
+          entry =>
+            entry.lifecycle === "componentWillMount" &&
+            entry.components.some(name => names.has(name))
+        ).map(entry => entry.dependency)
+      )
+      assert.isAtLeast(
+        dependencies.size,
+        2,
+        "CROSS_DEPENDENCY_CWM_GROUP no longer draws componentWillMount names " +
+          `from two different dependencies (found ${dependencies.size}). ` +
+          "Rebuild it from two surviving componentWillMount rows belonging " +
+          "to different dependencies; if only one such row is left, the " +
+          "'merged across two dependencies' case is no longer expressible " +
+          "and should be deleted along with this guard and the constant."
+      )
+    })
+  })
+
   // One case per known warning, with the component list written out here
   // rather than read from the table.
   describe("suppresses the known vendor warnings", () => {
@@ -146,7 +250,7 @@ describe("suppressVendorLifecycleWarnings", () => {
     })
 
     it("suppresses a group merged across two dependencies", () => {
-      swallows(CWM, "MemoryRouter, Route, Router, SideEffect(DocumentTitle)")
+      swallows(CWM, CROSS_DEPENDENCY_CWM_GROUP)
     })
   })
 
@@ -159,7 +263,7 @@ describe("suppressVendorLifecycleWarnings", () => {
     // not warning about before now uses a deprecated lifecycle -- possibly one
     // of ours -- so the warning must surface even beside known names.
     it("a known group that has gained an unknown component", () => {
-      passesThrough(CWM, "MemoryRouter, Route, Router, VideoPlayer")
+      passesThrough(CWM, `${KNOWN_CWM_GROUP}, VideoPlayer`)
     })
 
     it("an unknown component on its own", () => {
@@ -174,7 +278,7 @@ describe("suppressVendorLifecycleWarnings", () => {
     })
 
     it("a lifecycle that is not in the table", () => {
-      passesThrough(CWU, "MemoryRouter, Route, Router")
+      passesThrough(CWU, KNOWN_CWM_GROUP)
     })
 
     it("a matching message with no component-list argument", () => {
@@ -187,7 +291,7 @@ describe("suppressVendorLifecycleWarnings", () => {
 
     it("a non-string first argument", () => {
       const error = new Error("boom")
-      passesThrough(error, "MemoryRouter, Route, Router")
+      passesThrough(error, KNOWN_CWM_GROUP)
     })
   })
 
@@ -200,7 +304,7 @@ describe("suppressVendorLifecycleWarnings", () => {
       errors.push(args)
     }
     try {
-      console.error(CWM, "MemoryRouter, Route, Router")
+      console.error(CWM, KNOWN_CWM_GROUP)
     } finally {
       console.error = originalConsoleError
     }

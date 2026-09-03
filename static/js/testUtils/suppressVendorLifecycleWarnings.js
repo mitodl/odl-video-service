@@ -50,13 +50,21 @@
  * deleted by the change named against it, and deleting the last should delete
  * this file.
  *
- * Task 7 of this PR (victory 0.27 -> 37) already removed the two victory rows
- * that used to head this table: Victory 37 uses no deprecated lifecycle, so
- * nothing was left to excuse. That is the pattern for the rows below -- a row
+ * HOW TO REMOVE A ROW
+ *
+ * Phase R1's victory 0.27 -> 37 bump (mitodl/hq#12641) removed the two victory
+ * rows that used to head this table: Victory 37 uses no deprecated lifecycle,
+ * so nothing was left to excuse. That is the pattern -- in one commit, a row
  * leaves here, ledger.sh's "vendor lifecycle suppressions" cap comes down by
  * the same amount, and the literal copy in
- * suppressVendorLifecycleWarnings_test.js loses the matching row, all in one
- * commit.
+ * suppressVendorLifecycleWarnings_test.js loses the matching row.
+ *
+ * There is a fourth step that is easy to miss, and the tests will not all
+ * force it: some cases in that test file use component names from these rows
+ * as CARRIER DATA for assertions about something else. Removing a row can
+ * leave those cases passing while testing nothing. The affected constants are
+ * flagged at the rows below and guarded by tests in that file that fail with
+ * instructions. Read those before deleting a row.
  */
 
 export const VENDOR_LIFECYCLE_WARNINGS = [
@@ -66,6 +74,14 @@ export const VENDOR_LIFECYCLE_WARNINGS = [
     lifecycle:  "componentWillReceiveProps",
     components: ["LinearProgress"]
   },
+  // CARRIER DATA (see "HOW TO REMOVE A ROW" above): these three names are
+  // KNOWN_CWM_GROUP in suppressVendorLifecycleWarnings_test.js, where four
+  // pass-through cases use them as the part of the message that WOULD be
+  // suppressed, so that the reason each case names is the only reason it
+  // passes through. Remove this row and rebase that constant onto another
+  // surviving componentWillMount row; its guard test will fail and tell you
+  // so. Two "per-flush regrouping" cases also use these names directly and
+  // fail loudly on their own.
   {
     dependency: "react-router / react-router-dom 4.3.1",
     removedBy:  "no phase yet; 5.0 moved these to getDerivedStateFromProps",
@@ -78,6 +94,11 @@ export const VENDOR_LIFECYCLE_WARNINGS = [
     lifecycle:  "componentWillReceiveProps",
     components: ["Route", "Router"]
   },
+  // CARRIER DATA: the second half of CROSS_DEPENDENCY_CWM_GROUP in the test
+  // file. That case proves a flush merging names across dependencies still
+  // matches, so it needs this row and the react-router componentWillMount row
+  // above to coexist. Remove either and the case becomes inexpressible; its
+  // guard test fails and says what to do.
   {
     dependency: "react-document-title 2.0.3, via react-side-effect 1.2.0",
     removedBy:
