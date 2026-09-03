@@ -10,10 +10,11 @@ babelSharedLoader.options.presets = ["@babel/preset-env", "@babel/preset-react"]
 // "node_modules/**", which @babel/register anchors to cwd. That covers this
 // checkout's own node_modules but nothing resolved from a node_modules
 // directory further up the tree -- which happens whenever this repo sits
-// inside another copy of itself, as a nested git worktree does. Such a module
-// would then be transformed, react-hot-loader/babel would inject its
-// enterModule/leaveModule calls into it, and the resulting circular requires
-// print Node "Accessing non-existent property" warnings that fail the run.
+// inside another copy of itself, as a nested git worktree does. Transforming
+// a dependency at all is wrong regardless of which plugins are in play, and
+// a nested-worktree resolution escapes a relative glob, so such a module
+// would still be transformed and the resulting circular requires print Node
+// "Accessing non-existent property" warnings that fail the run.
 // A regexp has no anchor, so it ignores every node_modules regardless of
 // where it was resolved from. Test-runner only; the webpack build keeps the
 // glob, and its babel-loader rule already carries exclude: /node_modules/.
