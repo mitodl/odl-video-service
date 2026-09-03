@@ -8,7 +8,7 @@ import { CSSTransition, TransitionGroup } from "react-transition-group"
 import { actions } from "../actions"
 import type { ToastMessage as ToastMessageType } from "../flow/toastTypes"
 
-const DELAY_MS = 3000
+export const DELAY_MS = 3000
 
 export class ToastOverlay extends React.Component<*, void> {
   props: {
@@ -58,9 +58,13 @@ export class ToastOverlay extends React.Component<*, void> {
 
 export class ToastMessage extends React.Component<*, void> {
   componentDidMount() {
-    setTimeout(() => {
+    this._dismissTimer = setTimeout(() => {
       this.props.removeMessage({ key: this.props.message.key })
     }, DELAY_MS)
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this._dismissTimer)
   }
 
   render() {
