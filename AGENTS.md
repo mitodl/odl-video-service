@@ -18,7 +18,7 @@ A video hosting platform for MIT's Office of Digital Learning (ODL). Videos are 
 | Video delivery | AWS S3 + CloudFront (signed URLs) |
 | Transcoding | AWS MediaConvert (via `mitol-django-transcoding`) |
 | Frontend | React 15, Redux, Flow types, Webpack 5 |
-| JS test runner | Mocha + Chai + Enzyme |
+| JS test runner | Mocha + Chai + @testing-library/react |
 | JS package manager | Yarn 1.22.22 |
 | Node version | 24.14.0 |
 | Linting (Python) | `ruff` |
@@ -170,7 +170,7 @@ The `web` service runs `uwsgi`, the `watch` service runs webpack in dev mode wit
 - In tests: `CELERY_TASK_ALWAYS_EAGER=True` executes tasks synchronously
 
 ### Frontend (React)
-- **React 15** — class components, no hooks; `enzyme-adapter-react-15` for testing
+- **React 15** — class components, no hooks; `@testing-library/react` for testing
 - **Flow types** (not TypeScript) — `.flowconfig` present, `flow-bin` installed
 - Redux + redux-thunk + redux-actions for state management
 - Video.js 8 for video playback with quality selector, HLS, annotations

@@ -1,7 +1,7 @@
 // @flow
 import React from "react"
 import _ from "lodash"
-import { mount } from "enzyme"
+import { render } from "@testing-library/react"
 import { assert } from "chai"
 import sinon from "sinon"
 
@@ -9,7 +9,7 @@ import type { ToastMessage as ToastMessageType } from "../flow/toastTypes"
 import { ToastOverlay, ToastMessage, mapStateToProps } from "./ToastOverlay"
 
 describe("ToastOverlayTests", () => {
-  let sandbox, wrapper
+  let sandbox
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
@@ -49,6 +49,12 @@ describe("ToastOverlayTests", () => {
   })
 
   describe("ToastOverlay", () => {
+    class DummyMessageComponent extends React.Component<*, void> {
+      render() {
+        return <div />
+      }
+    }
+
     const renderComponent = (extraProps = {}) => {
       const mergedProps = {
         dispatch:         sandbox.stub(),
@@ -56,60 +62,81 @@ describe("ToastOverlayTests", () => {
         MessageComponent: DummyMessageComponent,
         ...extraProps
       }
-      return mount(<ToastOverlay {...mergedProps} />)
-    }
-
-    class DummyMessageComponent extends React.Component<*, void> {
-      render() {
-        return <div />
-      }
+      return render(<ToastOverlay {...mergedProps} />)
     }
 
     describe("when there are no messages", () => {
-      beforeEach(() => {
-        wrapper = renderComponent({ messages: [] })
-      })
-
       it("renders nothing", () => {
-        assert.isTrue(wrapper.isEmptyRender())
+        const { container } = renderComponent({ messages: [] })
+        // React 15 leaves a `<!-- react-empty: N -->` comment placeholder in
+        // the container when a component renders null, so `firstChild` is
+        // never actually `null` here (confirmed via Rule 26 DOM capture --
+        // the Enzyme version's `wrapper.html()` was `null`, matching
+        // `isEmptyRender()`, but jsdom's real container always keeps that
+        // comment node). `children` excludes comment/text nodes, so an empty
+        // `children` collection is the accurate "rendered nothing" check.
+        assert.lengthOf(container.children, 0)
       })
     })
 
     describe("when there are messages", () => {
-      beforeEach(() => {
-        wrapper = renderComponent({
-          messages:         generateMessages(3),
-          MessageComponent: DummyMessageComponent
-        })
-      })
-
       it("renders messages with MessageComponent in transition group", () => {
-        const messages = wrapper.prop("messages")
-        assert.isTrue(messages.length > 0)
-        const keyedMessages = _.keyBy(messages, "key")
-        const transitionGroupEl = wrapper.find("TransitionGroup")
-        const cssTransitionEls = transitionGroupEl.find("CSSTransition")
-        assert.equal(cssTransitionEls.length, messages.length)
-        cssTransitionEls.forEach(cssTransitionEl => {
-          const messageEl = cssTransitionEl.find(
-            wrapper.prop("MessageComponent")
-          )
-          const expectedMessage = keyedMessages[messageEl.key()]
-          assert.equal(messageEl.prop("message"), expectedMessage)
+        const messages = generateMessages(3)
+        // DummyMessageComponent (defined above, test-owned) renders an empty
+        // `<div />` with no distinguishing content, so nothing in the
+        // rendered DOM can tell one message's card apart from another --
+        // confirmed empirically via Rule 26 DOM capture of the Enzyme
+        // version, which showed three indistinguishable
+        // `.toast-transition-appear` divs. Spying on the dummy's own
+        // `render` and reading `thisValue.props` is the same technique
+        // VideoCard_test.js uses for Menu.prototype.render.
+        const messageRenderSpy = sandbox.spy(
+          DummyMessageComponent.prototype,
+          "render"
+        )
+        const { container } = renderComponent({ messages })
+        // CSSTransition's `appear` transition re-renders each child once
+        // more after mount (exited -> "-active"), so each MessageComponent
+        // instance is rendered twice, not once -- verified empirically by
+        // logging call.thisValue identity across calls. Dedupe by instance
+        // identity to get back to "one component per message" before
+        // checking count/order/reference-equality, which is what the
+        // original Enzyme `.find()` snapshot (read after settling) actually
+        // asserted.
+        const uniqueCalls = _.uniqBy(
+          messageRenderSpy.getCalls(),
+          call => call.thisValue
+        )
+        assert.equal(uniqueCalls.length, messages.length)
+        uniqueCalls.forEach((call, i) => {
+          assert.equal(call.thisValue.props.message, messages[i])
         })
+        // DOM-visible proxy for "wrapped in the transition group": the
+        // TransitionGroup renders as a real `.toast-messages` div, present
+        // only because messages.length > 0.
+        assert.isNotNull(container.querySelector(".toast-messages"))
       })
 
       it("passes removeMessage to MessageComponent", () => {
-        const messages = wrapper.prop("messages")
-        assert.isTrue(messages.length > 0)
-        const messageEls = wrapper.find(wrapper.prop("MessageComponent"))
+        const messages = generateMessages(3)
         const removeMessageStub = sandbox.stub(
-          wrapper.instance(),
+          ToastOverlay.prototype,
           "removeMessage"
         )
-        messageEls.forEach((messageEl, i) => {
+        const messageRenderSpy = sandbox.spy(
+          DummyMessageComponent.prototype,
+          "render"
+        )
+        renderComponent({ messages })
+        // Same double-render-per-instance behavior as above; dedupe first.
+        const uniqueCalls = _.uniqBy(
+          messageRenderSpy.getCalls(),
+          call => call.thisValue
+        )
+        assert.equal(uniqueCalls.length, messages.length)
+        uniqueCalls.forEach((call, i) => {
           assert.equal(removeMessageStub.callCount, i)
-          messageEl.prop("removeMessage")()
+          call.thisValue.props.removeMessage()
           assert.equal(removeMessageStub.callCount, i + 1)
         })
       })
@@ -123,13 +150,16 @@ describe("ToastOverlayTests", () => {
         removeMessage: sandbox.stub(),
         ...extraProps
       }
-      return mount(<ToastMessage {...mergedProps} />)
+      return render(<ToastMessage {...mergedProps} />)
     }
 
     it("renders the message", () => {
       const message = generateMessage()
-      const wrapper = renderComponent({ message })
-      assert.equal(wrapper.find(".message-content").text(), message.content)
+      const { container } = renderComponent({ message })
+      assert.equal(
+        container.querySelector(".message-content").textContent,
+        message.content
+      )
     })
 
     describe("icon", () => {
@@ -138,8 +168,11 @@ describe("ToastOverlayTests", () => {
         const message = generateMessage(1, { icon })
 
         it("it renders icon", () => {
-          const wrapper = renderComponent({ message })
-          assert.equal(wrapper.find(".message-icon").text(), message.icon)
+          const { container } = renderComponent({ message })
+          assert.equal(
+            container.querySelector(".message-icon").textContent,
+            message.icon
+          )
         })
       })
 
@@ -147,8 +180,8 @@ describe("ToastOverlayTests", () => {
         const message = _.omit(generateMessage(), ["icon"])
 
         it("it does not render icon", () => {
-          const wrapper = renderComponent({ message })
-          assert.equal(wrapper.find(".message-icon").length, 0)
+          const { container } = renderComponent({ message })
+          assert.isNull(container.querySelector(".message-icon"))
         })
       })
     })

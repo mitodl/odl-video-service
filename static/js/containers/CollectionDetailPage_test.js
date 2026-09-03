@@ -3,16 +3,23 @@
 import React from "react"
 import _ from "lodash"
 import sinon from "sinon"
-import { shallow } from "enzyme"
 import { assert } from "chai"
+import { screen, fireEvent, waitFor, within } from "@testing-library/react"
+import configureTestStore from "redux-asserts"
+import DropboxChooser from "react-dropbox-chooser"
 
 import { mapStateToProps, CollectionDetailPage } from "./CollectionDetailPage"
+import Menu from "../components/material/Menu"
 import { actions } from "../actions"
+import * as api from "../lib/api"
 import * as collectionUiActions from "../actions/collectionUi"
 import * as commonUiActions from "../actions/commonUi"
+import rootReducer from "../reducers"
+import { INITIAL_UI_STATE } from "../reducers/commonUi"
 import { makeCollection } from "../factories/collection"
 import { DIALOGS } from "../constants"
 import { shouldIf } from "../lib/test_utils"
+import renderWithProviders from "../testUtils/renderWithProviders"
 
 describe("CollectionDetailPage", () => {
   let sandbox
@@ -23,17 +30,12 @@ describe("CollectionDetailPage", () => {
 
   afterEach(() => {
     sandbox.restore()
+    // window.Dropbox is a real global that global_init.js's
+    // resetTestEnvironment does not clear, and lib/video.saveToDropbox calls
+    // window.Dropbox.save(...) -- leaking a `{ choose }`-only stub into a
+    // later test file would be a cross-file landmine.
+    delete window.Dropbox
   })
-
-  const stubRenderingMethod = methodName => {
-    sandbox
-      .stub(CollectionDetailPage.prototype, methodName)
-      .returns(<i id={`mocked-${methodName}`} key={`mocked-${methodName}`} />)
-  }
-
-  const stubRenderingMethods = methodNames => {
-    methodNames.forEach(methodName => stubRenderingMethod(methodName))
-  }
 
   describe("mapStateToProps", () => {
     let state, ownProps
@@ -203,239 +205,281 @@ describe("CollectionDetailPage", () => {
   })
 
   describe("Component", () => {
-    let collection, props, wrapper, page
+    let collection, video, props, store
 
     beforeEach(() => {
       collection = makeCollection()
-      collection.owner_info = {
-        id:       collection.owner,
-        username: collection.owner_info.username,
-        email:    collection.owner_info.email
-      }
+      video = collection.videos[0]
       props = {
-        dispatch:        sandbox.stub(),
+        dispatch:          sandbox.stub(),
         collection,
-        collectionError: undefined,
-        collectionKey:   collection.key,
-        editable:        true,
-        needsUpdate:     false,
-        commonUi:        {},
-        showDialog:      sandbox.stub()
+        collectionError:   undefined,
+        collectionKey:     collection.key,
+        isCollectionAdmin: false,
+        needsUpdate:       false,
+        // A full mount reaches CollectionDetailPage.isVideoMenuOpen, which
+        // VideoList.renderVideoCard calls during render and which reads
+        // commonUi.menuVisibility[videoKey]. The pre-conversion `commonUi: {}`
+        // fixture only survived because `shallow` never rendered VideoList.
+        commonUi:          { ...INITIAL_UI_STATE },
+        showDialog:        sandbox.stub()
       }
+      // material/Drawer's componentDidMount dispatches
+      // actions.collectionsList.get() whenever collectionsList is neither
+      // processing nor loaded; pre-seeding it keeps every render below
+      // synchronous and free of api stubs. The key must be spelled exactly as
+      // the endpoint name in reducers/collections.js -- any key the combined
+      // reducer does not know makes redux console.error an "Unexpected key"
+      // warning to stderr, which the frozen js_test.sh allowlist rejects.
+      store = configureTestStore(rootReducer, {
+        collectionsList: {
+          processing: false,
+          loaded:     true,
+          data:       { results: [] }
+        }
+      })
     })
 
-    describe("render", () => {
-      const render = (extraProps = {}) => {
-        return shallow(
-          <CollectionDetailPage {...{ ...props, ...extraProps }} />
-        )
-      }
+    // props.dispatch stays a plain stub, so the page's own dispatches are
+    // asserted against it; the store's dispatch only ever serves
+    // WithDrawer/Drawer. With needsUpdate false and no collectionError,
+    // componentDidMount/componentDidUpdate dispatch nothing, so the
+    // `notCalled(props.dispatch)` preconditions below still hold after mount.
+    const renderPage = (extraProps = {}) =>
+      renderWithProviders(
+        <CollectionDetailPage {...{ ...props, ...extraProps }} />,
+        { store }
+      )
 
-      beforeEach(() => {
-        stubRenderingMethods(["renderError", "renderBody"])
+    // The admin tools and the admin video-card menu items only render when
+    // isCollectionAdmin is true.
+    const renderAdmin = (extraProps = {}) =>
+      renderPage({ isCollectionAdmin: true, ...extraProps })
+
+    // A one-video collection keeps `more_vert`, the menu-item labels and the
+    // Menu render spy's lastCall unambiguous (the factory makes two videos,
+    // i.e. two menus with duplicate labels).
+    const renderOneVideoAdmin = (extraProps = {}) =>
+      renderAdmin({
+        collection: { ...collection, videos: [video] },
+        ...extraProps
       })
 
+    // Menu's <ul role="menu"> carries a hardcoded aria-hidden="true"
+    // (Menu.js:57-59) that MDCMenu never toggles under jsdom, so menu items
+    // need RTL's `hidden: true` escape hatch -- same as VideoCard_test.js.
+    const menuItems = () => screen.getAllByRole("menuitem", { hidden: true })
+    const menuItem = label => menuItems().find(el => el.textContent === label)
+
+    // Both frob buttons wrap an icon/alt text ("sync Sync Videos with edX",
+    // "Dropbox Icon Add Videos from Dropbox"), so the accessible name has to
+    // be matched with a regex, never an exact string.
+    const syncButton = () =>
+      screen.getByRole("button", { name: /Sync Videos with edX/ })
+    const dropboxButton = () =>
+      screen.getByRole("button", { name: /Add Videos from Dropbox/ })
+
+    describe("render", () => {
       it("renders drawer", () => {
-        wrapper = render()
-        assert.isTrue(wrapper.find("Connect(WithDrawer)").exists())
+        renderPage()
+        // Both of these are real user-visible chrome that only exists inside
+        // WithDrawer: OVSToolbar's title link and material/Drawer's header
+        // link.
+        assert.isNotNull(screen.getByText("ODL Video Services"))
+        assert.isNotNull(screen.getByText("My Collections"))
       })
 
       describe("when there is an error", () => {
-        beforeEach(() => {
-          wrapper = render({ collectionError: "someError" })
-        })
-
         it("renders error", () => {
-          sinon.assert.calledWith(
-            wrapper.instance().renderError,
-            wrapper.instance().props.collectionError
+          const { container, unmount } = renderPage({
+            collectionError: "someError"
+          })
+          // "someError" has no `.detail`, so renderError falls through to
+          // <ErrorMessages.UnableToLoadData/>.
+          assert.isNotNull(
+            within(container).getByText(
+              /unable to load the data necessary to process your request/
+            )
           )
-          sinon.assert.notCalled(wrapper.instance().renderBody)
+          assert.isNull(container.querySelector(".centered-content"))
+          unmount()
+
+          // The `error.detail` branch, which the marker-stub version of this
+          // test could never see.
+          const detailed = renderPage({
+            collectionError: { detail: "someDetail" }
+          })
+          assert.equal(
+            detailed.container.querySelector(".odl-error-message").textContent,
+            "Error: someDetail"
+          )
+          assert.isNull(detailed.container.querySelector(".centered-content"))
         })
       })
 
       describe("when there is no error", () => {
-        beforeEach(() => {
-          wrapper = render({ collectionError: undefined })
-        })
-
         it("renders body", () => {
-          sinon.assert.called(wrapper.instance().renderBody)
-          sinon.assert.notCalled(wrapper.instance().renderError)
+          const { container } = renderPage()
+          assert.isNotNull(container.querySelector(".centered-content"))
+          assert.equal(
+            screen.getByRole("heading", { level: 1 }).textContent,
+            `${collection.title} (2)`
+          )
+          assert.isNull(container.querySelector(".odl-error-message"))
         })
       })
     })
 
     describe("renderBody", () => {
-      beforeEach(() => {
-        stubRenderingMethods([
-          "renderTools",
-          "renderDescription",
-          "renderVideos"
-        ])
-      })
-
-      const renderBody = ({ extraProps = {} } = {}) => {
-        page = new CollectionDetailPage({ ...props, ...extraProps })
-        return shallow(page.renderBody())
-      }
-
       it("renders tools", () => {
-        assert.isTrue(
-          renderBody()
-            .find("#mocked-renderTools")
-            .exists()
+        const { container } = renderPage()
+        assert.isNotNull(
+          container.querySelector(".centered-content header .tools")
         )
       })
 
       it("renders description", () => {
-        assert.isTrue(
-          renderBody()
-            .find("#mocked-renderDescription")
-            .exists()
+        const { container } = renderPage()
+        assert.equal(
+          container.querySelector(".description").textContent,
+          collection.description
         )
       })
 
       it("renders videos", () => {
-        assert.isTrue(
-          renderBody()
-            .find("#mocked-renderVideos")
-            .exists()
-        )
+        const { container } = renderPage()
+        assert.isNotNull(container.querySelector(".video-list.videos"))
+        assert.equal(container.querySelectorAll(".video-card").length, 2)
       })
     })
 
     describe("renderTools", () => {
-      beforeEach(() => {
-        stubRenderingMethods(["renderAdminTools"])
-      })
-
-      // $FlowFixMe: defaults are ok.
-      const renderTools = ({ extraProps = {}, isAdmin = false } = {}) => {
-        page = new CollectionDetailPage({ ...props, ...extraProps })
-        return shallow(page.renderTools(isAdmin))
-      }
-
       it("has tools class", () => {
-        assert.isTrue(
-          renderTools()
-            .at(0)
-            .hasClass("tools")
-        )
+        const { container } = renderPage()
+        assert.isNotNull(container.querySelector("header .tools"))
       })
 
       it("renders admin tools if isAdmin", () => {
-        assert.isTrue(
-          renderTools({ isAdmin: true })
-            .find("#mocked-renderAdminTools")
-            .exists()
+        const { container } = renderAdmin()
+        assert.isNotNull(
+          within(container.querySelector(".tools")).getByText("settings")
         )
       })
 
       it("does not render admin tools if not isAdmin", () => {
-        assert.isFalse(
-          renderTools({ isAdmin: false })
-            .find("#mocked-renderAdminTools")
-            .exists()
-        )
+        const { container } = renderPage({ isCollectionAdmin: false })
+        // `{isAdmin && this.renderAdminTools()}` renders nothing for false.
+        assert.equal(container.querySelector(".tools").childElementCount, 0)
       })
     })
 
     describe("renderAdminTools", () => {
+      let tools
+
       beforeEach(() => {
-        stubRenderingMethods([
-          "renderSettingsFrob",
-          "renderSyncWithEdXFrob",
-          "renderUploadFrob"
-        ])
+        const { container } = renderAdmin()
+        tools = container.querySelector(".tools")
       })
 
-      const renderAdminTools = ({ extraProps = {} } = {}) => {
-        page = new CollectionDetailPage({ ...props, ...extraProps })
-        return shallow(<div>{page.renderAdminTools()}</div>)
-      }
-
       it("renders settings frob", () => {
-        assert.isTrue(
-          renderAdminTools()
-            .find("#mocked-renderSettingsFrob")
-            .exists()
-        )
+        assert.isNotNull(tools.querySelector("#edit-collection-button"))
       })
 
       it("renders sync with edX frob", () => {
-        assert.isTrue(
-          renderAdminTools()
-            .find("#mocked-renderSyncWithEdXFrob")
-            .exists()
+        // makeCollection()'s edx_course_id is truthy (casual.word).
+        assert.isNotNull(
+          within(tools).getByRole("button", { name: /Sync Videos with edX/ })
         )
       })
 
       it("renders upload frob", () => {
-        assert.isTrue(
-          renderAdminTools()
-            .find("#mocked-renderUploadFrob")
-            .exists()
+        assert.isNotNull(
+          within(tools).getByRole("button", {
+            name: /Add Videos from Dropbox/
+          })
         )
       })
     })
 
     describe("renderSettingsFrob", () => {
-      const renderSettingsFrob = ({ extraProps = {} } = {}) => {
-        page = new CollectionDetailPage({ ...props, ...extraProps })
-        return shallow(page.renderSettingsFrob())
-      }
-
       it("has settings icon", () => {
+        const { container } = renderAdmin()
+        const frob = container.querySelector("#edit-collection-button")
+        assert.isNotNull(frob)
         assert.equal(
-          renderSettingsFrob()
-            .find(".material-icons")
-            .text(),
+          frob.querySelector(".material-icons").textContent,
           "settings"
         )
       })
 
       it("triggers showEditCollectionDialog when clicked", () => {
-        sandbox.stub(CollectionDetailPage.prototype, "showEditCollectionDialog")
-        sinon.assert.notCalled(
-          CollectionDetailPage.prototype.showEditCollectionDialog
+        // The prototype stub is installed before the render because
+        // renderSettingsFrob does the `.bind(this)` at render time.
+        //
+        // Asserting the real dispatch instead is not possible:
+        // collectionUiActions.showEditCollectionDialog returns a thunk -- a
+        // fresh function per call -- so calledWith could never deep-equal it.
+        const stub = sandbox.stub(
+          CollectionDetailPage.prototype,
+          "showEditCollectionDialog"
         )
-        renderSettingsFrob()
-          .at(0)
-          .simulate("click")
-        sinon.assert.called(
-          CollectionDetailPage.prototype.showEditCollectionDialog
-        )
+        renderAdmin()
+        sinon.assert.notCalled(stub)
+        // The frob's <a> has no href, so this click cannot make jsdom log a
+        // "Not implemented: navigation" error to stderr. The click bubbles
+        // from the <i> to the <a>'s React onClick.
+        fireEvent.click(screen.getByText("settings"))
+        sinon.assert.called(stub)
       })
     })
 
     describe("renderUploadFrob", () => {
-      const renderUploadFrob = ({ extraProps = {} } = {}) => {
-        page = new CollectionDetailPage({ ...props, ...extraProps })
-        return shallow(<div>{page.renderUploadFrob()}</div>)
-      }
-
       it("renders DropBoxChooser with expected simple props", () => {
         SETTINGS.dropbox_key = "someAppKey"
-        const chooser = renderUploadFrob().find("DropboxChooser")
-        const expectedSimpleProps = {
-          appKey:      SETTINGS.dropbox_key,
-          linkType:    "preview",
-          multiselect: true,
-          extensions:  ["video"]
-        }
+        const chooseStub = sandbox.stub()
+        window.Dropbox = { choose: chooseStub }
+        // appKey is not reachable through window.Dropbox.choose -- it is only
+        // used for the <script> react-dropbox-chooser injects in
+        // componentDidMount, behind a module-level `scriptLoadingStarted` flag
+        // that an earlier test file has already consumed (and VideoSaverScript
+        // injects a tag with the same id and data-app-key), so asserting the
+        // #dropboxjs tag would be an order-dependent false positive. Capture
+        // the props the real rendered component received instead.
+        const chooserRenderSpy = sandbox.spy(DropboxChooser.prototype, "render")
+        // videos: [] leaves the upload frob's chooser as the only
+        // DropboxChooser in the tree -- VideoCards render their own hidden
+        // ones, which would otherwise win lastCall.
+        renderAdmin({ collection: { ...collection, videos: [] } })
+        assert.equal(
+          chooserRenderSpy.lastCall.thisValue.props.appKey,
+          "someAppKey"
+        )
+
+        fireEvent.click(dropboxButton())
         assert.deepEqual(
-          _.pick(chooser.props(), Object.keys(expectedSimpleProps)),
-          expectedSimpleProps
+          _.pick(chooseStub.firstCall.args[0], [
+            "linkType",
+            "multiselect",
+            "extensions"
+          ]),
+          { linkType: "preview", multiselect: true, extensions: ["video"] }
         )
       })
 
       it("passes upload handler to DropBoxChooser", () => {
-        sandbox.stub(CollectionDetailPage.prototype, "handleUpload")
-        const chooser = renderUploadFrob().find("DropboxChooser")
-        sinon.assert.notCalled(CollectionDetailPage.prototype.handleUpload)
-        chooser.prop("success")()
-        sinon.assert.called(CollectionDetailPage.prototype.handleUpload)
+        const chosenFiles = [{ id: 0 }]
+        window.Dropbox = { choose: opts => opts.success(chosenFiles) }
+        const stub = sandbox.stub(
+          CollectionDetailPage.prototype,
+          "handleUpload"
+        )
+        renderAdmin({ collection: { ...collection, videos: [] } })
+        sinon.assert.notCalled(stub)
+        fireEvent.click(dropboxButton())
+        // Stronger than the old `chooser.prop("success")()`: the handler is
+        // reached through the chooser's real success callback, with the real
+        // chosen-file payload.
+        sinon.assert.calledWith(stub, chosenFiles)
       })
     })
 
@@ -443,129 +487,189 @@ describe("CollectionDetailPage", () => {
       let chosenFiles
 
       beforeEach(() => {
-        sandbox.stub().returns(Promise.resolve())
         sandbox.stub(actions.uploadVideo, "post")
         sandbox.stub(actions.collections, "get")
         chosenFiles = [...Array(3).keys()].map(i => ({ id: i }))
-        page = new CollectionDetailPage(props)
+        window.Dropbox = { choose: opts => opts.success(chosenFiles) }
+        renderAdmin({ collection: { ...collection, videos: [] } })
       })
 
-      it("dispatches upload action", async () => {
+      it("dispatches upload action", () => {
         sinon.assert.notCalled(actions.uploadVideo.post)
-        await page.handleUpload(chosenFiles)
-        // $FlowFixMe: collection won't be null.
-        const expectedArgs = [page.props.collection.key, chosenFiles]
-        sinon.assert.calledWith(actions.uploadVideo.post, ...expectedArgs)
+        fireEvent.click(dropboxButton())
+        // Synchronous: it happens before handleUpload's first await.
+        sinon.assert.calledWith(
+          actions.uploadVideo.post,
+          collection.key,
+          chosenFiles
+        )
       })
 
       it("dispatches collections.get action to refresh collection", async () => {
-        sinon.assert.notCalled(actions.uploadVideo.post)
-        await page.handleUpload(chosenFiles)
-        // $FlowFixMe: won't be null
-        const expectedArgs = [page.props.collection.key]
-        sinon.assert.calledWith(actions.collections.get, ...expectedArgs)
+        fireEvent.click(dropboxButton())
+        // handleUpload awaits dispatch(uploadVideo.post(...)) first, so the
+        // refresh lands a microtask later than the click.
+        await waitFor(() =>
+          sinon.assert.calledWith(actions.collections.get, collection.key)
+        )
       })
     })
 
     describe("renderDescription", () => {
-      const renderDescription = ({
-        // $FlowFixMe: defaults are ok.
-        extraProps = {},
-        description = ""
-      } = {}) => {
-        page = new CollectionDetailPage({ ...props, ...extraProps })
-        return shallow(<div>{page.renderDescription(description)}</div>)
-      }
-
       it("renders description text when description is not empty", () => {
-        const description = "someDescription"
-        const rendered = renderDescription({ description }).childAt(0)
-        assert.equal(rendered.text(), description)
-        assert.isTrue(rendered.hasClass("description"))
+        const { container } = renderPage({
+          collection: { ...collection, description: "someDescription" }
+        })
+        const paragraph = container.querySelector("p.description")
+        assert.isNotNull(paragraph)
+        assert.equal(paragraph.textContent, "someDescription")
       })
-
-      it("is null when description is empty", () => {
-        const emptyDescriptions = ["", null, undefined]
-        // eslint-disable-next-line no-unused-vars
-        for (const description of emptyDescriptions) {
-          assert.isFalse(
-            renderDescription({ description })
-              .find(".description")
-              .exists()
-          )
-        }
+      ;[
+        ["", "an empty string"],
+        [null, "null"],
+        [undefined, "undefined"]
+      ].forEach(([description, label]) => {
+        // The pre-conversion version looped over these three inside a single
+        // `it`; one test per case reports which value regressed.
+        it(`renders no description when it is ${label}`, () => {
+          const { container } = renderPage({
+            collection: { ...collection, description }
+          })
+          assert.isNull(container.querySelector(".description"))
+        })
       })
     })
 
     describe("renderVideos", () => {
-      const renderVideos = ({
-        // $FlowFixMe: defaults are ok.
-        extraProps = {},
-        videos = [],
-        // $FlowFixMe: defaults are ok.
-        isAdmin = true
-      } = {}) => {
-        page = new CollectionDetailPage({ ...props, ...extraProps })
-        // $FlowFixMe: isAdmin is ok.
-        return shallow(<div>{page.renderVideos(videos, isAdmin)}</div>)
-      }
-
       it("renders 'no videos' message", () => {
-        assert.isTrue(
-          renderVideos({ videos: [] })
-            .find(".no-videos")
-            .exists()
-        )
+        const { container } = renderAdmin({
+          collection: { ...collection, videos: [] }
+        })
+        assert.isNotNull(container.querySelector(".no-videos"))
+        assert.isNotNull(screen.getByText(/There are no videos yet/))
       })
 
       it("renders 'no videos' message for anonymous", () => {
+        renderPage({
+          collection:        { ...collection, videos: [] },
+          isCollectionAdmin: false
+        })
+        // Exact accessible name, so the drawer's "Not logged in" link cannot
+        // match. Deliberately not clicked: firing a click on a real <a href>
+        // makes jsdom print "Error: Not implemented: navigation" to stderr,
+        // which the frozen js_test.sh allowlist rejects.
+        const link = screen.getByRole("link", { name: "login" })
         assert.equal(
-          renderVideos({ videos: [], isAdmin: false })
-            .find(".no-videos a")
-            .text(),
-          "login"
+          link.getAttribute("href"),
+          `/login/?next=/collections/${collection.key}`
         )
       })
 
       describe("when there are videos", () => {
-        const videos = makeCollection().videos
-        const isAdmin = "someIsAdminValue"
-
         it("renders VideoList with expected basic props", () => {
-          const videoList = renderVideos({ videos, isAdmin }).find("VideoList")
-          const expectedBasicProps = {
-            className: "videos",
-            videos,
-            commonUi:  page.props.commonUi,
-            isAdmin
-          }
+          const admin = renderAdmin()
+          // className
+          assert.isNotNull(admin.container.querySelector(".video-list.videos"))
+          // videos, in order
           assert.deepEqual(
-            _.pick(videoList.props(), Object.keys(expectedBasicProps)),
-            expectedBasicProps
+            Array.from(
+              admin.container.querySelectorAll(".video-card-body h2 a")
+            ).map(anchor => anchor.textContent),
+            collection.videos.map(collectionVideo => collectionVideo.title)
           )
+          // isAdmin: admins get the full five-item card menu, everyone else
+          // only "Share".
+          assert.equal(menuItems().length, 10)
+          // The `commonUi` prop VideoList also receives is deliberately not
+          // asserted: VideoList never reads it (its prop types do not declare
+          // it and neither render nor renderVideoCard touch it), so it has no
+          // user-visible or stubbable consequence. Dropped here rather than
+          // deleted from the component -- that would be a production change.
+          admin.unmount()
+
+          renderPage({ isCollectionAdmin: false })
+          assert.equal(menuItems().length, 2)
         })
 
         describe("VideoList function props", () => {
-          const methodNames = [
-            "showDeleteVideoDialog",
-            "showEditVideoDialog",
-            "showShareVideoDialog",
-            "showVideoMenu",
-            "hideVideoMenu",
-            "isVideoMenuOpen"
-          ]
-          _.forEach(methodNames, methodName => {
-            it(`it passes bound ${methodName} to VideoList`, () => {
-              sandbox.stub(CollectionDetailPage.prototype, methodName)
-              const videoList = renderVideos({ videos, isAdmin }).find(
-                "VideoList"
-              )
-              // $FlowFixMe: ignore index access
-              sinon.assert.notCalled(CollectionDetailPage.prototype[methodName])
-              videoList.prop(methodName)()
-              // $FlowFixMe: ignore index access
-              sinon.assert.called(CollectionDetailPage.prototype[methodName])
-            })
+          // Every `.bind(this)` in renderVideos happens during render, so each
+          // prototype stub below must be installed before the render.
+          it("it passes bound showDeleteVideoDialog to VideoList", () => {
+            const stub = sandbox.stub(
+              CollectionDetailPage.prototype,
+              "showDeleteVideoDialog"
+            )
+            renderOneVideoAdmin()
+            sinon.assert.notCalled(stub)
+            fireEvent.click(menuItem("Delete"))
+            sinon.assert.called(stub)
+          })
+
+          it("it passes bound showEditVideoDialog to VideoList", () => {
+            const stub = sandbox.stub(
+              CollectionDetailPage.prototype,
+              "showEditVideoDialog"
+            )
+            renderOneVideoAdmin()
+            sinon.assert.notCalled(stub)
+            fireEvent.click(menuItem("Edit"))
+            sinon.assert.called(stub)
+          })
+
+          it("it passes bound showShareVideoDialog to VideoList", () => {
+            const stub = sandbox.stub(
+              CollectionDetailPage.prototype,
+              "showShareVideoDialog"
+            )
+            renderOneVideoAdmin()
+            sinon.assert.notCalled(stub)
+            fireEvent.click(menuItem("Share"))
+            sinon.assert.called(stub)
+          })
+
+          it("it passes bound showVideoMenu to VideoList", () => {
+            const stub = sandbox.stub(
+              CollectionDetailPage.prototype,
+              "showVideoMenu"
+            )
+            renderOneVideoAdmin()
+            sinon.assert.notCalled(stub)
+            // Menu.js:47-49 wires showMenu directly onto the "more_vert" <a>,
+            // which has no href.
+            fireEvent.click(screen.getByText("more_vert"))
+            sinon.assert.called(stub)
+          })
+
+          it("it passes bound hideVideoMenu to VideoList", () => {
+            const stub = sandbox.stub(
+              CollectionDetailPage.prototype,
+              "hideVideoMenu"
+            )
+            // Documented exception, the same one VideoCard_test.js records:
+            // material/Menu wires closeMenu only to MDCMenu's own
+            // "MDCMenu:cancel"/"MDCMenu:selected" events (Menu.js:22-25), and
+            // those never fire under jsdom -- MDC's menu-surface foundation
+            // needs real layout metrics. So instead of dropping the assertion,
+            // grab the actual closeMenu prop the real rendered <Menu>
+            // received and invoke it. This still fails if the page or
+            // VideoList stop wiring hideVideoMenu through; it just cannot
+            // travel through MDC's own event dispatch in this environment.
+            const menuRenderSpy = sandbox.spy(Menu.prototype, "render")
+            renderOneVideoAdmin()
+            sinon.assert.notCalled(stub)
+            menuRenderSpy.lastCall.thisValue.props.closeMenu()
+            sinon.assert.called(stub)
+          })
+
+          it("it passes bound isVideoMenuOpen to VideoList", () => {
+            const stub = sandbox.stub(
+              CollectionDetailPage.prototype,
+              "isVideoMenuOpen"
+            )
+            renderOneVideoAdmin()
+            // VideoList.renderVideoCard calls it during render, so no event is
+            // needed -- and it is called with the video's own key.
+            sinon.assert.calledWith(stub, video.key)
           })
         })
       })
@@ -573,267 +677,251 @@ describe("CollectionDetailPage", () => {
 
     describe("showVideoDialog methods", () => {
       describe("showVideoDialog", () => {
-        const dialogName = "someDialogName"
-        const videoKey = "someVideoKey"
-
-        // Ideally we would stub collectionUiActions.setSelectedVideoKey
-        // to decouple this test from the internal logic of collectionUiActions,
-        // but because of the way that actions/collectionUiActions.js defines
-        // exports (as of 2018-05-10) that's not possible.
-        // So we just leave it unstubbed, since it makes no api calls and has
-        // no side-effects.
-        // dorska, 2018-05-10.
-
-        const showVideoDialog = ({
-          // $FlowFixMe: defaults are ok.
-          extraProps = {},
-          dialogName = "",
-          videoKey = ""
-        } = {}) => {
-          // $FlowFixMe: Constructor call is intentional.
-          page = new CollectionDetailPage({ ...props, ...extraProps })
-          page.showVideoDialog(dialogName, videoKey)
-        }
+        // collectionUiActions.setSelectedVideoKey is a plain createAction, so
+        // the dispatched action deep-equals a freshly built one. (Contrast
+        // showEditCollectionDialog, which returns a thunk -- see
+        // renderSettingsFrob above.)
 
         it("dispatches setSelectedVideoKey action", () => {
-          showVideoDialog({ dialogName, videoKey })
-          const expectedArgs = [
-            collectionUiActions.setSelectedVideoKey(videoKey)
-          ]
-          sinon.assert.calledWith(page.props.dispatch, ...expectedArgs)
+          renderOneVideoAdmin()
+          sinon.assert.notCalled(props.dispatch)
+          fireEvent.click(menuItem("Share"))
+          sinon.assert.calledWith(
+            props.dispatch,
+            collectionUiActions.setSelectedVideoKey(video.key)
+          )
         })
 
         it("calls props.showDialog", () => {
-          showVideoDialog({ dialogName, videoKey })
-          sinon.assert.called(page.props.showDialog)
+          renderOneVideoAdmin()
+          sinon.assert.notCalled(props.showDialog)
+          fireEvent.click(menuItem("Share"))
+          sinon.assert.calledWith(props.showDialog, DIALOGS.SHARE_VIDEO)
         })
       })
 
       describe("proxying dialog methods", () => {
-        beforeEach(() => {
-          sandbox.stub(CollectionDetailPage.prototype, "showVideoDialog")
-        })
-
-        const methodNamesToDialogNames = {
-          showEditVideoDialog:   DIALOGS.EDIT_VIDEO,
-          showShareVideoDialog:  DIALOGS.SHARE_VIDEO,
-          showDeleteVideoDialog: DIALOGS.DELETE_VIDEO
-        }
-        _.forEach(methodNamesToDialogNames, (dialogName, methodName) => {
-          it("proxies to showVideoDialog", () => {
-            const videoKey = "someVideoKey"
-            // $FlowFixMe: Constructor call is intentional.
-            const page = new CollectionDetailPage(props)
-            sinon.assert.notCalled(page.showVideoDialog)
-            page[methodName](videoKey)
-            sinon.assert.calledWith(page.showVideoDialog, dialogName, videoKey)
+        const methodCases = [
+          ["showEditVideoDialog", DIALOGS.EDIT_VIDEO, "Edit"],
+          ["showShareVideoDialog", DIALOGS.SHARE_VIDEO, "Share"],
+          ["showDeleteVideoDialog", DIALOGS.DELETE_VIDEO, "Delete"]
+        ]
+        _.forEach(methodCases, ([methodName, dialogName, label]) => {
+          it(`${methodName} proxies to showVideoDialog with ${dialogName}`, () => {
+            renderOneVideoAdmin()
+            fireEvent.click(menuItem(label))
+            sinon.assert.calledWith(props.showDialog, dialogName)
+            sinon.assert.calledWith(
+              props.dispatch,
+              collectionUiActions.setSelectedVideoKey(video.key)
+            )
           })
         })
       })
     })
 
     describe("videoMenu methods", () => {
-      // Ditto comment above re: stubbing actions here.
-      const showHideItems = ["show", "hide"]
-      _.forEach(showHideItems, showHide => {
-        const methodName = `${showHide}VideoMenu`
-        it(methodName, () => {
-          const videoKey = "someVideoKey"
-          // $FlowFixMe: Constructor call is intentional.
-          const page = new CollectionDetailPage(props)
-          sinon.assert.notCalled(page.props.dispatch)
-          page[methodName](videoKey)
-          sinon.assert.calledWith(
-            page.props.dispatch,
-            collectionUiActions.setSelectedVideoKey(videoKey)
-          )
-          sinon.assert.calledWith(
-            page.props.dispatch,
-            commonUiActions[`${showHide}Menu`](videoKey)
-          )
-        })
+      it("showVideoMenu", () => {
+        renderOneVideoAdmin()
+        sinon.assert.notCalled(props.dispatch)
+        fireEvent.click(screen.getByText("more_vert"))
+        sinon.assert.calledWith(
+          props.dispatch,
+          collectionUiActions.setSelectedVideoKey(video.key)
+        )
+        sinon.assert.calledWith(
+          props.dispatch,
+          commonUiActions.showMenu(video.key)
+        )
+      })
+
+      it("hideVideoMenu", () => {
+        // Same MDC limitation as the hideVideoMenu VideoList-prop test above:
+        // closeMenu has no jsdom-reachable DOM trigger, so invoke the real
+        // prop the real rendered <Menu> received.
+        const menuRenderSpy = sandbox.spy(Menu.prototype, "render")
+        renderOneVideoAdmin()
+        sinon.assert.notCalled(props.dispatch)
+        menuRenderSpy.lastCall.thisValue.props.closeMenu()
+        sinon.assert.calledWith(
+          props.dispatch,
+          collectionUiActions.setSelectedVideoKey(video.key)
+        )
+        sinon.assert.calledWith(
+          props.dispatch,
+          commonUiActions.hideMenu(video.key)
+        )
       })
 
       it("isVideoMenuOpen selects from commonUi", () => {
-        const videoKey = "someVideoKey"
         const expectedVisibilityValue = "someVisibilityValue"
-        const page = new CollectionDetailPage({
-          ...props,
-          commonUi: Object.assign({}, props.commonUi, {
-            menuVisibility: {
-              [videoKey]: expectedVisibilityValue
-            }
-          })
+        const menuRenderSpy = sandbox.spy(Menu.prototype, "render")
+        renderOneVideoAdmin({
+          commonUi: {
+            ...INITIAL_UI_STATE,
+            menuVisibility: { [video.key]: expectedVisibilityValue }
+          }
         })
-        assert.equal(page.isVideoMenuOpen(videoKey), expectedVisibilityValue)
+        // Asserts the whole chain, page -> VideoList -> VideoCard -> Menu,
+        // rather than just the accessor. An MDC open-class assertion would be
+        // vacuous here: Menu applies `open` only in componentDidUpdate, and
+        // @material/menu gates the class behind requestAnimationFrame, which
+        // global_init.js stubs to a no-op.
+        assert.equal(
+          menuRenderSpy.lastCall.thisValue.props.open,
+          expectedVisibilityValue
+        )
       })
     })
 
     describe("renderSyncWithEdXFrob", () => {
-      const renderSyncWithEdXFrob = ({ extraProps = {} } = {}) => {
-        page = new CollectionDetailPage({ ...props, ...extraProps })
-        return shallow(<div>{page.renderSyncWithEdXFrob()}</div>)
-      }
+      const collectionWithEdX = () => ({
+        ...collection,
+        edx_course_id: "course-v1:edX+DemoX+Demo_Course"
+      })
 
       it("renders sync with edX button when collection has edx_course_id", () => {
-        const collectionWithEdX = {
-          ...collection,
-          edx_course_id: "course-v1:edX+DemoX+Demo_Course"
-        }
-        const button = renderSyncWithEdXFrob({
-          extraProps: { collection: collectionWithEdX }
-        }).find(".sync-edx-btn")
-
-        assert.isTrue(button.exists())
-        assert.include(button.debug(), "Sync Videos with edX")
+        renderAdmin({ collection: collectionWithEdX() })
+        assert.isTrue(syncButton().classList.contains("sync-edx-btn"))
       })
 
       it("does not render sync button when collection has no edx_course_id", () => {
-        const collectionWithoutEdX = {
-          ...collection,
-          edx_course_id: null
-        }
-        const wrapper = renderSyncWithEdXFrob({
-          extraProps: { collection: collectionWithoutEdX }
+        const { container } = renderAdmin({
+          collection: { ...collection, edx_course_id: null }
         })
-
-        assert.isFalse(wrapper.find(".sync-edx-btn").exists())
+        assert.isNull(container.querySelector(".sync-edx-btn"))
       })
 
       it("does not render sync button when collection is null", () => {
-        const wrapper = renderSyncWithEdXFrob({
-          extraProps: { collection: null }
-        })
-
-        assert.isFalse(wrapper.find(".sync-edx-btn").exists())
+        const { container } = renderAdmin({ collection: null })
+        assert.isNull(container.querySelector(".sync-edx-btn"))
+        // Weakened, and vacuous by unreachability: render() returns null when
+        // there is neither a collection nor an error, so nothing renders at
+        // all and renderSyncWithEdXFrob's own `!collection` guard has no DOM
+        // path -- it is defensive-only. The count assertion below at least
+        // pins the real observable behaviour of a null collection.
+        assert.equal(container.children.length, 0)
       })
 
       it("calls handleSyncWithEdX when clicked", () => {
-        const collectionWithEdX = {
-          ...collection,
-          edx_course_id: "course-v1:edX+DemoX+Demo_Course"
-        }
-        sandbox.stub(CollectionDetailPage.prototype, "handleSyncWithEdX")
-        const button = renderSyncWithEdXFrob({
-          extraProps: { collection: collectionWithEdX }
-        }).find(".sync-edx-btn")
-
-        sinon.assert.notCalled(CollectionDetailPage.prototype.handleSyncWithEdX)
-        button.simulate("click")
-        sinon.assert.called(CollectionDetailPage.prototype.handleSyncWithEdX)
+        // Installed before the render: renderSyncWithEdXFrob binds at render
+        // time.
+        const stub = sandbox.stub(
+          CollectionDetailPage.prototype,
+          "handleSyncWithEdX"
+        )
+        renderAdmin({ collection: collectionWithEdX() })
+        sinon.assert.notCalled(stub)
+        fireEvent.click(syncButton())
+        sinon.assert.called(stub)
       })
     })
 
     describe("handleSyncWithEdX", () => {
-      let event
+      let syncStub
 
       beforeEach(() => {
-        event = {
-          preventDefault: sandbox.stub()
-        }
-        sandbox
-          .stub(require("../lib/api"), "syncCollectionVideosWithEdX")
+        // handleSyncWithEdX does a lazy `require("../lib/api")` at call time,
+        // and babel compiles lib/api.js's `export function` to a writable
+        // `exports.*` property, so stubbing the imported namespace is exactly
+        // what that require picks up.
+        syncStub = sandbox
+          .stub(api, "syncCollectionVideosWithEdX")
           .returns(Promise.resolve())
-        page = new CollectionDetailPage(props)
       })
 
-      it("prevents default event behavior", async () => {
-        await page.handleSyncWithEdX(event)
-        sinon.assert.called(event.preventDefault)
+      const renderSyncable = (extraProps = {}) =>
+        renderAdmin({
+          collection: {
+            ...collection,
+            edx_course_id: "course-v1:edX+DemoX+Demo_Course"
+          },
+          ...extraProps
+        })
+
+      const expectedToast = (key, content, icon) =>
+        actions.toast.addMessage({ message: { key, content, icon } })
+
+      it("prevents default event behavior", () => {
+        renderSyncable()
+        // fireEvent returns dispatchEvent's boolean, which is false exactly
+        // when a cancelable event had preventDefault() called on it. React
+        // 15's SyntheticEvent.preventDefault forwards to the native event, so
+        // this observes the handler's real e.preventDefault(). Verified
+        // empirically on this harness.
+        assert.isFalse(fireEvent.click(syncButton()))
       })
 
-      it("makes API call with collection key", async () => {
-        await page.handleSyncWithEdX(event)
-        sinon.assert.calledWith(
-          require("../lib/api").syncCollectionVideosWithEdX,
-          props.collectionKey
-        )
+      it("makes API call with collection key", () => {
+        renderSyncable()
+        // Synchronous: the call happens before the handler's first await.
+        fireEvent.click(syncButton())
+        sinon.assert.calledWith(syncStub, props.collectionKey)
       })
 
       it("dispatches success toast message when API call succeeds", async () => {
-        await page.handleSyncWithEdX(event)
-        sinon.assert.calledWith(
-          props.dispatch,
-          actions.toast.addMessage({
-            message: {
-              key:     "scheduled-sync",
-              content:
-                "Videos are being synced with edX. This may take a few minutes.",
-              icon: "check"
-            }
-          })
+        renderSyncable()
+        fireEvent.click(syncButton())
+        await waitFor(() =>
+          sinon.assert.calledWith(
+            props.dispatch,
+            expectedToast(
+              "scheduled-sync",
+              "Videos are being synced with edX. This may take a few minutes.",
+              "check"
+            )
+          )
         )
       })
 
       it("dispatches error toast message when API call fails", async () => {
         const error = { error: "Custom error message" }
-        require("../lib/api").syncCollectionVideosWithEdX.returns(
-          Promise.reject(error)
-        )
-
-        await page.handleSyncWithEdX(event)
-        sinon.assert.calledWith(
-          props.dispatch,
-          actions.toast.addMessage({
-            message: {
-              key:     "sync-error",
-              content: error.error,
-              icon:    "error"
-            }
-          })
+        syncStub.returns(Promise.reject(error))
+        renderSyncable()
+        fireEvent.click(syncButton())
+        await waitFor(() =>
+          sinon.assert.calledWith(
+            props.dispatch,
+            expectedToast("sync-error", error.error, "error")
+          )
         )
       })
 
       it("dispatches generic error message when API call fails without error details", async () => {
-        require("../lib/api").syncCollectionVideosWithEdX.returns(
-          Promise.reject({})
-        )
-
-        await page.handleSyncWithEdX(event)
-        sinon.assert.calledWith(
-          props.dispatch,
-          actions.toast.addMessage({
-            message: {
-              key:     "sync-error",
-              content: "Failed to sync videos with edX",
-              icon:    "error"
-            }
-          })
+        syncStub.returns(Promise.reject({}))
+        renderSyncable()
+        fireEvent.click(syncButton())
+        await waitFor(() =>
+          sinon.assert.calledWith(
+            props.dispatch,
+            expectedToast(
+              "sync-error",
+              "Failed to sync videos with edX",
+              "error"
+            )
+          )
         )
       })
 
-      it("returns null if collectionKey is not present", async () => {
-        page = new CollectionDetailPage({
-          ...props,
-          collectionKey: null
-        })
-
-        const result = await page.handleSyncWithEdX(event)
-        assert.isNull(result)
-        sinon.assert.notCalled(
-          require("../lib/api").syncCollectionVideosWithEdX
-        )
+      it("does not call the API when collectionKey is missing", () => {
+        // Weakened: a DOM-triggered handler's return value is unobservable, so
+        // the old `assert.isNull(result)` is gone. The observable half -- no
+        // API call and no dispatch -- is kept.
+        renderSyncable({ collectionKey: null })
+        sinon.assert.notCalled(props.dispatch)
+        fireEvent.click(syncButton())
+        sinon.assert.notCalled(syncStub)
+        sinon.assert.notCalled(props.dispatch)
       })
     })
 
     describe("Owner display", () => {
-      beforeEach(() => {
-        collection = makeCollection()
-        props = {
-          dispatch:      sandbox.stub(),
-          collection:    collection,
-          collectionKey: collection.key,
-          editable:      true,
-          needsUpdate:   false
-        }
-        wrapper = shallow(<CollectionDetailPage {...props} />)
-      })
-
       it("displays the owner username", () => {
-        const ownerElement = wrapper.find(".collection-owner")
-        assert.isTrue(ownerElement.exists())
-        assert.include(
-          ownerElement.text(),
+        const { container } = renderPage()
+        const ownerElement = container.querySelector(".collection-owner")
+        assert.isNotNull(ownerElement)
+        assert.equal(
+          ownerElement.textContent.trim(),
           `Owner: ${collection.owner_info.username}`
         )
       })

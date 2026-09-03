@@ -33,7 +33,11 @@ echo "=== migration ledger ==="
 # tests by 27% and which an agent can satisfy while deleting tests.
 TESTS=$(npm run test 2>&1 | grep -oE '[0-9]+ passing' | grep -oE '^[0-9]+' | tail -1)
 TESTS=${TESTS:-0}
-check "passing tests" "$TESTS" ge 492
+# 492 -> 505 (final review fix wave: adds the DeleteVideoDialog/
+# DeleteSubtitlesDialog accept-button-wiring tests, hq#12639/hq#12640; current
+# actual is 509 without a build artifact / 510 with one, so this leaves the
+# +-1 build-artifact margin plus a small buffer).
+check "passing tests" "$TESTS" ge 505
 
 # May only decrease. This is the migration's actual progress metric.
 # Cap was 33, not the original 31: #1564 added Dialog_test.js and Menu_test.js
@@ -42,8 +46,35 @@ check "passing tests" "$TESTS" ge 492
 # 33 -> 28 (Tier 1, hq#12638) -> 16 (Tier 2, hq#12638). Remaining 16 =
 # VideoPlayer (hq#12639) + AnalyticsChart/ProgressSlider + Tier 3's 13 files
 # (hq#12640).
-ENZYME=$(grep -rl 'from "enzyme"' static/js --include='*_test.js' 2>/dev/null | wc -l | tr -d ' ')
-check "enzyme test files" "$ENZYME" le 16
+# 16 -> 15 (VideoPlayer extracted + converted, hq#12639).
+# 15 -> 14 (Drawer_test.js converted, Tier 3 E4b/E5, hq#12640).
+# 14 -> 13 (Dialog_test.js converted, Tier 3 E4b/E5, hq#12640).
+# 13 -> 12 (Menu_test.js converted, Tier 3 E4b/E5, hq#12640).
+# 12 -> 11 (AnalyticsChart_test.js converted, Tier 3 E4b/E5, hq#12640).
+# 11 -> 10 (AnalyticsInfoTable_test.js converted, Tier 3 E4b/E5, hq#12640).
+# 10 -> 9 (ProgressSlider_test.js converted, Tier 3 E4b/E5, hq#12640).
+# 9 -> 8 (ToastOverlay_test.js converted, Task 3 of E4b/E5, hq#12640).
+# 8 -> 7 (withPagedCollections_test.js converted, Task 3 of E4b/E5, hq#12640).
+# 7 -> 6 (VideoList_test.js converted, Task 3 of E4b/E5, hq#12640).
+# 6 -> 5 (DeleteVideoDialog_test.js converted, Task 4 of E4b/E5, hq#12640).
+# 5 -> 4 (DeleteSubtitlesDialog_test.js converted, Task 4 of E4b/E5, hq#12640).
+# 4 -> 3 (EditVideoFormDialog_test.js converted, Task 5 of E4b/E5, hq#12640).
+# 3 -> 2 (VideoDetailPage_test.js converted, Task 6 of E4b/E5, hq#12640).
+# 2 -> 1 (CollectionFormDialog_test.js converted, Task 7 of E4b/E5, hq#12640;
+# this file held the migration's last two .state() reads).
+# 1 -> 0 (CollectionDetailPage_test.js converted, Task 8 of E4b/E5, hq#12640 --
+# the last Enzyme test file in the repo). The check stays here permanently as a
+# le 0 regression guard: it is now what stops Enzyme coming back.
+# Broadened (final review fix wave, hq#12640): the old pattern only caught
+# double-quoted ES imports in *_test.js, narrower than the "Enzyme is gone"
+# guarantee this check's comment claims. This also catches require() form and
+# scans every .js file under static/js, not just tests. Verified to return
+# zero on the current tree and to NOT match the jsdom-setup provenance
+# comment at static/js/babelhook.js:9 ("adapted from
+# https://airbnb.io/enzyme/docs/..."), which mentions Enzyme without
+# importing it.
+ENZYME=$(grep -rlE 'from .enzyme.|require\(.enzyme.\)' static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
+check "enzyme test files" "$ENZYME" le 0
 
 # data-testid is the escape hatch that turns an RTL migration back into
 # implementation-coupled testing. 86 .find("ComponentName") selectors exist in
@@ -55,11 +86,17 @@ check "enzyme test files" "$ENZYME" le 16
 # to make an RTL query easy.
 TESTIDS=$(grep -rho 'data-testid' static/js --include='*.js' \
 	--exclude='*_test.js' --exclude-dir=testUtils --exclude-dir=factories 2>/dev/null | wc -l | tr -d ' ')
-check "data-testid in components" "$TESTIDS" le 15
+# le 15 -> le 0 (final review fix wave, hq#12640): the migration spent none of
+# its 15-testid budget end to end, so a future legitimate need should require
+# a visible, reviewed ledger edit rather than quietly fitting under headroom.
+check "data-testid in components" "$TESTIDS" le 0
 
 # May only decrease.
 FLOWFIX=$(grep -rho 'FlowFixMe' static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "FlowFixMe occurrences" "$FLOWFIX" le 40
+# le 40 -> le 22 (final review fix wave, hq#12640): current actual is 22 after
+# the full Enzyme -> RTL migration; ratchet the ceiling down to that measured
+# value so it can't silently creep back up.
+check "FlowFixMe occurrences" "$FLOWFIX" le 22
 
 # Frozen. Adding a line here is how React 18 act() warnings get silenced --
 # turning a real signal about un-batched state updates into future flaky tests.

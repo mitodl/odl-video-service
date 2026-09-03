@@ -1,27 +1,42 @@
 // @flow
 /* global SETTINGS */
 import React from "react"
-import { Provider } from "react-redux"
 import { assert } from "chai"
 import sinon from "sinon"
-import { mount } from "enzyme"
+import { fireEvent } from "@testing-library/react"
 import { URLSearchParams } from "url"
+import configureTestStore from "redux-asserts"
+import ga from "react-ga"
 import VideoPlayer from "./VideoPlayer"
+import { VideoPlayerController } from "../lib/video_player_controller"
 import {
   makeVideo,
   makeVideoSource,
   makeVideoSubtitle
 } from "../factories/video"
 import * as libVideo from "../lib/video"
-import ga from "react-ga"
+import { actions } from "../actions"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
-import { makeVideoSubtitleUrl } from "../lib/urls"
 import { expect } from "../util/test_utils"
-import configureTestStore from "redux-asserts"
 import rootReducer from "../reducers"
+import renderWithProviders from "../testUtils/renderWithProviders"
+import { makePlayerStub } from "../testUtils/playerStub"
 
 global.URLSearchParams = URLSearchParams
+
+// The player events VideoPlayer wires to Google Analytics, in the same order
+// as the component's own `gaEvents` list. changeCameraView is deliberately
+// absent: it is not a player event, it is sent straight from clickCamera.
+const gaEvents = [
+  "play",
+  "pause",
+  "seeked",
+  "timeupdate",
+  "fullscreen off",
+  "fullscreen on",
+  "ended"
+]
 
 describe("VideoPlayer", () => {
   let video,
@@ -29,23 +44,59 @@ describe("VideoPlayer", () => {
     sandbox,
     cornerFunction,
     playerStub,
-    containerStub,
-    nodeStub,
     gaEventStub,
     gaSetStub,
-    store
+    store,
+    dispatchSpy
 
   const renderPlayer = (props = {}) =>
-    mount(
-      <Provider store={store}>
-        <VideoPlayer
-          video={video}
-          cornerFunc={cornerFunction}
-          selectedCorner={Object.keys(CANVASES)[0]}
-          {...props}
-        />
-      </Provider>
+    renderWithProviders(
+      <VideoPlayer
+        video={video}
+        cornerFunc={cornerFunction}
+        selectedCorner={Object.keys(CANVASES)[0]}
+        {...props}
+      />,
+      { store }
     )
+
+  // Invoke the onPlayerReady callback VideoPlayer passed to videojs, the way
+  // video.js itself would. Returns the fake `this` so tests can fire the
+  // handlers it registered.
+  const readyPlayer = () => {
+    const fakeReadyThis = {
+      enableTouchActivity: sandbox.stub(),
+      hotkeys:             sandbox.stub(),
+      currentTime:         sandbox.stub(),
+      on:                  sandbox.stub(),
+      tech_:               playerStub.tech_
+    }
+    videojsStub.firstCall.args[2].call(fakeReadyThis)
+    return fakeReadyThis
+  }
+
+  const fireReadyEvent = (fakeReadyThis, event) => {
+    const call = fakeReadyThis.on.getCalls().find(c => c.args[0] === event)
+    assert.isOk(call, `no handler registered for ${event}`)
+    call.args[1].call(fakeReadyThis)
+  }
+
+  const firePlayerEvent = event => {
+    const call = playerStub.on.getCalls().find(c => c.args[0] === event)
+    assert.isOk(call, `no handler registered for ${event}`)
+    call.args[1]()
+  }
+
+  // Capture every `new Image()` the component makes. `new Image()` in module
+  // code resolves through the global scope, not through `window`, so the stub
+  // has to go on `global`.
+  const captureImages = () => {
+    const images = []
+    sandbox.stub(global, "Image").callsFake(function() {
+      images.push(this)
+    })
+    return images
+  }
 
   beforeEach(() => {
     video = makeVideo()
@@ -54,39 +105,10 @@ describe("VideoPlayer", () => {
     cornerFunction = sandbox.stub()
     gaEventStub = sandbox.stub(ga, "event")
     gaSetStub = sandbox.stub(ga, "set")
-    playerStub = {
-      el_: {
-        style:         {},
-        dispatchEvent: sandbox.stub()
-      },
-      tracks:        [],
-      on:            sandbox.stub(),
-      tech_:         {},
-      reset:         sandbox.stub().returns(playerStub),
-      src:           sandbox.stub().returns(playerStub),
-      fluid:         sandbox.stub().returns(playerStub),
-      width:         sandbox.stub(),
-      height:        sandbox.stub(),
-      currentTime:   () => 630.5,
-      duration:      () => 2400.0,
-      videoWidth:    () => 640,
-      videoHeight:   () => 360,
-      currentWidth:  () => 1280,
-      currentHeight: () => 720,
-      textTracks:    function() {
-        return this.tracks
-      },
-      removeRemoteTextTrack: function(track) {
-        this.tracks.splice(this.tracks.indexOf(track), 1)
-      },
-      addRemoteTextTrack: function(track) {
-        this.tracks.push({ src: track.src, addEventListener: function() {} })
-      }
-    }
-    containerStub = { style: {}, parentElement: { style: {} } }
-    nodeStub = { style: {} }
+    playerStub = makePlayerStub(sandbox)
     videojsStub = sandbox.stub(libVideo, "videojs").returns(playerStub)
     store = configureTestStore(rootReducer)
+    dispatchSpy = sandbox.spy(store, "dispatch")
   })
 
   afterEach(() => {
@@ -174,37 +196,35 @@ describe("VideoPlayer", () => {
   })
   ;[false, true].forEach(function(embed) {
     it("video element is rendered with the correct style attributes", () => {
-      const wrapper = renderPlayer({ embed }).find("VideoPlayer")
-      const videoProps = wrapper.find("video").props()
+      const { container } = renderPlayer({ embed })
+      const videoElem = container.querySelector("video")
       assert.equal(
-        videoProps.className,
+        videoElem.className,
         `video-js vjs-default-skin ${embed ? "video-odl-embed" : ""}`
       )
-      assert(videoProps.controls !== undefined)
+      assert.isTrue(videoElem.hasAttribute("controls"))
     })
   })
 
   it("video element is rendered with 4 canvas elements when multiangle", () => {
     video.multiangle = true
-    const wrapper = renderPlayer().find("VideoPlayer")
-    const canvases = wrapper.find(".camera-box")
-    assert.equal(canvases.length, 4)
+    const { container } = renderPlayer()
+    assert.equal(container.querySelectorAll(".camera-box").length, 4)
   })
 
   it("video element is rendered with 1 selected canvas elements when multiangle", () => {
     video.multiangle = true
-    const wrapper = renderPlayer().find("VideoPlayer")
-    const canvas = wrapper.find(".camera-box-selected").at(0)
-    assert.equal(canvas.props().id, "camera1")
+    const { container } = renderPlayer()
+    assert.equal(container.querySelector(".camera-box-selected").id, "camera1")
   })
 
-  it("selected video screen changes on click", () => {
+  it("selected video screen changes on click", async () => {
     SETTINGS.ga_dimension_camera = "dimension1"
+    const cropStub = sandbox.stub(VideoPlayerController.prototype, "cropVideo")
     video.multiangle = true
-    const wrapper = renderPlayer().find("VideoPlayer")
+    const { container } = renderPlayer()
 
-    const canvases = wrapper.find(".camera-box")
-    canvases.at(3).prop("onClick")()
+    fireEvent.click(container.querySelectorAll(".camera-box")[3])
     sinon.assert.calledWith(cornerFunction, "camera4")
     sinon.assert.calledWith(gaSetStub, {
       dimension1: "camera4"
@@ -215,146 +235,93 @@ describe("VideoPlayer", () => {
       label:    video.key,
       value:    631
     })
+    // clickCamera awaits cornerFunc before cropping
+    await Promise.resolve()
+    sinon.assert.calledOnce(cropStub)
+    sinon.assert.calledWith(cropStub, Object.keys(CANVASES)[0])
   })
 
-  it("cropVideo modifies style and configureCameras function called", () => {
-    video.multiangle = true
-    sandbox.stub(window, "getComputedStyle").returns({ maxHeight: 600 })
-    const wrapper = renderPlayer().find("VideoPlayer")
-    wrapper.instance().player = playerStub
-    wrapper.instance().videoNode = nodeStub
-    wrapper.instance().videoContainer = containerStub
-    wrapper.instance().cropVideo()
-    assert.deepEqual(wrapper.instance().videoNode.style, {
-      left:      "640px",
-      top:       "360px",
-      transform: "scale(2)"
-    })
-  })
-  ;[1000, 4000].forEach(function(videoWidth) {
-    it("resizeYoutube modifies the video width and height", () => {
-      const wrapper = renderPlayer().find("VideoPlayer")
-      sandbox.stub(window, "getComputedStyle").returns({ maxHeight: "700px" })
-      containerStub = {
-        style:         {},
-        parentElement: { style: {} },
-        clientWidth:   videoWidth
-      }
-      wrapper.instance().player = playerStub
-      wrapper.instance().videoNode = nodeStub
-      wrapper.instance().videoContainer = containerStub
-      wrapper.instance().resizeYouTube()
-      sinon.assert.calledWith(
-        wrapper.instance().player.width,
-        wrapper.instance().videoContainer.clientWidth
-      )
-      sinon.assert.calledWith(
-        wrapper.instance().player.height,
-        Math.min(videoWidth / wrapper.instance().aspectRatio, 700)
-      )
-    })
-  })
-
-  it("drawCanvas calls inner drawCanvasImage", () => {
-    video.multiangle = true
-    sandbox.stub(window, "getComputedStyle").returns({ maxHeight: 600 })
-    const wrapper = renderPlayer().find("VideoPlayer")
-    wrapper.instance().player = playerStub
-    wrapper.instance().videoNode = nodeStub
-    const canvas = wrapper.find(".camera-box").at(0)
-    assert.throws(
-      () => wrapper.instance().drawCanvas(canvas, true, false),
-      TypeError,
-      "getContext"
+  it("updates subtitles on the controller when the video prop changes", () => {
+    const updateStub = sandbox.stub(
+      VideoPlayerController.prototype,
+      "updateSubtitles"
     )
-  })
-
-  it("subtitles added to and removed from player", () => {
-    const captionToKeep = video.videosubtitle_set[0]
-    const captionToDelete = makeVideoSubtitle(video.key, "es")
-    const captionToAdd = makeVideoSubtitle(video.key, "fr")
-    video.videosubtitle_set.push(captionToDelete)
-    const wrapper = renderPlayer().find("VideoPlayer")
-    wrapper.instance().player = playerStub
-    wrapper.instance().updateSubtitles()
-    assert.equal(wrapper.instance().player.tracks.length, 2)
-    assert.equal(
-      wrapper.instance().player.tracks[0].src,
-      makeVideoSubtitleUrl(captionToKeep)
+    const { rerender } = renderPlayer()
+    const newVideo = {
+      ...video,
+      videosubtitle_set: [
+        ...video.videosubtitle_set,
+        makeVideoSubtitle(video.key, "fr")
+      ]
+    }
+    rerender(
+      <VideoPlayer
+        video={newVideo}
+        cornerFunc={cornerFunction}
+        selectedCorner={Object.keys(CANVASES)[0]}
+      />
     )
-    assert.equal(
-      wrapper.instance().player.tracks[1].src,
-      makeVideoSubtitleUrl(captionToDelete)
-    )
-    video.videosubtitle_set = [captionToKeep, captionToAdd]
-    wrapper.instance().updateSubtitles()
-    assert.equal(wrapper.instance().player.tracks.length, 2)
-    assert.equal(
-      wrapper.instance().player.tracks[0].src,
-      makeVideoSubtitleUrl(captionToKeep)
-    )
-    assert.equal(
-      wrapper.instance().player.tracks[1].src,
-      makeVideoSubtitleUrl(captionToAdd)
-    )
-  })
-
-  it("has a playback speed button on the control bar", () => {
-    const wrapper = renderPlayer().find("VideoPlayer")
-    assert.isDefined(wrapper.find(".vjs-playback-rate-value"))
+    sinon.assert.calledWith(updateStub, newVideo)
   })
 
   it("toggleFullScreen on causes player to dispatchEvent", () => {
-    const wrapper = renderPlayer().find("VideoPlayer")
-    wrapper.instance().player = playerStub
-    // $FlowFixMe
-    containerStub.parentElement[FULLSCREEN_API.requestFullscreen] = () => {}
-    wrapper.instance().videoContainer = containerStub
+    video.multiangle = true
+    const { container } = renderPlayer()
+    // componentDidMount hands the component's toggleFullscreen to video.js
+    const videoContainer: Object = container.querySelector(".video-odl-medium")
+    const requestStub = sandbox.stub()
+    videoContainer.parentElement[FULLSCREEN_API.requestFullscreen] = requestStub
 
-    wrapper.instance().toggleFullscreen()
+    libVideo.videojs.getComponent("FullscreenToggle").prototype.handleClick()
+
+    sinon.assert.called(requestStub)
     assert.equal(
-      wrapper.instance().player.el_.dispatchEvent.getCalls()[0].args[0].type,
+      playerStub.el_.dispatchEvent.getCalls()[0].args[0].type,
       "fullscreen on"
     )
   })
 
   it("toggleFullScreen off causes player to dispatchEvent", () => {
-    const wrapper = renderPlayer().find("VideoPlayer")
-    wrapper.instance().player = playerStub
-    // $FlowFixMe
-    document[FULLSCREEN_API.fullscreenElement] = () => {
-      return true
-    }
-    wrapper.instance().videoContainer = containerStub
+    video.multiangle = true
+    renderPlayer()
+    // Flow does not know the vendor-prefixed fullscreen keys FULLSCREEN_API
+    // resolves to, so the stubs go on an Object-typed alias of document.
+    const doc: Object = document
+    const exitStub = sandbox.stub()
+    try {
+      // jsdom ships no fullscreen API, so FULLSCREEN_API is {} here and both
+      // keys collapse to the same name -- installing the exit stub is what
+      // makes isFullscreen() truthy. In a browser the two keys differ and both
+      // writes matter, which is why both are set and both are cleaned up.
+      doc[FULLSCREEN_API.fullscreenElement] = () => true
+      doc[FULLSCREEN_API.exitFullscreen] = exitStub
 
-    wrapper.instance().toggleFullscreen()
-    assert.equal(
-      wrapper.instance().player.el_.dispatchEvent.getCalls()[0].args[0].type,
-      "fullscreen off"
-    )
+      libVideo.videojs.getComponent("FullscreenToggle").prototype.handleClick()
+
+      sinon.assert.called(exitStub)
+      assert.equal(
+        playerStub.el_.dispatchEvent.getCalls()[0].args[0].type,
+        "fullscreen off"
+      )
+    } finally {
+      delete doc[FULLSCREEN_API.fullscreenElement]
+      delete doc[FULLSCREEN_API.exitFullscreen]
+    }
   })
-  ;[
-    "play",
-    "pause",
-    "seeked",
-    "timeupdate",
-    "changeCameraView",
-    "fullscreen off",
-    "fullscreen on",
-    "ended"
-  ].forEach(event => {
+
+  gaEvents.forEach(event => {
     it(`sets up GA trigger for player event ${event}`, () => {
-      const wrapper = renderPlayer().find("VideoPlayer")
-      wrapper.instance().player = playerStub
-      wrapper.instance().createEventHandler(event, event)
-      assert.isTrue(wrapper.instance().player.on.calledWith(event))
+      renderPlayer()
+      const ready = readyPlayer()
+      fireReadyEvent(ready, "loadedmetadata")
+      sinon.assert.calledWith(playerStub.on, event)
     })
 
     it(`sends the correct event to google analytics for ${event}`, () => {
-      const wrapper = renderPlayer().find("VideoPlayer")
-      wrapper.instance().player = playerStub
-      wrapper.instance().lastMinuteTracked = -1
-      wrapper.instance().sendEvent(event, video.key)
+      renderPlayer()
+      const ready = readyPlayer()
+      fireReadyEvent(ready, "loadedmetadata")
+      firePlayerEvent(event)
       if (event !== "timeupdate") {
         sinon.assert.calledWith(gaEventStub, {
           category: "video",
@@ -369,8 +336,17 @@ describe("VideoPlayer", () => {
           label:    video.key,
           value:    1
         })
+        sinon.assert.calledWith(dispatchSpy, actions.videoUi.setVideoTime(630))
       }
     })
+  })
+
+  it("dispatches the duration and seeks to the start on loadedmetadata", () => {
+    renderPlayer()
+    const ready = readyPlayer()
+    fireReadyEvent(ready, "loadedmetadata")
+    sinon.assert.calledWith(dispatchSpy, actions.videoUi.setVideoDuration(2400))
+    sinon.assert.calledWith(ready.currentTime, 0)
   })
 
   describe("selectPlaylist", () => {
@@ -395,9 +371,9 @@ describe("VideoPlayer", () => {
               systemBandwidth: bandwidth
             }
           }
-          const wrapper = renderPlayer().find("VideoPlayer")
-          wrapper.instance().player = playerStub
-          const bestPlayList = wrapper.instance().selectPlaylist()
+          renderPlayer()
+          readyPlayer()
+          const bestPlayList = playerStub.tech_.hls.selectPlaylist()
           assert.equal(
             bestPlayList.attributes.BANDWIDTH,
             videoTime < 10 ? 3900 : bandwidth - 100
@@ -427,9 +403,9 @@ describe("VideoPlayer", () => {
             systemBandwidth: 2000
           }
         }
-        const wrapper = renderPlayer().find("VideoPlayer")
-        wrapper.instance().player = playerStub
-        const bestPlayList = wrapper.instance().selectPlaylist()
+        renderPlayer()
+        readyPlayer()
+        const bestPlayList = playerStub.tech_.hls.selectPlaylist()
         assert.equal(bestPlayList.attributes.BANDWIDTH, 900)
       })
 
@@ -451,9 +427,9 @@ describe("VideoPlayer", () => {
             systemBandwidth: 2000
           }
         }
-        const wrapper = renderPlayer().find("VideoPlayer")
-        wrapper.instance().player = playerStub
-        const bestPlayList = wrapper.instance().selectPlaylist()
+        renderPlayer()
+        readyPlayer()
+        const bestPlayList = playerStub.tech_.hls.selectPlaylist()
         assert.equal(bestPlayList.attributes.BANDWIDTH, 2900)
       })
     })
@@ -462,33 +438,53 @@ describe("VideoPlayer", () => {
     ["asdJ4y", null].forEach(function(youtubeId) {
       it(`checkYouTube ${expect(
         isPublic && youtubeId !== null
-      )} be called if video.is_public=${String(isPublic)} and video.youtube_id=${String(youtubeId)}`, async () => {
+      )} be called if video.is_public=${String(isPublic)} and video.youtube_id=${String(youtubeId)}`, () => {
+        const images = captureImages()
         video.is_public = isPublic
         video.youtube_id = youtubeId
         video.multiangle = false
-        const wrapper = renderPlayer().find("VideoPlayer")
-        const checkStub = sandbox.stub(wrapper.instance(), "checkYouTube")
-        wrapper.instance().componentDidMount()
-        sinon.assert.callCount(
-          checkStub,
-          Number(isPublic && youtubeId !== null)
-        )
+        renderPlayer()
+        assert.equal(images.length, Number(isPublic && youtubeId !== null))
+        if (isPublic && youtubeId !== null) {
+          assert.equal(
+            images[0].src,
+            `https://img.youtube.com/vi/${String(youtubeId)}/0.jpg`
+          )
+        }
       })
     })
   })
   ;[[makeVideoSource()], []].forEach(function(sources) {
     it(`player.src() ${expect(
       sources.length > 0
-    )} be called if video has ${sources.length} sources`, async () => {
+    )} be called if video has ${sources.length} sources`, () => {
+      const images = captureImages()
+      video.is_public = true
+      video.youtube_id = "asdJ4y"
+      video.multiangle = false
       video.sources = sources
-      sandbox.stub(window, "Image")
-      const wrapper = await renderPlayer().find("VideoPlayer")
-      wrapper.instance().switchVideoSource()
-      sinon.assert.callCount(
-        wrapper.instance().player.src,
-        sources.length > 0 ? 1 : 0
-      )
+      renderPlayer()
+      // the YouTube thumbnail failing to load is what switches the source
+      images[0].onerror()
+      sinon.assert.callCount(playerStub.src, sources.length > 0 ? 1 : 0)
     })
+  })
+
+  it("calls controller.resizeYouTube with the embed prop on loadedmetadata when useYouTube", () => {
+    const images = captureImages()
+    const resizeStub = sandbox.stub(
+      VideoPlayerController.prototype,
+      "resizeYouTube"
+    )
+    video.is_public = true
+    video.youtube_id = "asdJ4y"
+    video.multiangle = false
+    renderPlayer({ embed: true })
+    const ready = readyPlayer()
+    fireReadyEvent(ready, "loadedmetadata")
+    sinon.assert.calledWith(resizeStub, true)
+    // sanity: the useYouTube path really ran (checkYouTube's thumbnail check)
+    assert.equal(images.length, 1)
   })
 
   it("renders overlayChildren", () => {
@@ -496,8 +492,20 @@ describe("VideoPlayer", () => {
     const overlayChildren = overlayChildKeys.map(key => {
       return <div key={key} className="overlay-child" />
     })
-    const wrapper = renderPlayer({ overlayChildren })
-    const renderedChildKeys = wrapper.find(".overlay-child").map(el => el.key())
-    assert.deepEqual(overlayChildKeys.sort(), renderedChildKeys.sort())
+    const { container } = renderPlayer({ overlayChildren })
+    // React keys are not observable from the DOM, so this asserts the count
+    // and the position -- the overlay renders inside the video container.
+    assert.equal(
+      container.querySelectorAll(".video-odl-medium > .overlay-child").length,
+      3
+    )
+  })
+
+  it("exposes setCurrentTime through videoPlayerRef", () => {
+    playerStub.currentTime = sandbox.stub().returns(630.5)
+    let playerRef
+    renderPlayer({ videoPlayerRef: ref => (playerRef = ref) })
+    playerRef.setCurrentTime(99)
+    sinon.assert.calledWith(playerStub.currentTime, 99)
   })
 })
