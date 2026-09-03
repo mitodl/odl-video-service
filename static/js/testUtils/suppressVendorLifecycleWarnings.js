@@ -11,8 +11,18 @@
  * So for a dependency that still uses these lifecycles there is no fix
  * available short of replacing the dependency.
  *
- * `grep -rn "componentWill" static/js` finds no call sites of our own -- the
- * prep phase removed them all -- so every name below is third-party.
+ * `grep -rnE "componentWill(Mount|ReceiveProps|Update)\b" static/js` finds no
+ * call sites of our own -- the prep phase removed them all -- so every name
+ * below is third-party. (The looser `grep -rn "componentWill"` returns ~15
+ * hits, all componentWillUnmount, which is not deprecated.)
+ *
+ * The match is by component NAME, and React identifies a component by its
+ * class name, so a component of OURS sharing a name with one below would be
+ * excused by it -- which is the one way this mechanism can lose its
+ * self-policing property. `suppressVendorLifecycleWarnings_test.js` enforces
+ * the absence of such a collision with a test, not a comment: see "THE
+ * NAME-COLLISION GUARD" there. `static/js/Router.js` exports `AppRouter`
+ * rather than `Router` because of it.
  *
  * WHY THIS IS NOT AN ALLOWLIST LINE IN js_test.sh
  *

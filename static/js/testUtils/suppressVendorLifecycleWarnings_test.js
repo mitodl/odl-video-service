@@ -1,3 +1,5 @@
+import fs from "fs"
+import path from "path"
 import { assert } from "chai"
 
 import suppressVendorLifecycleWarnings, {
@@ -309,5 +311,140 @@ describe("suppressVendorLifecycleWarnings", () => {
       console.error = originalConsoleError
     }
     assert.lengthOf(errors, 1)
+  })
+})
+
+/**
+ * THE NAME-COLLISION GUARD
+ *
+ * The matcher is by component NAME, and React identifies a component by its
+ * class name (type.displayName || type.name). So a component of OURS whose
+ * class name equals a vendored name in the table is indistinguishable from the
+ * vendored one, and a deprecated lifecycle added to ours would be silently
+ * swallowed -- destroying the single property that justifies this mechanism
+ * over a js_test.sh allowlist line: "an unknown name anywhere in the reported
+ * group fails the match ... including one of OUR components regressing".
+ *
+ * That was not hypothetical. static/js/Router.js used to export
+ * `class Router`, and "Router" is a known name for BOTH lifecycles via
+ * react-router 4.3.1. Proved by probe: a component of ours named `Router` with
+ * a componentWillMount was swallowed (suite exit 0, zero warnings printed);
+ * the identical probe named `OvsProbeWidget` reddened the run. Our class is
+ * now `AppRouter`, so the table has no collision today.
+ *
+ * A comment at the react-router row could not have stopped the NEXT collision,
+ * so this is a mechanism rather than a comment: it enumerates our own
+ * component names out of the source tree and fails if any of them appears in
+ * the table, whichever side introduced the clash. Like the carrier-data guards
+ * above -- and unlike the tautology this file's header warns about -- it
+ * cross-checks the table against an independently maintained second source,
+ * here static/js itself.
+ */
+describe("our own component names vs the vendor suppression table", () => {
+  const SOURCE_ROOT = path.resolve(__dirname, "..")
+
+  // `class X extends React.Component` / `extends Component` /
+  // `extends React.PureComponent`, plus a literal `displayName = "X"`, which
+  // React prefers over the class name when set. A displayName assembled from
+  // a template literal (components/dialogs/hoc.js) is not statically
+  // scannable; it is also incapable of equalling a bare vendored name.
+  const OWN_NAME_PATTERNS = [
+    /\bclass\s+([A-Za-z_$][\w$]*)\s+extends\s+(?:[\w$]+\.)?(?:Pure)?Component\b/g,
+    /\bdisplayName\s*[:=]\s*"([^"]+)"/g
+  ]
+
+  const jsFilesUnder = dir => {
+    return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        return jsFilesUnder(full)
+      }
+      return entry.isFile() && full.endsWith(".js") ? [full] : []
+    })
+  }
+
+  // name -> the first file it was declared in, for the failure message.
+  const ownComponents = () => {
+    const found = new Map()
+    jsFilesUnder(SOURCE_ROOT).forEach(file => {
+      const source = fs.readFileSync(file, "utf8")
+      OWN_NAME_PATTERNS.forEach(pattern => {
+        for (const match of source.matchAll(pattern)) {
+          if (!found.has(match[1])) {
+            found.set(match[1], path.relative(SOURCE_ROOT, file))
+          }
+        }
+      })
+    })
+    return found
+  }
+
+  /**
+   * Collisions we have deliberately decided to live with. Empty, and it should
+   * stay that way: the fix for a collision is to rename OUR component, which
+   * costs one import site. An entry here is a promise that the named component
+   * of ours will never grow a deprecated lifecycle -- which nothing can check
+   * -- so it needs a written justification beside it. The stale-entry guard
+   * below makes an exemption die with the row it excuses.
+   */
+  const ACCEPTED_NAME_COLLISIONS = []
+
+  const tableNames = new Set(
+    VENDOR_LIFECYCLE_WARNINGS.flatMap(entry => entry.components)
+  )
+
+  // Anti-vacuity: if the walk or either pattern breaks, every assertion below
+  // passes while scanning nothing. These floors are what makes the guard real.
+  it("actually finds our own component names", () => {
+    const found = ownComponents()
+    assert.isAtLeast(
+      found.size,
+      40,
+      `only found ${found.size} component names under static/js -- the walk ` +
+        "or OWN_NAME_PATTERNS is broken, and the collision guard below is " +
+        "passing vacuously"
+    )
+    ;["AppRouter", "VideoPlayer", "VideoDetailPage", "ToastMessage"].forEach(
+      name => {
+        assert.isTrue(
+          found.has(name),
+          `expected to find our ${name} component; the scanner missed it, so ` +
+            "the collision guard below cannot be trusted"
+        )
+      }
+    )
+  })
+
+  it("has no component of ours named after a suppressed vendor component", () => {
+    const collisions = [...ownComponents()]
+      .filter(([name]) => tableNames.has(name))
+      .filter(([name]) => !ACCEPTED_NAME_COLLISIONS.includes(name))
+      .map(([name, file]) => `${name} (static/js/${file})`)
+    assert.deepEqual(
+      collisions,
+      [],
+      `these components of ours share a name with a row in ` +
+        `VENDOR_LIFECYCLE_WARNINGS: ${collisions.join("; ")}. React reports ` +
+        "components by name, so a deprecated lifecycle added to ours would " +
+        "be SILENTLY SUPPRESSED rather than failing the run. Rename OUR " +
+        "component (that is what static/js/Router.js's `Router` -> " +
+        "`AppRouter` was for); only if that is truly impossible, add the " +
+        "name to ACCEPTED_NAME_COLLISIONS above WITH a justification."
+    )
+  })
+
+  it("carries no stale accepted collision", () => {
+    const names = new Set(ownComponents().keys())
+    const stale = ACCEPTED_NAME_COLLISIONS.filter(
+      name => !(names.has(name) && tableNames.has(name))
+    )
+    assert.deepEqual(
+      stale,
+      [],
+      `ACCEPTED_NAME_COLLISIONS lists ${stale.join(", ")}, which is no ` +
+        "longer both a component of ours and a name in the table. The " +
+        "collision is gone, so delete the exemption -- an exemption that " +
+        "outlives its collision silently excuses the next one."
+    )
   })
 })
