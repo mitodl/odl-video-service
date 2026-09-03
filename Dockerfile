@@ -2,7 +2,7 @@
 # hadolint global ignore=DL3008
 
 # ─── Node / frontend asset build ─────────────────────────────────────────────
-FROM node:24.16.0@sha256:9c1d881a5b3354362cd134d15b6eee789313833caa720c3cb6ea8862925d6eb8 AS node
+FROM node:24.18.1@sha256:19cd848a0e073d34bd8cd5545a1b6b4d28489b3e3b607366621ced442bd5f6b4 AS node
 ENV NODE_ENV=production
 RUN apt-get update && apt-get install libelf1 -y --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
