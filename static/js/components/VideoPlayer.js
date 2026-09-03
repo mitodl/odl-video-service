@@ -76,7 +76,7 @@ const makeConfigForVideo = (
   }
 })
 
-class VideoPlayer extends React.Component<*, void> {
+export class VideoPlayer extends React.Component<*, void> {
   props: {
     dispatch: Dispatch,
     video: Video,
