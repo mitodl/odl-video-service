@@ -7,19 +7,11 @@ import { makeVideoAnalyticsData } from "../../factories/videoAnalytics"
 import { ConditionalLabel, AnalyticsChart } from "./AnalyticsChart"
 import { shouldIf } from "../../lib/test_utils"
 
-import suppressVictoryKeyWarning from "../../testUtils/suppressVictoryKeyWarning"
-
 describe("AnalyticsChartTests", () => {
   let analyticsData, padding, getColorForChannelStub, props, sandbox
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
-    // AnalyticsChart mounts a real Victory chart whose VictoryAxis emits a
-    // spurious React "unique key prop" warning; see the helper for why it
-    // is filtered here and nowhere else. This used to be an inline copy of
-    // the helper's logic; the duplicate went stale when React 16 reworded
-    // the message, so the two call sites now share one implementation.
-    suppressVictoryKeyWarning(sandbox)
     analyticsData = makeVideoAnalyticsData(10)
     // Must be the {top, bottom, left, right} object AnalyticsPane passes as
     // CHART_PADDING. A bare number is a valid Victory `padding`, but

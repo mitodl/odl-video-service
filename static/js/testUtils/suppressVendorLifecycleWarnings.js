@@ -50,25 +50,16 @@
  * deleted by the change named against it, and deleting the last should delete
  * this file.
  *
- * TASK 7 of this PR (victory 0.27 -> 37) must, in one commit: delete the two
- * victory rows below, lower ledger.sh's "vendor lifecycle suppressions" cap
- * from 6 to 4, and delete the matching literal rows from
- * suppressVendorLifecycleWarnings_test.js's own recorded copy of this table.
+ * Task 7 of this PR (victory 0.27 -> 37) already removed the two victory rows
+ * that used to head this table: Victory 37 uses no deprecated lifecycle, so
+ * nothing was left to excuse. That is the pattern for the rows below -- a row
+ * leaves here, ledger.sh's "vendor lifecycle suppressions" cap comes down by
+ * the same amount, and the literal copy in
+ * suppressVendorLifecycleWarnings_test.js loses the matching row, all in one
+ * commit.
  */
 
 export const VENDOR_LIFECYCLE_WARNINGS = [
-  {
-    dependency: "victory 0.27.2",
-    removedBy:  "Task 7 of this PR (victory 0.27 -> 37)",
-    lifecycle:  "componentWillMount",
-    components: ["VictoryChart", "VictoryStack"]
-  },
-  {
-    dependency: "victory 0.27.2",
-    removedBy:  "Task 7 of this PR (victory 0.27 -> 37)",
-    lifecycle:  "componentWillReceiveProps",
-    components: ["VictoryAxis", "VictoryBar", "VictoryChart", "VictoryStack"]
-  },
   {
     dependency: "rmwc 1.9.4 (Base/withFoundation HOC)",
     removedBy:  "R2, which drops rmwc entirely",
@@ -155,8 +146,8 @@ export function isKnownVendorLifecycleWarning(args) {
  *
  * These warnings arrive on console.warn (react-dom calls
  * printWarning("warn", ...)), and nothing else in static/js touches
- * console.warn. The per-file `sandbox.stub(console, "error")` in
- * suppressVictoryKeyWarning is on a different method and cannot shadow this.
+ * console.warn. Any per-file `sandbox.stub(console, "error")` elsewhere in the
+ * suite is on a different method and cannot shadow this.
  */
 export default function suppressVendorLifecycleWarnings() {
   const originalConsoleWarn = console.warn.bind(console)

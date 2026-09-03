@@ -23,9 +23,10 @@ import suppressVendorLifecycleWarnings, {
  * the tautology this file exists to avoid. Any edit to the real table has to
  * be made here too, which is the point: it cannot happen silently.
  *
- * TASK 7 of this PR removes victory, and must delete the two victory rows from
- * EXPECTED_TABLE and their two suppression cases below, alongside the same
- * deletions in the helper and the ledger cap move 6 -> 4.
+ * Task 7 of this PR (victory 0.27 -> 37) already deleted the two victory rows
+ * from EXPECTED_TABLE and their two suppression cases, alongside the same
+ * deletions in the helper and the ledger cap move 6 -> 4. A later row leaves
+ * the same way.
  */
 
 // Copied verbatim from react-dom 16.14.0. Includes the "Warning: " prefix that
@@ -42,14 +43,6 @@ const CWU =
   "Warning: componentWillUpdate has been renamed, and is not recommended for use. See https://fb.me/react-unsafe-component-lifecycles for details.\n\n* Move data fetching code or side effects to componentDidUpdate.\n* Rename componentWillUpdate to UNSAFE_componentWillUpdate to suppress this warning in non-strict mode. In React 17.x, only the UNSAFE_ name will work. To rename all deprecated lifecycles to their new names, you can run `npx react-codemod rename-unsafe-lifecycles` in your project source folder.\n\nPlease update the following components: %s"
 
 const EXPECTED_TABLE = [
-  {
-    lifecycle:  "componentWillMount",
-    components: ["VictoryChart", "VictoryStack"]
-  },
-  {
-    lifecycle:  "componentWillReceiveProps",
-    components: ["VictoryAxis", "VictoryBar", "VictoryChart", "VictoryStack"]
-  },
   { lifecycle: "componentWillReceiveProps", components: ["LinearProgress"] },
   {
     lifecycle:  "componentWillMount",
@@ -100,7 +93,7 @@ describe("suppressVendorLifecycleWarnings", () => {
 
   // The anti-tautology check. Compares the real table against the literal copy
   // above, so no entry can be added, removed, renamed or widened without a
-  // test failing -- which is what the six suppression cases below, on their
+  // test failing -- which is what the four suppression cases below, on their
   // own, cannot detect.
   it("suppresses exactly the vendored warnings recorded in this file", () => {
     assert.deepEqual(
@@ -122,14 +115,6 @@ describe("suppressVendorLifecycleWarnings", () => {
   // One case per known warning, with the component list written out here
   // rather than read from the table.
   describe("suppresses the known vendor warnings", () => {
-    it("victory's componentWillMount group", () => {
-      swallows(CWM, "VictoryChart, VictoryStack")
-    })
-
-    it("victory's componentWillReceiveProps group", () => {
-      swallows(CWRP, "VictoryAxis, VictoryBar, VictoryChart, VictoryStack")
-    })
-
     it("rmwc's LinearProgress", () => {
       swallows(CWRP, "LinearProgress")
     })
@@ -161,7 +146,7 @@ describe("suppressVendorLifecycleWarnings", () => {
     })
 
     it("suppresses a group merged across two dependencies", () => {
-      swallows(CWM, "MemoryRouter, Route, Router, VictoryChart, VictoryStack")
+      swallows(CWM, "MemoryRouter, Route, Router, SideEffect(DocumentTitle)")
     })
   })
 
@@ -174,7 +159,7 @@ describe("suppressVendorLifecycleWarnings", () => {
     // not warning about before now uses a deprecated lifecycle -- possibly one
     // of ours -- so the warning must surface even beside known names.
     it("a known group that has gained an unknown component", () => {
-      passesThrough(CWM, "VictoryChart, VictoryStack, VideoPlayer")
+      passesThrough(CWM, "MemoryRouter, Route, Router, VideoPlayer")
     })
 
     it("an unknown component on its own", () => {
@@ -189,7 +174,7 @@ describe("suppressVendorLifecycleWarnings", () => {
     })
 
     it("a lifecycle that is not in the table", () => {
-      passesThrough(CWU, "VictoryChart, VictoryStack")
+      passesThrough(CWU, "MemoryRouter, Route, Router")
     })
 
     it("a matching message with no component-list argument", () => {
@@ -202,7 +187,7 @@ describe("suppressVendorLifecycleWarnings", () => {
 
     it("a non-string first argument", () => {
       const error = new Error("boom")
-      passesThrough(error, "VictoryChart, VictoryStack")
+      passesThrough(error, "MemoryRouter, Route, Router")
     })
   })
 
@@ -215,7 +200,7 @@ describe("suppressVendorLifecycleWarnings", () => {
       errors.push(args)
     }
     try {
-      console.error(CWM, "VictoryChart, VictoryStack")
+      console.error(CWM, "MemoryRouter, Route, Router")
     } finally {
       console.error = originalConsoleError
     }

@@ -110,28 +110,33 @@ check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
 
 # The same guarantee for the other suppression surface. Capping js_test.sh at 5
 # and then leaving testUtils/suppressVendorLifecycleWarnings.js uncapped would
-# just relocate the erosion one file over: a seventh entry could be added with
+# just relocate the erosion one file over: another entry could be added with
 # no threshold move, no comment discipline and no reviewer signal.
 #
-# Frozen at the six deprecated-lifecycle warnings React 16.9 emits for
-# vendored components today (Phase R1, hq#12641):
-#   2x victory 0.27.2                -> Task 7 of this PR (victory 0.27 -> 37)
+# Frozen at the deprecated-lifecycle warnings React 16.9 emits for vendored
+# components today (Phase R1, hq#12641):
 #   1x rmwc 1.9.4                    -> R2, which drops rmwc entirely
 #   2x react-router 4.3.1            -> no phase yet
 #   1x react-document-title 2.0.3    -> no phase yet (react-side-effect 1.2.0
 #                                       is unmaintained; needs a different
 #                                       component, not an upgrade)
-# A seventh entry is a new suppression and needs the same justification an
-# allowlist line would. Task 7 must lower this to 4 when it deletes the two
-# victory rows.
+# A fifth entry is a new suppression and needs the same justification an
+# allowlist line would.
+#
+# le 6 -> le 4 (Task 7 of Phase R1, hq#12641): victory 37 uses none of the
+# deprecated lifecycles, so the two `victory 0.27.2` rows were deleted with the
+# bump. Because this check is `le`, leaving the cap at 6 would have PASSED
+# while silently re-opening two slots of exactly the headroom this check exists
+# to deny -- so the cap moves with the rows, in the same commit, per this
+# file's own rule.
 #
 # Counts data rows only: the pattern requires leading whitespace, the
 # `lifecycle:` key and a quoted value, so no prose in that file's docstring --
 # which does discuss lifecycles at length -- can inflate it. Verified to
-# return 6 on the current tree.
+# return 4 on the current tree.
 VENDORSUPP=$(grep -cE '^[[:space:]]+lifecycle: *"' \
 	static/js/testUtils/suppressVendorLifecycleWarnings.js)
-check "vendor lifecycle suppressions" "$VENDORSUPP" le 6
+check "vendor lifecycle suppressions" "$VENDORSUPP" le 4
 
 # Mutation score, when a baseline has been recorded and a report exists.
 # The full run takes 30-90 minutes, so this is a per-phase or nightly check --
