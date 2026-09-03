@@ -153,13 +153,13 @@ $video-card-width: 15.6%;
         width: 100%;
       }
 
-      h1, p.description {
+      h1, .description {
         margin: 0;
         padding: 0 0 20px 0;
       }
     }
 
-    p.description {
+    .description {
       width: 100%;
       color: #666;
       font-size: 16px;

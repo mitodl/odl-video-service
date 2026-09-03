@@ -8,7 +8,12 @@ from django.contrib.admin.sites import AdminSite
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.test import RequestFactory
 
-from ui.admin import CollectionAdmin, VideoAdmin
+from ui.admin import (
+    CollectionAdmin,
+    CollectionAdminForm,
+    VideoAdmin,
+    VideoAdminForm,
+)
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
 from ui.factories import CollectionFactory, VideoFactory, VideoFileFactory
@@ -233,3 +238,139 @@ def test_retry_upload_mixed_queryset_reports_each_category(
     assert mocked_chain.return_value.delay.call_count == 1
     # one message each for retried + skipped_status + skipped_no_source
     assert video_admin.message_user.call_count == 3
+
+
+DIRTY_DESCRIPTION = (
+    "<p>Keep <strong>this</strong></p><script>alert(1)</script>"
+    '<p style="color:red">and this</p>'
+)
+CLEAN_DESCRIPTION = "<p>Keep <strong>this</strong></p><p>and this</p>"
+
+
+def _collection_form(description):
+    """Build a bound CollectionAdminForm with the given description"""
+    owner = VideoFactory.create().collection.owner
+    return CollectionAdminForm(
+        data={"title": "A series", "description": description, "owner": owner.id}
+    )
+
+
+def _video_form(description):
+    """Build a bound VideoAdminForm with the given description"""
+    video = VideoFactory.create()
+    return VideoAdminForm(
+        data={
+            "title": video.title,
+            "description": description,
+            "collection": video.collection.id,
+            "source_url": video.source_url,
+            "status": video.status,
+        },
+        instance=video,
+    )
+
+
+def test_admin_form_accepts_clean_rich_text():
+    """Markup within the allowlist passes through untouched"""
+    form = _collection_form(CLEAN_DESCRIPTION)
+    form.is_valid()  # other required fields are not the subject here
+    assert "description" not in form.errors
+    assert form.cleaned_data["description"] == CLEAN_DESCRIPTION
+
+
+def test_admin_form_rejects_disallowed_tags_and_names_them():
+    """
+    The admin edits raw HTML, so silently dropping a tag would leave the author
+    wondering where their formatting went. Refuse and say what was wrong.
+    """
+    form = _collection_form(DIRTY_DESCRIPTION)
+    assert not form.is_valid()
+    message = " ".join(form.errors["description"])
+    assert "<script>" in message
+    assert "not supported" in message
+
+
+def test_admin_form_rejects_headings_explicitly():
+    """Headings are the likeliest paste; Learn strips them, so OVS refuses them"""
+    form = _collection_form("<h2>Session notes</h2><p>body</p>")
+    assert not form.is_valid()
+    assert "<h2>" in " ".join(form.errors["description"])
+
+
+def test_admin_form_reports_dropped_attributes():
+    """An attribute-only problem is reported as an attribute problem"""
+    form = _collection_form('<p class="ql-align-center">centered</p>')
+    assert not form.is_valid()
+    assert "attributes would be dropped" in " ".join(form.errors["description"])
+
+
+def test_admin_form_tidies_malformed_markup_instead_of_refusing():
+    """
+    An unclosed tag loses nothing - nh3 closes it correctly - so accept the
+    tidied version rather than making the admin fix it by hand.
+    """
+    form = _collection_form("<p>unclosed <strong>bold</p>")
+    form.is_valid()
+    assert "description" not in form.errors
+    assert form.cleaned_data["description"] == "<p>unclosed <strong>bold</strong></p>"
+
+
+def test_admin_form_accepts_a_link_despite_the_added_rel():
+    """
+    nh3 adds rel="noopener noreferrer" to every anchor. That is an addition, not
+    a loss, so correct input with a link must not be rejected for differing.
+    """
+    form = _collection_form('<p><a href="https://learn.mit.edu">go</a></p>')
+    form.is_valid()
+    assert "description" not in form.errors
+    assert 'rel="noopener noreferrer"' in form.cleaned_data["description"]
+
+
+@pytest.mark.parametrize(
+    "href",
+    [
+        "javascript:alert(1)",
+        "//evil.example/x",
+        "/site-relative",
+        "ftp://files.mit.edu",
+    ],
+)
+def test_admin_form_rejects_a_link_that_would_lose_its_target(href):
+    """
+    nh3 drops the href but keeps the <a>, so the link silently stops working.
+    Protocol- and site-relative hrefs are included: url_schemes does not
+    constrain them, and on MIT Learn they would resolve against the wrong host.
+    """
+    form = _collection_form(f'<a href="{href}">x</a>')
+    assert not form.is_valid()
+    message = " ".join(form.errors["description"])
+    assert "lose their target" in message
+    assert href in message
+
+
+def test_admin_form_allows_an_empty_description():
+    """Clearing the field is not an error"""
+    form = _collection_form("")
+    form.is_valid()
+    assert "description" not in form.errors
+    assert form.cleaned_data["description"] == ""
+
+
+def test_video_admin_form_validates_description_too():
+    """Video descriptions get the same treatment as collection descriptions"""
+    form = _video_form(DIRTY_DESCRIPTION)
+    assert not form.is_valid()
+    assert "<script>" in " ".join(form.errors["description"])
+
+
+def test_admin_form_documents_the_allowlist_in_help_text():
+    """An admin editing raw HTML needs to be told which tags survive"""
+    help_text = str(_collection_form("").fields["description"].help_text)
+    assert "strong" in help_text
+    assert "Headings" in help_text
+
+
+def test_collection_admin_uses_the_validating_form():
+    """The form is actually attached, not just defined"""
+    assert CollectionAdmin.form is CollectionAdminForm
+    assert VideoAdmin.form is VideoAdminForm

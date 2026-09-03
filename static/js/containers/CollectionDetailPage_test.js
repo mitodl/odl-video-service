@@ -516,13 +516,30 @@ describe("CollectionDetailPage", () => {
     })
 
     describe("renderDescription", () => {
-      it("renders description text when description is not empty", () => {
+      it("renders a legacy plain-text description unchanged", () => {
         const { container } = renderPage({
           collection: { ...collection, description: "someDescription" }
         })
-        const paragraph = container.querySelector("p.description")
-        assert.isNotNull(paragraph)
-        assert.equal(paragraph.textContent, "someDescription")
+        const description = container.querySelector("div.description")
+        assert.isNotNull(description)
+        assert.equal(description.textContent, "someDescription")
+      })
+
+      it("renders the description as markup, not as escaped text", () => {
+        // Descriptions are rich text, sanitized server-side on write
+        // (ui/html.py), so they are injected rather than escaped. A div, not a
+        // p: the markup can contain block elements, which a p cannot hold.
+        const { container } = renderPage({
+          collection: {
+            ...collection,
+            description:
+              "<p>a <strong>seminar</strong></p><ul><li>one</li></ul>"
+          }
+        })
+        const description = container.querySelector("div.description")
+        assert.isNotNull(description)
+        assert.equal(description.querySelectorAll("strong").length, 1)
+        assert.equal(description.querySelectorAll("ul > li").length, 1)
       })
       ;[
         ["", "an empty string"],

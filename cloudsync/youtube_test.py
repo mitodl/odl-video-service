@@ -237,3 +237,36 @@ def test_strip_bad_chars():
     Test that `<`,`>` characters are removed from text
     """
     assert strip_bad_chars("<OV>S>") == "OVS"
+
+
+def test_upload_video_flattens_rich_text_description(mocker):
+    """
+    YouTube descriptions are plain text. An HTML description must be flattened
+    before upload - strip_bad_chars only deletes the angle brackets, which would
+    leave the tag names behind as words visible to viewers.
+    """
+    video = VideoFactory.create(
+        title="Carbon Markets",
+        description=(
+            "<p>How <strong>compliance markets</strong> price emissions.</p>"
+            '<p>Next steps:</p><ul><li><a href="https://learn.mit.edu/x">'
+            "Continue the series</a></li></ul>"
+        ),
+        is_public=True,
+        status=VideoStatus.COMPLETE,
+    )
+    VideoFileFactory(video=video)
+    mocker.patch("cloudsync.youtube.resumable_upload")
+    youtube_mocker = mocker.patch("cloudsync.youtube.build")
+    mock_upload = youtube_mocker().videos.return_value.insert
+    YouTubeApi().upload_video(video)
+    _called_args, called_kwargs = mock_upload.call_args
+    description = called_kwargs["body"]["snippet"]["description"]
+
+    assert "strong" not in description
+    assert "href" not in description
+    assert "<" not in description
+    assert ">" not in description
+    assert "How compliance markets price emissions." in description
+    # the list still reads as a list
+    assert "• Continue the series" in description

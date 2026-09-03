@@ -5,7 +5,7 @@ import type { Dispatch } from "redux"
 
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
-import Textarea from "../material/Textarea"
+import RichTextEditor from "../material/RichTextEditor"
 
 import Dialog from "../material/Dialog"
 
@@ -78,9 +78,10 @@ export class CollectionFormDialog extends React.Component<*, void> {
     dispatch(uiActions.setCollectionTitle(event.target.value))
   }
 
-  setCollectionDesc = (event: Object) => {
+  // The rich-text editor hands back serialized HTML, not a DOM event.
+  setCollectionDesc = (html: string) => {
     const { dispatch } = this.props
-    dispatch(uiActions.setCollectionDesc(event.target.value))
+    dispatch(uiActions.setCollectionDesc(html))
   }
 
   setCollectionViewPermChoice = (choice: string) => {
@@ -237,10 +238,10 @@ export class CollectionFormDialog extends React.Component<*, void> {
             minLength={1}
             validationMessage={errors ? errors.title : ""}
           />
-          <Textarea
+          <RichTextEditor
             label="Description (optional)"
             id="collection-desc"
-            rows="4"
+            placeholder="Add a description, links or next steps for learners."
             onChange={this.setCollectionDesc}
             value={collectionForm.description || ""}
           />

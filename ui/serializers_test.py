@@ -390,3 +390,65 @@ def test_user_serializer():
         "username": user.username,
         "email": user.email,
     }
+
+
+@pytest.mark.parametrize(
+    "serializer_class",
+    [
+        serializers.CollectionSerializer,
+        serializers.CollectionListSerializer,
+    ],
+)
+def test_collection_description_is_sanitized_on_write(serializer_class):
+    """
+    Collection descriptions are rich text, so disallowed markup must be stripped
+    before it is stored - the value is later rendered as HTML by OVS and by Learn.
+    """
+    user = UserFactory.create()
+    serializer = serializer_class(
+        data={
+            "title": "A series",
+            "description": (
+                "<p>Keep <strong>this</strong> and "
+                '<a href="https://learn.mit.edu">this</a></p>'
+                "<script>alert(1)</script><h2>drop the tag</h2>"
+            ),
+            "owner": user.id,
+            "view_lists": [],
+            "admin_lists": [],
+        }
+    )
+    assert serializer.is_valid(), serializer.errors
+    description = serializer.validated_data["description"]
+    assert "<strong>this</strong>" in description
+    assert 'href="https://learn.mit.edu"' in description
+    assert "script" not in description
+    assert "<h2" not in description
+    # the words inside a stripped tag are kept
+    assert "drop the tag" in description
+
+
+def test_video_description_is_sanitized_on_write():
+    """Video descriptions get the same treatment as collection descriptions"""
+    video = VideoFactory.create()
+    serializer = serializers.VideoSerializer(
+        video,
+        data={"description": '<p>ok</p><img src="x" onerror="alert(1)">'},
+        partial=True,
+    )
+    assert serializer.is_valid(), serializer.errors
+    assert serializer.validated_data["description"] == "<p>ok</p>"
+
+
+def test_video_description_sanitizing_persists():
+    """The sanitized value is what actually lands in the database"""
+    video = VideoFactory.create()
+    serializer = serializers.VideoSerializer(
+        video,
+        data={"description": "<p>hi</p><script>alert(1)</script>"},
+        partial=True,
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    video.refresh_from_db()
+    assert video.description == "<p>hi</p>"

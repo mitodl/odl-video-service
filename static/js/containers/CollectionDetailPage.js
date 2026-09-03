@@ -283,7 +283,14 @@ export class CollectionDetailPage extends React.Component<*, void> {
     if (_.isEmpty(description)) {
       return null
     }
-    return <p className="description">{description}</p>
+    // Descriptions are rich text. Safe to inject: every write path sanitizes
+    // against the allowlist in ui/html.py before the value is stored.
+    return (
+      <div
+        className="description"
+        dangerouslySetInnerHTML={{ __html: description || "" }}
+      />
+    )
   }
 
   renderVideos(videos: Array<Video>, isAdmin: boolean) {

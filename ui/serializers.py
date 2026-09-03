@@ -11,6 +11,7 @@ from rest_framework.settings import api_settings
 from ui import models
 from ui import permissions as ui_permissions
 from ui.encodings import EncodingNames
+from ui.html import sanitize_description
 from ui.keycloak_utils import get_keycloak_client
 from ui.utils import has_common_lists
 
@@ -41,6 +42,29 @@ def validate_keycloak_groups(lists):
             f"Group does not exist: {','.join(bad_lists)}"
         )
     return lists
+
+
+class RichTextDescriptionMixin:
+    """
+    Sanitizes the rich-text `description` field on write.
+
+    Descriptions are authored as HTML and published to MIT Learn, which renders
+    them as markup - so the stored value has to be safe on its own, whichever
+    client wrote it. See ui.html for the allowlist and why it is narrower than
+    Learn's.
+    """
+
+    def validate_description(self, value):
+        """
+        Strip disallowed markup from a submitted description.
+
+        Args:
+            value (str): the raw description
+
+        Returns:
+            str: the sanitized description
+        """
+        return sanitize_description(value)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -153,7 +177,7 @@ class VideoSubtitleSerializer(serializers.ModelSerializer):
         )
 
 
-class VideoSerializer(serializers.ModelSerializer):
+class VideoSerializer(RichTextDescriptionMixin, serializers.ModelSerializer):
     """Video Serializer"""
 
     key = serializers.SerializerMethodField()
@@ -274,7 +298,7 @@ class SimpleVideoSerializer(VideoSerializer):
         read_only_fields = fields
 
 
-class CollectionSerializer(serializers.ModelSerializer):
+class CollectionSerializer(RichTextDescriptionMixin, serializers.ModelSerializer):
     """
     Serializer for Collection Model, used on collection detail page
     """
@@ -379,7 +403,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         )
 
 
-class CollectionListSerializer(serializers.ModelSerializer):
+class CollectionListSerializer(RichTextDescriptionMixin, serializers.ModelSerializer):
     """
     Serializer for Collection Model, used on collection lists page
     """

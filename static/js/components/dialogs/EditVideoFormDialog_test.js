@@ -3,7 +3,7 @@
 import React from "react"
 import sinon from "sinon"
 import { assert } from "chai"
-import { screen, fireEvent } from "@testing-library/react"
+import { screen, fireEvent, waitFor } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 import _ from "lodash"
 
@@ -99,7 +99,14 @@ describe("EditVideoFormDialog", () => {
       store.getState().videoUi.editVideoForm.key
     )
     assert.equal(screen.getByLabelText("Title").value, video.title)
-    assert.equal(screen.getByLabelText("Description").value, video.description)
+    // The description is a rich-text editor: it holds its document in a
+    // contenteditable element, so there is no `value` to read.
+    await waitFor(() =>
+      assert.include(
+        document.querySelector("#video-description .ProseMirror").innerHTML,
+        video.description
+      )
+    )
   })
 
   it("doesn't re-initialize the form when given a video that matches the current form key", () => {
@@ -117,14 +124,6 @@ describe("EditVideoFormDialog", () => {
       SET_EDIT_VIDEO_TITLE,
       "new title",
       "Title",
-      "change"
-    ],
-    [
-      "#video-description",
-      "description",
-      SET_EDIT_VIDEO_DESC,
-      "new description",
-      "Description",
       "change"
     ],
     ["#view-moira-input", "viewLists", SET_VIEW_LISTS, "a,b,c", null, "change"],
@@ -197,6 +196,39 @@ describe("EditVideoFormDialog", () => {
       assert.equal(state.videoUi.editVideoForm[prop], newValue)
     })
   }
+
+  /*
+   * Description is not in the table above: it is a rich-text editor, not a
+   * form field. It keeps its document in a contenteditable element and reports
+   * serialized HTML through onChange, so there is no value for
+   * fireEvent.change to set. Driving it the way an author does - through a
+   * toolbar control - is what exercises the wiring.
+   */
+  describe("description", () => {
+    const editor = () =>
+      document.querySelector("#video-description .ProseMirror")
+
+    // The editor engine is a split chunk, so it arrives after mount.
+    const renderWithEditor = async (props = {}) => {
+      const result = renderComponent(props)
+      await waitFor(() => assert.isNotNull(editor()))
+      return result
+    }
+
+    it("stores what the editor reports, as HTML", async () => {
+      await renderWithEditor()
+      const state = await listenForActions([SET_EDIT_VIDEO_DESC], () => {
+        fireEvent.click(screen.getByRole("button", { name: "Bulleted list" }))
+      })
+      assert.include(state.videoUi.editVideoForm.description, "<ul>")
+    })
+
+    it("shows the stored description as markup", async () => {
+      video.description = "<p>stored <em>text</em></p>"
+      await renderWithEditor()
+      await waitFor(() => assert.include(editor().innerHTML, "<em>text</em>"))
+    })
+  })
 
   // eslint-disable-next-line no-unused-vars
   for (const selector of [

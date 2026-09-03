@@ -9,7 +9,7 @@ import Dialog from "../material/Dialog"
 import Filefield from "../material/Filefield"
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
-import Textarea from "../material/Textarea"
+import RichTextEditor from "../material/RichTextEditor"
 
 import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
@@ -126,9 +126,10 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     dispatch(actions.videoUi.setEditVideoTitle(event.target.value))
   }
 
-  setEditVideoDesc = (event: Object) => {
+  // The rich-text editor hands back serialized HTML, not a DOM event.
+  setEditVideoDesc = (html: string) => {
     const { dispatch } = this.props
-    dispatch(actions.videoUi.setEditVideoDesc(event.target.value))
+    dispatch(actions.videoUi.setEditVideoDesc(html))
   }
 
   setEditVideoCtaLink = (event: Object) => {
@@ -510,9 +511,10 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             validationMessage={errors ? errors.title : ""}
             required
           />
-          <Textarea
+          <RichTextEditor
             label="Description"
             id="video-description"
+            placeholder="Add a description, links or next steps for learners."
             onChange={this.setEditVideoDesc}
             value={editVideoForm.description}
           />

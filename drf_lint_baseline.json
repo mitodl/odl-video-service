@@ -1,10 +1,9 @@
 [
-  "ui/serializers.py:185:20:ORM002",
-  "ui/serializers.py:206:25:ORM002",
-  "ui/serializers.py:310:25:ORM002",
-  "ui/serializers.py:312:27:ORM002",
-  "ui/serializers.py:314:25:ORM002",
-  "ui/serializers.py:316:25:ORM002",
-  "ui/serializers.py:318:21:ORM002",
-  "ui/serializers.py:487:21:ORM002"
+  "ui/serializers.py:209:20:ORM002",
+  "ui/serializers.py:230:25:ORM002",
+  "ui/serializers.py:334:25:ORM002",
+  "ui/serializers.py:336:27:ORM002",
+  "ui/serializers.py:338:25:ORM002",
+  "ui/serializers.py:340:25:ORM002",
+  "ui/serializers.py:342:21:ORM002"
 ]

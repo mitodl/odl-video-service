@@ -286,9 +286,11 @@ export class VideoDetailPage extends React.Component<*, void> {
                     )}
                   </div>
                   {video.description && (
-                    <p className="video-description mdc-typography--body1">
-                      {video.description}
-                    </p>
+                    // Rich text, sanitized server-side on write (ui/html.py).
+                    <div
+                      className="video-description mdc-typography--body1"
+                      dangerouslySetInnerHTML={{ __html: video.description }}
+                    />
                   )}
                   <div className="upload-date mdc-typography--subheading1 fontgray">
                     Uploaded {formattedCreation}

@@ -195,6 +195,20 @@ describe("VideoDetailPage", () => {
     assert.equal(link.textContent, video.collection_title)
   })
 
+  it("renders the description as markup, not as escaped text", async () => {
+    // Descriptions are rich text, sanitized server-side on write (ui/html.py),
+    // so the page injects them rather than escaping them.
+    video.description = '<p>see the <a href="https://mit.edu">notes</a></p>'
+    const { container } = await renderPage()
+    const description = container.querySelector(".video-description")
+    assert.equal(description.querySelectorAll("a").length, 1)
+    assert.equal(
+      description.querySelector("a").getAttribute("href"),
+      "https://mit.edu"
+    )
+    assert.equal(description.textContent, "see the notes")
+  })
+
   // These two test names were swapped relative to what they actually assert
   // in the pre-conversion Enzyme file -- carried-over naming bug, not
   // introduced here. Fixed here since it's a pure rename (dossier flagged,
