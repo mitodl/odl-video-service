@@ -1,10 +1,11 @@
 #!/bin/bash
 # Ledger for the Enzyme -> RTL migration (mitodl/hq#12637).
 #
-# Five metrics that erode silently during a large test migration, plus the
-# mutation score. Each threshold is a floor or ceiling recorded at a known-good
-# point, not an aspiration. A build that trips one of these has quietly lost
-# something -- most often assertions, which no other check can see.
+# Metrics that erode silently during a large test migration, plus the suite's
+# own exit status and the mutation score. Each threshold is a floor or ceiling
+# recorded at a known-good point, not an aspiration. A build that trips one of
+# these has quietly lost something -- most often assertions, which no other
+# check can see.
 set -uo pipefail
 
 FAIL=0
@@ -14,6 +15,7 @@ check() { # name actual op expected
 	case $op in
 	ge) [[ $actual -ge $expected ]] && ok=1 || ok=0 ;;
 	le) [[ $actual -le $expected ]] && ok=1 || ok=0 ;;
+	eq) [[ $actual -eq $expected ]] && ok=1 || ok=0 ;;
 	*)
 		echo "bad op $op"
 		exit 2
@@ -29,10 +31,35 @@ check() { # name actual op expected
 
 echo "=== migration ledger ==="
 
-# Mocha's reported count -- NOT grep -c "it(", which undercounts loop-generated
-# tests by 27% and which an agent can satisfy while deleting tests.
-TESTS=$(npm run test 2>&1 | grep -oE '[0-9]+ passing' | grep -oE '^[0-9]+' | tail -1)
+# One suite run, read twice: once for its exit status and once for the count.
+#
+# The count is Mocha's own reported number -- NOT grep -c "it(", which
+# undercounts loop-generated tests by 27% and which an agent can satisfy while
+# deleting tests.
+#
+# The status check exists because this script used to compute TESTS inside a
+# command substitution and DISCARD npm run test's exit status, and `set -e` is
+# deliberately not on (every check must get a chance to report). So a suite
+# with failing tests -- or one js_test.sh failed for un-allowlisted stderr --
+# still printed "ledger OK" and exited 0 as long as the passing count cleared
+# the floor: proved with a deliberately failing test file, all six checks PASS,
+# exit 0. CI was never fooled (it runs `npm run test` as its own step before
+# `npm run ledger`), but every report in this migration cites "ledger OK" as
+# its headline evidence, and that sentence was weaker than it read.
+# Deliberately ONE invocation: the suite is the slowest thing here, and running
+# it twice would also let the two readings disagree.
+TEST_LOG=$(mktemp)
+trap 'rm -f "$TEST_LOG"' EXIT
+npm run test >"$TEST_LOG" 2>&1
+TEST_STATUS=$?
+TESTS=$(grep -oE '[0-9]+ passing' "$TEST_LOG" | grep -oE '^[0-9]+' | tail -1)
 TESTS=${TESTS:-0}
+check "js suite exit status" "$TEST_STATUS" eq 0
+if [[ $TEST_STATUS -ne 0 ]]; then
+	echo "        ---- last 40 lines of the failing suite run ----"
+	tail -40 "$TEST_LOG" | sed 's/^/        /'
+	echo "        ---- end of suite output ----"
+fi
 # 492 -> 505 (final review fix wave: adds the DeleteVideoDialog/
 # DeleteSubtitlesDialog accept-button-wiring tests, hq#12639/hq#12640; current
 # actual is 509 without a build artifact / 510 with one, so this leaves the
@@ -131,12 +158,66 @@ check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
 # file's own rule.
 #
 # Counts data rows only: the pattern requires leading whitespace, the
-# `lifecycle:` key and a quoted value, so no prose in that file's docstring --
-# which does discuss lifecycles at length -- can inflate it. Verified to
-# return 4 on the current tree.
-VENDORSUPP=$(grep -cE '^[[:space:]]+lifecycle: *"' \
-	static/js/testUtils/suppressVendorLifecycleWarnings.js)
-check "vendor lifecycle suppressions" "$VENDORSUPP" le 4
+# `lifecycle:` key and a quoted value, so no `*`-prefixed docstring line -- and
+# that file's docstring does discuss lifecycles at length -- can inflate it. An
+# indented STARLESS line inside a block comment still could; that direction is
+# fail-safe (a spurious FAIL, which a reader then reads), and there is no such
+# line today. Verified to return 4 on the current tree.
+#
+# The file must exist. `grep` on a missing path prints to stderr and yields an
+# empty VENDORSUPP, which `[[ -le ]]` arithmetic-evaluates as 0 -- so the check
+# would PASS at the moment its subject disappeared, inside the one file whose
+# whole purpose is stopping silent erosion. Defaulting the variable does not
+# help: `${VENDORSUPP:-0}` is still `0 -le 4`. Only an explicit existence test
+# fails, and it has to say what the remover is supposed to do, or the next
+# phase just deletes the check to get green.
+SUPPFILE=static/js/testUtils/suppressVendorLifecycleWarnings.js
+if [[ ! -f $SUPPFILE ]]; then
+	printf "  FAIL  %-34s %s\n" "vendor lifecycle suppressions" \
+		"($SUPPFILE is gone)"
+	echo "        If you deleted the last suppression row, delete THIS CHECK"
+	echo "        (both halves) in the same commit and say so in the message."
+	echo "        Do not repoint it at another file to get green."
+	FAIL=1
+else
+	VENDORSUPP=$(grep -cE '^[[:space:]]+lifecycle: *"' "$SUPPFILE" 2>/dev/null)
+	check "vendor lifecycle suppressions" "${VENDORSUPP:-0}" le 4
+
+	# Rows are not the only thing that can grow. Under set-membership matching
+	# (Ruling 10), WIDENING an existing row -- adding a name to its
+	# `components` array -- excuses strictly more without adding a row, so the
+	# cap above does not move and no threshold discipline is triggered. Today
+	# the only guard against that is EXPECTED_TABLE's deepEqual in
+	# suppressVendorLifecycleWarnings_test.js, which lives in the same file an
+	# operator widening a row is already editing. This puts the second guard
+	# here, where moving it requires a comment in the same commit.
+	#
+	# Frozen at the names those four rows excuse today (Phase R1 final fix
+	# wave, hq#12641): 1x rmwc (LinearProgress), 3x react-router
+	# componentWillMount (MemoryRouter, Route, Router), 2x react-router
+	# componentWillReceiveProps (Route, Router), 1x react-document-title
+	# (SideEffect(DocumentTitle)) = 7. Removing a row lowers this in the same
+	# commit, exactly as the row cap does.
+	#
+	# awk, not `grep -oE '"[^"]+"' | wc -l` over the `components: [` line:
+	# prettier keeps a short array on one line but wraps a long one to one item
+	# per line, at which point the opening line holds ZERO quoted names, the
+	# count DEFLATES, and an `le` check passes -- failing OPEN in precisely the
+	# case it exists for. CI does not run `yarn fmt:check`, so nothing else
+	# would catch it. This spans from `components: [` to the closing `]` and
+	# counts quoted strings across every line in between, so it returns 7 under
+	# either formatting. Verified by reformatting the table both ways.
+	VENDORNAMES=$(awk '
+		/^[ \t]+components:[ \t]*\[/ { inblock = 1 }
+		inblock {
+			line = $0
+			names += gsub(/"[^"]*"/, "", line)
+			if (index($0, "]") > 0) { inblock = 0 }
+		}
+		END { print names + 0 }
+	' "$SUPPFILE")
+	check "vendor suppressed component names" "${VENDORNAMES:-0}" le 7
+fi
 
 # Mutation score, when a baseline has been recorded and a report exists.
 # The full run takes 30-90 minutes, so this is a per-phase or nightly check --
