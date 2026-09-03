@@ -1,18 +1,22 @@
 // @flow
 import React from "react"
-import _ from "lodash"
-import { shallow } from "enzyme"
 import { assert } from "chai"
 import sinon from "sinon"
+import { screen, render, fireEvent, waitFor } from "@testing-library/react"
+import configureTestStore from "redux-asserts"
 
 import { DeleteVideoDialog, mapStateToProps } from "./DeleteVideoDialog"
 
-import { makeCollection } from "../../factories/collection"
+import rootReducer from "../../reducers"
 import { actions } from "../../actions"
+import * as toastActions from "../../actions/toast"
+import * as api from "../../lib/api"
+import { makeCollectionUrl } from "../../lib/urls"
+import { makeCollection } from "../../factories/collection"
+import renderWithProviders from "../../testUtils/renderWithProviders"
 
 describe("DeleteVideoDialogTests", () => {
   let sandbox, collection, video
-  const noop = () => null
 
   beforeEach(() => {
     collection = makeCollection()
@@ -55,90 +59,139 @@ describe("DeleteVideoDialogTests", () => {
   })
 
   describe("DeleteVideoDialog Component", () => {
-    const renderComponent = (extraProps = {}) => {
-      const defaultProps = {
-        hideDialog: noop,
-        open:       true,
-        video
-      }
-      return shallow(
-        <DeleteVideoDialog {...{ ...defaultProps, ...extraProps }} />
-      )
-    }
+    const defaultProps = () => ({
+      hideDialog: () => {},
+      open:       true,
+      video
+    })
 
     describe("when there is no video", () => {
-      let wrapper
-
-      beforeEach(() => {
-        wrapper = renderComponent({ video: undefined })
-      })
-
       it("renders nothing", () => {
-        assert.equal(wrapper.get(0), null)
+        const { container } = render(
+          <DeleteVideoDialog {...defaultProps()} video={undefined} />
+        )
+        assert.equal(container.children.length, 0)
       })
     })
 
     describe("when there is a video", () => {
-      let wrapper, instance
+      it("renders Dialog", () => {
+        const { container } = render(<DeleteVideoDialog {...defaultProps()} />)
+
+        // Shallow-rendering used to deep-equal the entire props object passed
+        // to <Dialog>. A full mount can't introspect React props directly, so
+        // this is decomposed into the visible facts the shallow assertion was
+        // standing in for: title, the dialog's DOM id, button labels, the
+        // video title text, and open-state (via absence of the "closed"
+        // inline style). The `hideDialog`/`onAccept` *identity*-wiring
+        // sub-assertions from the old test are intentionally dropped -- see
+        // the commit message for why (MDC onAccept double-dispatch makes
+        // clicking the submit button unsafe, and there is no real-DOM way to
+        // observe "this exact function reference was passed as a prop"
+        // without React internals).
+        assert.isNotNull(screen.getByRole("heading", { name: "Delete Video" }))
+        const dialogEl = container.querySelector("#delete-video-dialog")
+        assert.isNotNull(dialogEl)
+        assert.isNotNull(screen.getByRole("button", { name: "Cancel" }))
+        assert.isNotNull(screen.getByRole("button", { name: "Yes, Delete" }))
+        assert.isNotNull(screen.getByText(video.title))
+        // Closest visible proxy for "open was truthy": Dialog only sets an
+        // inline `display: none` style when `open` is falsy.
+        assert.isNull(dialogEl.getAttribute("style"))
+      })
+    })
+
+    describe("accept button wiring", () => {
+      let store, deleteVideoStub
 
       beforeEach(() => {
-        wrapper = renderComponent()
-        instance = wrapper.instance()
+        store = configureTestStore(rootReducer)
+        deleteVideoStub = sandbox
+          .stub(api, "deleteVideo")
+          .returns(Promise.resolve())
+        sandbox
+          .stub(api, "getCollection")
+          .returns(Promise.resolve(makeCollection()))
       })
 
-      it("renders Dialog", () => {
-        const dialogEl = wrapper.find("Dialog")
-        const expectedDialogProps = {
-          title:      "Delete Video",
-          id:         "delete-video-dialog",
-          cancelText: "Cancel",
-          submitText: "Yes, Delete",
-          open:       instance.props.open,
-          hideDialog: instance.props.hideDialog,
-          onAccept:   instance.confirmDeletion
-        }
-        assert.deepEqual(
-          _.omit(dialogEl.props(), ["children"]),
-          expectedDialogProps
+      it("wires the Yes, Delete button to confirmDeletion", async () => {
+        renderWithProviders(
+          <DeleteVideoDialog
+            {...defaultProps()}
+            dispatch={store.dispatch}
+            shouldUpdateCollection={true}
+          />,
+          { store }
         )
-        assert.equal(dialogEl.find("h5").text(), instance.props.video.title)
+
+        // Dialog.js's MDCDialog:accept listener AND the submit Button's React
+        // onClick both fire onAccept when validateOnClick is absent, so a
+        // real click double-dispatches confirmDeletion. That is a known,
+        // deferred issue (see the commit message / hq#12639 dossier) -- this
+        // test asserts `calledWith`, never `calledOnce`, so the double-fire
+        // doesn't make it flaky or wrong. This test exists to prove the
+        // button is actually WIRED to confirmDeletion, which the render-only
+        // test above cannot show.
+        fireEvent.click(screen.getByRole("button", { name: "Yes, Delete" }))
+
+        await waitFor(() => sinon.assert.calledWith(deleteVideoStub, video.key))
       })
     })
 
     describe("confirmDeletion", () => {
-      let wrapper, stubs
+      let store, listenForActions, deleteVideoStub, getCollectionStub
 
-      beforeEach(async () => {
-        const promises = {
-          videosDelete: Promise.resolve()
-        }
-        stubs = {
-          dispatch:     sandbox.stub(),
-          videosDelete: sandbox
-            .stub(actions.videos, "delete")
-            .returns(promises.videosDelete),
-          collectionsGet:  sandbox.stub(actions.collections, "get"),
-          toastAddMessage: sandbox.stub(actions.toast, "addMessage"),
-          window:          { location: { origin: "someOrigin" } }
-        }
-        await promises.videosDelete
-      })
-
-      const renderComponentWithStubs = (extraProps = {}) => {
-        const wrapper = renderComponent({
-          dispatch: stubs.dispatch,
-          ...extraProps
-        })
-        return wrapper
+      const renderUnconnectedComponent = (props = {}) => {
+        let dialogInstance
+        renderWithProviders(
+          <DeleteVideoDialog
+            {...defaultProps()}
+            dispatch={store.dispatch}
+            {...props}
+            ref={instance => {
+              dialogInstance = instance
+            }}
+          />,
+          { store }
+        )
+        return dialogInstance
       }
 
-      const generateCommonConfirmDeletionTests = () => {
-        it("dispatches video.delete", () => {
-          sinon.assert.calledWith(stubs.videosDelete, video.key)
-          sinon.assert.calledWith(
-            stubs.dispatch,
-            stubs.videosDelete.returnValues[0]
+      beforeEach(() => {
+        store = configureTestStore(rootReducer)
+        listenForActions = store.createListenForActions()
+        deleteVideoStub = sandbox
+          .stub(api, "deleteVideo")
+          .returns(Promise.resolve())
+        getCollectionStub = sandbox
+          .stub(api, "getCollection")
+          .returns(Promise.resolve(makeCollection()))
+      })
+
+      describe("when shouldUpdateCollection", () => {
+        beforeEach(async () => {
+          const dialogInstance = renderUnconnectedComponent({
+            video,
+            shouldUpdateCollection: true
+          })
+
+          // Calling confirmDeletion directly b/c MDC dialog double-fires
+          // onAccept through both the Dialog's MDCDialog:accept listener and
+          // the Button's onClick (see commit message / dossier).
+          await listenForActions(
+            [
+              actions.videos.delete.requestType,
+              actions.videos.delete.successType,
+              toastActions.constants.ADD_MESSAGE,
+              actions.collections.get.requestType,
+              actions.collections.get.successType
+            ],
+            () => dialogInstance.confirmDeletion()
           )
+        })
+
+        it("dispatches video.delete", () => {
+          sinon.assert.calledWith(deleteVideoStub, video.key)
         })
 
         it("dispatches toast.addMessage", () => {
@@ -147,51 +200,66 @@ describe("DeleteVideoDialogTests", () => {
             content: `Video "${video.title}" was deleted.`,
             icon:    "check"
           }
-          sinon.assert.calledWith(stubs.toastAddMessage, {
-            message: expectedMessage
-          })
-          sinon.assert.calledWith(
-            stubs.dispatch,
-            stubs.toastAddMessage.returnValues[0]
-          )
+          assert.deepInclude(store.getState().toast.messages, expectedMessage)
         })
-      }
-
-      describe("when shouldUpdateCollection", () => {
-        beforeEach(async () => {
-          wrapper = renderComponentWithStubs({
-            video,
-            shouldUpdateCollection: true
-          })
-          await wrapper.instance().confirmDeletion()
-        })
-
-        generateCommonConfirmDeletionTests()
 
         it("dispatches collections.get", () => {
-          sinon.assert.calledWith(stubs.collectionsGet, video.collection_key)
-          sinon.assert.calledWith(
-            stubs.dispatch,
-            stubs.collectionsGet.returnValues[0]
-          )
+          sinon.assert.calledWith(getCollectionStub, video.collection_key)
         })
       })
 
       describe("when not shouldUpdateCollection", () => {
+        let locationOrigin, originalLocationHref
+
         beforeEach(async () => {
-          wrapper = renderComponentWithStubs({
+          // Mutates the real global `window.location` (no fake `window` prop
+          // passed) -- mirrors the already-merged
+          // DeleteVideoFormDialog_test.js's equivalent test, which the
+          // conversion dossier verified produces zero stderr both alone and
+          // as part of the whole dialogs/ folder run. Capture the origin
+          // (and the full href, to restore afterward so this mutation can't
+          // leak into later tests/files) before calling confirmDeletion,
+          // since the assignment mutates window.location itself.
+          originalLocationHref = window.location.href
+          locationOrigin = window.location.origin
+
+          const dialogInstance = renderUnconnectedComponent({
             video,
-            shouldUpdateCollection: false,
-            window:                 stubs.window
+            shouldUpdateCollection: false
           })
-          await wrapper.instance().confirmDeletion()
+
+          await listenForActions(
+            [
+              actions.videos.delete.requestType,
+              actions.videos.delete.successType,
+              toastActions.constants.ADD_MESSAGE
+            ],
+            () => dialogInstance.confirmDeletion()
+          )
         })
 
-        generateCommonConfirmDeletionTests()
+        afterEach(() => {
+          window.location = originalLocationHref
+        })
+
+        it("dispatches video.delete", () => {
+          sinon.assert.calledWith(deleteVideoStub, video.key)
+        })
+
+        it("dispatches toast.addMessage", () => {
+          const expectedMessage = {
+            key:     "video-delete",
+            content: `Video "${video.title}" was deleted.`,
+            icon:    "check"
+          }
+          assert.deepInclude(store.getState().toast.messages, expectedMessage)
+        })
 
         it("assigns window.location", () => {
-          const expectedLocation = `someOrigin/collections/${video.collection_key}/`
-          assert.equal(stubs.window.location, expectedLocation)
+          assert.equal(
+            window.location,
+            `${locationOrigin}${makeCollectionUrl(video.collection_key)}`
+          )
         })
       })
     })
