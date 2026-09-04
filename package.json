@@ -131,8 +131,8 @@
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15",
     "@stryker-mutator/core": "9.6.1",
     "@stryker-mutator/mocha-runner": "9.6.1",
-    "@testing-library/dom": "8.20.1",
-    "@testing-library/react": "12.1.5",
+    "@testing-library/dom": "^10.0.0",
+    "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "14.6.1",
     "raf": "^3.4.1",
     "react-refresh": "^0.14.2"

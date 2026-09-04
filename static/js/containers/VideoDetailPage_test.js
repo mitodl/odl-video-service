@@ -3,7 +3,7 @@ import React from "react"
 import sinon from "sinon"
 import moment from "moment"
 import { assert } from "chai"
-import { render, fireEvent } from "@testing-library/react"
+import { render, fireEvent, waitFor } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 
 import VideoDetailPage from "./VideoDetailPage"
@@ -162,7 +162,13 @@ describe("VideoDetailPage", () => {
     assert.equal(spy.lastCall.thisValue.props.video, video)
 
     store.dispatch(actions.videoUi.updateVideoJsSync("someCorner"))
-    assert.equal(spy.lastCall.thisValue.props.selectedCorner, "someCorner")
+    // React 18 defers this dispatch's re-render instead of flushing it
+    // synchronously, so VideoPlayer.prototype.render (and thus spy.lastCall)
+    // does not reflect the new prop until the next microtask; wait for it
+    // rather than reading spy.lastCall immediately.
+    await waitFor(() =>
+      assert.equal(spy.lastCall.thisValue.props.selectedCorner, "someCorner")
+    )
 
     // overlayChildren: rather than stubbing renderOverlayChildren (no seam
     // to reach it on a HOC-connected instance), assert the wiring end to end
@@ -170,7 +176,11 @@ describe("VideoDetailPage", () => {
     // -> renderOverlayChildren -> renderAnalyticsOverlay actually produces.
     assert.isNull(container.querySelector(".analytics-overlay-container"))
     store.dispatch(actions.videoUi.toggleAnalyticsOverlay())
-    assert.isNotNull(container.querySelector(".analytics-overlay-container"))
+    // Same deferred-render reasoning as above, applied to the DOM instead of
+    // the spy.
+    await waitFor(() =>
+      assert.isNotNull(container.querySelector(".analytics-overlay-container"))
+    )
   })
 
   it("shows the video title, description and upload date, and link to collection", async () => {
@@ -310,13 +320,41 @@ describe("VideoDetailPage", () => {
       // state object in place. Works only because nothing in this chain
       // freezes state.
       store.getState().videoUi.videoSubtitleForm.video = video.key
+      // renderPage's mount also mounts the (real, connected) Drawer, whose
+      // componentDidMount dispatches actions.collectionsList.get() against
+      // the getCollections stub from the outer beforeEach --
+      // RECEIVE_GET_COLLECTIONS_LIST_SUCCESS lands some microtasks later.
+      // Under React 16 timing that landed before this point; under React
+      // 18's deferred/batched scheduling it can still be in flight here, and
+      // land inside the listenForActions window below instead -- which
+      // matches on an exact action set and fails on any extra action.
+      // Draining it here keeps the window scoped to only the actions the
+      // upload itself causes.
+      await waitFor(() =>
+        assert.isTrue(store.getState().collectionsList.loaded)
+      )
       await listenForActions(
         [
           actions.videoSubtitles.post.requestType,
           actions.videoSubtitles.post.successType,
           actions.videos.get.requestType,
           actions.videos.get.successType,
-          actions.collections.get.failureType,
+          // NOT actions.collections.get.failureType, unlike a nearby revision
+          // of this file might suggest: VideoDetailPage's componentDidMount
+          // already fires one (unstubbed api.getCollection rejects), and its
+          // collectionNeedsUpdate never resolves true, so componentDidUpdate
+          // retries it on every one of VideoDetailPage's own re-renders.
+          // Under React 16, the post/videos.get/toast dispatches below each
+          // produced a separate commit, so a retry reliably landed inside this
+          // window too. Under React 18's automatic batching, VideoDetailPage's
+          // own commits from this chain now coalesce (confirmed by
+          // instrumenting redux-asserts' resolver directly: with this entry
+          // included, the run hangs forever one action short, at exactly one
+          // fewer RECEIVE_GET_COLLECTIONS_FAILURE than expected -- not an
+          // "unexpected action" reject, a real missing one). The one failure
+          // from componentDidMount is still real and still fires; it is just
+          // consumed as baseline before this window opens, same mechanism as
+          // the collectionsList drain above.
           toastActions.constants.ADD_MESSAGE,
           videoUiActions.constants.SET_UPLOAD_SUBTITLE
         ],
@@ -477,7 +515,12 @@ describe("VideoDetailPage", () => {
         message: { key: "x", content: "Hello", icon: "check" }
       })
     )
-    assert.isNotNull(container.querySelector(".toast-overlay"))
-    assert.isNotNull(container.querySelector(".toast-message"))
+    // React 18 defers this dispatch's re-render, so the toast DOM does not
+    // exist yet on the next synchronous line; wait for it instead of
+    // asserting immediately.
+    await waitFor(() => {
+      assert.isNotNull(container.querySelector(".toast-overlay"))
+      assert.isNotNull(container.querySelector(".toast-message"))
+    })
   })
 })
