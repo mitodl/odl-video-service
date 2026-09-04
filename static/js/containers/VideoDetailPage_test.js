@@ -8,8 +8,8 @@ import configureTestStore from "redux-asserts"
 
 import VideoDetailPage from "./VideoDetailPage"
 import { VideoDetailPage as UnwrappedVideoDetailPage } from "./VideoDetailPage"
-import ConnectedVideoPlayerDefault from "../components/VideoPlayer"
-import { ConnectedVideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
+import { VideoPlayer } from "../components/VideoPlayer"
+import { VideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 
 import * as api from "../lib/api"
 import { actions } from "../actions"
@@ -149,13 +149,14 @@ describe("VideoDetailPage", () => {
     // owns that coverage).
     video.multiangle = false
 
-    // Spying on the *connected* default export's prototype.render, not the
-    // pre-connect class (which isn't exported) -- confirmed empirically
-    // (spike A, see task report) that react-redux v5's Connect wrapper is a
-    // real ES6 class here, and `this.props` on that instance is exactly the
+    // Spying on the pre-connect class (now a named export), not the
+    // connected default export -- react-redux 8's connect() returns a
+    // function component with no .prototype.render to spy on. VideoPlayer
+    // is wrapped with connect() (no mapStateToProps), so ownProps pass
+    // through unchanged, and `this.props` on this instance is exactly the
     // ownProps VideoDetailPage passed to <VideoPlayer>, i.e. video,
     // cornerFunc, selectedCorner, overlayChildren, videoPlayerRef, id.
-    const spy = sandbox.spy(ConnectedVideoPlayerDefault.prototype, "render")
+    const spy = sandbox.spy(VideoPlayer.prototype, "render")
     const { container } = await renderPage()
 
     assert.equal(spy.lastCall.thisValue.props.video, video)
@@ -419,10 +420,16 @@ describe("VideoDetailPage", () => {
     beforeEach(async () => {
       // Same technique as "renders the video player" above, applied to the
       // other connected child this container builds props for by hand.
-      // Confirmed empirically (spike A) that this fires and that
-      // `this.props` on the Connect instance is exactly the ownProps
-      // VideoDetailPage passed to <ConnectedVideoAnalyticsOverlay>.
-      spy = sandbox.spy(ConnectedVideoAnalyticsOverlay.prototype, "render")
+      // <ConnectedVideoAnalyticsOverlay> is
+      // connect(mapStateToProps)(withVideoAnalytics(VideoAnalyticsOverlay));
+      // react-redux 8's connect() no longer produces a class with
+      // .prototype.render, so this spies the innermost class instead.
+      // withVideoAnalytics only strips `needsUpdate` and `dispatch` before
+      // forwarding props, and mapStateToProps doesn't return `currentTime`
+      // or `duration`, so those ownProps VideoDetailPage passed to
+      // <ConnectedVideoAnalyticsOverlay> reach this instance's `this.props`
+      // unchanged.
+      spy = sandbox.spy(VideoAnalyticsOverlay.prototype, "render")
       await renderPage()
       store.dispatch(actions.videoUi.toggleAnalyticsOverlay())
       store.dispatch(actions.videoUi.setVideoTime(42))

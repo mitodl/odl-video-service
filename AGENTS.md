@@ -17,7 +17,7 @@ A video hosting platform for MIT's Office of Digital Learning (ODL). Videos are 
 | Auth | Keycloak OIDC via `social-auth-app-django` |
 | Video delivery | AWS S3 + CloudFront (signed URLs) |
 | Transcoding | AWS MediaConvert (via `mitol-django-transcoding`) |
-| Frontend | React 15, Redux, Flow types, Webpack 5 |
+| Frontend | React 16, Redux, Flow types, Webpack 5 |
 | JS test runner | Mocha + Chai + @testing-library/react |
 | JS package manager | Yarn 1.22.22 |
 | Node version | 24.14.0 |
@@ -170,11 +170,11 @@ The `web` service runs `uwsgi`, the `watch` service runs webpack in dev mode wit
 - In tests: `CELERY_TASK_ALWAYS_EAGER=True` executes tasks synchronously
 
 ### Frontend (React)
-- **React 15** — class components, no hooks; `@testing-library/react` for testing
+- **React 16** — class components, no hooks; `@testing-library/react` for testing
 - **Flow types** (not TypeScript) — `.flowconfig` present, `flow-bin` installed
 - Redux + redux-thunk + redux-actions for state management
 - Video.js 8 for video playback with quality selector, HLS, annotations
-- Material Design via `rmwc` and `@material/*` v0.33 (old MDC Web API)
+- Material Design via `@material/*` v0.33 (old MDC Web API)
 - Entry points in `static/js/entry/`; bundled via Webpack 5
 
 ### N+1 Detection
@@ -223,7 +223,7 @@ The `web` service runs `uwsgi`, the `watch` service runs webpack in dev mode wit
 
 ## Common Gotchas for AI Agents
 
-1. **React 15, not modern React** — No hooks, no functional components with state. Use `React.Component` class syntax.
+1. **React 16, not modern React** — No hooks, no functional components with state. Use `React.Component` class syntax.
 2. **Flow types, not TypeScript** — Type annotations use Flow syntax (`// @flow`, `: string`, `?string`).
 3. **`uv` for Python** — All Python commands must be prefixed with `uv run` (e.g., `uv run pytest`, `uv run python manage.py`). Do not use `pip install`.
 4. **`yarn` for JS** — Use `yarn add` / `yarn install`, not `npm install`.

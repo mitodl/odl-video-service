@@ -6,7 +6,7 @@ import moment from "moment"
 import type { Dispatch } from "redux"
 import * as R from "ramda"
 import _ from "lodash"
-import DocumentTitle from "react-document-title"
+import DocumentTitle from "../components/DocumentTitle"
 
 import Button from "../components/material/Button"
 import Drawer from "../components/material/Drawer"

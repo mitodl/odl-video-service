@@ -1,10 +1,8 @@
 // @flow
 /* global SETTINGS:false */
 __webpack_public_path__ = SETTINGS.public_path // eslint-disable-line no-undef, camelcase
-import "react-hot-loader/patch"
 import React from "react"
 import ReactDOM from "react-dom"
-import { AppContainer } from "react-hot-loader"
 import { createBrowserHistory } from "history"
 
 import configureStore from "../store/configureStore"
@@ -35,11 +33,9 @@ if (!rootEl) {
 const history = createBrowserHistory()
 const renderApp = Component => {
   ReactDOM.render(
-    <AppContainer>
-      <Component store={store} history={history}>
-        {routes}
-      </Component>
-    </AppContainer>,
+    <Component store={store} history={history}>
+      {routes}
+    </Component>,
     rootEl
   )
 }

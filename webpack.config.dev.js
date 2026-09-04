@@ -4,6 +4,7 @@ var R = require('ramda');
 var BundleTracker = require('webpack-bundle-tracker');
 const glob = require('glob');
 const { config, babelSharedLoader } = require(path.resolve("./webpack.config.shared.js"));
+const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 
 const hotEntry = (host, port) => (
   `webpack-hot-middleware/client?path=http://${host}:${port}/__webpack_hmr&timeout=20000&reload=true`
@@ -27,6 +28,7 @@ const devConfig = Object.assign({}, config, {
       }
     }),
     new webpack.HotModuleReplacementPlugin(),
+    new ReactRefreshWebpackPlugin({ overlay: false }),
     new BundleTracker({ path: __dirname, filename: "webpack-stats.json" })
   ],
   devtool: 'source-map',
@@ -39,8 +41,17 @@ const devConfig = Object.assign({}, config, {
   }
 });
 
+const devBabelLoader = Object.assign({}, babelSharedLoader, {
+  options: Object.assign({}, babelSharedLoader.options, {
+    plugins: [
+      ...babelSharedLoader.options.plugins,
+      require.resolve('react-refresh/babel')
+    ]
+  })
+});
+
 devConfig.module.rules = [
-  babelSharedLoader,
+  devBabelLoader,
   ...config.module.rules,
   {
     test: /\.css$|\.scss$/,
