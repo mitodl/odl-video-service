@@ -2,9 +2,12 @@
 Admin for UI app
 """
 
+import re
 from collections import Counter
 from urllib.parse import urljoin
 
+from bs4 import BeautifulSoup
+from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.contenttypes.admin import GenericTabularInline
@@ -12,7 +15,161 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from ui import api, models
+from ui.constants import DescriptionFormat
+from ui.html import (
+    ALLOWED_DESCRIPTION_ATTRIBUTES,
+    ALLOWED_DESCRIPTION_TAGS,
+    attributes_in,
+    sanitize_description,
+    tags_in,
+)
 from ui.models import EncodeJob
+
+
+class RichTextDescriptionAdminForm(forms.ModelForm):
+    """
+    Admin form for the rich-text `description` field.
+
+    The OVS UI has a real editor; the admin has a plain textarea holding raw
+    HTML, which is the easy place to break a description by hand. So rather than
+    silently rewriting what an admin typed, this form:
+
+      * says which tags are allowed, in help_text;
+      * refuses the save and names what would have been removed, instead of
+        quietly dropping it - an admin who pasted a heading should be told, not
+        left wondering where it went;
+      * refuses markup that does not round-trip (an unclosed tag), because the
+        stored value is rendered as HTML on OVS and on MIT Learn.
+
+    The API path sanitizes in the serializer instead of erroring, because there
+    the editor has already constrained the input to the allowed vocabulary.
+    """
+
+    class Media:
+        css = {"all": ("css/admin-rich-text.css",)}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field = self.fields.get("description")
+        if field is None:
+            return
+        field.help_text = format_html(
+            "Checked as rich text only when <em>Description format</em> is "
+            "\u201cRich text\u201d; a plain-text description is stored exactly as "
+            "typed. Allowed tags: {tags}. Links keep only "
+            "<code>href</code> and <code>title</code>; every other attribute is "
+            "dropped. Headings are <strong>not</strong> supported - MIT Learn "
+            "strips them. Prefer editing descriptions in the OVS collection or "
+            "video dialog, which has a proper editor.",
+            tags=", ".join(sorted(ALLOWED_DESCRIPTION_TAGS)),
+        )
+        field.widget.attrs.update(
+            {
+                "rows": 8,
+                "class": "vLargeTextField rich-text-source",
+                "spellcheck": "false",
+            }
+        )
+
+    def clean(self):
+        """
+        Reject a rich-text description only when sanitizing would *lose* something.
+
+        nh3 also normalizes harmlessly - it adds rel="noopener noreferrer" to
+        every anchor and closes an unclosed tag - and refusing those would make
+        the field unusable for correct input. So the rule is about loss, not
+        about difference: a disallowed tag, a dropped attribute or a refused link
+        scheme is the admin's intent silently disappearing, and that is worth an
+        error. Tidying is accepted and stored in its tidied form.
+
+        A plain-text description is left exactly as typed: it is rendered
+        escaped, so there is nothing to strip, and running it through the
+        allowlist would lose text rather than protect anything.
+
+        Returns:
+            dict: the cleaned data, with `description` in its tidied form
+
+        Raises:
+            forms.ValidationError: naming what would have been lost
+        """
+        cleaned_data = super().clean()
+        if cleaned_data.get("description_format") != DescriptionFormat.HTML:
+            return cleaned_data
+
+        raw = cleaned_data.get("description") or ""
+        cleaned = sanitize_description(raw)
+        if not raw.strip() or cleaned == raw:
+            return cleaned_data
+
+        problems = []
+
+        # Parsed, not pattern-matched: a regex over the source reads
+        # "Q&A with the class = fun" as a class attribute and "Register online =
+        # required" as an `on*` handler, refusing perfectly good prose.
+        removed = sorted(tags_in(raw) - set(ALLOWED_DESCRIPTION_TAGS))
+        if removed:
+            tags = ", ".join(f"<{tag}>" for tag in removed)
+            problems.append(
+                f"these tags are not supported and would be removed: {tags}"
+            )
+
+        allowed_attributes = {
+            attr for attrs in ALLOWED_DESCRIPTION_ATTRIBUTES.values() for attr in attrs
+        }
+        dropped = sorted(attributes_in(raw) - allowed_attributes)
+        if dropped:
+            attrs = ", ".join(dropped)
+            problems.append(
+                f"these attributes would be dropped: {attrs} "
+                "(only href and title survive, and only on a link)"
+            )
+
+        refused_links = sorted(
+            {
+                (tag.get("href") or "").strip()
+                for tag in BeautifulSoup(raw, "html5lib").find_all("a")
+                if (tag.get("href") or "").strip()
+                and not re.match(
+                    r"(?:https?|mailto):", tag["href"].strip(), re.IGNORECASE
+                )
+            }
+        )
+        if refused_links:
+            problems.append(
+                "these links would lose their target - use an absolute http, "
+                "https or mailto address: " + ", ".join(refused_links)
+            )
+
+        if problems:
+            raise forms.ValidationError(
+                {
+                    "description": (
+                        "This description was not saved, because publishing it "
+                        "would change it: " + "; and ".join(problems) + "."
+                    )
+                }
+            )
+
+        # Nothing lost - nh3 only tidied the markup (closed a tag, added
+        # rel="noopener noreferrer"). Store the tidied version.
+        cleaned_data["description"] = cleaned
+        return cleaned_data
+
+
+class CollectionAdminForm(RichTextDescriptionAdminForm):
+    """Collection admin form"""
+
+    class Meta:
+        model = models.Collection
+        fields = "__all__"
+
+
+class VideoAdminForm(RichTextDescriptionAdminForm):
+    """Video admin form"""
+
+    class Meta:
+        model = models.Video
+        fields = "__all__"
 
 
 class ViewListsInline(admin.TabularInline):
@@ -50,6 +207,8 @@ class CollectionEdxEndpointInlineAdmin(admin.StackedInline):
 
 class CollectionAdmin(admin.ModelAdmin):
     """Customized collection admin model"""
+
+    form = CollectionAdminForm
 
     def show_url(self, obj):
         """Display the collection URL"""
@@ -158,6 +317,8 @@ class VideoEncodeJobsInline(GenericTabularInline):
 
 class VideoAdmin(admin.ModelAdmin):
     """Customized Video admin model"""
+
+    form = VideoAdminForm
 
     def show_url(self, obj):
         """Display the video URL"""

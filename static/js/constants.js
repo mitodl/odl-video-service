@@ -44,3 +44,11 @@ export const CANVASES = {
   camera3: { shiftX: false, shiftY: true },
   camera4: { shiftX: true, shiftY: true }
 }
+
+/*
+ * How a Collection/Video description is stored. Mirrors
+ * ui.constants.DescriptionFormat - see there for why the format is recorded on
+ * the record rather than guessed from the value.
+ */
+export const DESCRIPTION_FORMAT_TEXT = "text"
+export const DESCRIPTION_FORMAT_HTML = "html"

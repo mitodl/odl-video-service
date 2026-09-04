@@ -516,13 +516,45 @@ describe("CollectionDetailPage", () => {
     })
 
     describe("renderDescription", () => {
-      it("renders description text when description is not empty", () => {
+      it("renders a plain-text description as text, keeping its line breaks", () => {
+        /*
+         * What the format on the record says, not what the value looks like.
+         * Injecting a legacy plain-text description as markup is what truncates
+         * it: `<b to a` is read as an unterminated tag and everything after it
+         * disappears.
+         */
         const { container } = renderPage({
-          collection: { ...collection, description: "someDescription" }
+          collection: {
+            ...collection,
+            description:        "Compare <b to a.\nSecond line.",
+            description_format: "text"
+          }
         })
-        const paragraph = container.querySelector("p.description")
-        assert.isNotNull(paragraph)
-        assert.equal(paragraph.textContent, "someDescription")
+        const description = container.querySelector("div.description")
+        assert.isNotNull(description)
+        assert.equal(description.textContent, "Compare <b to a.\nSecond line.")
+        assert.lengthOf(description.querySelectorAll("b"), 0)
+        assert.isTrue(
+          description.classList.contains("description-plain-text"),
+          "pre-wrap is what keeps the author's line breaks visible"
+        )
+      })
+
+      it("renders a rich-text description as markup", () => {
+        // Sanitized server-side on write (ui/html.py), so it is injected. A div,
+        // not a p: the markup can contain block elements, which a p cannot hold.
+        const { container } = renderPage({
+          collection: {
+            ...collection,
+            description:
+              "<p>a <strong>seminar</strong></p><ul><li>one</li></ul>",
+            description_format: "html"
+          }
+        })
+        const description = container.querySelector("div.description")
+        assert.isNotNull(description)
+        assert.equal(description.querySelectorAll("strong").length, 1)
+        assert.equal(description.querySelectorAll("ul > li").length, 1)
       })
       ;[
         ["", "an empty string"],

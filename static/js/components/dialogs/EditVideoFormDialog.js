@@ -9,7 +9,7 @@ import Dialog from "../material/Dialog"
 import Filefield from "../material/Filefield"
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
-import Textarea from "../material/Textarea"
+import DescriptionField from "../material/DescriptionField"
 
 import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
@@ -26,6 +26,7 @@ import {
 import type { Video, VideoUiState } from "../../flow/videoTypes"
 import { calculateListPermissionValue } from "../../util/util"
 import { videoHasError, videoIsProcessing } from "../../lib/video"
+import { DESCRIPTION_FORMAT_HTML } from "../../constants"
 
 type DialogProps = {
   dispatch: Dispatch,
@@ -39,7 +40,9 @@ type DialogProps = {
 type DialogState = {
   thumbnailFile: ?File,
   thumbnailPreviewUrl: ?string,
-  thumbnailError: ?string
+  thumbnailError: ?string,
+  upgradingDescription: boolean,
+  upgradeError: ?string
 }
 
 /**
@@ -62,16 +65,43 @@ function sanitizeImgSrc(url: ?string): string {
 class EditVideoFormDialog extends React.Component<*, DialogState> {
   props: DialogProps
   state: DialogState = {
-    thumbnailFile:       null,
-    thumbnailPreviewUrl: null,
-    thumbnailError:      null
+    thumbnailFile:        null,
+    thumbnailPreviewUrl:  null,
+    thumbnailError:       null,
+    upgradingDescription: false,
+    upgradeError:         null
   }
+
+  /*
+   * True while this dialog is closing itself.
+   *
+   * onClose clears the form, and that dispatch re-renders the dialog, which
+   * stays mounted while closed - withDialogs only flips `open`. Without this
+   * flag the clear is undone immediately: editVideoForm.key is back to null,
+   * which is exactly the condition checkActiveVideo re-seeds on, so it writes
+   * `props.video` into the form again. On the collection page that prop is the
+   * collection's own copy of the video, and submitForm has only just *asked*
+   * for the collection to be refetched - so the value re-seeded is the one from
+   * before the save. Nothing corrects it afterwards either, because
+   * checkActiveVideo only re-initializes when the video *key* changes, and the
+   * key has not changed. The next open of the dialog would show the pre-save
+   * values.
+   *
+   * Guarding on `open` alone would not do: the dispatch that hides the dialog
+   * and the dispatch that clears the form are separate, so their order would
+   * decide whether the bug appears.
+   */
+  closing = false
 
   componentDidMount() {
     this.checkActiveVideo()
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps: DialogProps) {
+    // A fresh open ends the close, and the form should track props again.
+    if (this.props.open && !prevProps.open) {
+      this.closing = false
+    }
     this.checkActiveVideo()
   }
 
@@ -81,6 +111,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       video,
       videoUi: { editVideoForm }
     } = this.props
+    if (this.closing) {
+      return
+    }
     if (open && video && video.key !== editVideoForm.key) {
       this.initializeFormWithVideo(video)
     }
@@ -107,10 +140,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 
     dispatch(
       actions.videoUi.initEditVideoForm({
-        key:            video.key,
-        title:          video.title,
-        description:    video.description,
-        cta_link:       video.cta_link || null,
+        key:                video.key,
+        title:              video.title,
+        description:        video.description,
+        description_format: video.description_format,
+        cta_link:           video.cta_link || null,
         overrideChoice:
           viewChoice === PERM_CHOICE_COLLECTION ?
             PERM_CHOICE_COLLECTION :
@@ -121,14 +155,56 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     )
   }
 
+  /**
+   * Convert this video's plain-text description to rich text.
+   *
+   * Saved on its own rather than folded into Save Changes, so the author gets
+   * the editor - with their words already in it - before deciding what to write
+   * next. Whatever is currently in the textarea goes up with the request, so an
+   * unsaved edit is converted too rather than discarded.
+   *
+   * The server does the converting (ui.html.upgrade_description): it is the only
+   * place that knows how to escape plain text and how to clean markup someone
+   * once pasted into the old field.
+   */
+  upgradeDescription = async () => {
+    const {
+      dispatch,
+      videoUi: { editVideoForm },
+      shouldUpdateCollection
+    } = this.props
+
+    this.setState({ upgradingDescription: true, upgradeError: null })
+    try {
+      const video = await dispatch(
+        actions.videos.patch(editVideoForm.key, {
+          description:        editVideoForm.description,
+          description_format: DESCRIPTION_FORMAT_HTML
+        })
+      )
+      this.setState({ upgradingDescription: false })
+      this.initializeFormWithVideo(video)
+      if (shouldUpdateCollection) {
+        dispatch(actions.collections.get(video.collection_key))
+      }
+    } catch (error) {
+      this.setState({
+        upgradingDescription: false,
+        upgradeError:
+          "That description could not be converted. Please try again."
+      })
+    }
+  }
+
   setEditVideoTitle = (event: Object) => {
     const { dispatch } = this.props
     dispatch(actions.videoUi.setEditVideoTitle(event.target.value))
   }
 
-  setEditVideoDesc = (event: Object) => {
+  // The rich-text editor hands back serialized HTML, not a DOM event.
+  setEditVideoDesc = (html: string) => {
     const { dispatch } = this.props
-    dispatch(actions.videoUi.setEditVideoDesc(event.target.value))
+    dispatch(actions.videoUi.setEditVideoDesc(html))
   }
 
   setEditVideoCtaLink = (event: Object) => {
@@ -227,6 +303,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       thumbnailPreviewUrl: null,
       thumbnailError:      null
     })
+    this.closing = true
     dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }
@@ -254,8 +331,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     const overridePerms = editVideoForm.overrideChoice === PERM_CHOICE_OVERRIDE
 
     let patchData = {
-      title:       editVideoForm.title,
-      description: editVideoForm.description,
+      title:              editVideoForm.title,
+      description:        editVideoForm.description,
+      description_format: editVideoForm.description_format,
       ...(editVideoForm.cta_link !== null ?
         { cta_link: editVideoForm.cta_link || null } :
         {})
@@ -510,11 +588,16 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             validationMessage={errors ? errors.title : ""}
             required
           />
-          <Textarea
+          <DescriptionField
             label="Description"
             id="video-description"
+            placeholder="Add a description, links or next steps for learners."
             onChange={this.setEditVideoDesc}
             value={editVideoForm.description}
+            descriptionFormat={editVideoForm.description_format}
+            onUpgrade={this.upgradeDescription}
+            upgrading={this.state.upgradingDescription}
+            upgradeError={this.state.upgradeError}
           />
           <Textfield
             label="Call-to-Action Link"

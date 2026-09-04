@@ -15,6 +15,7 @@ import {
   setViewChoice,
   setViewLists,
   setCollectionDesc,
+  setCollectionDescFormat,
   setCollectionTitle,
   setEdxCourseId,
   setOwnerId,
@@ -140,13 +141,6 @@ describe("CollectionFormDialog", () => {
           "change"
         ],
         [
-          "description",
-          SET_COLLECTION_DESC,
-          "new description",
-          () => screen.getByLabelText("Description (optional)"),
-          "change"
-        ],
-        [
           "viewChoice",
           SET_VIEW_CHOICE,
           isNew ? PERM_CHOICE_LISTS : PERM_CHOICE_NONE,
@@ -203,6 +197,51 @@ describe("CollectionFormDialog", () => {
           assert.equal(getCollectionForm(state.collectionUi)[prop], newValue)
         })
       }
+
+      /*
+       * Description is not in the table above: it is a rich-text editor, not a
+       * form field. It holds its document in a contenteditable element and
+       * reports serialized HTML through onChange, so there is no value to
+       * fireEvent.change. Driving it the way an author does - through a toolbar
+       * control - is what exercises the wiring.
+       */
+      describe("description", () => {
+        const editor = () =>
+          document.querySelector("#collection-desc .ProseMirror")
+
+        /*
+         * The rich-text editor only appears for a description that is already
+         * rich text; a plain-text one gets a textarea until an author upgrades
+         * it. The editor engine is a split chunk, so it arrives after mount.
+         */
+        const renderWithEditor = async (props = {}) => {
+          store.dispatch(setCollectionDescFormat("html"))
+          const result = await renderDialog(props)
+          await waitFor(() => assert.isNotNull(editor()))
+          return result
+        }
+
+        it("stores what the editor reports, as HTML", async () => {
+          await renderWithEditor()
+          const state = await listenForActions([SET_COLLECTION_DESC], () => {
+            fireEvent.click(
+              screen.getByRole("button", { name: "Bulleted list" })
+            )
+          })
+          assert.include(
+            getCollectionForm(state.collectionUi).description,
+            "<ul>"
+          )
+        })
+
+        it("shows the stored description as markup", async () => {
+          store.dispatch(setCollectionDesc("<p>stored <em>text</em></p>"))
+          await renderWithEditor()
+          await waitFor(() =>
+            assert.include(editor().innerHTML, "<em>text</em>")
+          )
+        })
+      })
 
       it("stores form submission errors in state", async () => {
         await renderDialog()
@@ -281,13 +320,14 @@ describe("CollectionFormDialog", () => {
         })
 
         const expectedRequestPayload = {
-          title:             "new title",
-          description:       "new description",
-          view_lists:        expectedListRequestData,
-          admin_lists:       expectedListRequestData,
-          edx_course_id:     "edx-course-id",
-          owner:             1,
-          is_logged_in_only: false
+          title:              "new title",
+          description:        "new description",
+          description_format: "text",
+          view_lists:         expectedListRequestData,
+          admin_lists:        expectedListRequestData,
+          edx_course_id:      "edx-course-id",
+          owner:              1,
+          is_logged_in_only:  false
         }
 
         if (isNew) {

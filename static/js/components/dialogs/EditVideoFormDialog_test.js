@@ -3,7 +3,7 @@
 import React from "react"
 import sinon from "sinon"
 import { assert } from "chai"
-import { screen, fireEvent } from "@testing-library/react"
+import { screen, fireEvent, waitFor } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 import _ from "lodash"
 
@@ -88,6 +88,7 @@ describe("EditVideoFormDialog", () => {
   }
 
   it("initializes the form when given a video that doesn't match the current form key", async () => {
+    video.description_format = "html"
     store.dispatch(initEditVideoForm({ key: "mismatching-key" }))
     const previousFormState = store.getState().videoUi.editVideoForm
     await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
@@ -99,7 +100,14 @@ describe("EditVideoFormDialog", () => {
       store.getState().videoUi.editVideoForm.key
     )
     assert.equal(screen.getByLabelText("Title").value, video.title)
-    assert.equal(screen.getByLabelText("Description").value, video.description)
+    // The description is a rich-text editor: it holds its document in a
+    // contenteditable element, so there is no `value` to read.
+    await waitFor(() =>
+      assert.include(
+        document.querySelector("#video-description .ProseMirror").innerHTML,
+        video.description
+      )
+    )
   })
 
   it("doesn't re-initialize the form when given a video that matches the current form key", () => {
@@ -117,14 +125,6 @@ describe("EditVideoFormDialog", () => {
       SET_EDIT_VIDEO_TITLE,
       "new title",
       "Title",
-      "change"
-    ],
-    [
-      "#video-description",
-      "description",
-      SET_EDIT_VIDEO_DESC,
-      "new description",
-      "Description",
       "change"
     ],
     ["#view-moira-input", "viewLists", SET_VIEW_LISTS, "a,b,c", null, "change"],
@@ -198,6 +198,88 @@ describe("EditVideoFormDialog", () => {
     })
   }
 
+  /*
+   * Description is not in the table above: it is a rich-text editor, not a
+   * form field. It keeps its document in a contenteditable element and reports
+   * serialized HTML through onChange, so there is no value for
+   * fireEvent.change to set. Driving it the way an author does - through a
+   * toolbar control - is what exercises the wiring.
+   */
+  describe("description", () => {
+    const editor = () =>
+      document.querySelector("#video-description .ProseMirror")
+
+    // The rich-text editor only appears for a description that is already
+    // rich text; a plain-text one gets a textarea until an author upgrades it.
+    // The editor engine is a split chunk, so it arrives after mount.
+    const renderWithEditor = async (props = {}) => {
+      video.description_format = "html"
+      const result = renderComponent(props)
+      await waitFor(() => assert.isNotNull(editor()))
+      return result
+    }
+
+    it("stores what the editor reports, as HTML", async () => {
+      await renderWithEditor()
+      const state = await listenForActions([SET_EDIT_VIDEO_DESC], () => {
+        fireEvent.click(screen.getByRole("button", { name: "Bulleted list" }))
+      })
+      assert.include(state.videoUi.editVideoForm.description, "<ul>")
+    })
+
+    it("upgrades through the server and swaps in the editor", async () => {
+      /*
+       * The conversion is the server's: it is the only place that knows how to
+       * escape plain text and how to clean markup someone once pasted into the
+       * old field. So this asserts the request and that the response is what
+       * puts the rich-text editor on screen - not any client-side conversion.
+       */
+      video.description = "line one\nline two"
+      video.description_format = "text"
+      renderComponent()
+      const upgraded = {
+        ...video,
+        description:        "<p>line one<br>line two</p>",
+        description_format: "html"
+      }
+      const patchStub = sandbox
+        .stub(api, "updateVideo")
+        .returns(Promise.resolve(upgraded))
+
+      fireEvent.click(document.querySelector(".description-upgrade__button"))
+
+      await waitFor(() => sinon.assert.called(patchStub))
+      sinon.assert.calledWith(patchStub, video.key, {
+        description:        "line one\nline two",
+        description_format: "html"
+      })
+      await waitFor(() => assert.isNotNull(editor()))
+      assert.include(editor().innerHTML, "line one")
+      assert.isNull(document.querySelector("textarea"))
+    })
+
+    it("keeps the textarea and explains an upgrade that failed", async () => {
+      video.description_format = "text"
+      renderComponent()
+      sandbox
+        .stub(api, "updateVideo")
+        .returns(Promise.reject(new Error("nope")))
+
+      fireEvent.click(document.querySelector(".description-upgrade__button"))
+
+      await waitFor(() =>
+        assert.isNotNull(document.querySelector(".description-upgrade__error"))
+      )
+      assert.isNotNull(document.querySelector("textarea"))
+    })
+
+    it("shows the stored description as markup", async () => {
+      video.description = "<p>stored <em>text</em></p>"
+      await renderWithEditor()
+      await waitFor(() => assert.include(editor().innerHTML, "<em>text</em>"))
+    })
+  })
+
   // eslint-disable-next-line no-unused-vars
   for (const selector of [
     "#view-moira-input",
@@ -229,8 +311,9 @@ describe("EditVideoFormDialog", () => {
     })
     // set title and description, check the values that updateVideoStub is called with
     const newValues = {
-      title:       "New Title",
-      description: "New Description"
+      title:              "New Title",
+      description:        "New Description",
+      description_format: "text"
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))
@@ -258,8 +341,11 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -279,12 +365,13 @@ describe("EditVideoFormDialog", () => {
     })
     // set permission override & view choices, check the values that updateVideoStub is called with
     const newValues = {
-      title:             "New Title",
-      description:       "New Description",
-      is_public:         false,
-      is_private:        false,
-      is_logged_in_only: false,
-      view_lists:        ["my-moira-list1", "my-moira-list2"]
+      title:              "New Title",
+      description:        "New Description",
+      description_format: "text",
+      is_public:          false,
+      is_private:         false,
+      is_logged_in_only:  false,
+      view_lists:         ["my-moira-list1", "my-moira-list2"]
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))
@@ -300,8 +387,11 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -322,8 +412,11 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -391,8 +484,11 @@ describe("EditVideoFormDialog", () => {
         INIT_EDIT_VIDEO_FORM,
         "NOOP",
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -423,13 +519,45 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
       }
     )
     sinon.assert.notCalled(collectionsGetStub)
+  })
+
+  it("does not re-seed the form from stale props while closing", async () => {
+    /*
+     * A regression test for the close path. Clearing the form re-renders this
+     * still-mounted dialog, and checkActiveVideo used to answer that render by
+     * writing `props.video` straight back in. On the collection page that prop
+     * is the collection's copy of the video, which right after a save has not
+     * been refetched yet - so the form ended up holding the pre-save values,
+     * and held on to them, since checkActiveVideo only re-initializes when the
+     * video *key* changes. Reopening the dialog then showed the old values.
+     */
+    const collection = makeCollection()
+    const collectionVideo = collection.videos[0]
+    store.dispatch(setSelectedVideoKey(collectionVideo.key))
+    renderComponent({ video: null, collection: collection })
+    assert.equal(
+      store.getState().videoUi.editVideoForm.key,
+      collectionVideo.key,
+      "form was not seeded, so this test cannot observe the close"
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+
+    await waitFor(() => sinon.assert.called(hideDialogStub))
+    assert.isNull(
+      store.getState().videoUi.editVideoForm.key,
+      "the form was re-seeded while closing"
+    )
   })
 })

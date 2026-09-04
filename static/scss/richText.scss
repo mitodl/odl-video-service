@@ -1,0 +1,300 @@
+/*
+ * Rich-text description field and the rendered output.
+ *
+ * Two jobs in one file so the editor and the pages that display its output stay
+ * visually in step: what an author sees while typing should match what the
+ * collection and video pages show.
+ */
+
+/*
+ * Applied to both the editor's content area and the pages that render a stored
+ * description, so an author is looking at the real result while they type.
+ */
+@mixin rich-text-body {
+  p {
+    margin: 0 0 12px;
+  }
+
+  ul,
+  ol {
+    margin: 0 0 12px;
+    padding-left: 22px;
+  }
+
+  li {
+    margin-bottom: 4px;
+  }
+
+  blockquote {
+    margin: 0 0 12px;
+    padding-left: 12px;
+    border-left: 3px solid $lightgray-bg;
+    color: $fontgray;
+  }
+
+  a {
+    color: $linkcolor;
+    text-decoration: underline;
+  }
+
+  strong,
+  b {
+    font-weight: 700;
+  }
+
+  em,
+  i {
+    font-style: italic;
+  }
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* ── the field ─────────────────────────────────────────── */
+
+.rte {
+  label {
+    display: block;
+    font-size: 13px;
+    color: $fontgray;
+    padding-bottom: 4px;
+  }
+
+  .rte-frame {
+    border: 1px solid rgba(0, 0, 0, .28);
+    border-radius: 2px;
+    background: #fff;
+    position: relative;
+
+    &:focus-within {
+      border-color: $mdc-theme-primary;
+    }
+
+    /* While the editor chunk is in flight the field is not yet editable; the
+       value is shown but must not look interactive. */
+    &.loading .rte-content {
+      opacity: .6;
+    }
+  }
+}
+
+.rte-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 4px 5px;
+  background: #f5f5f5;
+  border-bottom: 1px solid rgba(0, 0, 0, .14);
+
+  .rte-button + .rte-button {
+    margin-left: 2px;
+  }
+}
+
+.rte-button {
+  font-family: Roboto, sans-serif;
+  font-size: 13.5px;
+  line-height: 1;
+  min-width: 30px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: #5b6167;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, .06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $mdc-theme-primary;
+    outline-offset: 1px;
+  }
+
+  &.active {
+    background: #e3ecf8;
+    border-color: #b9d2ef;
+    color: $mdc-theme-primary;
+  }
+}
+
+/* Material Icons glyphs inside the toolbar buttons. The app-wide .material-icons
+   rule sets a grey colour and a hover colour meant for standalone action icons;
+   inside a toolbar button the button owns those states, so the glyph inherits. */
+.rte-button .material-icons {
+  font-size: 19px;
+  line-height: 1;
+  color: inherit;
+
+  &:hover {
+    color: inherit;
+    cursor: pointer;
+  }
+}
+
+.rte-link-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 6px;
+  background: #fafafa;
+  border-bottom: 1px solid rgba(0, 0, 0, .14);
+
+  > * + * {
+    margin-left: 6px;
+  }
+
+  .rte-link-label {
+    font-size: 12px;
+    color: $fontgray;
+    padding: 0;
+  }
+
+  .rte-link-input {
+    flex: 1 1 180px;
+    min-width: 0;
+    font-family: Roboto, sans-serif;
+    font-size: 13px;
+    padding: 5px 7px;
+    border: 1px solid rgba(0, 0, 0, .28);
+    border-radius: 2px;
+
+    &.invalid {
+      border-color: $validation-text;
+      background: $validation-bg;
+    }
+  }
+
+  .rte-link-error {
+    flex: 1 1 100%;
+    font-size: 12px;
+    color: $validation-text;
+  }
+}
+
+.rte-content {
+  @include rich-text-body;
+
+  padding: 10px 12px 12px;
+  min-height: 108px;
+
+  /* TipTap's editable element. Its own outline would sit inside the frame's
+     focus ring and read as a double border. */
+  .ProseMirror {
+    outline: none;
+    min-height: 84px;
+  }
+}
+
+.rte-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 10px 12px;
+  color: #9aa0a6;
+  font-size: 15px;
+  pointer-events: none;
+}
+
+/* The placeholder is positioned against the frame, but has to clear the toolbar
+   and the editable padding, so it is offset by the toolbar height. */
+.rte-frame .rte-placeholder {
+  top: 36px;
+}
+
+.rte-frame.loading .rte-placeholder {
+  display: none;
+}
+
+/* ── rendered descriptions ─────────────────────────────── */
+
+.collection-detail-content header .description,
+.video-description {
+  @include rich-text-body;
+}
+
+/* ── fallback when the editor chunk fails to load ──────── */
+
+.rte-fallback {
+  .rte-fallback-note {
+    margin: 0 0 6px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: $validation-text;
+  }
+
+  textarea.rich-text-source {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    height: auto;
+  }
+}
+
+/* ── descriptions still stored as plain text ────────────── */
+
+/*
+ * A plain-text description is rendered as text, not markup, so its line breaks
+ * are the only structure it has and HTML would collapse them to single spaces.
+ * pre-wrap keeps them and still wraps long lines.
+ */
+.description-plain-text {
+  white-space: pre-wrap;
+}
+
+/* ── the plain-text description field ───────────────────── */
+
+.description-field--plain-text {
+  margin-bottom: 16px;
+
+  label {
+    display: block;
+    margin-bottom: 4px;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 0.85rem;
+  }
+
+  .description-plain-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.4;
+    resize: vertical;
+  }
+}
+
+.description-upgrade {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 6px;
+
+  &__hint {
+    flex: 1 1 auto;
+    margin: 0;
+    color: #666;
+    font-size: 0.8rem;
+  }
+
+  &__button {
+    flex: 0 0 auto;
+  }
+
+  &__error {
+    flex: 1 1 100%;
+    margin: 4px 0 0;
+    color: #b00020;
+    font-size: 0.8rem;
+  }
+}

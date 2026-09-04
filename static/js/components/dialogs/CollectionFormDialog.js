@@ -5,7 +5,7 @@ import type { Dispatch } from "redux"
 
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
-import Textarea from "../material/Textarea"
+import DescriptionField from "../material/DescriptionField"
 
 import Dialog from "../material/Dialog"
 
@@ -16,7 +16,8 @@ import {
   PERM_CHOICE_LISTS,
   PERM_CHOICE_LOGGED_IN
 } from "../../lib/dialog"
-import { getCollectionForm } from "../../lib/collection"
+import { getCollectionForm, makeInitializedForm } from "../../lib/collection"
+import { DESCRIPTION_FORMAT_HTML } from "../../constants"
 import { makeCollectionUrl } from "../../lib/urls"
 import { calculateListPermissionValue } from "../../util/util"
 import {
@@ -47,7 +48,9 @@ export class CollectionFormDialog extends React.Component<*, void> {
   constructor(props) {
     super(props)
     this.state = {
-      users: props.users || []
+      users:                props.users || [],
+      upgradingDescription: false,
+      upgradeError:         null
     }
   }
 
@@ -78,9 +81,10 @@ export class CollectionFormDialog extends React.Component<*, void> {
     dispatch(uiActions.setCollectionTitle(event.target.value))
   }
 
-  setCollectionDesc = (event: Object) => {
+  // The rich-text editor hands back serialized HTML, not a DOM event.
+  setCollectionDesc = (html: string) => {
     const { dispatch } = this.props
-    dispatch(uiActions.setCollectionDesc(event.target.value))
+    dispatch(uiActions.setCollectionDesc(html))
   }
 
   setCollectionViewPermChoice = (choice: string) => {
@@ -125,6 +129,52 @@ export class CollectionFormDialog extends React.Component<*, void> {
     dispatch(uiActions.setOwnerId(parseInt(event.target.value, 10)))
   }
 
+  /**
+   * Convert this collection's plain-text description to rich text.
+   *
+   * Saved on its own rather than folded into the dialog's save, so the author
+   * gets the editor - with their words already in it - before deciding what to
+   * write next. Whatever is in the textarea goes up with the request, so an
+   * unsaved edit is converted rather than discarded.
+   *
+   * The server does the converting (ui.html.upgrade_description): it is the only
+   * place that knows how to escape plain text and how to clean markup someone
+   * once pasted into the old field.
+   *
+   * A collection that has not been created yet has nothing stored to convert, so
+   * the format is simply switched and the editor takes over from here.
+   */
+  upgradeDescription = async () => {
+    const {
+      dispatch,
+      collectionUi: { isNew },
+      collectionForm
+    } = this.props
+
+    if (isNew) {
+      dispatch(uiActions.setCollectionDescFormat(DESCRIPTION_FORMAT_HTML))
+      return
+    }
+
+    this.setState({ upgradingDescription: true, upgradeError: null })
+    try {
+      const collection = await dispatch(
+        actions.collections.patch(collectionForm.key, {
+          description:        collectionForm.description,
+          description_format: DESCRIPTION_FORMAT_HTML
+        })
+      )
+      this.setState({ upgradingDescription: false })
+      dispatch(uiActions.initCollectionForm(makeInitializedForm(collection)))
+    } catch (error) {
+      this.setState({
+        upgradingDescription: false,
+        upgradeError:
+          "That description could not be converted. Please try again."
+      })
+    }
+  }
+
   submitForm = async () => {
     const {
       dispatch,
@@ -135,9 +185,10 @@ export class CollectionFormDialog extends React.Component<*, void> {
     } = this.props
 
     const payload: Object = {
-      title:       collectionForm.title,
-      description: collectionForm.description,
-      view_lists:  calculateListPermissionValue(
+      title:              collectionForm.title,
+      description:        collectionForm.description,
+      description_format: collectionForm.description_format,
+      view_lists:         calculateListPermissionValue(
         collectionForm.viewChoice,
         collectionForm.viewLists
       ),
@@ -237,12 +288,16 @@ export class CollectionFormDialog extends React.Component<*, void> {
             minLength={1}
             validationMessage={errors ? errors.title : ""}
           />
-          <Textarea
+          <DescriptionField
             label="Description (optional)"
             id="collection-desc"
-            rows="4"
+            placeholder="Add a description, links or next steps for learners."
             onChange={this.setCollectionDesc}
             value={collectionForm.description || ""}
+            descriptionFormat={collectionForm.description_format}
+            onUpgrade={this.upgradeDescription}
+            upgrading={this.state.upgradingDescription}
+            upgradeError={this.state.upgradeError}
           />
 
           <section className="permission-group">

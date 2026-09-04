@@ -8,6 +8,7 @@ import pytest
 from rest_framework.serializers import DateTimeField, ValidationError
 
 from ui import factories, serializers
+from ui.constants import DescriptionFormat
 from ui.encodings import EncodingNames
 from ui.factories import KeycloakGroupFactory, UserFactory, VideoFactory
 
@@ -26,6 +27,7 @@ def test_collection_serializer():
         "created_at": DateTimeField().to_representation(collection.created_at),
         "title": collection.title,
         "description": collection.description,
+        "description_format": collection.description_format,
         "videos": serializers.SimpleVideoSerializer(videos, many=True).data,
         "video_count": len(videos),
         "view_lists": [],
@@ -152,6 +154,7 @@ def test_collection_list_serializer():
         "created_at": DateTimeField().to_representation(collection.created_at),
         "title": collection.title,
         "description": collection.description,
+        "description_format": collection.description_format,
         "view_lists": [],
         "admin_lists": [],
         "video_count": collection.videos.count(),
@@ -180,6 +183,7 @@ def get_expected_result(video):
         "multiangle": video.multiangle,
         "title": video.title,
         "description": video.description,
+        "description_format": video.description_format,
         "videofile_set": serializers.VideoFileSerializer(
             video.videofile_set.all(), many=True
         ).data,
@@ -363,6 +367,7 @@ def test_simplevideo_serializer():
         "created_at": DateTimeField().to_representation(video.created_at),
         "title": video.title,
         "description": video.description,
+        "description_format": video.description_format,
         "videofile_set": serializers.VideoFileSerializer(video_files, many=True).data,
         "videosubtitle_set": [],
         "is_public": video.is_public,
@@ -390,3 +395,203 @@ def test_user_serializer():
         "username": user.username,
         "email": user.email,
     }
+
+
+@pytest.mark.parametrize(
+    "serializer_class",
+    [
+        serializers.CollectionSerializer,
+        serializers.CollectionListSerializer,
+    ],
+)
+def test_collection_description_is_sanitized_on_write(serializer_class):
+    """
+    Collection descriptions are rich text, so disallowed markup must be stripped
+    before it is stored - the value is later rendered as HTML by OVS and by Learn.
+    """
+    user = UserFactory.create()
+    serializer = serializer_class(
+        data={
+            "title": "A series",
+            "description_format": DescriptionFormat.HTML,
+            "description": (
+                "<p>Keep <strong>this</strong> and "
+                '<a href="https://learn.mit.edu">this</a></p>'
+                "<script>alert(1)</script><h2>drop the tag</h2>"
+            ),
+            "owner": user.id,
+            "view_lists": [],
+            "admin_lists": [],
+        }
+    )
+    assert serializer.is_valid(), serializer.errors
+    description = serializer.validated_data["description"]
+    assert "<strong>this</strong>" in description
+    assert 'href="https://learn.mit.edu"' in description
+    assert "script" not in description
+    assert "<h2" not in description
+    # the words inside a stripped tag are kept
+    assert "drop the tag" in description
+
+
+def test_video_description_is_sanitized_on_write():
+    """Video descriptions get the same treatment as collection descriptions"""
+    video = VideoFactory.create()
+    serializer = serializers.VideoSerializer(
+        video,
+        data={
+            "description": '<p>ok</p><img src="x" onerror="alert(1)">',
+            "description_format": DescriptionFormat.HTML,
+        },
+        partial=True,
+    )
+    assert serializer.is_valid(), serializer.errors
+    assert serializer.validated_data["description"] == "<p>ok</p>"
+
+
+def test_video_description_sanitizing_persists():
+    """The sanitized value is what actually lands in the database"""
+    video = VideoFactory.create()
+    serializer = serializers.VideoSerializer(
+        video,
+        data={
+            "description": "<p>hi</p><script>alert(1)</script>",
+            "description_format": DescriptionFormat.HTML,
+        },
+        partial=True,
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    video.refresh_from_db()
+    assert video.description == "<p>hi</p>"
+
+
+def test_video_plain_text_description_is_stored_verbatim():
+    """
+    A description written as plain text is not put through the allowlist.
+
+    Sanitizing it would lose text rather than protect anything: `a <b to c` is
+    read as an unterminated tag and dropped, and the value is only ever rendered
+    escaped anyway.
+    """
+    video = VideoFactory.create()
+    legacy = "Compare <b to a. See &copy; notes.\n\nQ&A after."
+    serializer = serializers.VideoSerializer(
+        video,
+        data={"description": legacy, "description_format": DescriptionFormat.TEXT},
+        partial=True,
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    video.refresh_from_db()
+    assert video.description == legacy
+
+
+def test_video_description_defaults_to_plain_text():
+    """
+    Nothing is treated as rich text until it says it is.
+
+    A client that sends only a description - which is what every client did
+    before rich text existed - gets the plain-text treatment.
+    """
+    video = VideoFactory.create()
+    serializer = serializers.VideoSerializer(
+        video, data={"description": "<b>not markup</b>"}, partial=True
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    video.refresh_from_db()
+    assert video.description_format == DescriptionFormat.TEXT
+    assert video.description == "<b>not markup</b>"
+
+
+def test_upgrading_cleans_stored_markup():
+    """
+    Upgrading a row that happens to hold markup sanitizes it.
+
+    Otherwise this would be the way round the allowlist: store anything while the
+    row is plain text (safe, because it renders escaped), then flip the format on
+    its own and have it rendered as markup unchecked.
+    """
+    video = VideoFactory.create(
+        description='<p>hi</p><img src="x" onerror="alert(1)">',
+        description_format=DescriptionFormat.TEXT,
+    )
+    serializer = serializers.VideoSerializer(
+        video, data={"description_format": DescriptionFormat.HTML}, partial=True
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    video.refresh_from_db()
+    assert video.description == "<p>hi</p>"
+
+
+def test_upgrading_converts_plain_text_rather_than_sanitizing_it():
+    """
+    A genuine plain-text value is escaped and wrapped on upgrade.
+
+    Sanitizing it instead would read `<b to a` as an unterminated tag and drop
+    the rest of the sentence - losing the author's words at the exact moment
+    they asked to keep them.
+    """
+    video = VideoFactory.create(
+        description="Compare <b to a.\n\nSee notes.",
+        description_format=DescriptionFormat.TEXT,
+    )
+    serializer = serializers.VideoSerializer(
+        video, data={"description_format": DescriptionFormat.HTML}, partial=True
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    video.refresh_from_db()
+    assert video.description == "<p>Compare &lt;b to a.</p><p>See notes.</p>"
+
+
+def test_upgrading_converts_the_text_submitted_with_the_flip():
+    """
+    Unsaved edits in the plain-text field are upgraded too, not discarded.
+
+    The client sends whatever is in the field along with the new format, and it
+    is still plain text at that point, so it gets converted rather than cleaned.
+    """
+    video = VideoFactory.create(
+        description="old text", description_format=DescriptionFormat.TEXT
+    )
+    serializer = serializers.VideoSerializer(
+        video,
+        data={
+            "description": "edited <b to a",
+            "description_format": DescriptionFormat.HTML,
+        },
+        partial=True,
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    video.refresh_from_db()
+    assert video.description == "<p>edited &lt;b to a</p>"
+
+
+@pytest.mark.parametrize(
+    ("description_format", "expected"),
+    [
+        (DescriptionFormat.HTML, "<p>a <strong>b</strong></p>"),
+        (DescriptionFormat.TEXT, "<p>a &lt;b to c&lt;/p&gt;</p>"),
+    ],
+)
+def test_public_description_is_always_html(description_format, expected):
+    """
+    Learn renders the public description as markup, so it always gets markup.
+
+    A plain-text row is escaped on the way out rather than upgraded: a read must
+    not reinterpret a legacy value as markup.
+    """
+    stored = (
+        "<p>a <strong>b</strong></p>"
+        if description_format == DescriptionFormat.HTML
+        else "a <b to c</p>"
+    )
+    collection = factories.CollectionFactory.create(
+        description=stored, description_format=description_format
+    )
+    serialized = serializers.PublicCollectionSerializer(collection).data
+    assert serialized["description"] == expected
