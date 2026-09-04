@@ -250,6 +250,20 @@ describe("CollectionFormDialog", () => {
         store.dispatch(setEdxCourseId("edx-course-id"))
         store.dispatch(setOwnerId(1))
 
+        // React 18 batches these eight synchronous dispatches into one
+        // deferred re-render instead of flushing after each, so without this
+        // wait the submit click below fires before the form's connected
+        // props update -- the API stub then observes the pre-dispatch
+        // (blank) form values instead of the ones just set. Waiting for the
+        // title field, the last text value dispatched above, to reach the
+        // DOM confirms the whole batched update has committed.
+        await waitFor(() =>
+          assert.equal(
+            screen.getByLabelText("Collection Title").value,
+            "new title"
+          )
+        )
+
         sandbox.stub(api, "getCollections").returns(Promise.resolve({}))
         let apiStub, expectedActionTypes
         if (isNew) {
@@ -468,6 +482,16 @@ describe("CollectionFormDialog", () => {
         store.dispatch(setViewChoice(PERM_CHOICE_NONE))
         store.dispatch(setCollectionTitle("new title"))
         store.dispatch(setOwnerId(2)) // Set owner ID to 2
+
+        // Same batched-update wait as above: without it, the submit click
+        // below fires before React 18 flushes these four dispatches, and
+        // the API stub sees the owner select's pre-dispatch value.
+        await waitFor(() =>
+          assert.equal(
+            screen.getByRole("combobox", { name: "Owner" }).value,
+            "2"
+          )
+        )
 
         sandbox.stub(api, "getCollections").returns(Promise.resolve({}))
         let apiStub, expectedActionTypes
