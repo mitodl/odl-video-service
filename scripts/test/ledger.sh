@@ -234,6 +234,35 @@ else
 	check "vendor suppressed component names" "${VENDORNAMES:-0}" le 5
 fi
 
+# Every ~@material/* package that SCSS imports must be a DECLARED dependency.
+#
+# Added in Phase R2 (hq#12642) after this bit twice in one PR. `@material/*`
+# packages were reaching node_modules only TRANSITIVELY, via
+# rmwc -> material-components-web. Deleting rmwc removed them, while
+# static/scss/ kept importing them:
+#   - @material/linear-progress was caught during the task, by luck;
+#   - @material/tabs was NOT, and turned the branch red in CI.
+#
+# Local builds cannot be trusted to catch this. sass-loader resolves the `~`
+# prefix through node module lookup, which WALKS UP the directory tree -- so a
+# checkout nested inside another checkout (a worktree under .claude/worktrees/,
+# say) silently resolves the import from the PARENT repo's node_modules and
+# compiles clean, while CI, which has no parent, fails. That is the same
+# resolution-escape class as babelhook.js's ignore regexp, one layer over.
+#
+# So this checks DECLARATION in package.json, not presence in node_modules:
+# presence is exactly the thing that lies.
+SCSS_MATERIAL_UNDECLARED=0
+if [[ -d static/scss ]]; then
+	for pkg in $(grep -rhoE '~@material/[a-z-]+' static/scss/ 2>/dev/null | sed 's|^~||' | sort -u); do
+		grep -q "\"${pkg}\"" package.json || SCSS_MATERIAL_UNDECLARED=$((SCSS_MATERIAL_UNDECLARED + 1))
+	done
+else
+	printf "  FAIL  %-34s %s\n" "scss @material declared" "(static/scss is gone -- delete this check with it)"
+	FAIL=1
+fi
+check "scss @material undeclared" "$SCSS_MATERIAL_UNDECLARED" le 0
+
 # Mutation score, when a baseline has been recorded and a report exists.
 # The full run takes 30-90 minutes, so this is a per-phase or nightly check --
 # the ledger reads a report, it never runs Stryker itself.
