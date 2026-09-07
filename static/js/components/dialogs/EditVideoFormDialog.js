@@ -93,8 +93,17 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
    */
   closing = false
 
+  // Set on unmount so an upgrade that resolves afterwards does not setState on
+  // a dead component. withDialogs keeps this mounted while closed, so this is
+  // the page-teardown case rather than the everyday one.
+  unmounted = false
+
   componentDidMount() {
     this.checkActiveVideo()
+  }
+
+  componentWillUnmount() {
+    this.unmounted = true
   }
 
   componentDidUpdate(prevProps: DialogProps) {
@@ -155,6 +164,24 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     )
   }
 
+  /*
+   * True when an in-flight upgrade no longer belongs to the form on screen.
+   *
+   * `upgradeDescription` awaits a PATCH, and by the time it resolves the dialog
+   * may have been closed and reopened on a different video - close A, open B,
+   * and A's response would otherwise be written into B's form. `checkActiveVideo`
+   * is guarded against the same thing by `this.closing`; an awaited response has
+   * to check the form's key too, because a reopen clears that flag.
+   *
+   * Only the *form* writes are skipped on a stale response. The button's own
+   * "Converting…" state is cleared either way - it belongs to this component
+   * rather than to the video, and leaving it set would strand the field the
+   * author is now looking at behind a disabled button.
+   */
+  isStaleUpgrade(key: ?string) {
+    return this.closing || this.props.videoUi.editVideoForm.key !== key
+  }
+
   /**
    * Convert this video's plain-text description to rich text.
    *
@@ -166,6 +193,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
    * The server does the converting (ui.html.upgrade_description): it is the only
    * place that knows how to escape plain text and how to clean markup someone
    * once pasted into the old field.
+   *
+   * Only the description comes back into the form. Re-seeding the whole form
+   * from the response would discard every other unsaved edit in the dialog - the
+   * PATCH sends the description alone, so the response still carries the *old*
+   * title, and a title the author had just retyped would revert on the spot.
    */
   upgradeDescription = async () => {
     const {
@@ -173,24 +205,37 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       videoUi: { editVideoForm },
       shouldUpdateCollection
     } = this.props
+    const key = editVideoForm.key
 
     this.setState({ upgradingDescription: true, upgradeError: null })
     try {
       const video = await dispatch(
-        actions.videos.patch(editVideoForm.key, {
+        actions.videos.patch(key, {
           description:        editVideoForm.description,
           description_format: DESCRIPTION_FORMAT_HTML
         })
       )
+      if (this.unmounted) {
+        return
+      }
       this.setState({ upgradingDescription: false })
-      this.initializeFormWithVideo(video)
+      if (this.isStaleUpgrade(key)) {
+        return
+      }
+      dispatch(actions.videoUi.setEditVideoDesc(video.description))
+      dispatch(actions.videoUi.setEditVideoDescFormat(video.description_format))
       if (shouldUpdateCollection) {
         dispatch(actions.collections.get(video.collection_key))
       }
     } catch (error) {
+      if (this.unmounted) {
+        return
+      }
       this.setState({
         upgradingDescription: false,
-        upgradeError:
+        // Not this form's error to report once the dialog has moved on.
+        upgradeError:         this.isStaleUpgrade(key) ?
+          null :
           "That description could not be converted. Please try again."
       })
     }

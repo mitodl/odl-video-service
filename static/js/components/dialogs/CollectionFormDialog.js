@@ -16,7 +16,8 @@ import {
   PERM_CHOICE_LISTS,
   PERM_CHOICE_LOGGED_IN
 } from "../../lib/dialog"
-import { getCollectionForm, makeInitializedForm } from "../../lib/collection"
+import { getCollectionForm } from "../../lib/collection"
+import { plainTextToHtml } from "../../lib/description"
 import { DESCRIPTION_FORMAT_HTML } from "../../constants"
 import { makeCollectionUrl } from "../../lib/urls"
 import { calculateListPermissionValue } from "../../util/util"
@@ -54,8 +55,33 @@ export class CollectionFormDialog extends React.Component<*, void> {
     }
   }
 
+  // Set on unmount so an upgrade that resolves afterwards does not setState on
+  // a dead component.
+  unmounted = false
+
   componentDidMount() {
     this.fetchPotentialCollectionOwners()
+  }
+
+  componentWillUnmount() {
+    this.unmounted = true
+  }
+
+  /*
+   * True when an in-flight upgrade no longer belongs to the form on screen.
+   *
+   * `upgradeDescription` awaits a PATCH, and onClose clears the form. By the
+   * time the response arrives the dialog may have been closed, or reopened on a
+   * different collection, and writing the old response into the current form
+   * would show the author someone else's description.
+   *
+   * Only the *form* writes are skipped on a stale response. The button's own
+   * "Converting…" state is cleared either way - it belongs to this component
+   * rather than to the collection, and leaving it set would strand the field
+   * the author is now looking at behind a disabled button.
+   */
+  isStaleUpgrade(key: ?string) {
+    return this.props.collectionForm.key !== key
   }
 
   fetchPotentialCollectionOwners = async () => {
@@ -141,8 +167,16 @@ export class CollectionFormDialog extends React.Component<*, void> {
    * place that knows how to escape plain text and how to clean markup someone
    * once pasted into the old field.
    *
-   * A collection that has not been created yet has nothing stored to convert, so
-   * the format is simply switched and the editor takes over from here.
+   * A collection that has not been created yet has no row to PATCH, so the
+   * conversion is done here instead (`plainTextToHtml`). Switching the format
+   * on its own would hand the raw textarea value to the rich-text editor, which
+   * collapses the author's blank lines when it parses it as HTML and renders it
+   * as markup while its chunk loads.
+   *
+   * Only the description comes back into the form. Re-seeding the whole form
+   * from the response would discard every other unsaved edit in the dialog - the
+   * PATCH sends the description alone, so the response still carries the *old*
+   * title, and a title the author had just retyped would revert on the spot.
    */
   upgradeDescription = async () => {
     const {
@@ -152,24 +186,40 @@ export class CollectionFormDialog extends React.Component<*, void> {
     } = this.props
 
     if (isNew) {
+      dispatch(
+        uiActions.setCollectionDesc(plainTextToHtml(collectionForm.description))
+      )
       dispatch(uiActions.setCollectionDescFormat(DESCRIPTION_FORMAT_HTML))
       return
     }
 
+    const key = collectionForm.key
     this.setState({ upgradingDescription: true, upgradeError: null })
     try {
       const collection = await dispatch(
-        actions.collections.patch(collectionForm.key, {
+        actions.collections.patch(key, {
           description:        collectionForm.description,
           description_format: DESCRIPTION_FORMAT_HTML
         })
       )
+      if (this.unmounted) {
+        return
+      }
       this.setState({ upgradingDescription: false })
-      dispatch(uiActions.initCollectionForm(makeInitializedForm(collection)))
+      if (this.isStaleUpgrade(key)) {
+        return
+      }
+      dispatch(uiActions.setCollectionDesc(collection.description))
+      dispatch(uiActions.setCollectionDescFormat(collection.description_format))
     } catch (error) {
+      if (this.unmounted) {
+        return
+      }
       this.setState({
         upgradingDescription: false,
-        upgradeError:
+        // Not this form's error to report once the dialog has moved on.
+        upgradeError:         this.isStaleUpgrade(key) ?
+          null :
           "That description could not be converted. Please try again."
       })
     }

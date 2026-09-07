@@ -21,6 +21,7 @@ import {
   setOwnerId,
   SET_COLLECTION_TITLE,
   SET_COLLECTION_DESC,
+  SET_COLLECTION_DESC_FORMAT,
   SET_ADMIN_CHOICE,
   SET_ADMIN_LISTS,
   SET_VIEW_CHOICE,
@@ -241,6 +242,68 @@ describe("CollectionFormDialog", () => {
             assert.include(editor().innerHTML, "<em>text</em>")
           )
         })
+
+        if (isNew) {
+          /*
+           * A collection that does not exist yet has no row to PATCH, so the
+           * conversion happens client-side. Switching the format on its own
+           * would hand the raw textarea value to the editor, which parses it as
+           * HTML - collapsing the author's blank lines - and renders it as
+           * markup while its chunk is still loading.
+           */
+          describe("Use formatting on a collection that is not saved yet", () => {
+            const clickUseFormatting = () =>
+              fireEvent.click(
+                screen.getByRole("button", { name: "Use formatting" })
+              )
+
+            it("converts what the author typed instead of relabelling it", async () => {
+              store.dispatch(setCollectionDesc("First para\n\nSecond para"))
+              await renderDialog()
+
+              const state = await listenForActions(
+                [SET_COLLECTION_DESC, SET_COLLECTION_DESC_FORMAT],
+                clickUseFormatting
+              )
+
+              const form = getCollectionForm(state.collectionUi)
+              assert.equal(form.description_format, "html")
+              assert.equal(
+                form.description,
+                "<p>First para</p><p>Second para</p>"
+              )
+            })
+
+            it("escapes markup the author typed rather than switching to it", async () => {
+              store.dispatch(
+                setCollectionDesc('<img src=x onerror="alert(1)">')
+              )
+              await renderDialog()
+
+              const state = await listenForActions(
+                [SET_COLLECTION_DESC, SET_COLLECTION_DESC_FORMAT],
+                clickUseFormatting
+              )
+
+              const { description } = getCollectionForm(state.collectionUi)
+              assert.notInclude(description, "<img")
+              assert.include(description, "&lt;img")
+            })
+
+            it("does not ask the server to convert anything", async () => {
+              const patchStub = sandbox.stub(api, "updateCollection")
+              store.dispatch(setCollectionDesc("Notes"))
+              await renderDialog()
+
+              await listenForActions(
+                [SET_COLLECTION_DESC, SET_COLLECTION_DESC_FORMAT],
+                clickUseFormatting
+              )
+
+              assert.isFalse(patchStub.called)
+            })
+          })
+        }
       })
 
       it("stores form submission errors in state", async () => {

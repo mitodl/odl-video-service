@@ -31,6 +31,7 @@ const {
   INIT_EDIT_VIDEO_FORM,
   SET_EDIT_VIDEO_TITLE,
   SET_EDIT_VIDEO_DESC,
+  SET_EDIT_VIDEO_DESC_FORMAT,
   SET_VIEW_CHOICE,
   SET_VIEW_LISTS,
   SET_PERM_OVERRIDE_CHOICE,
@@ -559,5 +560,104 @@ describe("EditVideoFormDialog", () => {
       store.getState().videoUi.editVideoForm.key,
       "the form was re-seeded while closing"
     )
+  })
+
+  describe("Use formatting", () => {
+    const clickUseFormatting = () =>
+      fireEvent.click(screen.getByRole("button", { name: "Use formatting" }))
+
+    // The upgrade PATCHes the description on its own, so the response it gets
+    // back still carries every *other* field as it was stored.
+    const upgradedVideo = () => ({
+      ...video,
+      description:        "<p>converted</p>",
+      description_format: "html"
+    })
+
+    it("keeps an unsaved title that the response would have reverted", async () => {
+      /*
+       * The PATCH sends the description alone, so the server answers with the
+       * stored title. Re-seeding the whole form from that response threw away
+       * anything else the author had typed but not yet saved.
+       */
+      sandbox.stub(api, "updateVideo").returns(Promise.resolve(upgradedVideo()))
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        renderComponent()
+      })
+      store.dispatch(setEditVideoTitle("A title not saved yet"))
+
+      await listenForActions(
+        [
+          actions.videos.patch.requestType,
+          actions.videos.patch.successType,
+          // The two the upgrade dispatches instead of re-seeding the whole
+          // form. Listed so this waits for them rather than for the request.
+          SET_EDIT_VIDEO_DESC,
+          SET_EDIT_VIDEO_DESC_FORMAT
+        ],
+        clickUseFormatting
+      )
+
+      const form = store.getState().videoUi.editVideoForm
+      assert.equal(form.title, "A title not saved yet")
+      assert.equal(form.description, "<p>converted</p>")
+      assert.equal(form.description_format, "html")
+    })
+
+    it("ignores a response that arrives after the dialog moved to another video", async () => {
+      /*
+       * Reported in review: open A, click Use formatting, Cancel, open B, and
+       * B's form snapped back to A's data. `checkActiveVideo` is guarded by
+       * `this.closing`, but reopening clears that flag, so an awaited response
+       * has to check the form key it started with as well.
+       */
+      let resolvePatch, rerender
+      sandbox.stub(api, "updateVideo").returns(
+        new Promise(resolve => {
+          resolvePatch = resolve
+        })
+      )
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        rerender = renderComponent().rerender
+      })
+      clickUseFormatting()
+
+      // The dialog moves on to a different video while the PATCH is still in
+      // flight. Driven through the `video` prop, which is what re-seeds the
+      // form - dispatching a new form directly would just be undone by
+      // checkActiveVideo answering the re-render with the old prop.
+      const otherVideo = makeVideo()
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        rerender(
+          <EditVideoFormDialog
+            open={true}
+            hideDialog={hideDialogStub}
+            video={otherVideo}
+            videoUi={INITIAL_UI_STATE}
+          />
+        )
+      })
+      assert.equal(
+        store.getState().videoUi.editVideoForm.key,
+        otherVideo.key,
+        "the dialog did not move to the other video, so there is no race to observe"
+      )
+
+      resolvePatch(upgradedVideo())
+      // The button clears either way, so this waits for the response to have
+      // been handled rather than for a timeout.
+      await waitFor(() =>
+        assert.isNotNull(
+          screen.queryByRole("button", { name: "Use formatting" }),
+          "the upgrade response was never handled"
+        )
+      )
+
+      const form = store.getState().videoUi.editVideoForm
+      assert.equal(form.key, otherVideo.key)
+      assert.equal(form.title, otherVideo.title)
+      assert.equal(form.description, otherVideo.description)
+      assert.notEqual(form.description, "<p>converted</p>")
+    })
   })
 })
