@@ -242,6 +242,33 @@ describe("CollectionFormDialog", () => {
           )
         })
 
+        if (!isNew) {
+          it("locks the description and prevents a competing save during conversion", async () => {
+            let resolvePatch
+            const patchStub = sandbox.stub(api, "updateCollection").returns(
+              new Promise(resolve => {
+                resolvePatch = resolve
+              })
+            )
+            await renderDialog()
+            fireEvent.click(
+              screen.getByRole("button", { name: "Use formatting" })
+            )
+            await waitFor(() => sinon.assert.calledOnce(patchStub))
+            assert.isTrue(document.querySelector("textarea").disabled)
+            fireEvent.click(screen.getByRole("button", { name: submitText }))
+            sinon.assert.calledOnce(patchStub)
+            sinon.assert.notCalled(hideDialogStub)
+
+            resolvePatch({
+              ...collection,
+              description:        "<p>converted</p>",
+              description_format: "html"
+            })
+            await waitFor(() => assert.isNotNull(editor()))
+          })
+        }
+
         if (isNew) {
           /*
            * A collection being created has no description written before rich

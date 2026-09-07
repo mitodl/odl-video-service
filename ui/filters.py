@@ -78,12 +78,13 @@ def searchable_description(field_path, format_path):
     Returns:
         Case: the description with markup removed where it is markup
     """
-    # A space, not "": `<p>alpha</p><p>beta</p>` has no whitespace between the
-    # two words, and removing the tags outright would weld them into
-    # "alphabeta". The runs this leaves behind are collapsed below, so a phrase
-    # the author wrote as "Lectures on <strong>entropy</strong>" is still found
-    # by searching for "Lectures on entropy".
-    text = _regexp_replace(F(field_path), r"<[^>]*>", " ")
+    # Block boundaries separate words, but inline formatting can split a word:
+    # `micro<strong>biology</strong>` must still match "microbiology".
+    # These are the block/line-break tags in the sanitized description vocabulary.
+    text = _regexp_replace(
+        F(field_path), r"</?(?:p|br|blockquote|ul|ol|li)(?:\s[^>]*)?/?>", " "
+    )
+    text = _regexp_replace(text, r"<[^>]*>", "")
 
     # After the tags, never before: decoding first would turn an escaped
     # "&lt;b&gt;" into a real tag and then strip the word between the two.

@@ -2,6 +2,7 @@
 import React from "react"
 import sinon from "sinon"
 import { render, fireEvent, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { assert } from "chai"
 
 import DescriptionField from "./DescriptionField"
@@ -91,6 +92,32 @@ describe("DescriptionField", () => {
     it("disables the upgrade while one is in flight", () => {
       const { container } = renderField({ upgrading: true })
       assert.isTrue(upgradeButton(container).disabled)
+    })
+
+    it("prevents typing during conversion and restores editing after failure", async () => {
+      const user = userEvent.setup()
+      const { container, rerender } = renderField({
+        value:     "original",
+        upgrading: true
+      })
+      await user.type(textarea(container), " lost words")
+      assert.equal(textarea(container).value, "original")
+      sinon.assert.notCalled(onChange)
+
+      rerender(
+        <DescriptionField
+          label="Description"
+          id="test-desc"
+          value="original"
+          descriptionFormat={DESCRIPTION_FORMAT_TEXT}
+          onChange={onChange}
+          onUpgrade={onUpgrade}
+          upgrading={false}
+          upgradeError="Could not convert."
+        />
+      )
+      await user.type(textarea(container), "!")
+      sinon.assert.calledWith(onChange, "original!")
     })
 
     it("shows an upgrade that failed", () => {

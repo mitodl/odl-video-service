@@ -211,6 +211,9 @@ export class CollectionFormDialog extends React.Component<*, void> {
   }
 
   submitForm = async () => {
+    if (this.state.upgradingDescription) {
+      return
+    }
     const {
       dispatch,
       history,

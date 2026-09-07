@@ -574,6 +574,30 @@ describe("EditVideoFormDialog", () => {
       description_format: "html"
     })
 
+    it("locks the description and prevents a competing save during conversion", async () => {
+      let resolvePatch
+      const patchStub = sandbox.stub(api, "updateVideo").returns(
+        new Promise(resolve => {
+          resolvePatch = resolve
+        })
+      )
+      renderComponent()
+      clickUseFormatting()
+      await waitFor(() => sinon.assert.calledOnce(patchStub))
+      assert.isTrue(document.querySelector("textarea").disabled)
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      sinon.assert.calledOnce(patchStub)
+      sinon.assert.notCalled(hideDialogStub)
+
+      resolvePatch(upgradedVideo())
+      await waitFor(() =>
+        assert.equal(
+          store.getState().videoUi.editVideoForm.description_format,
+          "html"
+        )
+      )
+    })
+
     it("keeps an unsaved title that the response would have reverted", async () => {
       /*
        * The PATCH sends the description alone, so the server answers with the

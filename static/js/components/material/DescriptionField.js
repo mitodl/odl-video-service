@@ -77,6 +77,7 @@ export default class DescriptionField extends React.Component<*, void> {
           placeholder={placeholder}
           value={value || ""}
           onChange={this.handleTextChange}
+          disabled={!!upgrading}
         />
         <div className="description-upgrade">
           <p className="description-upgrade__hint">

@@ -367,6 +367,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   }
 
   submitForm = async () => {
+    if (this.state.upgradingDescription) {
+      return
+    }
     const {
       dispatch,
       videoUi: { editVideoForm },

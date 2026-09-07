@@ -127,6 +127,44 @@ def test_collection_search_keeps_a_phrase_that_spans_a_tag():
     assert matches_collection(collection, search="Lectures on heat today")
 
 
+@pytest.mark.parametrize(
+    "tag", ["strong", "em", "b", "i", "u", 'a href="https://mit.edu"']
+)
+@pytest.mark.parametrize("field", ["search", "description"])
+def test_description_filters_preserve_words_across_inline_tags(tag, field):
+    """Formatting only part of a word must not make that word unsearchable."""
+    closing_tag = tag.split()[0]
+    description = f"<p>micro<{tag}>biology</{closing_tag}></p>"
+    collection = make_collection(description)
+    video = make_video(description)
+
+    assert matches_collection(collection, **{field: "microbiology"})
+    assert matches_video(video, **{field: "microbiology"})
+    assert not matches_collection(collection, **{field: "micro biology"})
+    assert not matches_video(video, **{field: "micro biology"})
+
+
+@pytest.mark.parametrize(
+    "description",
+    [
+        "<p>alpha</p><p>beta</p>",
+        "<p>alpha<br>beta</p>",
+        "<blockquote>alpha</blockquote><p>beta</p>",
+        "<ul><li>alpha</li><li>beta</li></ul>",
+        "<ol><li>alpha</li><li>beta</li></ol>",
+    ],
+)
+def test_description_filters_keep_block_boundaries(description):
+    """Paragraphs, line breaks and list items continue to separate words."""
+    collection = make_collection(description)
+    video = make_video(description)
+
+    assert matches_collection(collection, search="alpha beta")
+    assert matches_video(video, search="alpha beta")
+    assert not matches_collection(collection, search="alphabeta")
+    assert not matches_video(video, search="alphabeta")
+
+
 def test_collection_search_returns_each_collection_once():
     """
     The video join multiplies rows, and the description expression must stay out
