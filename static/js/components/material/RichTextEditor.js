@@ -67,6 +67,7 @@ export default class RichTextEditor extends React.Component<*, State> {
         )
         this.editor.on("selectionUpdate", this.syncActive)
         this.editor.on("transaction", this.syncActive)
+        this.nameEditable()
         this.setState({ lib }, this.syncActive)
       })
       .catch(error => {
@@ -101,6 +102,29 @@ export default class RichTextEditor extends React.Component<*, State> {
       this.editor.destroy()
       this.editor = null
     }
+  }
+
+  /*
+   * Give the editable element its accessible name.
+   *
+   * The focusable thing is not the div rendered below - TipTap inserts its own
+   * `.ProseMirror` contenteditable inside it - and an accessible name is not
+   * inherited from an ancestor, so labelling the wrapper leaves a screen reader
+   * announcing the field as unnamed. It has to go on `view.dom`, which only
+   * exists once the editor has mounted.
+   *
+   * `role`/`aria-multiline` alongside it: a contenteditable div is a generic
+   * element to some assistive technology, and the field is a multi-line text
+   * box in every one of them.
+   */
+  nameEditable() {
+    if (!this.editor) {
+      return
+    }
+    const { dom } = this.editor.view
+    dom.setAttribute("aria-labelledby", `${this.props.id}-label`)
+    dom.setAttribute("role", "textbox")
+    dom.setAttribute("aria-multiline", "true")
   }
 
   currentHtml(): string {
@@ -302,9 +326,10 @@ export default class RichTextEditor extends React.Component<*, State> {
       <div className="mdc-textarea-container rte">
         {/*
           No htmlFor: the editable region is a contenteditable div, which is not
-          a labelable element, so `for` would point at nothing. aria-labelledby
-          on the region gives it its accessible name; the click handler restores
-          the click-the-label-to-focus behaviour a real <label> would have.
+          a labelable element, so `for` would point at nothing. `nameEditable`
+          points aria-labelledby at this id from the element TipTap actually
+          makes focusable; the click handler restores the
+          click-the-label-to-focus behaviour a real <label> would have.
           */}
         <label id={`${id}-label`} onClick={this.focusEditor}>
           {label}
@@ -315,7 +340,6 @@ export default class RichTextEditor extends React.Component<*, State> {
           <div
             id={id}
             className="rte-content"
-            aria-labelledby={`${id}-label`}
             ref={el => {
               this.editorEl = el
             }}

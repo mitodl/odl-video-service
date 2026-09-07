@@ -68,12 +68,18 @@ describe("RichTextEditor", () => {
     const { container } = renderEditor()
     await waitForEditor(container)
     assert.equal(container.querySelector("label").textContent, "Description")
-    // A contenteditable div is not a labelable element, so htmlFor cannot bind
-    // to it - aria-labelledby is what gives the field its accessible name.
-    assert.equal(
-      container.querySelector("#test-desc").getAttribute("aria-labelledby"),
-      "test-desc-label"
-    )
+    /*
+     * On `.ProseMirror`, not on the wrapper the component renders. A
+     * contenteditable div is not a labelable element, so htmlFor cannot bind to
+     * it and aria-labelledby is what gives the field its accessible name - and
+     * TipTap inserts its own editable element inside the wrapper, so a name on
+     * the wrapper would sit on an element nothing can focus and would not be
+     * inherited by the one that can.
+     */
+    const editable = container.querySelector(".ProseMirror")
+    assert.equal(editable.getAttribute("aria-labelledby"), "test-desc-label")
+    assert.equal(editable.getAttribute("role"), "textbox")
+    assert.equal(editable.getAttribute("aria-multiline"), "true")
   })
 
   it("shows the value as markup before the editor chunk arrives", () => {
