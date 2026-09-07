@@ -102,23 +102,6 @@ class RichTextDescriptionMixin:
 
         return attrs
 
-        if stored_format != DescriptionFormat.HTML:
-            # Being upgraded. Whatever is in hand was written as plain text, so
-            # convert it rather than sanitize it - escaping it is the whole
-            # point, and passing it through the allowlist instead would read
-            # `a <b to c` as an unterminated tag and drop the rest.
-            #
-            # This also closes the way round the allowlist: store anything while
-            # the row is plain text (harmless, it renders escaped), then flip the
-            # format on its own and have it rendered as markup unchecked.
-            attrs["description"] = upgrade_description(
-                attrs.get("description", self.instance.description)
-            )
-        elif "description" in attrs:
-            attrs["description"] = sanitize_description(attrs["description"])
-
-        return attrs
-
 
 class UserSerializer(serializers.ModelSerializer):
     """Serializer for User model"""
