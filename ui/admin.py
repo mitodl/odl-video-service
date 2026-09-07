@@ -20,8 +20,10 @@ from ui.html import (
     ALLOWED_DESCRIPTION_ATTRIBUTES,
     ALLOWED_DESCRIPTION_TAGS,
     attributes_in,
+    looks_like_html,
     sanitize_description,
     tags_in,
+    upgrade_description,
 )
 from ui.models import EncodeJob
 
@@ -39,7 +41,9 @@ class RichTextDescriptionAdminForm(forms.ModelForm):
         quietly dropping it - an admin who pasted a heading should be told, not
         left wondering where it went;
       * refuses markup that does not round-trip (an unclosed tag), because the
-        stored value is rendered as HTML on OVS and on MIT Learn.
+        stored value is rendered as HTML on OVS and on MIT Learn;
+      * converts, rather than checks, a stored plain-text description being
+        switched to rich text - see `_is_upgrade`.
 
     The API path sanitizes in the serializer instead of erroring, because there
     the editor has already constrained the input to the allowed vocabulary.
@@ -59,7 +63,9 @@ class RichTextDescriptionAdminForm(forms.ModelForm):
             "typed. Allowed tags: {tags}. Links keep only "
             "<code>href</code> and <code>title</code>; every other attribute is "
             "dropped. Headings are <strong>not</strong> supported - MIT Learn "
-            "strips them. Prefer editing descriptions in the OVS collection or "
+            "strips them. Switching a saved plain-text description to "
+            "\u201cRich text\u201d converts it for you, so type prose here, not "
+            "markup. Prefer editing descriptions in the OVS collection or "
             "video dialog, which has a proper editor.",
             tags=", ".join(sorted(ALLOWED_DESCRIPTION_TAGS)),
         )
@@ -69,6 +75,22 @@ class RichTextDescriptionAdminForm(forms.ModelForm):
                 "class": "vLargeTextField rich-text-source",
                 "spellcheck": "false",
             }
+        )
+
+    def _is_upgrade(self):
+        """
+        True when this save turns a stored plain-text description into rich text.
+
+        `self.instance` still holds the stored row here: ModelForm applies
+        cleaned_data in `_post_clean()`, which runs after `clean()`.
+
+        Returns:
+            bool: True for a saved row whose stored format is not HTML
+        """
+        return (
+            self.instance is not None
+            and self.instance.pk is not None
+            and self.instance.description_format != DescriptionFormat.HTML
         )
 
     def clean(self):
@@ -86,6 +108,22 @@ class RichTextDescriptionAdminForm(forms.ModelForm):
         escaped, so there is nothing to strip, and running it through the
         allowlist would lose text rather than protect anything.
 
+        Switching a *stored* plain-text row to rich text is neither of those
+        cases: it is an upgrade, and prose that has only ever been rendered
+        escaped must be converted rather than read as markup. Sanitizing it
+        instead deletes text silently - nh3 reads the `<b` in a legacy
+        `Compare <b to a` as an unterminated tag and returns `Compare `, and the
+        loss check cannot catch it, because html5lib drops that same incomplete
+        tag and leaves `tags_in` and `attributes_in` both empty. Newlines go the
+        same way: they are the only structure plain text has, and rendering them
+        as HTML collapses them. So such a value goes through the same conversion
+        the API uses (`upgrade_description`), which escapes it and keeps its line
+        structure.
+
+        A value that *does* open a tag the editor can produce is markup the admin
+        typed, upgrade or not, so it stays on the loss-checked path below rather
+        than being escaped into visible angle brackets.
+
         Returns:
             dict: the cleaned data, with `description` in its tidied form
 
@@ -97,6 +135,12 @@ class RichTextDescriptionAdminForm(forms.ModelForm):
             return cleaned_data
 
         raw = cleaned_data.get("description") or ""
+
+        if self._is_upgrade() and not looks_like_html(raw):
+            # Plain text being converted. No loss check: escaping is not loss.
+            cleaned_data["description"] = upgrade_description(raw)
+            return cleaned_data
+
         cleaned = sanitize_description(raw)
         if not raw.strip() or cleaned == raw:
             return cleaned_data

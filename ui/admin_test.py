@@ -410,3 +410,95 @@ def test_admin_form_checks_a_heading_only_when_it_is_rich_text():
     as_text = _collection_form(heading, description_format=DescriptionFormat.TEXT)
     as_text.is_valid()
     assert "description" not in as_text.errors
+
+
+@pytest.mark.django_db
+def test_admin_form_converts_a_stored_plain_text_description_on_upgrade():
+    """
+    Flipping a saved row's format to rich text must convert, not sanitize.
+
+    Sanitizing reads `<b to a` as an unterminated tag and returns `Compare `,
+    and the loss check cannot report it: html5lib drops the same incomplete tag,
+    so nothing shows up as a removed tag or a dropped attribute. Every word has
+    to survive the format change.
+    """
+    collection = CollectionFactory.create(
+        description="Compare <b to a. Q&A after.",
+        description_format=DescriptionFormat.TEXT,
+    )
+    form = CollectionAdminForm(
+        data={
+            "title": collection.title,
+            "description": collection.description,
+            "description_format": DescriptionFormat.HTML,
+            "owner": collection.owner.id,
+        },
+        instance=collection,
+    )
+    form.is_valid()
+
+    assert "description" not in form.errors
+    stored = form.cleaned_data["description"]
+    assert "Compare" in stored
+    assert "to a" in stored
+    assert "Q&amp;A after." in stored
+
+
+@pytest.mark.django_db
+def test_admin_form_keeps_line_breaks_when_upgrading_a_stored_description():
+    """
+    Line breaks are the only structure plain text has, so the upgrade has to
+    keep them - rendered as HTML they would otherwise collapse into one run.
+    """
+    collection = CollectionFactory.create(
+        description="Line one\n\nLine two",
+        description_format=DescriptionFormat.TEXT,
+    )
+    form = CollectionAdminForm(
+        data={
+            "title": collection.title,
+            "description": collection.description,
+            "description_format": DescriptionFormat.HTML,
+            "owner": collection.owner.id,
+        },
+        instance=collection,
+    )
+    form.is_valid()
+
+    assert "description" not in form.errors
+    assert form.cleaned_data["description"] == "<p>Line one</p><p>Line two</p>"
+
+
+@pytest.mark.django_db
+def test_admin_form_still_reports_loss_for_markup_typed_during_an_upgrade():
+    """
+    The upgrade path is for prose. Markup an admin actually typed still gets the
+    loss check, whatever the stored format was, so a pasted <script> is named
+    rather than silently dropped.
+    """
+    collection = CollectionFactory.create(description_format=DescriptionFormat.TEXT)
+    form = CollectionAdminForm(
+        data={
+            "title": collection.title,
+            "description": DIRTY_DESCRIPTION,
+            "description_format": DescriptionFormat.HTML,
+            "owner": collection.owner.id,
+        },
+        instance=collection,
+    )
+
+    assert not form.is_valid()
+    assert "<script>" in " ".join(form.errors["description"])
+
+
+@pytest.mark.django_db
+def test_admin_form_treats_a_new_row_as_authored_markup():
+    """
+    There is nothing stored to upgrade *from* on an add form, so the value is
+    whatever the admin just typed and gets checked as markup.
+    """
+    form = _collection_form(CLEAN_DESCRIPTION)
+    form.is_valid()
+
+    assert "description" not in form.errors
+    assert form.cleaned_data["description"] == CLEAN_DESCRIPTION
