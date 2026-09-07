@@ -17,7 +17,7 @@ import {
   CLEAR_COLLECTION_FORM,
   SET_COLLECTION_FORM_ERRORS
 } from "../actions/collectionUi"
-import { DESCRIPTION_FORMAT_TEXT } from "../constants"
+import { DESCRIPTION_FORMAT_HTML, DESCRIPTION_FORMAT_TEXT } from "../constants"
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 import { getFormKey } from "../lib/collection"
 
@@ -37,8 +37,23 @@ export const INITIAL_COLLECTION_FORM_STATE = {
   ownerId:            null
 }
 
+/*
+ * A collection that does not exist yet starts as rich text.
+ *
+ * The plain-text default and the "Use formatting" button exist to protect
+ * descriptions that were written before rich text did - opening one in the
+ * editor parses it as HTML and collapses the author's line breaks, so the
+ * conversion has to be a deliberate choice. A collection being created has no
+ * such description: the field is empty, there is nothing to lose, and an author
+ * writing their first words should not have to ask for formatting.
+ */
+export const INITIAL_NEW_COLLECTION_FORM_STATE = {
+  ...INITIAL_COLLECTION_FORM_STATE,
+  description_format: DESCRIPTION_FORMAT_HTML
+}
+
 export const INITIAL_UI_STATE = {
-  newCollectionForm:  INITIAL_COLLECTION_FORM_STATE,
+  newCollectionForm:  INITIAL_NEW_COLLECTION_FORM_STATE,
   editCollectionForm: INITIAL_COLLECTION_FORM_STATE,
   isNew:              true,
   selectedVideoKey:   null

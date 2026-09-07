@@ -17,7 +17,6 @@ import {
   PERM_CHOICE_LOGGED_IN
 } from "../../lib/dialog"
 import { getCollectionForm } from "../../lib/collection"
-import { plainTextToHtml } from "../../lib/description"
 import { DESCRIPTION_FORMAT_HTML } from "../../constants"
 import { makeCollectionUrl } from "../../lib/urls"
 import { calculateListPermissionValue } from "../../util/util"
@@ -167,11 +166,9 @@ export class CollectionFormDialog extends React.Component<*, void> {
    * place that knows how to escape plain text and how to clean markup someone
    * once pasted into the old field.
    *
-   * A collection that has not been created yet has no row to PATCH, so the
-   * conversion is done here instead (`plainTextToHtml`). Switching the format
-   * on its own would hand the raw textarea value to the rich-text editor, which
-   * collapses the author's blank lines when it parses it as HTML and renders it
-   * as markup while its chunk loads.
+   * Only reachable for a saved collection. A collection being created starts as
+   * rich text (see INITIAL_UI_STATE in reducers/collectionUi), because it has no
+   * description written before rich text existed and so nothing to protect.
    *
    * Only the description comes back into the form. Re-seeding the whole form
    * from the response would discard every other unsaved edit in the dialog - the
@@ -179,19 +176,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
    * title, and a title the author had just retyped would revert on the spot.
    */
   upgradeDescription = async () => {
-    const {
-      dispatch,
-      collectionUi: { isNew },
-      collectionForm
-    } = this.props
-
-    if (isNew) {
-      dispatch(
-        uiActions.setCollectionDesc(plainTextToHtml(collectionForm.description))
-      )
-      dispatch(uiActions.setCollectionDescFormat(DESCRIPTION_FORMAT_HTML))
-      return
-    }
+    const { dispatch, collectionForm } = this.props
 
     const key = collectionForm.key
     this.setState({ upgradingDescription: true, upgradeError: null })

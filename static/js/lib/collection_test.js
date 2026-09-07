@@ -63,7 +63,11 @@ describe("collection library function", () => {
       })
 
       it("getCollectionForm gets the expected form", () => {
-        const collectionUi = INITIAL_UI_STATE
+        // `isNew` has to be set on the state, since that is what
+        // getCollectionForm reads. Passing INITIAL_UI_STATE unchanged left it
+        // true for both halves of this loop, and the isNew=false case only
+        // held because the two forms started as the same object.
+        const collectionUi = { ...INITIAL_UI_STATE, isNew }
         const key = isNew ? "newCollectionForm" : "editCollectionForm"
         // this is explicitly comparing identity, not value equality
         assert.isTrue(getCollectionForm(collectionUi) === collectionUi[key])
