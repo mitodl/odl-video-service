@@ -5,8 +5,6 @@ import { render, waitFor } from "@testing-library/react"
 
 import AnalyticsPane from "./AnalyticsPane"
 
-import suppressVictoryKeyWarning from "../../testUtils/suppressVictoryKeyWarning"
-
 import { makeVideoAnalyticsData } from "../../factories/videoAnalytics"
 import { makeVideo } from "../../factories/video"
 
@@ -15,10 +13,6 @@ describe("AnalyticsPane", () => {
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
-    // AnalyticsChart mounts a real Victory chart whose VictoryAxis emits a
-    // spurious React "unique key prop" warning; see the helper for why it
-    // is filtered here and nowhere else.
-    suppressVictoryKeyWarning(sandbox)
     props = {
       analyticsData: makeVideoAnalyticsData(),
       video:         makeVideo(),

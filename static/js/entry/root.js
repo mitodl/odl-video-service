@@ -8,7 +8,7 @@ import { AppContainer } from "react-hot-loader"
 import { createBrowserHistory } from "history"
 
 import configureStore from "../store/configureStore"
-import Router, { routes } from "../Router"
+import AppRouter, { routes } from "../Router"
 
 import * as Sentry from "@sentry/browser"
 
@@ -44,11 +44,11 @@ const renderApp = Component => {
   )
 }
 
-renderApp(Router)
+renderApp(AppRouter)
 
 if (module.hot) {
   module.hot.accept("../Router", () => {
-    const RouterNext = require("../Router").default
-    renderApp(RouterNext)
+    const AppRouterNext = require("../Router").default
+    renderApp(AppRouterNext)
   })
 }
