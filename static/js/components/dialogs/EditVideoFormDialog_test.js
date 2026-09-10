@@ -683,5 +683,56 @@ describe("EditVideoFormDialog", () => {
       assert.equal(form.description, otherVideo.description)
       assert.notEqual(form.description, "<p>converted</p>")
     })
+
+    it("refreshes the collection even when the response is stale", async () => {
+      /*
+       * The conversion has already happened server-side, so the cached
+       * collection is wrong regardless of which form is on screen. On a
+       * collection page `props.video` comes from that cache and checkActiveVideo
+       * re-seeds the form from it, so skipping the refetch would reopen the
+       * dialog on the pre-upgrade description with its format back to plain
+       * text - and the next Save would write that stale format over the
+       * conversion. The refetch is cache coherence, not a form write, so it has
+       * to happen before the staleness check.
+       */
+      const collection = makeCollection()
+      const collectionVideo = collection.videos[0]
+      collectionVideo.description_format = "text"
+      store.dispatch(setSelectedVideoKey(collectionVideo.key))
+
+      let resolvePatch
+      sandbox.stub(api, "updateVideo").returns(
+        new Promise(resolve => {
+          resolvePatch = resolve
+        })
+      )
+      const collectionsGetStub = sandbox
+        .stub(actions.collections, "get")
+        .returns({ type: "NOOP" })
+
+      renderComponent({ video: null, collection: collection })
+      assert.equal(
+        store.getState().videoUi.editVideoForm.key,
+        collectionVideo.key,
+        "the form was not seeded, so this test cannot observe the upgrade"
+      )
+      clickUseFormatting()
+
+      // Close the dialog while the conversion is still in flight.
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+      await waitFor(() => sinon.assert.called(hideDialogStub))
+
+      resolvePatch({
+        ...collectionVideo,
+        description:        "<p>converted</p>",
+        description_format: "html"
+      })
+
+      await waitFor(() => sinon.assert.called(collectionsGetStub))
+      sinon.assert.calledWith(
+        collectionsGetStub,
+        collectionVideo.collection_key
+      )
+    })
   })
 })

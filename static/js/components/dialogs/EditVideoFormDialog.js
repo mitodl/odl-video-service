@@ -219,14 +219,23 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
         return
       }
       this.setState({ upgradingDescription: false })
+      /*
+       * Before the staleness check, not after: the row *has* been converted, so
+       * the cached collection is now wrong whether or not this form is still on
+       * screen. On a collection page `props.video` comes from that cache and
+       * `checkActiveVideo` re-seeds the form from it, so skipping the refetch
+       * would reopen the dialog on the pre-upgrade description with its format
+       * back to plain text - and the next Save would write that stale format
+       * over the conversion.
+       */
+      if (shouldUpdateCollection) {
+        dispatch(actions.collections.get(video.collection_key))
+      }
       if (this.isStaleUpgrade(key)) {
         return
       }
       dispatch(actions.videoUi.setEditVideoDesc(video.description))
       dispatch(actions.videoUi.setEditVideoDescFormat(video.description_format))
-      if (shouldUpdateCollection) {
-        dispatch(actions.collections.get(video.collection_key))
-      }
     } catch (error) {
       if (this.unmounted) {
         return

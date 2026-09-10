@@ -220,3 +220,63 @@ def test_video_description_filter_ignores_markup():
 
     assert matches_video(video, description="damping")
     assert not matches_video(video, description="em")
+
+
+def test_collection_search_joins_the_video_table_only_once():
+    """
+    Every video condition has to go through the same join.
+
+    A second join on a reverse FK multiplies each collection's videos by
+    themselves before DISTINCT removes them again: a 836-video collection alone
+    becomes ~700k rows, and modelling the top 50 production collections turned a
+    0.03s query into 47s - past the request timeout, so search would simply stop
+    working.
+
+    Django reuses one join for conditions in a single `filter()`, but `alias()`
+    opens its own, so a `videos__*` lookup left in the `filter()` alongside an
+    aliased `videos__*` expression is a second join. Keeping the plain title
+    lookup out of the `filter()` is what holds this to one.
+    """
+    sql = str(
+        CollectionFilter(
+            {"search": "anything"}, queryset=Collection.objects.all()
+        ).qs.query
+    )
+
+    assert sql.count('JOIN "ui_video"') == 1
+
+
+def test_video_search_joins_the_collection_table_only_once():
+    """
+    The same guarantee for the video filter.
+
+    `collection` is a forward FK rather than a reverse one, so there is no fan-out
+    to multiply here - but the join count is still the thing that would regress
+    if a `collection__*` lookup were added back into the `filter()`.
+    """
+    sql = str(
+        PublicVideoFilter({"search": "anything"}, queryset=Video.objects.all()).qs.query
+    )
+
+    assert sql.count('JOIN "ui_collection"') == 1
+
+
+def test_collection_search_matches_a_video_by_title_or_description():
+    """
+    One join must not turn the OR into an AND.
+
+    Routing the title through the same join is only safe because these are
+    disjunctions: a collection matches when *some* video matches *either*
+    condition, which is the same set either way. A collection whose title match
+    and description match live on different videos still has to be found.
+    """
+    collection = make_collection("", title="Zzz")
+    make_video("", title="Lecture on turbines", collection=collection)
+    make_video(
+        "<p>Notes on <strong>bearings</strong></p>",
+        title="Zzz",
+        collection=collection,
+    )
+
+    assert matches_collection(collection, search="turbines")
+    assert matches_collection(collection, search="bearings")

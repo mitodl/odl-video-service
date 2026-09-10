@@ -144,13 +144,14 @@ class CollectionFilter(django_filters.FilterSet):
                 searchable_video_description=searchable_description(
                     "videos__description", "videos__description_format"
                 ),
+                searchable_video_title=F("videos__title"),
             )
             .filter(
                 Q(title__icontains=value)
                 | Q(searchable_description__icontains=value)
                 | Q(edx_course_id__icontains=value)
                 | Q(slug__icontains=value)
-                | Q(videos__title__icontains=value)
+                | Q(searchable_video_title__icontains=value)
                 | Q(searchable_video_description__icontains=value)
             )
             .distinct()

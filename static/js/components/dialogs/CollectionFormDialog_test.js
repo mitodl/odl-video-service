@@ -243,6 +243,45 @@ describe("CollectionFormDialog", () => {
         })
 
         if (!isNew) {
+          it("ignores a conversion that lands after the dialog is closed", async () => {
+            /*
+             * Closing dispatches clearCollectionForm, which resets the whole ui
+             * slice - so the form key becomes "" and the captured key no longer
+             * matches. That is what makes `isStaleUpgrade` true here; unlike the
+             * video dialog, nothing re-seeds this form from props on render, so
+             * there is no window in which the key comes back.
+             */
+            let resolvePatch
+            sandbox.stub(api, "updateCollection").returns(
+              new Promise(resolve => {
+                resolvePatch = resolve
+              })
+            )
+            await renderDialog()
+            fireEvent.click(
+              screen.getByRole("button", { name: "Use formatting" })
+            )
+
+            fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+            await waitFor(() => sinon.assert.called(hideDialogStub))
+
+            resolvePatch({
+              ...collection,
+              description:        "<p>converted</p>",
+              description_format: "html"
+            })
+            await waitFor(() =>
+              assert.isFalse(
+                getCollectionForm(store.getState().collectionUi).description ===
+                  "<p>converted</p>"
+              )
+            )
+
+            const form = getCollectionForm(store.getState().collectionUi)
+            assert.notEqual(form.description, "<p>converted</p>")
+            assert.equal(form.key, "")
+          })
+
           it("locks the description and prevents a competing save during conversion", async () => {
             let resolvePatch
             const patchStub = sandbox.stub(api, "updateCollection").returns(
