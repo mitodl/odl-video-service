@@ -9,7 +9,7 @@ import Dialog from "../material/Dialog"
 import Filefield from "../material/Filefield"
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
-import Textarea from "../material/Textarea"
+import DescriptionField from "../material/DescriptionField"
 
 import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
@@ -26,6 +26,7 @@ import {
 import type { Video, VideoUiState } from "../../flow/videoTypes"
 import { calculateListPermissionValue } from "../../util/util"
 import { videoHasError, videoIsProcessing } from "../../lib/video"
+import { DESCRIPTION_FORMAT_HTML } from "../../constants"
 
 type DialogProps = {
   dispatch: Dispatch,
@@ -39,7 +40,9 @@ type DialogProps = {
 type DialogState = {
   thumbnailFile: ?File,
   thumbnailPreviewUrl: ?string,
-  thumbnailError: ?string
+  thumbnailError: ?string,
+  upgradingDescription: boolean,
+  upgradeError: ?string
 }
 
 /**
@@ -62,16 +65,52 @@ function sanitizeImgSrc(url: ?string): string {
 class EditVideoFormDialog extends React.Component<*, DialogState> {
   props: DialogProps
   state: DialogState = {
-    thumbnailFile:       null,
-    thumbnailPreviewUrl: null,
-    thumbnailError:      null
+    thumbnailFile:        null,
+    thumbnailPreviewUrl:  null,
+    thumbnailError:       null,
+    upgradingDescription: false,
+    upgradeError:         null
   }
+
+  /*
+   * True while this dialog is closing itself.
+   *
+   * onClose clears the form, and that dispatch re-renders the dialog, which
+   * stays mounted while closed - withDialogs only flips `open`. Without this
+   * flag the clear is undone immediately: editVideoForm.key is back to null,
+   * which is exactly the condition checkActiveVideo re-seeds on, so it writes
+   * `props.video` into the form again. On the collection page that prop is the
+   * collection's own copy of the video, and submitForm has only just *asked*
+   * for the collection to be refetched - so the value re-seeded is the one from
+   * before the save. Nothing corrects it afterwards either, because
+   * checkActiveVideo only re-initializes when the video *key* changes, and the
+   * key has not changed. The next open of the dialog would show the pre-save
+   * values.
+   *
+   * Guarding on `open` alone would not do: the dispatch that hides the dialog
+   * and the dispatch that clears the form are separate, so their order would
+   * decide whether the bug appears.
+   */
+  closing = false
+
+  // Set on unmount so an upgrade that resolves afterwards does not setState on
+  // a dead component. withDialogs keeps this mounted while closed, so this is
+  // the page-teardown case rather than the everyday one.
+  unmounted = false
 
   componentDidMount() {
     this.checkActiveVideo()
   }
 
-  componentDidUpdate() {
+  componentWillUnmount() {
+    this.unmounted = true
+  }
+
+  componentDidUpdate(prevProps: DialogProps) {
+    // A fresh open ends the close, and the form should track props again.
+    if (this.props.open && !prevProps.open) {
+      this.closing = false
+    }
     this.checkActiveVideo()
   }
 
@@ -81,6 +120,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       video,
       videoUi: { editVideoForm }
     } = this.props
+    if (this.closing) {
+      return
+    }
     if (open && video && video.key !== editVideoForm.key) {
       this.initializeFormWithVideo(video)
     }
@@ -107,10 +149,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 
     dispatch(
       actions.videoUi.initEditVideoForm({
-        key:            video.key,
-        title:          video.title,
-        description:    video.description,
-        cta_link:       video.cta_link || null,
+        key:                video.key,
+        title:              video.title,
+        description:        video.description,
+        description_format: video.description_format,
+        cta_link:           video.cta_link || null,
         overrideChoice:
           viewChoice === PERM_CHOICE_COLLECTION ?
             PERM_CHOICE_COLLECTION :
@@ -121,14 +164,101 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     )
   }
 
+  /*
+   * True when an in-flight upgrade no longer belongs to the form on screen.
+   *
+   * `upgradeDescription` awaits a PATCH, and by the time it resolves the dialog
+   * may have been closed and reopened on a different video - close A, open B,
+   * and A's response would otherwise be written into B's form. `checkActiveVideo`
+   * is guarded against the same thing by `this.closing`; an awaited response has
+   * to check the form's key too, because a reopen clears that flag.
+   *
+   * Only the *form* writes are skipped on a stale response. The button's own
+   * "Converting…" state is cleared either way - it belongs to this component
+   * rather than to the video, and leaving it set would strand the field the
+   * author is now looking at behind a disabled button.
+   */
+  isStaleUpgrade(key: ?string) {
+    return this.closing || this.props.videoUi.editVideoForm.key !== key
+  }
+
+  /**
+   * Convert this video's plain-text description to rich text.
+   *
+   * Saved on its own rather than folded into Save Changes, so the author gets
+   * the editor - with their words already in it - before deciding what to write
+   * next. Whatever is currently in the textarea goes up with the request, so an
+   * unsaved edit is converted too rather than discarded.
+   *
+   * The server does the converting (ui.html.upgrade_description): it is the only
+   * place that knows how to escape plain text and how to clean markup someone
+   * once pasted into the old field.
+   *
+   * Only the description comes back into the form. Re-seeding the whole form
+   * from the response would discard every other unsaved edit in the dialog - the
+   * PATCH sends the description alone, so the response still carries the *old*
+   * title, and a title the author had just retyped would revert on the spot.
+   */
+  upgradeDescription = async () => {
+    const {
+      dispatch,
+      videoUi: { editVideoForm },
+      shouldUpdateCollection
+    } = this.props
+    const key = editVideoForm.key
+
+    this.setState({ upgradingDescription: true, upgradeError: null })
+    try {
+      const video = await dispatch(
+        actions.videos.patch(key, {
+          description:        editVideoForm.description,
+          description_format: DESCRIPTION_FORMAT_HTML
+        })
+      )
+      if (this.unmounted) {
+        return
+      }
+      this.setState({ upgradingDescription: false })
+      /*
+       * Before the staleness check, not after: the row *has* been converted, so
+       * the cached collection is now wrong whether or not this form is still on
+       * screen. On a collection page `props.video` comes from that cache and
+       * `checkActiveVideo` re-seeds the form from it, so skipping the refetch
+       * would reopen the dialog on the pre-upgrade description with its format
+       * back to plain text - and the next Save would write that stale format
+       * over the conversion.
+       */
+      if (shouldUpdateCollection) {
+        dispatch(actions.collections.get(video.collection_key))
+      }
+      if (this.isStaleUpgrade(key)) {
+        return
+      }
+      dispatch(actions.videoUi.setEditVideoDesc(video.description))
+      dispatch(actions.videoUi.setEditVideoDescFormat(video.description_format))
+    } catch (error) {
+      if (this.unmounted) {
+        return
+      }
+      this.setState({
+        upgradingDescription: false,
+        // Not this form's error to report once the dialog has moved on.
+        upgradeError:         this.isStaleUpgrade(key) ?
+          null :
+          "That description could not be converted. Please try again."
+      })
+    }
+  }
+
   setEditVideoTitle = (event: Object) => {
     const { dispatch } = this.props
     dispatch(actions.videoUi.setEditVideoTitle(event.target.value))
   }
 
-  setEditVideoDesc = (event: Object) => {
+  // The rich-text editor hands back serialized HTML, not a DOM event.
+  setEditVideoDesc = (html: string) => {
     const { dispatch } = this.props
-    dispatch(actions.videoUi.setEditVideoDesc(event.target.value))
+    dispatch(actions.videoUi.setEditVideoDesc(html))
   }
 
   setEditVideoCtaLink = (event: Object) => {
@@ -227,6 +357,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       thumbnailPreviewUrl: null,
       thumbnailError:      null
     })
+    this.closing = true
     dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }
@@ -245,6 +376,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   }
 
   submitForm = async () => {
+    if (this.state.upgradingDescription) {
+      return
+    }
     const {
       dispatch,
       videoUi: { editVideoForm },
@@ -253,6 +387,16 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 
     const overridePerms = editVideoForm.overrideChoice === PERM_CHOICE_OVERRIDE
 
+    /*
+     * No description_format. It is server-owned: only the explicit upgrade
+     * changes it, and the API accepts an html -> text downgrade without
+     * complaint. Re-asserting the form's copy on an ordinary save means a
+     * format that moved on elsewhere - a second tab, another admin, Django
+     * admin - gets overwritten by whatever this page last read, which leaves
+     * markup stored as plain text and rendered escaped, so viewers see raw
+     * `<p>` tags. Omitting the field makes the serializer keep the stored
+     * format and sanitize against it.
+     */
     let patchData = {
       title:       editVideoForm.title,
       description: editVideoForm.description,
@@ -510,11 +654,16 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             validationMessage={errors ? errors.title : ""}
             required
           />
-          <Textarea
+          <DescriptionField
             label="Description"
             id="video-description"
+            placeholder="Add a description, links or next steps for learners."
             onChange={this.setEditVideoDesc}
             value={editVideoForm.description}
+            descriptionFormat={editVideoForm.description_format}
+            onUpgrade={this.upgradeDescription}
+            upgrading={this.state.upgradingDescription}
+            upgradeError={this.state.upgradeError}
           />
           <Textfield
             label="Call-to-Action Link"

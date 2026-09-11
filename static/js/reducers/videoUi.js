@@ -1,7 +1,7 @@
 // @flow
 import type { Action } from "../flow/reduxTypes"
 import { constants } from "../actions/videoUi"
-import { CANVASES } from "../constants"
+import { CANVASES, DESCRIPTION_FORMAT_TEXT } from "../constants"
 import type { VideoUiState } from "../flow/videoTypes"
 import { PERM_CHOICE_COLLECTION, PERM_CHOICE_NONE } from "../lib/dialog"
 
@@ -9,6 +9,7 @@ const {
   INIT_EDIT_VIDEO_FORM,
   SET_EDIT_VIDEO_TITLE,
   SET_EDIT_VIDEO_DESC,
+  SET_EDIT_VIDEO_DESC_FORMAT,
   SET_EDIT_VIDEO_CTA_LINK,
   INIT_UPLOAD_SUBTITLE_FORM,
   SET_UPLOAD_SUBTITLE,
@@ -27,12 +28,14 @@ const {
 } = constants
 
 export const INITIAL_EDIT_VIDEO_FORM_STATE = {
-  key:            null,
-  title:          "",
-  description:    "",
-  overrideChoice: PERM_CHOICE_COLLECTION,
-  viewChoice:     PERM_CHOICE_NONE,
-  viewLists:      null
+  key:                null,
+  title:              "",
+  description:        "",
+  // Plain text until the record says otherwise; see DESCRIPTION_FORMAT_TEXT.
+  description_format: DESCRIPTION_FORMAT_TEXT,
+  overrideChoice:     PERM_CHOICE_COLLECTION,
+  viewChoice:         PERM_CHOICE_NONE,
+  viewLists:          null
 }
 
 export const INITIAL_UPLOAD_SUBTITLE_FORM_STATE = {
@@ -87,6 +90,8 @@ const reducer = (
     return updateVideoForm(state, "title", action.payload)
   case SET_EDIT_VIDEO_DESC:
     return updateVideoForm(state, "description", action.payload)
+  case SET_EDIT_VIDEO_DESC_FORMAT:
+    return updateVideoForm(state, "description_format", action.payload)
   case SET_EDIT_VIDEO_CTA_LINK:
     return updateVideoForm(state, "cta_link", action.payload)
   case SET_PERM_OVERRIDE_CHOICE:

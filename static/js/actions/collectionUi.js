@@ -18,6 +18,13 @@ export const setCollectionTitle = createAction(SET_COLLECTION_TITLE)
 export const SET_COLLECTION_DESC = qualifiedName("SET_COLLECTION_DESC")
 export const setCollectionDesc = createAction(SET_COLLECTION_DESC)
 
+// For a collection that has not been created yet: there is nothing stored to
+// convert, so upgrading is just a switch of editor.
+export const SET_COLLECTION_DESC_FORMAT = qualifiedName(
+  "SET_COLLECTION_DESC_FORMAT"
+)
+export const setCollectionDescFormat = createAction(SET_COLLECTION_DESC_FORMAT)
+
 export const SET_VIEW_CHOICE = qualifiedName("SET_VIEW_CHOICE")
 export const setViewChoice = createAction(SET_VIEW_CHOICE)
 
