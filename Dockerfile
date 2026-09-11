@@ -46,6 +46,14 @@ EXPOSE 8089
 ENV PORT=8089
 CMD ["sh", "-c", "exec granian --interface wsgi --host 0.0.0.0 --port ${PORT:-8089} --workers 2 odl_video.wsgi:application"]
 
+# ─── Local-dev target (ol-infrastructure local-dev k8s/Tilt stack) ───────────
+# production plus dev deps (pytest, ipdb, …) and watchfiles for granian
+# --reload. Keep `development` last: docker-compose builds this file untargeted.
+FROM production AS local-dev
+
+RUN --mount=type=cache,target=/opt/uv-cache,uid=1000,gid=1000 \
+    uv sync --frozen --no-install-project
+
 # ─── Development target ───────────────────────────────────────────────────────
 FROM deps AS development
 
