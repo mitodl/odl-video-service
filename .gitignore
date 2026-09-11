@@ -141,3 +141,4 @@ secrets/
 # Stryker mutation testing reports
 reports/
 .stryker-tmp/
+.drf_lint_cache.json
