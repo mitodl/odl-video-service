@@ -16,7 +16,10 @@ import {
   setOwnerId
 } from "../actions/collectionUi"
 import rootReducer from "../reducers"
-import { INITIAL_COLLECTION_FORM_STATE } from "../reducers/collectionUi"
+import {
+  INITIAL_COLLECTION_FORM_STATE,
+  INITIAL_NEW_COLLECTION_FORM_STATE
+} from "../reducers/collectionUi"
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 import { getCollectionForm } from "../lib/collection"
 import { createAssertReducerResultState } from "../util/test_utils"
@@ -36,10 +39,18 @@ describe("collectionUi", () => {
   it("has some initial state", () => {
     assert.deepEqual(store.getState().collectionUi, {
       editCollectionForm: INITIAL_COLLECTION_FORM_STATE,
-      newCollectionForm:  INITIAL_COLLECTION_FORM_STATE,
+      // The new-collection form differs in one field: it is authored as rich
+      // text from the start, having no pre-rich-text description to protect.
+      newCollectionForm:  INITIAL_NEW_COLLECTION_FORM_STATE,
       selectedVideoKey:   null,
       isNew:              true
     })
+  })
+
+  it("starts a new collection form in rich text and an edit form in plain text", () => {
+    const ui = store.getState().collectionUi
+    assert.equal(ui.newCollectionForm.description_format, "html")
+    assert.equal(ui.editCollectionForm.description_format, "text")
   })
 
   it("sets the selected video key for the form", () => {
@@ -81,7 +92,12 @@ describe("collectionUi", () => {
           })
         )
         assert.deepEqual(getCollectionForm(store.getState().collectionUi), {
-          ...INITIAL_COLLECTION_FORM_STATE,
+          // The two baselines differ only in description_format: a new
+          // collection is authored as rich text, an existing one keeps the
+          // plain-text default until its record says otherwise.
+          ...(isNew ?
+            INITIAL_NEW_COLLECTION_FORM_STATE :
+            INITIAL_COLLECTION_FORM_STATE),
           title: "different title"
         })
       })

@@ -1,0 +1,35 @@
+/*
+ * Admin styling for the raw rich-text description field.
+ *
+ * The admin edits description HTML as source text, so it reads as source:
+ * monospace, generous line height, and a tinted background that distinguishes
+ * it from the plain-text fields around it. The real editor lives in the OVS
+ * collection/video dialogs; this is the escape hatch.
+ */
+textarea.rich-text-source {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: #fbfbf8;
+  border: 1px solid #b8c2cc;
+  border-radius: 3px;
+  padding: 8px 10px;
+  tab-size: 2;
+}
+
+textarea.rich-text-source:focus {
+  border-color: #2568be;
+  outline: none;
+}
+
+/* help_text under the field: let the tag list wrap readably */
+.field-description .help {
+  max-width: 62em;
+  line-height: 1.5;
+}
+
+.field-description .help code {
+  background: #eef1f5;
+  border-radius: 2px;
+  padding: 0 3px;
+}

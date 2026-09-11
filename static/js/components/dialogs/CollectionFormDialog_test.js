@@ -15,6 +15,7 @@ import {
   setViewChoice,
   setViewLists,
   setCollectionDesc,
+  setCollectionDescFormat,
   setCollectionTitle,
   setEdxCourseId,
   setOwnerId,
@@ -140,13 +141,6 @@ describe("CollectionFormDialog", () => {
           "change"
         ],
         [
-          "description",
-          SET_COLLECTION_DESC,
-          "new description",
-          () => screen.getByLabelText("Description (optional)"),
-          "change"
-        ],
-        [
           "viewChoice",
           SET_VIEW_CHOICE,
           isNew ? PERM_CHOICE_LISTS : PERM_CHOICE_NONE,
@@ -203,6 +197,168 @@ describe("CollectionFormDialog", () => {
           assert.equal(getCollectionForm(state.collectionUi)[prop], newValue)
         })
       }
+
+      /*
+       * Description is not in the table above: it is a rich-text editor, not a
+       * form field. It holds its document in a contenteditable element and
+       * reports serialized HTML through onChange, so there is no value to
+       * fireEvent.change. Driving it the way an author does - through a toolbar
+       * control - is what exercises the wiring.
+       */
+      describe("description", () => {
+        const editor = () =>
+          document.querySelector("#collection-desc .ProseMirror")
+
+        /*
+         * The rich-text editor only appears for a description that is already
+         * rich text; a plain-text one gets a textarea until an author upgrades
+         * it. The editor engine is a split chunk, so it arrives after mount.
+         */
+        const renderWithEditor = async (props = {}) => {
+          store.dispatch(setCollectionDescFormat("html"))
+          const result = await renderDialog(props)
+          await waitFor(() => assert.isNotNull(editor()))
+          return result
+        }
+
+        it("stores what the editor reports, as HTML", async () => {
+          await renderWithEditor()
+          const state = await listenForActions([SET_COLLECTION_DESC], () => {
+            fireEvent.click(
+              screen.getByRole("button", { name: "Bulleted list" })
+            )
+          })
+          assert.include(
+            getCollectionForm(state.collectionUi).description,
+            "<ul>"
+          )
+        })
+
+        it("shows the stored description as markup", async () => {
+          store.dispatch(setCollectionDesc("<p>stored <em>text</em></p>"))
+          await renderWithEditor()
+          await waitFor(() =>
+            assert.include(editor().innerHTML, "<em>text</em>")
+          )
+        })
+
+        if (!isNew) {
+          it("does not send description_format on an ordinary save", async () => {
+            /*
+             * Server-owned on an update: only the explicit upgrade changes it,
+             * and the API accepts an html -> text downgrade. A Save from a page
+             * whose copy has gone stale would revert a conversion and leave
+             * markup stored as plain text, rendered escaped as raw tags.
+             */
+            const patchStub = sandbox
+              .stub(api, "updateCollection")
+              .returns(Promise.resolve(collection))
+            await renderDialog()
+
+            fireEvent.click(screen.getByRole("button", { name: submitText }))
+
+            await waitFor(() => sinon.assert.called(patchStub))
+            assert.notProperty(
+              patchStub.firstCall.args[1],
+              "description_format"
+            )
+          })
+
+          it("ignores a conversion that lands after the dialog is closed", async () => {
+            /*
+             * Closing dispatches clearCollectionForm, which resets the whole ui
+             * slice - so the form key becomes "" and the captured key no longer
+             * matches. That is what makes `isStaleUpgrade` true here; unlike the
+             * video dialog, nothing re-seeds this form from props on render, so
+             * there is no window in which the key comes back.
+             */
+            let resolvePatch
+            sandbox.stub(api, "updateCollection").returns(
+              new Promise(resolve => {
+                resolvePatch = resolve
+              })
+            )
+            await renderDialog()
+            fireEvent.click(
+              screen.getByRole("button", { name: "Use formatting" })
+            )
+
+            fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+            await waitFor(() => sinon.assert.called(hideDialogStub))
+
+            resolvePatch({
+              ...collection,
+              description:        "<p>converted</p>",
+              description_format: "html"
+            })
+            await waitFor(() =>
+              assert.isFalse(
+                getCollectionForm(store.getState().collectionUi).description ===
+                  "<p>converted</p>"
+              )
+            )
+
+            const form = getCollectionForm(store.getState().collectionUi)
+            assert.notEqual(form.description, "<p>converted</p>")
+            assert.equal(form.key, "")
+          })
+
+          it("locks the description and prevents a competing save during conversion", async () => {
+            let resolvePatch
+            const patchStub = sandbox.stub(api, "updateCollection").returns(
+              new Promise(resolve => {
+                resolvePatch = resolve
+              })
+            )
+            await renderDialog()
+            fireEvent.click(
+              screen.getByRole("button", { name: "Use formatting" })
+            )
+            await waitFor(() => sinon.assert.calledOnce(patchStub))
+            assert.isTrue(document.querySelector("textarea").disabled)
+            fireEvent.click(screen.getByRole("button", { name: submitText }))
+            sinon.assert.calledOnce(patchStub)
+            sinon.assert.notCalled(hideDialogStub)
+
+            resolvePatch({
+              ...collection,
+              description:        "<p>converted</p>",
+              description_format: "html"
+            })
+            await waitFor(() => assert.isNotNull(editor()))
+          })
+        }
+
+        if (isNew) {
+          /*
+           * A collection being created has no description written before rich
+           * text existed, so there is nothing to protect and nothing to ask:
+           * it starts in the editor rather than offering to convert to it.
+           */
+          it("starts in the editor with no upgrade to offer", async () => {
+            await renderDialog()
+            await waitFor(() => assert.isNotNull(editor()))
+
+            assert.isNull(
+              screen.queryByRole("button", { name: "Use formatting" })
+            )
+            assert.isNull(document.querySelector(".description-plain-input"))
+          })
+
+          it("submits a new collection as rich text", async () => {
+            const postStub = sandbox
+              .stub(api, "createCollection")
+              .returns(Promise.resolve(collection))
+            await renderDialog()
+            await waitFor(() => assert.isNotNull(editor()))
+
+            fireEvent.click(screen.getByRole("button", { name: submitText }))
+
+            await waitFor(() => sinon.assert.called(postStub))
+            assert.equal(postStub.firstCall.args[0].description_format, "html")
+          })
+        }
+      })
 
       it("stores form submission errors in state", async () => {
         await renderDialog()
@@ -283,6 +439,12 @@ describe("CollectionFormDialog", () => {
         const expectedRequestPayload = {
           title:             "new title",
           description:       "new description",
+          // A new collection is authored as rich text from the start; an
+          // existing one keeps whatever format its record already says.
+          // Sent only on create, where this request decides the new row's
+          // format. On an update it is server-owned and omitted, so a format
+          // changed elsewhere is not overwritten by this page's stale copy.
+          ...(isNew ? { description_format: "html" } : {}),
           view_lists:        expectedListRequestData,
           admin_lists:       expectedListRequestData,
           edx_course_id:     "edx-course-id",

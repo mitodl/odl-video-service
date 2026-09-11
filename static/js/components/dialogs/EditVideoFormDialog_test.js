@@ -3,7 +3,7 @@
 import React from "react"
 import sinon from "sinon"
 import { assert } from "chai"
-import { screen, fireEvent } from "@testing-library/react"
+import { screen, fireEvent, waitFor } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 import _ from "lodash"
 
@@ -31,6 +31,7 @@ const {
   INIT_EDIT_VIDEO_FORM,
   SET_EDIT_VIDEO_TITLE,
   SET_EDIT_VIDEO_DESC,
+  SET_EDIT_VIDEO_DESC_FORMAT,
   SET_VIEW_CHOICE,
   SET_VIEW_LISTS,
   SET_PERM_OVERRIDE_CHOICE,
@@ -88,6 +89,7 @@ describe("EditVideoFormDialog", () => {
   }
 
   it("initializes the form when given a video that doesn't match the current form key", async () => {
+    video.description_format = "html"
     store.dispatch(initEditVideoForm({ key: "mismatching-key" }))
     const previousFormState = store.getState().videoUi.editVideoForm
     await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
@@ -99,7 +101,14 @@ describe("EditVideoFormDialog", () => {
       store.getState().videoUi.editVideoForm.key
     )
     assert.equal(screen.getByLabelText("Title").value, video.title)
-    assert.equal(screen.getByLabelText("Description").value, video.description)
+    // The description is a rich-text editor: it holds its document in a
+    // contenteditable element, so there is no `value` to read.
+    await waitFor(() =>
+      assert.include(
+        document.querySelector("#video-description .ProseMirror").innerHTML,
+        video.description
+      )
+    )
   })
 
   it("doesn't re-initialize the form when given a video that matches the current form key", () => {
@@ -117,14 +126,6 @@ describe("EditVideoFormDialog", () => {
       SET_EDIT_VIDEO_TITLE,
       "new title",
       "Title",
-      "change"
-    ],
-    [
-      "#video-description",
-      "description",
-      SET_EDIT_VIDEO_DESC,
-      "new description",
-      "Description",
       "change"
     ],
     ["#view-moira-input", "viewLists", SET_VIEW_LISTS, "a,b,c", null, "change"],
@@ -198,6 +199,88 @@ describe("EditVideoFormDialog", () => {
     })
   }
 
+  /*
+   * Description is not in the table above: it is a rich-text editor, not a
+   * form field. It keeps its document in a contenteditable element and reports
+   * serialized HTML through onChange, so there is no value for
+   * fireEvent.change to set. Driving it the way an author does - through a
+   * toolbar control - is what exercises the wiring.
+   */
+  describe("description", () => {
+    const editor = () =>
+      document.querySelector("#video-description .ProseMirror")
+
+    // The rich-text editor only appears for a description that is already
+    // rich text; a plain-text one gets a textarea until an author upgrades it.
+    // The editor engine is a split chunk, so it arrives after mount.
+    const renderWithEditor = async (props = {}) => {
+      video.description_format = "html"
+      const result = renderComponent(props)
+      await waitFor(() => assert.isNotNull(editor()))
+      return result
+    }
+
+    it("stores what the editor reports, as HTML", async () => {
+      await renderWithEditor()
+      const state = await listenForActions([SET_EDIT_VIDEO_DESC], () => {
+        fireEvent.click(screen.getByRole("button", { name: "Bulleted list" }))
+      })
+      assert.include(state.videoUi.editVideoForm.description, "<ul>")
+    })
+
+    it("upgrades through the server and swaps in the editor", async () => {
+      /*
+       * The conversion is the server's: it is the only place that knows how to
+       * escape plain text and how to clean markup someone once pasted into the
+       * old field. So this asserts the request and that the response is what
+       * puts the rich-text editor on screen - not any client-side conversion.
+       */
+      video.description = "line one\nline two"
+      video.description_format = "text"
+      renderComponent()
+      const upgraded = {
+        ...video,
+        description:        "<p>line one<br>line two</p>",
+        description_format: "html"
+      }
+      const patchStub = sandbox
+        .stub(api, "updateVideo")
+        .returns(Promise.resolve(upgraded))
+
+      fireEvent.click(document.querySelector(".description-upgrade__button"))
+
+      await waitFor(() => sinon.assert.called(patchStub))
+      sinon.assert.calledWith(patchStub, video.key, {
+        description:        "line one\nline two",
+        description_format: "html"
+      })
+      await waitFor(() => assert.isNotNull(editor()))
+      assert.include(editor().innerHTML, "line one")
+      assert.isNull(document.querySelector("textarea"))
+    })
+
+    it("keeps the textarea and explains an upgrade that failed", async () => {
+      video.description_format = "text"
+      renderComponent()
+      sandbox
+        .stub(api, "updateVideo")
+        .returns(Promise.reject(new Error("nope")))
+
+      fireEvent.click(document.querySelector(".description-upgrade__button"))
+
+      await waitFor(() =>
+        assert.isNotNull(document.querySelector(".description-upgrade__error"))
+      )
+      assert.isNotNull(document.querySelector("textarea"))
+    })
+
+    it("shows the stored description as markup", async () => {
+      video.description = "<p>stored <em>text</em></p>"
+      await renderWithEditor()
+      await waitFor(() => assert.include(editor().innerHTML, "<em>text</em>"))
+    })
+  })
+
   // eslint-disable-next-line no-unused-vars
   for (const selector of [
     "#view-moira-input",
@@ -228,6 +311,8 @@ describe("EditVideoFormDialog", () => {
       renderComponent()
     })
     // set title and description, check the values that updateVideoStub is called with
+    // No description_format: it is server-owned, and re-asserting the form's
+    // copy on an ordinary save downgrades a row another tab just converted.
     const newValues = {
       title:       "New Title",
       description: "New Description"
@@ -258,8 +343,11 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -300,8 +388,11 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -322,8 +413,11 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -391,8 +485,11 @@ describe("EditVideoFormDialog", () => {
         INIT_EDIT_VIDEO_FORM,
         "NOOP",
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
@@ -423,13 +520,258 @@ describe("EditVideoFormDialog", () => {
         actions.videos.patch.successType,
         INIT_EDIT_VIDEO_FORM,
         toastActions.constants.ADD_MESSAGE,
-        CLEAR_VIDEO_FORM,
-        INIT_EDIT_VIDEO_FORM
+        // No further INIT_EDIT_VIDEO_FORM after the clear. There used to be
+        // one: closing re-rendered the still-mounted dialog and the form was
+        // re-seeded from `props.video`. See "does not re-seed the form from
+        // stale props while closing" below for why that was wrong.
+        CLEAR_VIDEO_FORM
       ],
       () => {
         fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
       }
     )
     sinon.assert.notCalled(collectionsGetStub)
+  })
+
+  it("does not re-seed the form from stale props while closing", async () => {
+    /*
+     * A regression test for the close path. Clearing the form re-renders this
+     * still-mounted dialog, and checkActiveVideo used to answer that render by
+     * writing `props.video` straight back in. On the collection page that prop
+     * is the collection's copy of the video, which right after a save has not
+     * been refetched yet - so the form ended up holding the pre-save values,
+     * and held on to them, since checkActiveVideo only re-initializes when the
+     * video *key* changes. Reopening the dialog then showed the old values.
+     */
+    const collection = makeCollection()
+    const collectionVideo = collection.videos[0]
+    store.dispatch(setSelectedVideoKey(collectionVideo.key))
+    renderComponent({ video: null, collection: collection })
+    assert.equal(
+      store.getState().videoUi.editVideoForm.key,
+      collectionVideo.key,
+      "form was not seeded, so this test cannot observe the close"
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+
+    await waitFor(() => sinon.assert.called(hideDialogStub))
+    assert.isNull(
+      store.getState().videoUi.editVideoForm.key,
+      "the form was re-seeded while closing"
+    )
+  })
+
+  it("does not send description_format on an ordinary save", async () => {
+    /*
+     * The format is server-owned: only the explicit upgrade changes it, and the
+     * API accepts an html -> text downgrade without complaint. So a Save from a
+     * page whose copy of the format has gone stale - a second tab, another
+     * admin, Django admin - would revert a conversion and leave markup stored
+     * as plain text, which renders escaped: viewers see raw `<p>` tags.
+     */
+    SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false
+    video.description_format = "html"
+    const updateVideoStub = sandbox
+      .stub(api, "updateVideo")
+      .returns(Promise.resolve(video))
+    await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+      renderComponent()
+    })
+    assert.equal(
+      store.getState().videoUi.editVideoForm.description_format,
+      "html",
+      "the form does not hold a format, so this test cannot observe it being sent"
+    )
+
+    await listenForActions(
+      [
+        actions.videos.patch.requestType,
+        actions.videos.patch.successType,
+        INIT_EDIT_VIDEO_FORM,
+        toastActions.constants.ADD_MESSAGE,
+        CLEAR_VIDEO_FORM
+      ],
+      () => {
+        fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      }
+    )
+
+    sinon.assert.calledOnce(updateVideoStub)
+    assert.notProperty(updateVideoStub.firstCall.args[1], "description_format")
+  })
+
+  describe("Use formatting", () => {
+    const clickUseFormatting = () =>
+      fireEvent.click(screen.getByRole("button", { name: "Use formatting" }))
+
+    // The upgrade PATCHes the description on its own, so the response it gets
+    // back still carries every *other* field as it was stored.
+    const upgradedVideo = () => ({
+      ...video,
+      description:        "<p>converted</p>",
+      description_format: "html"
+    })
+
+    it("locks the description and prevents a competing save during conversion", async () => {
+      let resolvePatch
+      const patchStub = sandbox.stub(api, "updateVideo").returns(
+        new Promise(resolve => {
+          resolvePatch = resolve
+        })
+      )
+      renderComponent()
+      clickUseFormatting()
+      await waitFor(() => sinon.assert.calledOnce(patchStub))
+      assert.isTrue(document.querySelector("textarea").disabled)
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      sinon.assert.calledOnce(patchStub)
+      sinon.assert.notCalled(hideDialogStub)
+
+      resolvePatch(upgradedVideo())
+      await waitFor(() =>
+        assert.equal(
+          store.getState().videoUi.editVideoForm.description_format,
+          "html"
+        )
+      )
+    })
+
+    it("keeps an unsaved title that the response would have reverted", async () => {
+      /*
+       * The PATCH sends the description alone, so the server answers with the
+       * stored title. Re-seeding the whole form from that response threw away
+       * anything else the author had typed but not yet saved.
+       */
+      sandbox.stub(api, "updateVideo").returns(Promise.resolve(upgradedVideo()))
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        renderComponent()
+      })
+      store.dispatch(setEditVideoTitle("A title not saved yet"))
+
+      await listenForActions(
+        [
+          actions.videos.patch.requestType,
+          actions.videos.patch.successType,
+          // The two the upgrade dispatches instead of re-seeding the whole
+          // form. Listed so this waits for them rather than for the request.
+          SET_EDIT_VIDEO_DESC,
+          SET_EDIT_VIDEO_DESC_FORMAT
+        ],
+        clickUseFormatting
+      )
+
+      const form = store.getState().videoUi.editVideoForm
+      assert.equal(form.title, "A title not saved yet")
+      assert.equal(form.description, "<p>converted</p>")
+      assert.equal(form.description_format, "html")
+    })
+
+    it("ignores a response that arrives after the dialog moved to another video", async () => {
+      /*
+       * Reported in review: open A, click Use formatting, Cancel, open B, and
+       * B's form snapped back to A's data. `checkActiveVideo` is guarded by
+       * `this.closing`, but reopening clears that flag, so an awaited response
+       * has to check the form key it started with as well.
+       */
+      let resolvePatch, rerender
+      sandbox.stub(api, "updateVideo").returns(
+        new Promise(resolve => {
+          resolvePatch = resolve
+        })
+      )
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        rerender = renderComponent().rerender
+      })
+      clickUseFormatting()
+
+      // The dialog moves on to a different video while the PATCH is still in
+      // flight. Driven through the `video` prop, which is what re-seeds the
+      // form - dispatching a new form directly would just be undone by
+      // checkActiveVideo answering the re-render with the old prop.
+      const otherVideo = makeVideo()
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        rerender(
+          <EditVideoFormDialog
+            open={true}
+            hideDialog={hideDialogStub}
+            video={otherVideo}
+            videoUi={INITIAL_UI_STATE}
+          />
+        )
+      })
+      assert.equal(
+        store.getState().videoUi.editVideoForm.key,
+        otherVideo.key,
+        "the dialog did not move to the other video, so there is no race to observe"
+      )
+
+      resolvePatch(upgradedVideo())
+      // The button clears either way, so this waits for the response to have
+      // been handled rather than for a timeout.
+      await waitFor(() =>
+        assert.isNotNull(
+          screen.queryByRole("button", { name: "Use formatting" }),
+          "the upgrade response was never handled"
+        )
+      )
+
+      const form = store.getState().videoUi.editVideoForm
+      assert.equal(form.key, otherVideo.key)
+      assert.equal(form.title, otherVideo.title)
+      assert.equal(form.description, otherVideo.description)
+      assert.notEqual(form.description, "<p>converted</p>")
+    })
+
+    it("refreshes the collection even when the response is stale", async () => {
+      /*
+       * The conversion has already happened server-side, so the cached
+       * collection is wrong regardless of which form is on screen. On a
+       * collection page `props.video` comes from that cache and checkActiveVideo
+       * re-seeds the form from it, so skipping the refetch would reopen the
+       * dialog on the pre-upgrade description with its format back to plain
+       * text - and the next Save would write that stale format over the
+       * conversion. The refetch is cache coherence, not a form write, so it has
+       * to happen before the staleness check.
+       */
+      const collection = makeCollection()
+      const collectionVideo = collection.videos[0]
+      collectionVideo.description_format = "text"
+      store.dispatch(setSelectedVideoKey(collectionVideo.key))
+
+      let resolvePatch
+      sandbox.stub(api, "updateVideo").returns(
+        new Promise(resolve => {
+          resolvePatch = resolve
+        })
+      )
+      const collectionsGetStub = sandbox
+        .stub(actions.collections, "get")
+        .returns({ type: "NOOP" })
+
+      renderComponent({ video: null, collection: collection })
+      assert.equal(
+        store.getState().videoUi.editVideoForm.key,
+        collectionVideo.key,
+        "the form was not seeded, so this test cannot observe the upgrade"
+      )
+      clickUseFormatting()
+
+      // Close the dialog while the conversion is still in flight.
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+      await waitFor(() => sinon.assert.called(hideDialogStub))
+
+      resolvePatch({
+        ...collectionVideo,
+        description:        "<p>converted</p>",
+        description_format: "html"
+      })
+
+      await waitFor(() => sinon.assert.called(collectionsGetStub))
+      sinon.assert.calledWith(
+        collectionsGetStub,
+        collectionVideo.collection_key
+      )
+    })
   })
 })

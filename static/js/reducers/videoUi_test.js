@@ -23,6 +23,7 @@ const {
   toggleAnalyticsOverlay
 } = actionCreators
 import { PERM_CHOICE_NONE } from "../lib/dialog"
+import { DESCRIPTION_FORMAT_TEXT } from "../constants"
 
 describe("videoUi", () => {
   let store
@@ -82,7 +83,12 @@ describe("videoUi", () => {
       overrideChoice: "collection"
     }
     store.dispatch(initEditVideoForm(formObj))
-    assert.deepEqual(store.getState().videoUi.editVideoForm, formObj)
+    // The format is not in formObj, so it keeps the initial-state default:
+    // a description is plain text until a record says otherwise.
+    assert.deepEqual(store.getState().videoUi.editVideoForm, {
+      ...formObj,
+      description_format: DESCRIPTION_FORMAT_TEXT
+    })
   })
 
   it("has an action that sets the video time,", () => {
