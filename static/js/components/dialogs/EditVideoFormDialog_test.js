@@ -311,10 +311,11 @@ describe("EditVideoFormDialog", () => {
       renderComponent()
     })
     // set title and description, check the values that updateVideoStub is called with
+    // No description_format: it is server-owned, and re-asserting the form's
+    // copy on an ordinary save downgrades a row another tab just converted.
     const newValues = {
-      title:              "New Title",
-      description:        "New Description",
-      description_format: "text"
+      title:       "New Title",
+      description: "New Description"
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))
@@ -366,13 +367,12 @@ describe("EditVideoFormDialog", () => {
     })
     // set permission override & view choices, check the values that updateVideoStub is called with
     const newValues = {
-      title:              "New Title",
-      description:        "New Description",
-      description_format: "text",
-      is_public:          false,
-      is_private:         false,
-      is_logged_in_only:  false,
-      view_lists:         ["my-moira-list1", "my-moira-list2"]
+      title:             "New Title",
+      description:       "New Description",
+      is_public:         false,
+      is_private:        false,
+      is_logged_in_only: false,
+      view_lists:        ["my-moira-list1", "my-moira-list2"]
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))
@@ -560,6 +560,45 @@ describe("EditVideoFormDialog", () => {
       store.getState().videoUi.editVideoForm.key,
       "the form was re-seeded while closing"
     )
+  })
+
+  it("does not send description_format on an ordinary save", async () => {
+    /*
+     * The format is server-owned: only the explicit upgrade changes it, and the
+     * API accepts an html -> text downgrade without complaint. So a Save from a
+     * page whose copy of the format has gone stale - a second tab, another
+     * admin, Django admin - would revert a conversion and leave markup stored
+     * as plain text, which renders escaped: viewers see raw `<p>` tags.
+     */
+    SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS = false
+    video.description_format = "html"
+    const updateVideoStub = sandbox
+      .stub(api, "updateVideo")
+      .returns(Promise.resolve(video))
+    await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+      renderComponent()
+    })
+    assert.equal(
+      store.getState().videoUi.editVideoForm.description_format,
+      "html",
+      "the form does not hold a format, so this test cannot observe it being sent"
+    )
+
+    await listenForActions(
+      [
+        actions.videos.patch.requestType,
+        actions.videos.patch.successType,
+        INIT_EDIT_VIDEO_FORM,
+        toastActions.constants.ADD_MESSAGE,
+        CLEAR_VIDEO_FORM
+      ],
+      () => {
+        fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      }
+    )
+
+    sinon.assert.calledOnce(updateVideoStub)
+    assert.notProperty(updateVideoStub.firstCall.args[1], "description_format")
   })
 
   describe("Use formatting", () => {

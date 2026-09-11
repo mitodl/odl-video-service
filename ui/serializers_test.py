@@ -11,6 +11,7 @@ from ui import factories, serializers
 from ui.constants import DescriptionFormat
 from ui.encodings import EncodingNames
 from ui.factories import KeycloakGroupFactory, UserFactory, VideoFactory
+from ui.html import description_as_html
 
 pytestmark = pytest.mark.django_db
 
@@ -595,3 +596,62 @@ def test_public_description_is_always_html(description_format, expected):
     )
     serialized = serializers.PublicCollectionSerializer(collection).data
     assert serialized["description"] == expected
+
+
+def test_omitting_the_format_keeps_the_stored_one_and_sanitizes_against_it():
+    """
+    An update that does not mention the format is checked against the stored one.
+
+    This is the contract the edit dialogs rely on: they deliberately leave
+    `description_format` out of an ordinary save, because the format is decided
+    by the explicit upgrade and by nothing else. Omitting it has to mean "keep
+    what the row says" *and* "clean the description as that format", or a rich
+    text row would take unsanitized markup through the quiet path.
+    """
+    video = VideoFactory.create(
+        description="<p>original</p>", description_format=DescriptionFormat.HTML
+    )
+
+    serializer = serializers.VideoSerializer(
+        video,
+        data={"description": "<p>new</p><script>alert(1)</script>"},
+        partial=True,
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    video.refresh_from_db()
+
+    assert video.description_format == DescriptionFormat.HTML
+    assert video.description == "<p>new</p>"
+
+
+def test_the_api_accepts_a_format_downgrade_so_clients_must_not_resend_it():
+    """
+    Why the edit dialogs omit the field rather than sending what they hold.
+
+    Nothing here rejects html -> text, and the row keeps its markup while being
+    relabelled as plain text - which `description_as_html` then escapes, so the
+    page shows the reader raw `<p>` tags. A stale client copy of the format is
+    therefore enough to corrupt a converted description, with no race involved.
+
+    Left as a documented behaviour rather than a validation error because the
+    Django admin changes the format deliberately, through its own form, and that
+    path converts the value (see ui.admin.RichTextDescriptionAdminForm).
+    """
+    video = VideoFactory.create(
+        description="<p>Line one</p><p>Line two</p>",
+        description_format=DescriptionFormat.HTML,
+    )
+
+    serializer = serializers.VideoSerializer(
+        video, data={"description_format": DescriptionFormat.TEXT}, partial=True
+    )
+    assert serializer.is_valid(), serializer.errors
+    serializer.save()
+    video.refresh_from_db()
+
+    assert video.description_format == DescriptionFormat.TEXT
+    assert video.description == "<p>Line one</p><p>Line two</p>"
+    assert description_as_html(video.description, video.description_format) == (
+        "<p>&lt;p&gt;Line one&lt;/p&gt;&lt;p&gt;Line two&lt;/p&gt;</p>"
+    )

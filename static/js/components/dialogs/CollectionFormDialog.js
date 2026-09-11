@@ -223,10 +223,9 @@ export class CollectionFormDialog extends React.Component<*, void> {
     } = this.props
 
     const payload: Object = {
-      title:              collectionForm.title,
-      description:        collectionForm.description,
-      description_format: collectionForm.description_format,
-      view_lists:         calculateListPermissionValue(
+      title:       collectionForm.title,
+      description: collectionForm.description,
+      view_lists:  calculateListPermissionValue(
         collectionForm.viewChoice,
         collectionForm.viewLists
       ),
@@ -235,6 +234,18 @@ export class CollectionFormDialog extends React.Component<*, void> {
         collectionForm.adminLists
       ),
       is_logged_in_only: collectionForm.viewChoice === PERM_CHOICE_LOGGED_IN
+    }
+    /*
+     * Only on create, where this request is what decides the new row's format.
+     *
+     * On an update it is server-owned state: only the explicit upgrade changes
+     * it, and the API accepts an html -> text downgrade, so re-asserting the
+     * form's copy would let a second tab or the Django admin be overwritten by
+     * whatever this page last read - leaving markup stored as plain text and
+     * rendered escaped. Omitted, the serializer keeps the stored format.
+     */
+    if (isNew) {
+      payload.description_format = collectionForm.description_format
     }
     if (isEdxCourseAdmin) {
       payload.edx_course_id = collectionForm.edxCourseId

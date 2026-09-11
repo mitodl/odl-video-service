@@ -387,10 +387,19 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 
     const overridePerms = editVideoForm.overrideChoice === PERM_CHOICE_OVERRIDE
 
+    /*
+     * No description_format. It is server-owned: only the explicit upgrade
+     * changes it, and the API accepts an html -> text downgrade without
+     * complaint. Re-asserting the form's copy on an ordinary save means a
+     * format that moved on elsewhere - a second tab, another admin, Django
+     * admin - gets overwritten by whatever this page last read, which leaves
+     * markup stored as plain text and rendered escaped, so viewers see raw
+     * `<p>` tags. Omitting the field makes the serializer keep the stored
+     * format and sanitize against it.
+     */
     let patchData = {
-      title:              editVideoForm.title,
-      description:        editVideoForm.description,
-      description_format: editVideoForm.description_format,
+      title:       editVideoForm.title,
+      description: editVideoForm.description,
       ...(editVideoForm.cta_link !== null ?
         { cta_link: editVideoForm.cta_link || null } :
         {})

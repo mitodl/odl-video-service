@@ -243,6 +243,27 @@ describe("CollectionFormDialog", () => {
         })
 
         if (!isNew) {
+          it("does not send description_format on an ordinary save", async () => {
+            /*
+             * Server-owned on an update: only the explicit upgrade changes it,
+             * and the API accepts an html -> text downgrade. A Save from a page
+             * whose copy has gone stale would revert a conversion and leave
+             * markup stored as plain text, rendered escaped as raw tags.
+             */
+            const patchStub = sandbox
+              .stub(api, "updateCollection")
+              .returns(Promise.resolve(collection))
+            await renderDialog()
+
+            fireEvent.click(screen.getByRole("button", { name: submitText }))
+
+            await waitFor(() => sinon.assert.called(patchStub))
+            assert.notProperty(
+              patchStub.firstCall.args[1],
+              "description_format"
+            )
+          })
+
           it("ignores a conversion that lands after the dialog is closed", async () => {
             /*
              * Closing dispatches clearCollectionForm, which resets the whole ui
@@ -416,16 +437,19 @@ describe("CollectionFormDialog", () => {
         })
 
         const expectedRequestPayload = {
-          title:              "new title",
-          description:        "new description",
+          title:             "new title",
+          description:       "new description",
           // A new collection is authored as rich text from the start; an
           // existing one keeps whatever format its record already says.
-          description_format: isNew ? "html" : "text",
-          view_lists:         expectedListRequestData,
-          admin_lists:        expectedListRequestData,
-          edx_course_id:      "edx-course-id",
-          owner:              1,
-          is_logged_in_only:  false
+          // Sent only on create, where this request decides the new row's
+          // format. On an update it is server-owned and omitted, so a format
+          // changed elsewhere is not overwritten by this page's stale copy.
+          ...(isNew ? { description_format: "html" } : {}),
+          view_lists:        expectedListRequestData,
+          admin_lists:       expectedListRequestData,
+          edx_course_id:     "edx-course-id",
+          owner:             1,
+          is_logged_in_only: false
         }
 
         if (isNew) {
