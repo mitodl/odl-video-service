@@ -4,3 +4,7 @@ htmlcov
 .coverage
 node_modules
 staticfiles/
+# settings.py loads /src/.env if present; never bake a local one into an image
+.env
+.env.*
+!.env.example
