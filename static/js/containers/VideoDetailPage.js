@@ -18,6 +18,7 @@ import ShareVideoDialog from "../components/dialogs/ShareVideoDialog"
 import DeleteVideoDialog from "../components/dialogs/DeleteVideoDialog"
 import DeleteSubtitlesDialog from "../components/dialogs/DeleteSubtitlesDialog"
 import { withDialogs } from "../components/dialogs/hoc"
+import Description from "../components/material/Description"
 import VideoSubtitleCard from "../components/VideoSubtitleCard"
 import VideoSaverScript from "../components/VideoSaverScript"
 import { ConnectedVideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
@@ -285,11 +286,11 @@ export class VideoDetailPage extends React.Component<*, void> {
                       </span>
                     )}
                   </div>
-                  {video.description && (
-                    <p className="video-description mdc-typography--body1">
-                      {video.description}
-                    </p>
-                  )}
+                  <Description
+                    description={video.description}
+                    descriptionFormat={video.description_format}
+                    className="video-description mdc-typography--body1"
+                  />
                   <div className="upload-date mdc-typography--subheading1 fontgray">
                     Uploaded {formattedCreation}
                   </div>

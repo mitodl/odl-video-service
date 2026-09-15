@@ -4,6 +4,7 @@ import casual from "casual-browserify"
 import { makeVideos } from "./video"
 
 import type { Collection } from "../flow/collectionTypes"
+import { DESCRIPTION_FORMAT_TEXT } from "../constants"
 
 export const makeCollection = (
   collectionKey: string = casual.uuid
@@ -12,6 +13,7 @@ export const makeCollection = (
   created_at:          casual.moment.format(),
   title:               casual.text,
   description:         casual.text,
+  description_format:  DESCRIPTION_FORMAT_TEXT,
   videos:              makeVideos(2),
   video_count:         2,
   view_lists:          casual.array_of_words(2),

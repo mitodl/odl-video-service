@@ -2,11 +2,13 @@
 
 import type { Video } from './videoTypes'
 import type { User } from './userTypes'
+import type { DescriptionFormat } from './descriptionTypes'
 
 export type CollectionListItem = {
   key:                string,
   title:              string,
   description:        ?string,
+  description_format: DescriptionFormat,
   view_lists:         Array<string>,
   admin_lists:        Array<string>,
   is_logged_in_only:  boolean,
@@ -29,6 +31,7 @@ export type CollectionFormState = {
   key: ?string,
   title: ?string,
   description: ?string,
+  description_format: ?DescriptionFormat,
   viewChoice: string,
   viewLists: ?string,
   adminChoice: string,

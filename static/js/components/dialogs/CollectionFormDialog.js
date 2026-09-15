@@ -5,7 +5,7 @@ import type { Dispatch } from "redux"
 
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
-import Textarea from "../material/Textarea"
+import DescriptionField from "../material/DescriptionField"
 
 import Dialog from "../material/Dialog"
 
@@ -17,6 +17,7 @@ import {
   PERM_CHOICE_LOGGED_IN
 } from "../../lib/dialog"
 import { getCollectionForm } from "../../lib/collection"
+import { DESCRIPTION_FORMAT_HTML } from "../../constants"
 import { makeCollectionUrl } from "../../lib/urls"
 import { calculateListPermissionValue } from "../../util/util"
 import {
@@ -47,12 +48,39 @@ export class CollectionFormDialog extends React.Component<*, void> {
   constructor(props) {
     super(props)
     this.state = {
-      users: props.users || []
+      users:                props.users || [],
+      upgradingDescription: false,
+      upgradeError:         null
     }
   }
 
+  // Set on unmount so an upgrade that resolves afterwards does not setState on
+  // a dead component.
+  unmounted = false
+
   componentDidMount() {
     this.fetchPotentialCollectionOwners()
+  }
+
+  componentWillUnmount() {
+    this.unmounted = true
+  }
+
+  /*
+   * True when an in-flight upgrade no longer belongs to the form on screen.
+   *
+   * `upgradeDescription` awaits a PATCH, and onClose clears the form. By the
+   * time the response arrives the dialog may have been closed, or reopened on a
+   * different collection, and writing the old response into the current form
+   * would show the author someone else's description.
+   *
+   * Only the *form* writes are skipped on a stale response. The button's own
+   * "Converting…" state is cleared either way - it belongs to this component
+   * rather than to the collection, and leaving it set would strand the field
+   * the author is now looking at behind a disabled button.
+   */
+  isStaleUpgrade(key: ?string) {
+    return this.props.collectionForm.key !== key
   }
 
   fetchPotentialCollectionOwners = async () => {
@@ -78,9 +106,10 @@ export class CollectionFormDialog extends React.Component<*, void> {
     dispatch(uiActions.setCollectionTitle(event.target.value))
   }
 
-  setCollectionDesc = (event: Object) => {
+  // The rich-text editor hands back serialized HTML, not a DOM event.
+  setCollectionDesc = (html: string) => {
     const { dispatch } = this.props
-    dispatch(uiActions.setCollectionDesc(event.target.value))
+    dispatch(uiActions.setCollectionDesc(html))
   }
 
   setCollectionViewPermChoice = (choice: string) => {
@@ -125,7 +154,66 @@ export class CollectionFormDialog extends React.Component<*, void> {
     dispatch(uiActions.setOwnerId(parseInt(event.target.value, 10)))
   }
 
+  /**
+   * Convert this collection's plain-text description to rich text.
+   *
+   * Saved on its own rather than folded into the dialog's save, so the author
+   * gets the editor - with their words already in it - before deciding what to
+   * write next. Whatever is in the textarea goes up with the request, so an
+   * unsaved edit is converted rather than discarded.
+   *
+   * The server does the converting (ui.html.upgrade_description): it is the only
+   * place that knows how to escape plain text and how to clean markup someone
+   * once pasted into the old field.
+   *
+   * Only reachable for a saved collection. A collection being created starts as
+   * rich text (see INITIAL_UI_STATE in reducers/collectionUi), because it has no
+   * description written before rich text existed and so nothing to protect.
+   *
+   * Only the description comes back into the form. Re-seeding the whole form
+   * from the response would discard every other unsaved edit in the dialog - the
+   * PATCH sends the description alone, so the response still carries the *old*
+   * title, and a title the author had just retyped would revert on the spot.
+   */
+  upgradeDescription = async () => {
+    const { dispatch, collectionForm } = this.props
+
+    const key = collectionForm.key
+    this.setState({ upgradingDescription: true, upgradeError: null })
+    try {
+      const collection = await dispatch(
+        actions.collections.patch(key, {
+          description:        collectionForm.description,
+          description_format: DESCRIPTION_FORMAT_HTML
+        })
+      )
+      if (this.unmounted) {
+        return
+      }
+      this.setState({ upgradingDescription: false })
+      if (this.isStaleUpgrade(key)) {
+        return
+      }
+      dispatch(uiActions.setCollectionDesc(collection.description))
+      dispatch(uiActions.setCollectionDescFormat(collection.description_format))
+    } catch (error) {
+      if (this.unmounted) {
+        return
+      }
+      this.setState({
+        upgradingDescription: false,
+        // Not this form's error to report once the dialog has moved on.
+        upgradeError:         this.isStaleUpgrade(key) ?
+          null :
+          "That description could not be converted. Please try again."
+      })
+    }
+  }
+
   submitForm = async () => {
+    if (this.state.upgradingDescription) {
+      return
+    }
     const {
       dispatch,
       history,
@@ -146,6 +234,18 @@ export class CollectionFormDialog extends React.Component<*, void> {
         collectionForm.adminLists
       ),
       is_logged_in_only: collectionForm.viewChoice === PERM_CHOICE_LOGGED_IN
+    }
+    /*
+     * Only on create, where this request is what decides the new row's format.
+     *
+     * On an update it is server-owned state: only the explicit upgrade changes
+     * it, and the API accepts an html -> text downgrade, so re-asserting the
+     * form's copy would let a second tab or the Django admin be overwritten by
+     * whatever this page last read - leaving markup stored as plain text and
+     * rendered escaped. Omitted, the serializer keeps the stored format.
+     */
+    if (isNew) {
+      payload.description_format = collectionForm.description_format
     }
     if (isEdxCourseAdmin) {
       payload.edx_course_id = collectionForm.edxCourseId
@@ -237,12 +337,16 @@ export class CollectionFormDialog extends React.Component<*, void> {
             minLength={1}
             validationMessage={errors ? errors.title : ""}
           />
-          <Textarea
+          <DescriptionField
             label="Description (optional)"
             id="collection-desc"
-            rows="4"
+            placeholder="Add a description, links or next steps for learners."
             onChange={this.setCollectionDesc}
             value={collectionForm.description || ""}
+            descriptionFormat={collectionForm.description_format}
+            onUpgrade={this.upgradeDescription}
+            upgrading={this.state.upgradingDescription}
+            upgradeError={this.state.upgradeError}
           />
 
           <section className="permission-group">

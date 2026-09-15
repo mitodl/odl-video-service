@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.95.1
+--------------
+
+- Update dependency social-auth-app-django to v5.6.0 [SECURITY] (#1583)
+- Update dependency djangorestframework to v3.17.2 [SECURITY] (#1586)
+- OVS React 18: Remove Enzyme (#1582)
+- OVS React 18: Extract VideoPlayer controller (#1581)
+
 Version 0.95.0 (Released September 01, 2026)
 --------------
 

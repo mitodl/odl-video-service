@@ -20,7 +20,12 @@ from mail import tasks
 from odl_video.constants import DEFAULT_EDX_VIDEO_API_PATH
 from odl_video.models import TimestampedModel, TimestampedModelManager
 from ui import utils
-from ui.constants import StreamSource, VideoStatus, YouTubeStatus
+from ui.constants import (
+    DescriptionFormat,
+    StreamSource,
+    VideoStatus,
+    YouTubeStatus,
+)
 from ui.encodings import EncodingNames
 from ui.utils import get_bucket, multi_urljoin, now_in_utc, send_refresh_request
 
@@ -190,6 +195,13 @@ class Collection(TimestampedModel):
     title = models.TextField()
     slug = models.TextField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
+    # Plain text unless an author has explicitly upgraded this description to
+    # rich text; see ui.constants.DescriptionFormat.
+    description_format = models.CharField(
+        max_length=4,
+        choices=DescriptionFormat.CHOICES,
+        default=DescriptionFormat.TEXT,
+    )
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     view_lists = models.ManyToManyField(
         KeycloakGroup, blank=True, related_name="view_lists"
@@ -332,6 +344,13 @@ class Video(TimestampedModel):
     )
     title = models.CharField(max_length=250, blank=False)
     description = models.TextField(blank=True)
+    # Plain text unless an author has explicitly upgraded this description to
+    # rich text; see ui.constants.DescriptionFormat.
+    description_format = models.CharField(
+        max_length=4,
+        choices=DescriptionFormat.CHOICES,
+        default=DescriptionFormat.TEXT,
+    )
     source_url = models.URLField(max_length=2000)
     status = models.CharField(
         null=False,
