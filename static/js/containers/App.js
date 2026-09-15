@@ -40,12 +40,12 @@ class App extends React.Component<*, void> {
         <Route
           exact
           path={`${match.url}collections/`}
-          component={CollectionListPage}
+          render={routeProps => <CollectionListPage {...routeProps} />}
         />
         <Route
           exact
           path={`${match.url}collections/:collectionKey/`}
-          component={CollectionDetailPage}
+          render={routeProps => <CollectionDetailPage {...routeProps} />}
         />
         <Route
           exact
@@ -67,8 +67,16 @@ class App extends React.Component<*, void> {
           path={`${match.url}embeds/:videoKey/`}
           component={this.renderVideoEmbedPage}
         />
-        <Route exact path={`${match.url}help/`} component={HelpPage} />
-        <Route exact path={`${match.url}terms/`} component={TermsPage} />
+        <Route
+          exact
+          path={`${match.url}help/`}
+          render={routeProps => <HelpPage {...routeProps} />}
+        />
+        <Route
+          exact
+          path={`${match.url}terms/`}
+          render={routeProps => <TermsPage {...routeProps} />}
+        />
       </div>
     )
   }

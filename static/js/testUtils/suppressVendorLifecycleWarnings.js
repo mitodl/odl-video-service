@@ -78,12 +78,14 @@
  */
 
 export const VENDOR_LIFECYCLE_WARNINGS = [
-  {
-    dependency: "rmwc 1.9.4 (Base/withFoundation HOC)",
-    removedBy:  "R2, which drops rmwc entirely",
-    lifecycle:  "componentWillReceiveProps",
-    components: ["LinearProgress"]
-  },
+  // rmwc 1.9.4's LinearProgress row removed here, Phase R2, mitodl/hq#12642:
+  // rmwc is gone from the tree (its one consumer became
+  // static/js/components/material/LoadingIndicator.js), so nothing is left to
+  // excuse. Its name was also the subject of the test file's "a name that is
+  // known for a different lifecycle" case -- the only test of the
+  // per-lifecycle partitioning below -- which has been REBASED onto
+  // MemoryRouter rather than deleted with this row. See that case.
+  //
   // CARRIER DATA (see "HOW TO REMOVE A ROW" above): these three names are
   // KNOWN_CWM_GROUP in suppressVendorLifecycleWarnings_test.js, where four
   // pass-through cases use them as the part of the message that WOULD be
@@ -103,19 +105,13 @@ export const VENDOR_LIFECYCLE_WARNINGS = [
     removedBy:  "no phase yet; 5.0 moved these to getDerivedStateFromProps",
     lifecycle:  "componentWillReceiveProps",
     components: ["Route", "Router"]
-  },
-  // CARRIER DATA: the second half of CROSS_DEPENDENCY_CWM_GROUP in the test
-  // file. That case proves a flush merging names across dependencies still
-  // matches, so it needs this row and the react-router componentWillMount row
-  // above to coexist. Remove either and the case becomes inexpressible; its
-  // guard test fails and says what to do.
-  {
-    dependency: "react-document-title 2.0.3, via react-side-effect 1.2.0",
-    removedBy:
-      "no phase yet; react-side-effect 1.2.0 is unmaintained, so this needs a different title component rather than an upgrade",
-    lifecycle:  "componentWillMount",
-    components: ["SideEffect(DocumentTitle)"]
   }
+  // react-document-title 2.0.3 (via react-side-effect 1.2.0) removed here,
+  // Phase R2, mitodl/hq#12642: replaced with static/js/components/
+  // DocumentTitle.js, so nothing is left to excuse. Its row's
+  // componentWillMount entry was the second half of
+  // CROSS_DEPENDENCY_CWM_GROUP in the test file, which is now deleted rather
+  // than rebased -- see that file for why.
 ]
 
 // react-dom's printWarning prepends "Warning: " to the format string and
