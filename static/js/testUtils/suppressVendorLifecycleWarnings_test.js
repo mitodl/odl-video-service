@@ -246,6 +246,25 @@ describe("suppressVendorLifecycleWarnings", () => {
       passesThrough(CWM, "VideoPlayer")
     })
 
+    // Known sets are PER-LIFECYCLE (knownNamesFor filters the table by
+    // `entry.lifecycle` before unioning). Drop that filter and the union goes
+    // global, at which point a name excused for one lifecycle is silently
+    // excused for every other one too -- which is exactly the class of change
+    // this table exists to make visible.
+    //
+    // This case used to carry rmwc's LinearProgress, excused for
+    // componentWillReceiveProps only. That row left in Phase R2 (hq#12642)
+    // and the case was deleted with it rather than rebased, which left the
+    // lifecycle filter with no test at all. Rebased here onto MemoryRouter,
+    // which is a known componentWillMount name and deliberately NOT in the
+    // componentWillReceiveProps row -- so this fails the moment the filter
+    // goes away. If MemoryRouter ever gains a componentWillReceiveProps
+    // entry, rebase onto another name that is known for one lifecycle and
+    // not the other; do not simply delete this.
+    it("a name that is known for a different lifecycle", () => {
+      passesThrough(CWRP, "MemoryRouter")
+    })
+
     it("a lifecycle that is not in the table", () => {
       passesThrough(CWU, KNOWN_CWM_GROUP)
     })

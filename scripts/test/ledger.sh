@@ -234,7 +234,7 @@ else
 	check "vendor suppressed component names" "${VENDORNAMES:-0}" le 5
 fi
 
-# Every ~@material/* package that SCSS imports must be a DECLARED dependency.
+# Every @material/* package that SCSS imports must be a DECLARED dependency.
 #
 # Added in Phase R2 (hq#12642) after this bit twice in one PR. `@material/*`
 # packages were reaching node_modules only TRANSITIVELY, via
@@ -252,16 +252,59 @@ fi
 #
 # So this checks DECLARATION in package.json, not presence in node_modules:
 # presence is exactly the thing that lies.
+#
+# Two ways an earlier version of this guard could pass while asserting
+# nothing, both fixed here after review on the PR that added it:
+#
+# 1. It matched `~@material/*` only. The `~` prefix is sass-loader's, not
+#    Sass's, and sass-loader 16 (what we run) deprecates it -- so dropping it
+#    from these imports is ordinary cleanup, after which the tilde-only grep
+#    finds nothing, the loop iterates zero times, and `le 0` passes on an
+#    empty set. `~?` reads the imports rather than the syntax they happen to
+#    use today, and the emptiness check below refuses to pass on nothing
+#    regardless of why the list came back empty.
+#
+# 2. It grepped the package NAME anywhere in package.json, so a `resolutions`
+#    entry, or a name inside a `scripts` string, counted as declared. Worse,
+#    so did devDependencies: Dockerfile sets NODE_ENV=production BEFORE
+#    `yarn install`, and yarn 1 skips devDependencies under that, while CI
+#    installs with NODE_ENV unset and therefore has them. A devDependencies-
+#    only @material package would pass this check AND pass CI's prod webpack
+#    build, then break the production image -- exactly the case this guard
+#    exists for. So the maps are parsed and `dependencies` keys tested
+#    exactly, rather than grepped.
 SCSS_MATERIAL_UNDECLARED=0
 if [[ -d static/scss ]]; then
-	for pkg in $(grep -rhoE '~@material/[a-z-]+' static/scss/ 2>/dev/null | sed 's|^~||' | sort -u); do
-		grep -q "\"${pkg}\"" package.json || SCSS_MATERIAL_UNDECLARED=$((SCSS_MATERIAL_UNDECLARED + 1))
-	done
+	SCSS_MATERIAL_IMPORTS=$(grep -rhoE '~?@material/[a-z-]+' static/scss/ 2>/dev/null | sed 's|^~||' | sort -u)
+	# Fail OPEN is the whole failure mode above, so an empty list is a FAIL,
+	# not a vacuous pass. static/scss existing while importing no @material/*
+	# at all means the MDC styles are gone, which is a real migration event
+	# and should be noticed here rather than silently disarming the check.
+	if [[ -z $SCSS_MATERIAL_IMPORTS ]]; then
+		printf "  FAIL  %-34s %s\n" "scss @material imports" "(none found -- guard disarmed, not satisfied)"
+		FAIL=1
+	fi
+	SCSS_MATERIAL_UNDECLARED=$(printf '%s\n' "$SCSS_MATERIAL_IMPORTS" | node -e '
+		let input = ""
+		process.stdin.on("data", chunk => (input += chunk)).on("end", () => {
+			const declared = require("./package.json").dependencies || {}
+			const imported = input.split("\n").map(line => line.trim()).filter(Boolean)
+			const undeclared = imported.filter(
+				name => !Object.prototype.hasOwnProperty.call(declared, name)
+			)
+			// Named, not just counted: a bare number sends the reader back to
+			// diffing two sorted lists by hand.
+			for (const name of undeclared) {
+				process.stderr.write(`        undeclared in dependencies: ${name}\n`)
+			}
+			console.log(undeclared.length)
+		})
+	')
 else
 	printf "  FAIL  %-34s %s\n" "scss @material declared" "(static/scss is gone -- delete this check with it)"
 	FAIL=1
 fi
-check "scss @material undeclared" "$SCSS_MATERIAL_UNDECLARED" le 0
+check "scss @material undeclared" "${SCSS_MATERIAL_UNDECLARED:-1}" le 0
 
 # Mutation score, when a baseline has been recorded and a report exists.
 # The full run takes 30-90 minutes, so this is a per-phase or nightly check --

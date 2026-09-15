@@ -51,10 +51,17 @@ describe("DocumentTitle", () => {
     assert.equal(document.title, "second")
   })
 
-  it("does not restore the previous title on unmount", () => {
-    // Deliberate: react-document-title did not restore either, and OVS relies
-    // on the title persisting until the next page sets its own. Restoring here
-    // would be a behaviour change disguised as a dependency swap.
+  it("leaves the title alone on unmount, neither restoring nor clearing it", () => {
+    // A DELIBERATE divergence from react-document-title 2.0.3, not a
+    // reproduction of it -- see the comment on DocumentTitle.js. That package
+    // CLEARED document.title to "" once its last instance unmounted
+    // (reducePropsToState returns undefined for an empty propsList, then
+    // `title || ''`). It did not restore "before" either -- it kept no stack
+    // -- so "before" is the outcome neither implementation ever produced, and
+    // asserting against it is what distinguishes the two behaviours:
+    //   package  -> ""
+    //   this     -> "during"
+    //   neither  -> "before"
     document.title = "before"
     const { unmount } = render(
       <DocumentTitle title="during">
@@ -64,6 +71,12 @@ describe("DocumentTitle", () => {
     assert.equal(document.title, "during")
 
     unmount()
-    assert.equal(document.title, "during")
+    assert.equal(
+      document.title,
+      "during",
+      'expected the last title to persist; "" would mean the package\'s ' +
+        'clear-on-unmount got reintroduced, "before" a restore that neither ' +
+        "implementation ever did"
+    )
   })
 })
