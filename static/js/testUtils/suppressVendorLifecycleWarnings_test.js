@@ -312,6 +312,29 @@ describe("suppressVendorLifecycleWarnings", () => {
     }
     assert.lengthOf(errors, 1)
   })
+
+  /**
+   * restore() is the one part of the helper's contract the beforeEach/afterEach
+   * pair above cannot observe: afterEach calls it, but reinstates the
+   * process-global wrapper on the very next line, so its effect is overwritten
+   * before any assertion could see it. Turn restore() into a no-op without
+   * this case and the whole file still passes.
+   *
+   * Asserted by BEHAVIOUR, not by identity. The helper captures
+   * `console.warn.bind(console)`, so what it reinstalls is an equivalent bound
+   * copy and never the original reference -- `console.warn === originalConsoleWarn`
+   * would fail here for a reason that has nothing to do with restoring.
+   *
+   * Note that afterEach's second line is load-bearing and must stay: restore()
+   * only rewinds as far as the recorder installed in beforeEach, so without
+   * that line the recorder -- and its by-then-stale `passedThrough` array --
+   * would leak into every test file mocha loads after this one.
+   */
+  it("stops suppressing once restore() has run", () => {
+    swallows(CWM, KNOWN_CWM_GROUP)
+    restore()
+    passesThrough(CWM, KNOWN_CWM_GROUP)
+  })
 })
 
 /**
@@ -343,15 +366,43 @@ describe("suppressVendorLifecycleWarnings", () => {
 describe("our own component names vs the vendor suppression table", () => {
   const SOURCE_ROOT = path.resolve(__dirname, "..")
 
-  // `class X extends React.Component` / `extends Component` /
-  // `extends React.PureComponent`, plus a literal `displayName = "X"`, which
-  // React prefers over the class name when set. A displayName assembled from
-  // a template literal (components/dialogs/hoc.js) is not statically
-  // scannable; it is also incapable of equalling a bare vendored name.
+  /**
+   * Every way a component of ours can end up carrying a name that React would
+   * report. React uses `type.displayName || type.name`, so:
+   *
+   * 1. `class X extends React.Component` / `extends Component` /
+   *    `extends React.PureComponent` -- the declared class name.
+   * 2. `const X = class extends React.Component {}` -- an anonymous class
+   *    expression, where JS infers `.name` from the binding, so the NAME TO
+   *    CAPTURE IS THE BINDING'S, there being none after `class`. Missing this
+   *    form was a real hole: a component of ours written this way and named
+   *    after a vendored row passed the guard below silently.
+   * 3. A literal `displayName`, which React prefers over the class name when
+   *    set. Either quote style: `quotes` is [0] in eslint-config-mitodl and
+   *    `fmt:check` is not a CI step, so nothing in this repo would normalise a
+   *    single-quoted one to double.
+   *
+   * A displayName assembled from a template literal (components/dialogs/hoc.js)
+   * is not statically scannable; it is also incapable of equalling a bare
+   * vendored name.
+   *
+   * Over-matching here is the safe direction -- a spurious extra name can only
+   * cause a false collision report, which is loud, whereas a missed name is
+   * the silent failure this guard exists to prevent.
+   */
   const OWN_NAME_PATTERNS = [
     /\bclass\s+([A-Za-z_$][\w$]*)\s+extends\s+(?:[\w$]+\.)?(?:Pure)?Component\b/g,
-    /\bdisplayName\s*[:=]\s*"([^"]+)"/g
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*class\s+extends\s+(?:[\w$]+\.)?(?:Pure)?Component\b/g,
+    /\bdisplayName\s*[:=]\s*["']([^"']+)["']/g
   ]
+
+  // Comments are stripped before scanning, so a name that is only mentioned in
+  // prose cannot satisfy this guard or the vacuity floor below. Without this,
+  // the sole tree-wide match for the displayName pattern was the word "X" out
+  // of the block comment above it -- that pattern looked exercised while
+  // matching nothing real.
+  const withoutComments = source =>
+    source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")
 
   const jsFilesUnder = dir => {
     return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
@@ -363,21 +414,38 @@ describe("our own component names vs the vendor suppression table", () => {
     })
   }
 
+  // Every component name one source string declares.
+  const namesIn = source => {
+    const stripped = withoutComments(source)
+    const names = new Set()
+    OWN_NAME_PATTERNS.forEach(pattern => {
+      for (const match of stripped.matchAll(pattern)) {
+        names.add(match[1])
+      }
+    })
+    return names
+  }
+
   // name -> the first file it was declared in, for the failure message.
   const ownComponents = () => {
     const found = new Map()
     jsFilesUnder(SOURCE_ROOT).forEach(file => {
-      const source = fs.readFileSync(file, "utf8")
-      OWN_NAME_PATTERNS.forEach(pattern => {
-        for (const match of source.matchAll(pattern)) {
-          if (!found.has(match[1])) {
-            found.set(match[1], path.relative(SOURCE_ROOT, file))
-          }
+      namesIn(fs.readFileSync(file, "utf8")).forEach(name => {
+        if (!found.has(name)) {
+          found.set(name, path.relative(SOURCE_ROOT, file))
         }
       })
     })
     return found
   }
+
+  // Walked and scanned once for the whole describe rather than per case: the
+  // three cases below all want the same answer, and the walk reads every .js
+  // file under static/js.
+  let found
+  before(() => {
+    found = ownComponents()
+  })
 
   /**
    * Collisions we have deliberately decided to live with. Empty, and it should
@@ -393,10 +461,64 @@ describe("our own component names vs the vendor suppression table", () => {
     VENDOR_LIFECYCLE_WARNINGS.flatMap(entry => entry.components)
   )
 
+  /**
+   * Anti-vacuity for OWN_NAME_PATTERNS themselves, which the tree floor below
+   * cannot supply: static/js today contains no literal displayName at all (the
+   * only one, in components/dialogs/hoc.js, is a template literal), so the
+   * displayName pattern matches nothing real and a floor over the tree would
+   * stay green however broken that pattern got. A fixture is the only way to
+   * hold each recognised form to account.
+   *
+   * One distinct name per form, so a failure names the pattern that broke.
+   * Deliberately none of them a vendored name: this file is itself under
+   * static/js, so the tree walk above reads these fixtures as declarations of
+   * ours, and a vendored name here would trip the collision guard for real.
+   */
+  const DECLARATION_FORMS = `
+    class OvsFixtureBare extends Component {}
+    class OvsFixtureNamespaced extends React.Component {}
+    class OvsFixturePure extends React.PureComponent {}
+    const OvsFixtureAnonymous = class extends React.Component {}
+    class OvsFixtureDoubleQuoted extends React.Component {
+      static displayName = "OvsFixtureDoubleQuotedName"
+    }
+    class OvsFixtureSingleQuoted extends React.Component {
+      static displayName = 'OvsFixtureSingleQuotedName'
+    }
+  `
+
+  it("extracts a name from every declaration form React reports by", () => {
+    assert.deepEqual([...namesIn(DECLARATION_FORMS)].sort(), [
+      "OvsFixtureAnonymous",
+      "OvsFixtureBare",
+      "OvsFixtureDoubleQuoted",
+      "OvsFixtureDoubleQuotedName",
+      "OvsFixtureNamespaced",
+      "OvsFixturePure",
+      "OvsFixtureSingleQuoted",
+      "OvsFixtureSingleQuotedName"
+    ])
+  })
+
+  it("ignores a component name that only appears in a comment", () => {
+    assert.deepEqual(
+      [
+        ...namesIn(
+          [
+            "// class OvsFixtureLineCommented extends React.Component {}",
+            "/* class OvsFixtureBlockCommented extends React.Component {} */"
+          ].join("\n")
+        )
+      ],
+      [],
+      "a name mentioned only in prose must not satisfy this guard or the " +
+        "tree floor below"
+    )
+  })
+
   // Anti-vacuity: if the walk or either pattern breaks, every assertion below
   // passes while scanning nothing. These floors are what makes the guard real.
   it("actually finds our own component names", () => {
-    const found = ownComponents()
     assert.isAtLeast(
       found.size,
       40,
@@ -416,7 +538,7 @@ describe("our own component names vs the vendor suppression table", () => {
   })
 
   it("has no component of ours named after a suppressed vendor component", () => {
-    const collisions = [...ownComponents()]
+    const collisions = [...found]
       .filter(([name]) => tableNames.has(name))
       .filter(([name]) => !ACCEPTED_NAME_COLLISIONS.includes(name))
       .map(([name, file]) => `${name} (static/js/${file})`)
@@ -434,7 +556,7 @@ describe("our own component names vs the vendor suppression table", () => {
   })
 
   it("carries no stale accepted collision", () => {
-    const names = new Set(ownComponents().keys())
+    const names = new Set(found.keys())
     const stale = ACCEPTED_NAME_COLLISIONS.filter(
       name => !(names.has(name) && tableNames.has(name))
     )

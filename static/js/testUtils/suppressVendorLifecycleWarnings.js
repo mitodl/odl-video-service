@@ -128,19 +128,27 @@ const prefixFor = lifecycle =>
 
 const SUFFIX = "Please update the following components: %s"
 
-// Union of the known names for one lifecycle, across every dependency. The
-// union rather than one row at a time, because a single flush can group
-// components from two different dependencies together.
-const knownNamesFor = lifecycle =>
-  new Set(
-    VENDOR_LIFECYCLE_WARNINGS.filter(
-      entry => entry.lifecycle === lifecycle
-    ).flatMap(entry => entry.components)
-  )
-
 const KNOWN_LIFECYCLES = [
   ...new Set(VENDOR_LIFECYCLE_WARNINGS.map(entry => entry.lifecycle))
 ]
+
+// Union of the known names for one lifecycle, across every dependency. The
+// union rather than one row at a time, because a single flush can group
+// components from two different dependencies together.
+//
+// Built once at module load rather than per lookup: the matcher below runs on
+// every intercepted console.warn in the suite, and the table is frozen at
+// author time, so there is nothing a rebuild could pick up.
+const KNOWN_NAMES_BY_LIFECYCLE = new Map(
+  KNOWN_LIFECYCLES.map(lifecycle => [
+    lifecycle,
+    new Set(
+      VENDOR_LIFECYCLE_WARNINGS.filter(
+        entry => entry.lifecycle === lifecycle
+      ).flatMap(entry => entry.components)
+    )
+  ])
+)
 
 export function isKnownVendorLifecycleWarning(args) {
   if (args.length !== 2) {
@@ -159,7 +167,8 @@ export function isKnownVendorLifecycleWarning(args) {
   if (!lifecycle) {
     return false
   }
-  const known = knownNamesFor(lifecycle)
+  // KNOWN_LIFECYCLES is the key set of the map, so this lookup always hits.
+  const known = KNOWN_NAMES_BY_LIFECYCLE.get(lifecycle)
   // An empty reported list splits to [""], which is not a known name, so it
   // fails the match rather than matching vacuously.
   return reported.split(", ").every(name => known.has(name))
