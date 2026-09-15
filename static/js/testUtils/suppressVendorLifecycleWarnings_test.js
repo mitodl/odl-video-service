@@ -452,7 +452,7 @@ describe("suppressVendorLifecycleWarnings", () => {
   describe("family C: findDOMNode (console.error)", () => {
     // No table for this family -- see suppressVendorLifecycleWarnings.js's
     // "FAMILY C'S SAFETY IS DIFFERENT". Its safety comes from ledger.sh's
-    // "own findDOMNode call sites" check, not from anything tested here.
+    // "own findDOMNode references" check, not from anything tested here.
     it("suppresses the known vendor warning", () => {
       errorSwallows(FIND_DOM_NODE, STACK)
     })

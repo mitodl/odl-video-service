@@ -31,8 +31,8 @@
  * findDOMNode, childContextTypes, contextTypes and getChildContext ZERO times
  * (excluding this file and its test, which reference the names as STRING DATA
  * -- matcher literals and prose -- not as declarations or call sites).
- * `scripts/test/ledger.sh`'s "own findDOMNode call sites" and "own legacy
- * context API declarations" checks assert this stays true on every run: see
+ * `scripts/test/ledger.sh`'s "own findDOMNode references" and "own legacy
+ * context API references" checks assert this stays true on every run: see
  * "FAMILY C'S SAFETY IS DIFFERENT" below for why that machine-checked
  * precondition, rather than name matching, is what makes suppressing family C
  * defensible.
@@ -132,13 +132,19 @@
  * would, with no name check to save it.
  *
  * That precondition is therefore enforced OUTSIDE this file, in
- * scripts/test/ledger.sh's "own findDOMNode call sites" check, which greps all
- * of static/js (excluding this file and its test) for `findDOMNode(` call
- * sites and fails the run the moment one appears. The identical reasoning
- * applies to family B's legacy context API -- its per-name matching already
- * gives it the same self-policing property as family A, but the ledger's "own
- * legacy context API declarations" check is a second, independent guard for
- * it too, at zero extra cost.
+ * scripts/test/ledger.sh's "own findDOMNode references" check, which greps
+ * all of static/js (excluding this file and its test) for the BARE SYMBOL
+ * `findDOMNode` and fails the run the moment one appears. The symbol rather
+ * than a call-shaped pattern deliberately: PR #1590's review showed a
+ * call-shaped matcher is evadable three ways (`.call(...)`, a space before
+ * the paren, an aliased import), and since what is being ruled out is the
+ * symbol appearing at all, scanning for the symbol is both simpler and
+ * fail-closed. See that check's own comment for the verified evasions.
+ *
+ * The identical reasoning applies to family B's legacy context API -- its
+ * per-name matching already gives it the same self-policing property as
+ * family A, but the ledger's "own legacy context API references" check is a
+ * second, independent guard for it too, at zero extra cost.
  */
 
 // -----------------------------------------------------------------------------
@@ -333,7 +339,7 @@ export function isKnownVendorLegacyContextWarning(args) {
 // copied verbatim from react-dom 18.3.1's source (react-dom/cjs/
 // react-dom.development.js, function findDOMNode) and re-verified by
 // suppressVendorLifecycleWarnings_test.js's own independent copy. Its safety
-// comes from scripts/test/ledger.sh's "own findDOMNode call sites" check, not
+// comes from scripts/test/ledger.sh's "own findDOMNode references" check, not
 // from anything in this file.
 const FIND_DOM_NODE_MESSAGE =
   "Warning: findDOMNode is deprecated and will be removed in the next major " +

@@ -275,17 +275,40 @@ fi
 #
 # Verified to return 0 on the current tree (Ruling R3-5's own grep, re-run
 # here as a permanent check rather than a one-off).
-OWN_FINDDOMNODE=$(grep -rhoE 'findDOMNode\(' static/js --include='*.js' \
+#
+# THE BARE SYMBOL, not a call-shaped pattern (review of PR #1590). An earlier
+# version of this matched the literal substring `findDOMNode(`, which three
+# real spellings walk straight past while the console.error wrapper still
+# eats the resulting warning:
+#   ReactDOM.findDOMNode.call(null, el)   -- no "findDOMNode(" anywhere
+#   ReactDOM.findDOMNode (el)             -- prettier would fix it, CI does
+#                                            not run fmt:check (see below)
+#   import { findDOMNode as locateNode }  -- the call site is spelled
+#                                            locateNode(el)
+# Verified: all three in a file under static/js left the old check at PASS.
+# A zero-use invariant does not need to recognise call syntax -- the symbol
+# appearing AT ALL is the thing being ruled out, so scan for the symbol and
+# let it fail closed. The tradeoff is that prose mentioning findDOMNode in
+# some future file would trip this; that is the safe direction for an
+# invariant, and the only files that legitimately name it are excluded.
+OWN_FINDDOMNODE=$(grep -rhoE '\bfindDOMNode\b' static/js --include='*.js' \
 	--exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "own findDOMNode call sites" "${OWN_FINDDOMNODE:-0}" le 0
+check "own findDOMNode references" "${OWN_FINDDOMNODE:-0}" le 0
 
-# childContextTypes / contextTypes as a static class field or object property
-# (`= {`/`: {`), or getChildContext as a method (`(`/`= (` for a class field
-# arrow). These are DECLARATION shapes, not the word appearing in prose, so
-# this does not fire on, say, a code comment that merely discusses the API.
-OWN_LEGACY_CONTEXT=$(grep -rhoE '\b(childContextTypes|contextTypes)[[:space:]]*[=:]|\bgetChildContext[[:space:]]*[(=]' \
+# The legacy context API symbols, on the same bare-symbol rule and for the
+# same reason as findDOMNode above. The declaration-shaped predecessor
+# (`childContextTypes` followed by `=` or `:`) missed bracket notation and
+# getters -- `Foo["childContextTypes"] = {}`, `static get contextTypes() {}`
+# -- both verified to leave the old check at PASS.
+#
+# Unlike family C this is the SECOND guard, not the only one: family B's
+# warning carries a component name, so isKnownVendorLegacyContextWarning
+# already refuses to suppress a name outside its table. Tightened anyway --
+# it is the same one-word change, and redundancy that can be evaded is not
+# redundancy.
+OWN_LEGACY_CONTEXT=$(grep -rhoE '\b(childContextTypes|contextTypes|getChildContext)\b' \
 	static/js --include='*.js' --exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "own legacy context API declarations" "${OWN_LEGACY_CONTEXT:-0}" le 0
+check "own legacy context API references" "${OWN_LEGACY_CONTEXT:-0}" le 0
 
 # Every @material/* package that SCSS imports must be a DECLARED dependency.
 #
