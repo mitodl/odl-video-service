@@ -7,6 +7,7 @@ import {
   PERM_CHOICE_LISTS,
   PERM_CHOICE_LOGGED_IN
 } from "../lib/dialog"
+import { DESCRIPTION_FORMAT_TEXT } from "../constants"
 import type {
   Collection,
   CollectionFormState,
@@ -41,16 +42,17 @@ export function makeInitializedForm(
 ): CollectionFormState {
   if (!collection) {
     collection = {
-      key:               "",
-      title:             "",
-      description:       "",
-      view_lists:        [],
-      admin_lists:       [],
-      is_logged_in_only: false,
-      edx_course_id:     "",
-      video_count:       0,
-      owner:             null,
-      owner_info:        {
+      key:                "",
+      title:              "",
+      description:        "",
+      description_format: DESCRIPTION_FORMAT_TEXT,
+      view_lists:         [],
+      admin_lists:        [],
+      is_logged_in_only:  false,
+      edx_course_id:      "",
+      video_count:        0,
+      owner:              null,
+      owner_info:         {
         id:       null,
         username: "",
         email:    ""
@@ -63,10 +65,12 @@ export function makeInitializedForm(
     collection.admin_lists.length === 0 ? PERM_CHOICE_NONE : PERM_CHOICE_LISTS
 
   return {
-    key:         collection.key,
-    title:       collection.title,
-    description: collection.description,
-    viewChoice:  collection.is_logged_in_only ?
+    key:                collection.key,
+    title:              collection.title,
+    description:        collection.description,
+    description_format:
+      collection.description_format || DESCRIPTION_FORMAT_TEXT,
+    viewChoice: collection.is_logged_in_only ?
       PERM_CHOICE_LOGGED_IN :
       viewChoice,
     viewLists:   _.join(collection.view_lists, ","),

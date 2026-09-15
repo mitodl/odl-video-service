@@ -3,6 +3,7 @@ import _ from "lodash"
 import casual from "casual-browserify"
 
 import {
+  DESCRIPTION_FORMAT_TEXT,
   ENCODING_HLS,
   ENCODING_ORIGINAL,
   VIDEO_STATUS_COMPLETE
@@ -85,6 +86,9 @@ export const makeVideo = (
   created_at:            casual.moment.format(),
   title:                 casual.text,
   description:           casual.text,
+  // Matches the model default: a description is plain text until an author
+  // upgrades it (see ui.constants.DescriptionFormat).
+  description_format:    DESCRIPTION_FORMAT_TEXT,
   collection_key:        collectionKey,
   collection_title:      casual.text,
   collection_view_lists: [],

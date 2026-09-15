@@ -20,7 +20,7 @@ A video hosting platform for MIT's Office of Digital Learning (ODL). Videos are 
 | Frontend | React 16, Redux, Flow types, Webpack 5 |
 | JS test runner | Mocha + Chai + @testing-library/react |
 | JS package manager | Yarn 1.22.22 |
-| Node version | 24.16.0 |
+| Node version | 24.20.0 |
 | Linting (Python) | `ruff` |
 | Linting (JS) | ESLint + prettier-eslint |
 | Containerization | Docker Compose |

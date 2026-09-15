@@ -78,6 +78,14 @@
  */
 
 export const VENDOR_LIFECYCLE_WARNINGS = [
+  // rmwc 1.9.4's LinearProgress row removed here, Phase R2, mitodl/hq#12642:
+  // rmwc is gone from the tree (its one consumer became
+  // static/js/components/material/LoadingIndicator.js), so nothing is left to
+  // excuse. Its name was also the subject of the test file's "a name that is
+  // known for a different lifecycle" case -- the only test of the
+  // per-lifecycle partitioning below -- which has been REBASED onto
+  // MemoryRouter rather than deleted with this row. See that case.
+  //
   // CARRIER DATA (see "HOW TO REMOVE A ROW" above): these three names are
   // KNOWN_CWM_GROUP in suppressVendorLifecycleWarnings_test.js, where four
   // pass-through cases use them as the part of the message that WOULD be
@@ -116,19 +124,27 @@ const prefixFor = lifecycle =>
 
 const SUFFIX = "Please update the following components: %s"
 
-// Union of the known names for one lifecycle, across every dependency. The
-// union rather than one row at a time, because a single flush can group
-// components from two different dependencies together.
-const knownNamesFor = lifecycle =>
-  new Set(
-    VENDOR_LIFECYCLE_WARNINGS.filter(
-      entry => entry.lifecycle === lifecycle
-    ).flatMap(entry => entry.components)
-  )
-
 const KNOWN_LIFECYCLES = [
   ...new Set(VENDOR_LIFECYCLE_WARNINGS.map(entry => entry.lifecycle))
 ]
+
+// Union of the known names for one lifecycle, across every dependency. The
+// union rather than one row at a time, because a single flush can group
+// components from two different dependencies together.
+//
+// Built once at module load rather than per lookup: the matcher below runs on
+// every intercepted console.warn in the suite, and the table is frozen at
+// author time, so there is nothing a rebuild could pick up.
+const KNOWN_NAMES_BY_LIFECYCLE = new Map(
+  KNOWN_LIFECYCLES.map(lifecycle => [
+    lifecycle,
+    new Set(
+      VENDOR_LIFECYCLE_WARNINGS.filter(
+        entry => entry.lifecycle === lifecycle
+      ).flatMap(entry => entry.components)
+    )
+  ])
+)
 
 export function isKnownVendorLifecycleWarning(args) {
   if (args.length !== 2) {
@@ -147,7 +163,8 @@ export function isKnownVendorLifecycleWarning(args) {
   if (!lifecycle) {
     return false
   }
-  const known = knownNamesFor(lifecycle)
+  // KNOWN_LIFECYCLES is the key set of the map, so this lookup always hits.
+  const known = KNOWN_NAMES_BY_LIFECYCLE.get(lifecycle)
   // An empty reported list splits to [""], which is not a known name, so it
   // fails the match rather than matching vacuously.
   return reported.split(", ").every(name => known.has(name))

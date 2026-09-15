@@ -56,3 +56,34 @@ class StreamSource:
         YOUTUBE,
         CLOUDFRONT,
     ]
+
+
+class DescriptionFormat:
+    """
+    How a Collection/Video `description` is encoded.
+
+    Descriptions were plain text for most of this app's life, rendered escaped
+    by React. They are now authored as rich text and rendered as markup, and the
+    two cannot be told apart by looking at the value: a legacy description
+    containing `<p>` may be markup an author pasted, or prose about HTML. So the
+    format is recorded rather than guessed.
+
+    `TEXT` is the default, which is what makes the switch safe for data already
+    in the table: every existing row keeps being treated as plain text and
+    rendered escaped, exactly as it was before rich text existed. Authors opt a
+    description in one at a time (see ui.html.upgrade_description), and only a
+    value written as rich text is ever rendered as markup.
+    """
+
+    TEXT = "text"
+    HTML = "html"
+
+    ALL_FORMATS = [
+        TEXT,
+        HTML,
+    ]
+
+    CHOICES = [
+        (TEXT, "Plain text"),
+        (HTML, "Rich text"),
+    ]

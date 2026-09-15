@@ -1,5 +1,7 @@
 // @flow
 
+import type { DescriptionFormat } from './descriptionTypes'
+
 export type VideoSubtitle = {
   id:             number,
   created_at:     string,
@@ -39,6 +41,7 @@ export type Video = {
   created_at:             string,
   title:                  string,
   description:            string,
+  description_format:     DescriptionFormat,
   collection_key:         string,
   collection_title:       string,
   multiangle:             boolean,
@@ -59,6 +62,7 @@ export type Video = {
 export type VideoUpdatePayload = {
   title: string,
   description: string,
+  description_format?: DescriptionFormat,
   cta_link?: ?string,
   view_lists?: Array<string>,
   is_logged_in_only?: boolean,
@@ -70,6 +74,7 @@ export type VideoFormState = {
   key: ?string,
   title: ?string,
   description: ?string,
+  description_format: ?DescriptionFormat,
   cta_link: ?string,
   overrideChoice: string,
   viewChoice: string,
