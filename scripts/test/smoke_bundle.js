@@ -109,4 +109,29 @@ function bootBundle() {
   return { container: window.document.getElementById("container"), errors }
 }
 
-module.exports = { bootBundle, bundleIsBuilt, rootChunkFiles, isDevBuild }
+// createRoot().render() schedules the initial render on the Scheduler rather
+// than committing inline, so the container is still empty -- and any
+// console.error the first render emits has not fired yet -- at the moment
+// bootBundle() returns. Yield to the macrotask queue (the Scheduler's
+// MessageChannel callback, plus any setTimeout the app queues while mounting)
+// so the first commit has landed before anything asserts on it.
+//
+// This is THE entry point: bootBundle stays module-private deliberately, so
+// there is no synchronous export left to reach for. Reaching for one is what
+// broke this test under React 18 -- it read container.childNodes immediately
+// after render() and saw 0, failing a boot that had in fact succeeded, while
+// its errors assertion could not yet see a render-time throw either. Both
+// assertions were blind, which is the whole failure mode a React major
+// upgrade produces and the reason this test exists.
+async function bootBundleAndSettle() {
+  const booted = bootBundle()
+  await new Promise(resolve => setTimeout(resolve, 0))
+  return booted
+}
+
+module.exports = {
+  bootBundleAndSettle,
+  bundleIsBuilt,
+  rootChunkFiles,
+  isDevBuild
+}

@@ -2,7 +2,7 @@
 /* global SETTINGS:false */
 __webpack_public_path__ = SETTINGS.public_path // eslint-disable-line no-undef, camelcase
 import React from "react"
-import ReactDOM from "react-dom"
+import { createRoot } from "react-dom/client"
 import { createBrowserHistory } from "history"
 
 import configureStore from "../store/configureStore"
@@ -31,12 +31,17 @@ if (!rootEl) {
 }
 
 const history = createBrowserHistory()
+
+// Created once, outside renderApp: createRoot must be called at most once per
+// container. renderApp runs again on every hot reload, so creating the root
+// inside it would throw on the second call and break HMR.
+const root = createRoot(rootEl)
+
 const renderApp = Component => {
-  ReactDOM.render(
+  root.render(
     <Component store={store} history={history}>
       {routes}
-    </Component>,
-    rootEl
+    </Component>
   )
 }
 

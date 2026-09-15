@@ -319,6 +319,14 @@ describe("EditVideoFormDialog", () => {
     }
     store.dispatch(setEditVideoTitle(newValues.title))
     store.dispatch(setEditVideoDesc(newValues.description))
+    // React 18 batches these two synchronous dispatches into one deferred
+    // re-render rather than flushing immediately, so without this wait the
+    // click below fires before the connected props update and updateVideo
+    // observes the pre-dispatch (original) title/description instead of the
+    // new ones just set.
+    await waitFor(() =>
+      assert.equal(screen.getByLabelText("Title").value, newValues.title)
+    )
     // Real click on the "Save Changes" button, replacing the old
     // `.find("Dialog").prop("onAccept")()` call. Spiked empirically (see
     // task-5-report.md, Spike A): EditVideoFormDialog renders its Dialog
@@ -379,6 +387,12 @@ describe("EditVideoFormDialog", () => {
     store.dispatch(setPermOverrideChoice(PERM_CHOICE_OVERRIDE))
     store.dispatch(setViewChoice(PERM_CHOICE_LISTS))
     store.dispatch(setViewLists(_.map(newValues.view_lists).join(",")))
+
+    // Same batched-update wait as the previous test: five dispatches here,
+    // one deferred re-render in React 18.
+    await waitFor(() =>
+      assert.equal(screen.getByLabelText("Title").value, newValues.title)
+    )
 
     // See the previous test for the click/onAccept and full-chain-await
     // rationale (both apply identically here).

@@ -190,22 +190,39 @@ else
 	# cap moves with the row, in the same commit.
 	check "vendor lifecycle suppressions" "${VENDORSUPP:-0}" le 2
 
+	# The same row-count guarantee for FAMILY B (the legacy context API,
+	# Phase R3 Task 4, Ruling R3-5): react-router 4.3.1's Router/Route
+	# (childContextTypes) and react-router-dom 4.3.1's Link (contextTypes).
+	# Both rows key on `api:` rather than `lifecycle:`, so this is a separate
+	# counter from the one above rather than folded into it -- they are
+	# different tables with different growth pattern (family B rows are never
+	# batched into one reported group the way family A's are). Verified to
+	# return 2 on the current tree.
+	VENDORCTXSUPP=$(grep -cE '^[[:space:]]+api: *"' "$SUPPFILE" 2>/dev/null)
+	check "vendor legacy-context suppressions" "${VENDORCTXSUPP:-0}" le 2
+
 	# Rows are not the only thing that can grow. Under set-membership matching
 	# (Ruling 10), WIDENING an existing row -- adding a name to its
 	# `components` array -- excuses strictly more without adding a row, so the
 	# cap above does not move and no threshold discipline is triggered. Today
-	# the only guard against that is EXPECTED_TABLE's deepEqual in
-	# suppressVendorLifecycleWarnings_test.js, which lives in the same file an
-	# operator widening a row is already editing. This puts the second guard
-	# here, where moving it requires a comment in the same commit.
+	# the only guard against that is EXPECTED_TABLE / EXPECTED_CONTEXT_TABLE's
+	# deepEqual checks in suppressVendorLifecycleWarnings_test.js, which live
+	# in the same file an operator widening a row is already editing. This
+	# puts a second guard here, where moving it requires a comment in the same
+	# commit.
 	#
-	# Frozen at the names those rows excuse today (Phase R1 final fix wave,
-	# hq#12641; rmwc's 1x LinearProgress removed in Phase R2, hq#12642;
-	# react-document-title's 1x SideEffect(DocumentTitle) also removed in
-	# Phase R2, hq#12642): 3x react-router componentWillMount (MemoryRouter,
-	# Route, Router), 2x react-router componentWillReceiveProps (Route,
-	# Router) = 5. Removing a row lowers this in the same commit, exactly
-	# as the row cap does.
+	# Frozen at the names ALL rows -- family A and family B alike -- excuse
+	# today (Phase R1 final fix wave, hq#12641; rmwc's 1x LinearProgress
+	# removed in Phase R2, hq#12642; react-document-title's 1x
+	# SideEffect(DocumentTitle) also removed in Phase R2, hq#12642): 3x
+	# react-router componentWillMount (MemoryRouter, Route, Router), 2x
+	# react-router componentWillReceiveProps (Route, Router) = 5.
+	# le 5 -> le 8 (Phase R3 Task 4, hq#12643): family B added 2x
+	# childContextTypes (Router, Route) + 1x contextTypes (Link) = 3 more
+	# names, none of which overlap the family A count above (that counter
+	# only scans `lifecycle:`-keyed rows). 5 + 3 = 8. Removing a row from
+	# EITHER table lowers this in the same commit, exactly as the row caps
+	# do.
 	#
 	# awk, not `grep -oE '"[^"]+"' | wc -l` over the `components: [` line:
 	# prettier keeps a short array on one line but wraps a long one to one item
@@ -213,8 +230,10 @@ else
 	# count DEFLATES, and an `le` check passes -- failing OPEN in precisely the
 	# case it exists for. CI does not run `yarn fmt:check`, so nothing else
 	# would catch it. This spans from `components: [` to the closing `]` and
-	# counts quoted strings across every line in between, so it returns 5 under
-	# either formatting. Verified by reformatting the table both ways.
+	# counts quoted strings across every line in between -- across BOTH
+	# tables' `components:` arrays, since the pattern is not scoped to one
+	# table -- so it returns 8 under either formatting. Verified by
+	# reformatting the tables both ways.
 	VENDORNAMES=$(awk '
 		/^[ \t]+components:[ \t]*\[/ { inblock = 1 }
 		inblock {
@@ -231,8 +250,65 @@ else
 	# le 6 -> le 5 (Phase R2, hq#12642): react-document-title's row excused
 	# exactly one name (SideEffect(DocumentTitle)). Same `le` rule: the cap
 	# moves with the row, in the same commit.
-	check "vendor suppressed component names" "${VENDORNAMES:-0}" le 5
+	# le 5 -> le 8 (Phase R3 Task 4, hq#12643): family B's two rows added,
+	# see the comment above this awk block.
+	check "vendor suppressed component names" "${VENDORNAMES:-0}" le 8
 fi
+
+# THE SAFETY PROPERTY (Phase R3 Task 4, Ruling R3-5) that makes suppressing
+# families B (legacy context API) and C (findDOMNode) defensible at all:
+# suppressing a vendor-only warning class is safe only for as long as our OWN
+# code never triggers the same warning. Family A and family B are protected a
+# second way too -- the name-collision guard in
+# suppressVendorLifecycleWarnings_test.js -- but family C's message names NO
+# component (React appends only the component stack, with nothing to check
+# membership against), so THIS is the only thing standing between "vendor-only
+# deprecation" and "silently hiding one of our own regressions" for it. Same
+# shape as the "scss @material undeclared" check below: a suppression is only
+# safe while a machine-checked precondition holds, checked on every run.
+#
+# Scoped away from suppressVendorLifecycleWarnings.js and its test, which
+# reference these names only as STRING DATA -- matcher literals and
+# documentation prose -- not as declarations or call sites of ours. Scanning
+# them would false-positive inside the very file that exists to document and
+# enforce this precondition. Every other file under static/js is fair game.
+#
+# Verified to return 0 on the current tree (Ruling R3-5's own grep, re-run
+# here as a permanent check rather than a one-off).
+#
+# THE BARE SYMBOL, not a call-shaped pattern (review of PR #1590). An earlier
+# version of this matched the literal substring `findDOMNode(`, which three
+# real spellings walk straight past while the console.error wrapper still
+# eats the resulting warning:
+#   ReactDOM.findDOMNode.call(null, el)   -- no "findDOMNode(" anywhere
+#   ReactDOM.findDOMNode (el)             -- prettier would fix it, CI does
+#                                            not run fmt:check (see below)
+#   import { findDOMNode as locateNode }  -- the call site is spelled
+#                                            locateNode(el)
+# Verified: all three in a file under static/js left the old check at PASS.
+# A zero-use invariant does not need to recognise call syntax -- the symbol
+# appearing AT ALL is the thing being ruled out, so scan for the symbol and
+# let it fail closed. The tradeoff is that prose mentioning findDOMNode in
+# some future file would trip this; that is the safe direction for an
+# invariant, and the only files that legitimately name it are excluded.
+OWN_FINDDOMNODE=$(grep -rhoE '\bfindDOMNode\b' static/js --include='*.js' \
+	--exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
+check "own findDOMNode references" "${OWN_FINDDOMNODE:-0}" le 0
+
+# The legacy context API symbols, on the same bare-symbol rule and for the
+# same reason as findDOMNode above. The declaration-shaped predecessor
+# (`childContextTypes` followed by `=` or `:`) missed bracket notation and
+# getters -- `Foo["childContextTypes"] = {}`, `static get contextTypes() {}`
+# -- both verified to leave the old check at PASS.
+#
+# Unlike family C this is the SECOND guard, not the only one: family B's
+# warning carries a component name, so isKnownVendorLegacyContextWarning
+# already refuses to suppress a name outside its table. Tightened anyway --
+# it is the same one-word change, and redundancy that can be evaded is not
+# redundancy.
+OWN_LEGACY_CONTEXT=$(grep -rhoE '\b(childContextTypes|contextTypes|getChildContext)\b' \
+	static/js --include='*.js' --exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
+check "own legacy context API references" "${OWN_LEGACY_CONTEXT:-0}" le 0
 
 # Every @material/* package that SCSS imports must be a DECLARED dependency.
 #
