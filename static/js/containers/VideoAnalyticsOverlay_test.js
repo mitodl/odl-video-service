@@ -10,18 +10,12 @@ import { makeVideoAnalyticsData } from "../factories/videoAnalytics"
 
 import { VideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 import { actions } from "../actions"
-import suppressVictoryKeyWarning from "../testUtils/suppressVictoryKeyWarning"
 
 describe("VideoAnalyticsOverlay", () => {
   let props, sandbox
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
-    // AnalyticsPane (rendered whenever there's data, no error, and it's not
-    // loading) mounts a real Victory chart via AnalyticsChart, whose
-    // VictoryAxis emits a spurious React "unique key prop" warning; see the
-    // helper for why it is filtered here and nowhere else.
-    suppressVictoryKeyWarning(sandbox)
     const video = makeVideo()
     props = {
       video,

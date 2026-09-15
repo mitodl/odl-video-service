@@ -5,7 +5,7 @@
   },
   "settings": {
     "react": {
-      "version": "15.6.1",
+      "version": "16.14.0",
       "flowVersion": "0.59.0" // Flow version
     }
   }
