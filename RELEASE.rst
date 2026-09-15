@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+Version 0.97.0
+--------------
+
+- OVS React 18: Phase R3 — React 18.3.1, createRoot, RTL 16, react-redux 9 (#1590)
+- OVS React 18: Phase R2 — remove four React 18 blockers (no React bump) (#1589)
+- OVS React 18: Phase R1 — React 16.14, Victory 37, react-transition-group 4 (#1587)
+
 Version 0.96.0
 --------------
 
