@@ -1,10 +1,11 @@
 #!/bin/bash
 # Ledger for the Enzyme -> RTL migration (mitodl/hq#12637).
 #
-# Five metrics that erode silently during a large test migration, plus the
-# mutation score. Each threshold is a floor or ceiling recorded at a known-good
-# point, not an aspiration. A build that trips one of these has quietly lost
-# something -- most often assertions, which no other check can see.
+# Metrics that erode silently during a large test migration, plus the suite's
+# own exit status and the mutation score. Each threshold is a floor or ceiling
+# recorded at a known-good point, not an aspiration. A build that trips one of
+# these has quietly lost something -- most often assertions, which no other
+# check can see.
 set -uo pipefail
 
 FAIL=0
@@ -14,6 +15,7 @@ check() { # name actual op expected
 	case $op in
 	ge) [[ $actual -ge $expected ]] && ok=1 || ok=0 ;;
 	le) [[ $actual -le $expected ]] && ok=1 || ok=0 ;;
+	eq) [[ $actual -eq $expected ]] && ok=1 || ok=0 ;;
 	*)
 		echo "bad op $op"
 		exit 2
@@ -29,10 +31,35 @@ check() { # name actual op expected
 
 echo "=== migration ledger ==="
 
-# Mocha's reported count -- NOT grep -c "it(", which undercounts loop-generated
-# tests by 27% and which an agent can satisfy while deleting tests.
-TESTS=$(npm run test 2>&1 | grep -oE '[0-9]+ passing' | grep -oE '^[0-9]+' | tail -1)
+# One suite run, read twice: once for its exit status and once for the count.
+#
+# The count is Mocha's own reported number -- NOT grep -c "it(", which
+# undercounts loop-generated tests by 27% and which an agent can satisfy while
+# deleting tests.
+#
+# The status check exists because this script used to compute TESTS inside a
+# command substitution and DISCARD npm run test's exit status, and `set -e` is
+# deliberately not on (every check must get a chance to report). So a suite
+# with failing tests -- or one js_test.sh failed for un-allowlisted stderr --
+# still printed "ledger OK" and exited 0 as long as the passing count cleared
+# the floor: proved with a deliberately failing test file, all six checks PASS,
+# exit 0. CI was never fooled (it runs `npm run test` as its own step before
+# `npm run ledger`), but every report in this migration cites "ledger OK" as
+# its headline evidence, and that sentence was weaker than it read.
+# Deliberately ONE invocation: the suite is the slowest thing here, and running
+# it twice would also let the two readings disagree.
+TEST_LOG=$(mktemp)
+trap 'rm -f "$TEST_LOG"' EXIT
+npm run test >"$TEST_LOG" 2>&1
+TEST_STATUS=$?
+TESTS=$(grep -oE '[0-9]+ passing' "$TEST_LOG" | grep -oE '^[0-9]+' | tail -1)
 TESTS=${TESTS:-0}
+check "js suite exit status" "$TEST_STATUS" eq 0
+if [[ $TEST_STATUS -ne 0 ]]; then
+	echo "        ---- last 40 lines of the failing suite run ----"
+	tail -40 "$TEST_LOG" | sed 's/^/        /'
+	echo "        ---- end of suite output ----"
+fi
 # 492 -> 505 (final review fix wave: adds the DeleteVideoDialog/
 # DeleteSubtitlesDialog accept-button-wiring tests, hq#12639/hq#12640; current
 # actual is 509 without a build artifact / 510 with one, so this leaves the
@@ -70,7 +97,7 @@ check "passing tests" "$TESTS" ge 505
 # guarantee this check's comment claims. This also catches require() form and
 # scans every .js file under static/js, not just tests. Verified to return
 # zero on the current tree and to NOT match the jsdom-setup provenance
-# comment at static/js/babelhook.js:9 ("adapted from
+# comment at static/js/babelhook.js:22 ("adapted from
 # https://airbnb.io/enzyme/docs/..."), which mentions Enzyme without
 # importing it.
 ENZYME=$(grep -rlE 'from .enzyme.|require\(.enzyme.\)' static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
@@ -100,8 +127,260 @@ check "FlowFixMe occurrences" "$FLOWFIX" le 22
 
 # Frozen. Adding a line here is how React 18 act() warnings get silenced --
 # turning a real signal about un-batched state updates into future flaky tests.
+# le 7 -> le 5 (Phase R1, hq#12641): the PropTypes and createClass lines
+# suppressed React 15.5-era warnings that cannot fire on React 16, since both
+# were removed from the react package and nothing in static/js references
+# either. Leaving the cap at 7 would have left two slots of silent headroom
+# in a check whose whole value is having none.
 ALLOWLIST=$(grep -c 'grep -v' scripts/test/js_test.sh)
-check "js_test.sh allowlist lines" "$ALLOWLIST" le 7
+check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
+
+# The same guarantee for the other suppression surface. Capping js_test.sh at 5
+# and then leaving testUtils/suppressVendorLifecycleWarnings.js uncapped would
+# just relocate the erosion one file over: another entry could be added with
+# no threshold move, no comment discipline and no reviewer signal.
+#
+# Frozen at the deprecated-lifecycle warnings React 16.9 emits for vendored
+# components today (Phase R1, hq#12641; rmwc's row and react-document-title's
+# row both removed in Phase R2, hq#12642 -- see below):
+#   2x react-router 4.3.1            -> no phase yet
+# A third entry is a new suppression and needs the same justification an
+# allowlist line would.
+#
+# le 6 -> le 4 (Task 7 of Phase R1, hq#12641): victory 37 uses none of the
+# deprecated lifecycles, so the two `victory 0.27.2` rows were deleted with the
+# bump. Because this check is `le`, leaving the cap at 6 would have PASSED
+# while silently re-opening two slots of exactly the headroom this check exists
+# to deny -- so the cap moves with the rows, in the same commit, per this
+# file's own rule.
+#
+# Counts data rows only: the pattern requires leading whitespace, the
+# `lifecycle:` key and a quoted value, so no `*`-prefixed docstring line -- and
+# that file's docstring does discuss lifecycles at length -- can inflate it. An
+# indented STARLESS line inside a block comment still could; that direction is
+# fail-safe (a spurious FAIL, which a reader then reads), and there is no such
+# line today. Verified to return 2 on the current tree.
+#
+# The file must exist. `grep` on a missing path prints to stderr and yields an
+# empty VENDORSUPP, which `[[ -le ]]` arithmetic-evaluates as 0 -- so the check
+# would PASS at the moment its subject disappeared, inside the one file whose
+# whole purpose is stopping silent erosion. Defaulting the variable does not
+# help: `${VENDORSUPP:-0}` is still `0 -le 4`. Only an explicit existence test
+# fails, and it has to say what the remover is supposed to do, or the next
+# phase just deletes the check to get green.
+SUPPFILE=static/js/testUtils/suppressVendorLifecycleWarnings.js
+if [[ ! -f $SUPPFILE ]]; then
+	printf "  FAIL  %-34s %s\n" "vendor lifecycle suppressions" \
+		"($SUPPFILE is gone)"
+	echo "        If you deleted the last suppression row, delete THIS CHECK"
+	echo "        (both halves) in the same commit and say so in the message."
+	echo "        Do not repoint it at another file to get green."
+	FAIL=1
+else
+	VENDORSUPP=$(grep -cE '^[[:space:]]+lifecycle: *"' "$SUPPFILE" 2>/dev/null)
+	# le 4 -> le 3 (Phase R2, hq#12642): rmwc is deleted entirely, and its
+	# sole row -- the one predicting this removal in its own `removedBy`
+	# field -- goes with it. Because this check is `le`, leaving the cap at
+	# 4 would have PASSED while re-opening the one slot of headroom this
+	# check exists to deny, so the cap moves with the row, in the same
+	# commit, per this file's own rule.
+	# le 3 -> le 2 (Phase R2, hq#12642): react-document-title is replaced by
+	# static/js/components/DocumentTitle.js, and its componentWillMount row
+	# -- the last non-react-router row -- goes with it. Same `le` rule: the
+	# cap moves with the row, in the same commit.
+	check "vendor lifecycle suppressions" "${VENDORSUPP:-0}" le 2
+
+	# The same row-count guarantee for FAMILY B (the legacy context API,
+	# Phase R3 Task 4, Ruling R3-5): react-router 4.3.1's Router/Route
+	# (childContextTypes) and react-router-dom 4.3.1's Link (contextTypes).
+	# Both rows key on `api:` rather than `lifecycle:`, so this is a separate
+	# counter from the one above rather than folded into it -- they are
+	# different tables with different growth pattern (family B rows are never
+	# batched into one reported group the way family A's are). Verified to
+	# return 2 on the current tree.
+	VENDORCTXSUPP=$(grep -cE '^[[:space:]]+api: *"' "$SUPPFILE" 2>/dev/null)
+	check "vendor legacy-context suppressions" "${VENDORCTXSUPP:-0}" le 2
+
+	# Rows are not the only thing that can grow. Under set-membership matching
+	# (Ruling 10), WIDENING an existing row -- adding a name to its
+	# `components` array -- excuses strictly more without adding a row, so the
+	# cap above does not move and no threshold discipline is triggered. Today
+	# the only guard against that is EXPECTED_TABLE / EXPECTED_CONTEXT_TABLE's
+	# deepEqual checks in suppressVendorLifecycleWarnings_test.js, which live
+	# in the same file an operator widening a row is already editing. This
+	# puts a second guard here, where moving it requires a comment in the same
+	# commit.
+	#
+	# Frozen at the names ALL rows -- family A and family B alike -- excuse
+	# today (Phase R1 final fix wave, hq#12641; rmwc's 1x LinearProgress
+	# removed in Phase R2, hq#12642; react-document-title's 1x
+	# SideEffect(DocumentTitle) also removed in Phase R2, hq#12642): 3x
+	# react-router componentWillMount (MemoryRouter, Route, Router), 2x
+	# react-router componentWillReceiveProps (Route, Router) = 5.
+	# le 5 -> le 8 (Phase R3 Task 4, hq#12643): family B added 2x
+	# childContextTypes (Router, Route) + 1x contextTypes (Link) = 3 more
+	# names, none of which overlap the family A count above (that counter
+	# only scans `lifecycle:`-keyed rows). 5 + 3 = 8. Removing a row from
+	# EITHER table lowers this in the same commit, exactly as the row caps
+	# do.
+	#
+	# awk, not `grep -oE '"[^"]+"' | wc -l` over the `components: [` line:
+	# prettier keeps a short array on one line but wraps a long one to one item
+	# per line, at which point the opening line holds ZERO quoted names, the
+	# count DEFLATES, and an `le` check passes -- failing OPEN in precisely the
+	# case it exists for. CI does not run `yarn fmt:check`, so nothing else
+	# would catch it. This spans from `components: [` to the closing `]` and
+	# counts quoted strings across every line in between -- across BOTH
+	# tables' `components:` arrays, since the pattern is not scoped to one
+	# table -- so it returns 8 under either formatting. Verified by
+	# reformatting the tables both ways.
+	VENDORNAMES=$(awk '
+		/^[ \t]+components:[ \t]*\[/ { inblock = 1 }
+		inblock {
+			line = $0
+			names += gsub(/"[^"]*"/, "", line)
+			if (index($0, "]") > 0) { inblock = 0 }
+		}
+		END { print names + 0 }
+	' "$SUPPFILE")
+	# le 7 -> le 6 (Phase R2, hq#12642): rmwc's row excused exactly one name
+	# (LinearProgress). Removing the row without lowering this cap would
+	# have PASSED anyway under `le`, silently re-opening that one slot, so
+	# the cap moves with the row, in the same commit.
+	# le 6 -> le 5 (Phase R2, hq#12642): react-document-title's row excused
+	# exactly one name (SideEffect(DocumentTitle)). Same `le` rule: the cap
+	# moves with the row, in the same commit.
+	# le 5 -> le 8 (Phase R3 Task 4, hq#12643): family B's two rows added,
+	# see the comment above this awk block.
+	check "vendor suppressed component names" "${VENDORNAMES:-0}" le 8
+fi
+
+# THE SAFETY PROPERTY (Phase R3 Task 4, Ruling R3-5) that makes suppressing
+# families B (legacy context API) and C (findDOMNode) defensible at all:
+# suppressing a vendor-only warning class is safe only for as long as our OWN
+# code never triggers the same warning. Family A and family B are protected a
+# second way too -- the name-collision guard in
+# suppressVendorLifecycleWarnings_test.js -- but family C's message names NO
+# component (React appends only the component stack, with nothing to check
+# membership against), so THIS is the only thing standing between "vendor-only
+# deprecation" and "silently hiding one of our own regressions" for it. Same
+# shape as the "scss @material undeclared" check below: a suppression is only
+# safe while a machine-checked precondition holds, checked on every run.
+#
+# Scoped away from suppressVendorLifecycleWarnings.js and its test, which
+# reference these names only as STRING DATA -- matcher literals and
+# documentation prose -- not as declarations or call sites of ours. Scanning
+# them would false-positive inside the very file that exists to document and
+# enforce this precondition. Every other file under static/js is fair game.
+#
+# Verified to return 0 on the current tree (Ruling R3-5's own grep, re-run
+# here as a permanent check rather than a one-off).
+#
+# THE BARE SYMBOL, not a call-shaped pattern (review of PR #1590). An earlier
+# version of this matched the literal substring `findDOMNode(`, which three
+# real spellings walk straight past while the console.error wrapper still
+# eats the resulting warning:
+#   ReactDOM.findDOMNode.call(null, el)   -- no "findDOMNode(" anywhere
+#   ReactDOM.findDOMNode (el)             -- prettier would fix it, CI does
+#                                            not run fmt:check (see below)
+#   import { findDOMNode as locateNode }  -- the call site is spelled
+#                                            locateNode(el)
+# Verified: all three in a file under static/js left the old check at PASS.
+# A zero-use invariant does not need to recognise call syntax -- the symbol
+# appearing AT ALL is the thing being ruled out, so scan for the symbol and
+# let it fail closed. The tradeoff is that prose mentioning findDOMNode in
+# some future file would trip this; that is the safe direction for an
+# invariant, and the only files that legitimately name it are excluded.
+OWN_FINDDOMNODE=$(grep -rhoE '\bfindDOMNode\b' static/js --include='*.js' \
+	--exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
+check "own findDOMNode references" "${OWN_FINDDOMNODE:-0}" le 0
+
+# The legacy context API symbols, on the same bare-symbol rule and for the
+# same reason as findDOMNode above. The declaration-shaped predecessor
+# (`childContextTypes` followed by `=` or `:`) missed bracket notation and
+# getters -- `Foo["childContextTypes"] = {}`, `static get contextTypes() {}`
+# -- both verified to leave the old check at PASS.
+#
+# Unlike family C this is the SECOND guard, not the only one: family B's
+# warning carries a component name, so isKnownVendorLegacyContextWarning
+# already refuses to suppress a name outside its table. Tightened anyway --
+# it is the same one-word change, and redundancy that can be evaded is not
+# redundancy.
+OWN_LEGACY_CONTEXT=$(grep -rhoE '\b(childContextTypes|contextTypes|getChildContext)\b' \
+	static/js --include='*.js' --exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
+check "own legacy context API references" "${OWN_LEGACY_CONTEXT:-0}" le 0
+
+# Every @material/* package that SCSS imports must be a DECLARED dependency.
+#
+# Added in Phase R2 (hq#12642) after this bit twice in one PR. `@material/*`
+# packages were reaching node_modules only TRANSITIVELY, via
+# rmwc -> material-components-web. Deleting rmwc removed them, while
+# static/scss/ kept importing them:
+#   - @material/linear-progress was caught during the task, by luck;
+#   - @material/tabs was NOT, and turned the branch red in CI.
+#
+# Local builds cannot be trusted to catch this. sass-loader resolves the `~`
+# prefix through node module lookup, which WALKS UP the directory tree -- so a
+# checkout nested inside another checkout (a worktree under .claude/worktrees/,
+# say) silently resolves the import from the PARENT repo's node_modules and
+# compiles clean, while CI, which has no parent, fails. That is the same
+# resolution-escape class as babelhook.js's ignore regexp, one layer over.
+#
+# So this checks DECLARATION in package.json, not presence in node_modules:
+# presence is exactly the thing that lies.
+#
+# Two ways an earlier version of this guard could pass while asserting
+# nothing, both fixed here after review on the PR that added it:
+#
+# 1. It matched `~@material/*` only. The `~` prefix is sass-loader's, not
+#    Sass's, and sass-loader 16 (what we run) deprecates it -- so dropping it
+#    from these imports is ordinary cleanup, after which the tilde-only grep
+#    finds nothing, the loop iterates zero times, and `le 0` passes on an
+#    empty set. `~?` reads the imports rather than the syntax they happen to
+#    use today, and the emptiness check below refuses to pass on nothing
+#    regardless of why the list came back empty.
+#
+# 2. It grepped the package NAME anywhere in package.json, so a `resolutions`
+#    entry, or a name inside a `scripts` string, counted as declared. Worse,
+#    so did devDependencies: Dockerfile sets NODE_ENV=production BEFORE
+#    `yarn install`, and yarn 1 skips devDependencies under that, while CI
+#    installs with NODE_ENV unset and therefore has them. A devDependencies-
+#    only @material package would pass this check AND pass CI's prod webpack
+#    build, then break the production image -- exactly the case this guard
+#    exists for. So the maps are parsed and `dependencies` keys tested
+#    exactly, rather than grepped.
+SCSS_MATERIAL_UNDECLARED=0
+if [[ -d static/scss ]]; then
+	SCSS_MATERIAL_IMPORTS=$(grep -rhoE '~?@material/[a-z-]+' static/scss/ 2>/dev/null | sed 's|^~||' | sort -u)
+	# Fail OPEN is the whole failure mode above, so an empty list is a FAIL,
+	# not a vacuous pass. static/scss existing while importing no @material/*
+	# at all means the MDC styles are gone, which is a real migration event
+	# and should be noticed here rather than silently disarming the check.
+	if [[ -z $SCSS_MATERIAL_IMPORTS ]]; then
+		printf "  FAIL  %-34s %s\n" "scss @material imports" "(none found -- guard disarmed, not satisfied)"
+		FAIL=1
+	fi
+	SCSS_MATERIAL_UNDECLARED=$(printf '%s\n' "$SCSS_MATERIAL_IMPORTS" | node -e '
+		let input = ""
+		process.stdin.on("data", chunk => (input += chunk)).on("end", () => {
+			const declared = require("./package.json").dependencies || {}
+			const imported = input.split("\n").map(line => line.trim()).filter(Boolean)
+			const undeclared = imported.filter(
+				name => !Object.prototype.hasOwnProperty.call(declared, name)
+			)
+			// Named, not just counted: a bare number sends the reader back to
+			// diffing two sorted lists by hand.
+			for (const name of undeclared) {
+				process.stderr.write(`        undeclared in dependencies: ${name}\n`)
+			}
+			console.log(undeclared.length)
+		})
+	')
+else
+	printf "  FAIL  %-34s %s\n" "scss @material declared" "(static/scss is gone -- delete this check with it)"
+	FAIL=1
+fi
+check "scss @material undeclared" "${SCSS_MATERIAL_UNDECLARED:-1}" le 0
 
 # Mutation score, when a baseline has been recorded and a report exists.
 # The full run takes 30-90 minutes, so this is a per-phase or nightly check --

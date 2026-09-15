@@ -1,6 +1,13 @@
 // Define globals we would usually get from Django
 import { cleanup } from "@testing-library/react"
 import { makeVideo } from "./factories/video"
+import suppressVendorLifecycleWarnings from "./testUtils/suppressVendorLifecycleWarnings"
+
+// Installed once for the whole process, not per test file: React dedupes each
+// deprecated-lifecycle warning once per component class, so only the first
+// file to mount a given vendored component can see it. See the helper for the
+// list of dependencies this covers and what removes each one.
+suppressVendorLifecycleWarnings()
 
 const _createSettings = () => ({
   videoKey:              "a_video_key",

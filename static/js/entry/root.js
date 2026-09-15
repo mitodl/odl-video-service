@@ -1,14 +1,12 @@
 // @flow
 /* global SETTINGS:false */
 __webpack_public_path__ = SETTINGS.public_path // eslint-disable-line no-undef, camelcase
-import "react-hot-loader/patch"
 import React from "react"
-import ReactDOM from "react-dom"
-import { AppContainer } from "react-hot-loader"
+import { createRoot } from "react-dom/client"
 import { createBrowserHistory } from "history"
 
 import configureStore from "../store/configureStore"
-import Router, { routes } from "../Router"
+import AppRouter, { routes } from "../Router"
 
 import * as Sentry from "@sentry/browser"
 
@@ -33,22 +31,25 @@ if (!rootEl) {
 }
 
 const history = createBrowserHistory()
+
+// Created once, outside renderApp: createRoot must be called at most once per
+// container. renderApp runs again on every hot reload, so creating the root
+// inside it would throw on the second call and break HMR.
+const root = createRoot(rootEl)
+
 const renderApp = Component => {
-  ReactDOM.render(
-    <AppContainer>
-      <Component store={store} history={history}>
-        {routes}
-      </Component>
-    </AppContainer>,
-    rootEl
+  root.render(
+    <Component store={store} history={history}>
+      {routes}
+    </Component>
   )
 }
 
-renderApp(Router)
+renderApp(AppRouter)
 
 if (module.hot) {
   module.hot.accept("../Router", () => {
-    const RouterNext = require("../Router").default
-    renderApp(RouterNext)
+    const AppRouterNext = require("../Router").default
+    renderApp(AppRouterNext)
   })
 }

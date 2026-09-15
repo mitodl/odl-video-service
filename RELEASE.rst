@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+Version 0.96.0
+--------------
+
+- Rich text for video and collection descriptions (#1585)
+- Update dependency @sentry/browser to v10.73.0 (#1570)
+- Update dependency postcss to v8.5.28 (#1568)
+- Update dependency jsdom to v27.4.0 (#1561)
+- Update Node.js to v24.20.0 (#1547)
+- [pre-commit.ci] pre-commit autoupdate (#1573)
+
 Version 0.95.1
 --------------
 

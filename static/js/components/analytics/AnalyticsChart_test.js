@@ -12,31 +12,14 @@ describe("AnalyticsChartTests", () => {
 
   beforeEach(() => {
     sandbox = sinon.createSandbox()
-    // AnalyticsChart mounts a real Victory (0.27.2) chart. VictoryAxis's own
-    // tick-rendering code omits a `key` prop on an array of children, which
-    // React reports via console.error on every mount. Enzyme's shallow
-    // rendering never mounted this child, so the defect -- which lives
-    // entirely inside Victory, not in AnalyticsChart's usage of it or in
-    // anything asserted below -- was never exercised before. The rendered
-    // SVG is unaffected; only this one known, harmless message is
-    // filtered so it doesn't fail the test run's console-output check. Any
-    // other console.error still comes through and fails the test.
-    const originalConsoleError = console.error.bind(console)
-    sandbox.stub(console, "error").callsFake((...args) => {
-      const [message] = args
-      if (
-        typeof message === "string" &&
-        message.includes(
-          'Each child in an array or iterator should have a unique "key" prop'
-        ) &&
-        message.includes("VictoryAxis")
-      ) {
-        return
-      }
-      originalConsoleError(...args)
-    })
     analyticsData = makeVideoAnalyticsData(10)
-    padding = 2
+    // Must be the {top, bottom, left, right} object AnalyticsPane passes as
+    // CHART_PADDING. A bare number is a valid Victory `padding`, but
+    // AnalyticsChart also reads padding.left/right/top/bottom directly --
+    // for the clip-path rect's width/height and the dependent axis's
+    // offsetX -- so a number made all four NaN. React 15 rendered NaN
+    // attributes silently; React 16 reports each one.
+    padding = { top: 10, bottom: 60, left: 75, right: 20 }
     getColorForChannelStub = sandbox.stub()
     props = {
       analyticsData,
@@ -105,11 +88,14 @@ describe("AnalyticsChartTests", () => {
 
   describe("AnalyticsChart", () => {
     // AnalyticsChart measures its container via a 200ms setTimeout in
-    // componentDidMount before it renders the Victory chart. Waiting for
-    // that svg to appear makes sure the timer has already fired before
-    // RTL's automatic cleanup() unmounts the tree -- otherwise the pending
-    // setTimeout fires after unmount and calls setState on an unmounted
-    // component, which leaks a console error into a later test's run.
+    // componentDidMount before it renders the Victory chart, so the svg
+    // is not in the DOM synchronously after render. Waiting for it is how
+    // these tests observe a drawn chart.
+    //
+    // This previously also guarded against the timer firing after RTL's
+    // cleanup() and calling setState on an unmounted component. R1 fixed
+    // that at the cause -- componentWillUnmount now clears the timer --
+    // so this helper is only about waiting for render.
     const waitForChart = container =>
       waitFor(() => {
         const svg = container.querySelector("svg")
@@ -159,6 +145,49 @@ describe("AnalyticsChartTests", () => {
         assert.isFalse(tearDownStub.called)
         unmount()
         assert.isTrue(tearDownStub.called)
+      })
+
+      it("clears the pending dimensions timer", () => {
+        const updateDimensionsStub = sandbox.stub(
+          AnalyticsChart.prototype,
+          "_updateDimensions"
+        )
+        const clock = sandbox.useFakeTimers()
+
+        const { unmount } = render(<AnalyticsChart {...props} />)
+        unmount()
+        clock.tick(200)
+
+        // Without clearTimeout this fires after unmount and calls
+        // setState on a dead component.
+        assert.isFalse(updateDimensionsStub.called)
+      })
+
+      it("cancels pending throttled resize work", () => {
+        // _resizeHandler is _.throttle'd, so removeEventListener alone
+        // leaves a queued trailing invocation that still calls setState
+        // after unmount. Driven through a real instance because RTL gives
+        // no access to it and the throttle queue is instance state --
+        // the same reason the `domain` tests above instantiate directly.
+        const updateDimensionsStub = sandbox.stub(
+          AnalyticsChart.prototype,
+          "_updateDimensions"
+        )
+        const clock = sandbox.useFakeTimers()
+
+        const instance = new AnalyticsChart(props)
+        instance._setupResizeHandler()
+
+        // Two calls inside the 100ms window: the first invokes on the
+        // leading edge, the second queues a trailing invocation.
+        instance._resizeHandler()
+        instance._resizeHandler()
+        assert.equal(updateDimensionsStub.callCount, 1)
+
+        instance.componentWillUnmount()
+        clock.tick(100)
+
+        assert.equal(updateDimensionsStub.callCount, 1)
       })
     })
 

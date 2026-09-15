@@ -3,13 +3,13 @@ import React from "react"
 import sinon from "sinon"
 import moment from "moment"
 import { assert } from "chai"
-import { render, fireEvent } from "@testing-library/react"
+import { render, fireEvent, waitFor } from "@testing-library/react"
 import configureTestStore from "redux-asserts"
 
 import VideoDetailPage from "./VideoDetailPage"
 import { VideoDetailPage as UnwrappedVideoDetailPage } from "./VideoDetailPage"
-import ConnectedVideoPlayerDefault from "../components/VideoPlayer"
-import { ConnectedVideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
+import { VideoPlayer } from "../components/VideoPlayer"
+import { VideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 
 import * as api from "../lib/api"
 import { actions } from "../actions"
@@ -149,19 +149,26 @@ describe("VideoDetailPage", () => {
     // owns that coverage).
     video.multiangle = false
 
-    // Spying on the *connected* default export's prototype.render, not the
-    // pre-connect class (which isn't exported) -- confirmed empirically
-    // (spike A, see task report) that react-redux v5's Connect wrapper is a
-    // real ES6 class here, and `this.props` on that instance is exactly the
+    // Spying on the pre-connect class (now a named export), not the
+    // connected default export -- react-redux 8's connect() returns a
+    // function component with no .prototype.render to spy on. VideoPlayer
+    // is wrapped with connect() (no mapStateToProps), so ownProps pass
+    // through unchanged, and `this.props` on this instance is exactly the
     // ownProps VideoDetailPage passed to <VideoPlayer>, i.e. video,
     // cornerFunc, selectedCorner, overlayChildren, videoPlayerRef, id.
-    const spy = sandbox.spy(ConnectedVideoPlayerDefault.prototype, "render")
+    const spy = sandbox.spy(VideoPlayer.prototype, "render")
     const { container } = await renderPage()
 
     assert.equal(spy.lastCall.thisValue.props.video, video)
 
     store.dispatch(actions.videoUi.updateVideoJsSync("someCorner"))
-    assert.equal(spy.lastCall.thisValue.props.selectedCorner, "someCorner")
+    // React 18 defers this dispatch's re-render instead of flushing it
+    // synchronously, so VideoPlayer.prototype.render (and thus spy.lastCall)
+    // does not reflect the new prop until the next microtask; wait for it
+    // rather than reading spy.lastCall immediately.
+    await waitFor(() =>
+      assert.equal(spy.lastCall.thisValue.props.selectedCorner, "someCorner")
+    )
 
     // overlayChildren: rather than stubbing renderOverlayChildren (no seam
     // to reach it on a HOC-connected instance), assert the wiring end to end
@@ -169,7 +176,11 @@ describe("VideoDetailPage", () => {
     // -> renderOverlayChildren -> renderAnalyticsOverlay actually produces.
     assert.isNull(container.querySelector(".analytics-overlay-container"))
     store.dispatch(actions.videoUi.toggleAnalyticsOverlay())
-    assert.isNotNull(container.querySelector(".analytics-overlay-container"))
+    // Same deferred-render reasoning as above, applied to the DOM instead of
+    // the spy.
+    await waitFor(() =>
+      assert.isNotNull(container.querySelector(".analytics-overlay-container"))
+    )
   })
 
   it("shows the video title, description and upload date, and link to collection", async () => {
@@ -339,13 +350,41 @@ describe("VideoDetailPage", () => {
       // state object in place. Works only because nothing in this chain
       // freezes state.
       store.getState().videoUi.videoSubtitleForm.video = video.key
+      // renderPage's mount also mounts the (real, connected) Drawer, whose
+      // componentDidMount dispatches actions.collectionsList.get() against
+      // the getCollections stub from the outer beforeEach --
+      // RECEIVE_GET_COLLECTIONS_LIST_SUCCESS lands some microtasks later.
+      // Under React 16 timing that landed before this point; under React
+      // 18's deferred/batched scheduling it can still be in flight here, and
+      // land inside the listenForActions window below instead -- which
+      // matches on an exact action set and fails on any extra action.
+      // Draining it here keeps the window scoped to only the actions the
+      // upload itself causes.
+      await waitFor(() =>
+        assert.isTrue(store.getState().collectionsList.loaded)
+      )
       await listenForActions(
         [
           actions.videoSubtitles.post.requestType,
           actions.videoSubtitles.post.successType,
           actions.videos.get.requestType,
           actions.videos.get.successType,
-          actions.collections.get.failureType,
+          // NOT actions.collections.get.failureType, unlike a nearby revision
+          // of this file might suggest: VideoDetailPage's componentDidMount
+          // already fires one (unstubbed api.getCollection rejects), and its
+          // collectionNeedsUpdate never resolves true, so componentDidUpdate
+          // retries it on every one of VideoDetailPage's own re-renders.
+          // Under React 16, the post/videos.get/toast dispatches below each
+          // produced a separate commit, so a retry reliably landed inside this
+          // window too. Under React 18's automatic batching, VideoDetailPage's
+          // own commits from this chain now coalesce (confirmed by
+          // instrumenting redux-asserts' resolver directly: with this entry
+          // included, the run hangs forever one action short, at exactly one
+          // fewer RECEIVE_GET_COLLECTIONS_FAILURE than expected -- not an
+          // "unexpected action" reject, a real missing one). The one failure
+          // from componentDidMount is still real and still fires; it is just
+          // consumed as baseline before this window opens, same mechanism as
+          // the collectionsList drain above.
           toastActions.constants.ADD_MESSAGE,
           videoUiActions.constants.SET_UPLOAD_SUBTITLE
         ],
@@ -449,10 +488,16 @@ describe("VideoDetailPage", () => {
     beforeEach(async () => {
       // Same technique as "renders the video player" above, applied to the
       // other connected child this container builds props for by hand.
-      // Confirmed empirically (spike A) that this fires and that
-      // `this.props` on the Connect instance is exactly the ownProps
-      // VideoDetailPage passed to <ConnectedVideoAnalyticsOverlay>.
-      spy = sandbox.spy(ConnectedVideoAnalyticsOverlay.prototype, "render")
+      // <ConnectedVideoAnalyticsOverlay> is
+      // connect(mapStateToProps)(withVideoAnalytics(VideoAnalyticsOverlay));
+      // react-redux 8's connect() no longer produces a class with
+      // .prototype.render, so this spies the innermost class instead.
+      // withVideoAnalytics only strips `needsUpdate` and `dispatch` before
+      // forwarding props, and mapStateToProps doesn't return `currentTime`
+      // or `duration`, so those ownProps VideoDetailPage passed to
+      // <ConnectedVideoAnalyticsOverlay> reach this instance's `this.props`
+      // unchanged.
+      spy = sandbox.spy(VideoAnalyticsOverlay.prototype, "render")
       await renderPage()
       store.dispatch(actions.videoUi.toggleAnalyticsOverlay())
       store.dispatch(actions.videoUi.setVideoTime(42))
@@ -500,7 +545,12 @@ describe("VideoDetailPage", () => {
         message: { key: "x", content: "Hello", icon: "check" }
       })
     )
-    assert.isNotNull(container.querySelector(".toast-overlay"))
-    assert.isNotNull(container.querySelector(".toast-message"))
+    // React 18 defers this dispatch's re-render, so the toast DOM does not
+    // exist yet on the next synchronous line; wait for it instead of
+    // asserting immediately.
+    await waitFor(() => {
+      assert.isNotNull(container.querySelector(".toast-overlay"))
+      assert.isNotNull(container.querySelector(".toast-message"))
+    })
   })
 })
