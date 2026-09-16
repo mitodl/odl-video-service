@@ -83,12 +83,4 @@ repos:
         language: python
         files: 'serializers\.py$'
         additional_dependencies:
-          # Pinned deliberately. Every other hook here is pinned by `rev`;
-          # this one is a local hook, so its linter arrives through
-          # additional_dependencies and was unpinned -- meaning pre-commit
-          # resolved the newest release whenever it rebuilt the hook env.
-          # 2026.8.28 added cross-file rules (ORM004/005/006) and so turned
-          # every build red on unchanged code, with nothing in the repo
-          # having changed to explain it. Bump this pin on purpose and take
-          # the new findings with it.
-          - mitol-drf-lint==2026.8.28
+          - mitol-drf-lint
