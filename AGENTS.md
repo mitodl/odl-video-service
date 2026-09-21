@@ -181,6 +181,14 @@ The `web` service runs `uwsgi`, the `watch` service runs webpack in dev mode wit
 - `nplusone` middleware is enabled in `DEBUG=True` mode (dev/local only)
 - `drf-lint` pre-commit hook catches ORM queries inside DRF serializer methods
 - `drf_lint_baseline.json` tracks known baseline violations — update it when adding intentional query access in serializers
+- Baseline entries are **line-keyed** (`path:line:col:CODE`), so any edit that shifts lines in `ui/serializers.py` makes them stale and reds the hook on code you did not change. Regenerate with:
+
+  ```bash
+  drf-lint --baseline drf_lint_baseline.json --generate-baseline ui/serializers.py
+  ```
+
+  Always read the resulting diff before committing — `--generate-baseline` records *every* current violation, so it will silently baseline a real N+1 you just introduced.
+- `mitol-drf-lint` is unpinned in `.pre-commit-config.yaml` (no version under `additional_dependencies`), so pre-commit picks up the newest release whenever it rebuilds the hook environment. A release that adds rules can therefore red the build on unchanged code — inspect the findings, then fix or baseline them.
 
 ---
 
