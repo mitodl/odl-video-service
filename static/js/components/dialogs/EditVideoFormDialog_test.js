@@ -209,14 +209,24 @@ describe("EditVideoFormDialog", () => {
   describe("description", () => {
     const editor = () =>
       document.querySelector("#video-description .ProseMirror")
+    const toolbar = () =>
+      screen.queryByRole("toolbar", { name: "Text formatting" })
 
     // The rich-text editor only appears for a description that is already
     // rich text; a plain-text one gets a textarea until an author upgrades it.
     // The editor engine is a split chunk, so it arrives after mount.
+    //
+    // Wait for the toolbar, not just the editable region: TipTap inserts
+    // `.ProseMirror` synchronously inside createEditor, while the toolbar only
+    // renders on the setState that follows it. Gating on the editor alone
+    // returns in the gap where the field exists and its controls do not.
     const renderWithEditor = async (props = {}) => {
       video.description_format = "html"
       const result = renderComponent(props)
-      await waitFor(() => assert.isNotNull(editor()))
+      await waitFor(() => {
+        assert.isNotNull(editor())
+        assert.isNotNull(toolbar())
+      })
       return result
     }
 

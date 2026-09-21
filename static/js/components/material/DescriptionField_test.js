@@ -167,9 +167,10 @@ describe("DescriptionField", () => {
         value:             "<p>x</p>",
         descriptionFormat: DESCRIPTION_FORMAT_HTML
       })
-      await waitFor(() =>
+      await waitFor(() => {
         assert.isNotNull(container.querySelector(".ProseMirror"))
-      )
+        assert.isNotNull(container.querySelector(".rte-toolbar"))
+      })
       fireEvent.click(
         container.querySelector('button[aria-label="Bulleted list"]')
       )

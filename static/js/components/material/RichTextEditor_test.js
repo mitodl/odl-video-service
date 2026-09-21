@@ -30,12 +30,23 @@ describe("RichTextEditor", () => {
       />
     )
 
-  // The editor engine is a split chunk, so it arrives a microtask after mount.
+  /*
+   * The editor engine is a split chunk, so it arrives a microtask after mount.
+   *
+   * Wait for the toolbar as well as the editable region. TipTap inserts
+   * `.ProseMirror` synchronously inside createEditor, but the toolbar only
+   * renders on the setState that follows it, so waiting on `.ProseMirror`
+   * alone returns in the gap where the editor exists and its controls do not.
+   */
   const waitForEditor = async (container: HTMLElement) =>
     waitFor(() => {
       assert.isOk(
         container.querySelector(".ProseMirror"),
         "editor never mounted"
+      )
+      assert.isOk(
+        container.querySelector(".rte-toolbar"),
+        "toolbar never rendered"
       )
     })
 
