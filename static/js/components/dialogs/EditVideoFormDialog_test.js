@@ -19,6 +19,7 @@ import * as api from "../../lib/api"
 import { makeVideo } from "../../factories/video"
 import { makeCollection } from "../../factories/collection"
 import renderWithProviders from "../../testUtils/renderWithProviders"
+import waitForRichTextEditor from "../../testUtils/waitForRichTextEditor"
 import {
   PERM_CHOICE_LISTS,
   PERM_CHOICE_LOGGED_IN,
@@ -216,7 +217,7 @@ describe("EditVideoFormDialog", () => {
     const renderWithEditor = async (props = {}) => {
       video.description_format = "html"
       const result = renderComponent(props)
-      await waitFor(() => assert.isNotNull(editor()))
+      await waitForRichTextEditor("video-description")
       return result
     }
 
@@ -254,7 +255,7 @@ describe("EditVideoFormDialog", () => {
         description:        "line one\nline two",
         description_format: "html"
       })
-      await waitFor(() => assert.isNotNull(editor()))
+      await waitForRichTextEditor("video-description")
       assert.include(editor().innerHTML, "line one")
       assert.isNull(document.querySelector("textarea"))
     })
