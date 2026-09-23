@@ -159,10 +159,7 @@ export const runCommand = (editor: Object, name: string): boolean => {
     chain.toggleOrderedList().run()
     return true
   case "unlink":
-    chain
-      .extendMarkRange("link")
-      .unsetLink()
-      .run()
+    chain.extendMarkRange("link").unsetLink().run()
     return true
   default:
     return false
@@ -178,11 +175,6 @@ export const applyLink = (editor: Object, raw: string): boolean => {
   if (!href) {
     return false
   }
-  editor
-    .chain()
-    .focus()
-    .extendMarkRange("link")
-    .setLink({ href })
-    .run()
+  editor.chain().focus().extendMarkRange("link").setLink({ href }).run()
   return true
 }

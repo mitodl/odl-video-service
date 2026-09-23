@@ -461,7 +461,6 @@ export const mapStateToProps = (state: any) => {
   }
 }
 
-const ConnectedCollectionFormDialog = connect(mapStateToProps)(
-  CollectionFormDialog
-)
+const ConnectedCollectionFormDialog =
+  connect(mapStateToProps)(CollectionFormDialog)
 export default ConnectedCollectionFormDialog
