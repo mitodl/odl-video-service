@@ -5,6 +5,7 @@ import { render, fireEvent, waitFor } from "@testing-library/react"
 import { assert } from "chai"
 
 import RichTextEditor from "./RichTextEditor"
+import waitForRichTextEditor from "../../testUtils/waitForRichTextEditor"
 
 /*
  * RTL rather than Enzyme, deliberately: the migration ledger
@@ -29,26 +30,6 @@ describe("RichTextEditor", () => {
         {...props}
       />
     )
-
-  /*
-   * The editor engine is a split chunk, so it arrives a microtask after mount.
-   *
-   * Wait for the toolbar as well as the editable region. TipTap inserts
-   * `.ProseMirror` synchronously inside createEditor, but the toolbar only
-   * renders on the setState that follows it, so waiting on `.ProseMirror`
-   * alone returns in the gap where the editor exists and its controls do not.
-   */
-  const waitForEditor = async (container: HTMLElement) =>
-    waitFor(() => {
-      assert.isOk(
-        container.querySelector(".ProseMirror"),
-        "editor never mounted"
-      )
-      assert.isOk(
-        container.querySelector(".rte-toolbar"),
-        "toolbar never rendered"
-      )
-    })
 
   const toolbarButton = (container: HTMLElement, label: string) => {
     const button = container.querySelector(`button[aria-label="${label}"]`)
@@ -77,7 +58,7 @@ describe("RichTextEditor", () => {
 
   it("names the editable region with the label", async () => {
     const { container } = renderEditor()
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     assert.equal(container.querySelector("label").textContent, "Description")
     /*
      * On `.ProseMirror`, not on the wrapper the component renders. A
@@ -100,11 +81,15 @@ describe("RichTextEditor", () => {
       value: "<p>existing <strong>text</strong></p>"
     })
     assert.include(container.innerHTML, "existing <strong>text</strong>")
+    // No controls until the engine has loaded: there is no editor for them to
+    // act on yet.
+    assert.isNull(container.querySelector(".ProseMirror"))
+    assert.isNull(container.querySelector(".rte-toolbar"))
   })
 
   it("renders the toolbar as a toolbar once loaded", async () => {
     const { container } = renderEditor()
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     const toolbar = container.querySelector(".rte-toolbar")
     assert.equal(toolbar.getAttribute("role"), "toolbar")
     assert.lengthOf(container.querySelectorAll("button.rte-button"), 6)
@@ -112,7 +97,7 @@ describe("RichTextEditor", () => {
 
   it("labels every control and renders it as a Material Icon", async () => {
     const { container } = renderEditor()
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     const labels = [...container.querySelectorAll("button.rte-button")].map(b =>
       b.getAttribute("aria-label")
     )
@@ -132,13 +117,13 @@ describe("RichTextEditor", () => {
 
   it("loads the current value into the editor", async () => {
     const { container } = renderEditor({ value: "<p>hello</p>" })
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     assert.include(editorHtml(container), "hello")
   })
 
   it("reports edits to onChange as HTML", async () => {
     const { container } = renderEditor({ value: "<p>before</p>" })
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     fireEvent.click(toolbarButton(container, "Bulleted list"))
     await waitFor(() => {
       sinon.assert.called(onChange)
@@ -148,7 +133,7 @@ describe("RichTextEditor", () => {
 
   it("applies a bulleted list, not an attributed ordered list", async () => {
     const { container } = renderEditor({ value: "<p>item</p>" })
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     fireEvent.click(toolbarButton(container, "Bulleted list"))
     await waitFor(() => {
       assert.include(editorHtml(container), "<ul")
@@ -158,7 +143,7 @@ describe("RichTextEditor", () => {
 
   it("opens an inline link field rather than a browser prompt", async () => {
     const { container } = renderEditor({ value: "<p>text</p>" })
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     assert.lengthOf(container.querySelectorAll("input.rte-link-input"), 0)
     fireEvent.click(toolbarButton(container, "Add link"))
     assert.lengthOf(container.querySelectorAll("input.rte-link-input"), 1)
@@ -166,7 +151,7 @@ describe("RichTextEditor", () => {
 
   it("accepts a usable link target and closes the field", async () => {
     const { container } = renderEditor({ value: "<p>text</p>" })
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     fireEvent.click(toolbarButton(container, "Add link"))
     fireEvent.change(container.querySelector("input.rte-link-input"), {
       target: { value: "learn.mit.edu/c/x" }
@@ -184,7 +169,7 @@ describe("RichTextEditor", () => {
 
   it("keeps the field open and explains an unusable link", async () => {
     const { container } = renderEditor({ value: "<p>text</p>" })
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     fireEvent.click(toolbarButton(container, "Add link"))
     fireEvent.change(container.querySelector("input.rte-link-input"), {
       target: { value: "javascript:alert(1)" }
@@ -203,7 +188,7 @@ describe("RichTextEditor", () => {
 
   it("pushes an externally changed value into the editor", async () => {
     const { container, rerender } = renderEditor({ value: "<p>first</p>" })
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     rerender(
       <RichTextEditor
         label="Description"
@@ -222,7 +207,7 @@ describe("RichTextEditor", () => {
     // Writing the editor's own output back in would move the author's cursor to
     // the top of the field on every keystroke.
     const { container, rerender } = renderEditor({ value: "<p>first</p>" })
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     const before = editorHtml(container)
     onChange.resetHistory()
     rerender(
@@ -242,7 +227,7 @@ describe("RichTextEditor", () => {
       value:       "",
       placeholder: "Add a description"
     })
-    await waitForEditor(container)
+    await waitForRichTextEditor("test-desc")
     assert.lengthOf(container.querySelectorAll(".rte-placeholder"), 1)
     rerender(
       <RichTextEditor
