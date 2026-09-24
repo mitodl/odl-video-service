@@ -63,13 +63,12 @@ export const showNewCollectionDialog = () => (dispatch: Dispatch) => {
   dispatch(showDialog(DIALOGS.COLLECTION_FORM))
 }
 
-export const showEditCollectionDialog = (collection: Collection) => (
-  dispatch: Dispatch
-) => {
-  dispatch(setIsNew(false))
-  dispatch(initCollectionForm(makeInitializedForm(collection)))
-  dispatch(showDialog(DIALOGS.COLLECTION_FORM))
-}
+export const showEditCollectionDialog =
+  (collection: Collection) => (dispatch: Dispatch) => {
+    dispatch(setIsNew(false))
+    dispatch(initCollectionForm(makeInitializedForm(collection)))
+    dispatch(showDialog(DIALOGS.COLLECTION_FORM))
+  }
 
 export const SET_COLLECTION_FORM_ERRORS = qualifiedName(
   "SET_COLLECTION_FORM_ERRORS"

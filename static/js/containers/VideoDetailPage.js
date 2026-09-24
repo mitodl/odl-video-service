@@ -76,13 +76,8 @@ export class VideoDetailPage extends React.Component<*, void> {
   }
 
   updateRequirements = () => {
-    const {
-      dispatch,
-      videoKey,
-      needsUpdate,
-      video,
-      collectionNeedsUpdate
-    } = this.props
+    const { dispatch, videoKey, needsUpdate, video, collectionNeedsUpdate } =
+      this.props
 
     if (needsUpdate) {
       dispatch(actions.videos.get(videoKey))
@@ -158,7 +153,7 @@ export class VideoDetailPage extends React.Component<*, void> {
       dispatch(
         actions.toast.addMessage({
           message: {
-            key:     "replace-video-started",
+            key: "replace-video-started",
             content:
               "Video replacement has started. You will receive an email when it is ready.",
             icon: "check"
@@ -358,11 +353,8 @@ export class VideoDetailPage extends React.Component<*, void> {
 
   renderAnalyticsOverlay() {
     const { video } = this.props
-    const {
-      analyticsOverlayIsVisible,
-      videoTime,
-      duration
-    } = this.props.videoUi
+    const { analyticsOverlayIsVisible, videoTime, duration } =
+      this.props.videoUi
     if (!analyticsOverlayIsVisible) {
       return null
     }
