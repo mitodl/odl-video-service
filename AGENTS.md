@@ -17,7 +17,7 @@ A video hosting platform for MIT's Office of Digital Learning (ODL). Videos are 
 | Auth | Keycloak OIDC via `social-auth-app-django` |
 | Video delivery | AWS S3 + CloudFront (signed URLs) |
 | Transcoding | AWS MediaConvert (via `mitol-django-transcoding`) |
-| Frontend | React 16, Redux, Flow types, Webpack 5 |
+| Frontend | React 18, Redux, Flow types, Webpack 5 |
 | JS test runner | Mocha + Chai + @testing-library/react |
 | JS package manager | Yarn 1.22.22 |
 | Node version | 24.20.0 |
@@ -170,7 +170,7 @@ The `web` service runs `uwsgi`, the `watch` service runs webpack in dev mode wit
 - In tests: `CELERY_TASK_ALWAYS_EAGER=True` executes tasks synchronously
 
 ### Frontend (React)
-- **React 16** — class components, no hooks; `@testing-library/react` for testing
+- **React 18** (`createRoot`) — class components throughout, no hooks; `@testing-library/react` for testing
 - **Flow types** (not TypeScript) — `.flowconfig` present, `flow-bin` installed
 - Redux + redux-thunk + redux-actions for state management
 - Video.js 8 for video playback with quality selector, HLS, annotations
@@ -231,7 +231,7 @@ The `web` service runs `uwsgi`, the `watch` service runs webpack in dev mode wit
 
 ## Common Gotchas for AI Agents
 
-1. **React 16, not modern React** — No hooks, no functional components with state. Use `React.Component` class syntax.
+1. **React 18, class components only** — The codebase has no hooks or stateful function components; match it with `React.Component`. `setState` outside event handlers is batched, so the DOM updates later, not inside the call — tests must `waitFor` it.
 2. **Flow types, not TypeScript** — Type annotations use Flow syntax (`// @flow`, `: string`, `?string`).
 3. **`uv` for Python** — All Python commands must be prefixed with `uv run` (e.g., `uv run pytest`, `uv run python manage.py`). Do not use `pip install`.
 4. **`yarn` for JS** — Use `yarn add` / `yarn install`, not `npm install`.
