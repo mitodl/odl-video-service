@@ -14,7 +14,7 @@ repos:
       - id: check-toml
       - id: debug-statements
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.13.1-1
+    rev: v3.14.1-1
     hooks:
       - id: shfmt
   - repo: https://github.com/adrienverge/yamllint.git
@@ -46,7 +46,7 @@ repos:
           - --exclude-files
           - "config/keycloak/*"
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.16.6"
+    rev: "v0.16.8"
     hooks:
       # ruff-check runs first: its fixes can leave lines that need reformatting,
       # so ruff-format must have the last word.
@@ -69,7 +69,7 @@ repos:
         name: actionlint
         description: Runs actionlint to lint GitHub Actions workflow files
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.30.0
+    rev: v1.30.1
     hooks:
       - id: zizmor
         args: [--no-progress, --min-severity=medium, --min-confidence=medium]
