@@ -3,7 +3,7 @@ import React from "react"
 
 import { MDCMenu } from "@material/menu/dist/mdc.menu"
 
-import type { MenuItem } from "../../flow/uiTypes"
+import type { MenuItem } from "../../types/uiTypes"
 
 type MenuProps = {
   open: boolean,

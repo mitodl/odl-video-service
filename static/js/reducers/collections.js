@@ -3,7 +3,7 @@ import { GET, PATCH, POST, INITIAL_STATE } from "redux-hammock/constants"
 import * as R from "ramda"
 
 import * as api from "../lib/api"
-import type { Collection, CollectionList } from "../flow/collectionTypes"
+import type { Collection, CollectionList } from "../types/collectionTypes"
 import {
   CLEAR_COLLECTION_ERRORS,
   CLEAR_COLLECTION_DATA

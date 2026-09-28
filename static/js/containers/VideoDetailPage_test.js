@@ -28,7 +28,7 @@ import {
   VIDEO_STATUS_ERROR
 } from "../constants"
 
-import type { Video } from "../flow/videoTypes"
+import type { Video } from "../types/videoTypes"
 
 describe("VideoDetailPage", () => {
   let sandbox,

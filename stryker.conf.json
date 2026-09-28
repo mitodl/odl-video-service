@@ -31,7 +31,7 @@
     "!static/js/**/*_test.js",
     "!static/js/testUtils/**",
     "!static/js/factories/**",
-    "!static/js/flow/**",
+    "!static/js/types/**",
     "!static/js/entry/**",
     "!static/js/global_init.js",
     "!static/js/babelhook.js"

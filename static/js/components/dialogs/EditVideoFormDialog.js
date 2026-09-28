@@ -23,7 +23,7 @@ import {
   PERM_CHOICE_LOGGED_IN
 } from "../../lib/dialog"
 
-import type { Video, VideoUiState } from "../../flow/videoTypes"
+import type { Video, VideoUiState } from "../../types/videoTypes"
 import { calculateListPermissionValue } from "../../util/util"
 import { videoHasError, videoIsProcessing } from "../../lib/video"
 import { DESCRIPTION_FORMAT_HTML } from "../../constants"

@@ -3,7 +3,7 @@ import casual from "casual-browserify"
 
 import { makeVideos } from "./video"
 
-import type { Collection } from "../flow/collectionTypes"
+import type { Collection } from "../types/collectionTypes"
 import { DESCRIPTION_FORMAT_TEXT } from "../constants"
 
 export const makeCollection = (

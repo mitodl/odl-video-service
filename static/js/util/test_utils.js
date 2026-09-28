@@ -4,7 +4,7 @@ import { assert } from "chai"
 import _ from "lodash"
 import * as R from "ramda"
 
-import type { Action } from "../flow/reduxTypes"
+import type { Action } from "../types/reduxTypes"
 import type { Store } from "redux"
 
 export function createAssertReducerResultState(

@@ -6,7 +6,7 @@ import type { Dispatch } from "redux"
 import { CSSTransition, TransitionGroup } from "react-transition-group"
 
 import { actions } from "../actions"
-import type { ToastMessage as ToastMessageType } from "../flow/toastTypes"
+import type { ToastMessage as ToastMessageType } from "../types/toastTypes"
 
 export const DELAY_MS = 3000
 

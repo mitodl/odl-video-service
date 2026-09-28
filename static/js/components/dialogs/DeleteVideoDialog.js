@@ -9,7 +9,7 @@ import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
 import { makeCollectionUrl } from "../../lib/urls"
 
-import type { Video } from "../../flow/videoTypes"
+import type { Video } from "../../types/videoTypes"
 
 type DialogProps = {
   dispatch: Dispatch,

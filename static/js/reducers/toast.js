@@ -1,7 +1,7 @@
 // @flow
 import _ from "lodash"
-import type { Action } from "../flow/reduxTypes"
-import type { ToastState } from "../flow/toastTypes"
+import type { Action } from "../types/reduxTypes"
+import type { ToastState } from "../types/toastTypes"
 
 import { constants } from "../actions/toast"
 

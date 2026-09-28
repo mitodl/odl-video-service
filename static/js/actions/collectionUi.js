@@ -2,7 +2,7 @@
 import { createAction } from "redux-actions"
 import type { Dispatch } from "redux"
 
-import type { Collection } from "../flow/collectionTypes"
+import type { Collection } from "../types/collectionTypes"
 import { showDialog } from "./commonUi"
 import { DIALOGS } from "../constants"
 import { makeInitializedForm } from "../lib/collection"

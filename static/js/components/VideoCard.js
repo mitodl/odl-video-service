@@ -14,7 +14,7 @@ import {
 } from "../lib/video"
 import DropboxChooser from "react-dropbox-chooser"
 
-import type { Video } from "../flow/videoTypes"
+import type { Video } from "../types/videoTypes"
 
 type VideoCardProps = {
   video: Video,

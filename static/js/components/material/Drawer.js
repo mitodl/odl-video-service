@@ -7,7 +7,7 @@ import { MDCTemporaryDrawer } from "@material/drawer/dist/mdc.drawer"
 
 import { actions } from "../../actions"
 import { makeCollectionUrl } from "../../lib/urls"
-import type { Collection } from "../../flow/collectionTypes"
+import type { Collection } from "../../types/collectionTypes"
 
 const MAX_VISIBLE_COLLECTIONS = 10
 

@@ -4,7 +4,7 @@ import React from "react"
 
 import VideoCard from "./VideoCard"
 
-import type { Video } from "../flow/videoTypes"
+import type { Video } from "../types/videoTypes"
 
 export class VideoList extends React.Component<*, void> {
   props: {

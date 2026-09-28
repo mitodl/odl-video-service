@@ -2,7 +2,7 @@
 /* global SETTINGS: false */
 import sanitize from "sanitize-filename"
 
-import type { Video, VideoFile, VideoSubtitle } from "../flow/videoTypes"
+import type { Video, VideoFile, VideoSubtitle } from "../types/videoTypes"
 
 export const makeVideoUrl = (videoKey: string) =>
   `/videos/${encodeURI(videoKey)}/`

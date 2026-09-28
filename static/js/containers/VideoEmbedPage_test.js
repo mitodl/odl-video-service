@@ -11,7 +11,7 @@ import VideoEmbedPage from "./VideoEmbedPage"
 import { VideoEmbedPage as UnconnectedVideoEmbedPage } from "./VideoEmbedPage"
 import { makeVideo } from "../factories/video"
 import renderWithProviders from "../testUtils/renderWithProviders"
-import type { Video } from "../flow/videoTypes"
+import type { Video } from "../types/videoTypes"
 
 describe("VideoEmbedPage", () => {
   let sandbox, store, video: Video

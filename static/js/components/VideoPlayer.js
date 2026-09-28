@@ -10,7 +10,7 @@ import {
   VideoPlayerController,
   isFullscreen
 } from "../lib/video_player_controller"
-import type { Video } from "../flow/videoTypes"
+import type { Video } from "../types/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
 import { sendGAEvent, setCustomDimension } from "../util/google_analytics"

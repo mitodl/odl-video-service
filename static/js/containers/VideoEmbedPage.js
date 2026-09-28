@@ -6,7 +6,7 @@ import DocumentTitle from "../components/DocumentTitle"
 
 import { actions } from "../actions"
 import VideoPlayer from "../components/VideoPlayer"
-import type { Video, VideoUiState } from "../flow/videoTypes"
+import type { Video, VideoUiState } from "../types/videoTypes"
 import { initGA, sendGAPageView } from "../util/google_analytics"
 import { videoIsProcessing, videoHasError } from "../lib/video"
 

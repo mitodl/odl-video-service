@@ -3,7 +3,7 @@
 import React from "react"
 import _ from "lodash"
 
-import type { VideoAnalyticsData } from "../../flow/videoAnalyticsTypes"
+import type { VideoAnalyticsData } from "../../types/videoAnalyticsTypes"
 
 export default class AnalyticsInfoTable extends React.Component<*, void> {
   props: {

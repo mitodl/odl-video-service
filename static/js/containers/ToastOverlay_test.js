@@ -5,7 +5,7 @@ import { render } from "@testing-library/react"
 import { assert } from "chai"
 import sinon from "sinon"
 
-import type { ToastMessage as ToastMessageType } from "../flow/toastTypes"
+import type { ToastMessage as ToastMessageType } from "../types/toastTypes"
 import {
   ToastOverlay,
   ToastMessage,

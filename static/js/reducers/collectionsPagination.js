@@ -1,6 +1,6 @@
 // @flow
-import type { Action } from "../flow/reduxTypes"
-import type { CollectionsPagination } from "../flow/collectionTypes"
+import type { Action } from "../types/reduxTypes"
+import type { CollectionsPagination } from "../types/collectionTypes"
 
 import { constants } from "../actions/collectionsPagination"
 

@@ -12,7 +12,7 @@ import Drawer from "./Drawer"
 import { makeCollection } from "../../factories/collection"
 import { makeCollectionUrl } from "../../lib/urls"
 import renderWithProviders from "../../testUtils/renderWithProviders"
-import type { Collection } from "../../flow/collectionTypes"
+import type { Collection } from "../../types/collectionTypes"
 
 describe("Drawer", () => {
   let sandbox,

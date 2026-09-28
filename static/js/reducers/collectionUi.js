@@ -1,5 +1,5 @@
 // @flow
-import type { Action } from "../flow/reduxTypes"
+import type { Action } from "../types/reduxTypes"
 
 import {
   INIT_COLLECTION_FORM,
@@ -21,7 +21,7 @@ import { DESCRIPTION_FORMAT_HTML, DESCRIPTION_FORMAT_TEXT } from "../constants"
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 import { getFormKey } from "../lib/collection"
 
-import type { CollectionUiState } from "../flow/collectionTypes"
+import type { CollectionUiState } from "../types/collectionTypes"
 
 export const INITIAL_COLLECTION_FORM_STATE = {
   key:                "",

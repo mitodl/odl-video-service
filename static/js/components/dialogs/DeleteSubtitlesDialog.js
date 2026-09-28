@@ -8,7 +8,7 @@ import Dialog from "../material/Dialog"
 
 import { actions } from "../../actions"
 
-import type { VideoSubtitle } from "../../flow/videoTypes"
+import type { VideoSubtitle } from "../../types/videoTypes"
 
 export class DeleteSubtitlesDialog extends React.Component<*, void> {
   props: {

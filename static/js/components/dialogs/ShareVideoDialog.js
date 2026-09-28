@@ -11,7 +11,7 @@ import { makeEmbedUrl, makeVideoUrl } from "../../lib/urls"
 import { formatSecondsToMinutes } from "../../util/util"
 import Checkbox from "../material/Checkbox"
 import { actions } from "../../actions"
-import type { VideoUiState } from "../../flow/videoTypes"
+import type { VideoUiState } from "../../types/videoTypes"
 
 type DialogProps = {
   dispatch: Dispatch,

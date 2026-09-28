@@ -1,7 +1,7 @@
 // @flow
 /* global SETTINGS: false */
 import { makeVideoSubtitleUrl } from "./urls"
-import type { Video, VideoSubtitle } from "../flow/videoTypes"
+import type { Video, VideoSubtitle } from "../types/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
 import { sendGAEvent } from "../util/google_analytics"

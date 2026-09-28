@@ -403,6 +403,26 @@ else
 	printf "  SKIP  %-34s %s\n" "mutation score" "(no baseline or report)"
 fi
 
+# --- Flow -> TypeScript migration (mitodl/hq#11774) -------------------------
+#
+# Two ratchets, both ceilings, both meant to only ever fall.
+#
+# Flow annotations: 138 files still carry `// @flow`. Nothing checks them --
+# `flow check` errors out before reading a file and Flow runs in no CI job --
+# so this counts remaining work, not remaining safety. It reaches 0 when the
+# last .js under static/js is converted, at which point flow-bin, .flowconfig
+# and the babel flow-strip-types override all come out.
+FLOWFILES=$(grep -rl "@flow" static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
+check "flow-annotated files" "$FLOWFILES" le 138
+
+# Explicit `any` in converted TypeScript. Every one is inherited: the Flow
+# originals used `any`, `*`, `Object` or `Function` in exactly these places, so
+# converting them faithfully carried the looseness across rather than inventing
+# types the code does not honour. @typescript-eslint/no-explicit-any is set to
+# "warn" for .ts while this is non-zero; tighten both together.
+ANYS=$(grep -ohE "\\bany\\b" static/js/types/*.ts 2>/dev/null | wc -l | tr -d ' ')
+check "explicit any in types" "$ANYS" le 36
+
 echo
 if [[ $FAIL -ne 0 ]]; then
 	echo "LEDGER FAILED -- a migration metric moved the wrong way."

@@ -10,7 +10,7 @@ import {
 } from "../constants"
 import { makeCounter } from "../util/test_utils"
 
-import type { Video } from "../flow/videoTypes"
+import type { Video } from "../types/videoTypes"
 
 const videoFileId = makeCounter()
 

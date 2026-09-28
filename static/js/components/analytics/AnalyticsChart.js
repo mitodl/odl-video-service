@@ -3,7 +3,7 @@ import _ from "lodash"
 import { VictoryChart, VictoryBar, VictoryAxis, VictoryStack } from "victory"
 import { VictoryLabel, ClipPath } from "victory"
 
-import type { VideoAnalyticsData } from "../../flow/videoAnalyticsTypes"
+import type { VideoAnalyticsData } from "../../types/videoAnalyticsTypes"
 
 // Helper to selectively show labels in Victory charts
 export class ConditionalLabel extends React.Component {

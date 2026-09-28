@@ -1,6 +1,6 @@
 // @flow
 
-import type { VideoAnalyticsData } from "../flow/videoAnalyticsTypes"
+import type { VideoAnalyticsData } from "../types/videoAnalyticsTypes"
 
 export const makeVideoAnalyticsData = (
   n?: number,

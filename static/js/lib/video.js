@@ -14,7 +14,7 @@ import {
   VIDEO_STATUS_RETRANSCODING,
   ENCODING_HLS
 } from "../constants"
-import type { Video, VideoFile } from "../flow/videoTypes"
+import type { Video, VideoFile } from "../types/videoTypes"
 
 import _videojs from "video.js"
 import { makeVideoFileName, makeVideoFileUrl } from "./urls"

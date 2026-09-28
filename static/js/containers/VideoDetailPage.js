@@ -38,8 +38,8 @@ import { replaceVideoFromDropbox } from "../lib/api"
 import { DIALOGS, MM_DD_YYYY } from "../constants"
 import { initGA, sendGAPageView } from "../util/google_analytics"
 
-import type { Video, VideoUiState } from "../flow/videoTypes"
-import type { Collection } from "../flow/collectionTypes"
+import type { Video, VideoUiState } from "../types/videoTypes"
+import type { Collection } from "../types/collectionTypes"
 import type { CommonUiState } from "../reducers/commonUi"
 
 export class VideoDetailPage extends React.Component<*, void> {

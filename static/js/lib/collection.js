@@ -13,8 +13,8 @@ import type {
   CollectionFormState,
   CollectionListItem,
   CollectionUiState
-} from "../flow/collectionTypes"
-import type { RestState } from "../flow/restTypes"
+} from "../types/collectionTypes"
+import type { RestState } from "../types/restTypes"
 import type {} from "../reducers/collectionUi"
 
 export const getActiveCollectionDetail = (state: {

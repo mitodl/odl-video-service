@@ -11,8 +11,8 @@ import { makeCollection } from "../factories/collection"
 import { INITIAL_UI_STATE } from "../reducers/collectionUi"
 import { PERM_CHOICE_NONE, PERM_CHOICE_LISTS } from "./dialog"
 
-import type { Collection } from "../flow/collectionTypes"
-import type { RestState } from "../flow/restTypes"
+import type { Collection } from "../types/collectionTypes"
+import type { RestState } from "../types/restTypes"
 import { DESCRIPTION_FORMAT_TEXT } from "../constants"
 
 describe("collection library function", () => {

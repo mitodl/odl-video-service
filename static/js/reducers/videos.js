@@ -3,7 +3,7 @@ import { GET, PATCH, INITIAL_STATE } from "redux-hammock/constants"
 
 import * as api from "../lib/api"
 
-import type { Video, VideoUpdatePayload } from "../flow/videoTypes"
+import type { Video, VideoUpdatePayload } from "../types/videoTypes"
 
 export const videosEndpoint = {
   name:              "videos",

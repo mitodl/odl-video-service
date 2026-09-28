@@ -29,7 +29,7 @@ import type {
   CollectionFormState,
   CollectionUiState,
   Collection
-} from "../../flow/collectionTypes"
+} from "../../types/collectionTypes"
 
 type DialogProps = {
   dispatch: Dispatch,

@@ -15,7 +15,10 @@ import CollectionFormDialog from "../components/dialogs/CollectionFormDialog"
 import { withDialogs } from "../components/dialogs/hoc"
 import { makeCollectionUrl } from "../lib/urls"
 import type { CommonUiState } from "../reducers/commonUi"
-import type { Collection, CollectionsPagination } from "../flow/collectionTypes"
+import type {
+  Collection,
+  CollectionsPagination
+} from "../types/collectionTypes"
 import withPagedCollections from "./withPagedCollections"
 import LoadingIndicator from "../components/material/LoadingIndicator"
 import Paginator from "../components/Paginator"

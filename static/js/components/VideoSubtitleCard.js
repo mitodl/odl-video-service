@@ -4,7 +4,7 @@ import React from "react"
 import Card from "./material/Card"
 import { makeVideoSubtitleUrl } from "../lib/urls"
 
-import type { Video, VideoSubtitle } from "../flow/videoTypes"
+import type { Video, VideoSubtitle } from "../types/videoTypes"
 import Filefield from "./material/Filefield"
 
 export default class VideoSubtitleCard extends React.Component<*, void> {

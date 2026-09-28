@@ -1,8 +1,8 @@
 // @flow
-import type { Action } from "../flow/reduxTypes"
+import type { Action } from "../types/reduxTypes"
 import { constants } from "../actions/videoUi"
 import { CANVASES, DESCRIPTION_FORMAT_TEXT } from "../constants"
-import type { VideoUiState } from "../flow/videoTypes"
+import type { VideoUiState } from "../types/videoTypes"
 import { PERM_CHOICE_COLLECTION, PERM_CHOICE_NONE } from "../lib/dialog"
 
 const {

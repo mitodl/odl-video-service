@@ -1,5 +1,5 @@
 // @flow
-import type { Action } from "../flow/reduxTypes"
+import type { Action } from "../types/reduxTypes"
 import {
   SHOW_DIALOG,
   HIDE_DIALOG,
