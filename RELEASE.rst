@@ -1,6 +1,20 @@
 Release Notes
 =============
 
+Version 0.97.1
+--------------
+
+- Update AGENTS.md for React 18 (#1614)
+- Phase 1: update the lint/format toolchain (#1615)
+- Remove the dead cheerio resolution (#1606)
+- Fix flaky rich-text toolbar tests by waiting for the toolbar (#1605)
+- Update nginx Docker tag to v1.31.5 (#1604)
+- Update dependency webpack-dev-middleware to v7.4.6 (#1603)
+- Update dependency css-loader to v7.1.5 (#1602)
+- Pin dependencies (#1595)
+- Baseline the 8 new drf-lint findings reddening master (#1600)
+- fix(sentry): cap request bodies at 1KB and scrub Postgres DETAIL rows (#1591)
+
 Version 0.97.0
 --------------
 
