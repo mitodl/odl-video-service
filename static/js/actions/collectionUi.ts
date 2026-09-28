@@ -1,4 +1,3 @@
-// @flow
 import { createAction } from "redux-actions"
 import type { Dispatch } from "redux"
 

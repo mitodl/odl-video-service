@@ -1,4 +1,3 @@
-// @flow
 import { syncCollectionVideosWithEdX } from "../lib/api"
 
 export const syncCollectionEdXEndpoint = {

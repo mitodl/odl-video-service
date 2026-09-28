@@ -1,11 +1,10 @@
-// @flow
 import { GET, INITIAL_STATE } from "redux-hammock/constants"
 
 import * as api from "../lib/api"
 import type { VideoAnalyticsData } from "../types/videoAnalyticsTypes"
 
 type Payload = {
-  key: string | number,
+  key: string | number
   data: VideoAnalyticsData
 }
 

@@ -1,4 +1,3 @@
-// @flow
 import type { Action } from "../types/reduxTypes"
 import {
   SHOW_DIALOG,
@@ -11,15 +10,10 @@ import {
 import { DIALOGS } from "../constants"
 import { showDialog, hideDialog } from "../lib/dialog"
 
-import type { DialogVisibilityState } from "../lib/dialog"
-
-export type CommonUiState = DialogVisibilityState & {
-  drawerOpen: boolean,
-  menuVisibility: {
-    [string]: boolean
-  },
-  FAQVisibility: Map<string, boolean>
-}
+// Defined with the rest of the store shape in types/rootState, and
+// re-exported here so existing importers keep their path.
+import type { CommonUiState } from "../types/rootState"
+export type { CommonUiState }
 
 export const INITIAL_UI_STATE = {
   dialogVisibility: {

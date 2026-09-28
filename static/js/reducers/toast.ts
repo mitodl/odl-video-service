@@ -1,4 +1,3 @@
-// @flow
 import _ from "lodash"
 import type { Action } from "../types/reduxTypes"
 import type { ToastState } from "../types/toastTypes"

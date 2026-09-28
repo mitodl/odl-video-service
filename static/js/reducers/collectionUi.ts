@@ -1,4 +1,3 @@
-// @flow
 import type { Action } from "../types/reduxTypes"
 
 import {
@@ -21,9 +20,12 @@ import { DESCRIPTION_FORMAT_HTML, DESCRIPTION_FORMAT_TEXT } from "../constants"
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 import { getFormKey } from "../lib/collection"
 
-import type { CollectionUiState } from "../types/collectionTypes"
+import type {
+  CollectionUiState,
+  CollectionFormState
+} from "../types/collectionTypes"
 
-export const INITIAL_COLLECTION_FORM_STATE = {
+export const INITIAL_COLLECTION_FORM_STATE: CollectionFormState = {
   key:                "",
   title:              "",
   description:        "",
@@ -47,12 +49,12 @@ export const INITIAL_COLLECTION_FORM_STATE = {
  * such description: the field is empty, there is nothing to lose, and an author
  * writing their first words should not have to ask for formatting.
  */
-export const INITIAL_NEW_COLLECTION_FORM_STATE = {
+export const INITIAL_NEW_COLLECTION_FORM_STATE: CollectionFormState = {
   ...INITIAL_COLLECTION_FORM_STATE,
   description_format: DESCRIPTION_FORMAT_HTML
 }
 
-export const INITIAL_UI_STATE = {
+export const INITIAL_UI_STATE: CollectionUiState = {
   newCollectionForm:  INITIAL_NEW_COLLECTION_FORM_STATE,
   editCollectionForm: INITIAL_COLLECTION_FORM_STATE,
   isNew:              true,
@@ -62,7 +64,7 @@ export const INITIAL_UI_STATE = {
 const updateCollectionForm = (
   state: CollectionUiState,
   key: string,
-  newValue: ?string
+  newValue: string | null
 ) => ({
   ...state,
   [getFormKey(state.isNew)]: {

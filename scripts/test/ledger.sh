@@ -413,23 +413,29 @@ fi
 # last .js under static/js is converted, at which point flow-bin, .flowconfig
 # and the babel flow-strip-types override all come out.
 FLOWFILES=$(grep -rl "@flow" static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "flow-annotated files" "$FLOWFILES" le 125
+check "flow-annotated files" "$FLOWFILES" le 113
 
-# Explicit `any` in converted TypeScript. Every one is inherited: the Flow
-# originals used `any`, `*`, `Object` or `Function` in exactly these places, so
-# converting them faithfully carried the looseness across rather than inventing
-# types the code does not honour. @typescript-eslint/no-explicit-any is set to
-# "warn" for .ts while this is non-zero; tighten both together.
-# Counted across every .ts/.tsx, not just static/js/types: scoping it to the
-# types directory left `any` invisible everywhere else, which is where most of
-# it would land as files convert.
-# Comment lines are stripped first: without that, prose like "any author" in a
-# docblock counts as an explicit any. With it, this number agrees exactly with
-# @typescript-eslint/no-explicit-any's own count, which is the point -- a gate
-# that disagrees with the linter it stands in for teaches people to ignore it.
+# Explicit `any` in converted TypeScript, split in two because the two halves
+# move in opposite directions during the migration.
+#
+# `Action<any, ...>` is the inherited reducer and action-creator signature --
+# one per reducer, straight from the Flow original. It necessarily RISES as
+# files convert, so gating it as a falling ratchet would mean raising the
+# ceiling every task, which teaches everyone to raise ceilings. It is capped
+# instead at one per reducer plus the three generic aliases in reduxTypes, and
+# goes to 0 in Task 10 when action payloads become discriminated unions.
+ACTION_ANYS=$(grep -rhoE "Action<any" static/js --include='*.ts' --include='*.tsx' 2>/dev/null | wc -l | tr -d ' ')
+check "Action<any> signatures" "$ACTION_ANYS" le 15
+
+# Everything else is a true ratchet: it may only fall. Comment lines are
+# stripped first -- without that, prose like "any author" in a docblock counts
+# as an explicit any. With it this agrees with @typescript-eslint/no-explicit-any
+# minus the Action<> sites, and a gate that disagrees with the linter it stands
+# in for only teaches people to ignore it.
 ANYS=$(grep -rhE "\\bany\\b" static/js --include='*.ts' --include='*.tsx' 2>/dev/null \
-	| grep -vE "^[[:space:]]*(//|\\*|/\\*)" | grep -ohE "\\bany\\b" | wc -l | tr -d ' ')
-check "explicit any in ts" "$ANYS" le 34
+	| grep -vE "^[[:space:]]*(//|\\*|/\\*)" | grep -v "Action<" \
+	| grep -ohE "\\bany\\b" | wc -l | tr -d ' ')
+check "other explicit any" "$ANYS" le 30
 
 echo
 if [[ $FAIL -ne 0 ]]; then

@@ -73,7 +73,12 @@ export type VideoFormState = {
   title: string | null
   description: string | null
   description_format: DescriptionFormat | null
-  cta_link: string | null
+  // Optional, not `string | null`: INITIAL_EDIT_VIDEO_FORM_STATE in
+  // reducers/videoUi omits this key entirely, so it reads `undefined` until
+  // SET_EDIT_VIDEO_CTA_LINK fires. The Flow type claimed it was always
+  // present and nothing checked. Recording reality here rather than adding
+  // the key -- changing runtime state shape is not a type migration's job.
+  cta_link?: string | null
   overrideChoice: string
   viewChoice: string
   viewLists: string | null

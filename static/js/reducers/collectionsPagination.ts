@@ -1,4 +1,3 @@
-// @flow
 import type { Action } from "../types/reduxTypes"
 import type { CollectionsPagination } from "../types/collectionTypes"
 

@@ -1,8 +1,12 @@
-// @flow
 import type { Action } from "../types/reduxTypes"
 import { constants } from "../actions/videoUi"
 import { CANVASES, DESCRIPTION_FORMAT_TEXT } from "../constants"
-import type { VideoUiState } from "../types/videoTypes"
+import type {
+  VideoUiState,
+  VideoFormState,
+  VideoShareState,
+  VideoSubtitleState
+} from "../types/videoTypes"
 import { PERM_CHOICE_COLLECTION, PERM_CHOICE_NONE } from "../lib/dialog"
 
 const {
@@ -27,7 +31,7 @@ const {
   SET_CURRENT_SUBTITLES_KEY
 } = constants
 
-export const INITIAL_EDIT_VIDEO_FORM_STATE = {
+export const INITIAL_EDIT_VIDEO_FORM_STATE: VideoFormState = {
   key:                null,
   title:              "",
   description:        "",
@@ -38,18 +42,18 @@ export const INITIAL_EDIT_VIDEO_FORM_STATE = {
   viewLists:          null
 }
 
-export const INITIAL_UPLOAD_SUBTITLE_FORM_STATE = {
+export const INITIAL_UPLOAD_SUBTITLE_FORM_STATE: VideoSubtitleState = {
   key:      null,
   language: "en",
   subtitle: null
 }
 
-export const INITIAL_SHARE_VIDEO_FORM_STATE = {
+export const INITIAL_SHARE_VIDEO_FORM_STATE: VideoShareState = {
   shareTime: false,
   videoTime: 0
 }
 
-export const INITIAL_UI_STATE = {
+export const INITIAL_UI_STATE: VideoUiState = {
   videoTime:                 0,
   duration:                  0,
   editVideoForm:             INITIAL_EDIT_VIDEO_FORM_STATE,
@@ -64,7 +68,7 @@ export const INITIAL_UI_STATE = {
 const updateVideoForm = (
   state: VideoUiState,
   key: string,
-  newValue: ?string
+  newValue: string | null
 ) => ({
   ...state,
   editVideoForm: {

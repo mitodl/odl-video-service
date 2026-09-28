@@ -1,4 +1,3 @@
-// @flow
 import * as R from "ramda"
 import _ from "lodash"
 
@@ -9,17 +8,17 @@ import {
 } from "../lib/dialog"
 import { DESCRIPTION_FORMAT_TEXT } from "../constants"
 import type {
+  CollectionFormSource,
   Collection,
   CollectionFormState,
-  CollectionListItem,
   CollectionUiState
 } from "../types/collectionTypes"
 import type { RestState } from "../types/restTypes"
 import type {} from "../reducers/collectionUi"
 
 export const getActiveCollectionDetail = (state: {
-  collections?: ?RestState<Collection>
-}): ?Collection =>
+  collections?: RestState<Collection> | null
+}): Collection | null =>
   state.collections && state.collections.data && state.collections.loaded ?
     state.collections.data :
     null
@@ -38,7 +37,7 @@ export const getCollectionForm = (
  * Make an initialized form for use with existing collections
  */
 export function makeInitializedForm(
-  collection: ?CollectionListItem
+  collection: CollectionFormSource | null
 ): CollectionFormState {
   if (!collection) {
     collection = {
