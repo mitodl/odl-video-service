@@ -16,12 +16,8 @@ export default class VideoSubtitleCard extends React.Component<*, void> {
   }
 
   render() {
-    const {
-      video,
-      isAdmin,
-      uploadVideoSubtitle,
-      deleteVideoSubtitle
-    } = this.props
+    const { video, isAdmin, uploadVideoSubtitle, deleteVideoSubtitle } =
+      this.props
     return (
       <Card className="video-subtitle-card">
         <div className="video-subtitle-card-body">

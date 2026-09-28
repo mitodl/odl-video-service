@@ -10,6 +10,7 @@ import {
   DESCRIPTION_FORMAT_HTML,
   DESCRIPTION_FORMAT_TEXT
 } from "../../constants"
+import waitForRichTextEditor from "../../testUtils/waitForRichTextEditor"
 
 describe("DescriptionField", () => {
   let onChange, onUpgrade
@@ -141,9 +142,7 @@ describe("DescriptionField", () => {
         descriptionFormat: DESCRIPTION_FORMAT_HTML
       })
       // The editor engine is a split chunk, so it arrives after mount.
-      await waitFor(() =>
-        assert.isNotNull(container.querySelector(".ProseMirror"))
-      )
+      await waitForRichTextEditor("test-desc")
       assert.include(
         container.querySelector(".ProseMirror").innerHTML,
         "<strong>rich</strong>"
@@ -155,9 +154,7 @@ describe("DescriptionField", () => {
         value:             "<p>x</p>",
         descriptionFormat: DESCRIPTION_FORMAT_HTML
       })
-      await waitFor(() =>
-        assert.isNotNull(container.querySelector(".ProseMirror"))
-      )
+      await waitForRichTextEditor("test-desc")
       assert.isNull(textarea(container))
       assert.isNull(upgradeButton(container))
     })
@@ -167,9 +164,7 @@ describe("DescriptionField", () => {
         value:             "<p>x</p>",
         descriptionFormat: DESCRIPTION_FORMAT_HTML
       })
-      await waitFor(() =>
-        assert.isNotNull(container.querySelector(".ProseMirror"))
-      )
+      await waitForRichTextEditor("test-desc")
       fireEvent.click(
         container.querySelector('button[aria-label="Bulleted list"]')
       )

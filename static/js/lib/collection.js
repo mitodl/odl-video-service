@@ -65,9 +65,9 @@ export function makeInitializedForm(
     collection.admin_lists.length === 0 ? PERM_CHOICE_NONE : PERM_CHOICE_LISTS
 
   return {
-    key:                collection.key,
-    title:              collection.title,
-    description:        collection.description,
+    key:         collection.key,
+    title:       collection.title,
+    description: collection.description,
     description_format:
       collection.description_format || DESCRIPTION_FORMAT_TEXT,
     viewChoice: collection.is_logged_in_only ?

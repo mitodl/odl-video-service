@@ -37,7 +37,7 @@ export const withDialogs = R.curry(
               dialogConfig.getComponent() :
               dialogConfig.component,
             {
-              key:  dialogConfig.name,
+              key: dialogConfig.name,
               open:
                 commonUi.dialogVisibility &&
                 !!commonUi.dialogVisibility[dialogConfig.name],

@@ -56,14 +56,15 @@ export const sectionFAQs = {
         </a>
       </div>
     ),
-    "How long does it take for the lecture capture videos to become available?": (
-      <div>
-        Videos recorded by the lecture capture systems in the classroom are
-        automatically uploaded to the course collection overnight. Collection
-        owners will receive an email notification with a link to each lecture
-        when it is done being processed.
-      </div>
-    )
+    "How long does it take for the lecture capture videos to become available?":
+      (
+        <div>
+          Videos recorded by the lecture capture systems in the classroom are
+          automatically uploaded to the course collection overnight. Collection
+          owners will receive an email notification with a link to each lecture
+          when it is done being processed.
+        </div>
+      )
   },
   "Uploading Video and Managing Collections": {
     "Who can host videos on OVS?": (
@@ -149,15 +150,16 @@ export const sectionFAQs = {
         account and are on a Moira list.
       </div>
     ),
-    "I would like my videos to be public.  How can I set my recordings to public?": (
-      <div>
-        If you would like your videos to be public, you can change the settings
-        under the settings controls. Please note that a public setting will also
-        post the videos to Youtube and that captions will be required to post
-        public videos to conform would accessibility guidelines for public
-        content.
-      </div>
-    ),
+    "I would like my videos to be public.  How can I set my recordings to public?":
+      (
+        <div>
+          If you would like your videos to be public, you can change the
+          settings under the settings controls. Please note that a public
+          setting will also post the videos to Youtube and that captions will be
+          required to post public videos to conform would accessibility
+          guidelines for public content.
+        </div>
+      ),
     "How long will it take for my video to be ready?": (
       <div>
         <div>

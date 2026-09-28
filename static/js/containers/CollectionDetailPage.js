@@ -214,7 +214,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
       dispatch(
         actions.toast.addMessage({
           message: {
-            key:     "replace-video-started",
+            key: "replace-video-started",
             content:
               "Video replacement has started. You will receive an email when it is ready.",
             icon: "check"
@@ -255,7 +255,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
       dispatch(
         actions.toast.addMessage({
           message: {
-            key:     "scheduled-sync",
+            key: "scheduled-sync",
             content:
               "Videos are being synced with edX. This may take a few minutes.",
             icon: "check"

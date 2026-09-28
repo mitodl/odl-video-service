@@ -40,6 +40,7 @@ import { getCollectionForm } from "../../lib/collection"
 import { makeCollection } from "../../factories/collection"
 import { makeCollectionUrl } from "../../lib/urls"
 import renderWithProviders from "../../testUtils/renderWithProviders"
+import waitForRichTextEditor from "../../testUtils/waitForRichTextEditor"
 
 describe("CollectionFormDialog", () => {
   let sandbox,
@@ -217,7 +218,7 @@ describe("CollectionFormDialog", () => {
         const renderWithEditor = async (props = {}) => {
           store.dispatch(setCollectionDescFormat("html"))
           const result = await renderDialog(props)
-          await waitFor(() => assert.isNotNull(editor()))
+          await waitForRichTextEditor("collection-desc")
           return result
         }
 
@@ -325,7 +326,7 @@ describe("CollectionFormDialog", () => {
               description:        "<p>converted</p>",
               description_format: "html"
             })
-            await waitFor(() => assert.isNotNull(editor()))
+            await waitForRichTextEditor("collection-desc")
           })
         }
 
@@ -337,7 +338,7 @@ describe("CollectionFormDialog", () => {
            */
           it("starts in the editor with no upgrade to offer", async () => {
             await renderDialog()
-            await waitFor(() => assert.isNotNull(editor()))
+            await waitForRichTextEditor("collection-desc")
 
             assert.isNull(
               screen.queryByRole("button", { name: "Use formatting" })
@@ -350,7 +351,7 @@ describe("CollectionFormDialog", () => {
               .stub(api, "createCollection")
               .returns(Promise.resolve(collection))
             await renderDialog()
-            await waitFor(() => assert.isNotNull(editor()))
+            await waitForRichTextEditor("collection-desc")
 
             fireEvent.click(screen.getByRole("button", { name: submitText }))
 

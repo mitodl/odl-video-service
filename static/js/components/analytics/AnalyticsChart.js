@@ -94,9 +94,8 @@ export class AnalyticsChart extends React.Component {
     if (!dimensions || !padding) {
       return null
     }
-    const viewsAtTimesByChannel = this._generateViewsAtTimesByChannel(
-      analyticsData
-    )
+    const viewsAtTimesByChannel =
+      this._generateViewsAtTimesByChannel(analyticsData)
     const baseTextStyle = {
       fill:       "#666",
       fontFamily: "'Roboto', 'sans-serif'"

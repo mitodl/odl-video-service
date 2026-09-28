@@ -206,9 +206,8 @@ export class VideoPlayer extends React.Component<*, void> {
     const createEventHandler = this.createEventHandler
     const toggleFullscreen = this.toggleFullscreen
     if (video.multiangle) {
-      videojs.getComponent(
-        "FullscreenToggle"
-      ).prototype.handleClick = toggleFullscreen
+      videojs.getComponent("FullscreenToggle").prototype.handleClick =
+        toggleFullscreen
     }
     const useYouTube = video.is_public && video.youtube_id !== null
     this.lastMinuteTracked = null

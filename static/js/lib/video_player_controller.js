@@ -171,8 +171,9 @@ export class VideoPlayerController {
     // videoContainer is the .video-odl-medium div, which render() always
     // emits inside .video-odl-center, so parentElement is never null.
     // $FlowFixMe Flow cannot prove that from the ref's type
-    this.videoContainer.parentElement.style.width = `${videoWidth +
-      canvasWidth}px`
+    this.videoContainer.parentElement.style.width = `${
+      videoWidth + canvasWidth
+    }px`
     const left = Math.round(this.player.currentWidth() / (shiftX ? -2 : 2))
     const top = Math.round(this.player.currentHeight() / (shiftY ? -2 : 2))
 
