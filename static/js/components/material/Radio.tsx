@@ -1,22 +1,18 @@
-// @flow
-/* global React$Element */
 import React from "react"
 
 type RadioProps = {
-  id: string,
-  label: string,
-  radioGroupName: string,
-  value: string,
-  selectedValue?: string,
-  onChange: Function,
-  children?: React$Element<*>[],
-  className?: string,
+  id: string
+  label: string
+  radioGroupName: string
+  value: string
+  selectedValue?: string
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void
+  children?: React.ReactNode
+  className?: string
   disabled?: boolean
 }
 
-export default class Radio extends React.Component<*, void> {
-  props: RadioProps
-
+export default class Radio extends React.Component<RadioProps> {
   render() {
     const {
       value,

@@ -1,8 +1,25 @@
 import React from "react"
 
-const DEFAULT_HSL = { h: 0, s: 0, l: 0 }
+type HSL = {
+  h: number
+  s: number
+  l: number
+}
 
-class ProgressSlider extends React.Component {
+// `onChange` is omitted from the inherited div attributes because this
+// component's `onChange` takes the clicked position as a number, not a
+// React form event.
+type Props = Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> & {
+  hsl?: HSL
+  value: number
+  onChange?: (value: number) => void
+}
+
+const DEFAULT_HSL: HSL = { h: 0, s: 0, l: 0 }
+
+class ProgressSlider extends React.Component<Props> {
+  rootRef: HTMLDivElement | null = null
+
   render() {
     const { hsl, value, ...passThroughProps } = {
       hsl: DEFAULT_HSL,
@@ -20,7 +37,10 @@ class ProgressSlider extends React.Component {
           this.rootRef = ref
         }}
         className="time-slider"
-        {...passThroughProps}
+        {...(passThroughProps as Omit<
+          React.HTMLAttributes<HTMLDivElement>,
+          "onChange"
+        >)}
         style={style}
         onClick={this.onClickSlider.bind(this)}
       >
@@ -78,7 +98,7 @@ class ProgressSlider extends React.Component {
     )
   }
 
-  onClickSlider(event) {
+  onClickSlider(event: React.MouseEvent<HTMLDivElement>) {
     const bounds = this.getBounds()
     const xOffset = event.pageX - bounds.x
     const xPercent = xOffset / bounds.width
@@ -91,7 +111,7 @@ class ProgressSlider extends React.Component {
     return this.rootRef.getBoundingClientRect()
   }
 
-  hslStr(hsl = {}) {
+  hslStr(hsl: Partial<HSL> = {}) {
     return `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
   }
 }

@@ -1,8 +1,10 @@
-// @flow
 import { PERM_CHOICE_LISTS } from "../lib/dialog"
 import * as R from "ramda"
 
-export function getDisplayName(WrappedComponent: any) {
+export function getDisplayName(WrappedComponent: {
+  displayName?: string
+  name?: string
+}): string {
   return WrappedComponent.displayName || WrappedComponent.name || "Component"
 }
 
@@ -14,7 +16,7 @@ export const wait = (millis: number): Promise<void> =>
 
 export const calculateListPermissionValue = (
   choice: string,
-  listsInput: ?string
+  listsInput: string | null
 ): Array<string> =>
   choice !== PERM_CHOICE_LISTS || !listsInput || listsInput.trim().length === 0 ?
     [] :
@@ -23,5 +25,5 @@ export const calculateListPermissionValue = (
 /**
  * Formats seconds to minutes:seconds string
  */
-export const formatSecondsToMinutes = (seconds: number) =>
+export const formatSecondsToMinutes = (seconds: number): string =>
   (seconds - (seconds %= 60)) / 60 + (9 < seconds ? ":" : ":0") + seconds

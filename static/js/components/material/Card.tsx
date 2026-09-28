@@ -1,9 +1,8 @@
-// @flow
 import React from "react"
 
 type CardProps = {
-  children: any,
-  className?: string,
+  children: React.ReactNode
+  className?: string
   title?: string
 }
 

@@ -1,20 +1,31 @@
-// @flow
 import React from "react"
 
 import { MDCMenu } from "@material/menu/dist/mdc.menu"
 
 import type { MenuItem } from "../../types/uiTypes"
 
+/*
+ * @material/menu 0.33 ships no type declarations, so the instance is typed by
+ * the three members this component actually uses of it. `open` is a real
+ * get/set accessor on MDCMenu.prototype (see @material/menu's index.js), which
+ * is what componentDidUpdate assigns to below and what Menu_test.js spies on.
+ */
+type MDCMenuInstance = {
+  open: boolean
+  listen: (eventName: string, handler: (event: Event) => void) => void
+  destroy: () => void
+}
+
 type MenuProps = {
-  open: boolean,
-  showMenu: Function,
-  closeMenu: Function,
+  open: boolean
+  showMenu: (event: React.MouseEvent<HTMLAnchorElement>) => void
+  closeMenu: () => void
   menuItems: Array<MenuItem>
 }
 
-export default class Menu extends React.Component<*, void> {
-  menu: null
-  menuRoot: ?HTMLElement
+export default class Menu extends React.Component<MenuProps> {
+  menu: MDCMenuInstance | null
+  menuRoot: HTMLElement | null
 
   componentDidMount() {
     const { closeMenu } = this.props
@@ -49,8 +60,10 @@ export default class Menu extends React.Component<*, void> {
         </a>
         <div
           className="mdc-menu"
-          tabIndex="-1"
-          ref={div => (this.menuRoot = div)}
+          tabIndex={-1}
+          ref={div => {
+            this.menuRoot = div
+          }}
         >
           <ul
             className="mdc-menu__items mdc-list"

@@ -1,17 +1,54 @@
-// @flow
-/* global SETTINGS: false */
 import { makeVideoSubtitleUrl } from "./urls"
 import type { Video, VideoSubtitle } from "../types/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
 import { sendGAEvent } from "../util/google_analytics"
 
+/*
+ * The slice of the video.js player API this controller drives. video.js ships
+ * its own types, but they describe neither `el_` (a private the component and
+ * this module both reach for) nor the `src` the text tracks carry, and the
+ * tests hand the controller a plain stub rather than a real player. A
+ * structural type keeps both callers honest without dragging in the whole
+ * Player class.
+ */
+type PlayerTextTrack = {
+  src: string
+  addEventListener: (type: string, listener: () => void) => void
+}
+
+export type VideoJsPlayer = {
+  el_: { style: { [key: string]: string } }
+  currentTime: () => number
+  currentWidth: () => number
+  currentHeight: () => number
+  videoWidth: () => number
+  videoHeight: () => number
+  width: (width: number) => void
+  height: (height: number) => void
+  textTracks: () => ArrayLike<PlayerTextTrack>
+  addRemoteTextTrack: (
+    options: {
+      kind: string
+      src: string
+      srcLang: string
+      label: string
+    },
+    manualCleanup: boolean
+  ) => void
+  removeRemoteTextTrack: (track: PlayerTextTrack) => void
+}
+
 export const isFullscreen = () => {
-  // $FlowFixMe
   return document[FULLSCREEN_API.fullscreenElement]
 }
 
-const drawCanvasImage = function(canvas, videoNode, shiftX, shiftY) {
+const drawCanvasImage = function(
+  canvas: HTMLCanvasElement,
+  videoNode: HTMLVideoElement,
+  shiftX: boolean,
+  shiftY: boolean
+) {
   const x = shiftX ? Math.floor(videoNode.videoWidth / 2) : 0
   const y = shiftY ? Math.floor(videoNode.videoHeight / 2) : 0
   const context = canvas.getContext("2d")
@@ -36,10 +73,10 @@ const drawCanvasImage = function(canvas, videoNode, shiftX, shiftY) {
  * with plain stubs and no renderer.
  */
 export class VideoPlayerController {
-  player: ?Object
-  videoNode: ?HTMLVideoElement
-  videoContainer: ?HTMLDivElement
-  cameras: ?HTMLDivElement
+  player: VideoJsPlayer | null
+  videoNode: HTMLVideoElement | null
+  videoContainer: HTMLDivElement | null
+  cameras: HTMLDivElement | null
   aspectRatio: number
 
   updateSubtitles(video: Video) {
@@ -91,7 +128,7 @@ export class VideoPlayerController {
 
   drawCanvas(canvas: HTMLCanvasElement, shiftX: boolean, shiftY: boolean) {
     if (!this.videoNode) {
-      // make flow happy
+      // make the typechecker happy
       throw new Error("Missing videoNode")
     }
     const { offsetWidth, offsetHeight } = this.videoNode
@@ -104,19 +141,24 @@ export class VideoPlayerController {
 
   configureCameras() {
     if (this.cameras) {
-      const canvasElements = this.cameras.getElementsByTagName("canvas")
+      // Each canvas is looked up by the camera name it carries as an id --
+      // HTMLCollection's named access, which its type does not describe: the
+      // declaration only covers the numeric indexing.
+      const canvasElements = this.cameras.getElementsByTagName(
+        "canvas"
+      ) as unknown as { [key: string]: HTMLCanvasElement }
       Object.keys(CANVASES).forEach(corner => {
+        const canvasName = corner as keyof typeof CANVASES
         this.drawCanvas(
-          // $FlowFixMe - corner does not have to be a number
-          canvasElements[corner],
-          CANVASES[corner].shiftX,
-          CANVASES[corner].shiftY
+          canvasElements[canvasName],
+          CANVASES[canvasName].shiftX,
+          CANVASES[canvasName].shiftY
         )
       })
     }
   }
 
-  resizeYouTube(embed: ?boolean) {
+  resizeYouTube(embed: boolean | null) {
     if (!isFullscreen() && !embed) {
       if (!this.aspectRatio) {
         this.aspectRatio =
@@ -124,19 +166,23 @@ export class VideoPlayerController {
       }
       // resizeYouTube only runs from player callbacks registered in
       // onPlayerReady, by which point render() has set videoContainer.
-      // $FlowFixMe Flow cannot narrow the ref across that indirection
       const maxWidth = this.videoContainer.clientWidth
       this.player.width(maxWidth)
       const maxHeight = window
         .getComputedStyle(this.videoContainer)
         .maxHeight.replace("px", "")
-      this.player.height(Math.min(maxHeight, maxWidth / this.aspectRatio))
+      // Math.min coerced this string to a number on its own; Number() makes
+      // the identical conversion explicit for the typechecker.
+      this.player.height(
+        Math.min(Number(maxHeight), maxWidth / this.aspectRatio)
+      )
     }
   }
 
   cropVideo(selectedCorner: string) {
-    const shiftX = CANVASES[selectedCorner].shiftX
-    const shiftY = CANVASES[selectedCorner].shiftY
+    const corner = selectedCorner as keyof typeof CANVASES
+    const shiftX = CANVASES[corner].shiftX
+    const shiftY = CANVASES[corner].shiftY
     const transformProps = [
       "transform",
       "WebkitTransform",
@@ -164,13 +210,12 @@ export class VideoPlayerController {
     )
 
     if (!this.videoContainer) {
-      // Make flow happy
+      // Make the typechecker happy
       throw new Error("Missing videoContainer")
     }
     this.videoContainer.style.maxWidth = `${videoWidth}px`
     // videoContainer is the .video-odl-medium div, which render() always
     // emits inside .video-odl-center, so parentElement is never null.
-    // $FlowFixMe Flow cannot prove that from the ref's type
     this.videoContainer.parentElement.style.width = `${
       videoWidth + canvasWidth
     }px`
@@ -178,13 +223,13 @@ export class VideoPlayerController {
     const top = Math.round(this.player.currentHeight() / (shiftY ? -2 : 2))
 
     if (!this.videoNode) {
-      // Make flow happy
+      // Make the typechecker happy
       throw new Error("Missing videoNode")
     }
 
     this.videoNode.style.left = `${left}px`
     this.videoNode.style.top = `${top}px`
-    // $FlowFixMe prop does not have to be a number
+    // prop is a vendor-prefixed transform name, not a declared CSSStyleDeclaration key
     this.videoNode.style[prop] = "scale(2)"
     this.configureCameras()
   }

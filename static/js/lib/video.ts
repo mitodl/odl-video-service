@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS: false */
 import * as R from "ramda"
 
 import {
@@ -19,15 +17,37 @@ import type { Video, VideoFile } from "../types/videoTypes"
 import _videojs from "video.js"
 import { makeVideoFileName, makeVideoFileUrl } from "./urls"
 
-// For this to work properly videojs must be available as a global
-global.videojs = _videojs
+// The Dropbox Saver widget, loaded by a <script> tag in the page template
+// rather than bundled, so it has to be declared rather than imported.
+declare global {
+  interface Window {
+    Dropbox?: {
+      save: (
+        url: string,
+        filename: string,
+        options: { error: (errorMessage: string) => void }
+      ) => void
+    }
+  }
+}
+
+// For this to work properly videojs must be available as a global.
+// globals.d.ts declares `videojs` with `const`, which TypeScript does not
+// surface as a writable property of `globalThis`, hence the cast.
+const globalScope = global as typeof globalThis & {
+  videojs: typeof _videojs
+  $: unknown
+}
+globalScope.videojs = _videojs
 require("videojs-contrib-quality-levels")
 require("videojs-hls-quality-selector")
 require("videojs-youtube")
 require("videojs-hotkeys")
 
 if (SETTINGS.FEATURES.VIDEOJS_ANNOTATIONS) {
-  global.$ = require("jquery")
+  globalScope.$ = require("jquery")
+  // Loaded lazily behind a feature flag, so it cannot become a static import.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const AnnotationComments = require("@contently/videojs-annotation-comments")
   _videojs.registerPlugin("annotationComments", AnnotationComments(_videojs))
   require("@contently/videojs-annotation-comments/build/css/annotations.css")
@@ -35,6 +55,7 @@ if (SETTINGS.FEATURES.VIDEOJS_ANNOTATIONS) {
 
 // export here to allow mocking of videojs function
 export const videojs = _videojs
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 require("@silvermine/videojs-quality-selector")(videojs)
 
 export const getHLSEncodedUrl = (video: Video): string | null => {
@@ -45,7 +66,7 @@ export const getHLSEncodedUrl = (video: Video): string | null => {
   return videofile ? videofile.cloudfront_url : null
 }
 
-export const videoIsProcessing = R.compose(
+export const videoIsProcessing: (video: Video) => boolean = R.compose(
   R.includes(R.__, [
     VIDEO_STATUS_CREATED,
     VIDEO_STATUS_UPLOADING,
@@ -57,7 +78,7 @@ export const videoIsProcessing = R.compose(
 // All states where an async chain (upload or retranscode) is actively in-flight.
 // Attempting a second replace while any of these are active would cause two
 // concurrent chains to race, with the slower one overwriting the faster one.
-export const videoIsInFlight = R.compose(
+export const videoIsInFlight: (video: Video) => boolean = R.compose(
   R.includes(R.__, [
     VIDEO_STATUS_CREATED,
     VIDEO_STATUS_UPLOADING,
@@ -68,7 +89,7 @@ export const videoIsInFlight = R.compose(
   R.prop("status")
 )
 
-export const videoHasError = R.compose(
+export const videoHasError: (video: Video) => boolean = R.compose(
   R.includes(R.__, [
     VIDEO_STATUS_UPLOAD_FAILED,
     VIDEO_STATUS_TRANSCODE_FAILED_INTERNAL,

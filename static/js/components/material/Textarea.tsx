@@ -1,12 +1,11 @@
-// @flow
 import React from "react"
 
-export default class Textarea extends React.Component<*, void> {
-  props: {
-    label: string,
-    id: string
-  }
+type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  label: string
+  id: string
+}
 
+export default class Textarea extends React.Component<TextareaProps> {
   render() {
     const { label, id, ...otherProps } = this.props
     return (

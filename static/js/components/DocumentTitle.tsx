@@ -1,5 +1,9 @@
-// @flow
 import React from "react"
+
+type Props = {
+  title: string
+  children?: React.ReactNode
+}
 
 /**
  * Sets `document.title` and renders its children unchanged.
@@ -39,12 +43,7 @@ import React from "react"
  *
  * DocumentTitle_test.js pins the unmount behaviour.
  */
-export default class DocumentTitle extends React.Component<*, void> {
-  props: {
-    title: string,
-    children?: any
-  }
-
+export default class DocumentTitle extends React.Component<Props> {
   componentDidMount() {
     document.title = this.props.title
   }

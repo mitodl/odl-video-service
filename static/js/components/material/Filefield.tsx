@@ -1,13 +1,13 @@
-// @flow
 import React from "react"
 
-export default class Filefield extends React.Component<*, void> {
-  fileInput: ?HTMLElement
-  props: {
-    label?: string,
-    accept?: string,
-    className?: string
-  }
+type Props = {
+  label?: string
+  accept?: string
+  className?: string
+} & React.InputHTMLAttributes<HTMLInputElement>
+
+export default class Filefield extends React.Component<Props> {
+  fileInput: HTMLInputElement | null
 
   handleClick = () => {
     if (this.fileInput) {
@@ -26,7 +26,10 @@ export default class Filefield extends React.Component<*, void> {
     return (
       <button
         onClick={this.handleClick}
-        href="#"
+        // `href` is not a valid attribute on <button> and React's types
+        // reject it, but React still renders it to the DOM -- spreading it
+        // keeps the emitted markup identical to the Flow version.
+        {...{ href: "#" }}
         className={
           className ?
             `${className} button-link upload-link` :

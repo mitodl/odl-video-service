@@ -1,4 +1,3 @@
-// @flow
 import React from "react"
 import _ from "lodash"
 import { connect } from "react-redux"
@@ -7,16 +6,23 @@ import { CSSTransition, TransitionGroup } from "react-transition-group"
 
 import { actions } from "../actions"
 import type { ToastMessage as ToastMessageType } from "../types/toastTypes"
+import type { RootState } from "../types/rootState"
+import type { ActionCreator } from "../types/reduxTypes"
 
 export const DELAY_MS = 3000
 
-export class ToastOverlay extends React.Component<*, void> {
-  props: {
-    dispatch: Dispatch,
-    messages?: Array<ToastMessageType>,
-    MessageComponent?: any
-  }
+type ToastMessageProps = {
+  message: ToastMessageType
+  removeMessage: (opts: { key: string }) => void
+}
 
+type ToastOverlayProps = {
+  dispatch: Dispatch
+  messages?: Array<ToastMessageType>
+  MessageComponent?: React.ComponentType<ToastMessageProps>
+}
+
+export class ToastOverlay extends React.Component<ToastOverlayProps> {
   render() {
     const { messages } = this.props
     if (_.isEmpty(messages)) {
@@ -52,11 +58,19 @@ export class ToastOverlay extends React.Component<*, void> {
   }
 
   removeMessage(opts: { key: string }) {
-    this.props.dispatch(actions.toast.removeMessage(opts))
+    // `actions` is declared `Record<string, unknown>` in actions/index.ts, so
+    // each slice comes back as `unknown`. The cast is erased at runtime -- the
+    // call stays a property access on `actions.toast`, which is what the tests
+    // stub -- and only tells tsc the shape actions/toast.ts already exports.
+    this.props.dispatch(
+      (actions.toast as { removeMessage: ActionCreator }).removeMessage(opts)
+    )
   }
 }
 
-export class ToastMessage extends React.Component<*, void> {
+export class ToastMessage extends React.Component<ToastMessageProps> {
+  _dismissTimer: ReturnType<typeof setTimeout>
+
   componentDidMount() {
     this._dismissTimer = setTimeout(() => {
       this.props.removeMessage({ key: this.props.message.key })
@@ -82,7 +96,7 @@ export class ToastMessage extends React.Component<*, void> {
   }
 }
 
-export const mapStateToProps = (state: Object) => {
+export const mapStateToProps = (state: RootState) => {
   return { messages: state.toast.messages }
 }
 

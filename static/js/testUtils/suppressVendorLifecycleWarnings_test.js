@@ -592,13 +592,20 @@ describe("our own component names vs the vendor suppression tables", () => {
   const withoutComments = source =>
     source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")
 
-  const jsFilesUnder = dir => {
+  // .ts/.tsx as well as .js: during the Flow -> TypeScript migration a
+  // component moving to .tsx would otherwise drop out of this walk silently,
+  // shrinking `found` and weakening the collision guard below with no failure
+  // anywhere to say so. The isAtLeast floor is what caught that happening.
+  const SOURCE_EXTENSIONS = [".js", ".ts", ".tsx"]
+  const sourceFilesUnder = dir => {
     return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
       const full = path.join(dir, entry.name)
       if (entry.isDirectory()) {
-        return jsFilesUnder(full)
+        return sourceFilesUnder(full)
       }
-      return entry.isFile() && full.endsWith(".js") ? [full] : []
+      return entry.isFile() && SOURCE_EXTENSIONS.some(e => full.endsWith(e)) ?
+        [full] :
+        []
     })
   }
 
@@ -617,7 +624,7 @@ describe("our own component names vs the vendor suppression tables", () => {
   // name -> the first file it was declared in, for the failure message.
   const ownComponents = () => {
     const found = new Map()
-    jsFilesUnder(SOURCE_ROOT).forEach(file => {
+    sourceFilesUnder(SOURCE_ROOT).forEach(file => {
       namesIn(fs.readFileSync(file, "utf8")).forEach(name => {
         if (!found.has(name)) {
           found.set(name, path.relative(SOURCE_ROOT, file))

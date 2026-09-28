@@ -1,11 +1,11 @@
-// @flow
 import React from "react"
 
 import { DESCRIPTION_FORMAT_HTML } from "../../constants"
+import type { DescriptionFormat } from "../../types/descriptionTypes"
 
 type DescriptionProps = {
-  description: ?string,
-  descriptionFormat: ?string,
+  description: string | null
+  descriptionFormat: DescriptionFormat | null
   className?: string
 }
 
@@ -22,9 +22,7 @@ type DescriptionProps = {
  * are plain text, they are rendered escaped exactly as they always were, and
  * they only start being treated as markup once an author upgrades them.
  */
-export default class Description extends React.Component<*, void> {
-  props: DescriptionProps
-
+export default class Description extends React.Component<DescriptionProps> {
   render() {
     const { description, descriptionFormat, className } = this.props
 

@@ -1,4 +1,3 @@
-// @flow
 /*
  * Rich-text field, drop-in replacement for <Textarea> on description fields.
  *
@@ -13,31 +12,36 @@
  */
 import React from "react"
 
+// Type-only imports: erased at compile time, so neither one pulls the editor
+// chunk back into the main bundle that the dynamic import below splits it out
+// of.
+import type { Editor } from "@tiptap/core"
+type EditorLib = typeof import("../../lib/editor")
+
 type Props = {
-  label: string,
-  id: string,
-  value: ?string,
-  onChange: (html: string) => void,
+  label: string
+  id: string
+  value: string | null
+  onChange: (html: string) => void
   // Shown when the field is empty, like a textarea placeholder.
   placeholder?: string
 }
 
 type State = {
   // null until the editor chunk has loaded and mounted
-  lib: ?Object,
-  active: { [string]: boolean },
+  lib: EditorLib | null
+  active: { [key: string]: boolean }
   // true when the editor chunk could not be fetched; falls back to a textarea
-  loadFailed: boolean,
-  linkOpen: boolean,
-  linkValue: string,
+  loadFailed: boolean
+  linkOpen: boolean
+  linkValue: string
   linkError: boolean
 }
 
-export default class RichTextEditor extends React.Component<*, State> {
-  props: Props
-  editor: ?Object
-  editorEl: ?HTMLElement
-  linkInput: ?HTMLInputElement
+export default class RichTextEditor extends React.Component<Props, State> {
+  editor: Editor | null
+  editorEl: HTMLElement | null
+  linkInput: HTMLInputElement | null
   unmounted: boolean
 
   constructor(props: Props) {
@@ -150,7 +154,7 @@ export default class RichTextEditor extends React.Component<*, State> {
     if (!this.editor || !lib) {
       return
     }
-    const active = {}
+    const active: { [key: string]: boolean } = {}
     lib.TOOLBAR_BUTTONS.forEach(button => {
       const target = button.mark || button.node
       active[button.name] = target ? this.editor.isActive(target) : false
@@ -158,7 +162,7 @@ export default class RichTextEditor extends React.Component<*, State> {
     this.setState({ active })
   }
 
-  handleButtonClick = (name: string, event: Object) => {
+  handleButtonClick = (name: string, event: React.SyntheticEvent) => {
     // The buttons live inside a form; a bare <button> would submit it.
     event.preventDefault()
     const { lib } = this.state
@@ -195,11 +199,11 @@ export default class RichTextEditor extends React.Component<*, State> {
     }
   }
 
-  handleLinkChange = (event: Object) => {
+  handleLinkChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     this.setState({ linkValue: event.target.value, linkError: false })
   }
 
-  applyLink = (event: Object) => {
+  applyLink = (event: React.SyntheticEvent) => {
     event.preventDefault()
     const { lib, linkValue } = this.state
     if (!this.editor || !lib) {
@@ -213,7 +217,7 @@ export default class RichTextEditor extends React.Component<*, State> {
     }
   }
 
-  handleLinkKeyDown = (event: Object) => {
+  handleLinkKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       this.applyLink(event)
     } else if (event.key === "Escape") {
@@ -287,7 +291,7 @@ export default class RichTextEditor extends React.Component<*, State> {
     )
   }
 
-  handleFallbackChange = (event: Object) => {
+  handleFallbackChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     this.props.onChange(event.target.value)
   }
 
@@ -304,7 +308,7 @@ export default class RichTextEditor extends React.Component<*, State> {
           <textarea
             className="mdc-text-field__input rich-text-source"
             id={id}
-            rows="8"
+            rows={8}
             spellCheck="false"
             placeholder={placeholder}
             value={value || ""}

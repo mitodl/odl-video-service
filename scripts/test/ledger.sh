@@ -123,7 +123,7 @@ FLOWFIX=$(grep -rho 'FlowFixMe' static/js --include='*.js' 2>/dev/null | wc -l |
 # le 40 -> le 22 (final review fix wave, hq#12640): current actual is 22 after
 # the full Enzyme -> RTL migration; ratchet the ceiling down to that measured
 # value so it can't silently creep back up.
-check "FlowFixMe occurrences" "$FLOWFIX" le 21
+check "FlowFixMe occurrences" "$FLOWFIX" le 17
 
 # Frozen. Adding a line here is how React 18 act() warnings get silenced --
 # turning a real signal about un-batched state updates into future flaky tests.
@@ -419,7 +419,7 @@ fi
 # last .js under static/js is converted, at which point flow-bin, .flowconfig
 # and the babel flow-strip-types override all come out.
 FLOWFILES=$(grep -rl "@flow" static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "flow-annotated files" "$FLOWFILES" le 99
+check "flow-annotated files" "$FLOWFILES" le 76
 
 # Explicit `any` in converted TypeScript, split in two because the two halves
 # move in opposite directions during the migration.

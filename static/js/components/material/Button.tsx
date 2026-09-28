@@ -1,7 +1,8 @@
-// @flow
 import React from "react"
 
-export default class Button extends React.Component<*, void> {
+type Props = React.ButtonHTMLAttributes<HTMLButtonElement>
+
+export default class Button extends React.Component<Props> {
   render() {
     const { children, className, ...otherProps } = this.props
 

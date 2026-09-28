@@ -30,10 +30,6 @@ declare global {
     environment: string
   }
 
-  // webpack
-  // eslint-disable-next-line camelcase
-  const __webpack_public_path__: string
-
   const videojs: (...args: any[]) => any
 
   // Dev/test hooks that static/js/lib/api.ts reads off window to stub the

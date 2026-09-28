@@ -1,16 +1,20 @@
-// @flow
-/* global SETTINGS:false */
 import React from "react"
 
 import { sectionFAQs } from "../data/faqs"
 
-export default class FAQ extends React.Component<*, void> {
-  props: {
-    FAQVisibility: Map<string, boolean>,
-    toggleFAQVisibility: Function
-  }
+type Props = {
+  FAQVisibility: Map<string, boolean>
+  // Curried in HelpPage: called with the question, returns the click handler.
+  toggleFAQVisibility: (
+    question: string
+  ) => (e: React.MouseEvent<HTMLDivElement>) => void
+}
 
-  renderSectionFAQ = ([section, faqs]: [string, any]) => {
+export default class FAQ extends React.Component<Props> {
+  renderSectionFAQ = ([section, faqs]: [
+    string,
+    { [key: string]: React.ReactNode }
+  ]) => {
     return (
       <div className="faq-section" key={section}>
         <h3 className="mdc-typography--subheading">{section}</h3>
@@ -21,7 +25,7 @@ export default class FAQ extends React.Component<*, void> {
     )
   }
 
-  renderFAQ = ([question, answer]: [string, any]) => {
+  renderFAQ = ([question, answer]: [string, React.ReactNode]) => {
     const { FAQVisibility, toggleFAQVisibility } = this.props
 
     return (

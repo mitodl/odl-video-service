@@ -1,7 +1,8 @@
-// @flow
 import React from "react"
 
-export default class ErrorMessage extends React.Component<*, void> {
+type Props = React.HTMLAttributes<HTMLDivElement>
+
+export default class ErrorMessage extends React.Component<Props> {
   render() {
     const { children, className, ...passThroughProps } = this.props
     let classNames = ["odl-error-message"]

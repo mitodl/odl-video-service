@@ -1,14 +1,13 @@
-// @flow
 import React from "react"
 import * as R from "ramda"
 
-export default class Textfield extends React.Component<*, void> {
-  props: {
-    id: string,
-    label?: string,
-    validationMessage?: string
-  }
+type TextfieldProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  id: string
+  label?: string
+  validationMessage?: string
+}
 
+export default class Textfield extends React.Component<TextfieldProps> {
   render() {
     const { label, id, validationMessage, ...otherProps } = this.props
 

@@ -2,11 +2,20 @@ import React from "react"
 import _ from "lodash"
 import { VictoryChart, VictoryBar, VictoryAxis, VictoryStack } from "victory"
 import { VictoryLabel, ClipPath } from "victory"
+import type { VictoryLabelProps } from "victory"
 
 import type { VideoAnalyticsData } from "../../types/videoAnalyticsTypes"
 
+type ConditionalLabelProps = VictoryLabelProps & {
+  testFn: (props: ConditionalLabelProps) => boolean
+  // VictoryLabelProps declares `datum` as an object, but an axis tick label
+  // component is handed the raw tick value, which is what the testFn below
+  // compares numerically.
+  datum?: number
+}
+
 // Helper to selectively show labels in Victory charts
-export class ConditionalLabel extends React.Component {
+export class ConditionalLabel extends React.Component<ConditionalLabelProps> {
   render() {
     const { testFn, ...passThroughProps } = this.props
     if (testFn(this.props)) {
@@ -16,15 +25,44 @@ export class ConditionalLabel extends React.Component {
   }
 }
 
-export class AnalyticsChart extends React.Component {
-  props: {
-    analyticsData: VideoAnalyticsData,
-    getColorForChannel: Function,
-    currentTime: number,
-    style?: { [string]: mixed }
-  }
+type ChartPadding = {
+  top: number
+  bottom: number
+  left: number
+  right: number
+}
 
-  constructor(props) {
+type Dimensions = {
+  width: number
+  height: number
+}
+
+type ChannelDatum = {
+  time: string | number
+  views: number
+}
+
+type Props = {
+  analyticsData: VideoAnalyticsData
+  getColorForChannel: (channel: string) => string
+  currentTime: number
+  duration: number
+  padding?: ChartPadding
+  setVideoTime?: (time: number) => void
+  style?: React.CSSProperties
+}
+
+type State = {
+  dimensions: Dimensions | null
+}
+
+export class AnalyticsChart extends React.Component<Props, State> {
+  _namespace: number
+  _dimensionsTimer: ReturnType<typeof setTimeout>
+  _resizeHandler: _.DebouncedFunc<() => void>
+  rootRef: HTMLDivElement | null
+
+  constructor(props: Props) {
     super(props)
     this._namespace = Math.floor(1e6 * Math.random()) // used for ids in svg
     this.state = {
@@ -111,11 +149,14 @@ export class AnalyticsChart extends React.Component {
     const chartBodyClipPathId = `${this._namespace}-chart-body-clipPath`
     const chartBodyBounds = this._getRelativeChartBodyBounds()
     const yTicks = this._getYTicks({ analyticsData })
+    // VideoAnalyticsData types `times` as (string | number)[], but the chart
+    // treats them as numeric minutes, and Victory's domain tuple only accepts
+    // number | Date -- hence the cast on the last tick below.
     const xMax =
       duration > 0 ?
         duration / 60 :
         analyticsData.times ?
-          analyticsData.times.slice(-1)[0] :
+          (analyticsData.times.slice(-1)[0] as number) :
           0
     return (
       <VictoryChart
@@ -231,8 +272,10 @@ export class AnalyticsChart extends React.Component {
     }
   }
 
-  _generateViewsAtTimesByChannel(analyticsData) {
-    const viewsAtTimesByChannel = {}
+  _generateViewsAtTimesByChannel(analyticsData: VideoAnalyticsData): {
+    [key: string]: Array<ChannelDatum>
+  } {
+    const viewsAtTimesByChannel: { [key: string]: Array<ChannelDatum> } = {}
     // eslint-disable-next-line no-unused-vars
     for (const channel of analyticsData.channels) {
       viewsAtTimesByChannel[channel] = []
@@ -251,7 +294,7 @@ export class AnalyticsChart extends React.Component {
     return viewsAtTimesByChannel
   }
 
-  _getYTicks(opts) {
+  _getYTicks(opts: { analyticsData: VideoAnalyticsData }): Array<number> {
     const { analyticsData } = opts
     const sortedTotalViewsValues = analyticsData.times
       .map(time => {

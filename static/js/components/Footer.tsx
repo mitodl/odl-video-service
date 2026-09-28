@@ -1,11 +1,9 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import moment from "moment"
 
 const currentYear = () => moment().format("YYYY")
 
-export default class Footer extends React.Component<*, void> {
+export default class Footer extends React.Component {
   render() {
     return (
       <footer id="footer">

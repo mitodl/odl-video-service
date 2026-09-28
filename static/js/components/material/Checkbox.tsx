@@ -1,22 +1,18 @@
-// @flow
-/* global React$Element */
 import React from "react"
 
 type CheckboxProps = {
-  id: string,
-  label: string,
-  checkGroupName: string,
-  value: string,
-  checked?: boolean,
-  onChange: Function,
-  children?: React$Element<*>[],
-  className?: string,
+  id: string
+  label: string
+  checkGroupName: string
+  value: string
+  checked?: boolean
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void
+  children?: React.ReactNode
+  className?: string
   disabled?: boolean
 }
 
-export default class Checkbox extends React.Component<*, void> {
-  props: CheckboxProps
-
+export default class Checkbox extends React.Component<CheckboxProps> {
   render() {
     const {
       value,

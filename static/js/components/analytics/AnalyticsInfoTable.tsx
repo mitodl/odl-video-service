@@ -1,25 +1,30 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import _ from "lodash"
 
 import type { VideoAnalyticsData } from "../../types/videoAnalyticsTypes"
 
-export default class AnalyticsInfoTable extends React.Component<*, void> {
-  props: {
-    analyticsData: VideoAnalyticsData,
-    getColorForChannel: Function,
-    currentTime: number,
-    style?: { [string]: mixed }
-  }
+type Props = {
+  analyticsData: VideoAnalyticsData
+  getColorForChannel: (channel: string) => string
+  currentTime: number
+  style?: React.CSSProperties
+}
 
+type ColumnSpec = {
+  key: string
+  className: string
+  labelEl: React.ReactNode
+  valueEl: React.ReactNode
+}
+
+export default class AnalyticsInfoTable extends React.Component<Props> {
   render() {
     const { analyticsData, currentTime, style } = this.props
     const columnSpecs = this.generateColumnSpecs({
       analyticsData,
       time: currentTime
     })
-    const columnStyles = {
+    const columnStyles: { [key: string]: React.CSSProperties } = {
       th: { fontWeight: "normal", fontSize: "90%" },
       td: { fontWeight: "bold", textAlign: "center" }
     }
@@ -60,14 +65,14 @@ export default class AnalyticsInfoTable extends React.Component<*, void> {
   }
 
   generateColumnSpecs(opts: {
-    analyticsData: VideoAnalyticsData,
+    analyticsData: VideoAnalyticsData
     time: number
-  }) {
+  }): Array<ColumnSpec> {
     const { analyticsData, time } = opts
     const minute = Math.floor(time / 60)
     const viewsAtTime = analyticsData.views_at_times[minute] || {}
     const totalViews = _.sum(Object.values(viewsAtTime))
-    let columnSpecs = [
+    let columnSpecs: Array<ColumnSpec> = [
       {
         key:       "time",
         className: "time",
@@ -85,7 +90,10 @@ export default class AnalyticsInfoTable extends React.Component<*, void> {
           valueEl:   <span>{totalViews}</span>
         },
         ...analyticsData.channels.map(channel => {
-          const numViews = parseFloat(viewsAtTime[channel] || 0)
+          // `parseFloat` stringifies its argument before parsing, so wrapping
+          // in `String` is what the call already did implicitly; it only makes
+          // the coercion visible to the typechecker.
+          const numViews = parseFloat(String(viewsAtTime[channel] || 0))
           const percent = totalViews === 0 ? 0 : (numViews / totalViews) * 100
           return {
             key:       channel,
@@ -114,7 +122,7 @@ export default class AnalyticsInfoTable extends React.Component<*, void> {
   }
 
   renderLabelForChannel(channel: string) {
-    const style = {
+    const style: React.CSSProperties = {
       marginRight:     ".5em",
       width:           10,
       height:          10,

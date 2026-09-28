@@ -1,16 +1,23 @@
-// @flow
 import React from "react"
-import type { ChildrenArray } from "react"
+import type { ReactNode } from "react"
 import { MDCToolbar } from "@material/toolbar/dist/mdc.toolbar"
 
-export default class Toolbar extends React.Component<*, void> {
-  toolbar: null
-  toolbarRoot: ?HTMLElement
+/*
+ * @material/toolbar 0.33 ships no type declarations, so the instance is typed
+ * by the one member this component actually uses of it.
+ */
+type MDCToolbarInstance = {
+  destroy: () => void
+}
 
-  props: {
-    onClickMenu: () => void,
-    children: ChildrenArray<*>
-  }
+type Props = {
+  onClickMenu: () => void
+  children: ReactNode
+}
+
+export default class Toolbar extends React.Component<Props> {
+  toolbar: MDCToolbarInstance | null
+  toolbarRoot: HTMLElement | null
 
   componentDidMount() {
     this.toolbar = new MDCToolbar(this.toolbarRoot)
@@ -22,7 +29,7 @@ export default class Toolbar extends React.Component<*, void> {
     }
   }
 
-  toggleMenu = (event: Event) => {
+  toggleMenu = (event: React.MouseEvent<HTMLAnchorElement>) => {
     const { onClickMenu } = this.props
     event.preventDefault()
 
@@ -33,7 +40,12 @@ export default class Toolbar extends React.Component<*, void> {
     const { children } = this.props
 
     return (
-      <header className="mdc-toolbar" ref={div => (this.toolbarRoot = div)}>
+      <header
+        className="mdc-toolbar"
+        ref={div => {
+          this.toolbarRoot = div
+        }}
+      >
         <div className="mdc-toolbar__row">
           <section className="mdc-toolbar__section mdc-toolbar__section--align-start">
             <a
