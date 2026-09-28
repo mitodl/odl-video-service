@@ -1,11 +1,11 @@
-//@flow
-
 /*
   Determine which fullscreen function names are available for the current browser.
   Based on private videojs module.
 */
 
-const fullscreenApi = {}
+// Keys are spec fullscreen API names, values the vendor-prefixed name this
+// browser actually implements.
+const fullscreenApi: Record<string, string> = {}
 
 const apiMap = [
   [

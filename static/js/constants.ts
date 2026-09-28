@@ -1,4 +1,3 @@
-// @flow
 export const ENCODING_HLS = "HLS"
 export const ENCODING_ORIGINAL = "original"
 

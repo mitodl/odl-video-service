@@ -10,6 +10,9 @@ declare global {
       [key: string]: boolean
     }
     reactGaDebug: string
+    // Sent by ui/views.py:68 and read by util/google_analytics and
+    // util/withTracker, but absent from the old Flow declaration.
+    gaTrackingID: string
     cloudfront_base_url: string
     video: Video
     videoKey: string
@@ -32,6 +35,14 @@ declare global {
   const __webpack_public_path__: string
 
   const videojs: (...args: any[]) => any
+
+  // Dev/test hooks that static/js/lib/api.ts reads off window to stub the
+  // analytics endpoint. Set by the browser console or a test, never by the app.
+  interface Window {
+    ovsMockAnalytics?: boolean
+    ovsMockAnalyticsData?: unknown
+    ovsMockAnalyticsError?: boolean
+  }
 }
 
 export {}

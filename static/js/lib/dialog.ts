@@ -1,4 +1,3 @@
-// @flow
 import * as R from "ramda"
 
 export const PERM_CHOICE_NONE: string = "none"
@@ -10,7 +9,7 @@ export const PERM_CHOICE_OVERRIDE: string = "override"
 
 export type DialogVisibilityState = {
   dialogVisibility: {
-    [string]: boolean
+    [key: string]: boolean
   }
 }
 

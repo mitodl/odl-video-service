@@ -1,13 +1,16 @@
-// @flow
-/* global SETTINGS:false */
 import ga from "react-ga"
 import * as R from "ramda"
 
-const makeGAEvent = (category, action, label, value) => ({
+const makeGAEvent = (
+  category: string,
+  action: string,
+  label: string,
+  value?: number
+) => ({
   category: category,
   action:   action,
   label:    label,
-  value:    Math.round(value)
+  value:    Math.round(value as number)
 })
 
 const isValidNumber = R.both(R.is(Number), R.complement(R.equals(NaN)))

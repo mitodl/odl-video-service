@@ -123,7 +123,7 @@ FLOWFIX=$(grep -rho 'FlowFixMe' static/js --include='*.js' 2>/dev/null | wc -l |
 # le 40 -> le 22 (final review fix wave, hq#12640): current actual is 22 after
 # the full Enzyme -> RTL migration; ratchet the ceiling down to that measured
 # value so it can't silently creep back up.
-check "FlowFixMe occurrences" "$FLOWFIX" le 22
+check "FlowFixMe occurrences" "$FLOWFIX" le 21
 
 # Frozen. Adding a line here is how React 18 act() warnings get silenced --
 # turning a real signal about un-batched state updates into future flaky tests.
@@ -413,15 +413,23 @@ fi
 # last .js under static/js is converted, at which point flow-bin, .flowconfig
 # and the babel flow-strip-types override all come out.
 FLOWFILES=$(grep -rl "@flow" static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "flow-annotated files" "$FLOWFILES" le 138
+check "flow-annotated files" "$FLOWFILES" le 129
 
 # Explicit `any` in converted TypeScript. Every one is inherited: the Flow
 # originals used `any`, `*`, `Object` or `Function` in exactly these places, so
 # converting them faithfully carried the looseness across rather than inventing
 # types the code does not honour. @typescript-eslint/no-explicit-any is set to
 # "warn" for .ts while this is non-zero; tighten both together.
-ANYS=$(grep -ohE "\\bany\\b" static/js/types/*.ts 2>/dev/null | wc -l | tr -d ' ')
-check "explicit any in types" "$ANYS" le 36
+# Counted across every .ts/.tsx, not just static/js/types: scoping it to the
+# types directory left `any` invisible everywhere else, which is where most of
+# it would land as files convert.
+# Comment lines are stripped first: without that, prose like "any author" in a
+# docblock counts as an explicit any. With it, this number agrees exactly with
+# @typescript-eslint/no-explicit-any's own count, which is the point -- a gate
+# that disagrees with the linter it stands in for teaches people to ignore it.
+ANYS=$(grep -rhE "\\bany\\b" static/js --include='*.ts' --include='*.tsx' 2>/dev/null \
+	| grep -vE "^[[:space:]]*(//|\\*|/\\*)" | grep -ohE "\\bany\\b" | wc -l | tr -d ' ')
+check "explicit any in ts" "$ANYS" le 35
 
 echo
 if [[ $FAIL -ne 0 ]]; then

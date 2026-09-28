@@ -1,4 +1,3 @@
-// @flow
 import _ from "lodash"
 import {
   fetchJSONWithCSRF,
@@ -6,6 +5,22 @@ import {
 } from "redux-hammock/django_csrf_fetch"
 import type { Collection } from "../types/collectionTypes"
 import type { VideoUpdatePayload } from "../types/videoTypes"
+
+/**
+ * An Error that carries the HTTP status that produced it.
+ *
+ * Replaces a `$FlowFixMe` that assigned `.status` onto a plain Error, which
+ * Flow could not express and so was suppressed rather than typed.
+ */
+export class HttpError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "HttpError"
+    this.status = status
+  }
+}
 
 export type PaginationParams = {
   page: string | number
@@ -21,7 +36,7 @@ export function getCollections(opts: { pagination?: PaginationParams } = {}) {
 }
 
 export function makeQueryParamsStr(queryParams: {
-  [string]: string | number
+  [key: string]: string | number
 }): string {
   return _.map(queryParams, (v, k) => {
     return [k, v].map(encodeURIComponent).join("=")
@@ -32,7 +47,10 @@ export function getCollection(collectionKey: string) {
   return fetchJSONWithCSRF(`/api/v0/collections/${encodeURI(collectionKey)}/`)
 }
 
-export function updateCollection(collectionKey: string, payload: Object) {
+export function updateCollection(
+  collectionKey: string,
+  payload: Record<string, unknown>
+) {
   return fetchJSONWithCSRF(`/api/v0/collections/${encodeURI(collectionKey)}/`, {
     method: "PATCH",
     body:   JSON.stringify(payload)
@@ -71,7 +89,7 @@ export function deleteVideo(videoKey: string) {
   })
 }
 
-export function uploadVideo(collectionKey: string, files: Array<Object>) {
+export function uploadVideo(collectionKey: string, files: Array<File>) {
   return fetchJSONWithCSRF(`/api/v0/upload_videos/`, {
     method: "POST",
     body:   JSON.stringify({ collection: collectionKey, files: files })
@@ -115,10 +133,7 @@ export async function uploadThumbnail(videoKey: string, formData: FormData) {
       httpStatus === 413 ?
         "This image is too large. Please reduce the file size and try again." :
         `Thumbnail upload failed (${httpStatus})`
-    const err = new Error(message)
-    // $FlowFixMe
-    err.status = httpStatus
-    throw err
+    throw new HttpError(message, httpStatus)
   }
 }
 
@@ -149,7 +164,10 @@ export function syncCollectionVideosWithEdX(collectionId: string) {
   })
 }
 
-export function replaceVideoFromDropbox(videoKey: string, file: Object) {
+export function replaceVideoFromDropbox(
+  videoKey: string,
+  file: Record<string, unknown>
+) {
   return fetchJSONWithCSRF(`/api/v0/replace_video/`, {
     method: "POST",
     body:   JSON.stringify({ video: videoKey, file: file })

@@ -1,11 +1,10 @@
-// @flow
 /*
  * Rich-text editor for Collection and Video descriptions.
  *
- * Built on @tiptap/core rather than @tiptap/react: this app is on React 15,
- * which has no hooks, and @tiptap/react needs React >= 17. The core package has
+ * Built on @tiptap/core rather than @tiptap/react: this app has no hooks and
+ * uses class components throughout. The core package has
  * no React dependency at all, so RichTextEditor mounts it imperatively against
- * a ref. Nothing here changes when the app moves to React 18.
+ * a ref.
  *
  * The extension list is explicit rather than StarterKit. That is not for weight
  * (it saves ~3KB) but for correctness: every tag produced here has to survive
@@ -98,7 +97,7 @@ export const createEditor = (
   element: HTMLElement,
   content: string,
   onChange: (html: string) => void
-): Object =>
+): Editor =>
   new Editor({
     element,
     extensions: EXTENSIONS,
@@ -122,7 +121,7 @@ const LOOKS_SCHEMELESS = /^[\w-]+(\.[\w-]+)+(:\d+)?([/?#]|$)/
 /**
  * Normalize an author-typed link target, or return null if it isn't usable.
  */
-export const normalizeHref = (raw: string): ?string => {
+export const normalizeHref = (raw: string): string | null => {
   const href = (raw || "").trim()
   if (!href) {
     return null
@@ -143,7 +142,7 @@ export const normalizeHref = (raw: string): ?string => {
  * by applyLink instead, because it needs a target from the author first.
  * Returns false when the button did nothing.
  */
-export const runCommand = (editor: Object, name: string): boolean => {
+export const runCommand = (editor: Editor, name: string): boolean => {
   const chain = editor.chain().focus()
   switch (name) {
   case "bold":
@@ -170,7 +169,7 @@ export const runCommand = (editor: Object, name: string): boolean => {
  * Link the current selection, extending over an existing link if the cursor is
  * inside one. Returns false if the target isn't a usable link.
  */
-export const applyLink = (editor: Object, raw: string): boolean => {
+export const applyLink = (editor: Editor, raw: string): boolean => {
   const href = normalizeHref(raw)
   if (!href) {
     return false
