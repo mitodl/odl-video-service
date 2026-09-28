@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    // Babel strips the types; tsc is only ever run as a checker (`yarn tsc`),
+    // never to emit. Keeping noEmit on means the build stays a single
+    // babel/webpack pipeline and tsc cannot disagree with it about output.
+    "noEmit": true,
+    "isolatedModules": true,
+
+    // allowJs without checkJs lets .ts and .js coexist during the migration:
+    // TypeScript resolves imports into the remaining Flow-annotated .js files
+    // without trying to typecheck them.
+    "allowJs": true,
+    "checkJs": false,
+
+    // Deliberately off for now. The codebase has ~1000 latent type defects
+    // inherited from years of unchecked Flow annotations; turning these on
+    // before the conversion is done would bury real regressions in noise.
+    // Flip them on in the final step, once no .js remains under static/js.
+    "strict": false,
+    "noImplicitAny": false,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "baseUrl": "./static/js"
+  },
+  "include": ["static/js/**/*.ts", "static/js/**/*.tsx"],
+  "exclude": ["node_modules", "static/bundles", "staticfiles"]
+}

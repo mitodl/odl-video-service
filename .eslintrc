@@ -16,5 +16,39 @@
         "@babel/plugin-syntax-jsx"
       ]
     }
-  }
+  },
+  "overrides": [
+    {
+      // eslint-config-mitodl's base already carries a *.ts override that picks
+      // @typescript-eslint/parser, but extending .../flow afterwards re-sets
+      // the root parser to @babel/eslint-parser, and in the eslintrc cascade
+      // the later entry wins -- so every .ts file was being parsed as Flow.
+      // This override is declared here, after all three extends, to land last.
+      "files": ["*.ts", "*.tsx"],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "sourceType": "module",
+        "requireConfigFile": null,
+        "babelOptions": null
+      },
+      "rules": {
+        // Every `any` in static/js/types is inherited from the Flow original,
+        // which used `any`, `*`, `Object` or `Function` in the same place.
+        // Failing the build on them would only invite inventing types the code
+        // does not actually honour. ledger.sh caps the count so it can fall but
+        // never rise; restore this to "error" when that ceiling reaches 0.
+        "@typescript-eslint/no-explicit-any": "warn"
+      }
+    },
+    {
+      // Ambient declaration files are lists of unrelated globals, not runtime
+      // variable statements. one-var would have them merged into a single
+      // `const a, b, c`, which obscures what each global is and where it comes
+      // from.
+      "files": ["*.d.ts"],
+      "rules": {
+        "one-var": "off"
+      }
+    }
+  ]
 }

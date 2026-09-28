@@ -22,7 +22,7 @@ module.exports = {
         path.join(__dirname, "static/js"),
         "node_modules"
       ],
-      extensions: ['.js', '.jsx'],
+      extensions: ['.js', '.jsx', '.ts', '.tsx'],
       alias: {
         'videojs-contrib-hls': path.resolve(__dirname, 'node_modules/videojs-contrib-hls/dist/videojs-contrib-hls.js'),
         'videojs-contrib-quality-levels': path.resolve(__dirname, 'node_modules/videojs-contrib-quality-levels/dist/videojs-contrib-quality-levels.js'),
@@ -33,7 +33,7 @@ module.exports = {
     }
   },
   babelSharedLoader: {
-    test: /\.jsx?$/,
+    test: /\.[jt]sx?$/,
     exclude: /node_modules/,
     loader: 'babel-loader',
     options: {
@@ -45,10 +45,24 @@ module.exports = {
         "node_modules/**"
       ],
       "plugins": [
-        "@babel/plugin-transform-flow-strip-types",
         "@babel/plugin-proposal-object-rest-spread",
         "@babel/plugin-proposal-class-properties",
         "@babel/plugin-syntax-dynamic-import",
+      ],
+      // Flow and TypeScript syntax cannot both be enabled on one file, so the
+      // type-stripping transform is selected by extension. .js/.jsx keep Flow
+      // while the migration is in progress; .ts/.tsx get TypeScript. When the
+      // last Flow annotation is gone, the first override and
+      // @babel/plugin-transform-flow-strip-types go with it.
+      "overrides": [
+        {
+          "test": /\.jsx?$/,
+          "plugins": ["@babel/plugin-transform-flow-strip-types"]
+        },
+        {
+          "test": /\.tsx?$/,
+          "presets": ["@babel/preset-typescript"]
+        }
       ]
     }
   },

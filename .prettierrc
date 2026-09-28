@@ -1,4 +1,12 @@
 {
   "semi": false,
-  "parser": "babel-flow"
+  "parser": "babel-flow",
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+      "options": {
+        "parser": "typescript"
+      }
+    }
+  ]
 }

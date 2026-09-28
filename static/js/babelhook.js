@@ -6,6 +6,20 @@ require("babel-polyfill")
 // Update presets to use Babel 7 format for testing
 babelSharedLoader.options.presets = ["@babel/preset-env", "@babel/preset-react"]
 
+// Resetting presets above drops the per-extension overrides' presets too, so
+// re-declare them. .js/.jsx keep Flow, .ts/.tsx get TypeScript; the two cannot
+// be enabled on the same file.
+babelSharedLoader.options.overrides = [
+  {
+    test:    /\.jsx?$/,
+    plugins: ["@babel/plugin-transform-flow-strip-types"]
+  },
+  {
+    test:    /\.tsx?$/,
+    presets: ["@babel/preset-typescript"]
+  }
+]
+
 // webpack.config.shared.js declares ignore as the relative glob
 // "node_modules/**", which @babel/register anchors to cwd. That covers this
 // checkout's own node_modules but nothing resolved from a node_modules
@@ -112,4 +126,12 @@ global.cancelAnimationFrame = function(id) {
 }
 copyProps(window, global)
 
-require("@babel/register")(babelSharedLoader.options)
+// @babel/register only hooks .js/.jsx/.mjs/.es/.es6 by default, so .ts and
+// .tsx have to be named explicitly or a migrated file is require()d raw and
+// throws on its first type annotation. Passed here rather than set on
+// babelSharedLoader.options, which is also handed to babel-loader, where
+// "extensions" is not a valid option.
+require("@babel/register")({
+  ...babelSharedLoader.options,
+  extensions: [".js", ".jsx", ".ts", ".tsx"]
+})
