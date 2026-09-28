@@ -1,4 +1,3 @@
-// @flow
 import { combineReducers } from "redux"
 import { deriveReducers } from "redux-hammock"
 
@@ -10,7 +9,7 @@ import collectionUi from "./collectionUi"
 import videoUi from "./videoUi"
 import toast from "./toast"
 
-const reducers: Object = {
+const reducers: Record<string, unknown> = {
   collectionsPagination,
   commonUi,
   collectionUi,

@@ -4,6 +4,10 @@ import type { DescriptionFormat } from "./descriptionTypes"
 
 export type CollectionListItem = {
   key: string
+  // In the serializer's `fields` tuple (ui/serializers.py:418) and returned on
+  // every collection, but absent from the Flow type. Video declared it; this
+  // did not.
+  created_at: string
   title: string
   description: string | null
   description_format: DescriptionFormat
@@ -20,7 +24,9 @@ export type CollectionListItem = {
   owner: number
   owner_info: User
   is_public: boolean
-  stream_source: string
+  // ui/models.py:217 declares stream_source null=True, blank=True, so it is
+  // null on every collection that has not chosen a source.
+  stream_source: string | null
 }
 
 export type Collection = CollectionListItem & {

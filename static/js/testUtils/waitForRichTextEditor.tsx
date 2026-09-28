@@ -1,4 +1,3 @@
-// @flow
 import { assert } from "chai"
 import { waitFor, within } from "@testing-library/react"
 

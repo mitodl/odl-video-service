@@ -1,4 +1,4 @@
-// @flow
+import type { SinonSandbox, SinonStub } from "sinon"
 
 /*
  * A stand-in for a video.js player, shared by VideoPlayer_test.js and
@@ -11,13 +11,18 @@
  * observable. Everything else is a sinon stub on the caller's sandbox, so
  * `sandbox.restore()` in the test's afterEach cleans up.
  */
-export const makePlayerStub = (sandbox: Object): Object => {
+type StubTrack = {
+  src: string
+  addEventListener?: (...args: any[]) => void
+}
+
+export const makePlayerStub = (sandbox: SinonSandbox) => {
   const player = {
     el_: {
       style:         {},
       dispatchEvent: sandbox.stub()
     },
-    tracks:        [],
+    tracks:        [] as Array<StubTrack>,
     on:            sandbox.stub(),
     tech_:         {},
     // RTL unmounts after every test, so VideoPlayer's componentWillUnmount --
@@ -34,17 +39,23 @@ export const makePlayerStub = (sandbox: Object): Object => {
     textTracks:    function() {
       return this.tracks
     },
-    removeRemoteTextTrack: function(track: Object) {
+    removeRemoteTextTrack: function(track: StubTrack) {
       this.tracks.splice(this.tracks.indexOf(track), 1)
     },
-    addRemoteTextTrack: function(track: Object) {
+    addRemoteTextTrack: function(track: StubTrack) {
       this.tracks.push({ src: track.src, addEventListener: sandbox.stub() })
     }
   }
   // video.js returns the player from these for chaining. They are assigned
-  // after the literal because they close over `player` itself.
-  player.reset = sandbox.stub().returns(player)
-  player.src = sandbox.stub().returns(player)
-  player.fluid = sandbox.stub().returns(player)
-  return player
+  // after the literal because they close over `player` itself, so the object
+  // is widened here rather than at the literal.
+  const chained = player as typeof player & {
+    reset: SinonStub
+    src: SinonStub
+    fluid: SinonStub
+  }
+  chained.reset = sandbox.stub().returns(player)
+  chained.src = sandbox.stub().returns(player)
+  chained.fluid = sandbox.stub().returns(player)
+  return chained
 }

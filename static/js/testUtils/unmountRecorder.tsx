@@ -1,4 +1,3 @@
-// @flow
 import React from "react"
 
 // Shared by harness_test.js and teardown_test.js, both of which need to
@@ -8,7 +7,7 @@ import React from "react"
 export const makeUnmountRecorder = () => {
   let unmountCount = 0
 
-  class UnmountRecorder extends React.Component<*, void> {
+  class UnmountRecorder extends React.Component {
     componentWillUnmount() {
       unmountCount += 1
     }

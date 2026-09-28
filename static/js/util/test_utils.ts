@@ -1,5 +1,3 @@
-/* global SETTINGS: false */
-// @flow
 import { assert } from "chai"
 import _ from "lodash"
 import * as R from "ramda"
@@ -9,11 +7,11 @@ import type { Store } from "redux"
 
 export function createAssertReducerResultState(
   store: Store,
-  getReducerState: (x: any) => Object
+  getReducerState: (x: any) => Record<string, any>
 ) {
   return (
-    action: (arg: any) => Action<*, *>,
-    stateLookup: (state: Object) => any,
+    action: (arg: any) => Action<any, any>,
+    stateLookup: (state: Record<string, any>) => any,
     defaultValue: any
   ): void => {
     const getState = () => stateLookup(getReducerState(store.getState()))

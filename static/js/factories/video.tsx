@@ -1,4 +1,3 @@
-// @flow
 import _ from "lodash"
 import casual from "casual-browserify"
 
@@ -92,7 +91,7 @@ export const makeVideo = (
   collection_key:        collectionKey,
   collection_title:      casual.text,
   collection_view_lists: [],
-  multiangle:            casual.coin_flip,
+  multiangle:            Boolean(casual.coin_flip),
   videofile_set:         [
     makeVideoFile(videoKey, ENCODING_HLS),
     makeVideoFile(videoKey, ENCODING_ORIGINAL)

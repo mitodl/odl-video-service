@@ -1,5 +1,3 @@
-// @flow
-
 import type { VideoAnalyticsData } from "../types/videoAnalyticsTypes"
 
 export const makeVideoAnalyticsData = (

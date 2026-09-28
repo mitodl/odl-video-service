@@ -1,4 +1,3 @@
-// @flow
 /* global SETTINGS:false */
 /* eslint-disable max-len */
 import React from "react"

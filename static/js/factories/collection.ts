@@ -1,4 +1,3 @@
-// @flow
 import casual from "casual-browserify"
 
 import { makeVideos } from "./video"
@@ -19,6 +18,11 @@ export const makeCollection = (
   view_lists:          casual.array_of_words(2),
   admin_lists:         casual.array_of_words(2),
   is_logged_in_only:   false,
+  // Both are in the serializer and returned on every collection, but the
+  // factory omitted them, so anything built from it read undefined where
+  // the app sees a real value. Defaults match ui/models.py:214,217.
+  is_public:           false,
+  stream_source:       null,
   edx_course_id:       casual.word,
   is_admin:            true,
   is_edx_course_admin: true,

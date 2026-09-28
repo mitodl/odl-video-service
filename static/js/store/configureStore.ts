@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-redeclare
-/* global require:false, module:false */
 import {
   compose,
   legacy_createStore as createStore,
@@ -9,6 +7,7 @@ import { thunk } from "redux-thunk" // Updated import
 import { createLogger } from "redux-logger"
 
 import rootReducer from "../reducers"
+import type { RootState } from "../types/rootState"
 
 const composeEnhancers =
   (typeof window !== "undefined" &&
@@ -24,8 +23,9 @@ if (process.env.NODE_ENV !== "production") {
   createStoreWithMiddleware = compose(applyMiddleware(thunk))(createStore)
 }
 
-// @flow
-export default function configureStore(initialState: Object) {
+// Partial: callers seed only the slices a test or page cares about, and
+// combineReducers fills the rest from each reducer's own initial state.
+export default function configureStore(initialState?: Partial<RootState>) {
   const store = createStoreWithMiddleware(rootReducer, initialState)
 
   if (module.hot) {

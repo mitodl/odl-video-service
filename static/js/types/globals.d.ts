@@ -39,6 +39,9 @@ declare global {
   // Dev/test hooks that static/js/lib/api.ts reads off window to stub the
   // analytics endpoint. Set by the browser console or a test, never by the app.
   interface Window {
+    // Injected by the Redux DevTools browser extension; absent in production
+    // and in tests, which is why store/configureStore falls back to `compose`.
+    __REDUX_DEVTOOLS_EXTENSION_COMPOSE__?: typeof import("redux").compose
     ovsMockAnalytics?: boolean
     ovsMockAnalyticsData?: unknown
     ovsMockAnalyticsError?: boolean

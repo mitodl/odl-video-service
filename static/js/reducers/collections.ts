@@ -1,4 +1,3 @@
-// @flow
 import { GET, PATCH, POST, INITIAL_STATE } from "redux-hammock/constants"
 import * as R from "ramda"
 
@@ -15,7 +14,10 @@ export const collectionsListEndpoint = {
   initialState:       { ...INITIAL_STATE, data: [] },
   getFunc:            (): Promise<CollectionList> => api.getCollections(),
   postFunc:           (collection: Collection) => api.createCollection(collection),
-  postSuccessHandler: (payload: Collection, data: Object) => {
+  postSuccessHandler: (
+    payload: Collection,
+    data: { results?: Array<Collection> } | null
+  ) => {
     return { results: [payload, ...(data ? data.results || [] : [])] }
   }
 }
@@ -26,8 +28,10 @@ export const collectionsEndpoint = {
   initialState: { ...INITIAL_STATE, data: new Map() },
   getFunc:      (collectionKey: string): Promise<Collection> =>
     api.getCollection(collectionKey),
-  patchFunc: (collectionKey: string, payload: Object): Promise<Collection> =>
-    api.updateCollection(collectionKey, payload),
+  patchFunc: (
+    collectionKey: string,
+    payload: Record<string, unknown>
+  ): Promise<Collection> => api.updateCollection(collectionKey, payload),
   extraActions: {
     [CLEAR_COLLECTION_ERRORS]: R.dissoc("error"),
     [CLEAR_COLLECTION_DATA]:   state => ({
@@ -44,6 +48,6 @@ export const uploadVideoEndpoint = {
   name:         "uploadVideo",
   verbs:        [POST],
   initialState: { ...INITIAL_STATE },
-  postFunc:     (collectionKey: string, files: Array<Object>): Promise<Object> =>
+  postFunc:     (collectionKey: string, files: Array<File>): Promise<unknown> =>
     api.uploadVideo(collectionKey, files)
 }

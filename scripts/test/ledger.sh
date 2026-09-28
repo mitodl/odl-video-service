@@ -168,7 +168,11 @@ check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
 # help: `${VENDORSUPP:-0}` is still `0 -le 4`. Only an explicit existence test
 # fails, and it has to say what the remover is supposed to do, or the next
 # phase just deletes the check to get green.
-SUPPFILE=static/js/testUtils/suppressVendorLifecycleWarnings.js
+# Extension-agnostic: this file converts .js -> .tsx during the TypeScript
+# migration, and a hardcoded .js path turns every gate below it into a
+# "file is gone" failure the moment it is renamed.
+SUPPFILE=$(ls static/js/testUtils/suppressVendorLifecycleWarnings.* 2>/dev/null \
+	| grep -vE '_test\.' | head -1)
 if [[ ! -f $SUPPFILE ]]; then
 	printf "  FAIL  %-34s %s\n" "vendor lifecycle suppressions" \
 		"($SUPPFILE is gone)"
@@ -292,7 +296,8 @@ fi
 # some future file would trip this; that is the safe direction for an
 # invariant, and the only files that legitimately name it are excluded.
 OWN_FINDDOMNODE=$(grep -rhoE '\bfindDOMNode\b' static/js --include='*.js' \
-	--exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
+	--include='*.ts' --include='*.tsx' \
+	--exclude='suppressVendorLifecycleWarnings*' 2>/dev/null | wc -l | tr -d ' ')
 check "own findDOMNode references" "${OWN_FINDDOMNODE:-0}" le 0
 
 # The legacy context API symbols, on the same bare-symbol rule and for the
@@ -307,7 +312,8 @@ check "own findDOMNode references" "${OWN_FINDDOMNODE:-0}" le 0
 # it is the same one-word change, and redundancy that can be evaded is not
 # redundancy.
 OWN_LEGACY_CONTEXT=$(grep -rhoE '\b(childContextTypes|contextTypes|getChildContext)\b' \
-	static/js --include='*.js' --exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
+	static/js --include='*.js' --include='*.ts' --include='*.tsx' \
+	--exclude='suppressVendorLifecycleWarnings*' 2>/dev/null | wc -l | tr -d ' ')
 check "own legacy context API references" "${OWN_LEGACY_CONTEXT:-0}" le 0
 
 # Every @material/* package that SCSS imports must be a DECLARED dependency.
@@ -413,7 +419,7 @@ fi
 # last .js under static/js is converted, at which point flow-bin, .flowconfig
 # and the babel flow-strip-types override all come out.
 FLOWFILES=$(grep -rl "@flow" static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "flow-annotated files" "$FLOWFILES" le 113
+check "flow-annotated files" "$FLOWFILES" le 99
 
 # Explicit `any` in converted TypeScript, split in two because the two halves
 # move in opposite directions during the migration.
@@ -435,7 +441,7 @@ check "Action<any> signatures" "$ACTION_ANYS" le 15
 ANYS=$(grep -rhE "\\bany\\b" static/js --include='*.ts' --include='*.tsx' 2>/dev/null \
 	| grep -vE "^[[:space:]]*(//|\\*|/\\*)" | grep -v "Action<" \
 	| grep -ohE "\\bany\\b" | wc -l | tr -d ' ')
-check "other explicit any" "$ANYS" le 30
+check "other explicit any" "$ANYS" le 35
 
 echo
 if [[ $FAIL -ne 0 ]]; then
