@@ -413,7 +413,7 @@ fi
 # last .js under static/js is converted, at which point flow-bin, .flowconfig
 # and the babel flow-strip-types override all come out.
 FLOWFILES=$(grep -rl "@flow" static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "flow-annotated files" "$FLOWFILES" le 129
+check "flow-annotated files" "$FLOWFILES" le 125
 
 # Explicit `any` in converted TypeScript. Every one is inherited: the Flow
 # originals used `any`, `*`, `Object` or `Function` in exactly these places, so
@@ -429,7 +429,7 @@ check "flow-annotated files" "$FLOWFILES" le 129
 # that disagrees with the linter it stands in for teaches people to ignore it.
 ANYS=$(grep -rhE "\\bany\\b" static/js --include='*.ts' --include='*.tsx' 2>/dev/null \
 	| grep -vE "^[[:space:]]*(//|\\*|/\\*)" | grep -ohE "\\bany\\b" | wc -l | tr -d ' ')
-check "explicit any in ts" "$ANYS" le 35
+check "explicit any in ts" "$ANYS" le 34
 
 echo
 if [[ $FAIL -ne 0 ]]; then

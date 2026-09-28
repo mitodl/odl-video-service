@@ -1,9 +1,10 @@
 import type { Dispatch, Reducer } from "redux"
 
 // redux's Flow libdef exported a `State` type; its TypeScript types do not,
-// because application state is the app's own concern. Nothing here constrains
-// it today, so it stays open until the reducers are converted.
-export type State = Record<string, any>
+// because application state is the app's own concern. Ours is RootState.
+import type { RootState } from "./rootState"
+
+export type State = RootState
 
 export type ActionType = string
 

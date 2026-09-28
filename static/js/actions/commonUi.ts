@@ -1,4 +1,3 @@
-// @flow
 import { createAction } from "redux-actions"
 
 export const qualifiedName = (name: string) => `UI_${name}`
