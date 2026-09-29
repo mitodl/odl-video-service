@@ -171,8 +171,8 @@ check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
 # Extension-agnostic: this file converts .js -> .tsx during the TypeScript
 # migration, and a hardcoded .js path turns every gate below it into a
 # "file is gone" failure the moment it is renamed.
-SUPPFILE=$(ls static/js/testUtils/suppressVendorLifecycleWarnings.* 2>/dev/null |
-	grep -vE '_test\.' | head -1)
+SUPPFILE=$(find static/js/testUtils -maxdepth 1 \
+	-name 'suppressVendorLifecycleWarnings.*' -not -name '*_test.*' 2>/dev/null | head -1)
 if [[ ! -f $SUPPFILE ]]; then
 	printf "  FAIL  %-34s %s\n" "vendor lifecycle suppressions" \
 		"($SUPPFILE is gone)"
