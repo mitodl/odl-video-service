@@ -1,8 +1,6 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
+import type { AppDispatch } from "../../types/reduxTypes"
 import { connect } from "react-redux"
-import type { Dispatch } from "redux"
 import _ from "lodash"
 
 import Dialog from "../material/Dialog"
@@ -23,33 +21,54 @@ import {
   PERM_CHOICE_LOGGED_IN
 } from "../../lib/dialog"
 
-import type { Video, VideoUiState } from "../../types/videoTypes"
+import type {
+  Video,
+  VideoUiState,
+  VideoUpdatePayload
+} from "../../types/videoTypes"
+import type { Collection } from "../../types/collectionTypes"
+import type { RootState } from "../../types/rootState"
+import type { ToastMessage } from "../../types/toastTypes"
 import { calculateListPermissionValue } from "../../util/util"
 import { videoHasError, videoIsProcessing } from "../../lib/video"
 import { DESCRIPTION_FORMAT_HTML } from "../../constants"
 
+/*
+ * The props this dialog reads that come from whoever renders it, rather than
+ * from the store. Both are optional and mapStateToProps branches on which one
+ * it got -- see the comment there.
+ */
+type OwnProps = {
+  collection?: Collection | null
+  video?: Video | null
+}
+
 type DialogProps = {
-  dispatch: Dispatch,
-  videoUi: VideoUiState,
-  video: ?Video,
-  open: boolean,
-  hideDialog: Function,
+  dispatch: AppDispatch
+  videoUi: VideoUiState
+  video: Video | null
+  open: boolean
+  hideDialog: () => void
   shouldUpdateCollection: boolean
+  // Read by renderPermissions, and by mapStateToProps as an own prop. The
+  // Flow prop type never declared it, but the collection page really does
+  // pass it.
+  collection?: Collection | null
 }
 
 type DialogState = {
-  thumbnailFile: ?File,
-  thumbnailPreviewUrl: ?string,
-  thumbnailError: ?string,
-  upgradingDescription: boolean,
-  upgradeError: ?string
+  thumbnailFile: File | null
+  thumbnailPreviewUrl: string | null
+  thumbnailError: string | null
+  upgradingDescription: boolean
+  upgradeError: string | null
 }
 
 /**
  * Allow only blob: (local preview) and https: (CDN) URLs in img src to prevent
  * javascript: or data: URI injection (satisfies CodeQL DOM-XSS check).
  */
-function sanitizeImgSrc(url: ?string): string {
+function sanitizeImgSrc(url: string | null): string {
   if (!url) return ""
   try {
     const parsed = new URL(url)
@@ -62,8 +81,7 @@ function sanitizeImgSrc(url: ?string): string {
   return ""
 }
 
-class EditVideoFormDialog extends React.Component<*, DialogState> {
-  props: DialogProps
+class EditVideoFormDialog extends React.Component<DialogProps, DialogState> {
   state: DialogState = {
     thumbnailFile:        null,
     thumbnailPreviewUrl:  null,
@@ -178,7 +196,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
    * rather than to the video, and leaving it set would strand the field the
    * author is now looking at behind a disabled button.
    */
-  isStaleUpgrade(key: ?string) {
+  isStaleUpgrade(key: string | null) {
     return this.closing || this.props.videoUi.editVideoForm.key !== key
   }
 
@@ -209,7 +227,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 
     this.setState({ upgradingDescription: true, upgradeError: null })
     try {
-      const video = await dispatch(
+      // Annotated because redux-hammock's derived thunks are untyped, so the
+      // awaited value would otherwise be implicitly untyped.
+      const video: Video = await dispatch(
         actions.videos.patch(key, {
           description:        editVideoForm.description,
           description_format: DESCRIPTION_FORMAT_HTML
@@ -250,7 +270,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     }
   }
 
-  setEditVideoTitle = (event: Object) => {
+  setEditVideoTitle = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { dispatch } = this.props
     dispatch(actions.videoUi.setEditVideoTitle(event.target.value))
   }
@@ -261,7 +281,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     dispatch(actions.videoUi.setEditVideoDesc(html))
   }
 
-  setEditVideoCtaLink = (event: Object) => {
+  setEditVideoCtaLink = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { dispatch } = this.props
     dispatch(actions.videoUi.setEditVideoCtaLink(event.target.value))
   }
@@ -276,11 +296,17 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     }
   }
 
-  handleVideoViewPermClick = (event: Object) => {
+  handleVideoViewPermClick = (event: React.ChangeEvent<HTMLInputElement>) => {
     this.setVideoViewPermChoice(event.target.value)
   }
 
-  setVideoPermOverrideChoice = (choice: boolean) => {
+  /*
+   * `choice` is a string, not a boolean: the only caller hands it a radio
+   * input's `value`, which is PERM_CHOICE_COLLECTION or PERM_CHOICE_OVERRIDE,
+   * and `editVideoForm.overrideChoice` it is compared against is a string too.
+   * The Flow annotation said `boolean` and nothing checked it.
+   */
+  setVideoPermOverrideChoice = (choice: string) => {
     const {
       dispatch,
       videoUi: { editVideoForm }
@@ -290,16 +316,18 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     }
   }
 
-  handleVideoPermOverrideClick = (event: Object) => {
+  handleVideoPermOverrideClick = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     this.setVideoPermOverrideChoice(event.target.value)
   }
 
-  setVideoViewPermLists = (event: Object) => {
+  setVideoViewPermLists = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { dispatch } = this.props
     dispatch(actions.videoUi.setViewLists(event.target.value))
   }
 
-  handleThumbnailChange = (event: Object) => {
+  handleThumbnailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files[0]
     if (!file) return
     if (
@@ -397,7 +425,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
      * `<p>` tags. Omitting the field makes the serializer keep the stored
      * format and sanitize against it.
      */
-    let patchData = {
+    let patchData: VideoUpdatePayload = {
       title:       editVideoForm.title,
       description: editVideoForm.description,
       ...(editVideoForm.cta_link !== null ?
@@ -441,7 +469,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
           return
         }
       }
-      const video = await dispatch(
+      const video: Video = await dispatch(
         actions.videos.patch(editVideoForm.key, patchData)
       )
       this.initializeFormWithVideo(video)
@@ -461,7 +489,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     }
   }
 
-  addToastMessage(...args) {
+  addToastMessage(...args: Array<{ message: ToastMessage }>) {
     const { dispatch } = this.props
     dispatch(actions.toast.addMessage(...args))
   }
@@ -688,7 +716,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   }
 }
 
-const mapStateToProps = (state, ownProps) => {
+const mapStateToProps = (state: RootState, ownProps: OwnProps) => {
   const {
     videoUi,
     collectionUi: { selectedVideoKey }
@@ -697,7 +725,8 @@ const mapStateToProps = (state, ownProps) => {
 
   // The dialog needs a Video object passed in as a prop. Depending on the container that includes this dialog,
   // that video can be retrieved in a couple different ways.
-  let selectedVideo, shouldUpdateCollection
+  let selectedVideo: Video | null | undefined,
+    shouldUpdateCollection: boolean | undefined
   if (video) {
     selectedVideo = video
     shouldUpdateCollection = false

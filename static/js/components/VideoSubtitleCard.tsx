@@ -1,4 +1,3 @@
-// @flow
 import React from "react"
 
 import Card from "./material/Card"
@@ -7,14 +6,18 @@ import { makeVideoSubtitleUrl } from "../lib/urls"
 import type { Video, VideoSubtitle } from "../types/videoTypes"
 import Filefield from "./material/Filefield"
 
-export default class VideoSubtitleCard extends React.Component<*, void> {
-  props: {
-    video: Video,
-    isAdmin: boolean,
-    uploadVideoSubtitle: Function,
-    deleteVideoSubtitle: Function
-  }
+type Props = {
+  // Not in the Flow prop list, but VideoDetailPage passes id="subtitleCard".
+  // The Flow class was React.Component<*, void>, so the extra prop went
+  // unchecked; declaring it keeps that call site valid.
+  id?: string
+  video: Video
+  isAdmin: boolean
+  uploadVideoSubtitle: (event: React.ChangeEvent<HTMLInputElement>) => void
+  deleteVideoSubtitle: (subtitleId: number) => void
+}
 
+export default class VideoSubtitleCard extends React.Component<Props> {
   render() {
     const { video, isAdmin, uploadVideoSubtitle, deleteVideoSubtitle } =
       this.props
@@ -41,7 +44,11 @@ export default class VideoSubtitleCard extends React.Component<*, void> {
                       <a
                         className="mdc-list-item mdc-link download-link"
                         href={makeVideoSubtitleUrl(subtitle)}
-                        alt="Download this subtitle"
+                        // `alt` is not a valid attribute on <a> and React's
+                        // types reject it, but React still renders it to the
+                        // DOM -- spreading it keeps the emitted markup
+                        // identical to the Flow version.
+                        {...{ alt: "Download this subtitle" }}
                       >
                         <i className="material-icons">file_download</i>
                       </a>

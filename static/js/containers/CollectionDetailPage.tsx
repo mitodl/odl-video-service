@@ -1,8 +1,7 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import { connect } from "react-redux"
-import type { Dispatch } from "redux"
+import type { UnknownAction } from "redux"
+import type { ThunkDispatch } from "redux-thunk"
 import * as R from "ramda"
 import _ from "lodash"
 import DocumentTitle from "../components/DocumentTitle"
@@ -25,8 +24,11 @@ import * as collectionUiActions from "../actions/collectionUi"
 import { DIALOGS } from "../constants"
 
 import type { Collection } from "../types/collectionTypes"
+import type { RestState } from "../types/restTypes"
+import type { DescriptionFormat } from "../types/descriptionTypes"
 import type { Video } from "../types/videoTypes"
 import type { CommonUiState } from "../reducers/commonUi"
+import type { RootState } from "../types/rootState"
 import * as commonUiActions from "../actions/commonUi"
 import VideoSaverScript from "../components/VideoSaverScript"
 import {
@@ -35,19 +37,46 @@ import {
 } from "../actions/collectionUi"
 import { replaceVideoFromDropbox } from "../lib/api"
 
-export class CollectionDetailPage extends React.Component<*, void> {
-  props: {
-    dispatch: Dispatch,
-    collection: ?Collection,
-    collectionError: ?Object,
-    collectionKey: string,
-    isCollectionAdmin: boolean,
-    editable: boolean,
-    needsUpdate: boolean,
-    commonUi: CommonUiState,
-    showDialog: Function
-  }
+/*
+ * What the collections endpoint stores on `error`. `detail` is DRF's own
+ * message and the only field read here; it is absent on a failure that did
+ * not come back as a DRF error body, which is what renderError falls back on.
+ */
+type CollectionError = {
+  detail?: string
+}
 
+/*
+ * `collection` and `collectionError` come from the same REST slice and are
+ * each null until it resolves, so every consumer below re-checks them.
+ *
+ * `dispatch` was declared as redux's plain `Dispatch` under Flow, but several
+ * dispatches here hand it a thunk (`collectionUiActions
+ * .showEditCollectionDialog()` and every `actions.<slice>.<verb>()` from
+ * redux-hammock return a function of dispatch), so ThunkDispatch is what is
+ * actually passed in.
+ */
+type Props = {
+  dispatch: ThunkDispatch<RootState, unknown, UnknownAction>
+  collection: Collection | null
+  collectionError: CollectionError | null
+  collectionKey: string
+  isCollectionAdmin: boolean
+  editable: boolean
+  needsUpdate: boolean
+  commonUi: CommonUiState
+  showDialog: (dialogName: string) => void
+}
+
+type OwnProps = {
+  match: {
+    params: {
+      collectionKey: string
+    }
+  }
+}
+
+export class CollectionDetailPage extends React.Component<Props> {
   componentDidMount() {
     this.updateRequirements()
   }
@@ -91,7 +120,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
     )
   }
 
-  renderError(error: any) {
+  renderError(error: CollectionError) {
     if (error.detail) {
       return <ErrorMessage>Error: {error.detail}</ErrorMessage>
     }
@@ -152,11 +181,13 @@ export class CollectionDetailPage extends React.Component<*, void> {
     )
   }
 
-  showEditCollectionDialog(e: MouseEvent) {
+  showEditCollectionDialog(e: React.MouseEvent<HTMLAnchorElement>) {
     const { dispatch, collection } = this.props
     e.preventDefault()
-    // $FlowFixMe: collection will really be a colleciton
-    dispatch(collectionUiActions.showEditCollectionDialog(collection))
+    // collection will really be a colleciton
+    dispatch(
+      collectionUiActions.showEditCollectionDialog(collection as Collection)
+    )
   }
 
   renderUploadFrob() {
@@ -198,7 +229,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
     )
   }
 
-  async handleUpload(chosenFiles: Array<Object>) {
+  async handleUpload(chosenFiles: Array<Record<string, unknown>>) {
     const { dispatch, collection } = this.props
     if (!collection) {
       return null
@@ -207,7 +238,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
     dispatch(actions.collections.get(collection.key))
   }
 
-  async handleReplaceVideo(videoKey: string, file: Object) {
+  async handleReplaceVideo(videoKey: string, file: Record<string, unknown>) {
     const { dispatch, collection } = this.props
     try {
       await replaceVideoFromDropbox(videoKey, file)
@@ -237,7 +268,7 @@ export class CollectionDetailPage extends React.Component<*, void> {
     }
   }
 
-  async handleSyncWithEdX(e: Event) {
+  async handleSyncWithEdX(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault()
     const { dispatch, collectionKey } = this.props
     if (!collectionKey) {
@@ -246,6 +277,10 @@ export class CollectionDetailPage extends React.Component<*, void> {
 
     try {
       // Import syncCollectionVideosWithEdX from the API
+      // Left as a call-time require rather than hoisted to a static import:
+      // the call form is what the tests stub, so changing it is a behaviour
+      // change and not part of this conversion.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const { syncCollectionVideosWithEdX } = require("../lib/api")
 
       // Call the API endpoint
@@ -283,7 +318,10 @@ export class CollectionDetailPage extends React.Component<*, void> {
     }
   }
 
-  renderDescription(description: ?string, descriptionFormat: ?string) {
+  renderDescription(
+    description: string | null,
+    descriptionFormat: DescriptionFormat | null
+  ) {
     if (_.isEmpty(description)) {
       return null
     }
@@ -304,7 +342,14 @@ export class CollectionDetailPage extends React.Component<*, void> {
       <VideoList
         className="videos"
         videos={videos}
-        commonUi={this.props.commonUi}
+        /*
+         * VideoList's own Props declares no `commonUi` -- it never reads one,
+         * it forwards a fixed prop list to VideoCard. The prop has always been
+         * passed from here, so it is still passed (removing it is a behaviour
+         * change, not a conversion); it goes through a spread because a plain
+         * attribute is an excess-property error against the declared Props.
+         */
+        {...{ commonUi: this.props.commonUi }}
         isAdmin={isAdmin}
         showDeleteVideoDialog={this.showDeleteVideoDialog.bind(this)}
         showEditVideoDialog={this.showEditVideoDialog.bind(this)}
@@ -382,9 +427,18 @@ const enabledDialogs = {
   [DIALOGS.DELETE_VIDEO]:    DeleteVideoDialog
 }
 
-export const mapStateToProps = (state: any, ownProps: any) => {
+export const mapStateToProps = (state: RootState, ownProps: OwnProps) => {
   const { match } = ownProps
-  const { collections, commonUi } = state
+  const { commonUi } = state
+  /*
+   * types/rootState types this slice as RestState<Map<string, Collection>>,
+   * after the `new Map()` in the endpoint's `initialState`. What actually
+   * lands in `data` is a single Collection -- collectionsEndpoint.getFunc
+   * resolves api.getCollection(key) -- which is what the three reads below
+   * expect and have always got. Narrowed here rather than corrected in
+   * types/rootState, which this change does not own.
+   */
+  const collections = state.collections as unknown as RestState<Collection>
 
   const collectionKey = match.params.collectionKey
   const collection =

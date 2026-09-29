@@ -1,19 +1,19 @@
-// @flow
 import React from "react"
 
 import RichTextEditor from "./RichTextEditor"
 import { DESCRIPTION_FORMAT_HTML } from "../../constants"
+import type { DescriptionFormat } from "../../types/descriptionTypes"
 
 type DescriptionFieldProps = {
-  label: string,
-  id: string,
-  placeholder?: string,
-  value: ?string,
-  descriptionFormat: ?string,
-  onChange: (value: string) => void,
-  onUpgrade: () => void,
-  upgrading?: boolean,
-  upgradeError?: ?string
+  label: string
+  id: string
+  placeholder?: string
+  value: string | null
+  descriptionFormat: DescriptionFormat | null
+  onChange: (value: string) => void
+  onUpgrade: () => void
+  upgrading?: boolean
+  upgradeError?: string | null
 }
 
 /**
@@ -30,10 +30,8 @@ type DescriptionFieldProps = {
  * which is the only place that knows how to escape plain text and how to clean
  * markup someone once pasted into the old field. Nothing here reimplements it.
  */
-export default class DescriptionField extends React.Component<*, void> {
-  props: DescriptionFieldProps
-
-  handleTextChange = (event: Object) => {
+export default class DescriptionField extends React.Component<DescriptionFieldProps> {
+  handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { onChange } = this.props
     onChange(event.target.value)
   }

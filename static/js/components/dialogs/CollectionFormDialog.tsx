@@ -1,7 +1,7 @@
-// @flow
 import React from "react"
 import { connect } from "react-redux"
-import type { Dispatch } from "redux"
+import type { UnknownAction } from "redux"
+import type { ThunkAction } from "redux-thunk"
 
 import Radio from "../material/Radio"
 import Textfield from "../material/Textfield"
@@ -30,22 +30,100 @@ import type {
   CollectionUiState,
   Collection
 } from "../../types/collectionTypes"
+import type { DescriptionFormat } from "../../types/descriptionTypes"
+import type { ActionCreator, AppDispatch } from "../../types/reduxTypes"
+import type { RootState } from "../../types/rootState"
+import type { ToastMessage } from "../../types/toastTypes"
+import type { User } from "../../types/userTypes"
 
-type DialogProps = {
-  dispatch: Dispatch,
-  history: Object,
-  collectionUi: CollectionUiState,
-  collection: ?Collection,
-  collectionForm: CollectionFormState,
-  open: boolean,
-  hideDialog: Function,
-  isEdxCourseAdmin?: boolean
+/*
+ * react-router 4 ships no type declarations and none are installed, so
+ * `history` is typed by the one member this dialog uses of it.
+ */
+type RouterHistory = {
+  push: (path: string) => void
 }
 
-export class CollectionFormDialog extends React.Component<*, void> {
-  props: DialogProps
+/*
+ * The body this dialog sends to the collections API.
+ *
+ * `description_format`, `edx_course_id` and `owner` are optional because
+ * submitForm adds each one conditionally - see the comments at their
+ * assignments for why omitting them is meaningful rather than incidental.
+ */
+type CollectionPayload = {
+  title: string | null
+  description: string | null
+  view_lists: Array<string>
+  admin_lists: Array<string>
+  is_logged_in_only: boolean
+  description_format?: DescriptionFormat | null
+  edx_course_id?: string | null
+  owner?: number
+}
 
-  constructor(props) {
+/*
+ * `actions` is declared `Record<string, unknown>` in actions/index.ts, so each
+ * slice comes back as `unknown`. The casts below are erased at runtime - every
+ * dispatch stays a property access on `actions.<slice>`, which is what
+ * CollectionFormDialog_test.js stubs - and only tell tsc the shape
+ * redux-hammock's deriveActions produces for each endpoint.
+ */
+type PotentialCollectionOwnersActions = {
+  get: (
+    collectionKey: string
+  ) => ThunkAction<
+    Promise<{ users: Array<User> }>,
+    RootState,
+    unknown,
+    UnknownAction
+  >
+}
+
+type CollectionsActions = {
+  patch: (
+    key: string | null,
+    payload: Partial<CollectionPayload>
+  ) => ThunkAction<Promise<Collection>, RootState, unknown, UnknownAction>
+}
+
+type CollectionsListActions = {
+  get: () => ThunkAction<Promise<unknown>, RootState, unknown, UnknownAction>
+  post: (
+    payload: CollectionPayload
+  ) => ThunkAction<Promise<Collection>, RootState, unknown, UnknownAction>
+}
+
+type ToastActions = {
+  addMessage: ActionCreator
+}
+
+type DialogProps = {
+  dispatch: AppDispatch
+  history: RouterHistory
+  collectionUi: CollectionUiState
+  collection: Collection | null
+  collectionForm: CollectionFormState
+  open: boolean
+  hideDialog: () => void
+  isEdxCourseAdmin?: boolean
+  // Read by the constructor and by fetchPotentialCollectionOwners. Neither was
+  // in the Flow prop type, but both are props the callers really pass.
+  collectionKey?: string
+  users?: Array<User>
+}
+
+type DialogState = {
+  users: Array<User>
+  upgradingDescription: boolean
+  upgradeError: string | null
+}
+
+export class CollectionFormDialog extends React.Component<
+  DialogProps,
+  DialogState
+> {
+  constructor(props: DialogProps) {
     super(props)
     this.state = {
       users:                props.users || [],
@@ -79,7 +157,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
    * rather than to the collection, and leaving it set would strand the field
    * the author is now looking at behind a disabled button.
    */
-  isStaleUpgrade(key: ?string) {
+  isStaleUpgrade(key: string | null) {
     return this.props.collectionForm.key !== key
   }
 
@@ -92,7 +170,9 @@ export class CollectionFormDialog extends React.Component<*, void> {
     }
     try {
       const response = await dispatch(
-        actions.potentialCollectionOwners.get(collectionKey)
+        (
+          actions.potentialCollectionOwners as PotentialCollectionOwnersActions
+        ).get(collectionKey)
       )
       this.setState({ users: response.users || [] })
     } catch (error) {
@@ -101,7 +181,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
     }
   }
 
-  setCollectionTitle = (event: Object) => {
+  setCollectionTitle = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { dispatch } = this.props
     dispatch(uiActions.setCollectionTitle(event.target.value))
   }
@@ -126,30 +206,36 @@ export class CollectionFormDialog extends React.Component<*, void> {
     }
   }
 
-  handleCollectionViewPermClick = (event: Object) => {
+  handleCollectionViewPermClick = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     this.setCollectionViewPermChoice(event.target.value)
   }
 
-  handleCollectionAdminPermClick = (event: Object) => {
+  handleCollectionAdminPermClick = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     this.setCollectionAdminPermChoice(event.target.value)
   }
 
-  setCollectionViewPermLists = (event: Object) => {
+  setCollectionViewPermLists = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { dispatch } = this.props
     dispatch(uiActions.setViewLists(event.target.value))
   }
 
-  setCollectionAdminPermLists = (event: Object) => {
+  setCollectionAdminPermLists = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { dispatch } = this.props
     dispatch(uiActions.setAdminLists(event.target.value))
   }
 
-  setCollectionEdxCourseId = (event: Object) => {
+  setCollectionEdxCourseId = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { dispatch } = this.props
     dispatch(uiActions.setEdxCourseId(event.target.value))
   }
 
-  setCollectionOwner = (event: Object) => {
+  setCollectionOwner = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const { dispatch } = this.props
     dispatch(uiActions.setOwnerId(parseInt(event.target.value, 10)))
   }
@@ -182,7 +268,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
     this.setState({ upgradingDescription: true, upgradeError: null })
     try {
       const collection = await dispatch(
-        actions.collections.patch(key, {
+        (actions.collections as CollectionsActions).patch(key, {
           description:        collectionForm.description,
           description_format: DESCRIPTION_FORMAT_HTML
         })
@@ -222,7 +308,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
       isEdxCourseAdmin
     } = this.props
 
-    const payload: Object = {
+    const payload: CollectionPayload = {
       title:       collectionForm.title,
       description: collectionForm.description,
       view_lists:  calculateListPermissionValue(
@@ -256,7 +342,9 @@ export class CollectionFormDialog extends React.Component<*, void> {
 
     try {
       if (isNew) {
-        const collection = await dispatch(actions.collectionsList.post(payload))
+        const collection = await dispatch(
+          (actions.collectionsList as CollectionsListActions).post(payload)
+        )
         history.push(makeCollectionUrl(collection.key))
         this.addToastMessage({
           message: {
@@ -266,7 +354,12 @@ export class CollectionFormDialog extends React.Component<*, void> {
           }
         })
       } else {
-        await dispatch(actions.collections.patch(collectionForm.key, payload))
+        await dispatch(
+          (actions.collections as CollectionsActions).patch(
+            collectionForm.key,
+            payload
+          )
+        )
         this.addToastMessage({
           message: {
             key:     "collection-updated",
@@ -275,15 +368,15 @@ export class CollectionFormDialog extends React.Component<*, void> {
           }
         })
       }
-      dispatch(actions.collectionsList.get())
+      dispatch((actions.collectionsList as CollectionsListActions).get())
       this.onClose()
     } catch (e) {
       this.handleError(e)
     }
   }
 
-  addToastMessage(...args: any[]) {
-    this.props.dispatch(actions.toast.addMessage(...args))
+  addToastMessage(...args: Array<{ message: ToastMessage }>) {
+    this.props.dispatch((actions.toast as ToastActions).addMessage(...args))
   }
 
   onClose = () => {
@@ -451,7 +544,7 @@ export class CollectionFormDialog extends React.Component<*, void> {
   }
 }
 
-export const mapStateToProps = (state: any) => {
+export const mapStateToProps = (state: RootState) => {
   const { collectionUi } = state
 
   const collectionForm = getCollectionForm(collectionUi)

@@ -1,4 +1,3 @@
-// @flow
 import React from "react"
 import { connect } from "react-redux"
 import type { Dispatch } from "redux"
@@ -11,23 +10,33 @@ import { makeEmbedUrl, makeVideoUrl } from "../../lib/urls"
 import { formatSecondsToMinutes } from "../../util/util"
 import Checkbox from "../material/Checkbox"
 import { actions } from "../../actions"
-import type { VideoUiState } from "../../types/videoTypes"
+import type { Collection } from "../../types/collectionTypes"
+import type { ActionCreator } from "../../types/reduxTypes"
+import type { RootState } from "../../types/rootState"
+import type { Video, VideoUiState } from "../../types/videoTypes"
 
 type DialogProps = {
-  dispatch: Dispatch,
-  videoUi: VideoUiState,
-  open: boolean,
-  hideDialog: Function,
-  videoKey: string,
+  dispatch: Dispatch
+  videoUi: VideoUiState
+  open: boolean
+  hideDialog: () => void
+  videoKey: string
   cloudfrontUrl: string
 }
 
-class ShareVideoDialog extends React.Component<*, void> {
-  props: DialogProps
-
-  onChange = (event: Object) => {
+class ShareVideoDialog extends React.Component<DialogProps> {
+  onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { dispatch } = this.props
-    dispatch(actions.videoUi.setShareVideoTimeEnabled(event.target.checked))
+    // `actions` is declared `Record<string, unknown>` in actions/index.ts, so
+    // each slice comes back as `unknown`. The cast is erased at runtime -- the
+    // call stays a property access on `actions.videoUi`, which is what
+    // ShareVideoDialog_test.js drives through the real reducer -- and only
+    // tells tsc the shape actions/videoUi.ts already exports.
+    dispatch(
+      (
+        actions.videoUi as { setShareVideoTimeEnabled: ActionCreator }
+      ).setShareVideoTimeEnabled(event.target.checked)
+    )
   }
 
   render() {
@@ -69,12 +78,21 @@ class ShareVideoDialog extends React.Component<*, void> {
             readOnly
             label="Embed HTML"
             id="video-embed-code"
-            rows="4"
+            // {4} not "4": React's own TextareaHTMLAttributes types rows as a
+            // number, and it renders rows="4" in the DOM from either form, so
+            // this is inert. Widening the prop to string would have made
+            // Textarea disagree with React instead.
+            rows={4}
             value={`<iframe src="${videoEmbedUrl}" width="560" height="315" frameborder="0" allow="autoplay" allowfullscreen></iframe>`}
           />
           <Checkbox
             label={`Start at ${formatSecondsToMinutes(startTime)}`}
             id="start-checkbox"
+            // FOLLOW-UP: this is Checkbox's only call site and it passes no
+            // checkGroupName, so the rendered htmlFor is
+            // "undefined-start-checkbox" -- the label is not associated with
+            // the input. A real accessibility bug, pre-existing, and left
+            // alone here because a type migration must not change behaviour.
             value={startTime}
             onChange={this.onChange}
             className="wideLabel"
@@ -85,7 +103,12 @@ class ShareVideoDialog extends React.Component<*, void> {
   }
 }
 
-const mapStateToProps = (state, ownProps) => {
+type OwnProps = {
+  collection?: Collection
+  video?: Video | null
+}
+
+const mapStateToProps = (state: RootState, ownProps: OwnProps) => {
   const {
     videoUi,
     collectionUi: { selectedVideoKey }

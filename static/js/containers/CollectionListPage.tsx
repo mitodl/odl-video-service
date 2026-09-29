@@ -1,10 +1,8 @@
-// @flow
-/* global SETTINGS: false */
-
 import React from "react"
 import * as R from "ramda"
 import { connect } from "react-redux"
-import type { Dispatch } from "redux"
+import type { UnknownAction } from "redux"
+import type { ThunkDispatch } from "redux-thunk"
 import { Link } from "react-router-dom"
 
 import { DIALOGS } from "../constants"
@@ -19,20 +17,28 @@ import type {
   Collection,
   CollectionsPagination
 } from "../types/collectionTypes"
+import type { RootState } from "../types/rootState"
 import withPagedCollections from "./withPagedCollections"
 import LoadingIndicator from "../components/material/LoadingIndicator"
 import Paginator from "../components/Paginator"
 import * as ErrorMessages from "../components/errorMessages"
 
-export class CollectionListPage extends React.Component<*, void> {
-  props: {
-    collectionsPagination: CollectionsPagination,
-    dispatch: Dispatch,
-    collections: Array<Collection>,
-    isAdmin: boolean,
-    commonUi: CommonUiState
-  }
+/*
+ * `dispatch` was declared as redux's plain `Dispatch` under Flow, but both
+ * dispatches below hand it a thunk (`collectionUiActions
+ * .showNewCollectionDialog()` and `actions.collectionsPagination.getPage()`
+ * each return a function of dispatch), so ThunkDispatch is what is actually
+ * passed in -- the same narrowing withPagedCollections.tsx already makes.
+ */
+type Props = {
+  collectionsPagination: CollectionsPagination
+  dispatch: ThunkDispatch<RootState, unknown, UnknownAction>
+  collections: Array<Collection>
+  isAdmin: boolean
+  commonUi: CommonUiState
+}
 
+export class CollectionListPage extends React.Component<Props> {
   render() {
     return (
       <div className="collection-list-content">
@@ -99,7 +105,7 @@ export class CollectionListPage extends React.Component<*, void> {
     )
   }
 
-  handleSearch(searchText) {
+  handleSearch(searchText: string) {
     // Reset to page 1 when searching
     if (this.props.collectionsPagination.currentPage !== 1) {
       this.props.collectionsPagination.setCurrentPage(1)
@@ -163,7 +169,7 @@ export class CollectionListPage extends React.Component<*, void> {
   }
 }
 
-export class CollectionListPageWithDrawer extends React.Component<*, void> {
+export class CollectionListPageWithDrawer extends React.Component<Props> {
   render() {
     return (
       <WithDrawer>
@@ -173,7 +179,7 @@ export class CollectionListPageWithDrawer extends React.Component<*, void> {
   }
 }
 
-const mapStateToProps = state => {
+const mapStateToProps = (state: RootState) => {
   return {
     commonUi: state.commonUi
   }

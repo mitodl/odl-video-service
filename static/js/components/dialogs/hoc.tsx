@@ -1,4 +1,3 @@
-// @flow
 import React from "react"
 import * as R from "ramda"
 import type { Dispatch } from "redux"
@@ -8,15 +7,32 @@ import { getDisplayName } from "../../util/util"
 
 import type { CommonUiState } from "../../reducers/commonUi"
 
-export const withDialogs = R.curry(
-  (dialogs: Array<Object>, WrappedComponent) => {
-    class WithDialog extends React.Component<*, void> {
-      props: {
-        dispatch: Dispatch,
-        commonUi: CommonUiState,
-        dialogProps?: Object
-      }
+/*
+ * A dialog is configured either by `component` (what every container does) or
+ * by `getComponent`, a thunk that defers resolving the component until render.
+ * Both are optional so either form typechecks; exactly one is expected.
+ */
+type DialogConfig = {
+  name: string
+  component?: React.ComponentType<Record<string, unknown>>
+  getComponent?: () => React.ComponentType<Record<string, unknown>>
+}
 
+type Props = {
+  dispatch: Dispatch
+  commonUi: CommonUiState
+  dialogProps?: { [key: string]: Record<string, unknown> }
+  // Every other prop is forwarded untouched to the wrapped component and to
+  // each dialog.
+  [key: string]: unknown
+}
+
+export const withDialogs = R.curry(
+  (
+    dialogs: Array<DialogConfig>,
+    WrappedComponent: React.ComponentType<Record<string, unknown>>
+  ) => {
+    class WithDialog extends React.Component<Props> {
       showDialog = (dialogName: string) => {
         const { dispatch } = this.props
         dispatch(commonUiActions.showDialog(dialogName))
@@ -61,7 +77,11 @@ export const withDialogs = R.curry(
       }
     }
 
-    WithDialog.displayName = `WithDialogs(${getDisplayName(WrappedComponent)})`
+    // tsc will not let a static be added to a class declaration after the
+    // fact; the cast is erased at runtime, so this stays the same assignment
+    // on the same class object.
+    (WithDialog as React.ComponentClass<Props>).displayName =
+      `WithDialogs(${getDisplayName(WrappedComponent)})`
     return WithDialog
   }
 )

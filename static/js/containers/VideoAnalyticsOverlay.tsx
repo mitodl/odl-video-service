@@ -1,5 +1,7 @@
 import React from "react"
 import _ from "lodash"
+import type { UnknownAction } from "redux"
+import type { ThunkDispatch } from "redux-thunk"
 
 import AnalyticsPane from "../components/analytics/AnalyticsPane"
 import LoadingIndicator from "../components/material/LoadingIndicator"
@@ -7,7 +9,30 @@ import LoadingIndicator from "../components/material/LoadingIndicator"
 import withVideoAnalytics from "./withVideoAnalytics"
 import { actions } from "../actions"
 
-export class VideoAnalyticsOverlay extends React.Component {
+import type { RestState } from "../types/restTypes"
+import type { RootState } from "../types/rootState"
+import type { VideoAnalyticsData } from "../types/videoAnalyticsTypes"
+import type { Video } from "../types/videoTypes"
+
+/*
+ * Everything except `onClose`/`showCloseButton` (and the two props consumed
+ * below) is forwarded to AnalyticsPane, which spreads what it does not use
+ * onto its root div -- hence the HTMLAttributes base. `currentTime`,
+ * `duration` and `setVideoTime` are required because AnalyticsPane requires
+ * them; VideoDetailPage supplies all three.
+ */
+type Props = React.HTMLAttributes<HTMLDivElement> & {
+  currentTime: number
+  dispatch: ThunkDispatch<RootState, unknown, UnknownAction>
+  duration: number
+  onClose?: () => void
+  setVideoTime: (time: number) => void
+  showCloseButton?: boolean
+  video?: Video | null
+  videoAnalytics?: RestState<Map<string, VideoAnalyticsData>> | null
+}
+
+export class VideoAnalyticsOverlay extends React.Component<Props> {
   renderCloseButton() {
     return (
       <span

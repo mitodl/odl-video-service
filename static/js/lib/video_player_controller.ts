@@ -14,7 +14,17 @@ import { sendGAEvent } from "../util/google_analytics"
  */
 type PlayerTextTrack = {
   src: string
-  addEventListener: (type: string, listener: () => void) => void
+  // `label` and `mode` are read off `this` inside the "modechange" listener
+  // below to build the GA event label. Declaring them, and giving the listener
+  // an explicit `this` parameter, is what makes that read checked -- without
+  // the `this` annotation the callback's receiver is untyped and the two
+  // fields go unverified however they are declared.
+  label: string
+  mode: string
+  addEventListener: (
+    type: string,
+    listener: (this: PlayerTextTrack) => void
+  ) => void
 }
 
 export type VideoJsPlayer = {

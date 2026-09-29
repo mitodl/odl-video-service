@@ -123,7 +123,7 @@ FLOWFIX=$(grep -rho 'FlowFixMe' static/js --include='*.js' 2>/dev/null | wc -l |
 # le 40 -> le 22 (final review fix wave, hq#12640): current actual is 22 after
 # the full Enzyme -> RTL migration; ratchet the ceiling down to that measured
 # value so it can't silently creep back up.
-check "FlowFixMe occurrences" "$FLOWFIX" le 17
+check "FlowFixMe occurrences" "$FLOWFIX" le 12
 
 # Frozen. Adding a line here is how React 18 act() warnings get silenced --
 # turning a real signal about un-batched state updates into future flaky tests.
@@ -419,29 +419,25 @@ fi
 # last .js under static/js is converted, at which point flow-bin, .flowconfig
 # and the babel flow-strip-types override all come out.
 FLOWFILES=$(grep -rl "@flow" static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "flow-annotated files" "$FLOWFILES" le 76
+check "flow-annotated files" "$FLOWFILES" le 51
 
-# Explicit `any` in converted TypeScript, split in two because the two halves
-# move in opposite directions during the migration.
+# Explicit `any`, counted by asking ESLint rather than by grepping.
 #
-# `Action<any, ...>` is the inherited reducer and action-creator signature --
-# one per reducer, straight from the Flow original. It necessarily RISES as
-# files convert, so gating it as a falling ratchet would mean raising the
-# ceiling every task, which teaches everyone to raise ceilings. It is capped
-# instead at one per reducer plus the three generic aliases in reduxTypes, and
-# goes to 0 in Task 10 when action payloads become discriminated unions.
-ACTION_ANYS=$(grep -rhoE "Action<any" static/js --include='*.ts' --include='*.tsx' 2>/dev/null | wc -l | tr -d ' ')
-check "Action<any> signatures" "$ACTION_ANYS" le 15
-
-# Everything else is a true ratchet: it may only fall. Comment lines are
-# stripped first -- without that, prose like "any author" in a docblock counts
-# as an explicit any. With it this agrees with @typescript-eslint/no-explicit-any
-# minus the Action<> sites, and a gate that disagrees with the linter it stands
-# in for only teaches people to ignore it.
-ANYS=$(grep -rhE "\\bany\\b" static/js --include='*.ts' --include='*.tsx' 2>/dev/null \
-	| grep -vE "^[[:space:]]*(//|\\*|/\\*)" | grep -v "Action<" \
-	| grep -ohE "\\bany\\b" | wc -l | tr -d ' ')
-check "other explicit any" "$ANYS" le 35
+# This gate used to grep for \bany\b with comment lines stripped. That was
+# wrong twice over: it counted English prose inside JSX ("at any time" in
+# TermsPage alone scored 67) and it needed a second gate to excuse the
+# inherited `Action<any, null>` reducer signature. @typescript-eslint knows
+# which occurrences are actually the type, so it is the authoritative source --
+# and a gate that disagrees with the linter it stands in for only teaches
+# people to ignore it.
+#
+# Includes the 8 inherited `Action<any, ...>` signatures. Every reducer is
+# converted now, so that subtotal is fixed and this whole number can only fall.
+# It reaches 0 when action payloads become discriminated unions and the
+# remaining REST/test-helper placeholders get real types.
+ANYS=$(node ./node_modules/eslint/bin/eslint.js ./static/js --ext .js,.ts,.tsx -f json 2>/dev/null \
+	| node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const f=JSON.parse(s);let n=0;for(const x of f)for(const m of x.messages)if(m.ruleId==="@typescript-eslint/no-explicit-any")n++;console.log(n)})')
+check "explicit any (eslint)" "$ANYS" le 51
 
 echo
 if [[ $FAIL -ne 0 ]]; then

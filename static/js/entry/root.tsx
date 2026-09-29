@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS:false */
 __webpack_public_path__ = SETTINGS.public_path // eslint-disable-line no-undef, camelcase
 import React from "react"
 import { createRoot } from "react-dom/client"
@@ -32,12 +30,18 @@ if (!rootEl) {
 
 const history = createBrowserHistory()
 
+type AppRouterProps = {
+  store: typeof store
+  history: typeof history
+  children?: React.ReactNode
+}
+
 // Created once, outside renderApp: createRoot must be called at most once per
 // container. renderApp runs again on every hot reload, so creating the root
 // inside it would throw on the second call and break HMR.
 const root = createRoot(rootEl)
 
-const renderApp = Component => {
+const renderApp = (Component: React.ComponentType<AppRouterProps>) => {
   root.render(
     <Component store={store} history={history}>
       {routes}
@@ -49,6 +53,10 @@ renderApp(AppRouter)
 
 if (module.hot) {
   module.hot.accept("../Router", () => {
+    // require(), not import(): webpack's HMR accept callback has to swap the
+    // module synchronously, and an await here would let a render happen
+    // against the stale component first.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const AppRouterNext = require("../Router").default
     renderApp(AppRouterNext)
   })

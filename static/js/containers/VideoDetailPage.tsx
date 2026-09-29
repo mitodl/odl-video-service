@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import { connect } from "react-redux"
 import moment from "moment"
@@ -12,7 +10,7 @@ import Button from "../components/material/Button"
 import Drawer from "../components/material/Drawer"
 import OVSToolbar from "../components/OVSToolbar"
 import Footer from "../components/Footer"
-import VideoPlayer from "../components/VideoPlayer"
+import ConnectedVideoPlayer from "../components/VideoPlayer"
 import EditVideoFormDialog from "../components/dialogs/EditVideoFormDialog"
 import ShareVideoDialog from "../components/dialogs/ShareVideoDialog"
 import DeleteVideoDialog from "../components/dialogs/DeleteVideoDialog"
@@ -41,23 +39,64 @@ import { initGA, sendGAPageView } from "../util/google_analytics"
 import type { Video, VideoUiState } from "../types/videoTypes"
 import type { Collection } from "../types/collectionTypes"
 import type { CommonUiState } from "../reducers/commonUi"
+import type { RootState } from "../types/rootState"
 
-export class VideoDetailPage extends React.Component<*, void> {
-  props: {
-    dispatch: Dispatch,
-    video: ?Video,
-    collection: ?Collection,
-    videoKey: string,
-    needsUpdate: boolean,
-    collectionNeedsUpdate: boolean,
-    commonUi: CommonUiState,
-    videoUi: VideoUiState,
-    showDialog: Function,
-    isAdmin: boolean,
-    dialogProps: Object
-  }
+/*
+ * components/VideoPlayer declares `embed` as a required prop and does not
+ * declare `id` at all, yet this page has always rendered the player with an
+ * id and without `embed` -- only VideoEmbedPage passes that one. Relaxing
+ * `embed` and adding `id` belongs in VideoPlayer's own Props, so the props are
+ * widened here instead. The cast is erased at runtime: `VideoPlayer` below is
+ * the same connected component object the default export has always been, and
+ * the element rendered in renderVideoPlayer is unchanged.
+ */
+type VideoPlayerProps = Omit<
+  React.ComponentProps<typeof ConnectedVideoPlayer>,
+  "embed"
+> & {
+  embed?: boolean
+  id?: string
+}
 
-  videoPlayerRef: Object
+const VideoPlayer =
+  ConnectedVideoPlayer as React.ComponentType<VideoPlayerProps>
+
+type Props = {
+  dispatch: Dispatch
+  video: Video | null
+  collection: Collection | null
+  videoKey: string
+  needsUpdate: boolean
+  /*
+   * Truthy, not strictly boolean: mapStateToProps builds this with a chain of
+   * `&&`, so before the video loads it is whatever the first falsy link was
+   * (`undefined`, or the empty collection_key). It is only ever read in an
+   * `if`. The Flow type said `boolean` and nothing checked it, because the
+   * class was `React.Component<*, void>`.
+   */
+  collectionNeedsUpdate: boolean | string | Video
+  commonUi: CommonUiState
+  videoUi: VideoUiState
+  showDialog: (dialogName: string) => void
+  isAdmin: boolean
+  dialogProps: { [key: string]: Record<string, unknown> }
+}
+
+export class VideoDetailPage extends React.Component<Props> {
+  /*
+   * Only the one member setVideoTime reaches for. Typing this as the
+   * VideoPlayer class would mean importing the unconnected named export
+   * alongside the connected default this file renders, and the tests hand the
+   * component a plain stub player rather than a real one.
+   */
+  videoPlayerRef: { setCurrentTime: (time: number) => void } | null
+
+  /*
+   * Set by the hidden DropboxChooser trigger's ref and clicked by the Replace
+   * button. Undeclared in the Flow original -- an untyped `this.foo = x` in a
+   * render callback was silently allowed there.
+   */
+  replaceDropboxTriggerRef: HTMLButtonElement | null
 
   componentDidMount() {
     this.setCurrentVideoKey()
@@ -107,14 +146,13 @@ export class VideoDetailPage extends React.Component<*, void> {
       formData.append("collection", video.collection_key)
       formData.append("video", video.key)
       formData.append("language", videoSubtitleForm.language)
-      // $FlowFixMe: A file always has a name
       formData.append("filename", videoSubtitleForm.subtitle.name)
       await dispatch(actions.videoSubtitles.post(formData))
       dispatch(actions.videos.get(videoKey))
     }
   }
 
-  setUploadSubtitle = async (event: Object) => {
+  setUploadSubtitle = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const { dispatch } = this.props
     await dispatch(actions.videoUi.setUploadSubtitle(event.target.files[0]))
     try {
@@ -146,7 +184,7 @@ export class VideoDetailPage extends React.Component<*, void> {
     dispatch(actions.videoUi.updateVideoJsSync(corner))
   }
 
-  handleReplaceVideo = async (file: Object) => {
+  handleReplaceVideo = async (file: Record<string, unknown>) => {
     const { dispatch, videoKey } = this.props
     try {
       await replaceVideoFromDropbox(videoKey, file)
@@ -389,7 +427,7 @@ export class VideoDetailPage extends React.Component<*, void> {
             video={video}
             currentTime={videoTime || 0}
             duration={duration || 0}
-            setVideoTime={(...args) => {
+            setVideoTime={(...args: [number]) => {
               this.setVideoTime(...args)
             }}
             style={{ width: "100%", height: "100%" }}
@@ -408,7 +446,7 @@ export class VideoDetailPage extends React.Component<*, void> {
   }
 }
 
-const mapStateToProps = (state, ownProps) => {
+const mapStateToProps = (state: RootState, ownProps: { videoKey: string }) => {
   const { videoKey } = ownProps
   const { videos, collections, commonUi, videoUi } = state
   const video =
@@ -417,10 +455,20 @@ const mapStateToProps = (state, ownProps) => {
       null
   const needsUpdate = !videos.processing && !videos.loaded
 
+  /*
+   * types/rootState types this slice's `data` as Map<string, Collection>,
+   * after the endpoint's `initialState: { ...INITIAL_STATE, data: new Map() }`.
+   * The collections endpoint declares no getSuccessHandler, though, so
+   * redux-hammock replaces `data` outright with the GET payload -- one
+   * Collection -- which is what this selector has always read. The cast is
+   * erased at runtime and only tells tsc what the slice really holds here.
+   */
+  const collectionsData = collections.data as unknown as Collection | null
+
   // Get the collection if video exists
   const collection =
-    video && collections.data && collections.data.key === video.collection_key ?
-      collections.data :
+    video && collectionsData && collectionsData.key === video.collection_key ?
+      collectionsData :
       null
 
   // Only fetch collection if not processing, not loaded, and we don't have it

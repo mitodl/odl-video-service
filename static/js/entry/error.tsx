@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS:false */
 __webpack_public_path__ = SETTINGS.public_path // eslint-disable-line no-undef, camelcase
 import React from "react"
 import { createRoot } from "react-dom/client"

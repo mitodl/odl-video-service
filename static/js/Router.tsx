@@ -1,6 +1,6 @@
-/* global Store */
 import React from "react"
 import { Provider } from "react-redux"
+import type { Store } from "redux"
 import { Route, Router as ReactRouter } from "react-router-dom"
 
 import App from "./containers/App"
@@ -12,12 +12,17 @@ import withTracker from "./util/withTracker"
 // deprecated-lifecycle warnings for. A deprecated lifecycle added here would
 // then be silently swallowed instead of failing the run. The collision test in
 // suppressVendorLifecycleWarnings_test.js enforces this for every component.
-export default class AppRouter extends React.Component {
-  props: {
-    history: Object,
-    store: Store
-  }
+/*
+ * react-router 4 ships no type declarations, so `history` is declared by the
+ * one member ReactRouter is handed it for rather than adding a types package.
+ */
+type Props = {
+  history: unknown
+  store: Store
+  children?: React.ReactNode
+}
 
+export default class AppRouter extends React.Component<Props> {
   render() {
     const { children, history, store } = this.props
 

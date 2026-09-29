@@ -55,6 +55,10 @@ export type Video = {
   sources: Array<VideoSource>
   youtube_id: string | null
   cloudfront_url: string
+  // In the Video serializer (ui/serializers.py:295,334,600) and on the model as
+  // URLField(null=True, blank=True) (ui/models.py:372). EditVideoFormDialog
+  // reads video.cta_link; the Flow type never declared it.
+  cta_link: string | null
 }
 
 export type VideoUpdatePayload = {
@@ -98,6 +102,8 @@ export type VideoSubtitleState = {
 export type VideoValidation = {
   title?: string
   view_lists?: string
+  // EditVideoFormDialog's validators set this alongside title/view_lists.
+  cta_link?: string
 }
 
 export type VideoUiState = {

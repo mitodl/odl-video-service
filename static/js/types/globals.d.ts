@@ -23,6 +23,9 @@ declare global {
     email: string | null
     dropbox_key: string
     support_email_address: string
+    // Sent by ui/views.py:83 and read by EditVideoFormDialog to cap the
+    // thumbnail upload; absent from the old Flow declaration.
+    thumbnail_upload_max_size: number
     status_code?: number
     ga_dimension_camera: string
     sentry_dsn: string

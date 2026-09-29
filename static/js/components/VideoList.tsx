@@ -1,26 +1,24 @@
-// @flow
-/* global Video */
 import React from "react"
 
 import VideoCard from "./VideoCard"
 
 import type { Video } from "../types/videoTypes"
 
-export class VideoList extends React.Component<*, void> {
-  props: {
-    className?: string,
-    style?: { [string]: any },
-    videos: ?Array<Video>,
-    isAdmin: boolean,
-    showDeleteVideoDialog: Function,
-    showEditVideoDialog: Function,
-    showShareVideoDialog: Function,
-    showVideoMenu: Function,
-    hideVideoMenu: Function,
-    isVideoMenuOpen: Function,
-    onReplaceVideo?: Function
-  }
+type Props = {
+  className?: string
+  style?: React.CSSProperties
+  videos: Array<Video> | null
+  isAdmin: boolean
+  showDeleteVideoDialog: (videoKey: string) => void
+  showEditVideoDialog: (videoKey: string) => void
+  showShareVideoDialog: (videoKey: string) => void
+  showVideoMenu: (videoKey: string) => void
+  hideVideoMenu: (videoKey: string) => void
+  isVideoMenuOpen: (videoKey: string) => boolean
+  onReplaceVideo?: (videoKey: string, file: Record<string, unknown>) => void
+}
 
+export class VideoList extends React.Component<Props> {
   render() {
     const className = `video-list ${this.props.className || ""}`
     return (

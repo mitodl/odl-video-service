@@ -1,19 +1,27 @@
-// @flow
 import React from "react"
 import { connect } from "react-redux"
+import type { Dispatch } from "redux"
 import * as R from "ramda"
 
 import WithDrawer from "./WithDrawer"
 import FAQ from "../components/FAQ"
 import { toggleFAQVisibility } from "../actions/commonUi"
+import type { RootState } from "../types/rootState"
 
-class HelpPage extends React.Component<*, void> {
-  toggleShowFAQ = R.curry((questionName, e) => {
-    const { dispatch } = this.props
+type Props = {
+  dispatch: Dispatch
+  FAQVisibility: Map<string, boolean>
+}
 
-    e.preventDefault()
-    dispatch(toggleFAQVisibility(questionName))
-  })
+class HelpPage extends React.Component<Props> {
+  toggleShowFAQ = R.curry(
+    (questionName: string, e: React.MouseEvent<HTMLDivElement>) => {
+      const { dispatch } = this.props
+
+      e.preventDefault()
+      dispatch(toggleFAQVisibility(questionName))
+    }
+  )
 
   render() {
     const { FAQVisibility } = this.props
@@ -29,7 +37,7 @@ class HelpPage extends React.Component<*, void> {
   }
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state: RootState) => ({
   FAQVisibility: state.commonUi.FAQVisibility
 })
 

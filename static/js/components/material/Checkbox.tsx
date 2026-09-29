@@ -3,8 +3,14 @@ import React from "react"
 type CheckboxProps = {
   id: string
   label: string
-  checkGroupName: string
-  value: string
+  // Optional, and `value` takes a number: ShareVideoDialog is the only call
+  // site and passes neither a checkGroupName nor a string value. That makes
+  // the rendered htmlFor "undefined-start-checkbox" today -- a real
+  // accessibility bug, but a pre-existing one. Recorded here rather than
+  // fixed, so the conversion changes no behaviour; see the FOLLOW-UP note in
+  // ShareVideoDialog.
+  checkGroupName?: string
+  value: string | number
   checked?: boolean
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void
   children?: React.ReactNode

@@ -1,7 +1,7 @@
-// @flow
 import React from "react"
 import { connect } from "react-redux"
-import type { Dispatch } from "redux"
+import type { UnknownAction } from "redux"
+import type { ThunkDispatch } from "redux-thunk"
 
 import Dialog from "../material/Dialog"
 
@@ -9,20 +9,20 @@ import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
 import { makeCollectionUrl } from "../../lib/urls"
 
+import type { Collection } from "../../types/collectionTypes"
+import type { RootState } from "../../types/rootState"
 import type { Video } from "../../types/videoTypes"
 
 type DialogProps = {
-  dispatch: Dispatch,
-  open: boolean,
-  hideDialog: Function,
-  shouldUpdateCollection: boolean,
-  video: Video,
-  window?: any
+  dispatch: ThunkDispatch<RootState, unknown, UnknownAction>
+  open: boolean
+  hideDialog: () => void
+  shouldUpdateCollection: boolean
+  video: Video
+  window?: Window
 }
 
-export class DeleteVideoDialog extends React.Component<*, void> {
-  props: DialogProps
-
+export class DeleteVideoDialog extends React.Component<DialogProps> {
   confirmDeletion = async () => {
     const { dispatch, video, shouldUpdateCollection } = this.props
     const window_ = this.props.window || window
@@ -69,7 +69,12 @@ export class DeleteVideoDialog extends React.Component<*, void> {
   }
 }
 
-export const mapStateToProps = (state: Object, ownProps: Object) => {
+type OwnProps = {
+  collection?: Collection
+  video?: Video
+}
+
+export const mapStateToProps = (state: RootState, ownProps: OwnProps) => {
   const {
     collectionUi: { selectedVideoKey }
   } = state

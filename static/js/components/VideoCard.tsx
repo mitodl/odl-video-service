@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import _ from "lodash"
 
@@ -15,17 +13,18 @@ import {
 import DropboxChooser from "react-dropbox-chooser"
 
 import type { Video } from "../types/videoTypes"
+import type { MenuItem } from "../types/uiTypes"
 
 type VideoCardProps = {
-  video: Video,
-  isAdmin: boolean,
-  isMenuOpen: boolean,
-  showDeleteVideoDialog: Function,
-  showEditVideoDialog: Function,
-  showShareVideoDialog: Function,
-  showVideoMenu: Function,
-  hideVideoMenu: Function,
-  onReplaceVideo?: Function
+  video: Video
+  isAdmin: boolean
+  isMenuOpen: boolean
+  showDeleteVideoDialog: () => void
+  showEditVideoDialog: () => void
+  showShareVideoDialog: () => void
+  showVideoMenu: (event: React.MouseEvent<HTMLAnchorElement>) => void
+  hideVideoMenu: () => void
+  onReplaceVideo?: (file: Record<string, unknown>) => void
 }
 
 const VideoCard = (props: VideoCardProps) => {
@@ -41,7 +40,7 @@ const VideoCard = (props: VideoCardProps) => {
     onReplaceVideo
   } = props
 
-  let dropboxTriggerEl: ?HTMLElement = null
+  let dropboxTriggerEl: HTMLElement | null = null
   const triggerReplaceDropbox = () => {
     if (dropboxTriggerEl) {
       dropboxTriggerEl.click()
@@ -80,7 +79,9 @@ const VideoCard = (props: VideoCardProps) => {
     )
   }
 
-  let menuItems = [{ label: "Share", action: showShareVideoDialog }]
+  let menuItems: Array<MenuItem> = [
+    { label: "Share", action: showShareVideoDialog }
+  ]
 
   const inFlight = videoIsInFlight(video)
 

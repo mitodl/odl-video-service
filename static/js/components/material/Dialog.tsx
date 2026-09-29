@@ -1,30 +1,38 @@
-// @flow
 import React from "react"
 import { MDCDialog } from "@material/dialog/dist/mdc.dialog"
 
-import type { ChildrenArray } from "react"
-
 import Button from "./Button"
 
+/*
+ * @material/dialog 0.33 ships no type declarations, so the instance is typed
+ * by the three members this component actually uses of it.
+ */
+type MDCDialogInstance = {
+  listen: (eventName: string, handler: () => void) => void
+  show: () => void
+  destroy: () => void
+}
+
 type DialogProps = {
-  open: boolean,
-  onAccept?: () => void,
-  onCancel?: () => void,
-  hideDialog: () => void,
-  children: ChildrenArray<*>,
-  title?: string,
-  cancelText: string,
-  submitText: string,
-  noSubmit?: boolean,
-  id: string,
+  open: boolean
+  onAccept?: () => void
+  onCancel?: () => void
+  hideDialog: () => void
+  children: React.ReactNode
+  title?: string
+  // Both are optional: render() falls back to "Cancel"/"Save" when they are
+  // absent, and the submit button is not rendered at all under noSubmit -- so
+  // callers that pass noSubmit legitimately omit submitText.
+  cancelText?: string
+  submitText?: string
+  noSubmit?: boolean
+  id: string
   validateOnClick?: boolean
 }
 
-export default class Dialog extends React.Component<*, void> {
-  dialog: null
-  dialogRoot: ?HTMLElement
-  // $FlowFixMe: Flow doesn't like the extra props that aren't part of mdc.dialog class
-  props: DialogProps
+export default class Dialog extends React.Component<DialogProps> {
+  dialog: MDCDialogInstance | null
+  dialogRoot: HTMLElement | null
 
   componentDidMount() {
     const { open } = this.props
@@ -55,7 +63,7 @@ export default class Dialog extends React.Component<*, void> {
   }
 
   // This function only exists because of false Flow errors
-  attachDialogListeners = (dialog: Object) => {
+  attachDialogListeners = (dialog: MDCDialogInstance) => {
     const { onAccept, onCancel, hideDialog, validateOnClick } = this.props
 
     if (onAccept) {
@@ -107,7 +115,9 @@ export default class Dialog extends React.Component<*, void> {
         aria-labelledby="my-mdc-dialog-label"
         aria-describedby="my-mdc-dialog-description"
         style={styleProp}
-        ref={node => (this.dialogRoot = node)}
+        ref={node => {
+          this.dialogRoot = node
+        }}
       >
         <div className="mdc-dialog__surface">
           {title ? (

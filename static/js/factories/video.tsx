@@ -105,6 +105,9 @@ export const makeVideo = (
   view_lists:         [],
   sources:            [makeVideoSource(videoKey, ENCODING_HLS)],
   youtube_id:         null,
+  // null, matching the model default: cta_link is URLField(null=True, blank=True)
+  // (ui/models.py:372) and is unset on a video with no call-to-action link.
+  cta_link:           null,
   cloudfront_url:     ""
 })
 

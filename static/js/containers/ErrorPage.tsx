@@ -1,11 +1,16 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 
 import WithDrawer from "./WithDrawer"
 
-export default class ErrorPage extends React.Component<*, void> {
-  errorTitle = () => {
+/*
+ * The Flow class was React.Component<*, void> with no prop list, and the only
+ * call sites (entry/error.tsx and ErrorPage_test.js) render it with no props at
+ * all, so there is nothing to declare here.
+ */
+type Props = Record<string, never>
+
+export default class ErrorPage extends React.Component<Props> {
+  errorTitle = (): string => {
     switch (SETTINGS.status_code) {
     case 403:
       return "You do not have permission to view this video"
@@ -16,7 +21,7 @@ export default class ErrorPage extends React.Component<*, void> {
     }
   }
 
-  errorMessage = () => {
+  errorMessage = (): React.ReactElement => {
     switch (SETTINGS.status_code) {
     case 403:
       return (

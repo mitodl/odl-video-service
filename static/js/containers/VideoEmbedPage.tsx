@@ -1,4 +1,3 @@
-// @flow
 import React from "react"
 import { connect } from "react-redux"
 import type { Dispatch } from "redux"
@@ -7,16 +6,17 @@ import DocumentTitle from "../components/DocumentTitle"
 import { actions } from "../actions"
 import VideoPlayer from "../components/VideoPlayer"
 import type { Video, VideoUiState } from "../types/videoTypes"
+import type { RootState } from "../types/rootState"
 import { initGA, sendGAPageView } from "../util/google_analytics"
 import { videoIsProcessing, videoHasError } from "../lib/video"
 
-export class VideoEmbedPage extends React.Component<*, void> {
-  props: {
-    dispatch: Dispatch,
-    video: Video,
-    videoUi: VideoUiState
-  }
+type Props = {
+  dispatch: Dispatch
+  video: Video
+  videoUi: VideoUiState
+}
 
+export class VideoEmbedPage extends React.Component<Props> {
   componentDidMount() {
     initGA()
     sendGAPageView(window.location.pathname)
@@ -85,7 +85,7 @@ export class VideoEmbedPage extends React.Component<*, void> {
   }
 }
 
-export const mapStateToProps = (state: { videoUi: VideoUiState }) => {
+export const mapStateToProps = (state: RootState) => {
   const { videoUi } = state
   return {
     videoUi

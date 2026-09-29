@@ -1,10 +1,9 @@
-// @flow
 import React from "react"
 import { connect } from "react-redux"
 
 import WithDrawer from "./WithDrawer"
 
-class TermsPage extends React.Component<*, void> {
+class TermsPage extends React.Component {
   render() {
     return (
       <WithDrawer>

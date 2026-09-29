@@ -6,7 +6,15 @@ import AnalyticsChart from "./AnalyticsChart"
 import AnalyticsInfoTable from "./AnalyticsInfoTable"
 import ProgressSlider from "./ProgressSlider"
 
-const COLORS = [
+import type { VideoAnalyticsData } from "../../types/videoAnalyticsTypes"
+import type { Video } from "../../types/videoTypes"
+
+type ChannelColor = {
+  name: string
+  hex: string
+}
+
+const COLORS: Array<ChannelColor> = [
   { name: "lightBlue", hex: "#61befd" },
   { name: "darkBlue", hex: "#3976c7" },
   { name: "green", hex: "#6ac360" },
@@ -20,7 +28,18 @@ const CHART_PADDING = {
   right:  20
 }
 
-export class AnalyticsPane extends React.Component {
+// Extra props not listed here are spread onto the root div, so the div's own
+// attributes are part of the prop type. `video` is accepted but deliberately
+// omitted from that spread.
+type Props = React.HTMLAttributes<HTMLDivElement> & {
+  analyticsData?: VideoAnalyticsData | null
+  currentTime: number
+  duration: number
+  setVideoTime: (time: number) => void
+  video?: Video
+}
+
+export class AnalyticsPane extends React.Component<Props> {
   render() {
     const {
       currentTime,
@@ -31,11 +50,12 @@ export class AnalyticsPane extends React.Component {
     } = this.props
     const analyticsData_ =
       analyticsData || makeVideoAnalyticsData(Math.floor(duration / 60) + 1)
-    const colorsForChannels = {}
+    const colorsForChannels: { [key: string]: ChannelColor } = {}
     for (let i = 0; i < analyticsData_.channels.length; i++) {
       colorsForChannels[analyticsData_.channels[i]] = COLORS[i]
     }
-    const getColorForChannel = channel => colorsForChannels[channel].hex
+    const getColorForChannel = (channel: string) =>
+      colorsForChannels[channel].hex
     let className = "analytics-overlay"
     if (this.props.className) {
       className += ` ${this.props.className}`

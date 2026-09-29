@@ -1,13 +1,12 @@
-// @flow
 import React from "react"
 
 import Toolbar from "../components/material/Toolbar"
 
-export default class OVSToolbar extends React.Component<*, void> {
-  props: {
-    setDrawerOpen: Function
-  }
+type Props = {
+  setDrawerOpen: () => void
+}
 
+export default class OVSToolbar extends React.Component<Props> {
   render() {
     const { setDrawerOpen } = this.props
 
