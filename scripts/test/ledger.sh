@@ -171,8 +171,8 @@ check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
 # Extension-agnostic: this file converts .js -> .tsx during the TypeScript
 # migration, and a hardcoded .js path turns every gate below it into a
 # "file is gone" failure the moment it is renamed.
-SUPPFILE=$(ls static/js/testUtils/suppressVendorLifecycleWarnings.* 2>/dev/null \
-	| grep -vE '_test\.' | head -1)
+SUPPFILE=$(ls static/js/testUtils/suppressVendorLifecycleWarnings.* 2>/dev/null |
+	grep -vE '_test\.' | head -1)
 if [[ ! -f $SUPPFILE ]]; then
 	printf "  FAIL  %-34s %s\n" "vendor lifecycle suppressions" \
 		"($SUPPFILE is gone)"
@@ -435,8 +435,8 @@ check "flow-annotated files" "$FLOWFILES" le 0
 # converted now, so that subtotal is fixed and this whole number can only fall.
 # It reaches 0 when action payloads become discriminated unions and the
 # remaining REST/test-helper placeholders get real types.
-ANYS=$(node ./node_modules/eslint/bin/eslint.js ./static/js --ext .js,.ts,.tsx -f json 2>/dev/null \
-	| node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const f=JSON.parse(s);let n=0;for(const x of f)for(const m of x.messages)if(m.ruleId==="@typescript-eslint/no-explicit-any")n++;console.log(n)})')
+ANYS=$(node ./node_modules/eslint/bin/eslint.js ./static/js --ext .js,.ts,.tsx -f json 2>/dev/null |
+	node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const f=JSON.parse(s);let n=0;for(const x of f)for(const m of x.messages)if(m.ruleId==="@typescript-eslint/no-explicit-any")n++;console.log(n)})')
 check "explicit any (eslint)" "$ANYS" le 54
 
 # TypeScript errors, split by source vs test.
