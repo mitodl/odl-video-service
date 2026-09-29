@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import { assert } from "chai"
 import sinon from "sinon"

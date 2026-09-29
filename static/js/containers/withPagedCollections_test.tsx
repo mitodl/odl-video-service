@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import _ from "lodash"
 import { assert } from "chai"
@@ -64,7 +62,7 @@ describe("withPagedCollections", () => {
   })
 
   describe("WrappedComponent", () => {
-    class DummyComponent extends React.Component<*, void> {
+    class DummyComponent extends React.Component {
       render() {
         return <div>DummyComponent</div>
       }

@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS: true */
 import React from "react"
 import sinon from "sinon"
 import { screen, fireEvent, render } from "@testing-library/react"

@@ -1,6 +1,5 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
+import { asInput } from "../../testUtils/asStub"
 import sinon from "sinon"
 import { assert } from "chai"
 import { screen, fireEvent, waitFor } from "@testing-library/react"
@@ -101,7 +100,7 @@ describe("EditVideoFormDialog", () => {
       previousFormState.key,
       store.getState().videoUi.editVideoForm.key
     )
-    assert.equal(screen.getByLabelText("Title").value, video.title)
+    assert.equal(asInput(screen.getByLabelText("Title")).value, video.title)
     // The description is a rich-text editor: it holds its document in a
     // contenteditable element, so there is no `value` to read.
     await waitFor(() =>
@@ -326,7 +325,10 @@ describe("EditVideoFormDialog", () => {
     // observes the pre-dispatch (original) title/description instead of the
     // new ones just set.
     await waitFor(() =>
-      assert.equal(screen.getByLabelText("Title").value, newValues.title)
+      assert.equal(
+        asInput(screen.getByLabelText("Title")).value,
+        newValues.title
+      )
     )
     // Real click on the "Save Changes" button, replacing the old
     // `.find("Dialog").prop("onAccept")()` call. Spiked empirically (see
@@ -392,7 +394,10 @@ describe("EditVideoFormDialog", () => {
     // Same batched-update wait as the previous test: five dispatches here,
     // one deferred re-render in React 18.
     await waitFor(() =>
-      assert.equal(screen.getByLabelText("Title").value, newValues.title)
+      assert.equal(
+        asInput(screen.getByLabelText("Title")).value,
+        newValues.title
+      )
     )
 
     // See the previous test for the click/onAccept and full-chain-await
@@ -486,7 +491,10 @@ describe("EditVideoFormDialog", () => {
     await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
       renderComponent({ video: null, collection })
     })
-    assert.equal(screen.getByLabelText("Title").value, collectionVideo.title)
+    assert.equal(
+      asInput(screen.getByLabelText("Title")).value,
+      collectionVideo.title
+    )
 
     sandbox.stub(api, "updateVideo").returns(Promise.resolve(collectionVideo))
     const collectionsGetStub = sandbox
@@ -519,7 +527,7 @@ describe("EditVideoFormDialog", () => {
     await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
       renderComponent({ video, collection })
     })
-    assert.equal(screen.getByLabelText("Title").value, video.title)
+    assert.equal(asInput(screen.getByLabelText("Title")).value, video.title)
 
     // shouldUpdateCollection === false here (an explicit `video` prop wins
     // over `collection` in mapStateToProps) -- proven by observing that

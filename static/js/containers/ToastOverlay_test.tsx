@@ -1,4 +1,3 @@
-// @flow
 import React from "react"
 import _ from "lodash"
 import { render } from "@testing-library/react"
@@ -30,7 +29,7 @@ describe("ToastOverlayTests", () => {
 
   const generateMessage = (
     key: string | number = 1,
-    extraProps: Object = {}
+    extraProps: Record<string, unknown> = {}
   ): ToastMessageType => {
     return {
       key,
@@ -54,7 +53,7 @@ describe("ToastOverlayTests", () => {
   })
 
   describe("ToastOverlay", () => {
-    class DummyMessageComponent extends React.Component<*, void> {
+    class DummyMessageComponent extends React.Component {
       render() {
         return <div />
       }

@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import _ from "lodash"
 import sinon from "sinon"

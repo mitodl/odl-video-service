@@ -1,5 +1,5 @@
-// @flow
 import React from "react"
+import { asInput } from "../../testUtils/asStub"
 import sinon from "sinon"
 import { assert } from "chai"
 import { screen, fireEvent } from "@testing-library/react"
@@ -40,15 +40,13 @@ describe("ShareVideoDialog", () => {
     const video = makeVideo()
     renderComponent({ video: video })
     assert.equal(
-      screen.getByLabelText("Video URL").value,
+      asInput(screen.getByLabelText("Video URL")).value,
       `http://fake/videos/${video.key}/`
     )
     assert.isTrue(
-      screen
-        .getByLabelText("Embed HTML")
-        .value.startsWith(
-          `<iframe src="http://fake/videos/${video.key}/embed/"`
-        )
+      asInput(screen.getByLabelText("Embed HTML")).value.startsWith(
+        `<iframe src="http://fake/videos/${video.key}/embed/"`
+      )
     )
     assert.isNull(screen.queryByLabelText("Open edX video URL"))
   })
@@ -59,7 +57,7 @@ describe("ShareVideoDialog", () => {
     video.cloudfront_url = cloudfrontUrl
     renderComponent({ video: video })
     assert.equal(
-      screen.getByLabelText("Open edX video URL").value,
+      asInput(screen.getByLabelText("Open edX video URL")).value,
       cloudfrontUrl
     )
   })
@@ -83,17 +81,15 @@ describe("ShareVideoDialog", () => {
         })
       }
       assert.equal(
-        screen.getByLabelText("Video URL").value,
+        asInput(screen.getByLabelText("Video URL")).value,
         `http://fake/videos/${video.key}/${checked ? "?start=0" : ""}`
       )
       assert.isTrue(
-        screen
-          .getByLabelText("Embed HTML")
-          .value.startsWith(
-            `<iframe src="http://fake/videos/${video.key}/embed/${
-              checked ? "?start=0" : ""
-            }"`
-          )
+        asInput(screen.getByLabelText("Embed HTML")).value.startsWith(
+          `<iframe src="http://fake/videos/${video.key}/embed/${
+            checked ? "?start=0" : ""
+          }"`
+        )
       )
     })
   })
@@ -102,7 +98,7 @@ describe("ShareVideoDialog", () => {
     const video = makeVideo()
     renderComponent({ video: video })
     assert.equal(
-      screen.getByLabelText("Video URL").value,
+      asInput(screen.getByLabelText("Video URL")).value,
       `http://fake/videos/${video.key}/`
     )
   })
@@ -112,7 +108,7 @@ describe("ShareVideoDialog", () => {
     store.dispatch(setSelectedVideoKey(videoKey))
     renderComponent({ video: null })
     assert.equal(
-      screen.getByLabelText("Video URL").value,
+      asInput(screen.getByLabelText("Video URL")).value,
       `http://fake/videos/${videoKey}/`
     )
   })
@@ -127,6 +123,9 @@ describe("ShareVideoDialog", () => {
       video:      null,
       collection: { videos: [video] }
     })
-    assert.equal(screen.getByLabelText("Open edX video URL").value, url)
+    assert.equal(
+      asInput(screen.getByLabelText("Open edX video URL")).value,
+      url
+    )
   })
 })

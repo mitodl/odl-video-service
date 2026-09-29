@@ -11,8 +11,22 @@ import * as toast from "./toast"
  * thunk-creator per verb the endpoint declares (get/post/patch) plus whatever
  * it lists in extraActions, so the slice is keyed by name rather than spelled
  * out per endpoint.
+ *
+ * Each of those creators also carries the three action-type strings hammock
+ * generated for it (hammock.js:159-161). Tests assert on them directly --
+ * `listenForActions([actions.videos.get.requestType, ...])` -- so leaving them
+ * off made every such assertion a type error.
  */
-type RestActions = Record<string, (...args: any[]) => any>
+type RestAction = ((...args: any[]) => any) & {
+  // Optional, not required: components narrow a slice with
+  // `actions.collections as CollectionsActions`, and making these mandatory
+  // destroys the structural overlap that cast depends on (TS2352).
+  requestType?: string
+  successType?: string
+  failureType?: string
+}
+
+type RestActions = Record<string, RestAction>
 
 /*
  * Spelled out rather than left as Record<string, unknown>: consumers reach

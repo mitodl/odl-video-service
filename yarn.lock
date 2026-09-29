@@ -491,13 +491,6 @@
   dependencies:
     "@babel/helper-plugin-utils" "^7.8.0"
 
-"@babel/plugin-syntax-flow@^7.29.7":
-  version "7.29.7"
-  resolved "https://registry.yarnpkg.com/@babel/plugin-syntax-flow/-/plugin-syntax-flow-7.29.7.tgz#3f3278c11c896c43bf8098250819785fd1231881"
-  integrity sha512-ajMX6QPcyomotqwpzhkYGxcK2i/us0rs1Qo9QvUpa+Fca0FTmqrzKrctoIYLMxcOhGZldGT/BAVkRGTWBiR8gQ==
-  dependencies:
-    "@babel/helper-plugin-utils" "^7.29.7"
-
 "@babel/plugin-syntax-import-assertions@^7.29.7":
   version "7.29.7"
   resolved "https://registry.yarnpkg.com/@babel/plugin-syntax-import-assertions/-/plugin-syntax-import-assertions-7.29.7.tgz#c5cd868505269126cc18882e1f01f7b0e0e24b4e"
@@ -675,14 +668,6 @@
   integrity sha512-24B2nOy2TeJSMheqwPD4DDQOV/elLSIlKxjZt4i05H5AgdPdWR3n18HnNrcJ+j76WJd9gbwb9jPjNYUy6RautA==
   dependencies:
     "@babel/helper-plugin-utils" "^7.29.7"
-
-"@babel/plugin-transform-flow-strip-types@^7.27.1":
-  version "7.29.7"
-  resolved "https://registry.yarnpkg.com/@babel/plugin-transform-flow-strip-types/-/plugin-transform-flow-strip-types-7.29.7.tgz#911bcb31608c3576510d7e0c95ccf64f9e1812d0"
-  integrity sha512-wRHeUjUjCZnMHmiO5bRgjFLcoEh7JyTdByOW11ahhwNa4V0bmeGEaIvt51yq0zQp2yWIpqfxXXPyUP6GFJZHOQ==
-  dependencies:
-    "@babel/helper-plugin-utils" "^7.29.7"
-    "@babel/plugin-syntax-flow" "^7.29.7"
 
 "@babel/plugin-transform-for-of@^7.29.7":
   version "7.29.7"
@@ -3482,13 +3467,6 @@ babel-plugin-istanbul@^7.0.0:
     istanbul-lib-instrument "^6.0.2"
     test-exclude "^6.0.0"
 
-babel-plugin-jsx@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/babel-plugin-jsx/-/babel-plugin-jsx-1.2.0.tgz#9c926e5ff421d376123ccbc103dfba5560d171e3"
-  integrity sha512-eYeaFsGl0BecHxx5dowVCeGZPXJJZNTyFwyNgf9RFU9Ya3WkpRPZow+kOzWZ++RerDiKpcUGfYFp6ovWCWzXcg==
-  dependencies:
-    esutils "^2.0.2"
-
 babel-plugin-polyfill-corejs2@^0.4.15:
   version "0.4.17"
   resolved "https://registry.yarnpkg.com/babel-plugin-polyfill-corejs2/-/babel-plugin-polyfill-corejs2-0.4.17.tgz#198f970f1c99a856b466d1187e88ce30bd199d91"
@@ -4989,19 +4967,6 @@ eslint-config-mitodl@^2.1.0:
     "@typescript-eslint/parser" "^7.0.1"
     eslint-config-google "^0.14.0"
 
-eslint-plugin-flow-vars@^0.5.0:
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-flow-vars/-/eslint-plugin-flow-vars-0.5.0.tgz#a7fb78fd873c86e0e5839df3b3c90d47bc68c6d2"
-  integrity sha512-KD6Kdd2+9U8e7+Qg0BNVmQ6Qh8lsrCHfCRGooT0lJUonVsZo7QI2rtkPHBBJBC4REMwRVeViIDi3gWczM0qK8A==
-
-eslint-plugin-flowtype@^8.0.3:
-  version "8.0.3"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-flowtype/-/eslint-plugin-flowtype-8.0.3.tgz#e1557e37118f24734aa3122e7536a038d34a4912"
-  integrity sha512-dX8l6qUL6O+fYPtpNRideCFSpmWOUVx5QcaGLVqe/vlDiBSe4vYljDWDETwnyFzpl7By/WVIu6rcrniCgH9BqQ==
-  dependencies:
-    lodash "^4.17.21"
-    string-natural-compare "^3.0.1"
-
 eslint-plugin-mocha@^10.5.0:
   version "10.5.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-mocha/-/eslint-plugin-mocha-10.5.0.tgz#0aca8d709e7cddef566e0dc252f6b02e307a2b7e"
@@ -5486,11 +5451,6 @@ flatted@^3.2.9:
   version "3.4.4"
   resolved "https://registry.yarnpkg.com/flatted/-/flatted-3.4.4.tgz#aeeca2a506303f0cee61c59e6c9f2a88d2f29fc6"
   integrity sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==
-
-flow-bin@0.277.1:
-  version "0.277.1"
-  resolved "https://registry.yarnpkg.com/flow-bin/-/flow-bin-0.277.1.tgz#8c438f7dc448a918c9fc1b2920e4ced8c43ee983"
-  integrity sha512-WllhR0uomrlxTg0F7rSt2khi8KQKSVU5N5vD1m0ZlYzAs2q9rIP7RWhXFsctXwKkscqI+csEWIgcPoCYzPv1dw==
 
 focus-trap@^2.3.0:
   version "2.4.6"
@@ -8897,11 +8857,6 @@ stream-events@^1.0.5:
   integrity sha512-E1GUzBSgvct8Jsb3v2X15pjzN1tYebtbLaMg+eBOUOAxgbLoSbT2NS91ckc5lJD1KfLjId+jXJRgo0qnV5Nerg==
   dependencies:
     stubs "^3.0.0"
-
-string-natural-compare@^3.0.1:
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/string-natural-compare/-/string-natural-compare-3.0.1.tgz#7a42d58474454963759e8e8b7ae63d71c1e7fdf4"
-  integrity sha512-n3sPwynL1nwKi3WJ6AIsClwBMa0zTi54fn2oLU6ndfTSIO05xaznjSf15PcBZU6FNWbmN5Q6cxT4V5hGvB4taw==
 
 "string-width-cjs@npm:string-width@^4.2.0":
   version "4.2.3"

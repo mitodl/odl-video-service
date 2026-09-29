@@ -7,13 +7,9 @@ require("babel-polyfill")
 babelSharedLoader.options.presets = ["@babel/preset-env", "@babel/preset-react"]
 
 // Resetting presets above drops the per-extension overrides' presets too, so
-// re-declare them. .js/.jsx keep Flow, .ts/.tsx get TypeScript; the two cannot
-// be enabled on the same file.
+// re-declare them. Only .ts/.tsx get the TypeScript preset: this file and
+// global_init.js are plain JavaScript.
 babelSharedLoader.options.overrides = [
-  {
-    test:    /\.jsx?$/,
-    plugins: ["@babel/plugin-transform-flow-strip-types"]
-  },
   {
     test:    /\.tsx?$/,
     presets: ["@babel/preset-typescript"]

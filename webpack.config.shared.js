@@ -49,16 +49,11 @@ module.exports = {
         "@babel/plugin-proposal-class-properties",
         "@babel/plugin-syntax-dynamic-import",
       ],
-      // Flow and TypeScript syntax cannot both be enabled on one file, so the
-      // type-stripping transform is selected by extension. .js/.jsx keep Flow
-      // while the migration is in progress; .ts/.tsx get TypeScript. When the
-      // last Flow annotation is gone, the first override and
-      // @babel/plugin-transform-flow-strip-types go with it.
+      // Scoped to .ts/.tsx rather than hoisted into presets: babelhook.js
+      // still registers .js for the two Node-side harness files
+      // (babelhook.js, global_init.js), which are plain JavaScript and must
+      // not go through the TypeScript parser.
       "overrides": [
-        {
-          "test": /\.jsx?$/,
-          "plugins": ["@babel/plugin-transform-flow-strip-types"]
-        },
         {
           "test": /\.tsx?$/,
           "presets": ["@babel/preset-typescript"]

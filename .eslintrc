@@ -1,22 +1,12 @@
 {
   "extends": [
     "eslint-config-mitodl",
-    "eslint-config-mitodl/flow",
     "eslint-config-mitodl/mocha"
   ],
-  "parserOptions": {
-    // This repo has no root babel config: babel options live inline in
-    // webpack.config.shared.js and static/js/babelhook.js. Tell
-    // @babel/eslint-parser (pulled in by eslint-config-mitodl/flow) to parse
-    // without one, and enable the syntax it needs by hand.
-    "requireConfigFile": false,
-    "babelOptions": {
-      "plugins": [
-        "@babel/plugin-syntax-flow",
-        "@babel/plugin-syntax-jsx"
-      ]
-    }
-  },
+  // No parserOptions block: eslint-config-mitodl/flow used to re-set the root
+  // parser to @babel/eslint-parser, which needed a babel config this repo does
+  // not have. With Flow gone, @typescript-eslint/parser from the base config is
+  // the only parser.
   "overrides": [
     {
       // eslint-config-mitodl's base already carries a *.ts override that picks

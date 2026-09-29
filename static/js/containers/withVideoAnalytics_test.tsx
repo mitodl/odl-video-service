@@ -1,5 +1,3 @@
-// @flow
-/* global SETTINGS: false */
 import React from "react"
 import { assert } from "chai"
 import sinon from "sinon"
@@ -72,7 +70,7 @@ describe("withVideoAnalytics", () => {
       // invisible to the deepEqual below.
       let receivedProps
 
-      class DummyComponent extends React.Component<*, void> {
+      class DummyComponent extends React.Component {
         render() {
           receivedProps = this.props
           return <div>DummyComponent</div>

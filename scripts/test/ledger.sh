@@ -419,7 +419,7 @@ fi
 # last .js under static/js is converted, at which point flow-bin, .flowconfig
 # and the babel flow-strip-types override all come out.
 FLOWFILES=$(grep -rl "@flow" static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
-check "flow-annotated files" "$FLOWFILES" le 16
+check "flow-annotated files" "$FLOWFILES" le 0
 
 # Explicit `any`, counted by asking ESLint rather than by grepping.
 #
@@ -438,6 +438,20 @@ check "flow-annotated files" "$FLOWFILES" le 16
 ANYS=$(node ./node_modules/eslint/bin/eslint.js ./static/js --ext .js,.ts,.tsx -f json 2>/dev/null \
 	| node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const f=JSON.parse(s);let n=0;for(const x of f)for(const m of x.messages)if(m.ruleId==="@typescript-eslint/no-explicit-any")n++;console.log(n)})')
 check "explicit any (eslint)" "$ANYS" le 54
+
+# TypeScript errors, split by source vs test.
+#
+# Source files must be clean -- that is the gate. Test files are not, and the
+# remaining errors are all one shape: a test builds a deliberately partial
+# fixture ({ needsUpdate: true }) and hands it to a component whose Props type
+# is complete. Completing those fixtures would change what the tests isolate,
+# so they are typed properly in the strict-mode task rather than papered over
+# now. Ceiling, so the number can only fall.
+TSC_OUT=$(node ./node_modules/.bin/tsc --noEmit 2>&1 | grep "error TS")
+TSC_SRC=$(echo "$TSC_OUT" | grep -v "_test\." | grep -c "error TS")
+TSC_TEST=$(echo "$TSC_OUT" | grep -c "_test\." )
+check "tsc errors in sources" "$TSC_SRC" le 0
+check "tsc errors in tests" "$TSC_TEST" le 60
 
 echo
 if [[ $FAIL -ne 0 ]]; then

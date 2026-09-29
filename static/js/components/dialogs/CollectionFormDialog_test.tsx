@@ -1,5 +1,5 @@
-// @flow
 import React from "react"
+import { asInput } from "../../testUtils/asStub"
 import sinon from "sinon"
 import { assert } from "chai"
 import { screen, fireEvent, within, waitFor } from "@testing-library/react"
@@ -416,7 +416,7 @@ describe("CollectionFormDialog", () => {
         // DOM confirms the whole batched update has committed.
         await waitFor(() =>
           assert.equal(
-            screen.getByLabelText("Collection Title").value,
+            asInput(screen.getByLabelText("Collection Title")).value,
             "new title"
           )
         )
@@ -651,7 +651,7 @@ describe("CollectionFormDialog", () => {
         // the API stub sees the owner select's pre-dispatch value.
         await waitFor(() =>
           assert.equal(
-            screen.getByRole("combobox", { name: "Owner" }).value,
+            asInput(screen.getByRole("combobox", { name: "Owner" })).value,
             "2"
           )
         )

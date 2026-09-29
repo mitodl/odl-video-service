@@ -1,4 +1,3 @@
-// @flow
 import React from "react"
 import sinon from "sinon"
 import { render, screen } from "@testing-library/react"
