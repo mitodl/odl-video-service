@@ -1,0 +1,57 @@
+import { assert } from "chai"
+import _ from "lodash"
+import * as R from "ramda"
+
+import type { Action } from "../types/reduxTypes"
+import type { Store } from "redux"
+
+export function createAssertReducerResultState(
+  store: Store,
+  getReducerState: (x: any) => Record<string, any>
+) {
+  return (
+    action: (arg: any) => Action<any, any>,
+    stateLookup: (state: Record<string, any>) => any,
+    defaultValue: any
+  ): void => {
+    const getState = () => stateLookup(getReducerState(store.getState()))
+
+    assert.deepEqual(defaultValue, getState())
+    // eslint-disable-next-line no-unused-vars
+    for (const value of [
+      true,
+      null,
+      false,
+      0,
+      3,
+      "x",
+      { a: "b" },
+      {},
+      [3, 4, 5],
+      [],
+      ""
+    ]) {
+      store.dispatch(action(value))
+      assert.deepEqual(value, getState())
+    }
+  }
+}
+
+export const stringStrip = R.compose(R.join(" "), _.words)
+
+export const makeCounter = (): (() => number) => {
+  const gen = (function* () {
+    let i = 1
+    while (true) {
+      // eslint-disable-line no-constant-condition
+      yield i
+      i += 1
+    }
+  })()
+  // $FlowFixMe: Flow doesn't know that this always returns a number
+  return () => gen.next().value
+}
+
+// Helper method for test descriptions
+export const expect = (expectation: boolean) =>
+  expectation ? "should" : "should not"

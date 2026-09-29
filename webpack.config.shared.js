@@ -22,7 +22,7 @@ module.exports = {
         path.join(__dirname, "static/js"),
         "node_modules"
       ],
-      extensions: ['.js', '.jsx'],
+      extensions: ['.js', '.jsx', '.ts', '.tsx'],
       alias: {
         'videojs-contrib-hls': path.resolve(__dirname, 'node_modules/videojs-contrib-hls/dist/videojs-contrib-hls.js'),
         'videojs-contrib-quality-levels': path.resolve(__dirname, 'node_modules/videojs-contrib-quality-levels/dist/videojs-contrib-quality-levels.js'),
@@ -33,7 +33,7 @@ module.exports = {
     }
   },
   babelSharedLoader: {
-    test: /\.jsx?$/,
+    test: /\.[jt]sx?$/,
     exclude: /node_modules/,
     loader: 'babel-loader',
     options: {
@@ -45,10 +45,19 @@ module.exports = {
         "node_modules/**"
       ],
       "plugins": [
-        "@babel/plugin-transform-flow-strip-types",
         "@babel/plugin-proposal-object-rest-spread",
         "@babel/plugin-proposal-class-properties",
         "@babel/plugin-syntax-dynamic-import",
+      ],
+      // Scoped to .ts/.tsx rather than hoisted into presets: babelhook.js
+      // still registers .js for the two Node-side harness files
+      // (babelhook.js, global_init.js), which are plain JavaScript and must
+      // not go through the TypeScript parser.
+      "overrides": [
+        {
+          "test": /\.tsx?$/,
+          "presets": ["@babel/preset-typescript"]
+        }
       ]
     }
   },

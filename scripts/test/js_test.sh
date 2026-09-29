@@ -15,7 +15,10 @@ else
 	fi
 fi
 
-export FILE_PATTERN=${1:-'"static/**/*/*_test.js"'}
+# Matches .js today and .ts/.tsx as files migrate. A test renamed to .ts must
+# still be picked up here, or it silently stops running and the ledger's
+# passing-test count reports a false green.
+export FILE_PATTERN=${1:-'"static/**/*/*_test.{js,ts,tsx}"'}
 CMD_ARGS="--require ./static/js/babelhook.js static/js/global_init.js $FILE_PATTERN"
 
 # Second argument (if specified) should be a string that will match specific test case descriptions

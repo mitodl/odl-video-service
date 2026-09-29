@@ -123,7 +123,7 @@ FLOWFIX=$(grep -rho 'FlowFixMe' static/js --include='*.js' 2>/dev/null | wc -l |
 # le 40 -> le 22 (final review fix wave, hq#12640): current actual is 22 after
 # the full Enzyme -> RTL migration; ratchet the ceiling down to that measured
 # value so it can't silently creep back up.
-check "FlowFixMe occurrences" "$FLOWFIX" le 22
+check "FlowFixMe occurrences" "$FLOWFIX" le 0
 
 # Frozen. Adding a line here is how React 18 act() warnings get silenced --
 # turning a real signal about un-batched state updates into future flaky tests.
@@ -168,7 +168,11 @@ check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
 # help: `${VENDORSUPP:-0}` is still `0 -le 4`. Only an explicit existence test
 # fails, and it has to say what the remover is supposed to do, or the next
 # phase just deletes the check to get green.
-SUPPFILE=static/js/testUtils/suppressVendorLifecycleWarnings.js
+# Extension-agnostic: this file converts .js -> .tsx during the TypeScript
+# migration, and a hardcoded .js path turns every gate below it into a
+# "file is gone" failure the moment it is renamed.
+SUPPFILE=$(find static/js/testUtils -maxdepth 1 \
+	-name 'suppressVendorLifecycleWarnings.*' -not -name '*_test.*' 2>/dev/null | head -1)
 if [[ ! -f $SUPPFILE ]]; then
 	printf "  FAIL  %-34s %s\n" "vendor lifecycle suppressions" \
 		"($SUPPFILE is gone)"
@@ -292,7 +296,8 @@ fi
 # some future file would trip this; that is the safe direction for an
 # invariant, and the only files that legitimately name it are excluded.
 OWN_FINDDOMNODE=$(grep -rhoE '\bfindDOMNode\b' static/js --include='*.js' \
-	--exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
+	--include='*.ts' --include='*.tsx' \
+	--exclude='suppressVendorLifecycleWarnings*' 2>/dev/null | wc -l | tr -d ' ')
 check "own findDOMNode references" "${OWN_FINDDOMNODE:-0}" le 0
 
 # The legacy context API symbols, on the same bare-symbol rule and for the
@@ -307,7 +312,8 @@ check "own findDOMNode references" "${OWN_FINDDOMNODE:-0}" le 0
 # it is the same one-word change, and redundancy that can be evaded is not
 # redundancy.
 OWN_LEGACY_CONTEXT=$(grep -rhoE '\b(childContextTypes|contextTypes|getChildContext)\b' \
-	static/js --include='*.js' --exclude='suppressVendorLifecycleWarnings*.js' 2>/dev/null | wc -l | tr -d ' ')
+	static/js --include='*.js' --include='*.ts' --include='*.tsx' \
+	--exclude='suppressVendorLifecycleWarnings*' 2>/dev/null | wc -l | tr -d ' ')
 check "own legacy context API references" "${OWN_LEGACY_CONTEXT:-0}" le 0
 
 # Every @material/* package that SCSS imports must be a DECLARED dependency.
@@ -402,6 +408,50 @@ if [[ -f .stryker-baseline.json && -f reports/mutation/mutation.json ]]; then
 else
 	printf "  SKIP  %-34s %s\n" "mutation score" "(no baseline or report)"
 fi
+
+# --- Flow -> TypeScript migration (mitodl/hq#11774) -------------------------
+#
+# Two ratchets, both ceilings, both meant to only ever fall.
+#
+# Flow annotations: 138 files still carry `// @flow`. Nothing checks them --
+# `flow check` errors out before reading a file and Flow runs in no CI job --
+# so this counts remaining work, not remaining safety. It reaches 0 when the
+# last .js under static/js is converted, at which point flow-bin, .flowconfig
+# and the babel flow-strip-types override all come out.
+FLOWFILES=$(grep -rl "@flow" static/js --include='*.js' 2>/dev/null | wc -l | tr -d ' ')
+check "flow-annotated files" "$FLOWFILES" le 0
+
+# Explicit `any`, counted by asking ESLint rather than by grepping.
+#
+# This gate used to grep for \bany\b with comment lines stripped. That was
+# wrong twice over: it counted English prose inside JSX ("at any time" in
+# TermsPage alone scored 67) and it needed a second gate to excuse the
+# inherited `Action<any, null>` reducer signature. @typescript-eslint knows
+# which occurrences are actually the type, so it is the authoritative source --
+# and a gate that disagrees with the linter it stands in for only teaches
+# people to ignore it.
+#
+# Includes the 8 inherited `Action<any, ...>` signatures. Every reducer is
+# converted now, so that subtotal is fixed and this whole number can only fall.
+# It reaches 0 when action payloads become discriminated unions and the
+# remaining REST/test-helper placeholders get real types.
+ANYS=$(node ./node_modules/eslint/bin/eslint.js ./static/js --ext .js,.ts,.tsx -f json 2>/dev/null |
+	node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const f=JSON.parse(s);let n=0;for(const x of f)for(const m of x.messages)if(m.ruleId==="@typescript-eslint/no-explicit-any")n++;console.log(n)})')
+check "explicit any (eslint)" "$ANYS" le 54
+
+# TypeScript errors, split by source vs test.
+#
+# Source files must be clean -- that is the gate. Test files are not, and the
+# remaining errors are all one shape: a test builds a deliberately partial
+# fixture ({ needsUpdate: true }) and hands it to a component whose Props type
+# is complete. Completing those fixtures would change what the tests isolate,
+# so they are typed properly in the strict-mode task rather than papered over
+# now. Ceiling, so the number can only fall.
+TSC_OUT=$(node ./node_modules/.bin/tsc --noEmit 2>&1 | grep "error TS")
+TSC_SRC=$(echo "$TSC_OUT" | grep -v "_test\." | grep -c "error TS")
+TSC_TEST=$(echo "$TSC_OUT" | grep -c "_test\.")
+check "tsc errors in sources" "$TSC_SRC" le 0
+check "tsc errors in tests" "$TSC_TEST" le 60
 
 echo
 if [[ $FAIL -ne 0 ]]; then

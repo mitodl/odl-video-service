@@ -1,0 +1,35 @@
+import casual from "casual-browserify"
+
+import { makeVideos } from "./video"
+
+import type { Collection } from "../types/collectionTypes"
+import { DESCRIPTION_FORMAT_TEXT } from "../constants"
+
+export const makeCollection = (
+  collectionKey: string = casual.uuid
+): Collection => ({
+  key:                 collectionKey,
+  created_at:          casual.moment.format(),
+  title:               casual.text,
+  description:         casual.text,
+  description_format:  DESCRIPTION_FORMAT_TEXT,
+  videos:              makeVideos(2),
+  video_count:         2,
+  view_lists:          casual.array_of_words(2),
+  admin_lists:         casual.array_of_words(2),
+  is_logged_in_only:   false,
+  // Both are in the serializer and returned on every collection, but the
+  // factory omitted them, so anything built from it read undefined where
+  // the app sees a real value. Defaults match ui/models.py:214,217.
+  is_public:           false,
+  stream_source:       null,
+  edx_course_id:       casual.word,
+  is_admin:            true,
+  is_edx_course_admin: true,
+  owner:               casual.integer(1, 100),
+  owner_info:          {
+    id:       casual.integer(1, 100),
+    username: casual.username,
+    email:    casual.email
+  }
+})

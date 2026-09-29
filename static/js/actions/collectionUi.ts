@@ -1,0 +1,75 @@
+import { createAction } from "redux-actions"
+import type { Dispatch } from "redux"
+
+import type { Collection } from "../types/collectionTypes"
+import { showDialog } from "./commonUi"
+import { DIALOGS } from "../constants"
+import { makeInitializedForm } from "../lib/collection"
+
+export const qualifiedName = (name: string) => `COLLECTION_UI_${name}`
+
+export const INIT_COLLECTION_FORM = qualifiedName("INIT_COLLECTION_FORM")
+export const initCollectionForm = createAction(INIT_COLLECTION_FORM)
+
+export const SET_COLLECTION_TITLE = qualifiedName("SET_COLLECTION_TITLE")
+export const setCollectionTitle = createAction(SET_COLLECTION_TITLE)
+
+export const SET_COLLECTION_DESC = qualifiedName("SET_COLLECTION_DESC")
+export const setCollectionDesc = createAction(SET_COLLECTION_DESC)
+
+// For a collection that has not been created yet: there is nothing stored to
+// convert, so upgrading is just a switch of editor.
+export const SET_COLLECTION_DESC_FORMAT = qualifiedName(
+  "SET_COLLECTION_DESC_FORMAT"
+)
+export const setCollectionDescFormat = createAction(SET_COLLECTION_DESC_FORMAT)
+
+export const SET_VIEW_CHOICE = qualifiedName("SET_VIEW_CHOICE")
+export const setViewChoice = createAction(SET_VIEW_CHOICE)
+
+export const SET_VIEW_LISTS = qualifiedName("SET_VIEW_LISTS")
+export const setViewLists = createAction(SET_VIEW_LISTS)
+
+export const SET_ADMIN_CHOICE = qualifiedName("SET_ADMIN_CHOICE")
+export const setAdminChoice = createAction(SET_ADMIN_CHOICE)
+
+export const SET_ADMIN_LISTS = qualifiedName("SET_ADMIN_LISTS")
+export const setAdminLists = createAction(SET_ADMIN_LISTS)
+
+export const SET_EDX_COURSE_ID = qualifiedName("SET_EDX_COURSE_ID")
+export const setEdxCourseId = createAction(SET_EDX_COURSE_ID)
+
+export const SET_OWNER_ID = qualifiedName("SET_OWNER_ID")
+export const setOwnerId = createAction(SET_OWNER_ID)
+
+export const SET_SELECTED_VIDEO_KEY = qualifiedName("SET_SELECTED_VIDEO_KEY")
+export const setSelectedVideoKey = createAction(SET_SELECTED_VIDEO_KEY)
+
+export const SET_IS_NEW = qualifiedName("SET_IS_NEW")
+export const setIsNew = createAction(SET_IS_NEW)
+
+export const CLEAR_COLLECTION_FORM = qualifiedName("CLEAR_COLLECTION_FORM")
+export const clearCollectionForm = createAction(CLEAR_COLLECTION_FORM)
+
+export const CLEAR_COLLECTION_ERRORS = qualifiedName("CLEAR_COLLECTION_ERRORS")
+export const clearCollectionErrors = createAction(CLEAR_COLLECTION_ERRORS)
+
+export const CLEAR_COLLECTION_DATA = qualifiedName("CLEAR_COLLECTION_DATA")
+export const clearCollectionData = createAction(CLEAR_COLLECTION_DATA)
+
+export const showNewCollectionDialog = () => (dispatch: Dispatch) => {
+  dispatch(setIsNew(true))
+  dispatch(showDialog(DIALOGS.COLLECTION_FORM))
+}
+
+export const showEditCollectionDialog =
+  (collection: Collection) => (dispatch: Dispatch) => {
+    dispatch(setIsNew(false))
+    dispatch(initCollectionForm(makeInitializedForm(collection)))
+    dispatch(showDialog(DIALOGS.COLLECTION_FORM))
+  }
+
+export const SET_COLLECTION_FORM_ERRORS = qualifiedName(
+  "SET_COLLECTION_FORM_ERRORS"
+)
+export const setCollectionFormErrors = createAction(SET_COLLECTION_FORM_ERRORS)

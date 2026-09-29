@@ -1,0 +1,87 @@
+import * as R from "ramda"
+import _ from "lodash"
+
+import {
+  PERM_CHOICE_NONE,
+  PERM_CHOICE_LISTS,
+  PERM_CHOICE_LOGGED_IN
+} from "../lib/dialog"
+import { DESCRIPTION_FORMAT_TEXT } from "../constants"
+import type {
+  CollectionFormSource,
+  Collection,
+  CollectionFormState,
+  CollectionUiState
+} from "../types/collectionTypes"
+import type { RestState } from "../types/restTypes"
+import type {} from "../reducers/collectionUi"
+
+export const getActiveCollectionDetail = (state: {
+  collections?: RestState<Collection> | null
+}): Collection | null =>
+  state.collections && state.collections.data && state.collections.loaded ?
+    state.collections.data :
+    null
+
+export const getVideoWithKey = (collection: Collection, key: string) =>
+  R.compose(R.find(R.propEq(key, "key")), R.defaultTo([]))(collection.videos)
+
+export const getFormKey = (isNew: boolean): string =>
+  isNew ? "newCollectionForm" : "editCollectionForm"
+
+export const getCollectionForm = (
+  state: CollectionUiState
+): CollectionFormState => state[getFormKey(state.isNew)]
+
+/**
+ * Make an initialized form for use with existing collections
+ */
+export function makeInitializedForm(
+  collection: CollectionFormSource | null
+): CollectionFormState {
+  if (!collection) {
+    collection = {
+      key:                "",
+      title:              "",
+      description:        "",
+      description_format: DESCRIPTION_FORMAT_TEXT,
+      view_lists:         [],
+      admin_lists:        [],
+      is_logged_in_only:  false,
+      edx_course_id:      "",
+      video_count:        0,
+      owner:              null,
+      owner_info:         {
+        id:       null,
+        username: "",
+        email:    ""
+      }
+    }
+  }
+  const viewChoice =
+    collection.view_lists.length === 0 ? PERM_CHOICE_NONE : PERM_CHOICE_LISTS
+  const adminChoice =
+    collection.admin_lists.length === 0 ? PERM_CHOICE_NONE : PERM_CHOICE_LISTS
+
+  return {
+    key:         collection.key,
+    title:       collection.title,
+    description: collection.description,
+    description_format:
+      collection.description_format || DESCRIPTION_FORMAT_TEXT,
+    viewChoice: collection.is_logged_in_only ?
+      PERM_CHOICE_LOGGED_IN :
+      viewChoice,
+    viewLists:   _.join(collection.view_lists, ","),
+    adminChoice: adminChoice,
+    adminLists:  _.join(collection.admin_lists, ","),
+    edxCourseId: collection.edx_course_id,
+    videoCount:  collection.video_count,
+    ownerId:     collection.owner || null,
+    ownerInfo:   collection.owner_info || {
+      id:       null,
+      username: "",
+      email:    ""
+    }
+  }
+}

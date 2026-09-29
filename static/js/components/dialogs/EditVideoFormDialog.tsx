@@ -1,0 +1,746 @@
+import React from "react"
+import type { AppDispatch } from "../../types/reduxTypes"
+import { connect } from "react-redux"
+import _ from "lodash"
+
+import Dialog from "../material/Dialog"
+import Filefield from "../material/Filefield"
+import Radio from "../material/Radio"
+import Textfield from "../material/Textfield"
+import DescriptionField from "../material/DescriptionField"
+
+import { actions } from "../../actions"
+import { getVideoWithKey } from "../../lib/collection"
+import { uploadThumbnail } from "../../lib/api"
+import {
+  PERM_CHOICE_NONE,
+  PERM_CHOICE_LISTS,
+  PERM_CHOICE_PUBLIC,
+  PERM_CHOICE_COLLECTION,
+  PERM_CHOICE_OVERRIDE,
+  PERM_CHOICE_LOGGED_IN
+} from "../../lib/dialog"
+
+import type {
+  Video,
+  VideoUiState,
+  VideoUpdatePayload
+} from "../../types/videoTypes"
+import type { Collection } from "../../types/collectionTypes"
+import type { RootState } from "../../types/rootState"
+import type { ToastMessage } from "../../types/toastTypes"
+import { calculateListPermissionValue } from "../../util/util"
+import { videoHasError, videoIsProcessing } from "../../lib/video"
+import { DESCRIPTION_FORMAT_HTML } from "../../constants"
+
+/*
+ * The props this dialog reads that come from whoever renders it, rather than
+ * from the store. Both are optional and mapStateToProps branches on which one
+ * it got -- see the comment there.
+ */
+type OwnProps = {
+  collection?: Collection | null
+  video?: Video | null
+}
+
+type DialogProps = {
+  dispatch: AppDispatch
+  videoUi: VideoUiState
+  video: Video | null
+  open: boolean
+  hideDialog: () => void
+  shouldUpdateCollection: boolean
+  // Read by renderPermissions, and by mapStateToProps as an own prop. The
+  // Flow prop type never declared it, but the collection page really does
+  // pass it.
+  collection?: Collection | null
+}
+
+type DialogState = {
+  thumbnailFile: File | null
+  thumbnailPreviewUrl: string | null
+  thumbnailError: string | null
+  upgradingDescription: boolean
+  upgradeError: string | null
+}
+
+/**
+ * Allow only blob: (local preview) and https: (CDN) URLs in img src to prevent
+ * javascript: or data: URI injection (satisfies CodeQL DOM-XSS check).
+ */
+function sanitizeImgSrc(url: string | null): string {
+  if (!url) return ""
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol === "blob:" || parsed.protocol === "https:") {
+      return parsed.href
+    }
+  } catch (_) {
+    /* invalid URL */
+  }
+  return ""
+}
+
+class EditVideoFormDialog extends React.Component<DialogProps, DialogState> {
+  state: DialogState = {
+    thumbnailFile:        null,
+    thumbnailPreviewUrl:  null,
+    thumbnailError:       null,
+    upgradingDescription: false,
+    upgradeError:         null
+  }
+
+  /*
+   * True while this dialog is closing itself.
+   *
+   * onClose clears the form, and that dispatch re-renders the dialog, which
+   * stays mounted while closed - withDialogs only flips `open`. Without this
+   * flag the clear is undone immediately: editVideoForm.key is back to null,
+   * which is exactly the condition checkActiveVideo re-seeds on, so it writes
+   * `props.video` into the form again. On the collection page that prop is the
+   * collection's own copy of the video, and submitForm has only just *asked*
+   * for the collection to be refetched - so the value re-seeded is the one from
+   * before the save. Nothing corrects it afterwards either, because
+   * checkActiveVideo only re-initializes when the video *key* changes, and the
+   * key has not changed. The next open of the dialog would show the pre-save
+   * values.
+   *
+   * Guarding on `open` alone would not do: the dispatch that hides the dialog
+   * and the dispatch that clears the form are separate, so their order would
+   * decide whether the bug appears.
+   */
+  closing = false
+
+  // Set on unmount so an upgrade that resolves afterwards does not setState on
+  // a dead component. withDialogs keeps this mounted while closed, so this is
+  // the page-teardown case rather than the everyday one.
+  unmounted = false
+
+  componentDidMount() {
+    this.checkActiveVideo()
+  }
+
+  componentWillUnmount() {
+    this.unmounted = true
+  }
+
+  componentDidUpdate(prevProps: DialogProps) {
+    // A fresh open ends the close, and the form should track props again.
+    if (this.props.open && !prevProps.open) {
+      this.closing = false
+    }
+    this.checkActiveVideo()
+  }
+
+  checkActiveVideo() {
+    const {
+      open,
+      video,
+      videoUi: { editVideoForm }
+    } = this.props
+    if (this.closing) {
+      return
+    }
+    if (open && video && video.key !== editVideoForm.key) {
+      this.initializeFormWithVideo(video)
+    }
+  }
+
+  determineViewChoice(video: Video) {
+    if (video.is_private) {
+      return PERM_CHOICE_NONE
+    } else if (video.is_public) {
+      return PERM_CHOICE_PUBLIC
+    } else if (video.is_logged_in_only) {
+      return PERM_CHOICE_LOGGED_IN
+    } else if (video.view_lists.length > 0) {
+      return PERM_CHOICE_LISTS
+    } else {
+      return PERM_CHOICE_COLLECTION
+    }
+  }
+
+  initializeFormWithVideo(video: Video) {
+    const { dispatch } = this.props
+
+    const viewChoice = this.determineViewChoice(video)
+
+    dispatch(
+      actions.videoUi.initEditVideoForm({
+        key:                video.key,
+        title:              video.title,
+        description:        video.description,
+        description_format: video.description_format,
+        cta_link:           video.cta_link || null,
+        overrideChoice:
+          viewChoice === PERM_CHOICE_COLLECTION ?
+            PERM_CHOICE_COLLECTION :
+            PERM_CHOICE_OVERRIDE,
+        viewChoice: viewChoice,
+        viewLists:  _.join(video.view_lists, ",")
+      })
+    )
+  }
+
+  /*
+   * True when an in-flight upgrade no longer belongs to the form on screen.
+   *
+   * `upgradeDescription` awaits a PATCH, and by the time it resolves the dialog
+   * may have been closed and reopened on a different video - close A, open B,
+   * and A's response would otherwise be written into B's form. `checkActiveVideo`
+   * is guarded against the same thing by `this.closing`; an awaited response has
+   * to check the form's key too, because a reopen clears that flag.
+   *
+   * Only the *form* writes are skipped on a stale response. The button's own
+   * "Converting…" state is cleared either way - it belongs to this component
+   * rather than to the video, and leaving it set would strand the field the
+   * author is now looking at behind a disabled button.
+   */
+  isStaleUpgrade(key: string | null) {
+    return this.closing || this.props.videoUi.editVideoForm.key !== key
+  }
+
+  /**
+   * Convert this video's plain-text description to rich text.
+   *
+   * Saved on its own rather than folded into Save Changes, so the author gets
+   * the editor - with their words already in it - before deciding what to write
+   * next. Whatever is currently in the textarea goes up with the request, so an
+   * unsaved edit is converted too rather than discarded.
+   *
+   * The server does the converting (ui.html.upgrade_description): it is the only
+   * place that knows how to escape plain text and how to clean markup someone
+   * once pasted into the old field.
+   *
+   * Only the description comes back into the form. Re-seeding the whole form
+   * from the response would discard every other unsaved edit in the dialog - the
+   * PATCH sends the description alone, so the response still carries the *old*
+   * title, and a title the author had just retyped would revert on the spot.
+   */
+  upgradeDescription = async () => {
+    const {
+      dispatch,
+      videoUi: { editVideoForm },
+      shouldUpdateCollection
+    } = this.props
+    const key = editVideoForm.key
+
+    this.setState({ upgradingDescription: true, upgradeError: null })
+    try {
+      // Annotated because redux-hammock's derived thunks are untyped, so the
+      // awaited value would otherwise be implicitly untyped.
+      const video: Video = await dispatch(
+        actions.videos.patch(key, {
+          description:        editVideoForm.description,
+          description_format: DESCRIPTION_FORMAT_HTML
+        })
+      )
+      if (this.unmounted) {
+        return
+      }
+      this.setState({ upgradingDescription: false })
+      /*
+       * Before the staleness check, not after: the row *has* been converted, so
+       * the cached collection is now wrong whether or not this form is still on
+       * screen. On a collection page `props.video` comes from that cache and
+       * `checkActiveVideo` re-seeds the form from it, so skipping the refetch
+       * would reopen the dialog on the pre-upgrade description with its format
+       * back to plain text - and the next Save would write that stale format
+       * over the conversion.
+       */
+      if (shouldUpdateCollection) {
+        dispatch(actions.collections.get(video.collection_key))
+      }
+      if (this.isStaleUpgrade(key)) {
+        return
+      }
+      dispatch(actions.videoUi.setEditVideoDesc(video.description))
+      dispatch(actions.videoUi.setEditVideoDescFormat(video.description_format))
+    } catch (error) {
+      if (this.unmounted) {
+        return
+      }
+      this.setState({
+        upgradingDescription: false,
+        // Not this form's error to report once the dialog has moved on.
+        upgradeError:         this.isStaleUpgrade(key) ?
+          null :
+          "That description could not be converted. Please try again."
+      })
+    }
+  }
+
+  setEditVideoTitle = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { dispatch } = this.props
+    dispatch(actions.videoUi.setEditVideoTitle(event.target.value))
+  }
+
+  // The rich-text editor hands back serialized HTML, not a DOM event.
+  setEditVideoDesc = (html: string) => {
+    const { dispatch } = this.props
+    dispatch(actions.videoUi.setEditVideoDesc(html))
+  }
+
+  setEditVideoCtaLink = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { dispatch } = this.props
+    dispatch(actions.videoUi.setEditVideoCtaLink(event.target.value))
+  }
+
+  setVideoViewPermChoice = (choice: string) => {
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
+    if (choice !== editVideoForm.viewChoice) {
+      dispatch(actions.videoUi.setViewChoice(choice))
+    }
+  }
+
+  handleVideoViewPermClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    this.setVideoViewPermChoice(event.target.value)
+  }
+
+  /*
+   * `choice` is a string, not a boolean: the only caller hands it a radio
+   * input's `value`, which is PERM_CHOICE_COLLECTION or PERM_CHOICE_OVERRIDE,
+   * and `editVideoForm.overrideChoice` it is compared against is a string too.
+   * The Flow annotation said `boolean` and nothing checked it.
+   */
+  setVideoPermOverrideChoice = (choice: string) => {
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
+    if (choice !== editVideoForm.overrideChoice) {
+      dispatch(actions.videoUi.setPermOverrideChoice(choice))
+    }
+  }
+
+  handleVideoPermOverrideClick = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    this.setVideoPermOverrideChoice(event.target.value)
+  }
+
+  setVideoViewPermLists = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { dispatch } = this.props
+    dispatch(actions.videoUi.setViewLists(event.target.value))
+  }
+
+  handleThumbnailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files[0]
+    if (!file) return
+    if (
+      file.type !== "image/jpeg" &&
+      file.type !== "image/jpg" &&
+      file.type !== "image/png"
+    ) {
+      const { thumbnailPreviewUrl } = this.state
+      if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
+      this.setState({
+        thumbnailError:      "Only JPEG and PNG image files are allowed.",
+        thumbnailFile:       null,
+        thumbnailPreviewUrl: null
+      })
+      event.target.value = ""
+      return
+    }
+    if (file.size > SETTINGS.thumbnail_upload_max_size) {
+      const { thumbnailPreviewUrl } = this.state
+      if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
+      const maxBytes = SETTINGS.thumbnail_upload_max_size
+      const maxSizeStr =
+        maxBytes >= 1024 * 1024 ?
+          `${Math.floor(maxBytes / (1024 * 1024))} MB` :
+          maxBytes >= 1024 ?
+            `${Math.floor(maxBytes / 1024)} KB` :
+            `${maxBytes} bytes`
+      this.setState({
+        thumbnailError:      `This image is too large (max ${maxSizeStr}). Please reduce the file size and try again.`,
+        thumbnailFile:       null,
+        thumbnailPreviewUrl: null
+      })
+      event.target.value = ""
+      return
+    }
+    const { thumbnailPreviewUrl } = this.state
+    if (thumbnailPreviewUrl) {
+      URL.revokeObjectURL(thumbnailPreviewUrl)
+    }
+    this.setState({
+      thumbnailFile:       file,
+      thumbnailPreviewUrl: URL.createObjectURL(file),
+      thumbnailError:      null
+    })
+  }
+
+  onClose = () => {
+    const { hideDialog, dispatch } = this.props
+    const { thumbnailPreviewUrl } = this.state
+    if (thumbnailPreviewUrl) {
+      URL.revokeObjectURL(thumbnailPreviewUrl)
+    }
+    this.setState({
+      thumbnailFile:       null,
+      thumbnailPreviewUrl: null,
+      thumbnailError:      null
+    })
+    this.closing = true
+    dispatch(actions.videoUi.clearVideoForm())
+    hideDialog()
+  }
+
+  handleError = (error: Error) => {
+    const {
+      dispatch,
+      videoUi: { editVideoForm }
+    } = this.props
+    dispatch(
+      actions.videoUi.setVideoFormErrors({
+        ...editVideoForm,
+        errors: error
+      })
+    )
+  }
+
+  submitForm = async () => {
+    if (this.state.upgradingDescription) {
+      return
+    }
+    const {
+      dispatch,
+      videoUi: { editVideoForm },
+      shouldUpdateCollection
+    } = this.props
+
+    const overridePerms = editVideoForm.overrideChoice === PERM_CHOICE_OVERRIDE
+
+    /*
+     * No description_format. It is server-owned: only the explicit upgrade
+     * changes it, and the API accepts an html -> text downgrade without
+     * complaint. Re-asserting the form's copy on an ordinary save means a
+     * format that moved on elsewhere - a second tab, another admin, Django
+     * admin - gets overwritten by whatever this page last read, which leaves
+     * markup stored as plain text and rendered escaped, so viewers see raw
+     * `<p>` tags. Omitting the field makes the serializer keep the stored
+     * format and sanitize against it.
+     */
+    let patchData: VideoUpdatePayload = {
+      title:       editVideoForm.title,
+      description: editVideoForm.description,
+      ...(editVideoForm.cta_link !== null ?
+        { cta_link: editVideoForm.cta_link || null } :
+        {})
+    }
+
+    if (SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS) {
+      patchData = {
+        ...patchData,
+        view_lists: overridePerms ?
+          calculateListPermissionValue(
+            editVideoForm.viewChoice,
+            editVideoForm.viewLists
+          ) :
+          [],
+        is_public:
+          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_PUBLIC,
+        is_private:
+          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_NONE,
+        is_logged_in_only:
+          overridePerms && editVideoForm.viewChoice === PERM_CHOICE_LOGGED_IN
+      }
+    }
+
+    try {
+      const { thumbnailFile } = this.state
+      if (thumbnailFile) {
+        const formData = new FormData()
+        formData.append("thumbnail", thumbnailFile)
+        try {
+          await uploadThumbnail(editVideoForm.key, formData)
+        } catch (uploadErr) {
+          const { thumbnailPreviewUrl } = this.state
+          if (thumbnailPreviewUrl) URL.revokeObjectURL(thumbnailPreviewUrl)
+          this.setState({
+            thumbnailError:      uploadErr.message,
+            thumbnailFile:       null,
+            thumbnailPreviewUrl: null
+          })
+          return
+        }
+      }
+      const video: Video = await dispatch(
+        actions.videos.patch(editVideoForm.key, patchData)
+      )
+      this.initializeFormWithVideo(video)
+      if (shouldUpdateCollection) {
+        dispatch(actions.collections.get(video.collection_key))
+      }
+      this.addToastMessage({
+        message: {
+          key:     "video-saved",
+          content: "Changes saved",
+          icon:    "check"
+        }
+      })
+      this.onClose()
+    } catch (e) {
+      this.handleError(e)
+    }
+  }
+
+  addToastMessage(...args: Array<{ message: ToastMessage }>) {
+    const { dispatch } = this.props
+    dispatch(actions.toast.addMessage(...args))
+  }
+
+  renderThumbnail() {
+    const { video } = this.props
+    const { thumbnailPreviewUrl, thumbnailError } = this.state
+    const existingThumbnail =
+      video && video.videothumbnail_set && video.videothumbnail_set.length > 0 ?
+        video.videothumbnail_set[0] :
+        null
+
+    const previewUrl =
+      thumbnailPreviewUrl ||
+      (existingThumbnail ? existingThumbnail.cloudfront_url : null)
+
+    const buttonLabel = existingThumbnail ?
+      "Replace thumbnail" :
+      "Add thumbnail"
+
+    return (
+      <section className="thumbnail-group">
+        <h4 className="mdc-typography--subheading2">Thumbnail</h4>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {previewUrl && (
+            <img
+              src={sanitizeImgSrc(previewUrl)}
+              alt="Video thumbnail"
+              style={{
+                width:        "120px",
+                height:       "68px",
+                objectFit:    "cover",
+                borderRadius: "4px",
+                border:       "1px solid #ccc",
+                flexShrink:   0
+              }}
+            />
+          )}
+          <Filefield
+            label={buttonLabel}
+            accept="image/jpeg,image/jpg,image/png,.jpg,.jpeg,.png"
+            onChange={this.handleThumbnailChange}
+          />
+          {thumbnailError ? (
+            <p
+              style={{ color: "red", margin: "4px 0 0 0", fontSize: "0.85em" }}
+            >
+              {thumbnailError}
+            </p>
+          ) : (
+            <p
+              style={{ color: "#666", margin: "4px 0 0 0", fontSize: "0.8em" }}
+            >
+              JPEG or PNG, max{" "}
+              {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
+            </p>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  renderPermissions() {
+    const {
+      videoUi: { editVideoForm, errors },
+      video,
+      collection
+    } = this.props
+
+    const defaultPerms = editVideoForm.overrideChoice === PERM_CHOICE_COLLECTION
+    const collectionIsPublic = collection ? collection.is_public : false
+
+    return (
+      <section className="permission-group">
+        <h4>Who can view this video?</h4>
+        <Radio
+          id="view-collection-inherit"
+          label="Same as collection permissions (default)"
+          radioGroupName="video-view-perms-override"
+          value={PERM_CHOICE_COLLECTION}
+          selectedValue={editVideoForm.overrideChoice}
+          onChange={this.handleVideoPermOverrideClick}
+          className="wideLabel"
+        />
+        <div className="collectionPerms">
+          {`${
+            video && video.collection_view_lists.length > 0 ?
+              _.map(video.collection_view_lists).join(",") :
+              "Only owner"
+          }`}
+        </div>
+        <Radio
+          id="view-collection-override"
+          label="Override collection permissions for this video"
+          radioGroupName="video-view-perms-override"
+          value={PERM_CHOICE_OVERRIDE}
+          selectedValue={editVideoForm.overrideChoice}
+          onChange={this.handleVideoPermOverrideClick}
+          className="wideLabel"
+        />
+        <section className="permission-group nested-once">
+          <Radio
+            id="view-only-me"
+            label="Only you and other admins"
+            radioGroupName="video-view-perms"
+            value={PERM_CHOICE_NONE}
+            selectedValue={editVideoForm.viewChoice}
+            onChange={this.handleVideoViewPermClick}
+            disabled={defaultPerms}
+            className="wideLabel"
+          />
+          <Radio
+            id="view-moira"
+            label="Moira Lists"
+            radioGroupName="video-view-permss"
+            value={PERM_CHOICE_LISTS}
+            selectedValue={editVideoForm.viewChoice}
+            onChange={this.handleVideoViewPermClick}
+            disabled={defaultPerms}
+          >
+            <Textfield
+              id="view-moira-input"
+              placeholder="Add Moira list(s), separated by commas"
+              onChange={this.setVideoViewPermLists}
+              onFocus={this.setVideoViewPermChoice.bind(
+                this,
+                PERM_CHOICE_LISTS
+              )}
+              value={
+                editVideoForm.viewLists ||
+                (video ? _.map(video.view_lists).join(",") : "")
+              }
+              validationMessage={errors ? errors.view_lists : ""}
+            />
+          </Radio>
+          <Radio
+            id="view-logged-in-only"
+            label="MIT Touchstone"
+            radioGroupName="video-view-perms"
+            value={PERM_CHOICE_LOGGED_IN}
+            selectedValue={editVideoForm.viewChoice}
+            onChange={this.handleVideoViewPermClick}
+            disabled={defaultPerms}
+            className="wideLabel"
+          />
+          {collectionIsPublic && (
+            <Radio
+              id="view-public"
+              label="Publicly accessible"
+              radioGroupName="video-view-perms"
+              value={PERM_CHOICE_PUBLIC}
+              selectedValue={editVideoForm.viewChoice}
+              onChange={this.handleVideoViewPermClick}
+              disabled={defaultPerms}
+              className="wideLabel"
+            />
+          )}
+        </section>
+      </section>
+    )
+  }
+
+  render() {
+    const {
+      open,
+      hideDialog,
+      video,
+      videoUi: { editVideoForm, errors }
+    } = this.props
+
+    return (
+      <Dialog
+        id="edit-video-form-dialog"
+        title="Edit Video Details"
+        cancelText="Cancel"
+        submitText="Save Changes"
+        noSubmit={false}
+        hideDialog={hideDialog}
+        onAccept={this.submitForm}
+        onCancel={this.onClose}
+        open={open}
+        validateOnClick={true}
+      >
+        <div className="ovs-form-dialog">
+          <Textfield
+            label="Title"
+            id="video-title"
+            onChange={this.setEditVideoTitle}
+            value={editVideoForm.title}
+            validationMessage={errors ? errors.title : ""}
+            required
+          />
+          <DescriptionField
+            label="Description"
+            id="video-description"
+            placeholder="Add a description, links or next steps for learners."
+            onChange={this.setEditVideoDesc}
+            value={editVideoForm.description}
+            descriptionFormat={editVideoForm.description_format}
+            onUpgrade={this.upgradeDescription}
+            upgrading={this.state.upgradingDescription}
+            upgradeError={this.state.upgradeError}
+          />
+          <Textfield
+            label="Call-to-Action Link"
+            id="video-cta-link"
+            onChange={this.setEditVideoCtaLink}
+            value={editVideoForm.cta_link || ""}
+            validationMessage={errors ? errors.cta_link : ""}
+            placeholder="https://"
+          />
+          {video &&
+            !videoIsProcessing(video) &&
+            !videoHasError(video) &&
+            this.renderThumbnail()}
+          {SETTINGS.FEATURES.ENABLE_VIDEO_PERMISSIONS &&
+            video &&
+            !videoIsProcessing(video) &&
+            !videoHasError(video) &&
+            this.renderPermissions()}
+        </div>
+      </Dialog>
+    )
+  }
+}
+
+const mapStateToProps = (state: RootState, ownProps: OwnProps) => {
+  const {
+    videoUi,
+    collectionUi: { selectedVideoKey }
+  } = state
+  const { collection, video } = ownProps
+
+  // The dialog needs a Video object passed in as a prop. Depending on the container that includes this dialog,
+  // that video can be retrieved in a couple different ways.
+  let selectedVideo: Video | null | undefined,
+    shouldUpdateCollection: boolean | undefined
+  if (video) {
+    selectedVideo = video
+    shouldUpdateCollection = false
+  } else if (collection) {
+    selectedVideo = getVideoWithKey(collection, selectedVideoKey)
+    shouldUpdateCollection = true
+  }
+
+  return {
+    videoUi:                videoUi,
+    video:                  selectedVideo,
+    shouldUpdateCollection: shouldUpdateCollection,
+    collection:             collection
+  }
+}
+
+export default connect(mapStateToProps)(EditVideoFormDialog)
