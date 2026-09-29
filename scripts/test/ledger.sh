@@ -449,7 +449,7 @@ check "explicit any (eslint)" "$ANYS" le 54
 # now. Ceiling, so the number can only fall.
 TSC_OUT=$(node ./node_modules/.bin/tsc --noEmit 2>&1 | grep "error TS")
 TSC_SRC=$(echo "$TSC_OUT" | grep -v "_test\." | grep -c "error TS")
-TSC_TEST=$(echo "$TSC_OUT" | grep -c "_test\." )
+TSC_TEST=$(echo "$TSC_OUT" | grep -c "_test\.")
 check "tsc errors in sources" "$TSC_SRC" le 0
 check "tsc errors in tests" "$TSC_TEST" le 60
 
