@@ -371,12 +371,20 @@ like this:
 
 Commits
 -------
-To ensure commits to github are safe, you should install the following first:
-.. code-block:: bash
-    pip install pre_commit detect-secrets
-    pre-commit install
+Code checks run with `prek <https://prek.j178.dev/>`_, which reads
+``.pre-commit-config.yaml``. The ``prek`` check runs these hooks on pull requests,
+and `autofix.ci <https://autofix.ci/>`_ pushes a commit with any fixes they make.
+To install the development dependencies and replace an existing pre-commit git hook:
 
-To automatically install precommit hooks when cloning a repo, you can run this:
 .. code-block:: bash
+
+    uv sync
+    uv run prek install -f
+    uv run prek run --all-files
+
+To automatically install prek hooks when cloning a repo, you can run this:
+
+.. code-block:: bash
+
     git config --global init.templateDir ~/.git-template
-    pre-commit init-templatedir ~/.git-template
+    uv run prek init-templatedir ~/.git-template

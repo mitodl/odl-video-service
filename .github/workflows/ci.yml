@@ -55,7 +55,8 @@ jobs:
 
       - name: Tests
         run: |
-          export MEDIA_ROOT="$(mktemp -d)"
+          MEDIA_ROOT="$(mktemp -d)"
+          export MEDIA_ROOT
           ./scripts/test/python_tests.sh
         env:
           DEBUG: 'False'
