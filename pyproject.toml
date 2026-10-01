@@ -67,7 +67,9 @@ dependencies = [
 ]
 
 [dependency-groups]
+prek = ["prek==0.5.3"]
 dev = [
+    { include-group = "prek" },
     "bpython",
     "ddt>=1.6.0,<2",
     "factory-boy>=3.3.3,<4",
