@@ -98,6 +98,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
    */
   closing = false
 
+  // The thumbnail picked most recently; checks for any earlier pick are ignored
+  pendingThumbnail: ?File = null
+
   // Set on unmount so an upgrade that resolves afterwards does not setState on
   // a dead component. withDialogs keeps this mounted while closed, so this is
   // the page-teardown case rather than the everyday one.
@@ -307,6 +310,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   handleThumbnailChange = (event: Object) => {
     const file = event.target.files[0]
     if (!file) return
+    this.pendingThumbnail = file
     if (
       file.type !== "image/jpeg" &&
       file.type !== "image/jpg" &&
@@ -345,6 +349,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       .then(({ width, height }) => getThumbnailDimensionError(width, height))
       .catch(err => err.message)
       .then(error => {
+        if (file !== this.pendingThumbnail || this.closing) return
         const { thumbnailPreviewUrl } = this.state
         if (thumbnailPreviewUrl) {
           URL.revokeObjectURL(thumbnailPreviewUrl)
@@ -378,6 +383,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       thumbnailError:      null
     })
     this.closing = true
+    this.pendingThumbnail = null
     dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }

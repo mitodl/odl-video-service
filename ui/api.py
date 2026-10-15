@@ -8,7 +8,7 @@ import io
 import boto3
 import requests
 import structlog
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 from celery import chain
 from django.conf import settings
 from django.core.cache import caches
@@ -35,6 +35,8 @@ log = structlog.get_logger(__name__)
 
 # How long an image sent to an edX endpoint suppresses re-sending the identical image
 EDX_VIDEO_IMAGE_DEDUPE_SECONDS = 5 * 60
+# Upper bound on how long one worker holds the right to send a given image
+EDX_VIDEO_IMAGE_SEND_LOCK_SECONDS = 2 * 60
 
 
 def dispatch_upload_chain(video_id):
@@ -212,7 +214,7 @@ def post_video_to_edx(video_files):
                     "Video already exists on edX, updating instead",
                 )
                 update_resp = update_video_on_edx(video_key, encoded_videos)
-                resp = next(iter(update_resp.values()))
+                resp = update_resp.get(f"{edx_endpoint.full_api_url}{video_key}")
             else:
                 resp.raise_for_status()
             if resp is not None and resp.ok:
@@ -234,9 +236,16 @@ def post_video_to_edx(video_files):
             resp = exc.response
         responses[edx_endpoint] = resp
     if accepted_endpoints:
-        post_video_thumbnail_to_edx(
-            video_files[0].video, edx_endpoints=accepted_endpoints
-        )
+        try:
+            post_video_thumbnail_to_edx(
+                video_files[0].video, edx_endpoints=accepted_endpoints
+            )
+        except Exception:
+            # The video is already on edX; a thumbnail problem must not fail the video push
+            log.exception(
+                "Can not add video thumbnail to edX",
+                video_key=video_files[0].video.hexkey,
+            )
     return responses
 
 
@@ -311,7 +320,7 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
             Bucket=thumbnail.bucket_name, Key=thumbnail.s3_object_key
         )
         image_bytes = s3_object["Body"].read()
-    except ClientError:
+    except (BotoCoreError, ClientError):
         log.exception(
             "Can not add video thumbnail to edX, the image could not be read from S3",
             video_key=video.hexkey,
@@ -332,16 +341,27 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
     responses = {}
     for edx_endpoint in edx_endpoints:
         # One dialog save pushes the same image twice (thumbnail upload, then the video save
-        # signal), often from two workers at once. cache.add is atomic, so only one sends it.
-        push_key = f"edx-video-image:{edx_endpoint.id}:{video.key}:{image_hash}"
-        if not cache.add(push_key, 1, timeout=EDX_VIDEO_IMAGE_DEDUPE_SECONDS):
+        # signal), often from two workers at once. Only one worker may send a given image at a
+        # time (cache.add is atomic), and an image identical to the last one sent is skipped.
+        last_sent_key = f"edx-video-image:{edx_endpoint.id}:{video.key}:last-sent"
+        sending_key = (
+            f"edx-video-image:{edx_endpoint.id}:{video.key}:{image_hash}:sending"
+        )
+        if not cache.add(sending_key, 1, timeout=EDX_VIDEO_IMAGE_SEND_LOCK_SECONDS):
             log.info(
-                "Video thumbnail was just sent to this edX endpoint, skipping",
+                "Video thumbnail is already being sent to this edX endpoint, skipping",
                 video_key=video.hexkey,
                 edx_endpoint=edx_endpoint.name,
             )
             continue
         try:
+            if cache.get(last_sent_key) == image_hash:
+                log.info(
+                    "Video thumbnail was just sent to this edX endpoint, skipping",
+                    video_key=video.hexkey,
+                    edx_endpoint=edx_endpoint.name,
+                )
+                continue
             edx_endpoint.refresh_access_token()
             resp = requests.post(
                 edx_endpoint.video_image_api_url(course_id, video.key),
@@ -350,8 +370,8 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
                 timeout=60,
             )
             resp.raise_for_status()
+            cache.set(last_sent_key, image_hash, timeout=EDX_VIDEO_IMAGE_DEDUPE_SECONDS)
         except requests.exceptions.RequestException as exc:
-            cache.delete(push_key)
             log.error(
                 "Can not add video thumbnail to edX",
                 video_key=video.hexkey,
@@ -363,6 +383,8 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
                 ),
             )
             resp = exc.response
+        finally:
+            cache.delete(sending_key)
         responses[edx_endpoint] = resp
     return responses
 
