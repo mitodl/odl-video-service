@@ -641,7 +641,7 @@ def test_transcode_video_client_error_no_job_id(mocker):
 def _make_jpeg_file():
     """
     Return a minimal in-memory JPEG file-like object using PIL (640×360,
-    matching the default THUMBNAIL_UPLOAD_MAX_WIDTH/HEIGHT so no resize occurs).
+    within the default THUMBNAIL_UPLOAD_MAX_WIDTH/HEIGHT so no resize occurs).
     """
     buf = io.BytesIO()
     Image.new("RGB", (640, 360), color=(255, 0, 0)).save(buf, format="JPEG")
@@ -877,6 +877,19 @@ def test_convert_image_to_jpeg_passthrough_for_jpeg():
     assert result.read() == original_bytes
     assert width == 2
     assert height == 2
+
+
+def test_convert_image_to_jpeg_default_limits_keep_edx_resolution():
+    """
+    By default a 16:9 upload is downscaled to 1280x720, which edX recommends for video
+    images and which stays above edX's 640x360 minimum.
+    """
+    buf = io.BytesIO()
+    Image.new("RGB", (1920, 1080), color=(0, 0, 255)).save(buf, format="JPEG")
+    buf.seek(0)
+
+    _, width, height = convert_image_to_jpeg(buf)
+    assert (width, height) == (1280, 720)
 
 
 @override_settings(THUMBNAIL_UPLOAD_MAX_WIDTH=200, THUMBNAIL_UPLOAD_MAX_HEIGHT=150)

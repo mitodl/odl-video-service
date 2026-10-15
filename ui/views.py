@@ -18,6 +18,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
+from PIL import Image, ImageOps
 from rest_framework import (
     authentication,
     generics,
@@ -50,7 +51,7 @@ from ui.models import (
 )
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import UserSerializer, VideoSerializer
-from ui.tasks import post_collection_videos_to_edx
+from ui.tasks import post_collection_videos_to_edx, post_video_thumbnail_to_edx
 from ui.templatetags.render_bundle import public_path
 from ui.utils import (
     generate_mock_video_analytics_data,
@@ -569,6 +570,21 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )
         try:
+            with Image.open(thumbnail_file) as image:
+                width, height = ImageOps.exif_transpose(image).size
+            thumbnail_file.seek(0)
+        except Exception as exc:
+            log.warning("Thumbnail upload could not be decoded", exc_info=exc)
+            return Response(
+                {"error": "Invalid thumbnail data provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        dimension_error = api.get_thumbnail_dimension_error(width, height)
+        if dimension_error:
+            return Response(
+                {"error": dimension_error}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
             if thumbnail:
                 cloudapi.replace_thumbnail_in_s3(thumbnail, thumbnail_file)
                 _status = status.HTTP_200_OK
@@ -583,6 +599,9 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 {"error": "Invalid thumbnail data provided."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        if video.status == VideoStatus.COMPLETE and video.collection.edx_course_id:
+            post_video_thumbnail_to_edx.delay(video.id)
 
         return Response(
             serializers.VideoSerializer(video, context={"request": request}).data,

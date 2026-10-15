@@ -182,6 +182,27 @@ describe("api", () => {
     assert.equal(thrown.status, 413)
   })
 
+  it("throws with the server's error message when the upload is rejected", async () => {
+    const fetchFormStub = sandbox.stub(fetchFuncs, "fetchWithCSRF")
+    const video = makeVideo()
+    const formData = new FormData()
+    const serverError =
+      "Thumbnails must be 16:9 and at least 640x360 pixels. This image is 1280x615."
+    fetchFormStub.returns(
+      Promise.reject([JSON.stringify({ error: serverError }), 400])
+    )
+
+    let thrown
+    try {
+      await uploadThumbnail(video.key, formData)
+    } catch (err) {
+      thrown = err
+    }
+    assert.isDefined(thrown)
+    assert.equal(thrown.message, serverError)
+    assert.equal(thrown.status, 400)
+  })
+
   it("throws with a generic message for non-413 upload errors", async () => {
     const fetchFormStub = sandbox.stub(fetchFuncs, "fetchWithCSRF")
     const video = makeVideo()

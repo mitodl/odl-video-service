@@ -15,6 +15,11 @@ import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
 import { uploadThumbnail } from "../../lib/api"
 import {
+  getImageDimensions,
+  getThumbnailDimensionError,
+  THUMBNAIL_REQUIREMENTS
+} from "../../lib/thumbnail"
+import {
   PERM_CHOICE_NONE,
   PERM_CHOICE_LISTS,
   PERM_CHOICE_PUBLIC,
@@ -53,7 +58,7 @@ function sanitizeImgSrc(url: ?string): string {
   if (!url) return ""
   try {
     const parsed = new URL(url)
-    if (parsed.protocol === "blob:" || parsed.protocol === "https:") {
+    if (["blob:", "http:", "https:"].includes(parsed.protocol)) {
       return parsed.href
     }
   } catch (_) {
@@ -335,15 +340,30 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       event.target.value = ""
       return
     }
-    const { thumbnailPreviewUrl } = this.state
-    if (thumbnailPreviewUrl) {
-      URL.revokeObjectURL(thumbnailPreviewUrl)
-    }
-    this.setState({
-      thumbnailFile:       file,
-      thumbnailPreviewUrl: URL.createObjectURL(file),
-      thumbnailError:      null
-    })
+    const input = event.target
+    getImageDimensions(file)
+      .then(({ width, height }) => getThumbnailDimensionError(width, height))
+      .catch(err => err.message)
+      .then(error => {
+        const { thumbnailPreviewUrl } = this.state
+        if (thumbnailPreviewUrl) {
+          URL.revokeObjectURL(thumbnailPreviewUrl)
+        }
+        if (error) {
+          this.setState({
+            thumbnailError:      error,
+            thumbnailFile:       null,
+            thumbnailPreviewUrl: null
+          })
+          input.value = ""
+          return
+        }
+        this.setState({
+          thumbnailFile:       file,
+          thumbnailPreviewUrl: URL.createObjectURL(file),
+          thumbnailError:      null
+        })
+      })
   }
 
   onClose = () => {
@@ -515,7 +535,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             <p
               style={{ color: "#666", margin: "4px 0 0 0", fontSize: "0.8em" }}
             >
-              JPEG or PNG, max{" "}
+              JPEG or PNG, {THUMBNAIL_REQUIREMENTS}, max{" "}
               {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
             </p>
           )}
