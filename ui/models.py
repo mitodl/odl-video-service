@@ -17,7 +17,7 @@ from encrypted_model_fields.fields import EncryptedTextField
 from pycountry import languages
 
 from mail import tasks
-from odl_video.constants import DEFAULT_EDX_VIDEO_API_PATH
+from odl_video.constants import DEFAULT_EDX_VIDEO_API_PATH, EDX_VIDEO_IMAGE_API_PATH
 from odl_video.models import TimestampedModel, TimestampedModelManager
 from ui import utils
 from ui.constants import (
@@ -82,6 +82,12 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
 
     name = models.CharField(max_length=20, unique=True, blank=False, null=False)
     base_url = models.CharField(max_length=100, blank=False, null=False)
+    studio_base_url = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Studio (CMS) base URL. Video thumbnails are only pushed when this is set.",
+    )
     access_token = models.CharField(max_length=2048)
     expires_in = models.IntegerField(default=0)
     edx_video_api_path = models.CharField(
@@ -100,6 +106,12 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
             self.base_url,
             self.edx_video_api_path or DEFAULT_EDX_VIDEO_API_PATH,
             add_trailing_slash=True,
+        )
+
+    def video_image_api_url(self, course_id, edx_video_id):
+        """Returns the Studio URL for uploading the image of a course video"""
+        return multi_urljoin(
+            self.studio_base_url, EDX_VIDEO_IMAGE_API_PATH, course_id, str(edx_video_id)
         )
 
     def update_access_token(self, data):

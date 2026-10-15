@@ -2,21 +2,41 @@
 API methods
 """
 
+import hashlib
+import io
+
+import boto3
 import requests
 import structlog
+from botocore.exceptions import BotoCoreError, ClientError
 from celery import chain
 from django.conf import settings
+from django.core.cache import caches
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from PIL import Image
 
 from cloudsync import tasks
+from odl_video.constants import (
+    EDX_VIDEO_IMAGE_ASPECT_RATIO,
+    EDX_VIDEO_IMAGE_ASPECT_RATIO_ERROR_MARGIN,
+    EDX_VIDEO_IMAGE_MAX_BYTES,
+    EDX_VIDEO_IMAGE_MIN_BYTES,
+    EDX_VIDEO_IMAGE_MIN_HEIGHT,
+    EDX_VIDEO_IMAGE_MIN_WIDTH,
+)
 from ui import models
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
 from ui.utils import get_error_response_summary_dict
 
 log = structlog.get_logger(__name__)
+
+# How long an image sent to an edX endpoint suppresses re-sending the identical image
+EDX_VIDEO_IMAGE_DEDUPE_SECONDS = 5 * 60
+# Upper bound on how long one worker holds the right to send a given image
+EDX_VIDEO_IMAGE_SEND_LOCK_SECONDS = 2 * 60
 
 
 def dispatch_upload_chain(video_id):
@@ -169,6 +189,7 @@ def post_video_to_edx(video_files):
         )
 
     responses = {}
+    accepted_endpoints = []
     for edx_endpoint in edx_endpoints:
         try:
             edx_endpoint.refresh_access_token()
@@ -193,9 +214,11 @@ def post_video_to_edx(video_files):
                     "Video already exists on edX, updating instead",
                 )
                 update_resp = update_video_on_edx(video_key, encoded_videos)
-                resp = next(iter(update_resp.values()))
+                resp = update_resp.get(f"{edx_endpoint.full_api_url}{video_key}")
             else:
                 resp.raise_for_status()
+            if resp is not None and resp.ok:
+                accepted_endpoints.append(edx_endpoint)
         except requests.exceptions.RequestException as exc:
             if exc is not None and exc.response is not None:
                 response_summary_dict = get_error_response_summary_dict(exc.response)
@@ -211,6 +234,157 @@ def post_video_to_edx(video_files):
                 response=str(response_summary_dict),
             )
             resp = exc.response
+        responses[edx_endpoint] = resp
+    if accepted_endpoints:
+        try:
+            post_video_thumbnail_to_edx(
+                video_files[0].video, edx_endpoints=accepted_endpoints
+            )
+        except Exception:
+            # The video is already on edX; a thumbnail problem must not fail the video push
+            log.exception(
+                "Can not add video thumbnail to edX",
+                video_key=video_files[0].video.hexkey,
+            )
+    return responses
+
+
+def get_edx_video_image_error(image_bytes):
+    """
+    Check an image against the limits Studio enforces on video images
+
+    Args:
+        image_bytes (bytes): The image file content
+
+    Returns:
+        str or None: A description of why edX would reject the image, or None if it is acceptable
+    """
+    if not EDX_VIDEO_IMAGE_MIN_BYTES <= len(image_bytes) <= EDX_VIDEO_IMAGE_MAX_BYTES:
+        return f"file size {len(image_bytes)} bytes is outside edX's limits"
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as image:
+            width, height = image.size
+    except Exception:  # noqa: BLE001
+        return "image could not be decoded"
+    return get_thumbnail_dimension_error(width, height)
+
+
+def get_thumbnail_dimension_error(width, height):
+    """
+    Check image dimensions against the size and aspect ratio edX requires for video images
+
+    Args:
+        width (int): Image width in pixels
+        height (int): Image height in pixels
+
+    Returns:
+        str or None: A user-facing description of the requirement, or None if the dimensions are acceptable
+    """
+    too_small = width < EDX_VIDEO_IMAGE_MIN_WIDTH or height < EDX_VIDEO_IMAGE_MIN_HEIGHT
+    aspect_ratio_delta = abs(width / height - EDX_VIDEO_IMAGE_ASPECT_RATIO)
+    if too_small or aspect_ratio_delta > EDX_VIDEO_IMAGE_ASPECT_RATIO_ERROR_MARGIN:
+        return (
+            f"Thumbnails must be 16:9 and at least "
+            f"{EDX_VIDEO_IMAGE_MIN_WIDTH}x{EDX_VIDEO_IMAGE_MIN_HEIGHT} pixels. "
+            f"This image is {width}x{height}."
+        )
+    return None
+
+
+def post_video_thumbnail_to_edx(video, edx_endpoints=None):
+    """
+    Uploads a video's thumbnail to the Studio video image API of its collection's edX endpoints.
+    Endpoints without a studio_base_url are skipped, as are images that edX would reject.
+
+    Args:
+        video (ui.models.Video): The video whose thumbnail should be uploaded
+        edx_endpoints (iterable of ui.models.EdxEndpoint): Endpoints to upload to. Defaults to all
+            endpoints configured for the video's collection.
+
+    Returns:
+        Dict[EdxEndpoint, requests.models.Response]: Each endpoint the image was sent to, mapped to
+            the response from that request.
+    """
+    if edx_endpoints is None:
+        edx_endpoints = models.EdxEndpoint.objects.filter(
+            collections__id=video.collection_id
+        )
+    edx_endpoints = [endpoint for endpoint in edx_endpoints if endpoint.studio_base_url]
+    thumbnail = video.videothumbnail_set.first()
+    course_id = video.collection.edx_course_id
+    if not edx_endpoints or thumbnail is None or not course_id:
+        return {}
+
+    try:
+        s3_object = boto3.client("s3").get_object(
+            Bucket=thumbnail.bucket_name, Key=thumbnail.s3_object_key
+        )
+        image_bytes = s3_object["Body"].read()
+    except (BotoCoreError, ClientError):
+        log.exception(
+            "Can not add video thumbnail to edX, the image could not be read from S3",
+            video_key=video.hexkey,
+            s3_object_key=thumbnail.s3_object_key,
+        )
+        return {}
+    error = get_edx_video_image_error(image_bytes)
+    if error:
+        log.warning(
+            "Not adding video thumbnail to edX, the image does not meet edX's requirements",
+            video_key=video.hexkey,
+            reason=error,
+        )
+        return {}
+
+    image_hash = hashlib.sha256(image_bytes).hexdigest()
+    cache = caches["redis"]
+    responses = {}
+    for edx_endpoint in edx_endpoints:
+        # One dialog save pushes the same image twice (thumbnail upload, then the video save
+        # signal), often from two workers at once. Only one worker may send a given image at a
+        # time (cache.add is atomic), and an image identical to the last one sent is skipped.
+        last_sent_key = f"edx-video-image:{edx_endpoint.id}:{video.key}:last-sent"
+        sending_key = (
+            f"edx-video-image:{edx_endpoint.id}:{video.key}:{image_hash}:sending"
+        )
+        if not cache.add(sending_key, 1, timeout=EDX_VIDEO_IMAGE_SEND_LOCK_SECONDS):
+            log.info(
+                "Video thumbnail is already being sent to this edX endpoint, skipping",
+                video_key=video.hexkey,
+                edx_endpoint=edx_endpoint.name,
+            )
+            continue
+        try:
+            if cache.get(last_sent_key) == image_hash:
+                log.info(
+                    "Video thumbnail was just sent to this edX endpoint, skipping",
+                    video_key=video.hexkey,
+                    edx_endpoint=edx_endpoint.name,
+                )
+                continue
+            edx_endpoint.refresh_access_token()
+            resp = requests.post(
+                edx_endpoint.video_image_api_url(course_id, video.key),
+                files={"file": ("video_thumbnail.jpg", image_bytes, "image/jpeg")},
+                headers={"Authorization": f"JWT {edx_endpoint.access_token}"},
+                timeout=60,
+            )
+            resp.raise_for_status()
+            cache.set(last_sent_key, image_hash, timeout=EDX_VIDEO_IMAGE_DEDUPE_SECONDS)
+        except requests.exceptions.RequestException as exc:
+            log.error(
+                "Can not add video thumbnail to edX",
+                video_key=video.hexkey,
+                edx_endpoint=edx_endpoint.name,
+                response=str(
+                    get_error_response_summary_dict(exc.response)
+                    if exc.response is not None
+                    else {"exception": str(exc)}
+                ),
+            )
+            resp = exc.response
+        finally:
+            cache.delete(sending_key)
         responses[edx_endpoint] = resp
     return responses
 

@@ -16,6 +16,7 @@ import * as toastActions from "../../actions/toast"
 import { setSelectedVideoKey } from "../../actions/collectionUi"
 import { INITIAL_UI_STATE } from "../../reducers/videoUi"
 import * as api from "../../lib/api"
+import * as thumbnailLib from "../../lib/thumbnail"
 import { makeVideo } from "../../factories/video"
 import { makeCollection } from "../../factories/collection"
 import renderWithProviders from "../../testUtils/renderWithProviders"
@@ -786,6 +787,107 @@ describe("EditVideoFormDialog", () => {
       sinon.assert.calledWith(
         collectionsGetStub,
         collectionVideo.collection_key
+      )
+    })
+  })
+
+  describe("thumbnail", () => {
+    const pickThumbnail = (file: File) =>
+      fireEvent.change(
+        document.querySelector("section.thumbnail-group input[type=file]"),
+        { target: { files: [file] } }
+      )
+
+    it("tells the user the thumbnail requirements", () => {
+      renderComponent()
+      const section = document.querySelector("section.thumbnail-group")
+      assert.include(section.textContent, "16:9")
+      assert.include(section.textContent, "640x360")
+    })
+
+    it("rejects a picked image that is not 16:9 before it is uploaded", async () => {
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(Promise.resolve({ width: 1280, height: 615 }))
+      const uploadStub = sandbox.stub(api, "uploadThumbnail")
+      renderComponent()
+
+      pickThumbnail(new File(["x"], "wide.jpg", { type: "image/jpeg" }))
+
+      await waitFor(() =>
+        assert.include(
+          document.querySelector("section.thumbnail-group").textContent,
+          "This image is 1280x615."
+        )
+      )
+      assert.isNull(
+        document.querySelector("section.thumbnail-group img[src^='blob:']")
+      )
+      sinon.assert.notCalled(uploadStub)
+    })
+
+    it("accepts a picked 16:9 image and shows its preview", async () => {
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(Promise.resolve({ width: 1920, height: 1080 }))
+      renderComponent()
+
+      pickThumbnail(new File(["x"], "wide.jpg", { type: "image/jpeg" }))
+
+      await waitFor(() =>
+        assert.isNotNull(
+          document.querySelector("section.thumbnail-group img[src^='blob:']")
+        )
+      )
+    })
+
+    it("keeps the last picked image when an earlier pick finishes checking later", async () => {
+      let resolveFirst, resolveSecond
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .onFirstCall()
+        .returns(new Promise(resolve => (resolveFirst = resolve)))
+        .onSecondCall()
+        .returns(new Promise(resolve => (resolveSecond = resolve)))
+      sandbox
+        .stub(URL, "createObjectURL")
+        .callsFake(file => `blob:${file.name}`)
+      renderComponent()
+
+      pickThumbnail(new File(["a"], "first.jpg", { type: "image/jpeg" }))
+      pickThumbnail(new File(["b"], "second.jpg", { type: "image/jpeg" }))
+      resolveSecond({ width: 1920, height: 1080 })
+      await waitFor(() =>
+        assert.isNotNull(
+          document.querySelector(
+            "section.thumbnail-group img[src='blob:second.jpg']"
+          )
+        )
+      )
+      resolveFirst({ width: 1920, height: 1080 })
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      assert.isNotNull(
+        document.querySelector(
+          "section.thumbnail-group img[src='blob:second.jpg']"
+        )
+      )
+      assert.isNull(
+        document.querySelector(
+          "section.thumbnail-group img[src='blob:first.jpg']"
+        )
+      )
+    })
+
+    it("shows the existing thumbnail when it is served over http", () => {
+      video.videothumbnail_set[0].cloudfront_url =
+        "http://ovs-minio.odl.local:9000/ovs-thumbnail/thumb.jpg"
+      renderComponent()
+      assert.equal(
+        document
+          .querySelector("section.thumbnail-group img")
+          .getAttribute("src"),
+        "http://ovs-minio.odl.local:9000/ovs-thumbnail/thumb.jpg"
       )
     })
   })

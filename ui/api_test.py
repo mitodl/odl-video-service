@@ -2,14 +2,20 @@
 Tests for ui/api.py
 """
 
+import io
 from types import SimpleNamespace
 from uuid import uuid4
 
+import boto3
 import factory
 import pytest
+from botocore.exceptions import EndpointConnectionError
+from django.core.cache import caches
 from django.core.exceptions import ValidationError
 from django.db.models import signals
 from django.http import Http404
+from moto import mock_aws
+from PIL import Image
 
 from odl_video.test_utils import any_instance_of
 from ui import api, models
@@ -20,6 +26,7 @@ from ui.factories import (
     CollectionFactory,
     VideoFactory,
     VideoFileFactory,
+    VideoThumbnailFactory,
 )
 
 pytestmark = pytest.mark.django_db
@@ -600,3 +607,289 @@ def test_retry_failed_upload_skips_no_source(mocker):
 
     assert outcome == "skipped_no_source"
     mocked_chain.assert_not_called()
+
+
+STUDIO_URL = "https://studio.example.com"
+
+
+def _jpeg_bytes(size):
+    """Return JPEG bytes for an image of the given (width, height), padded with noise to exceed 2 KB."""
+    image = Image.effect_noise(size, 64).convert("RGB")
+    buf = io.BytesIO()
+    image.save(buf, format="JPEG")
+    return buf.getvalue()
+
+
+@pytest.fixture()
+def thumbnail_scenario(edx_api_scenario, settings):
+    """edx_api_scenario plus a Studio URL on the endpoint and a 16:9 thumbnail stored in (mocked) S3"""
+    settings.CACHES = {
+        **settings.CACHES,
+        "redis": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
+    }
+    caches["redis"].clear()
+    with mock_aws():
+        endpoint = edx_api_scenario.collection_endpoint
+        endpoint.studio_base_url = STUDIO_URL
+        endpoint.save()
+        video = edx_api_scenario.video_file_hls.video
+        thumbnail = VideoThumbnailFactory(
+            video=video, bucket_name="thumb-bucket", s3_object_key="thumbs/t.jpg"
+        )
+        s3 = boto3.client("s3", region_name="us-east-1")
+        s3.create_bucket(Bucket="thumb-bucket")
+        image_bytes = _jpeg_bytes((1280, 720))
+        s3.put_object(Bucket="thumb-bucket", Key="thumbs/t.jpg", Body=image_bytes)
+        yield SimpleNamespace(
+            video=video,
+            endpoint=endpoint,
+            thumbnail=thumbnail,
+            image_bytes=image_bytes,
+            s3=s3,
+            images_url=f"{STUDIO_URL}/api/contentstore/v0/videos/images/"
+            f"{edx_api_scenario.course_id}/{video.key}",
+        )
+
+
+def test_post_video_thumbnail_to_edx(mocker, reqmocker, thumbnail_scenario):
+    """post_video_thumbnail_to_edx should upload the thumbnail image to Studio's video image API"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    mocked_post = reqmocker.register_uri(
+        "POST", thumbnail_scenario.images_url, status_code=200, json={}
+    )
+
+    responses = api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+
+    assert mocked_post.call_count == 1
+    request = mocked_post.last_request
+    assert (
+        request.headers["Authorization"]
+        == f"JWT {thumbnail_scenario.endpoint.access_token}"
+    )
+    assert request.headers["Content-Type"].startswith("multipart/form-data")
+    assert thumbnail_scenario.image_bytes in request.body
+    assert b'name="file"' in request.body
+    assert responses[thumbnail_scenario.endpoint].status_code == 200
+
+
+def test_post_video_thumbnail_to_edx_no_studio_url(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """Endpoints without a studio_base_url are skipped"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    thumbnail_scenario.endpoint.studio_base_url = ""
+    thumbnail_scenario.endpoint.save()
+
+    assert api.post_video_thumbnail_to_edx(thumbnail_scenario.video) == {}
+    assert reqmocker.call_count == 0
+
+
+def test_post_video_thumbnail_to_edx_no_thumbnail(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """Nothing is sent when the video has no thumbnail"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    thumbnail_scenario.thumbnail.delete()
+
+    assert api.post_video_thumbnail_to_edx(thumbnail_scenario.video) == {}
+    assert reqmocker.call_count == 0
+
+
+@pytest.mark.parametrize(
+    "size",
+    [
+        (480, 360),  # below edX's 640x360 minimum
+        (1280, 960),  # 4:3, outside edX's 16:9 aspect ratio margin
+    ],
+)
+def test_post_video_thumbnail_to_edx_rejects_incompatible_image(
+    mocker, reqmocker, thumbnail_scenario, size
+):
+    """Images edX would reject are skipped with a warning instead of being sent"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    patched_log_warning = mocker.patch("ui.api.log.warning")
+    thumbnail_scenario.s3.put_object(
+        Bucket="thumb-bucket", Key="thumbs/t.jpg", Body=_jpeg_bytes(size)
+    )
+
+    assert api.post_video_thumbnail_to_edx(thumbnail_scenario.video) == {}
+    assert reqmocker.call_count == 0
+    patched_log_warning.assert_called_once()
+
+
+def test_post_video_thumbnail_to_edx_bad_resp(mocker, reqmocker, thumbnail_scenario):
+    """A failed upload is logged and returned, not raised"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    patched_log_error = mocker.patch("ui.api.log.error")
+    reqmocker.register_uri("POST", thumbnail_scenario.images_url, status_code=403)
+
+    responses = api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+
+    assert responses[thumbnail_scenario.endpoint].status_code == 403
+    patched_log_error.assert_called_once()
+    assert "Can not add video thumbnail to edX" in patched_log_error.call_args[0][0]
+
+
+@pytest.mark.parametrize("post_status", [201, 400])
+def test_post_video_to_edx_pushes_thumbnail(
+    mocker, reqmocker, edx_api_scenario, post_status
+):
+    """After the video is created (201) or updated (400 -> PATCH) on edX, its thumbnail is pushed too"""
+    endpoint = edx_api_scenario.collection_endpoint
+    video = edx_api_scenario.video_file_hls.video
+    reqmocker.register_uri("POST", endpoint.full_api_url, status_code=post_status)
+    reqmocker.register_uri(
+        "PATCH", f"{endpoint.full_api_url}{video.key}", status_code=200
+    )
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    patched_thumbnail_push = mocker.patch("ui.api.post_video_thumbnail_to_edx")
+
+    api.post_video_to_edx([edx_api_scenario.video_file_hls])
+
+    patched_thumbnail_push.assert_called_once_with(video, edx_endpoints=[endpoint])
+
+
+def test_post_video_to_edx_failure_skips_thumbnail(mocker, reqmocker, edx_api_scenario):
+    """The thumbnail is not pushed to an endpoint that rejected the video"""
+    endpoint = edx_api_scenario.collection_endpoint
+    reqmocker.register_uri("POST", endpoint.full_api_url, status_code=403)
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    patched_thumbnail_push = mocker.patch("ui.api.post_video_thumbnail_to_edx")
+
+    api.post_video_to_edx([edx_api_scenario.video_file_hls])
+
+    patched_thumbnail_push.assert_not_called()
+
+
+def test_post_video_thumbnail_to_edx_missing_s3_object(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """A thumbnail that can't be read from S3 is logged and skipped instead of raising"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    patched_log_exception = mocker.patch("ui.api.log.exception")
+    thumbnail_scenario.s3.delete_object(Bucket="thumb-bucket", Key="thumbs/t.jpg")
+
+    assert api.post_video_thumbnail_to_edx(thumbnail_scenario.video) == {}
+    assert reqmocker.call_count == 0
+    patched_log_exception.assert_called_once()
+
+
+def test_post_video_thumbnail_to_edx_skips_duplicate_push(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """
+    Saving the Edit dialog pushes the thumbnail twice (thumbnail upload, then the video save signal).
+    The same image is only sent to an endpoint once; a changed image is sent again.
+    """
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    mocked_post = reqmocker.register_uri(
+        "POST", thumbnail_scenario.images_url, status_code=200, json={}
+    )
+
+    first = api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+    second = api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+    assert mocked_post.call_count == 1
+    assert first[thumbnail_scenario.endpoint].status_code == 200
+    assert second == {}
+
+    thumbnail_scenario.s3.put_object(
+        Bucket="thumb-bucket", Key="thumbs/t.jpg", Body=_jpeg_bytes((1920, 1080))
+    )
+    api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+    assert mocked_post.call_count == 2
+
+
+def test_post_video_thumbnail_to_edx_retries_after_failure(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """A failed upload does not block the next attempt with the same image"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    mocker.patch("ui.api.log.error")
+    mocked_post = reqmocker.register_uri(
+        "POST",
+        thumbnail_scenario.images_url,
+        [{"status_code": 500}, {"status_code": 200, "json": {}}],
+    )
+
+    api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+    retry = api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+
+    assert mocked_post.call_count == 2
+    assert retry[thumbnail_scenario.endpoint].status_code == 200
+
+
+def test_post_video_thumbnail_to_edx_resends_reverted_image(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """Switching back to an earlier image (A, B, A) is sent again: only a repeat of the last image is skipped"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    mocked_post = reqmocker.register_uri(
+        "POST", thumbnail_scenario.images_url, status_code=200, json={}
+    )
+    image_a = thumbnail_scenario.image_bytes
+    image_b = _jpeg_bytes((1920, 1080))
+
+    for body in (image_a, image_b, image_a):
+        thumbnail_scenario.s3.put_object(
+            Bucket="thumb-bucket", Key="thumbs/t.jpg", Body=body
+        )
+        api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+
+    assert mocked_post.call_count == 3
+
+
+def test_post_video_thumbnail_to_edx_s3_connection_error(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """Any botocore failure reading the thumbnail is logged and skipped, not only ClientError"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    patched_log_exception = mocker.patch("ui.api.log.exception")
+    mocker.patch(
+        "ui.api.boto3.client"
+    ).return_value.get_object.side_effect = EndpointConnectionError(
+        endpoint_url="https://s3.example.com"
+    )
+
+    assert api.post_video_thumbnail_to_edx(thumbnail_scenario.video) == {}
+    assert reqmocker.call_count == 0
+    patched_log_exception.assert_called_once()
+
+
+def test_post_video_to_edx_survives_thumbnail_failure(
+    mocker, reqmocker, edx_api_scenario
+):
+    """An unexpected error in the thumbnail step never breaks the video push"""
+    endpoint = edx_api_scenario.collection_endpoint
+    reqmocker.register_uri("POST", endpoint.full_api_url, status_code=201)
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    mocker.patch("ui.api.post_video_thumbnail_to_edx", side_effect=RuntimeError("boom"))
+    patched_log_exception = mocker.patch("ui.api.log.exception")
+
+    responses = api.post_video_to_edx([edx_api_scenario.video_file_hls])
+
+    assert responses[endpoint].status_code == 201
+    patched_log_exception.assert_called_once()
+
+
+def test_post_video_to_edx_thumbnail_uses_each_endpoints_own_update(
+    mocker, reqmocker, edx_api_scenario
+):
+    """
+    When the video already exists (400 -> PATCH), each endpoint is judged by its own PATCH
+    response, so a failing endpoint doesn't get a thumbnail because another one succeeded.
+    """
+    video = edx_api_scenario.video_file_hls.video
+    endpoint_a = edx_api_scenario.collection_endpoint
+    endpoint_b = CollectionEdxEndpointFactory(collection=video.collection).edx_endpoint
+    for endpoint, patch_status in ((endpoint_a, 200), (endpoint_b, 500)):
+        reqmocker.register_uri("POST", endpoint.full_api_url, status_code=400)
+        reqmocker.register_uri(
+            "PATCH", f"{endpoint.full_api_url}{video.key}", status_code=patch_status
+        )
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    mocker.patch("ui.api.log.exception")
+    patched_thumbnail_push = mocker.patch("ui.api.post_video_thumbnail_to_edx")
+
+    api.post_video_to_edx([edx_api_scenario.video_file_hls])
+
+    patched_thumbnail_push.assert_called_once_with(video, edx_endpoints=[endpoint_a])
