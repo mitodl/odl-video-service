@@ -2,21 +2,25 @@
 Tests for views
 """
 
+import io
 import json
 from types import SimpleNamespace
 from uuid import uuid4
 
+import factory
 import pytest
 from django.contrib.auth.models import AnonymousUser, Group
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db.models import signals
 from django.http import HttpResponseRedirect
 from django.test import RequestFactory, override_settings
+from PIL import Image
 from rest_framework import status
 from rest_framework.reverse import reverse
 
 from techtv2ovs.factories import TechTVVideoFactory
 from ui import factories
-from ui.constants import StreamSource, YouTubeStatus
+from ui.constants import StreamSource, VideoStatus, YouTubeStatus
 from ui.encodings import EncodingNames
 from ui.factories import (
     CollectionFactory,
@@ -1709,36 +1713,18 @@ def test_potential_owners_api(
 # ---------------------------------------------------------------------------
 # VideoViewSet.upload_thumbnail tests
 # ---------------------------------------------------------------------------
+def _make_image_file(size=(1280, 720), fmt="JPEG", name="thumb.jpg", exif=None):
+    """Return an in-memory image SimpleUploadedFile of the given (width, height)."""
+    buf = io.BytesIO()
+    save_kwargs = {"exif": exif} if exif is not None else {}
+    Image.new("RGB", size, color=(255, 0, 0)).save(buf, format=fmt, **save_kwargs)
+    content_type = "image/png" if fmt == "PNG" else "image/jpeg"
+    return SimpleUploadedFile(name, buf.getvalue(), content_type=content_type)
+
+
 def _make_jpeg_file(name="thumb.jpg"):
-    """Return a minimal in-memory JPEG SimpleUploadedFile."""
-    # Smallest valid JPEG header that PIL / browsers accept
-    jpeg_bytes = bytes(
-        [
-            0xFF,
-            0xD8,
-            0xFF,
-            0xE0,
-            0x00,
-            0x10,
-            0x4A,
-            0x46,
-            0x49,
-            0x46,
-            0x00,
-            0x01,
-            0x01,
-            0x00,
-            0x00,
-            0x01,
-            0x00,
-            0x01,
-            0x00,
-            0x00,
-            0xFF,
-            0xD9,
-        ]
-    )
-    return SimpleUploadedFile(name, jpeg_bytes, content_type="image/jpeg")
+    """Return an in-memory 16:9 JPEG SimpleUploadedFile that meets the thumbnail requirements."""
+    return _make_image_file(name=name)
 
 
 def test_upload_thumbnail_replaces_existing(mocker, logged_in_apiclient):
@@ -1853,7 +1839,7 @@ def test_upload_thumbnail_accepts_png(mocker, logged_in_apiclient):
     video = VideoFactory(collection=CollectionFactory(owner=user))
     VideoThumbnailFactory(video=video)
 
-    png_file = SimpleUploadedFile("thumb.png", b"pngdata", content_type="image/png")
+    png_file = _make_image_file(fmt="PNG", name="thumb.png")
     url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
     response = client.patch(
         url,
@@ -1912,6 +1898,124 @@ def test_upload_thumbnail_corrupt_file_returns_400(mocker, logged_in_apiclient):
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "Invalid thumbnail data provided" in response.data["error"]
+
+
+@pytest.mark.parametrize(
+    "size",
+    [
+        (1600, 1200),  # 4:3
+        (1280, 615),  # wider than 16:9
+        (480, 270),  # 16:9 but below the 640x360 minimum
+    ],
+)
+def test_upload_thumbnail_rejects_wrong_dimensions(mocker, logged_in_apiclient, size):
+    """
+    Thumbnails must be 16:9 and at least 640x360 so they can be shown in edX. Anything else
+    is rejected with a message that names the requirement and the uploaded size.
+    """
+    mocker.patch("ui.utils.get_keycloak_client")
+    mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    VideoThumbnailFactory(video=video)
+
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url, {"thumbnail": _make_image_file(size=size)}, format="multipart"
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "16:9" in response.data["error"]
+    assert "640x360" in response.data["error"]
+    assert f"{size[0]}x{size[1]}" in response.data["error"]
+    mock_replace.assert_not_called()
+
+
+def test_upload_thumbnail_checks_dimensions_after_exif_rotation(
+    mocker, logged_in_apiclient
+):
+    """A 16:9 photo whose EXIF orientation turns it portrait is checked as it will be displayed"""
+    mocker.patch("ui.utils.get_keycloak_client")
+    mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    VideoThumbnailFactory(video=video)
+
+    exif = Image.Exif()
+    exif[0x0112] = 6  # Orientation: rotate 90 degrees for display
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url,
+        {"thumbnail": _make_image_file(size=(1280, 720), exif=exif)},
+        format="multipart",
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "720x1280" in response.data["error"]
+    mock_replace.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "video_status,edx_course_id,should_queue",
+    [
+        (VideoStatus.COMPLETE, "course-v1:abc", True),
+        (VideoStatus.COMPLETE, None, False),
+        (VideoStatus.TRANSCODING, "course-v1:abc", False),
+    ],
+)
+def test_upload_thumbnail_queues_edx_push(
+    mocker, logged_in_apiclient, video_status, edx_course_id, should_queue
+):
+    """
+    A successful thumbnail upload should push the new thumbnail to edX, but only for
+    COMPLETE videos in a collection that has an edX course ID.
+    """
+    mocker.patch("ui.utils.get_keycloak_client")
+    mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
+    mock_task = mocker.patch("ui.views.post_video_thumbnail_to_edx")
+
+    client, user = logged_in_apiclient
+    with factory.django.mute_signals(signals.post_save):
+        video = VideoFactory(
+            status=video_status,
+            collection=CollectionFactory(owner=user, edx_course_id=edx_course_id),
+        )
+    VideoThumbnailFactory(video=video)
+
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(url, {"thumbnail": _make_jpeg_file()}, format="multipart")
+
+    assert response.status_code == status.HTTP_200_OK
+    if should_queue:
+        mock_task.delay.assert_called_once_with(video.id)
+    else:
+        mock_task.delay.assert_not_called()
+
+
+def test_upload_thumbnail_failure_does_not_queue_edx_push(mocker, logged_in_apiclient):
+    """A rejected thumbnail upload should not push anything to edX"""
+    mocker.patch("ui.utils.get_keycloak_client")
+    mocker.patch(
+        "ui.views.cloudapi.replace_thumbnail_in_s3",
+        side_effect=ValueError("Could not decode image"),
+    )
+    mock_task = mocker.patch("ui.views.post_video_thumbnail_to_edx")
+
+    client, user = logged_in_apiclient
+    with factory.django.mute_signals(signals.post_save):
+        video = VideoFactory(
+            status=VideoStatus.COMPLETE,
+            collection=CollectionFactory(owner=user, edx_course_id="course-v1:abc"),
+        )
+    VideoThumbnailFactory(video=video)
+
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(url, {"thumbnail": _make_jpeg_file()}, format="multipart")
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    mock_task.delay.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
