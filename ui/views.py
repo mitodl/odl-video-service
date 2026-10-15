@@ -18,7 +18,7 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.generic import TemplateView
-from PIL import Image, ImageOps
+from PIL import ExifTags, Image
 from rest_framework import (
     authentication,
     generics,
@@ -35,6 +35,7 @@ from rest_framework.views import APIView
 
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
+from odl_video.constants import EDX_VIDEO_IMAGE_MIN_BYTES
 from techtv2ovs.models import TechTVVideo
 from ui import api, serializers
 from ui import permissions as ui_permissions
@@ -61,6 +62,9 @@ from ui.utils import (
 )
 
 log = structlog.get_logger(__name__)
+
+# EXIF orientations that display the image rotated by 90 or 270 degrees
+EXIF_ORIENTATIONS_ROTATED_90 = {5, 6, 7, 8}
 
 
 def default_js_settings(request):
@@ -570,8 +574,12 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )
         try:
+            # Reads only the header and EXIF; the pixels are decoded once, later, when resizing
             with Image.open(thumbnail_file) as image:
-                width, height = ImageOps.exif_transpose(image).size
+                width, height = image.size
+                orientation = image.getexif().get(ExifTags.Base.Orientation, 1)
+            if orientation in EXIF_ORIENTATIONS_ROTATED_90:
+                width, height = height, width
             thumbnail_file.seek(0)
         except Exception as exc:
             log.warning("Thumbnail upload could not be decoded", exc_info=exc)
@@ -583,6 +591,14 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
         if dimension_error:
             return Response(
                 {"error": dimension_error}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if getattr(thumbnail_file, "size", 0) < EDX_VIDEO_IMAGE_MIN_BYTES:
+            return Response(
+                {
+                    "error": "This image file is too small for edX (minimum 2 KB). "
+                    "Please upload a higher quality image."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
         try:
             if thumbnail:

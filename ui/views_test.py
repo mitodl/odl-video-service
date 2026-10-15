@@ -1932,6 +1932,33 @@ def test_upload_thumbnail_rejects_wrong_dimensions(mocker, logged_in_apiclient, 
     mock_replace.assert_not_called()
 
 
+def test_upload_thumbnail_rejects_file_below_edx_minimum_size(
+    mocker, logged_in_apiclient
+):
+    """edX rejects video images under 2 KB, so OVS rejects them at upload with the reason"""
+    mocker.patch("ui.utils.get_keycloak_client")
+    mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    VideoThumbnailFactory(video=video)
+
+    buf = io.BytesIO()
+    Image.new("RGB", (640, 360), color=(255, 0, 0)).save(
+        buf, format="JPEG", optimize=True
+    )
+    tiny_file = SimpleUploadedFile(
+        "tiny.jpg", buf.getvalue(), content_type="image/jpeg"
+    )
+    assert tiny_file.size < 2048
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(url, {"thumbnail": tiny_file}, format="multipart")
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "2 KB" in response.data["error"]
+    mock_replace.assert_not_called()
+
+
 def test_upload_thumbnail_checks_dimensions_after_exif_rotation(
     mocker, logged_in_apiclient
 ):

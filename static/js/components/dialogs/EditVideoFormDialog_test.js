@@ -841,6 +841,44 @@ describe("EditVideoFormDialog", () => {
       )
     })
 
+    it("keeps the last picked image when an earlier pick finishes checking later", async () => {
+      let resolveFirst, resolveSecond
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .onFirstCall()
+        .returns(new Promise(resolve => (resolveFirst = resolve)))
+        .onSecondCall()
+        .returns(new Promise(resolve => (resolveSecond = resolve)))
+      sandbox
+        .stub(URL, "createObjectURL")
+        .callsFake(file => `blob:${file.name}`)
+      renderComponent()
+
+      pickThumbnail(new File(["a"], "first.jpg", { type: "image/jpeg" }))
+      pickThumbnail(new File(["b"], "second.jpg", { type: "image/jpeg" }))
+      resolveSecond({ width: 1920, height: 1080 })
+      await waitFor(() =>
+        assert.isNotNull(
+          document.querySelector(
+            "section.thumbnail-group img[src='blob:second.jpg']"
+          )
+        )
+      )
+      resolveFirst({ width: 1920, height: 1080 })
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      assert.isNotNull(
+        document.querySelector(
+          "section.thumbnail-group img[src='blob:second.jpg']"
+        )
+      )
+      assert.isNull(
+        document.querySelector(
+          "section.thumbnail-group img[src='blob:first.jpg']"
+        )
+      )
+    })
+
     it("shows the existing thumbnail when it is served over http", () => {
       video.videothumbnail_set[0].cloudfront_url =
         "http://ovs-minio.odl.local:9000/ovs-thumbnail/thumb.jpg"
