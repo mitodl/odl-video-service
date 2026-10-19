@@ -391,11 +391,12 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       URL.revokeObjectURL(thumbnailPreviewUrl)
     }
     this.setState({
-      thumbnailFile:         null,
-      thumbnailPreviewUrl:   null,
-      thumbnailError:        null,
-      existingThumbnailSize: null
+      thumbnailFile:       null,
+      thumbnailPreviewUrl: null,
+      thumbnailError:      null
     })
+    // existingThumbnailSize is kept: the Dialog stays mounted while hidden, so the same thumbnail
+    // won't fire load again on reopen, and its src check stops it applying to another thumbnail
     this.closing = true
     this.pendingThumbnail = null
     this.thumbnailCheck = null

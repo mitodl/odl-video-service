@@ -979,6 +979,32 @@ describe("EditVideoFormDialog", () => {
       })
     })
 
+    it("keeps the note when the same video's dialog is closed and reopened", async () => {
+      const { rerender } = renderComponent()
+      loadExistingThumbnail(640, 480)
+      const noteShown = () =>
+        document
+          .querySelector("section.thumbnail-group")
+          .textContent.includes("black bars")
+      await waitFor(() => assert.isTrue(noteShown()))
+
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+      // The Dialog stays mounted while hidden, so the <img> never fires load again on reopen
+      for (const open of [false, true]) {
+        rerender(
+          <EditVideoFormDialog
+            open={open}
+            hideDialog={hideDialogStub}
+            video={video}
+            videoUi={INITIAL_UI_STATE}
+          />
+        )
+      }
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      assert.isTrue(noteShown())
+    })
+
     it("doesn't carry the note over to another video", async () => {
       const { rerender } = renderComponent()
       loadExistingThumbnail(640, 480)
