@@ -15,13 +15,15 @@ from django.core.cache import caches
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from PIL import Image
+from PIL import Image, ImageOps
 
 from cloudsync import tasks
 from odl_video.constants import (
     EDX_VIDEO_IMAGE_ASPECT_RATIO,
     EDX_VIDEO_IMAGE_ASPECT_RATIO_ERROR_MARGIN,
     EDX_VIDEO_IMAGE_MAX_BYTES,
+    EDX_VIDEO_IMAGE_MAX_HEIGHT,
+    EDX_VIDEO_IMAGE_MAX_WIDTH,
     EDX_VIDEO_IMAGE_MIN_BYTES,
     EDX_VIDEO_IMAGE_MIN_HEIGHT,
     EDX_VIDEO_IMAGE_MIN_WIDTH,
@@ -270,6 +272,42 @@ def get_edx_video_image_error(image_bytes):
     return get_thumbnail_dimension_error(width, height)
 
 
+def pad_image_for_edx(image_bytes):
+    """
+    Make a copy of an image that edX accepts: pad it with black bars to 16:9, keeping the whole
+    frame visible, then scale it to between 640x360 and 1280x720 and encode it as JPEG.
+
+    Args:
+        image_bytes (bytes): The image file content
+
+    Returns:
+        bytes or None: The JPEG content of the padded copy, or None if the image can't be decoded
+    """
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as source:
+            image = ImageOps.exif_transpose(source).convert("RGB")
+    except Exception:  # noqa: BLE001
+        return None
+    width, height = image.size
+    if width / height > EDX_VIDEO_IMAGE_ASPECT_RATIO:
+        canvas_size = (width, round(width / EDX_VIDEO_IMAGE_ASPECT_RATIO))
+    else:
+        canvas_size = (round(height * EDX_VIDEO_IMAGE_ASPECT_RATIO), height)
+    padded = Image.new("RGB", canvas_size, (0, 0, 0))
+    padded.paste(image, ((canvas_size[0] - width) // 2, (canvas_size[1] - height) // 2))
+    if canvas_size[0] > EDX_VIDEO_IMAGE_MAX_WIDTH:
+        padded = padded.resize(
+            (EDX_VIDEO_IMAGE_MAX_WIDTH, EDX_VIDEO_IMAGE_MAX_HEIGHT), Image.LANCZOS
+        )
+    elif canvas_size[0] < EDX_VIDEO_IMAGE_MIN_WIDTH:
+        padded = padded.resize(
+            (EDX_VIDEO_IMAGE_MIN_WIDTH, EDX_VIDEO_IMAGE_MIN_HEIGHT), Image.LANCZOS
+        )
+    output = io.BytesIO()
+    padded.save(output, format="JPEG", quality=85)
+    return output.getvalue()
+
+
 def get_thumbnail_dimension_error(width, height):
     """
     Check image dimensions against the size and aspect ratio edX requires for video images
@@ -330,12 +368,21 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
         return {}
     error = get_edx_video_image_error(image_bytes)
     if error:
-        log.warning(
-            "Not adding video thumbnail to edX, the image does not meet edX's requirements",
+        # e.g. a frame auto-captured from a 4:3 or portrait video; uploads are already 16:9
+        padded_bytes = pad_image_for_edx(image_bytes)
+        if padded_bytes is None or get_edx_video_image_error(padded_bytes):
+            log.warning(
+                "Not adding video thumbnail to edX, the image does not meet edX's requirements",
+                video_key=video.hexkey,
+                reason=error,
+            )
+            return {}
+        log.info(
+            "Sending edX a 16:9 copy of the video thumbnail padded with black bars",
             video_key=video.hexkey,
             reason=error,
         )
-        return {}
+        image_bytes = padded_bytes
 
     image_hash = hashlib.sha256(image_bytes).hexdigest()
     cache = caches["redis"]

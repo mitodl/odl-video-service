@@ -695,21 +695,60 @@ def test_post_video_thumbnail_to_edx_no_thumbnail(
     assert reqmocker.call_count == 0
 
 
+def _posted_image_bytes(mocked_post):
+    """The JPEG file sent in the last multipart POST"""
+    body = mocked_post.last_request.body
+    return body[body.index(b"\xff\xd8") : body.rindex(b"\xff\xd9") + 2]
+
+
 @pytest.mark.parametrize(
-    "size",
+    "size,expected_size",
     [
-        (480, 360),  # below edX's 640x360 minimum
-        (1280, 960),  # 4:3, outside edX's 16:9 aspect ratio margin
+        ((1280, 960), (1280, 720)),  # 4:3: bars left and right
+        ((720, 1280), (1280, 720)),  # portrait: bars left and right, scaled down
+        ((480, 360), (640, 360)),  # 4:3 below edX's minimum: padded, then scaled up
+        ((1920, 600), (1280, 720)),  # very wide: bars top and bottom, scaled down
     ],
 )
-def test_post_video_thumbnail_to_edx_rejects_incompatible_image(
-    mocker, reqmocker, thumbnail_scenario, size
+def test_post_video_thumbnail_to_edx_pads_incompatible_image(
+    mocker, reqmocker, thumbnail_scenario, size, expected_size
 ):
-    """Images edX would reject are skipped with a warning instead of being sent"""
+    """
+    A thumbnail edX would reject (e.g. auto-generated from a 4:3 or portrait video) is sent as a
+    16:9 copy padded with black bars, so the whole frame stays visible. The OVS thumbnail is not changed.
+    """
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    mocked_post = reqmocker.register_uri(
+        "POST", thumbnail_scenario.images_url, status_code=200, json={}
+    )
+    original = Image.effect_noise(size, 64).convert("RGB")
+    buf = io.BytesIO()
+    original.save(buf, format="JPEG")
+    thumbnail_scenario.s3.put_object(
+        Bucket="thumb-bucket", Key="thumbs/t.jpg", Body=buf.getvalue()
+    )
+
+    api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+
+    assert mocked_post.call_count == 1
+    sent_bytes = _posted_image_bytes(mocked_post)
+    assert api.get_edx_video_image_error(sent_bytes) is None
+    sent = Image.open(io.BytesIO(sent_bytes)).convert("RGB")
+    assert sent.size == expected_size
+    # the top-left corner is inside a bar in every case above, and bars are black
+    assert max(sent.getpixel((0, 0))) < 20
+    stored = thumbnail_scenario.s3.get_object(Bucket="thumb-bucket", Key="thumbs/t.jpg")
+    assert stored["Body"].read() == buf.getvalue()
+
+
+def test_post_video_thumbnail_to_edx_skips_undecodable_image(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """Data that isn't an image is skipped with a warning instead of being sent"""
     mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
     patched_log_warning = mocker.patch("ui.api.log.warning")
     thumbnail_scenario.s3.put_object(
-        Bucket="thumb-bucket", Key="thumbs/t.jpg", Body=_jpeg_bytes(size)
+        Bucket="thumb-bucket", Key="thumbs/t.jpg", Body=b"not an image" * 400
     )
 
     assert api.post_video_thumbnail_to_edx(thumbnail_scenario.video) == {}

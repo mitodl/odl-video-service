@@ -46,6 +46,8 @@ type DialogState = {
   thumbnailFile: ?File,
   thumbnailPreviewUrl: ?string,
   thumbnailError: ?string,
+  // Natural size of the video's current (already uploaded) thumbnail, measured when it loads
+  existingThumbnailSize: ?{ width: number, height: number },
   upgradingDescription: boolean,
   upgradeError: ?string
 }
@@ -70,11 +72,12 @@ function sanitizeImgSrc(url: ?string): string {
 class EditVideoFormDialog extends React.Component<*, DialogState> {
   props: DialogProps
   state: DialogState = {
-    thumbnailFile:        null,
-    thumbnailPreviewUrl:  null,
-    thumbnailError:       null,
-    upgradingDescription: false,
-    upgradeError:         null
+    thumbnailFile:         null,
+    thumbnailPreviewUrl:   null,
+    thumbnailError:        null,
+    existingThumbnailSize: null,
+    upgradingDescription:  false,
+    upgradeError:          null
   }
 
   /*
@@ -503,9 +506,18 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     dispatch(actions.toast.addMessage(...args))
   }
 
+  handleThumbnailLoad = (event: Object) => {
+    if (this.state.thumbnailPreviewUrl) return
+    const { naturalWidth, naturalHeight } = event.target
+    this.setState({
+      existingThumbnailSize: { width: naturalWidth, height: naturalHeight }
+    })
+  }
+
   renderThumbnail() {
     const { video } = this.props
-    const { thumbnailPreviewUrl, thumbnailError } = this.state
+    const { thumbnailPreviewUrl, thumbnailError, existingThumbnailSize } =
+      this.state
     const existingThumbnail =
       video && video.videothumbnail_set && video.videothumbnail_set.length > 0 ?
         video.videothumbnail_set[0] :
@@ -514,6 +526,16 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     const previewUrl =
       thumbnailPreviewUrl ||
       (existingThumbnail ? existingThumbnail.cloudfront_url : null)
+
+    const existingThumbnailNote =
+      !thumbnailPreviewUrl &&
+      existingThumbnailSize &&
+      getThumbnailDimensionError(
+        existingThumbnailSize.width,
+        existingThumbnailSize.height
+      ) ?
+        `This thumbnail is ${existingThumbnailSize.width}x${existingThumbnailSize.height}, not 16:9, so edX courses show it with black bars. Replace it with a 16:9 image to fill the frame.` :
+        null
 
     const buttonLabel = existingThumbnail ?
       "Replace thumbnail" :
@@ -527,6 +549,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             <img
               src={sanitizeImgSrc(previewUrl)}
               alt="Video thumbnail"
+              onLoad={this.handleThumbnailLoad}
               style={{
                 width:        "120px",
                 height:       "68px",
@@ -549,12 +572,30 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
               {thumbnailError}
             </p>
           ) : (
-            <p
-              style={{ color: "#666", margin: "4px 0 0 0", fontSize: "0.8em" }}
-            >
-              JPEG or PNG, {THUMBNAIL_REQUIREMENTS}, max{" "}
-              {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
-            </p>
+            <div>
+              {existingThumbnailNote && (
+                <p
+                  className="thumbnail-note"
+                  style={{
+                    color:    "#8a5300",
+                    margin:   "4px 0 0 0",
+                    fontSize: "0.85em"
+                  }}
+                >
+                  {existingThumbnailNote}
+                </p>
+              )}
+              <p
+                style={{
+                  color:    "#666",
+                  margin:   "4px 0 0 0",
+                  fontSize: "0.8em"
+                }}
+              >
+                JPEG or PNG, {THUMBNAIL_REQUIREMENTS}, max{" "}
+                {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
+              </p>
+            </div>
           )}
         </div>
       </section>

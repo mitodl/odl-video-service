@@ -937,6 +937,35 @@ describe("EditVideoFormDialog", () => {
       sinon.assert.calledOnce(uploadStub)
     })
 
+    const loadExistingThumbnail = (width: number, height: number) => {
+      const img = document.querySelector("section.thumbnail-group img")
+      Object.defineProperty(img, "naturalWidth", { value: width })
+      Object.defineProperty(img, "naturalHeight", { value: height })
+      fireEvent.load(img)
+    }
+
+    it("explains that a non-16:9 existing thumbnail gets black bars in edX", async () => {
+      renderComponent()
+      loadExistingThumbnail(1280, 960)
+      await waitFor(() => {
+        const text = document.querySelector(
+          "section.thumbnail-group"
+        ).textContent
+        assert.include(text, "1280x960")
+        assert.include(text, "black bars")
+      })
+    })
+
+    it("shows no note for a 16:9 existing thumbnail", async () => {
+      renderComponent()
+      loadExistingThumbnail(1280, 720)
+      await new Promise(resolve => setTimeout(resolve, 0))
+      assert.notInclude(
+        document.querySelector("section.thumbnail-group").textContent,
+        "black bars"
+      )
+    })
+
     it("shows the existing thumbnail when it is served over http", () => {
       video.videothumbnail_set[0].cloudfront_url =
         "http://ovs-minio.odl.local:9000/ovs-thumbnail/thumb.jpg"
