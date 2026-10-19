@@ -912,7 +912,7 @@ describe("EditVideoFormDialog", () => {
         .returns(Promise.resolve({ width: 1920, height: 1080 }))
       const uploadStub = sandbox
         .stub(api, "uploadThumbnail")
-        .returns(Promise.reject(new Error("Thumbnail upload failed (500)")))
+        .rejects(new Error("Thumbnail upload failed (500)"))
       sandbox.stub(api, "updateVideo").returns(Promise.resolve(video))
       await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
         renderComponent()

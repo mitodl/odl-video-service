@@ -400,10 +400,11 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
         # One dialog save pushes the same image twice (thumbnail upload, then the video save
         # signal), often from two workers at once. Only one worker may send a given image at a
         # time (cache.add is atomic), and an image identical to the last one sent is skipped.
-        last_sent_key = f"edx-video-image:{edx_endpoint.id}:{video.key}:last-sent"
-        sending_key = (
-            f"edx-video-image:{edx_endpoint.id}:{video.key}:{image_hash}:sending"
-        )
+        # Keyed by the full upload URL (Studio host, course, video): a new destination is a new upload
+        image_api_url = edx_endpoint.video_image_api_url(course_id, video.key)
+        destination = hashlib.sha256(image_api_url.encode()).hexdigest()
+        last_sent_key = f"edx-video-image:{destination}:last-sent"
+        sending_key = f"edx-video-image:{destination}:{image_hash}:sending"
         if not cache.add(sending_key, 1, timeout=EDX_VIDEO_IMAGE_SEND_LOCK_SECONDS):
             log.info(
                 "Video thumbnail is already being sent to this edX endpoint, skipping",
@@ -421,7 +422,7 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
                 continue
             edx_endpoint.refresh_access_token()
             resp = requests.post(
-                edx_endpoint.video_image_api_url(course_id, video.key),
+                image_api_url,
                 files={"file": ("video_thumbnail.jpg", image_bytes, "image/jpeg")},
                 headers={"Authorization": f"JWT {edx_endpoint.access_token}"},
                 timeout=60,

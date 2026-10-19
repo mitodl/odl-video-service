@@ -995,3 +995,40 @@ def test_video_image_api_url_accepts_course_keys():
         "https://studio.example.com/api/contentstore/v0/videos/images/"
         "course-v1:MITxT+18.01x+3T2026/0ce30fa5-464c-4a01-908f-bd716546e215"
     )
+
+
+@pytest.mark.parametrize("change", ["course", "studio"])
+def test_post_video_thumbnail_to_edx_resends_after_destination_change(
+    mocker, reqmocker, thumbnail_scenario, change
+):
+    """
+    The same image is sent again when its destination changes (the collection's course ID or the
+    endpoint's Studio URL), so a previous upload elsewhere doesn't suppress it.
+    """
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    reqmocker.register_uri(
+        "POST", thumbnail_scenario.images_url, status_code=200, json={}
+    )
+    api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+
+    video = thumbnail_scenario.video
+    if change == "course":
+        models.Collection.objects.filter(pk=video.collection_id).update(
+            edx_course_id="course-v1:MITx+other+2027"
+        )
+        new_url = (
+            f"{STUDIO_URL}/api/contentstore/v0/videos/images/"
+            f"course-v1:MITx+other+2027/{video.key}"
+        )
+    else:
+        thumbnail_scenario.endpoint.studio_base_url = "https://studio2.example.com"
+        thumbnail_scenario.endpoint.save()
+        new_url = thumbnail_scenario.images_url.replace(
+            STUDIO_URL, "https://studio2.example.com"
+        )
+    new_destination = reqmocker.register_uri("POST", new_url, status_code=200, json={})
+    video.refresh_from_db()
+
+    api.post_video_thumbnail_to_edx(video)
+
+    assert new_destination.call_count == 1
