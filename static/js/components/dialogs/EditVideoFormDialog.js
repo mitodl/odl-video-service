@@ -101,6 +101,10 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   // The thumbnail picked most recently; checks for any earlier pick are ignored
   pendingThumbnail: ?File = null
 
+  // The dimension check for pendingThumbnail. Save awaits it and uses the file it resolves to
+  // (null if rejected), because the setState it triggers may not have landed yet.
+  thumbnailCheck: ?Promise<?File> = null
+
   // Set on unmount so an upgrade that resolves afterwards does not setState on
   // a dead component. withDialogs keeps this mounted while closed, so this is
   // the page-teardown case rather than the everyday one.
@@ -311,6 +315,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     const file = event.target.files[0]
     if (!file) return
     this.pendingThumbnail = file
+    this.thumbnailCheck = null
     if (
       file.type !== "image/jpeg" &&
       file.type !== "image/jpg" &&
@@ -345,11 +350,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       return
     }
     const input = event.target
-    getImageDimensions(file)
+    this.thumbnailCheck = getImageDimensions(file)
       .then(({ width, height }) => getThumbnailDimensionError(width, height))
       .catch(err => err.message)
       .then(error => {
-        if (file !== this.pendingThumbnail || this.closing) return
+        if (file !== this.pendingThumbnail || this.closing) return null
         const { thumbnailPreviewUrl } = this.state
         if (thumbnailPreviewUrl) {
           URL.revokeObjectURL(thumbnailPreviewUrl)
@@ -361,13 +366,14 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             thumbnailPreviewUrl: null
           })
           input.value = ""
-          return
+          return null
         }
         this.setState({
           thumbnailFile:       file,
           thumbnailPreviewUrl: URL.createObjectURL(file),
           thumbnailError:      null
         })
+        return file
       })
   }
 
@@ -384,6 +390,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     })
     this.closing = true
     this.pendingThumbnail = null
+    this.thumbnailCheck = null
     dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }
@@ -405,6 +412,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     if (this.state.upgradingDescription) {
       return
     }
+    const thumbnailFile = this.thumbnailCheck ?
+      await this.thumbnailCheck :
+      this.state.thumbnailFile
     const {
       dispatch,
       videoUi: { editVideoForm },
@@ -450,8 +460,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     }
 
     try {
-      const { thumbnailFile } = this.state
       if (thumbnailFile) {
+        // Picked files are uploaded at most once; a failed upload needs a new pick
+        this.thumbnailCheck = null
         const formData = new FormData()
         formData.append("thumbnail", thumbnailFile)
         try {

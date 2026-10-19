@@ -879,6 +879,64 @@ describe("EditVideoFormDialog", () => {
       )
     })
 
+    it("waits for a pending dimension check before saving", async () => {
+      let resolveCheck
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(new Promise(resolve => (resolveCheck = resolve)))
+      const uploadStub = sandbox
+        .stub(api, "uploadThumbnail")
+        .returns(Promise.resolve({}))
+      sandbox.stub(api, "updateVideo").returns(Promise.resolve(video))
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        renderComponent()
+      })
+      const picked = new File(["x"], "picked.jpg", { type: "image/jpeg" })
+
+      pickThumbnail(picked)
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      await new Promise(resolve => setTimeout(resolve, 0))
+      sinon.assert.notCalled(uploadStub)
+
+      resolveCheck({ width: 1920, height: 1080 })
+      await waitFor(() => sinon.assert.calledOnce(uploadStub))
+      assert.equal(
+        uploadStub.firstCall.args[1].get("thumbnail").name,
+        "picked.jpg"
+      )
+    })
+
+    it("does not re-upload a thumbnail whose upload failed on the next save", async () => {
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(Promise.resolve({ width: 1920, height: 1080 }))
+      const uploadStub = sandbox
+        .stub(api, "uploadThumbnail")
+        .returns(Promise.reject(new Error("Thumbnail upload failed (500)")))
+      sandbox.stub(api, "updateVideo").returns(Promise.resolve(video))
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        renderComponent()
+      })
+      pickThumbnail(new File(["x"], "picked.jpg", { type: "image/jpeg" }))
+      await waitFor(() =>
+        assert.isNotNull(
+          document.querySelector("section.thumbnail-group img[src^='blob:']")
+        )
+      )
+
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      await waitFor(() =>
+        assert.include(
+          document.querySelector("section.thumbnail-group").textContent,
+          "Thumbnail upload failed (500)"
+        )
+      )
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      sinon.assert.calledOnce(uploadStub)
+    })
+
     it("shows the existing thumbnail when it is served over http", () => {
       video.videothumbnail_set[0].cloudfront_url =
         "http://ovs-minio.odl.local:9000/ovs-thumbnail/thumb.jpg"

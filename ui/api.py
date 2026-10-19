@@ -33,8 +33,9 @@ from ui.utils import get_error_response_summary_dict
 
 log = structlog.get_logger(__name__)
 
-# How long an image sent to an edX endpoint suppresses re-sending the identical image
-EDX_VIDEO_IMAGE_DEDUPE_SECONDS = 5 * 60
+# How long OVS remembers the last image sent to an edX endpoint, so that later pushes (e.g. every
+# save of a COMPLETE video) don't re-send an unchanged thumbnail. A new image is always sent.
+EDX_VIDEO_IMAGE_DEDUPE_SECONDS = 30 * 24 * 60 * 60
 # Upper bound on how long one worker holds the right to send a given image
 EDX_VIDEO_IMAGE_SEND_LOCK_SECONDS = 2 * 60
 

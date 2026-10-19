@@ -893,3 +893,27 @@ def test_post_video_to_edx_thumbnail_uses_each_endpoints_own_update(
     api.post_video_to_edx([edx_api_scenario.video_file_hls])
 
     patched_thumbnail_push.assert_called_once_with(video, edx_endpoints=[endpoint_a])
+
+
+def test_post_video_thumbnail_to_edx_does_not_resend_unchanged_image_later(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """
+    Every save of a COMPLETE video re-runs the push. An unchanged thumbnail is not sent again
+    later on (edX would store it under a new file name each time); only a new image is.
+    """
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    mocked_post = reqmocker.register_uri(
+        "POST", thumbnail_scenario.images_url, status_code=200, json={}
+    )
+    clock = mocker.Mock()
+    clock.time.return_value = 1_000_000
+    # base computes expiry times, locmem compares against them
+    mocker.patch("django.core.cache.backends.base.time", clock)
+    mocker.patch("django.core.cache.backends.locmem.time", clock)
+
+    api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+    clock.time.return_value += 6 * 60 * 60  # hours later, e.g. a title edit
+    api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
+
+    assert mocked_post.call_count == 1
