@@ -3,6 +3,7 @@ Models for UI app
 """
 
 import os
+import re
 from datetime import timedelta
 from urllib.parse import urlparse
 from uuid import uuid4
@@ -17,7 +18,11 @@ from encrypted_model_fields.fields import EncryptedTextField
 from pycountry import languages
 
 from mail import tasks
-from odl_video.constants import DEFAULT_EDX_VIDEO_API_PATH, EDX_VIDEO_IMAGE_API_PATH
+from odl_video.constants import (
+    DEFAULT_EDX_VIDEO_API_PATH,
+    EDX_COURSE_KEY_PATTERN,
+    EDX_VIDEO_IMAGE_API_PATH,
+)
 from odl_video.models import TimestampedModel, TimestampedModelManager
 from ui import utils
 from ui.constants import (
@@ -109,7 +114,15 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
         )
 
     def video_image_api_url(self, course_id, edx_video_id):
-        """Returns the Studio URL for uploading the image of a course video"""
+        """
+        Returns the Studio URL for uploading the image of a course video
+
+        Raises:
+            ValueError: if course_id is not a course-v1 key, since it becomes part of the URL path
+        """
+        if not re.fullmatch(EDX_COURSE_KEY_PATTERN, course_id or ""):
+            msg = f"Not a valid edX course key: {course_id!r}"
+            raise ValueError(msg)
         return multi_urljoin(
             self.studio_base_url, EDX_VIDEO_IMAGE_API_PATH, course_id, str(edx_video_id)
         )

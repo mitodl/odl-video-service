@@ -2,6 +2,8 @@
 
 DEFAULT_EDX_VIDEO_API_PATH = "/api/val/v0/videos/"
 EDX_VIDEO_IMAGE_API_PATH = "/api/contentstore/v0/videos/images/"
+# A course-v1 key with no characters that could change a URL's path, query or fragment
+EDX_COURSE_KEY_PATTERN = r"^course-v1:[\w.~-]+\+[\w.~-]+\+[\w.~-]+$"
 
 # Studio rejects video images outside these limits (edx-platform settings VIDEO_IMAGE_*)
 EDX_VIDEO_IMAGE_MIN_WIDTH = 640

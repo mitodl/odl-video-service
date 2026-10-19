@@ -36,7 +36,7 @@ pytestmark = pytest.mark.django_db
 @factory.django.mute_signals(signals.post_save)
 def edx_api_scenario():
     """Fixture that provides a VideoFile with the correct properties to post to edX"""
-    course_id = "course-v1:abc"
+    course_id = "course-v1:MITx+abc+2026"
     video_file_hls = VideoFileFactory.create(
         encoding=EncodingNames.HLS,
         video__title="My Video",
@@ -956,3 +956,42 @@ def test_post_video_thumbnail_to_edx_does_not_resend_unchanged_image_later(
     api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
 
     assert mocked_post.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "edx_course_id",
+    [
+        "../../file_assets/course-v1:Other+X+Y?a=",
+        "course-v1:abc/../../x",
+        "..",
+        "course-v1:abc#frag",
+    ],
+)
+def test_post_video_thumbnail_to_edx_rejects_unsafe_course_id(
+    mocker, reqmocker, thumbnail_scenario, edx_course_id
+):
+    """
+    The course ID becomes part of the Studio URL, so a value that could change the path or query
+    (e.g. set by a collection admin) is never sent anywhere.
+    """
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    patched_log_warning = mocker.patch("ui.api.log.warning")
+    models.Collection.objects.filter(pk=thumbnail_scenario.video.collection_id).update(
+        edx_course_id=edx_course_id
+    )
+    thumbnail_scenario.video.refresh_from_db()
+
+    assert api.post_video_thumbnail_to_edx(thumbnail_scenario.video) == {}
+    assert reqmocker.call_count == 0
+    patched_log_warning.assert_called_once()
+
+
+def test_video_image_api_url_accepts_course_keys():
+    """Well-formed course keys produce the expected Studio URL"""
+    endpoint = models.EdxEndpoint(studio_base_url="https://studio.example.com")
+    assert endpoint.video_image_api_url(
+        "course-v1:MITxT+18.01x+3T2026", "0ce30fa5-464c-4a01-908f-bd716546e215"
+    ) == (
+        "https://studio.example.com/api/contentstore/v0/videos/images/"
+        "course-v1:MITxT+18.01x+3T2026/0ce30fa5-464c-4a01-908f-bd716546e215"
+    )

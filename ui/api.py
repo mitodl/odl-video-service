@@ -4,6 +4,7 @@ API methods
 
 import hashlib
 import io
+import re
 
 import boto3
 import requests
@@ -19,6 +20,7 @@ from PIL import Image, ImageOps
 
 from cloudsync import tasks
 from odl_video.constants import (
+    EDX_COURSE_KEY_PATTERN,
     EDX_VIDEO_IMAGE_ASPECT_RATIO,
     EDX_VIDEO_IMAGE_ASPECT_RATIO_ERROR_MARGIN,
     EDX_VIDEO_IMAGE_MAX_BYTES,
@@ -352,6 +354,13 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
     thumbnail = video.videothumbnail_set.first()
     course_id = video.collection.edx_course_id
     if not edx_endpoints or thumbnail is None or not course_id:
+        return {}
+    if not re.fullmatch(EDX_COURSE_KEY_PATTERN, course_id):
+        log.warning(
+            "Not adding video thumbnail to edX, the collection's edX course ID is not a course key",
+            video_key=video.hexkey,
+            edx_course_id=course_id,
+        )
         return {}
 
     try:

@@ -966,6 +966,74 @@ describe("EditVideoFormDialog", () => {
       )
     })
 
+    it("says a small 16:9 thumbnail is too small, not that it gets bars", async () => {
+      renderComponent()
+      loadExistingThumbnail(426, 240)
+      await waitFor(() => {
+        const text = document.querySelector(
+          "section.thumbnail-group"
+        ).textContent
+        assert.include(text, "426x240")
+        assert.include(text, "smaller than 640x360")
+        assert.notInclude(text, "black bars")
+      })
+    })
+
+    it("doesn't carry the note over to another video", async () => {
+      const { rerender } = renderComponent()
+      loadExistingThumbnail(640, 480)
+      await waitFor(() =>
+        assert.include(
+          document.querySelector("section.thumbnail-group").textContent,
+          "black bars"
+        )
+      )
+      const otherVideo = makeVideo()
+      otherVideo.videothumbnail_set = []
+      rerender(
+        <EditVideoFormDialog
+          open={true}
+          hideDialog={hideDialogStub}
+          video={otherVideo}
+          videoUi={INITIAL_UI_STATE}
+        />
+      )
+      await new Promise(resolve => setTimeout(resolve, 0))
+      assert.notInclude(
+        document.querySelector("section.thumbnail-group").textContent,
+        "black bars"
+      )
+    })
+
+    it("stops the save and keeps the error when a pending check rejects the image", async () => {
+      let resolveCheck
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(new Promise(resolve => (resolveCheck = resolve)))
+      const uploadStub = sandbox.stub(api, "uploadThumbnail")
+      const updateStub = sandbox
+        .stub(api, "updateVideo")
+        .returns(Promise.resolve(video))
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        renderComponent()
+      })
+
+      pickThumbnail(new File(["x"], "square.jpg", { type: "image/jpeg" }))
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      resolveCheck({ width: 1600, height: 1200 })
+
+      await waitFor(() =>
+        assert.include(
+          document.querySelector("section.thumbnail-group").textContent,
+          "This image is 1600x1200."
+        )
+      )
+      await new Promise(resolve => setTimeout(resolve, 0))
+      sinon.assert.notCalled(uploadStub)
+      sinon.assert.notCalled(updateStub)
+      sinon.assert.notCalled(hideDialogStub)
+    })
+
     it("shows the existing thumbnail when it is served over http", () => {
       video.videothumbnail_set[0].cloudfront_url =
         "http://ovs-minio.odl.local:9000/ovs-thumbnail/thumb.jpg"

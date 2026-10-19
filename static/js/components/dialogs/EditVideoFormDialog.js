@@ -15,6 +15,7 @@ import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
 import { uploadThumbnail } from "../../lib/api"
 import {
+  getExistingThumbnailNote,
   getImageDimensions,
   getThumbnailDimensionError,
   THUMBNAIL_REQUIREMENTS
@@ -46,8 +47,9 @@ type DialogState = {
   thumbnailFile: ?File,
   thumbnailPreviewUrl: ?string,
   thumbnailError: ?string,
-  // Natural size of the video's current (already uploaded) thumbnail, measured when it loads
-  existingThumbnailSize: ?{ width: number, height: number },
+  // Natural size of the video's current (already uploaded) thumbnail, measured when it loads,
+  // with the src it was measured from so it is never applied to another video's thumbnail
+  existingThumbnailSize: ?{ src: string, width: number, height: number },
   upgradingDescription: boolean,
   upgradeError: ?string
 }
@@ -369,6 +371,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             thumbnailPreviewUrl: null
           })
           input.value = ""
+          // A Save waiting on this check stops; a later Save saves the other fields
+          this.thumbnailCheck = null
           return null
         }
         this.setState({
@@ -387,9 +391,10 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       URL.revokeObjectURL(thumbnailPreviewUrl)
     }
     this.setState({
-      thumbnailFile:       null,
-      thumbnailPreviewUrl: null,
-      thumbnailError:      null
+      thumbnailFile:         null,
+      thumbnailPreviewUrl:   null,
+      thumbnailError:        null,
+      existingThumbnailSize: null
     })
     this.closing = true
     this.pendingThumbnail = null
@@ -415,9 +420,14 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     if (this.state.upgradingDescription) {
       return
     }
-    const thumbnailFile = this.thumbnailCheck ?
-      await this.thumbnailCheck :
+    const pendingCheck = this.thumbnailCheck
+    const thumbnailFile = pendingCheck ?
+      await pendingCheck :
       this.state.thumbnailFile
+    if (pendingCheck && !thumbnailFile) {
+      // The image picked just before Save was rejected; keep the dialog open with its error
+      return
+    }
     const {
       dispatch,
       videoUi: { editVideoForm },
@@ -510,7 +520,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     if (this.state.thumbnailPreviewUrl) return
     const { naturalWidth, naturalHeight } = event.target
     this.setState({
-      existingThumbnailSize: { width: naturalWidth, height: naturalHeight }
+      existingThumbnailSize: {
+        src:    event.target.getAttribute("src"),
+        width:  naturalWidth,
+        height: naturalHeight
+      }
     })
   }
 
@@ -529,12 +543,14 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 
     const existingThumbnailNote =
       !thumbnailPreviewUrl &&
+      existingThumbnail &&
       existingThumbnailSize &&
-      getThumbnailDimensionError(
-        existingThumbnailSize.width,
-        existingThumbnailSize.height
-      ) ?
-        `This thumbnail is ${existingThumbnailSize.width}x${existingThumbnailSize.height}, not 16:9, so edX courses show it with black bars. Replace it with a 16:9 image to fill the frame.` :
+      existingThumbnailSize.src ===
+        sanitizeImgSrc(existingThumbnail.cloudfront_url) ?
+        getExistingThumbnailNote(
+          existingThumbnailSize.width,
+          existingThumbnailSize.height
+        ) :
         null
 
     const buttonLabel = existingThumbnail ?
