@@ -1,27 +1,20 @@
 """Tests for utils methods"""
 
-import json
-
 import pytest
 import responses
 from django.contrib.auth.models import AnonymousUser
 
 from odl_video.test_utils import MockResponse
 from ui import factories
-from ui.exceptions import GoogleAnalyticsException, KeycloakException
+from ui.exceptions import KeycloakException
 from ui.keycloak_utils import KeycloakManager
 from ui.utils import (
     _groups_from_social_auth,
-    generate_google_analytics_query,
-    generate_mock_video_analytics_data,
     get_error_response_summary_dict,
-    get_google_analytics_client,
     get_keycloak_client,
-    get_video_analytics,
     group_members,
     has_common_groups,
     multi_urljoin,
-    parse_google_analytics_response,
     partition,
     partition_to_lists,
     query_lists,
@@ -278,242 +271,6 @@ def test_has_common_groups(mocker):
     user = factories.UserFactory()
     assert has_common_groups(user, ["b", "c"]) is True
     assert has_common_groups(user, ["c"]) is False
-
-
-def test_get_video_analytics(mocker):
-    """Test that video analytics data is returned"""
-    mock_get_ga_client = mocker.patch("ui.utils.get_google_analytics_client")
-    mock_generate_ga_query = mocker.patch("ui.utils.generate_google_analytics_query")
-    mock_parse_ga_response = mocker.patch("ui.utils.parse_google_analytics_response")
-    video = factories.VideoFactory()
-    result = get_video_analytics(video)
-    expected_ga_client = mock_get_ga_client.return_value
-    expected_batchGet_call = expected_ga_client.reports.return_value.batchGet
-    expected_ga_query = mock_generate_ga_query.return_value
-    expected_batchGet_call.assert_called_once_with(body=expected_ga_query)
-    mock_parse_ga_response.assert_called_once_with(
-        expected_batchGet_call.return_value.execute()
-    )
-    assert result is mock_parse_ga_response.return_value
-
-
-def test_get_video_analytics_parse_failure(mocker):
-    """Test that video analytics data is returned"""
-    mocker.patch("ui.utils.get_google_analytics_client")
-    mocker.patch("ui.utils.generate_google_analytics_query")
-    mock_parse_ga_response = mocker.patch("ui.utils.parse_google_analytics_response")
-    mock_parse_ga_response.side_effect = Exception("badness")
-    video_key = "some_video_key"
-    with pytest.raises(GoogleAnalyticsException):
-        get_video_analytics(video_key)
-
-
-def test_get_google_analytics_client_success(ga_client_mocks, settings):
-    """Test that a client is returned from get_ga_client"""
-    settings.GA_KEYFILE_JSON = '{"some": "json"}'
-    result = get_google_analytics_client()
-    ga_client_mocks[
-        "ServiceAccountCredentials"
-    ].from_service_account_info.assert_called_once_with(
-        json.loads(settings.GA_KEYFILE_JSON)
-    )
-    ga_client_mocks["build"].assert_called_once_with(
-        "analyticsreporting",
-        "v4",
-        credentials=ga_client_mocks[
-            "ServiceAccountCredentials"
-        ].from_service_account_info.return_value,
-    )
-    assert result is ga_client_mocks["build"].return_value
-
-
-@pytest.mark.parametrize("multiangle", [True, False])
-def test_generate_google_analytics_query_success(settings, multiangle):
-    """Test that expected query is generated."""
-    video = factories.VideoFactory(multiangle=multiangle)
-    ga_view_id = "some_view_id"
-    settings.GA_VIEW_ID = ga_view_id
-    ga_dimension_camera = "some_camera_dimension"
-    settings.GA_DIMENSION_CAMERA = ga_dimension_camera
-    actual_query = generate_google_analytics_query(video)
-    expected_dimensions = [{"name": "ga:eventAction"}]
-    if multiangle:
-        expected_dimensions.append({"name": "ga:" + ga_dimension_camera})
-    expected_query = {
-        "reportRequests": [
-            {
-                "viewId": ga_view_id,
-                "dateRanges": [
-                    {
-                        "startDate": "2005-01-01",
-                        "endDate": "9999-01-01",
-                    }
-                ],
-                "metrics": [{"expression": "ga:totalEvents"}],
-                "dimensions": expected_dimensions,
-                "dimensionFilterClauses": [
-                    {
-                        "filters": [
-                            {
-                                "dimensionName": "ga:eventLabel",
-                                "operator": "EXACT",
-                                "expressions": [video.hexkey.capitalize()],
-                            },
-                        ],
-                    },
-                ],
-            },
-        ],
-    }
-    assert actual_query == expected_query
-
-
-def test_parse_google_analytics_response_multiangle():
-    """Test that parse result matches expected result."""
-    mock_response = {
-        "reports": [
-            {
-                "columnHeader": {
-                    "dimensions": ["ga:eventAction", "ga:dimension1"],
-                    "metricHeader": {
-                        "metricHeaderEntries": [
-                            {"name": "ga:totalEvents", "type": "INTEGER"},
-                        ]
-                    },
-                },
-                "data": {
-                    "maximums": [{"values": ["2"]}],
-                    "minimums": [{"values": ["1"]}],
-                    "rowCount": 5,
-                    "rows": [
-                        {
-                            "dimensions": ["changeCameraView", "camera2"],
-                            "metrics": [{"values": ["16"]}],
-                        },
-                        {
-                            "dimensions": ["Pause", "camera1"],
-                            "metrics": [{"values": ["4"]}],
-                        },
-                        {
-                            "dimensions": ["T0000", "camera1"],
-                            "metrics": [{"values": ["102"]}],
-                        },
-                        {
-                            "dimensions": ["T0002", "camera1"],
-                            "metrics": [{"values": ["98"]}],
-                        },
-                        {
-                            "dimensions": ["T0002", "camera2"],
-                            "metrics": [{"values": ["3"]}],
-                        },
-                        {
-                            "dimensions": ["T0002", "Bad channel"],
-                            "metrics": [{"values": ["3"]}],
-                        },
-                    ],
-                    "totals": [{"values": ["30"]}],
-                },
-            }
-        ]
-    }
-    expected_result = {
-        "times": [0, 2],
-        "channels": ["camera1", "camera2"],
-        "is_multichannel": True,
-        "views_at_times": {
-            0: {
-                "camera1": 102,
-            },
-            2: {
-                "camera1": 98,
-                "camera2": 3,
-            },
-        },
-    }
-    actual_result = parse_google_analytics_response(mock_response)
-    assert actual_result == expected_result
-
-
-def test_parse_google_analytics_response_singlecam():
-    """Test that parse result matches expected result."""
-    mock_response = {
-        "reports": [
-            {
-                "columnHeader": {
-                    "dimensions": ["ga:eventAction"],
-                    "metricHeader": {
-                        "metricHeaderEntries": [
-                            {"name": "ga:totalEvents", "type": "INTEGER"},
-                        ]
-                    },
-                },
-                "data": {
-                    "maximums": [{"values": ["2"]}],
-                    "minimums": [{"values": ["1"]}],
-                    "rowCount": 5,
-                    "rows": [
-                        {
-                            "dimensions": ["changeCameraView"],
-                            "metrics": [{"values": ["16"]}],
-                        },
-                        {"dimensions": ["Pause"], "metrics": [{"values": ["4"]}]},
-                        {"dimensions": ["T0000"], "metrics": [{"values": ["102"]}]},
-                        {"dimensions": ["T0002"], "metrics": [{"values": ["98"]}]},
-                    ],
-                    "totals": [{"values": ["30"]}],
-                },
-            }
-        ]
-    }
-    expected_result = {
-        "times": [0, 2],
-        "channels": ["views"],
-        "is_multichannel": False,
-        "views_at_times": {
-            0: {
-                "views": 102,
-            },
-            2: {
-                "views": 98,
-            },
-        },
-    }
-    actual_result = parse_google_analytics_response(mock_response)
-    assert actual_result == expected_result
-
-
-@pytest.mark.parametrize(
-    "n, seed, expected",
-    [
-        (
-            1,
-            "some seed",
-            {
-                "channels": ["camera1", "camera2", "camera3", "camera4"],
-                "times": [0],
-                "views_at_times": {
-                    0: {"camera1": 86, "camera2": 83, "camera3": 0, "camera4": 82}
-                },
-            },
-        ),
-        (
-            2,
-            "some other seed",
-            {
-                "channels": ["camera1", "camera2", "camera3", "camera4"],
-                "times": [0, 1],
-                "views_at_times": {
-                    0: {"camera1": 35, "camera2": 63, "camera3": 0, "camera4": 64},
-                    1: {"camera1": 97, "camera2": 98, "camera3": 7, "camera4": 33},
-                },
-            },
-        ),
-    ],
-)
-def test_generate_mock_video_analytics_data(n, seed, expected):
-    """Test that returns expected result."""
-    actual = generate_mock_video_analytics_data(n=n, seed=seed)
-    assert actual == expected
 
 
 def test_group_members_exception(mock_keycloak):

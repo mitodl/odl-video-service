@@ -7,7 +7,6 @@ declare var SETTINGS: {
   FEATURES: {
     [key: string]: boolean,
   },
-  reactGaDebug: string,
   cloudfront_base_url: string,
   video: Video,
   videoKey: string,
@@ -19,7 +18,6 @@ declare var SETTINGS: {
   dropbox_key: string,
   support_email_address: string,
   status_code?: number,
-  ga_dimension_camera: string,
   sentry_dsn: string,
   release_version: string,
   environment: string

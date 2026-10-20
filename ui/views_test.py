@@ -127,8 +127,6 @@ def test_index(logged_in_client):
 def test_video_detail(logged_in_client, settings):
     """Test video detail page"""
     client, user = logged_in_client
-    settings.GA_DIMENSION_CAMERA = "camera1"
-    settings.GA_TRACKING_ID = "UA-xyz-1"
     settings.ENVIRONMENT = "test"
     settings.VERSION = "1.2.3"
     settings.ENABLE_VIDEO_PERMISSIONS = False
@@ -141,11 +139,9 @@ def test_video_detail(logged_in_client, settings):
     js_settings_json = json.loads(response.context_data["js_settings_json"])
     assert js_settings_json == {
         "is_app_admin": False,
-        "gaTrackingID": settings.GA_TRACKING_ID,
         "environment": settings.ENVIRONMENT,
         "release_version": settings.VERSION,
         "sentry_dsn": "",
-        "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "public_path": "/static/bundles/",
         "videoKey": videofileHLS.video.hexkey,
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
@@ -165,8 +161,6 @@ def test_video_detail(logged_in_client, settings):
 def test_video_embed(logged_in_client, settings):
     """Test video embed page"""
     client, user = logged_in_client
-    settings.GA_DIMENSION_CAMERA = "camera1"
-    settings.GA_TRACKING_ID = "UA-xyz-1"
     settings.ENVIRONMENT = "test"
     settings.VERSION = "1.2.3"
     settings.ENABLE_VIDEO_PERMISSIONS = False
@@ -184,11 +178,9 @@ def test_video_embed(logged_in_client, settings):
     js_settings_json = json.loads(response.context_data["js_settings_json"])
     assert js_settings_json == {
         "video": VideoSerializer(video).data,
-        "gaTrackingID": settings.GA_TRACKING_ID,
         "release_version": settings.VERSION,
         "environment": settings.ENVIRONMENT,
         "sentry_dsn": "",
-        "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "public_path": "/static/bundles/",
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
         "user": user.username,
@@ -984,10 +976,8 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     We should show the React container for our 404 page
     """
     settings.VIDEO_CLOUDFRONT_BASE_URL = "cloudfront_base_url"
-    settings.GA_TRACKING_ID = "tracking_id"
     settings.ENVIRONMENT = "test"
     settings.VERSION = "1.2.3"
-    settings.GA_DIMENSION_CAMERA = "camera1"
     settings.EMAIL_SUPPORT = "support"
     settings.ENABLE_VIDEO_PERMISSIONS = False
     settings.USE_WEBPACK_DEV_SERVER = False
@@ -997,11 +987,9 @@ def test_page_not_found(url, logged_in_apiclient, settings):
     assert resp.status_code == status.HTTP_404_NOT_FOUND
     assert json.loads(resp.context[0]["js_settings_json"]) == {
         "cloudfront_base_url": settings.VIDEO_CLOUDFRONT_BASE_URL,
-        "gaTrackingID": settings.GA_TRACKING_ID,
         "environment": settings.ENVIRONMENT,
         "release_version": settings.VERSION,
         "sentry_dsn": "",
-        "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "public_path": "/static/bundles/",
         "status_code": status.HTTP_404_NOT_FOUND,
         "support_email_address": settings.EMAIL_SUPPORT,
@@ -1031,59 +1019,6 @@ def test_terms_page_is_noindex(mocker, logged_in_client):
     client, _ = logged_in_client
     response = client.get(reverse("terms-react-view"))
     assert b'<meta name="robots" content="noindex, nofollow">' in response.content
-
-
-def test_video_viewset_analytics(mocker, logged_in_apiclient):
-    """
-    Tests to retrieve video analytics
-    """
-    mocker.patch("ui.utils.get_keycloak_client")
-    mock_get_video_analytics = mocker.patch("ui.views.get_video_analytics")
-    mock_get_video_analytics.return_value = {"mock-analytics-data": "foo"}
-    client, user = logged_in_apiclient
-    collection = CollectionFactory(owner=user)
-    video = VideoFactory(collection=collection)
-    url = reverse("models-api:video-analytics", kwargs={"key": video.hexkey})
-    result = client.get(url)
-    assert result.status_code == status.HTTP_200_OK
-    mock_get_video_analytics.assert_called_once_with(video)
-    assert result.data["data"] == mock_get_video_analytics.return_value
-
-
-def test_video_viewset_analytics_mock_data(mocker, logged_in_apiclient):
-    """
-    Tests to retrieve mock video analytics data.
-    """
-    mocker.patch("ui.utils.get_keycloak_client")
-    mock_generate_mock_video_analytics_data = mocker.patch(
-        "ui.views.generate_mock_video_analytics_data"
-    )
-    mock_generate_mock_video_analytics_data.return_value = {
-        "mock-analytics-data": "foo"
-    }
-    client, user = logged_in_apiclient
-    collection = CollectionFactory(owner=user)
-    video = VideoFactory(collection=collection)
-    url = reverse("models-api:video-analytics", kwargs={"key": video.hexkey})
-    seed = "some_seed"
-    n = 2
-    result = client.get(url, {"mock": 1, "seed": seed, "n": n})
-    assert result.status_code == status.HTTP_200_OK
-    mock_generate_mock_video_analytics_data.assert_called_once_with(seed=seed, n=str(n))
-    assert result.data["data"] == mock_generate_mock_video_analytics_data.return_value
-
-
-def test_video_viewset_analytics_throw(mocker, logged_in_apiclient):
-    """
-    Tests to retrieve video analytics w/ error.
-    """
-    mocker.patch("ui.utils.get_keycloak_client")
-    client, user = logged_in_apiclient
-    collection = CollectionFactory(owner=user)
-    video = VideoFactory(collection=collection)
-    url = reverse("models-api:video-analytics", kwargs={"key": video.hexkey})
-    result = client.get(url, {"throw": 1})
-    assert result.status_code == 500
 
 
 def test_video_viewset_list(mocker, mock_user_groups, logged_in_apiclient):
