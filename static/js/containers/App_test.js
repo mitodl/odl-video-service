@@ -133,11 +133,11 @@ describe("App", () => {
     // Task 4 did NOT have to change (bound class-property arrow functions are
     // real typeof "function", so react-router 4's `component: PropTypes.func`
     // check never tripped on them). Every target page mounts video.js;
-    // VideoDetailPage_test.js and VideoEmbedPage_test.js
-    // already cover that behavior exhaustively with the stubs it requires
-    // (videojs, dropbox, api). Duplicating that here would only re-test
-    // those pages, not App's routing, so render() (and VideoDetailPage's
-    // componentDidMount()) are replaced with cheap stand-ins and this only proves what's actually
+    // VideoDetailPage_test.js and VideoEmbedPage_test.js already cover that
+    // behavior exhaustively with the stubs it requires (videojs, dropbox,
+    // api). Duplicating that here would only re-test those pages, not App's
+    // routing, so render() (and VideoDetailPage's componentDidMount()) are
+    // replaced with cheap stand-ins and this only proves what's actually
     // in scope: that the route resolves to the right page component, with
     // the SETTINGS-derived props and the spread routeProps both reaching it.
     //
