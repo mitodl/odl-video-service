@@ -1,6 +1,21 @@
 Release Notes
 =============
 
+Version 0.97.2
+--------------
+
+- chore: remove the interim pre-commit.ci ci: block
+- ci: pin prek 0.5.3
+- Update dependency uv_build to >=0.12.15,<0.13.0 (#1612)
+- Update all non-major dev-dependencies (#1607)
+- Update dependency urllib3 to v2.8.0 [SECURITY] (#1619)
+- ci: preserve the existing optional Aptfile step
+- ci: fix runner-specific actionlint drift
+- ci: run hooks with prek and autofix.ci
+- Update dependency autoprefixer to v10.6.1 (#1608)
+- Update dependency mitol-drf-lint to v2026.8.28 (#1610)
+- Update dependency moment to v2.31.0 (#1611)
+
 Version 0.97.1
 --------------
 
