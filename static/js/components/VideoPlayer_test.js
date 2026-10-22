@@ -1,12 +1,10 @@
 // @flow
-/* global SETTINGS */
 import React from "react"
 import { assert } from "chai"
 import sinon from "sinon"
 import { fireEvent } from "@testing-library/react"
 import { URLSearchParams } from "url"
 import configureTestStore from "redux-asserts"
-import ga from "react-ga"
 import VideoPlayer from "./VideoPlayer"
 import { VideoPlayerController } from "../lib/video_player_controller"
 import {
@@ -25,27 +23,12 @@ import { makePlayerStub } from "../testUtils/playerStub"
 
 global.URLSearchParams = URLSearchParams
 
-// The player events VideoPlayer wires to Google Analytics, in the same order
-// as the component's own `gaEvents` list. changeCameraView is deliberately
-// absent: it is not a player event, it is sent straight from clickCamera.
-const gaEvents = [
-  "play",
-  "pause",
-  "seeked",
-  "timeupdate",
-  "fullscreen off",
-  "fullscreen on",
-  "ended"
-]
-
 describe("VideoPlayer", () => {
   let video,
     videojsStub,
     sandbox,
     cornerFunction,
     playerStub,
-    gaEventStub,
-    gaSetStub,
     store,
     dispatchSpy
 
@@ -103,8 +86,6 @@ describe("VideoPlayer", () => {
     sandbox = sinon.createSandbox()
     sandbox.stub(global, "setTimeout")
     cornerFunction = sandbox.stub()
-    gaEventStub = sandbox.stub(ga, "event")
-    gaSetStub = sandbox.stub(ga, "set")
     playerStub = makePlayerStub(sandbox)
     videojsStub = sandbox.stub(libVideo, "videojs").returns(playerStub)
     store = configureTestStore(rootReducer)
@@ -117,7 +98,6 @@ describe("VideoPlayer", () => {
   ;[true, false].forEach(function(embed) {
     [true, false].forEach(function(multiangle) {
       it("uses videojs on mount with the right arguments", () => {
-        SETTINGS.ga_dimension_camera = "dimension1"
         video.multiangle = multiangle
         renderPlayer({ embed })
         sinon.assert.called(videojsStub)
@@ -184,13 +164,6 @@ describe("VideoPlayer", () => {
         })
         sinon.assert.calledWith(enableTouchActivityStub)
         sinon.assert.calledWith(onStub)
-        if (video.multiangle) {
-          sinon.assert.calledWith(gaSetStub, {
-            dimension1: "camera1"
-          })
-        } else {
-          sinon.assert.notCalled(gaSetStub)
-        }
       })
     })
   })
@@ -219,22 +192,12 @@ describe("VideoPlayer", () => {
   })
 
   it("selected video screen changes on click", async () => {
-    SETTINGS.ga_dimension_camera = "dimension1"
     const cropStub = sandbox.stub(VideoPlayerController.prototype, "cropVideo")
     video.multiangle = true
     const { container } = renderPlayer()
 
     fireEvent.click(container.querySelectorAll(".camera-box")[3])
     sinon.assert.calledWith(cornerFunction, "camera4")
-    sinon.assert.calledWith(gaSetStub, {
-      dimension1: "camera4"
-    })
-    sinon.assert.calledWith(gaEventStub, {
-      category: "video",
-      action:   "changeCameraView",
-      label:    video.key,
-      value:    631
-    })
     // clickCamera awaits cornerFunc before cropping
     await Promise.resolve()
     sinon.assert.calledOnce(cropStub)
@@ -264,7 +227,7 @@ describe("VideoPlayer", () => {
     sinon.assert.calledWith(updateStub, newVideo)
   })
 
-  it("toggleFullScreen on causes player to dispatchEvent", () => {
+  it("toggleFullScreen requests fullscreen when not fullscreen", () => {
     video.multiangle = true
     const { container } = renderPlayer()
     // componentDidMount hands the component's toggleFullscreen to video.js
@@ -275,13 +238,9 @@ describe("VideoPlayer", () => {
     libVideo.videojs.getComponent("FullscreenToggle").prototype.handleClick()
 
     sinon.assert.called(requestStub)
-    assert.equal(
-      playerStub.el_.dispatchEvent.getCalls()[0].args[0].type,
-      "fullscreen on"
-    )
   })
 
-  it("toggleFullScreen off causes player to dispatchEvent", () => {
+  it("toggleFullScreen exits fullscreen when fullscreen", () => {
     video.multiangle = true
     renderPlayer()
     // Flow does not know the vendor-prefixed fullscreen keys FULLSCREEN_API
@@ -299,46 +258,18 @@ describe("VideoPlayer", () => {
       libVideo.videojs.getComponent("FullscreenToggle").prototype.handleClick()
 
       sinon.assert.called(exitStub)
-      assert.equal(
-        playerStub.el_.dispatchEvent.getCalls()[0].args[0].type,
-        "fullscreen off"
-      )
     } finally {
       delete doc[FULLSCREEN_API.fullscreenElement]
       delete doc[FULLSCREEN_API.exitFullscreen]
     }
   })
 
-  gaEvents.forEach(event => {
-    it(`sets up GA trigger for player event ${event}`, () => {
-      renderPlayer()
-      const ready = readyPlayer()
-      fireReadyEvent(ready, "loadedmetadata")
-      sinon.assert.calledWith(playerStub.on, event)
-    })
-
-    it(`sends the correct event to google analytics for ${event}`, () => {
-      renderPlayer()
-      const ready = readyPlayer()
-      fireReadyEvent(ready, "loadedmetadata")
-      firePlayerEvent(event)
-      if (event !== "timeupdate") {
-        sinon.assert.calledWith(gaEventStub, {
-          category: "video",
-          action:   event,
-          label:    video.key,
-          value:    631
-        })
-      } else {
-        sinon.assert.calledWith(gaEventStub, {
-          category: "video",
-          action:   "T0010",
-          label:    video.key,
-          value:    1
-        })
-        sinon.assert.calledWith(dispatchSpy, actions.videoUi.setVideoTime(630))
-      }
-    })
+  it("dispatches the current video time on timeupdate", () => {
+    renderPlayer()
+    const ready = readyPlayer()
+    fireReadyEvent(ready, "loadedmetadata")
+    firePlayerEvent("timeupdate")
+    sinon.assert.calledWith(dispatchSpy, actions.videoUi.setVideoTime(630))
   })
 
   it("dispatches the duration and seeks to the start on loadedmetadata", () => {
@@ -485,27 +416,5 @@ describe("VideoPlayer", () => {
     sinon.assert.calledWith(resizeStub, true)
     // sanity: the useYouTube path really ran (checkYouTube's thumbnail check)
     assert.equal(images.length, 1)
-  })
-
-  it("renders overlayChildren", () => {
-    const overlayChildKeys = [...Array(3).keys()].map(i => `child-${i}`)
-    const overlayChildren = overlayChildKeys.map(key => {
-      return <div key={key} className="overlay-child" />
-    })
-    const { container } = renderPlayer({ overlayChildren })
-    // React keys are not observable from the DOM, so this asserts the count
-    // and the position -- the overlay renders inside the video container.
-    assert.equal(
-      container.querySelectorAll(".video-odl-medium > .overlay-child").length,
-      3
-    )
-  })
-
-  it("exposes setCurrentTime through videoPlayerRef", () => {
-    playerStub.currentTime = sandbox.stub().returns(630.5)
-    let playerRef
-    renderPlayer({ videoPlayerRef: ref => (playerRef = ref) })
-    playerRef.setCurrentTime(99)
-    sinon.assert.calledWith(playerStub.currentTime, 99)
   })
 })

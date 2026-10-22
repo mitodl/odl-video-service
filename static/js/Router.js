@@ -4,7 +4,6 @@ import { Provider } from "react-redux"
 import { Route, Router as ReactRouter } from "react-router-dom"
 
 import App from "./containers/App"
-import withTracker from "./util/withTracker"
 
 // AppRouter, not Router: React identifies a component by its class name, so a
 // class of ours named `Router` would be indistinguishable from react-router's
@@ -30,4 +29,4 @@ export default class AppRouter extends React.Component {
     )
   }
 }
-export const routes = <Route component={withTracker(App)} />
+export const routes = <Route component={App} />

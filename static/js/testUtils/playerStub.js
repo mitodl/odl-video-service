@@ -14,8 +14,7 @@
 export const makePlayerStub = (sandbox: Object): Object => {
   const player = {
     el_: {
-      style:         {},
-      dispatchEvent: sandbox.stub()
+      style: {}
     },
     tracks:        [],
     on:            sandbox.stub(),
@@ -38,7 +37,7 @@ export const makePlayerStub = (sandbox: Object): Object => {
       this.tracks.splice(this.tracks.indexOf(track), 1)
     },
     addRemoteTextTrack: function(track: Object) {
-      this.tracks.push({ src: track.src, addEventListener: sandbox.stub() })
+      this.tracks.push({ src: track.src })
     }
   }
   // video.js returns the player from these for chaining. They are assigned

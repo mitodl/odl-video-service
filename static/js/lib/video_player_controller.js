@@ -1,10 +1,8 @@
 // @flow
-/* global SETTINGS: false */
 import { makeVideoSubtitleUrl } from "./urls"
 import type { Video, VideoSubtitle } from "../flow/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
-import { sendGAEvent } from "../util/google_analytics"
 
 export const isFullscreen = () => {
   // $FlowFixMe
@@ -70,20 +68,6 @@ export class VideoPlayerController {
             },
             true
           )
-        }
-        // Add listeners to each track
-        const player = this.player
-        for (let idx = 0; idx < this.player.textTracks().length; idx++) {
-          if (!trackUrls.includes(tracks[idx].src)) {
-            tracks[idx].addEventListener("modechange", function() {
-              sendGAEvent(
-                "video",
-                `Subtitles ${this.label} ${this.mode}`,
-                video.key,
-                player.currentTime()
-              )
-            })
-          }
         }
       })
     }

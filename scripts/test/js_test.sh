@@ -50,7 +50,6 @@ if [[ $(
 		grep -v "This browser doesn't support the \`onScroll\` event" |
 		grep -v 'VIDEOJS: WARN: A plugin named "qualityLevels" already exists' |
 		grep -v '\[baseline-browser-mapping\]' |
-		grep -v '\[react-ga\]' |
 		wc -l |
 		awk '{print $1}'
 ) -ne 0 ]]; then # is file empty?

@@ -122,26 +122,6 @@ export async function uploadThumbnail(videoKey: string, formData: FormData) {
   }
 }
 
-export async function getVideoAnalytics(videoKey: string) {
-  if (window && window.ovsMockAnalyticsData) {
-    return Promise.resolve({
-      key:  videoKey,
-      data: window.ovsMockAnalyticsData
-    })
-  }
-  let url = `/api/v0/videos/${videoKey}/analytics/`
-  if (window && window.ovsMockAnalyticsError) {
-    url += `?throw=1`
-  } else if (window && window.ovsMockAnalytics) {
-    url += `?mock=1&seed=${videoKey}`
-  }
-  const response = await fetchJSONWithCSRF(url)
-  return {
-    key:  videoKey,
-    data: response.data
-  }
-}
-
 export function syncCollectionVideosWithEdX(collectionId: string) {
   return fetchJSONWithCSRF(`/api/v0/sync_collection_videos_with_edx/`, {
     method: "POST",
