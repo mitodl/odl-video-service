@@ -97,6 +97,8 @@ exclude-newer = "7d"
 required-version = ">=0.9.17"
 
 [tool.uv.exclude-newer-package]
+# CA bundle: skip cool-down so revocations (e.g. eMudhra, Oct 2026) land promptly
+certifi = "0d"
 mitol-django-common = "0d"
 mitol-django-observability = "0d"
 mitol-django-transcoding = "0d"
