@@ -10,16 +10,21 @@ import suppressVendorLifecycleWarnings from "./testUtils/suppressVendorLifecycle
 suppressVendorLifecycleWarnings()
 
 const _createSettings = () => ({
-  videoKey:              "a_video_key",
-  video:                 makeVideo("a_video_key"),
-  is_app_admin:          false,
-  is_edx_course_admin:   false,
-  user:                  "",
-  dropbox_key:           "dropbox_key",
-  thumbnail_base_url:    "http://fake/",
-  support_email_address: "support@example.com",
-  ga_dimension_camera:   "dimension1",
-  FEATURES:              {
+  videoKey:                            "a_video_key",
+  video:                               makeVideo("a_video_key"),
+  is_app_admin:                        false,
+  is_edx_course_admin:                 false,
+  user:                                "",
+  dropbox_key:                         "dropbox_key",
+  thumbnail_base_url:                  "http://fake/",
+  support_email_address:               "support@example.com",
+  ga_dimension_camera:                 "dimension1",
+  // edX video image limits, as sent by default_js_settings
+  thumbnail_min_width:                 640,
+  thumbnail_min_height:                360,
+  thumbnail_aspect_ratio:              16 / 9,
+  thumbnail_aspect_ratio_error_margin: 0.1,
+  FEATURES:                            {
     ENABLE_VIDEO_PERMISSIONS: false
   }
 })

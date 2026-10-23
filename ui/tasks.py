@@ -17,7 +17,7 @@ from ui.api import update_video_on_edx
 from ui.encodings import EncodingNames
 from ui.keycloak_utils import KeycloakUser, build_keycloak_manager
 from ui.management.commands.keycloak_command_utils import record_exception
-from ui.models import VideoFile
+from ui.models import Video, VideoFile
 
 log = structlog.get_logger(__name__)
 
@@ -37,6 +37,20 @@ def post_video_to_edx(video_id):
     response_dict = ovs_api.post_video_to_edx(video_files)
     return [
         (endpoint.full_api_url, getattr(resp, "status_code", None))
+        for endpoint, resp in response_dict.items()
+    ]
+
+
+@app.task
+def post_video_thumbnail_to_edx(video_id):
+    """Loads a Video and calls our API method to upload its thumbnail to edX"""
+    video = Video.objects.filter(id=video_id).select_related("collection").first()
+    if video is None:
+        log.error("Video doesn't exist", video_id=video_id)
+        return
+    response_dict = ovs_api.post_video_thumbnail_to_edx(video)
+    return [
+        (endpoint.studio_base_url, getattr(resp, "status_code", None))
         for endpoint, resp in response_dict.items()
     ]
 

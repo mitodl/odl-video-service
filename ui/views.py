@@ -34,6 +34,12 @@ from rest_framework.views import APIView
 
 from cloudsync import api as cloudapi
 from cloudsync.tasks import upload_youtube_caption
+from odl_video.constants import (
+    EDX_VIDEO_IMAGE_ASPECT_RATIO,
+    EDX_VIDEO_IMAGE_ASPECT_RATIO_ERROR_MARGIN,
+    EDX_VIDEO_IMAGE_MIN_HEIGHT,
+    EDX_VIDEO_IMAGE_MIN_WIDTH,
+)
 from techtv2ovs.models import TechTVVideo
 from ui import api, serializers
 from ui import permissions as ui_permissions
@@ -50,7 +56,7 @@ from ui.models import (
 )
 from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import UserSerializer, VideoSerializer
-from ui.tasks import post_collection_videos_to_edx
+from ui.tasks import post_collection_videos_to_edx, post_video_thumbnail_to_edx
 from ui.templatetags.render_bundle import public_path
 from ui.utils import (
     generate_mock_video_analytics_data,
@@ -81,6 +87,11 @@ def default_js_settings(request):
         "support_email_address": settings.EMAIL_SUPPORT,
         "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
+        # edX rejects video images outside these limits
+        "thumbnail_min_width": EDX_VIDEO_IMAGE_MIN_WIDTH,
+        "thumbnail_min_height": EDX_VIDEO_IMAGE_MIN_HEIGHT,
+        "thumbnail_aspect_ratio": EDX_VIDEO_IMAGE_ASPECT_RATIO,
+        "thumbnail_aspect_ratio_error_margin": EDX_VIDEO_IMAGE_ASPECT_RATIO_ERROR_MARGIN,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": settings.ENABLE_VIDEO_PERMISSIONS,
             "VIDEOJS_ANNOTATIONS": settings.FEATURES.get("VIDEOJS_ANNOTATIONS", False),
@@ -569,13 +580,29 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )
         try:
+            # Check what OVS will store and push (resized, EXIF-rotated JPEG), not the upload
+            jpeg_data, _, _ = cloudapi.convert_image_to_jpeg(thumbnail_file)
+        except ValueError as exc:
+            log.warning("Thumbnail upload could not be decoded", exc_info=exc)
+            return Response(
+                {"error": "Invalid thumbnail data provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # Shorts are portrait; their thumbnail is padded to 16:9 when pushed to edX
+        if not video.collection.for_shorts:
+            image_error = api.get_edx_video_image_error(jpeg_data.getvalue())
+            if image_error:
+                return Response(
+                    {"error": image_error}, status=status.HTTP_400_BAD_REQUEST
+                )
+        try:
             if thumbnail:
-                cloudapi.replace_thumbnail_in_s3(thumbnail, thumbnail_file)
+                cloudapi.replace_thumbnail_in_s3(thumbnail, jpeg_data)
                 _status = status.HTTP_200_OK
             else:
                 # This is really a fallback case since a thumbnail should have already been created for the video,
                 # but we can handle it gracefully by creating a new thumbnail object and uploading the file to S3
-                cloudapi.create_thumbnail_in_s3(video, thumbnail_file)
+                cloudapi.create_thumbnail_in_s3(video, jpeg_data)
                 _status = status.HTTP_201_CREATED
         except ValueError as exc:
             log.warning("Thumbnail upload validation failed", exc_info=exc)
@@ -583,6 +610,9 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 {"error": "Invalid thumbnail data provided."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        if video.status == VideoStatus.COMPLETE and video.collection.edx_course_id:
+            post_video_thumbnail_to_edx.delay(video.id)
 
         return Response(
             serializers.VideoSerializer(video, context={"request": request}).data,
