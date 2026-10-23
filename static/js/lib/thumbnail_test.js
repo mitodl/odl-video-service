@@ -1,7 +1,11 @@
 // @flow
+/* global SETTINGS: false */
 import { assert } from "chai"
 
-import { getThumbnailDimensionError } from "./thumbnail"
+import {
+  getThumbnailDimensionError,
+  getThumbnailRequirements
+} from "./thumbnail"
 
 describe("thumbnail", () => {
   describe("getThumbnailDimensionError", () => {
@@ -25,6 +29,14 @@ describe("thumbnail", () => {
         assert.include(error, "640x360")
         assert.include(error, `${width}x${height}`)
       })
+    })
+
+    it("uses the limits the server sends in SETTINGS", () => {
+      SETTINGS.thumbnail_min_width = 1280
+      SETTINGS.thumbnail_min_height = 720
+      assert.include(getThumbnailDimensionError(960, 540), "at least 1280x720")
+      assert.isNull(getThumbnailDimensionError(1280, 720))
+      assert.equal(getThumbnailRequirements(), "16:9, at least 1280x720")
     })
   })
 })

@@ -157,6 +157,10 @@ def test_video_detail(logged_in_client, settings):
         "email": user.email,
         "support_email_address": settings.EMAIL_SUPPORT,
         "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
+        "thumbnail_min_width": 640,
+        "thumbnail_min_height": 360,
+        "thumbnail_aspect_ratio": 16 / 9,
+        "thumbnail_aspect_ratio_error_margin": 0.1,
         "dropbox_key": "foo_dropbox_key",
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": False,
@@ -200,6 +204,10 @@ def test_video_embed(logged_in_client, settings):
         "is_app_admin": False,
         "support_email_address": settings.EMAIL_SUPPORT,
         "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
+        "thumbnail_min_width": 640,
+        "thumbnail_min_height": 360,
+        "thumbnail_aspect_ratio": 16 / 9,
+        "thumbnail_aspect_ratio_error_margin": 0.1,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": False,
             "VIDEOJS_ANNOTATIONS": False,
@@ -1010,6 +1018,10 @@ def test_page_not_found(url, logged_in_apiclient, settings):
         "status_code": status.HTTP_404_NOT_FOUND,
         "support_email_address": settings.EMAIL_SUPPORT,
         "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
+        "thumbnail_min_width": 640,
+        "thumbnail_min_height": 360,
+        "thumbnail_aspect_ratio": 16 / 9,
+        "thumbnail_aspect_ratio_error_margin": 0.1,
         "email": user.email,
         "user": user.username,
         "is_app_admin": False,
@@ -1901,17 +1913,19 @@ def test_upload_thumbnail_corrupt_file_returns_400(mocker, logged_in_apiclient):
 
 
 @pytest.mark.parametrize(
-    "size",
+    "size,stored_size",
     [
-        (1600, 1200),  # 4:3
-        (1280, 615),  # wider than 16:9
-        (480, 270),  # 16:9 but below the 640x360 minimum
+        ((1600, 1200), "960x720"),  # 4:3, scaled down to fit 1280x720
+        ((1280, 615), "1280x615"),  # wider than 16:9
+        ((480, 270), "480x270"),  # 16:9 but below the 640x360 minimum
     ],
 )
-def test_upload_thumbnail_rejects_wrong_dimensions(mocker, logged_in_apiclient, size):
+def test_upload_thumbnail_rejects_wrong_dimensions(
+    mocker, logged_in_apiclient, size, stored_size
+):
     """
     Thumbnails must be 16:9 and at least 640x360 so they can be shown in edX. Anything else
-    is rejected with a message that names the requirement and the uploaded size.
+    is rejected with a message that names the requirement and the size OVS would store.
     """
     mocker.patch("ui.utils.get_keycloak_client")
     mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
@@ -1928,7 +1942,7 @@ def test_upload_thumbnail_rejects_wrong_dimensions(mocker, logged_in_apiclient, 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "16:9" in response.data["error"]
     assert "640x360" in response.data["error"]
-    assert f"{size[0]}x{size[1]}" in response.data["error"]
+    assert stored_size in response.data["error"]
     mock_replace.assert_not_called()
 
 
@@ -1980,8 +1994,54 @@ def test_upload_thumbnail_checks_dimensions_after_exif_rotation(
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert "720x1280" in response.data["error"]
+    # displayed as 720x1280, then scaled down to fit 1280x720
+    assert "405x720" in response.data["error"]
     mock_replace.assert_not_called()
+
+
+def test_upload_thumbnail_checks_size_of_converted_image(mocker, logged_in_apiclient):
+    """
+    The 2 KB edX minimum applies to the JPEG OVS stores and pushes, not the upload: a small PNG
+    that converts to a JPEG over 2 KB is accepted, and the converted image is what gets stored.
+    """
+    mocker.patch("ui.utils.get_keycloak_client")
+    mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    thumbnail = VideoThumbnailFactory(video=video)
+
+    png_file = _make_image_file(size=(640, 360), fmt="PNG", name="thumb.png")
+    assert png_file.size < 2048
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(url, {"thumbnail": png_file}, format="multipart")
+
+    assert response.status_code == status.HTTP_200_OK
+    stored = mock_replace.call_args[0][1].getvalue()
+    assert stored.startswith(b"\xff\xd8")
+    assert len(stored) >= 2048
+    mock_replace.assert_called_once_with(thumbnail, mocker.ANY)
+
+
+@pytest.mark.parametrize("size", [(1080, 1920), (720, 1280)])
+def test_upload_thumbnail_accepts_portrait_for_shorts(
+    mocker, logged_in_apiclient, size
+):
+    """Shorts are portrait, so their thumbnails are not held to edX's 16:9 rule"""
+    mocker.patch("ui.utils.get_keycloak_client")
+    mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user, for_shorts=True))
+    VideoThumbnailFactory(video=video)
+
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url, {"thumbnail": _make_image_file(size=size)}, format="multipart"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    mock_replace.assert_called_once()
 
 
 @pytest.mark.parametrize(

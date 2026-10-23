@@ -1,28 +1,29 @@
 // @flow
+/* global SETTINGS: false */
 
-// edX rejects video images outside these limits; keep in sync with odl_video/constants.py
-export const THUMBNAIL_MIN_WIDTH = 640
-export const THUMBNAIL_MIN_HEIGHT = 360
-const THUMBNAIL_ASPECT_RATIO = 16 / 9
-const THUMBNAIL_ASPECT_RATIO_ERROR_MARGIN = 0.1
+// edX rejects video images outside these limits; the server sends them in SETTINGS
+const minSize = () =>
+  `${SETTINGS.thumbnail_min_width}x${SETTINGS.thumbnail_min_height}`
 
-export const THUMBNAIL_REQUIREMENTS = `16:9, at least ${THUMBNAIL_MIN_WIDTH}x${THUMBNAIL_MIN_HEIGHT}`
+const isTooSmall = (width: number, height: number): boolean =>
+  width < SETTINGS.thumbnail_min_width || height < SETTINGS.thumbnail_min_height
+
+const isSixteenByNine = (width: number, height: number): boolean =>
+  Math.abs(width / height - SETTINGS.thumbnail_aspect_ratio) <=
+  SETTINGS.thumbnail_aspect_ratio_error_margin
+
+export const getThumbnailRequirements = (): string =>
+  `16:9, at least ${minSize()}`
 
 export const getThumbnailDimensionError = (
   width: number,
   height: number
 ): ?string => {
-  const tooSmall = width < THUMBNAIL_MIN_WIDTH || height < THUMBNAIL_MIN_HEIGHT
-  const aspectRatioDelta = Math.abs(width / height - THUMBNAIL_ASPECT_RATIO)
-  if (tooSmall || aspectRatioDelta > THUMBNAIL_ASPECT_RATIO_ERROR_MARGIN) {
-    return `Thumbnails must be 16:9 and at least ${THUMBNAIL_MIN_WIDTH}x${THUMBNAIL_MIN_HEIGHT} pixels. This image is ${width}x${height}.`
+  if (isTooSmall(width, height) || !isSixteenByNine(width, height)) {
+    return `Thumbnails must be 16:9 and at least ${minSize()} pixels. This image is ${width}x${height}.`
   }
   return null
 }
-
-const isSixteenByNine = (width: number, height: number): boolean =>
-  Math.abs(width / height - THUMBNAIL_ASPECT_RATIO) <=
-  THUMBNAIL_ASPECT_RATIO_ERROR_MARGIN
 
 // A note for a thumbnail that is already stored but that edX will show adjusted, or null
 export const getExistingThumbnailNote = (
@@ -32,8 +33,8 @@ export const getExistingThumbnailNote = (
   if (!isSixteenByNine(width, height)) {
     return `This thumbnail is ${width}x${height}, not 16:9, so edX courses show it with black bars. Replace it with a 16:9 image to fill the frame.`
   }
-  if (width < THUMBNAIL_MIN_WIDTH || height < THUMBNAIL_MIN_HEIGHT) {
-    return `This thumbnail is ${width}x${height}, smaller than ${THUMBNAIL_MIN_WIDTH}x${THUMBNAIL_MIN_HEIGHT}, so edX courses show it enlarged. Replace it with a larger 16:9 image.`
+  if (isTooSmall(width, height)) {
+    return `This thumbnail is ${width}x${height}, smaller than ${minSize()}, so edX courses show it enlarged. Replace it with a larger 16:9 image.`
   }
   return null
 }

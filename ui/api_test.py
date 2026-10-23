@@ -2,6 +2,7 @@
 Tests for ui/api.py
 """
 
+import hashlib
 import io
 from types import SimpleNamespace
 from uuid import uuid4
@@ -938,24 +939,42 @@ def test_post_video_thumbnail_to_edx_does_not_resend_unchanged_image_later(
     mocker, reqmocker, thumbnail_scenario
 ):
     """
-    Every save of a COMPLETE video re-runs the push. An unchanged thumbnail is not sent again
-    later on (edX would store it under a new file name each time); only a new image is.
+    Every save of a COMPLETE video re-runs the push. An unchanged thumbnail is never sent again
+    (edX would store it under a new file name each time, overwriting an image replaced in
+    Studio), even after the cache is cleared; only a new image is.
     """
     mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
     mocked_post = reqmocker.register_uri(
         "POST", thumbnail_scenario.images_url, status_code=200, json={}
     )
-    clock = mocker.Mock()
-    clock.time.return_value = 1_000_000
-    # base computes expiry times, locmem compares against them
-    mocker.patch("django.core.cache.backends.base.time", clock)
-    mocker.patch("django.core.cache.backends.locmem.time", clock)
 
     api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
-    clock.time.return_value += 6 * 60 * 60  # hours later, e.g. a title edit
+    caches["redis"].clear()  # e.g. a Redis restart or eviction, or months later
     api.post_video_thumbnail_to_edx(thumbnail_scenario.video)
 
     assert mocked_post.call_count == 1
+    upload = models.EdxVideoImageUpload.objects.get()
+    assert upload.video == thumbnail_scenario.video
+    assert upload.edx_endpoint == thumbnail_scenario.endpoint
+
+
+def test_post_video_thumbnail_to_edx_skips_image_being_sent(
+    mocker, reqmocker, thumbnail_scenario
+):
+    """While another worker holds the lock for the same image and destination, nothing is sent"""
+    mocker.patch("ui.models.EdxEndpoint.refresh_access_token")
+    mocked_post = reqmocker.register_uri(
+        "POST", thumbnail_scenario.images_url, status_code=200, json={}
+    )
+    destination = hashlib.sha256(thumbnail_scenario.images_url.encode()).hexdigest()
+    image_hash = hashlib.sha256(thumbnail_scenario.image_bytes).hexdigest()
+    sending_key = f"edx-video-image:{destination}:{image_hash}:sending"
+    caches["redis"].add(sending_key, 1)
+
+    assert api.post_video_thumbnail_to_edx(thumbnail_scenario.video) == {}
+    assert mocked_post.call_count == 0
+    # the lock belongs to the other worker, so it is left in place
+    assert caches["redis"].get(sending_key) == 1
 
 
 @pytest.mark.parametrize(

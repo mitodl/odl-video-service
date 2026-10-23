@@ -24,7 +24,6 @@ from odl_video.constants import (
     EDX_VIDEO_IMAGE_ASPECT_RATIO,
     EDX_VIDEO_IMAGE_ASPECT_RATIO_ERROR_MARGIN,
     EDX_VIDEO_IMAGE_MAX_BYTES,
-    EDX_VIDEO_IMAGE_MAX_HEIGHT,
     EDX_VIDEO_IMAGE_MAX_WIDTH,
     EDX_VIDEO_IMAGE_MIN_BYTES,
     EDX_VIDEO_IMAGE_MIN_HEIGHT,
@@ -37,9 +36,6 @@ from ui.utils import get_error_response_summary_dict
 
 log = structlog.get_logger(__name__)
 
-# How long OVS remembers the last image sent to an edX endpoint, so that later pushes (e.g. every
-# save of a COMPLETE video) don't re-send an unchanged thumbnail. A new image is always sent.
-EDX_VIDEO_IMAGE_DEDUPE_SECONDS = 30 * 24 * 60 * 60
 # Upper bound on how long one worker holds the right to send a given image
 EDX_VIDEO_IMAGE_SEND_LOCK_SECONDS = 2 * 60
 
@@ -264,13 +260,21 @@ def get_edx_video_image_error(image_bytes):
     Returns:
         str or None: A description of why edX would reject the image, or None if it is acceptable
     """
-    if not EDX_VIDEO_IMAGE_MIN_BYTES <= len(image_bytes) <= EDX_VIDEO_IMAGE_MAX_BYTES:
-        return f"file size {len(image_bytes)} bytes is outside edX's limits"
+    if len(image_bytes) < EDX_VIDEO_IMAGE_MIN_BYTES:
+        return (
+            f"This image file is too small for edX (minimum "
+            f"{EDX_VIDEO_IMAGE_MIN_BYTES // 1024} KB). Please upload a higher quality image."
+        )
+    if len(image_bytes) > EDX_VIDEO_IMAGE_MAX_BYTES:
+        return (
+            f"This image file is too large for edX (maximum "
+            f"{EDX_VIDEO_IMAGE_MAX_BYTES // (1024 * 1024)} MB)."
+        )
     try:
         with Image.open(io.BytesIO(image_bytes)) as image:
             width, height = image.size
     except Exception:  # noqa: BLE001
-        return "image could not be decoded"
+        return "This image could not be decoded."
     return get_thumbnail_dimension_error(width, height)
 
 
@@ -291,20 +295,15 @@ def pad_image_for_edx(image_bytes):
     except Exception:  # noqa: BLE001
         return None
     width, height = image.size
-    if width / height > EDX_VIDEO_IMAGE_ASPECT_RATIO:
-        canvas_size = (width, round(width / EDX_VIDEO_IMAGE_ASPECT_RATIO))
-    else:
-        canvas_size = (round(height * EDX_VIDEO_IMAGE_ASPECT_RATIO), height)
-    padded = Image.new("RGB", canvas_size, (0, 0, 0))
-    padded.paste(image, ((canvas_size[0] - width) // 2, (canvas_size[1] - height) // 2))
-    if canvas_size[0] > EDX_VIDEO_IMAGE_MAX_WIDTH:
-        padded = padded.resize(
-            (EDX_VIDEO_IMAGE_MAX_WIDTH, EDX_VIDEO_IMAGE_MAX_HEIGHT), Image.LANCZOS
-        )
-    elif canvas_size[0] < EDX_VIDEO_IMAGE_MIN_WIDTH:
-        padded = padded.resize(
-            (EDX_VIDEO_IMAGE_MIN_WIDTH, EDX_VIDEO_IMAGE_MIN_HEIGHT), Image.LANCZOS
-        )
+    canvas_width = max(width, round(height * EDX_VIDEO_IMAGE_ASPECT_RATIO))
+    canvas_width = min(
+        max(canvas_width, EDX_VIDEO_IMAGE_MIN_WIDTH), EDX_VIDEO_IMAGE_MAX_WIDTH
+    )
+    padded = ImageOps.pad(
+        image,
+        (canvas_width, round(canvas_width / EDX_VIDEO_IMAGE_ASPECT_RATIO)),
+        color=(0, 0, 0),
+    )
     output = io.BytesIO()
     padded.save(output, format="JPEG", quality=85)
     return output.getvalue()
@@ -403,7 +402,6 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
         # Keyed by the full upload URL (Studio host, course, video): a new destination is a new upload
         image_api_url = edx_endpoint.video_image_api_url(course_id, video.key)
         destination = hashlib.sha256(image_api_url.encode()).hexdigest()
-        last_sent_key = f"edx-video-image:{destination}:last-sent"
         sending_key = f"edx-video-image:{destination}:{image_hash}:sending"
         if not cache.add(sending_key, 1, timeout=EDX_VIDEO_IMAGE_SEND_LOCK_SECONDS):
             log.info(
@@ -413,9 +411,11 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
             )
             continue
         try:
-            if cache.get(last_sent_key) == image_hash:
+            if models.EdxVideoImageUpload.objects.filter(
+                destination=destination, image_hash=image_hash
+            ).exists():
                 log.info(
-                    "Video thumbnail was just sent to this edX endpoint, skipping",
+                    "This video thumbnail was already sent to this edX endpoint, skipping",
                     video_key=video.hexkey,
                     edx_endpoint=edx_endpoint.name,
                 )
@@ -428,7 +428,14 @@ def post_video_thumbnail_to_edx(video, edx_endpoints=None):
                 timeout=60,
             )
             resp.raise_for_status()
-            cache.set(last_sent_key, image_hash, timeout=EDX_VIDEO_IMAGE_DEDUPE_SECONDS)
+            models.EdxVideoImageUpload.objects.update_or_create(
+                destination=destination,
+                defaults={
+                    "video": video,
+                    "edx_endpoint": edx_endpoint,
+                    "image_hash": image_hash,
+                },
+            )
         except requests.exceptions.RequestException as exc:
             log.error(
                 "Can not add video thumbnail to edX",

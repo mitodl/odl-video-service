@@ -798,11 +798,60 @@ describe("EditVideoFormDialog", () => {
         { target: { files: [file] } }
       )
 
+    const loadExistingThumbnail = (width: number, height: number) => {
+      const img = document.querySelector("section.thumbnail-group img")
+      Object.defineProperty(img, "naturalWidth", { value: width })
+      Object.defineProperty(img, "naturalHeight", { value: height })
+      fireEvent.load(img)
+    }
+
     it("tells the user the thumbnail requirements", () => {
       renderComponent()
       const section = document.querySelector("section.thumbnail-group")
       assert.include(section.textContent, "16:9")
       assert.include(section.textContent, "640x360")
+    })
+
+    describe("for a shorts collection", () => {
+      beforeEach(() => {
+        video.collection_for_shorts = true
+      })
+
+      it("does not ask for 16:9", () => {
+        renderComponent()
+        const section = document.querySelector("section.thumbnail-group")
+        assert.notInclude(section.textContent, "16:9")
+        assert.include(section.textContent, "JPEG or PNG, max")
+      })
+
+      it("accepts a picked portrait image", async () => {
+        sandbox
+          .stub(thumbnailLib, "getImageDimensions")
+          .returns(Promise.resolve({ width: 1080, height: 1920 }))
+        renderComponent()
+
+        pickThumbnail(new File(["x"], "tall.jpg", { type: "image/jpeg" }))
+
+        await waitFor(() =>
+          assert.isNotNull(
+            document.querySelector("section.thumbnail-group img[src^='blob:']")
+          )
+        )
+        assert.notInclude(
+          document.querySelector("section.thumbnail-group").textContent,
+          "Thumbnails must be 16:9"
+        )
+      })
+
+      it("shows no black-bars note for a portrait existing thumbnail", async () => {
+        renderComponent()
+        loadExistingThumbnail(1080, 1920)
+        await new Promise(resolve => setTimeout(resolve, 0))
+        assert.notInclude(
+          document.querySelector("section.thumbnail-group").textContent,
+          "black bars"
+        )
+      })
     })
 
     it("rejects a picked image that is not 16:9 before it is uploaded", async () => {
@@ -936,13 +985,6 @@ describe("EditVideoFormDialog", () => {
 
       sinon.assert.calledOnce(uploadStub)
     })
-
-    const loadExistingThumbnail = (width: number, height: number) => {
-      const img = document.querySelector("section.thumbnail-group img")
-      Object.defineProperty(img, "naturalWidth", { value: width })
-      Object.defineProperty(img, "naturalHeight", { value: height })
-      fireEvent.load(img)
-    }
 
     it("explains that a non-16:9 existing thumbnail gets black bars in edX", async () => {
       renderComponent()

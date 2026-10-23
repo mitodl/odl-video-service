@@ -711,6 +711,22 @@ class VideoThumbnail(VideoS3):
         ordering = ["-created_at"]
 
 
+class EdxVideoImageUpload(TimestampedModel):
+    """
+    The last thumbnail image sent to one Studio video image URL, so that later pushes don't
+    re-send an unchanged image. It is kept until a different image is sent there.
+    """
+
+    video = models.ForeignKey(Video, on_delete=models.CASCADE)
+    edx_endpoint = models.ForeignKey(EdxEndpoint, on_delete=models.CASCADE)
+    # SHA-256 of the full upload URL (Studio host, course, video), so a new destination is a new upload
+    destination = models.CharField(max_length=64, unique=True)
+    image_hash = models.CharField(max_length=64)
+
+    def __str__(self):
+        return f"{self.video.title}: {self.edx_endpoint.name}"
+
+
 class VideoSubtitle(VideoS3):
     """A VTT or SRT file that provides captions for a Video"""
 

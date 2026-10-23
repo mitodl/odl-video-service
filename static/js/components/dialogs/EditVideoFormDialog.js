@@ -18,7 +18,7 @@ import {
   getExistingThumbnailNote,
   getImageDimensions,
   getThumbnailDimensionError,
-  THUMBNAIL_REQUIREMENTS
+  getThumbnailRequirements
 } from "../../lib/thumbnail"
 import {
   PERM_CHOICE_NONE,
@@ -355,8 +355,12 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       return
     }
     const input = event.target
+    // Shorts are portrait, so edX's 16:9 rule doesn't apply to them
+    const forShorts = this.isForShorts()
     this.thumbnailCheck = getImageDimensions(file)
-      .then(({ width, height }) => getThumbnailDimensionError(width, height))
+      .then(({ width, height }) =>
+        forShorts ? null : getThumbnailDimensionError(width, height)
+      )
       .catch(err => err.message)
       .then(error => {
         if (file !== this.pendingThumbnail || this.closing) return null
@@ -517,6 +521,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     dispatch(actions.toast.addMessage(...args))
   }
 
+  isForShorts = (): boolean => {
+    const { video } = this.props
+    return !!(video && video.collection_for_shorts)
+  }
+
   handleThumbnailLoad = (event: Object) => {
     if (this.state.thumbnailPreviewUrl) return
     const { naturalWidth, naturalHeight } = event.target
@@ -542,7 +551,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       thumbnailPreviewUrl ||
       (existingThumbnail ? existingThumbnail.cloudfront_url : null)
 
+    const forShorts = this.isForShorts()
     const existingThumbnailNote =
+      !forShorts &&
       !thumbnailPreviewUrl &&
       existingThumbnail &&
       existingThumbnailSize &&
@@ -609,7 +620,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
                   fontSize: "0.8em"
                 }}
               >
-                JPEG or PNG, {THUMBNAIL_REQUIREMENTS}, max{" "}
+                JPEG or PNG,{" "}
+                {forShorts ? "" : `${getThumbnailRequirements()}, `}max{" "}
                 {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
               </p>
             </div>
