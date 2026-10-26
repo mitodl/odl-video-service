@@ -120,7 +120,7 @@ if USE_KEYCLOAK:
     INSTALLED_APPS += ("social_django",)
 
     AUTHENTICATION_BACKENDS = [
-        "social_core.backends.keycloak.KeycloakOAuth2",
+        "odl_video.backends.KeycloakJWKSOAuth2",
     ]
 
     LOGIN_URL = "/auth/login/keycloak/"
@@ -133,7 +133,6 @@ else:
 # Keycloak OIDC settings — consumed by social-auth-app-django at runtime.
 SOCIAL_AUTH_KEYCLOAK_KEY = get_string("SOCIAL_AUTH_KEYCLOAK_KEY", "")
 SOCIAL_AUTH_KEYCLOAK_SECRET = get_string("SOCIAL_AUTH_KEYCLOAK_SECRET", "")
-SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY = get_string("SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY", "")
 SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL = get_string(
     "SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL", ""
 )
