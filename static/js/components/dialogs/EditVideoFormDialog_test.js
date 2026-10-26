@@ -16,6 +16,7 @@ import * as toastActions from "../../actions/toast"
 import { setSelectedVideoKey } from "../../actions/collectionUi"
 import { INITIAL_UI_STATE } from "../../reducers/videoUi"
 import * as api from "../../lib/api"
+import * as thumbnailLib from "../../lib/thumbnail"
 import { makeVideo } from "../../factories/video"
 import { makeCollection } from "../../factories/collection"
 import renderWithProviders from "../../testUtils/renderWithProviders"
@@ -786,6 +787,330 @@ describe("EditVideoFormDialog", () => {
       sinon.assert.calledWith(
         collectionsGetStub,
         collectionVideo.collection_key
+      )
+    })
+  })
+
+  describe("thumbnail", () => {
+    const pickThumbnail = (file: File) =>
+      fireEvent.change(
+        document.querySelector("section.thumbnail-group input[type=file]"),
+        { target: { files: [file] } }
+      )
+
+    const loadExistingThumbnail = (width: number, height: number) => {
+      const img = document.querySelector("section.thumbnail-group img")
+      Object.defineProperty(img, "naturalWidth", { value: width })
+      Object.defineProperty(img, "naturalHeight", { value: height })
+      fireEvent.load(img)
+    }
+
+    it("tells the user the thumbnail requirements", () => {
+      renderComponent()
+      const section = document.querySelector("section.thumbnail-group")
+      assert.include(section.textContent, "16:9")
+      assert.include(section.textContent, "640x360")
+    })
+
+    describe("for a shorts collection", () => {
+      beforeEach(() => {
+        video.collection_for_shorts = true
+      })
+
+      it("does not ask for 16:9", () => {
+        renderComponent()
+        const section = document.querySelector("section.thumbnail-group")
+        assert.notInclude(section.textContent, "16:9")
+        assert.include(section.textContent, "JPEG or PNG, max")
+      })
+
+      it("accepts a picked portrait image", async () => {
+        sandbox
+          .stub(thumbnailLib, "getImageDimensions")
+          .returns(Promise.resolve({ width: 1080, height: 1920 }))
+        renderComponent()
+
+        pickThumbnail(new File(["x"], "tall.jpg", { type: "image/jpeg" }))
+
+        await waitFor(() =>
+          assert.isNotNull(
+            document.querySelector("section.thumbnail-group img[src^='blob:']")
+          )
+        )
+        assert.notInclude(
+          document.querySelector("section.thumbnail-group").textContent,
+          "Thumbnails must be 16:9"
+        )
+      })
+
+      it("shows no black-bars note for a portrait existing thumbnail", async () => {
+        renderComponent()
+        loadExistingThumbnail(1080, 1920)
+        await new Promise(resolve => setTimeout(resolve, 0))
+        assert.notInclude(
+          document.querySelector("section.thumbnail-group").textContent,
+          "black bars"
+        )
+      })
+    })
+
+    it("rejects a picked image that is not 16:9 before it is uploaded", async () => {
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(Promise.resolve({ width: 1280, height: 615 }))
+      const uploadStub = sandbox.stub(api, "uploadThumbnail")
+      renderComponent()
+
+      pickThumbnail(new File(["x"], "wide.jpg", { type: "image/jpeg" }))
+
+      await waitFor(() =>
+        assert.include(
+          document.querySelector("section.thumbnail-group").textContent,
+          "This image is 1280x615."
+        )
+      )
+      assert.isNull(
+        document.querySelector("section.thumbnail-group img[src^='blob:']")
+      )
+      sinon.assert.notCalled(uploadStub)
+    })
+
+    it("accepts a picked 16:9 image and shows its preview", async () => {
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(Promise.resolve({ width: 1920, height: 1080 }))
+      renderComponent()
+
+      pickThumbnail(new File(["x"], "wide.jpg", { type: "image/jpeg" }))
+
+      await waitFor(() =>
+        assert.isNotNull(
+          document.querySelector("section.thumbnail-group img[src^='blob:']")
+        )
+      )
+    })
+
+    it("keeps the last picked image when an earlier pick finishes checking later", async () => {
+      let resolveFirst, resolveSecond
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .onFirstCall()
+        .returns(new Promise(resolve => (resolveFirst = resolve)))
+        .onSecondCall()
+        .returns(new Promise(resolve => (resolveSecond = resolve)))
+      sandbox
+        .stub(URL, "createObjectURL")
+        .callsFake(file => `blob:${file.name}`)
+      renderComponent()
+
+      pickThumbnail(new File(["a"], "first.jpg", { type: "image/jpeg" }))
+      pickThumbnail(new File(["b"], "second.jpg", { type: "image/jpeg" }))
+      resolveSecond({ width: 1920, height: 1080 })
+      await waitFor(() =>
+        assert.isNotNull(
+          document.querySelector(
+            "section.thumbnail-group img[src='blob:second.jpg']"
+          )
+        )
+      )
+      resolveFirst({ width: 1920, height: 1080 })
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      assert.isNotNull(
+        document.querySelector(
+          "section.thumbnail-group img[src='blob:second.jpg']"
+        )
+      )
+      assert.isNull(
+        document.querySelector(
+          "section.thumbnail-group img[src='blob:first.jpg']"
+        )
+      )
+    })
+
+    it("waits for a pending dimension check before saving", async () => {
+      let resolveCheck
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(new Promise(resolve => (resolveCheck = resolve)))
+      const uploadStub = sandbox
+        .stub(api, "uploadThumbnail")
+        .returns(Promise.resolve({}))
+      sandbox.stub(api, "updateVideo").returns(Promise.resolve(video))
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        renderComponent()
+      })
+      const picked = new File(["x"], "picked.jpg", { type: "image/jpeg" })
+
+      pickThumbnail(picked)
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      await new Promise(resolve => setTimeout(resolve, 0))
+      sinon.assert.notCalled(uploadStub)
+
+      resolveCheck({ width: 1920, height: 1080 })
+      await waitFor(() => sinon.assert.calledOnce(uploadStub))
+      assert.equal(
+        uploadStub.firstCall.args[1].get("thumbnail").name,
+        "picked.jpg"
+      )
+    })
+
+    it("does not re-upload a thumbnail whose upload failed on the next save", async () => {
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(Promise.resolve({ width: 1920, height: 1080 }))
+      const uploadStub = sandbox
+        .stub(api, "uploadThumbnail")
+        .rejects(new Error("Thumbnail upload failed (500)"))
+      sandbox.stub(api, "updateVideo").returns(Promise.resolve(video))
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        renderComponent()
+      })
+      pickThumbnail(new File(["x"], "picked.jpg", { type: "image/jpeg" }))
+      await waitFor(() =>
+        assert.isNotNull(
+          document.querySelector("section.thumbnail-group img[src^='blob:']")
+        )
+      )
+
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      await waitFor(() =>
+        assert.include(
+          document.querySelector("section.thumbnail-group").textContent,
+          "Thumbnail upload failed (500)"
+        )
+      )
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      sinon.assert.calledOnce(uploadStub)
+    })
+
+    it("explains that a non-16:9 existing thumbnail gets black bars in edX", async () => {
+      renderComponent()
+      loadExistingThumbnail(1280, 960)
+      await waitFor(() => {
+        const text = document.querySelector(
+          "section.thumbnail-group"
+        ).textContent
+        assert.include(text, "1280x960")
+        assert.include(text, "black bars")
+      })
+    })
+
+    it("shows no note for a 16:9 existing thumbnail", async () => {
+      renderComponent()
+      loadExistingThumbnail(1280, 720)
+      await new Promise(resolve => setTimeout(resolve, 0))
+      assert.notInclude(
+        document.querySelector("section.thumbnail-group").textContent,
+        "black bars"
+      )
+    })
+
+    it("says a small 16:9 thumbnail is too small, not that it gets bars", async () => {
+      renderComponent()
+      loadExistingThumbnail(426, 240)
+      await waitFor(() => {
+        const text = document.querySelector(
+          "section.thumbnail-group"
+        ).textContent
+        assert.include(text, "426x240")
+        assert.include(text, "smaller than 640x360")
+        assert.notInclude(text, "black bars")
+      })
+    })
+
+    it("keeps the note when the same video's dialog is closed and reopened", async () => {
+      const { rerender } = renderComponent()
+      loadExistingThumbnail(640, 480)
+      const noteShown = () =>
+        document
+          .querySelector("section.thumbnail-group")
+          .textContent.includes("black bars")
+      await waitFor(() => assert.isTrue(noteShown()))
+
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+      // The Dialog stays mounted while hidden, so the <img> never fires load again on reopen
+      for (const open of [false, true]) {
+        rerender(
+          <EditVideoFormDialog
+            open={open}
+            hideDialog={hideDialogStub}
+            video={video}
+            videoUi={INITIAL_UI_STATE}
+          />
+        )
+      }
+      await new Promise(resolve => setTimeout(resolve, 0))
+
+      assert.isTrue(noteShown())
+    })
+
+    it("doesn't carry the note over to another video", async () => {
+      const { rerender } = renderComponent()
+      loadExistingThumbnail(640, 480)
+      await waitFor(() =>
+        assert.include(
+          document.querySelector("section.thumbnail-group").textContent,
+          "black bars"
+        )
+      )
+      const otherVideo = makeVideo()
+      otherVideo.videothumbnail_set = []
+      rerender(
+        <EditVideoFormDialog
+          open={true}
+          hideDialog={hideDialogStub}
+          video={otherVideo}
+          videoUi={INITIAL_UI_STATE}
+        />
+      )
+      await new Promise(resolve => setTimeout(resolve, 0))
+      assert.notInclude(
+        document.querySelector("section.thumbnail-group").textContent,
+        "black bars"
+      )
+    })
+
+    it("stops the save and keeps the error when a pending check rejects the image", async () => {
+      let resolveCheck
+      sandbox
+        .stub(thumbnailLib, "getImageDimensions")
+        .returns(new Promise(resolve => (resolveCheck = resolve)))
+      const uploadStub = sandbox.stub(api, "uploadThumbnail")
+      const updateStub = sandbox
+        .stub(api, "updateVideo")
+        .returns(Promise.resolve(video))
+      await listenForActions([INIT_EDIT_VIDEO_FORM], () => {
+        renderComponent()
+      })
+
+      pickThumbnail(new File(["x"], "square.jpg", { type: "image/jpeg" }))
+      fireEvent.click(screen.getByRole("button", { name: "Save Changes" }))
+      resolveCheck({ width: 1600, height: 1200 })
+
+      await waitFor(() =>
+        assert.include(
+          document.querySelector("section.thumbnail-group").textContent,
+          "This image is 1600x1200."
+        )
+      )
+      await new Promise(resolve => setTimeout(resolve, 0))
+      sinon.assert.notCalled(uploadStub)
+      sinon.assert.notCalled(updateStub)
+      sinon.assert.notCalled(hideDialogStub)
+    })
+
+    it("shows the existing thumbnail when it is served over http", () => {
+      video.videothumbnail_set[0].cloudfront_url =
+        "http://ovs-minio.odl.local:9000/ovs-thumbnail/thumb.jpg"
+      renderComponent()
+      assert.equal(
+        document
+          .querySelector("section.thumbnail-group img")
+          .getAttribute("src"),
+        "http://ovs-minio.odl.local:9000/ovs-thumbnail/thumb.jpg"
       )
     })
   })

@@ -275,6 +275,13 @@ Create one ``EdxEndpoint`` per edX instance in the Django admin at
 - **Client ID / Secret key** — from the OAuth2 application created above.
 - **edx_video_api_path** — leave at the default ``/api/val/v0/videos/``
   unless the instance uses a custom path.
+- **Studio base URL** — root URL of the instance's Studio (CMS), e.g.
+  ``https://studio.example.edu``. Video thumbnails are pushed to
+  ``<studio_base_url>/api/contentstore/v0/videos/images/<course_id>/<video>``
+  only when this is set; if it is blank they are skipped without a log message.
+  After setting it on an existing endpoint, press **Sync Videos with edX** on
+  each linked collection so videos already in edX get their thumbnails. Videos
+  whose thumbnail was already sent are skipped.
 
 Linking a collection to edX
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

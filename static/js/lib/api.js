@@ -110,11 +110,17 @@ export async function uploadThumbnail(videoKey: string, formData: FormData) {
     if (!Array.isArray(rejection)) {
       throw rejection
     }
-    const [, httpStatus] = rejection
+    const [body, httpStatus] = rejection
+    let serverError
+    try {
+      serverError = JSON.parse(body).error
+    } catch (_) {
+      /* response body is not JSON */
+    }
     const message =
       httpStatus === 413 ?
         "This image is too large. Please reduce the file size and try again." :
-        `Thumbnail upload failed (${httpStatus})`
+        serverError || `Thumbnail upload failed (${httpStatus})`
     const err = new Error(message)
     // $FlowFixMe
     err.status = httpStatus
