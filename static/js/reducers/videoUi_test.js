@@ -18,8 +18,7 @@ const {
   setEditVideoDesc,
   setEditVideoTitle,
   setUploadSubtitle,
-  setVideoTime,
-  setVideoDuration
+  setVideoTime
 } = actionCreators
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 import { DESCRIPTION_FORMAT_TEXT } from "../constants"
@@ -37,7 +36,6 @@ describe("videoUi", () => {
       editVideoForm:       INITIAL_EDIT_VIDEO_FORM_STATE,
       shareVideoForm:      INITIAL_SHARE_VIDEO_FORM_STATE,
       corner:              "camera1",
-      duration:            0,
       videoTime:           0,
       currentVideoKey:     null,
       currentSubtitlesKey: null
@@ -96,18 +94,10 @@ describe("videoUi", () => {
     assert.equal(store.getState().videoUi.videoTime, videoTime)
   })
 
-  it("has an action that sets the duration,", () => {
-    const duration = 42
-    assert.notEqual(store.getState().videoUi.duration, duration)
-    store.dispatch(setVideoDuration(42))
-    assert.equal(store.getState().videoUi.duration, duration)
-  })
-
   describe("CLEAR_VIDEO_FORM", () => {
     const initialVideoUiState = {
       ...INITIAL_UI_STATE,
       videoTime:     42,
-      duration:      42,
       corner:        42,
       editVideoForm: {
         ...INITIAL_EDIT_VIDEO_FORM_STATE,

@@ -20,7 +20,6 @@ const {
   SET_PERM_OVERRIDE_CHOICE,
   CLEAR_VIDEO_FORM,
   SET_VIDEO_TIME,
-  SET_VIDEO_DURATION,
   SET_SHARE_VIDEO_TIME_ENABLED,
   SET_CURRENT_VIDEO_KEY,
   SET_CURRENT_SUBTITLES_KEY
@@ -50,7 +49,6 @@ export const INITIAL_SHARE_VIDEO_FORM_STATE = {
 
 export const INITIAL_UI_STATE = {
   videoTime:           0,
-  duration:            0,
   editVideoForm:       INITIAL_EDIT_VIDEO_FORM_STATE,
   videoSubtitleForm:   INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
   shareVideoForm:      INITIAL_SHARE_VIDEO_FORM_STATE,
@@ -126,11 +124,6 @@ const reducer = (
     return {
       ...state,
       videoTime: action.payload
-    }
-  case SET_VIDEO_DURATION:
-    return {
-      ...state,
-      duration: action.payload
     }
   case SET_VIDEOJS_SYNC:
     return { ...state, corner: action.payload }

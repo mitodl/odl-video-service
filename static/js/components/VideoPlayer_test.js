@@ -272,11 +272,10 @@ describe("VideoPlayer", () => {
     sinon.assert.calledWith(dispatchSpy, actions.videoUi.setVideoTime(630))
   })
 
-  it("dispatches the duration and seeks to the start on loadedmetadata", () => {
+  it("seeks to the start on loadedmetadata", () => {
     renderPlayer()
     const ready = readyPlayer()
     fireReadyEvent(ready, "loadedmetadata")
-    sinon.assert.calledWith(dispatchSpy, actions.videoUi.setVideoDuration(2400))
     sinon.assert.calledWith(ready.currentTime, 0)
   })
 

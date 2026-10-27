@@ -25,7 +25,6 @@ export const makePlayerStub = (sandbox: Object): Object => {
     width:         sandbox.stub(),
     height:        sandbox.stub(),
     currentTime:   () => 630.5,
-    duration:      () => 2400.0,
     videoWidth:    () => 640,
     videoHeight:   () => 360,
     currentWidth:  () => 1280,

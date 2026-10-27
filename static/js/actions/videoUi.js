@@ -56,9 +56,6 @@ actionCreators.clearVideoForm = createAction(constants.CLEAR_VIDEO_FORM)
 constants.SET_VIDEO_TIME = qualifiedName("SET_VIDEO_TIME")
 actionCreators.setVideoTime = createAction(constants.SET_VIDEO_TIME)
 
-constants.SET_VIDEO_DURATION = qualifiedName("SET_VIDEO_DURATION")
-actionCreators.setVideoDuration = createAction(constants.SET_VIDEO_DURATION)
-
 constants.SET_SHARE_VIDEO_TIME_ENABLED = qualifiedName(
   "SET_SHARE_VIDEO_TIME_ENABLED"
 )

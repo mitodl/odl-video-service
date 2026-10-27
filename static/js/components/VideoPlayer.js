@@ -191,9 +191,6 @@ export class VideoPlayer extends React.Component<*, void> {
           window.addEventListener("resize", resizeYouTube)
         }
         this.on("loadedmetadata", function() {
-          self.props.dispatch(
-            actions.videoUi.setVideoDuration(self.player.duration())
-          )
           self.player.on("timeupdate", self.updateVideoTime)
           if (!useYouTube) {
             this.currentTime(startTime)
