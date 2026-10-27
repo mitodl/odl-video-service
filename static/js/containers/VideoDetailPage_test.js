@@ -49,17 +49,13 @@ describe("VideoDetailPage", () => {
     sandbox
       .stub(api, "getCollections")
       .returns(Promise.resolve({ results: [] }))
-    // Bare (no .returns()) is not enough for this file: unlike VideoPlayer's
-    // own tests, VideoDetailPage re-renders its <VideoPlayer> child (a new
-    // element, same underlying player) on every store dispatch that touches
-    // videoUi/videos state -- opening the drawer, uploading a subtitle,
-    // etc. all trigger it. Each such re-render
-    // runs VideoPlayer's componentDidUpdate -> updateSubtitles(), which calls
+    // Bare (no .returns()) is not enough for this file. connect() skips
+    // re-rendering <VideoPlayer> while its props are unchanged, but a new
+    // `video` object or a corner change ("renders the video player" below)
+    // re-renders it, and componentDidUpdate -> updateSubtitles() then calls
     // this.player.textTracks()/addRemoteTextTrack()/removeRemoteTextTrack().
-    // Without those, most tests below throw
-    // "this.player.textTracks is not a function" the moment they dispatch
-    // anything post-mount. Verified empirically (spike B) -- see the task
-    // report. dispose is required too: RTL unmounts after every test, so
+    // Without those that test throws "this.player.textTracks is not a
+    // function". dispose is required too: RTL unmounts after every test, so
     // componentWillUnmount's real this.player.dispose() call now runs.
     playerStub = {
       tracks:      [],
