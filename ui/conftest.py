@@ -34,16 +34,6 @@ def mock_user_groups(mocker):
     return mocked
 
 
-@pytest.fixture
-def ga_client_mocks(mocker):
-    """Return mocker with patches for objects used for google api clients"""
-    mocks = {
-        "build": mocker.patch("ui.utils.build"),
-        "ServiceAccountCredentials": mocker.patch("ui.utils.ServiceAccountCredentials"),
-    }
-    return mocks
-
-
 @pytest.fixture(autouse=True)
 def disable_keycloak(settings):
     """

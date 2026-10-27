@@ -104,8 +104,6 @@ export type VideoUiState = {
   corner: string,
   errors?: VideoValidation,
   videoTime: number,
-  duration: number,
-  analyticsOverlayIsVisible: boolean,
   currentVideoKey: ?string,
   currentSubtitlesKey: ?(string|number)
 };

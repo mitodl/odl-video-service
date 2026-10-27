@@ -17,7 +17,6 @@ import {
   uploadVideo,
   createSubtitle,
   deleteSubtitle,
-  getVideoAnalytics,
   uploadThumbnail
 } from "../lib/api"
 
@@ -196,19 +195,5 @@ describe("api", () => {
     }
     assert.isDefined(thrown)
     assert.include(thrown.message, "500")
-  })
-
-  it("gets video analytics", async () => {
-    const video = makeVideo()
-    const mockAnalyticsData = { data: { some: "data" } }
-    fetchStub.returns(Promise.resolve(mockAnalyticsData))
-
-    const result = await getVideoAnalytics(video.key)
-    sinon.assert.calledWith(fetchStub, `/api/v0/videos/${video.key}/analytics/`)
-    const expectedResult = {
-      key:  video.key,
-      data: mockAnalyticsData.data
-    }
-    assert.deepEqual(result, expectedResult)
   })
 })

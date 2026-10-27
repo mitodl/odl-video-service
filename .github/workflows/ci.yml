@@ -80,10 +80,6 @@ jobs:
           DROPBOX_SECRET: foo_dropbox_secret  # pragma: allowlist secret
           DROPBOX_REFRESH_TOKEN: foo_dropbox_refresh_token  # pragma: allowlist secret
           FIELD_ENCRYPTION_KEY: jtma0CL1QMRLaJgjXNlJh3mtPNcgok0G5ajRCMZ_XNI=
-          GA_DIMENSION_CAMERA: fake
-          GA_KEYFILE_JSON: fake
-          GA_VIEW_ID: fake
-          GA_TRACKING_ID: fake
           LECTURE_CAPTURE_USER: admin
           MAILGUN_URL: http://fake_mailgun_url.com
           MAILGUN_KEY: foookey

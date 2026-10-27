@@ -74,7 +74,6 @@ function bootBundle() {
     dropbox_key: "dropbox_key",
     thumbnail_base_url: "http://fake/",
     support_email_address: "support@example.com",
-    ga_dimension_camera: "dimension1",
     FEATURES: { ENABLE_VIDEO_PERMISSIONS: false }
   }
   window.requestAnimationFrame = cb => window.setTimeout(cb, 0)

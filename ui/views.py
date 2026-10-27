@@ -12,7 +12,7 @@ from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Prefetch, Q
-from django.http import Http404, HttpResponse
+from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -52,12 +52,7 @@ from ui.pagination import CollectionSetPagination, VideoSetPagination
 from ui.serializers import UserSerializer, VideoSerializer
 from ui.tasks import post_collection_videos_to_edx
 from ui.templatetags.render_bundle import public_path
-from ui.utils import (
-    generate_mock_video_analytics_data,
-    get_video_analytics,
-    list_members,
-    query_lists,
-)
+from ui.utils import list_members, query_lists
 
 log = structlog.get_logger(__name__)
 
@@ -65,7 +60,6 @@ log = structlog.get_logger(__name__)
 def default_js_settings(request):
     """Default JS settings for views"""
     return {
-        "gaTrackingID": settings.GA_TRACKING_ID,
         "environment": settings.ENVIRONMENT,
         "sentry_dsn": settings.SENTRY_DSN,
         "release_version": settings.VERSION,
@@ -79,7 +73,6 @@ def default_js_settings(request):
             else False
         ),
         "support_email_address": settings.EMAIL_SUPPORT,
-        "ga_dimension_camera": settings.GA_DIMENSION_CAMERA,
         "thumbnail_upload_max_size": settings.THUMBNAIL_UPLOAD_MAX_SIZE,
         "FEATURES": {
             "ENABLE_VIDEO_PERMISSIONS": settings.ENABLE_VIDEO_PERMISSIONS,
@@ -588,28 +581,6 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
             serializers.VideoSerializer(video, context={"request": request}).data,
             status=_status,
         )
-
-    @action(detail=True)
-    def analytics(self, request, key=None):
-        """get video analytics data"""
-
-        if "throw" in request.GET:
-            return HttpResponse(status=500)
-        if "mock" in request.GET:
-            # This is not for unit testing.
-            # Instead it is for integration testing w/ front-end code.
-            # (test the full analytics system, but w/out querying google analytics)
-            data = generate_mock_video_analytics_data(
-                **{
-                    param: request.GET[param]
-                    for param in ["n", "seed"]
-                    if param in request.GET
-                }
-            )
-        else:
-            video = self.get_object()
-            data = get_video_analytics(video)
-        return Response({"data": data})
 
 
 class VideoSubtitleViewSet(ModelDetailViewset):

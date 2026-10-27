@@ -1,8 +1,6 @@
 // @flow
-/* global SETTINGS */
 import { assert } from "chai"
 import sinon from "sinon"
-import ga from "react-ga"
 import { VideoPlayerController, isFullscreen } from "./video_player_controller"
 import { makeVideo, makeVideoSubtitle } from "../factories/video"
 import { makeVideoSubtitleUrl } from "./urls"
@@ -11,19 +9,12 @@ import { CANVASES } from "../constants"
 import { makePlayerStub } from "../testUtils/playerStub"
 
 describe("VideoPlayerController", () => {
-  let sandbox,
-    controller,
-    video,
-    playerStub,
-    containerStub,
-    nodeStub,
-    gaEventStub
+  let sandbox, controller, video, playerStub, containerStub, nodeStub
 
   beforeEach(() => {
     video = makeVideo()
     sandbox = sinon.createSandbox()
     sandbox.stub(global, "setTimeout")
-    gaEventStub = sandbox.stub(ga, "event")
     playerStub = makePlayerStub(sandbox)
     containerStub = { style: {}, parentElement: { style: {} } }
     nodeStub = { style: {} }
@@ -166,22 +157,6 @@ describe("VideoPlayerController", () => {
     assert.equal(playerStub.tracks.length, 2)
     assert.equal(playerStub.tracks[0].src, makeVideoSubtitleUrl(captionToKeep))
     assert.equal(playerStub.tracks[1].src, makeVideoSubtitleUrl(captionToAdd))
-  })
-
-  it("updateSubtitles sends a GA event when a track's mode changes", () => {
-    controller.updateSubtitles(video)
-    const track = playerStub.tracks[0]
-    const call = track.addEventListener
-      .getCalls()
-      .find(c => c.args[0] === "modechange")
-    assert.isOk(call)
-    call.args[1].call({ label: "English", mode: "showing" })
-    sinon.assert.calledWith(gaEventStub, {
-      category: "video",
-      action:   "Subtitles English showing",
-      label:    video.key,
-      value:    631
-    })
   })
 
   it("updateSubtitles does nothing without a player", () => {

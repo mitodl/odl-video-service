@@ -21,7 +21,6 @@ import { withDialogs } from "../components/dialogs/hoc"
 import Description from "../components/material/Description"
 import VideoSubtitleCard from "../components/VideoSubtitleCard"
 import VideoSaverScript from "../components/VideoSaverScript"
-import { ConnectedVideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 import ToastOverlay from "./ToastOverlay"
 import DropboxChooser from "react-dropbox-chooser"
 
@@ -36,7 +35,6 @@ import {
 } from "../lib/video"
 import { replaceVideoFromDropbox } from "../lib/api"
 import { DIALOGS, MM_DD_YYYY } from "../constants"
-import { initGA, sendGAPageView } from "../util/google_analytics"
 
 import type { Video, VideoUiState } from "../flow/videoTypes"
 import type { Collection } from "../flow/collectionTypes"
@@ -57,13 +55,9 @@ export class VideoDetailPage extends React.Component<*, void> {
     dialogProps: Object
   }
 
-  videoPlayerRef: Object
-
   componentDidMount() {
     this.setCurrentVideoKey()
     this.updateRequirements()
-    initGA()
-    sendGAPageView(window.location.pathname)
   }
 
   componentDidUpdate() {
@@ -251,12 +245,6 @@ export class VideoDetailPage extends React.Component<*, void> {
                         >
                           Delete
                         </Button>
-                        <Button
-                          className="analytics mdc-button--raised"
-                          onClick={() => this.toggleAnalyticsOverlay()}
-                        >
-                          Show/Hide Analytics
-                        </Button>
                         {!videoIsInFlight(video) && (
                           <div style={{ display: "none" }}>
                             <DropboxChooser
@@ -308,10 +296,6 @@ export class VideoDetailPage extends React.Component<*, void> {
     )
   }
 
-  toggleAnalyticsOverlay = () => {
-    this.props.dispatch(actions.videoUi.toggleAnalyticsOverlay())
-  }
-
   renderVideoPlayer = (video: Video) => {
     const { videoUi } = this.props
     if (videoIsProcessing(video)) {
@@ -335,76 +319,12 @@ export class VideoDetailPage extends React.Component<*, void> {
       >
         <VideoPlayer
           id="video-player"
-          videoPlayerRef={ref => {
-            this.videoPlayerRef = ref
-          }}
           video={video}
           cornerFunc={this.updateCorner}
           selectedCorner={videoUi.corner}
-          overlayChildren={this.renderOverlayChildren()}
         />
       </div>
     )
-  }
-
-  renderOverlayChildren() {
-    return [this.renderAnalyticsOverlay()]
-  }
-
-  renderAnalyticsOverlay() {
-    const { video } = this.props
-    const { analyticsOverlayIsVisible, videoTime, duration } =
-      this.props.videoUi
-    if (!analyticsOverlayIsVisible) {
-      return null
-    }
-    const overlayPadding = "10px"
-    return (
-      <div
-        key="analytics-overlay"
-        className="analytics-overlay-container"
-        style={{
-          position:        "absolute",
-          bottom:          "2.5em",
-          left:            "8%",
-          right:           "8%",
-          height:          "45%",
-          minHeight:       "250px",
-          opacity:         ".9",
-          backgroundColor: "hsla(0, 0%, 90%, 1)",
-          borderRadius:    "5px"
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top:      overlayPadding,
-            left:     overlayPadding,
-            right:    overlayPadding,
-            bottom:   overlayPadding
-          }}
-        >
-          <ConnectedVideoAnalyticsOverlay
-            id="video-analytics-overlay"
-            video={video}
-            currentTime={videoTime || 0}
-            duration={duration || 0}
-            setVideoTime={(...args) => {
-              this.setVideoTime(...args)
-            }}
-            style={{ width: "100%", height: "100%" }}
-            showCloseButton={true}
-            onClose={this.toggleAnalyticsOverlay}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  setVideoTime(time: number) {
-    if (this.videoPlayerRef) {
-      this.videoPlayerRef.setCurrentTime(time)
-    }
   }
 }
 

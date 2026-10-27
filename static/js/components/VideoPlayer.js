@@ -13,19 +13,8 @@ import {
 import type { Video } from "../flow/videoTypes"
 import { FULLSCREEN_API } from "../util/fullscreen_api"
 import { CANVASES } from "../constants"
-import { sendGAEvent, setCustomDimension } from "../util/google_analytics"
 import { actions } from "../actions"
 import { connect } from "react-redux"
-
-const gaEvents = [
-  "play",
-  "pause",
-  "seeked",
-  "timeupdate",
-  "fullscreen off",
-  "fullscreen on",
-  "ended"
-]
 
 const makeConfigForVideo = (
   video: Video,
@@ -82,14 +71,11 @@ export class VideoPlayer extends React.Component<*, void> {
     video: Video,
     selectedCorner: string,
     cornerFunc: (corner: string) => void,
-    embed: ?boolean,
-    videoPlayerRef?: (player: any) => void,
-    overlayChildren?: any
+    embed: ?boolean
   }
 
   player: Object
   controller: VideoPlayerController = new VideoPlayerController()
-  lastMinuteTracked: ?number
 
   updateSubtitles = () => this.controller.updateSubtitles(this.props.video)
 
@@ -116,9 +102,6 @@ export class VideoPlayer extends React.Component<*, void> {
       // $FlowFixMe Flow cannot prove that from the ref's type
       videoContainer.parentElement[FULLSCREEN_API.requestFullscreen]()
     }
-    this.player.el_.dispatchEvent(
-      new Event(`fullscreen ${fullscreen ? "off" : "on"}`)
-    )
   }
 
   switchVideoSource = () => {
@@ -141,32 +124,11 @@ export class VideoPlayer extends React.Component<*, void> {
     this.imageExists(imgUrl)
   }
 
-  sendEvent = (action: string, label: string) => {
+  updateVideoTime = () => {
     const { dispatch } = this.props
-    if (action === "timeupdate") {
-      // Track amount played in increments of 60 seconds
-      const currentTime = this.player.currentTime()
-      const nearestMinute = parseInt((currentTime - (currentTime % 60)) / 60)
-      if (this.lastMinuteTracked !== nearestMinute) {
-        sendGAEvent(
-          "video",
-          "T".concat(nearestMinute.toString().padStart(4, "0")),
-          label,
-          1
-        )
-        this.lastMinuteTracked = nearestMinute
-      }
-      dispatch(actions.videoUi.setVideoTime(Math.floor(currentTime)))
-    } else {
-      sendGAEvent("video", action, label, this.player.currentTime())
-    }
-  }
-
-  createEventHandler = (action: string, label: string) => {
-    const sendEvent = this.sendEvent
-    this.player.on(action, function() {
-      sendEvent(action, label)
-    })
+    dispatch(
+      actions.videoUi.setVideoTime(Math.floor(this.player.currentTime()))
+    )
   }
 
   selectPlaylist = () => {
@@ -197,20 +159,15 @@ export class VideoPlayer extends React.Component<*, void> {
   }
 
   componentDidMount() {
-    const { video, selectedCorner, embed, videoPlayerRef } = this.props
-    if (videoPlayerRef) {
-      videoPlayerRef(this)
-    }
+    const { video, embed } = this.props
     const cropVideo = this.cropVideo
     const resizeYouTube = this.resizeYouTube
-    const createEventHandler = this.createEventHandler
     const toggleFullscreen = this.toggleFullscreen
     if (video.multiangle) {
       videojs.getComponent("FullscreenToggle").prototype.handleClick =
         toggleFullscreen
     }
     const useYouTube = video.is_public && video.youtube_id !== null
-    this.lastMinuteTracked = null
     const selectPlaylist = this.selectPlaylist.bind(this)
     const self = this
     const params = new URLSearchParams(window.location.search)
@@ -226,7 +183,6 @@ export class VideoPlayer extends React.Component<*, void> {
           enableModifiersForNumbers: false
         })
         if (video.multiangle) {
-          setCustomDimension(SETTINGS.ga_dimension_camera, selectedCorner)
           this.on("loadeddata", cropVideo)
           this.on(FULLSCREEN_API.fullscreenchange, cropVideo)
           window.addEventListener("resize", cropVideo)
@@ -235,12 +191,7 @@ export class VideoPlayer extends React.Component<*, void> {
           window.addEventListener("resize", resizeYouTube)
         }
         this.on("loadedmetadata", function() {
-          self.props.dispatch(
-            actions.videoUi.setVideoDuration(self.player.duration())
-          )
-          gaEvents.forEach((event: string) => {
-            createEventHandler(event, video.key)
-          })
+          self.player.on("timeupdate", self.updateVideoTime)
           if (!useYouTube) {
             this.currentTime(startTime)
           }
@@ -279,15 +230,8 @@ export class VideoPlayer extends React.Component<*, void> {
   }
 
   clickCamera = async (corner: string) => {
-    const { cornerFunc, video } = this.props
+    const { cornerFunc } = this.props
     if (cornerFunc) {
-      setCustomDimension(SETTINGS.ga_dimension_camera, corner)
-      sendGAEvent(
-        "video",
-        "changeCameraView",
-        video.key,
-        this.player.currentTime()
-      )
       await cornerFunc(corner)
       this.cropVideo()
     }
@@ -314,7 +258,6 @@ export class VideoPlayer extends React.Component<*, void> {
               controls
             />
           </div>
-          {this.props.overlayChildren}
         </div>
         {video.multiangle && (
           <div
@@ -337,10 +280,6 @@ export class VideoPlayer extends React.Component<*, void> {
         )}
       </div>
     )
-  }
-
-  setCurrentTime(time) {
-    this.player.currentTime(time)
   }
 }
 

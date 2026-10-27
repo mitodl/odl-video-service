@@ -7,7 +7,6 @@ import DocumentTitle from "../components/DocumentTitle"
 import { actions } from "../actions"
 import VideoPlayer from "../components/VideoPlayer"
 import type { Video, VideoUiState } from "../flow/videoTypes"
-import { initGA, sendGAPageView } from "../util/google_analytics"
 import { videoIsProcessing, videoHasError } from "../lib/video"
 
 export class VideoEmbedPage extends React.Component<*, void> {
@@ -15,11 +14,6 @@ export class VideoEmbedPage extends React.Component<*, void> {
     dispatch: Dispatch,
     video: Video,
     videoUi: VideoUiState
-  }
-
-  componentDidMount() {
-    initGA()
-    sendGAPageView(window.location.pathname)
   }
 
   updateCorner = (corner: string) => {
