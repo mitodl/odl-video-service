@@ -71,21 +71,9 @@ The project comes with a pre-configured realm called `ovs-local` that includes:
 - **Certificate**: `MIICpDCCAYwCCQD5UHLf1MqmDDANBgkqhkiG9w0BAQsFA...`
 
 
-### 5. Public Key
+### 5. Signing Keys
 
-#### Local Development:
-For local development, no extra steps are needed. `.env.example` contains the correct value for `SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY` from pre-generated [Public Key](config/keycloak/tls/oidc-signing-pub.pem).
-
-#### Production:
-1. Go to Realm Settings → Keys tab
-2. Find the RSA key with "RS256" algorithm
-3. Click "Public key" button
-4. Copy the public key (without the BEGIN/END lines)
-5. Update your environment with the key accordingly:
-
-```env
-SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...
-```
+The app verifies access tokens against the realm's published signing keys, which it fetches from `/protocol/openid-connect/certs` next to `SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL`. Nothing needs to be copied out of Keycloak, and rotating the realm key doesn't require a config change.
 
 ## Environment Configuration
 
@@ -95,7 +83,6 @@ Create/update your `.env` file with these Keycloak settings:
 # Runtime OIDC login — consumed by social-auth-app-django.
 SOCIAL_AUTH_KEYCLOAK_KEY=odl-video-app
 SOCIAL_AUTH_KEYCLOAK_SECRET=odl-video-secret-2025
-SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkVcc5QcK9biP2TWBO3P1ZlxbhDpsrFOkH/SG4W6LJ2Te/UO4io0M+yLkiaO9jmT4VxMwYZA+h8+Gy18TCm0hzKsYM5+VN2Nmc5fOB3BIotjXj3UMsnXRxeia/4Lscx8cjRwqy2Xt2aXufjMwEAJjcr+P3nCwJHocmR3G+DpjMzIN9+33mJzfcpOpfFivM04QJmPxm6qYaiS1f5/RB98vyeQJC7WKLKJJO8+lXWck2uHILez75I0hbjKJxQxnvcoeWXS9lsEIFmyxMcg41WkQt/eUUfyd19ALK44+XFRY9KlIKTd47CADlNPD/MyO4DJ8EL7GJjSQ2HwgIRLJhzDcTwIDAQAB
 SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL=http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/auth
 SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL=http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/token
 
@@ -164,10 +151,8 @@ In Keycloak Admin Console:
 - Verify `SOCIAL_AUTH_KEYCLOAK_KEY` matches the client ID in Keycloak
 - Check that `SOCIAL_AUTH_KEYCLOAK_SECRET` is correct
 
-#### 3. "Invalid public key" Error
-- Get a fresh public key from Keycloak Admin Console
-- Ensure the key is on a single line without spaces or line breaks
-- Remove `-----BEGIN PUBLIC KEY-----` and `-----END PUBLIC KEY-----` headers
+#### 3. Token signature, "Unable to find a signing key", or "Fail to fetch data from the url" Error
+- Check that the app container can reach the realm JWKS: `docker compose exec web curl http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/certs`. Running the curl from the host doesn't show whether the app can reach Keycloak.
 
 #### 4. "Connection refused" Error
 - Check that Keycloak container is running: `docker-compose ps keycloak`
