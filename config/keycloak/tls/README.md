@@ -20,4 +20,3 @@ Keycloak realm to sign JWTs. They are **dev-only** and safe to commit.
 
 * `oidc-signing.key` — RSA private key (PEM); injected into the realm JSON
 * `oidc-signing.crt` — Self-signed X.509 certificate (PEM); injected into the realm JSON
-* `oidc-signing-pub.pem` — RSA public key (PEM); the app fetches it from the realm JWKS endpoint at runtime, so it isn't configured anywhere
