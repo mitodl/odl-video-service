@@ -9,8 +9,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from social_core.exceptions import AuthTokenError
-from social_core.tests.models import TestStorage
-from social_core.tests.strategy import TestStrategy
+from social_django.utils import load_backend, load_strategy
 
 from odl_video import backends
 from odl_video.backends import KeycloakJWKSOAuth2
@@ -74,21 +73,24 @@ def realm():
 
 
 @pytest.fixture
-def backend(realm):
-    """KeycloakJWKSOAuth2 configured against the local realm"""
+def backend(realm, settings):
+    """
+    The keycloak backend as social-auth loads it from AUTHENTICATION_BACKENDS,
+    configured against the local realm
+    """
     url, _, _ = realm
-    backends._jwks_client.cache_clear()
-    strategy = TestStrategy(TestStorage)
-    strategy.set_settings(
-        {
-            "SOCIAL_AUTH_KEYCLOAK_KEY": CLIENT_ID,
-            "SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL": (
-                f"{url}/protocol/openid-connect/token"
-            ),
-        }
+    settings.SOCIAL_AUTH_KEYCLOAK_KEY = CLIENT_ID
+    settings.SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL = (
+        f"{url}/protocol/openid-connect/token"
     )
-    yield KeycloakJWKSOAuth2(strategy)
     backends._jwks_client.cache_clear()
+    yield load_backend(load_strategy(), "keycloak", None)
+    backends._jwks_client.cache_clear()
+
+
+def test_settings_load_jwks_backend(backend):
+    """AUTHENTICATION_BACKENDS resolves the keycloak backend to this subclass"""
+    assert type(backend) is KeycloakJWKSOAuth2
 
 
 def test_jwks_url(backend, realm):
@@ -97,11 +99,9 @@ def test_jwks_url(backend, realm):
     assert backend.jwks_url() == f"{url}/protocol/openid-connect/certs"
 
 
-def test_jwks_url_rejects_non_keycloak_token_url(backend):
+def test_jwks_url_rejects_non_keycloak_token_url(backend, settings):
     """A token URL that isn't a Keycloak realm endpoint fails loudly"""
-    backend.strategy.set_settings(
-        {"SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL": "https://example.com/token"}
-    )
+    settings.SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL = "https://example.com/token"
     with pytest.raises(ValueError, match="ACCESS_TOKEN_URL"):
         backend.jwks_url()
 
