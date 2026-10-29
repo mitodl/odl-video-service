@@ -151,8 +151,8 @@ In Keycloak Admin Console:
 - Verify `SOCIAL_AUTH_KEYCLOAK_KEY` matches the client ID in Keycloak
 - Check that `SOCIAL_AUTH_KEYCLOAK_SECRET` is correct
 
-#### 3. Token signature or "Unable to find a signing key" Error
-- Check that the app can reach the realm JWKS: `curl http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/certs`
+#### 3. Token signature, "Unable to find a signing key", or "Fail to fetch data from the url" Error
+- Check that the app container can reach the realm JWKS: `docker compose exec web curl http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/certs`. Running the curl from the host doesn't show whether the app can reach Keycloak.
 
 #### 4. "Connection refused" Error
 - Check that Keycloak container is running: `docker-compose ps keycloak`
