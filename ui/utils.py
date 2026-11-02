@@ -2,22 +2,13 @@
 
 import datetime
 import itertools
-import json
-import random
-import re
 from urllib.parse import urljoin
 
 import boto3
 import pytz
 import requests
 import structlog
-from django.conf import settings
-from google.oauth2.service_account import (
-    Credentials as ServiceAccountCredentials,
-)
-from googleapiclient.discovery import build
 
-from ui.exceptions import GoogleAnalyticsException
 from ui.keycloak_utils import get_keycloak_client
 
 log = structlog.get_logger(__name__)
@@ -202,155 +193,6 @@ def get_bucket(bucket_name):
     """
     s3 = boto3.resource("s3")
     return s3.Bucket(bucket_name)
-
-
-def get_video_analytics(video):
-    """Get video analytics data from Google Analytics."""
-    ga_client = get_google_analytics_client()
-    ga_response = (
-        ga_client.reports()
-        .batchGet(body=generate_google_analytics_query(video))
-        .execute()
-    )
-    try:
-        return parse_google_analytics_response(ga_response)
-    except Exception as exc:
-        raise GoogleAnalyticsException("Could not parse analytics response") from exc
-
-
-def get_google_analytics_client():
-    """Gets a Google Analytics client.
-
-    Returns:
-        analytics_client: An analytics client
-    """
-    try:
-        credentials = ServiceAccountCredentials.from_service_account_info(
-            json.loads(settings.GA_KEYFILE_JSON)
-        )
-        analytics_client = build("analyticsreporting", "v4", credentials=credentials)
-        return analytics_client
-    except Exception as exc:
-        raise GoogleAnalyticsException(
-            "Something went wrong with creating a GoogleAnalytics client"
-        ) from exc
-
-
-def generate_google_analytics_query(video):
-    """Generates a Google Analytics query.
-
-    Returns:
-        analytics_query: a query dict suitable to use as the body of an
-        analytics 'batchGet' request.
-    """
-    # https://developers.google.com/analytics/devguides/reporting/core/v3/reference
-    START_DATE = "2005-01-01"
-    END_DATE = "9999-01-01"
-    dimensions = [{"name": "ga:eventAction"}]
-    if video.multiangle:
-        # [adorsk, 2018-03]
-        # Achtung! Only use the camera angle dimension for multiangle.
-        # Single-camera videos do not set a custom dimension for events
-        # sent to GoogleAnalytics.
-        dimensions.append({"name": "ga:" + settings.GA_DIMENSION_CAMERA})
-    query = {
-        "reportRequests": [
-            {
-                "viewId": settings.GA_VIEW_ID,
-                "dateRanges": [{"startDate": START_DATE, "endDate": END_DATE}],
-                "metrics": [{"expression": "ga:totalEvents"}],
-                "dimensions": dimensions,
-                "dimensionFilterClauses": [
-                    {
-                        "filters": [
-                            {
-                                "dimensionName": "ga:eventLabel",
-                                "operator": "EXACT",
-                                # 2018-03, dorsk
-                                # Achtung! We do video.hexkey.capitalize()
-                                # because GA has capitalized event data,
-                                # due to an unexpected side-effect of the
-                                # react-ga library.
-                                # See: https://github.com/mitodl/odl-video-service/pull/472
-                                "expressions": [video.hexkey.capitalize()],
-                            },
-                        ],
-                    }
-                ],
-            },
-        ],
-    }
-    return query
-
-
-def parse_google_analytics_response(ga_response):
-    """Parse a Google Analytics response.
-
-    Returns:
-        data: a dict of parsed response data, in this shape:
-            {
-                'times': [0, ..., N], # list of all times
-                'channels': ['camera0', ..., 'cameraN'], # list of all channels
-                'views_at_times': {
-                    0: {
-                        'camera0': 23,
-                        'camera1': 3,
-                        ...
-                        <cameraN>: <X>
-                    },
-                    ...
-                    <timeN>: <views_per_channel_at_timeN>
-                },
-            }
-    """
-    times = set()
-    channels = set()
-    views_at_times = {}
-    report = ga_response["reports"][0]
-    # Check dimensions,
-    # to account for singlecam/multicam query differences.
-    dimensions = report["columnHeader"]["dimensions"]
-    is_multichannel = len(dimensions) == 2
-    rows = report["data"].get("rows", [])
-    for row in rows:
-        m = re.match(r"T(\d{4})", row["dimensions"][0])
-        if not m:
-            continue
-        time_ = int(m.group(1))
-        if is_multichannel:
-            channel = row["dimensions"][1]
-        else:
-            channel = "views"
-        if re.match(r"camera\d+|views", channel):
-            viewers = int(row["metrics"][0]["values"][0])
-            views_at_times.setdefault(time_, {}).update({channel: viewers})
-            times.add(time_)
-            channels.add(channel)
-    return {
-        "times": sorted(times),
-        "channels": sorted(channels),
-        "is_multichannel": is_multichannel,
-        "views_at_times": views_at_times,
-    }
-
-
-def generate_mock_video_analytics_data(n=24, seed=42):
-    """Generate a mock analytics response.
-
-    This can be useful for doing integration tests with the frontend.
-    """
-    local_random = random.Random(seed)
-    times = list(range(int(n)))
-    channels = [f"camera{i + 1}" for i in range(4)]
-    views_at_times = {
-        t: {channel: local_random.randint(0, 100) for channel in channels}
-        for t in times
-    }
-    return {
-        "times": sorted(times),
-        "channels": sorted(channels),
-        "views_at_times": views_at_times,
-    }
 
 
 def multi_urljoin(url_base, *url_parts, add_trailing_slash=False):

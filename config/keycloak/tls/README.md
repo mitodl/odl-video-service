@@ -20,4 +20,3 @@ Keycloak realm to sign JWTs. They are **dev-only** and safe to commit.
 
 * `oidc-signing.key` — RSA private key (PEM); injected into the realm JSON
 * `oidc-signing.crt` — Self-signed X.509 certificate (PEM); injected into the realm JSON
-* `oidc-signing-pub.pem` — RSA public key (PEM); injected into `SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY` in `.env`

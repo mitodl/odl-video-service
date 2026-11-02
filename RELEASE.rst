@@ -1,6 +1,25 @@
 Release Notes
 =============
 
+Version 0.97.3
+--------------
+
+- Update dependency django to v5.2.18 (#1636)
+- Update dependency Pillow to v13 [SECURITY] (#1629)
+- Add certifi>=2026.10.19 constraint (eMudhra CA compromise) (#1633)
+- Update docker/dockerfile:1 Docker digest to 4edf897 (#1596)
+- Update postgres:18.4 Docker digest to a02db8c (#1598)
+- Bump certifi to 2026.10.19 (eMudhra CA compromise) (#1632)
+- Update dependency djangorestframework to v3.18.2 [SECURITY] (#1630)
+- Keep host webpack build outputs out of the build context
+- Keep .env files out of the image
+- Add a local-dev Dockerfile stage for the ol-infrastructure Tilt stack
+- Update zizmorcore/zizmor-action action to v0.6.4 (#1625)
+- Update pre-commit hook zizmorcore/zizmor-pre-commit to v1.30.1 (#1624)
+- Update nginx Docker tag to v1.31.6 (#1622)
+- Update dependency flow-bin to v0.336.0 (#1609)
+- Update pre-commit hook astral-sh/ruff-pre-commit to v0.16.10 (#1623)
+
 Version 0.97.2
 --------------
 

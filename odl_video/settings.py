@@ -15,7 +15,7 @@ from redbeat import RedBeatScheduler
 from odl_video.envs import get_any, get_bool, get_int, get_key, get_string, parse_env
 from odl_video.sentry import init_sentry
 
-VERSION = "0.97.2"
+VERSION = "0.97.3"
 
 ENVIRONMENT = get_string("ODL_VIDEO_ENVIRONMENT", "dev")
 
@@ -120,7 +120,7 @@ if USE_KEYCLOAK:
     INSTALLED_APPS += ("social_django",)
 
     AUTHENTICATION_BACKENDS = [
-        "social_core.backends.keycloak.KeycloakOAuth2",
+        "odl_video.backends.KeycloakJWKSOAuth2",
     ]
 
     LOGIN_URL = "/auth/login/keycloak/"
@@ -133,7 +133,6 @@ else:
 # Keycloak OIDC settings — consumed by social-auth-app-django at runtime.
 SOCIAL_AUTH_KEYCLOAK_KEY = get_string("SOCIAL_AUTH_KEYCLOAK_KEY", "")
 SOCIAL_AUTH_KEYCLOAK_SECRET = get_string("SOCIAL_AUTH_KEYCLOAK_SECRET", "")
-SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY = get_string("SOCIAL_AUTH_KEYCLOAK_PUBLIC_KEY", "")
 SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL = get_string(
     "SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL", ""
 )
@@ -424,15 +423,6 @@ THUMBNAIL_UPLOAD_MAX_HEIGHT = get_int("THUMBNAIL_UPLOAD_MAX_HEIGHT", 720)
 THUMBNAIL_UPLOAD_MAX_SIZE = get_int("THUMBNAIL_UPLOAD_MAX_SIZE", 1024 * 1024)
 VIDEO_S3_WATCH_BUCKET = get_string("VIDEO_S3_WATCH_BUCKET", "")
 
-ADWORDS_CONVERSION_ID = get_string("ADWORDS_CONVERSION_ID", "")
-GA_DIMENSION_CAMERA = get_string("GA_DIMENSION_CAMERA", "")
-GA_KEYFILE_JSON = get_string("GA_KEYFILE_JSON", "")
-GA_TRACKING_ID = get_string("GA_TRACKING_ID", "")
-GA_VIEW_ID = get_string("GA_VIEW_ID", "")
-REACT_GA_DEBUG = get_bool("REACT_GA_DEBUG", False)
-GA_KEYFILE_JSON = get_string("GA_KEYFILE_JSON", "")
-GA_VIEW_ID = get_string("GA_VIEW_ID", "")
-
 YT_CLIENT_ID = get_string("YT_CLIENT_ID", "")
 YT_PROJECT_ID = get_string("YT_PROJECT_ID", "")
 YT_CLIENT_SECRET = get_string("YT_CLIENT_SECRET", "")
@@ -467,9 +457,6 @@ MANDATORY_SETTINGS = [
     "DROPBOX_KEY",
     "DROPBOX_SECRET",
     "DROPBOX_REFRESH_TOKEN",
-    "GA_DIMENSION_CAMERA",
-    "GA_KEYFILE_JSON",
-    "GA_VIEW_ID",
     "LECTURE_CAPTURE_USER",
     "MAILGUN_KEY",
     "MAILGUN_URL",

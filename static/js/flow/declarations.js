@@ -7,7 +7,6 @@ declare var SETTINGS: {
   FEATURES: {
     [key: string]: boolean,
   },
-  reactGaDebug: string,
   cloudfront_base_url: string,
   video: Video,
   videoKey: string,

@@ -4,3 +4,13 @@ htmlcov
 .coverage
 node_modules
 staticfiles/
+# settings.py loads /src/.env if present; never bake a local one into an image
+.env
+.env.*
+!.env.example
+# The node stage builds these into the image. Tilt's live_update syncs every
+# host file not ignored here into the running pod, so a host webpack run (e.g.
+# the compose `watch` service, which writes webpack-stats.json) would overwrite
+# the image's copies.
+static/bundles/
+webpack-stats.json

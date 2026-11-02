@@ -9,7 +9,6 @@ import configureTestStore from "redux-asserts"
 import VideoDetailPage from "./VideoDetailPage"
 import { VideoDetailPage as UnwrappedVideoDetailPage } from "./VideoDetailPage"
 import { VideoPlayer } from "../components/VideoPlayer"
-import { VideoAnalyticsOverlay } from "./VideoAnalyticsOverlay"
 
 import * as api from "../lib/api"
 import { actions } from "../actions"
@@ -50,27 +49,13 @@ describe("VideoDetailPage", () => {
     sandbox
       .stub(api, "getCollections")
       .returns(Promise.resolve({ results: [] }))
-    // Mounting the (real, connected) analytics overlay for the first time
-    // -- i.e. toggling analyticsOverlayIsVisible true -- triggers
-    // withVideoAnalytics' componentDidUpdate -> videoAnalytics.get fetch.
-    // Left permanently pending: nothing below asserts on the fetched data
-    // itself (that's AnalyticsPane/VideoAnalyticsOverlay's own test
-    // coverage), only on the request firing and on the outer wiring, so
-    // there's nothing to gain from resolving it and real risk (an
-    // unmocked-shape success payload reaching AnalyticsPane) in doing so.
-    sandbox.stub(api, "getVideoAnalytics").returns(new Promise(() => {}))
-
-    // Bare (no .returns()) is not enough for this file: unlike VideoPlayer's
-    // own tests, VideoDetailPage re-renders its <VideoPlayer> child (a new
-    // element, same underlying player) on every store dispatch that touches
-    // videoUi/videos state -- toggling the analytics overlay, opening the
-    // drawer, uploading a subtitle, etc. all trigger it. Each such re-render
-    // runs VideoPlayer's componentDidUpdate -> updateSubtitles(), which calls
+    // Bare (no .returns()) is not enough for this file. connect() skips
+    // re-rendering <VideoPlayer> while its props are unchanged, but a new
+    // `video` object or a corner change ("renders the video player" below)
+    // re-renders it, and componentDidUpdate -> updateSubtitles() then calls
     // this.player.textTracks()/addRemoteTextTrack()/removeRemoteTextTrack().
-    // Without those, most tests below throw
-    // "this.player.textTracks is not a function" the moment they dispatch
-    // anything post-mount. Verified empirically (spike B) -- see the task
-    // report. dispose is required too: RTL unmounts after every test, so
+    // Without those that test throws "this.player.textTracks is not a
+    // function". dispose is required too: RTL unmounts after every test, so
     // componentWillUnmount's real this.player.dispose() call now runs.
     playerStub = {
       tracks:      [],
@@ -83,7 +68,7 @@ describe("VideoDetailPage", () => {
         this.tracks.splice(this.tracks.indexOf(track), 1)
       },
       addRemoteTextTrack: function(track) {
-        this.tracks.push({ src: track.src, addEventListener: function() {} })
+        this.tracks.push({ src: track.src })
       }
     }
     sandbox.stub(libVideo, "videojs").returns(playerStub)
@@ -155,9 +140,9 @@ describe("VideoDetailPage", () => {
     // is wrapped with connect() (no mapStateToProps), so ownProps pass
     // through unchanged, and `this.props` on this instance is exactly the
     // ownProps VideoDetailPage passed to <VideoPlayer>, i.e. video,
-    // cornerFunc, selectedCorner, overlayChildren, videoPlayerRef, id.
+    // cornerFunc, selectedCorner, id.
     const spy = sandbox.spy(VideoPlayer.prototype, "render")
-    const { container } = await renderPage()
+    await renderPage()
 
     assert.equal(spy.lastCall.thisValue.props.video, video)
 
@@ -168,18 +153,6 @@ describe("VideoDetailPage", () => {
     // rather than reading spy.lastCall immediately.
     await waitFor(() =>
       assert.equal(spy.lastCall.thisValue.props.selectedCorner, "someCorner")
-    )
-
-    // overlayChildren: rather than stubbing renderOverlayChildren (no seam
-    // to reach it on a HOC-connected instance), assert the wiring end to end
-    // through real DOM -- this is what renderVideoPlayer -> overlayChildren
-    // -> renderOverlayChildren -> renderAnalyticsOverlay actually produces.
-    assert.isNull(container.querySelector(".analytics-overlay-container"))
-    store.dispatch(actions.videoUi.toggleAnalyticsOverlay())
-    // Same deferred-render reasoning as above, applied to the DOM instead of
-    // the spy.
-    await waitFor(() =>
-      assert.isNotNull(container.querySelector(".analytics-overlay-container"))
     )
   })
 
@@ -267,40 +240,9 @@ describe("VideoDetailPage", () => {
 
   it("does not include buttons for privileged functionality when lacking permission", async () => {
     const { container } = await renderPage({ isAdmin: false })
-    assert.isNull(container.querySelector(".analytics"))
     assert.isNull(container.querySelector(".edit"))
     assert.isNull(container.querySelector(".dropbox"))
     assert.isNull(container.querySelector(".delete"))
-  })
-
-  describe("analytics button", () => {
-    it("includes the analytics button when the user has correct permissions", async () => {
-      const { container } = await renderPage({ isAdmin: true })
-      assert.isNotNull(container.querySelector(".analytics"))
-    })
-
-    it("onClick calls toggleAnalyticsOverlay", async () => {
-      // Behavioral rewrite: the old test drilled to the instance via
-      // wrapper.find("VideoDetailPage").instance() (no RTL analog) to stub
-      // toggleAnalyticsOverlay and assert it was called. This asserts the
-      // real, stronger, user-visible effect instead -- the store state the
-      // handler actually flips.
-      const { container } = await renderPage({ isAdmin: true })
-      assert.isFalse(store.getState().videoUi.analyticsOverlayIsVisible)
-      await listenForActions(
-        [
-          videoUiActions.constants.TOGGLE_ANALYTICS_OVERLAY,
-          // Mounting <ConnectedVideoAnalyticsOverlay> for the first time
-          // (analyticsOverlayIsVisible flips true) triggers its own
-          // componentDidUpdate -> needsUpdate -> videoAnalytics.get fetch.
-          actions.videoAnalytics.get.requestType
-        ],
-        () => {
-          fireEvent.click(container.querySelector(".analytics"))
-        }
-      )
-      assert.isTrue(store.getState().videoUi.analyticsOverlayIsVisible)
-    })
   })
 
   it("includes the edit button and dialog when the user has correct permissions", async () => {
@@ -479,58 +421,6 @@ describe("VideoDetailPage", () => {
 
     it("calls showDialog", () => {
       sinon.assert.calledWith(stubs.showDialog, DIALOGS.DELETE_SUBTITLES)
-    })
-  })
-
-  describe("renderAnalyticsOverlay", () => {
-    let spy
-
-    beforeEach(async () => {
-      // Same technique as "renders the video player" above, applied to the
-      // other connected child this container builds props for by hand.
-      // <ConnectedVideoAnalyticsOverlay> is
-      // connect(mapStateToProps)(withVideoAnalytics(VideoAnalyticsOverlay));
-      // react-redux 8's connect() no longer produces a class with
-      // .prototype.render, so this spies the innermost class instead.
-      // withVideoAnalytics only strips `needsUpdate` and `dispatch` before
-      // forwarding props, and mapStateToProps doesn't return `currentTime`
-      // or `duration`, so those ownProps VideoDetailPage passed to
-      // <ConnectedVideoAnalyticsOverlay> reach this instance's `this.props`
-      // unchanged.
-      spy = sandbox.spy(VideoAnalyticsOverlay.prototype, "render")
-      await renderPage()
-      store.dispatch(actions.videoUi.toggleAnalyticsOverlay())
-      store.dispatch(actions.videoUi.setVideoTime(42))
-      store.dispatch(actions.videoUi.setVideoDuration(42))
-    })
-
-    it("renders analytics overlay with expected props", () => {
-      assert.equal(spy.lastCall.thisValue.props.video, video)
-      assert.equal(spy.lastCall.thisValue.props.currentTime, 42)
-      assert.equal(spy.lastCall.thisValue.props.duration, 42)
-    })
-
-    it("passes setVideoTime", () => {
-      // Stronger than the original (which only proved setVideoTime was
-      // *called*): this is the same videoPlayerRef contract
-      // VideoPlayer_test.js's "exposes setCurrentTime through
-      // videoPlayerRef" documents, exercised end to end through the real
-      // player stub.
-      spy.lastCall.thisValue.props.setVideoTime(99)
-      sinon.assert.calledWith(playerStub.currentTime, 99)
-    })
-
-    it("passes closeOverlay", () => {
-      // Behavioral rewrite: rather than an identity check against an
-      // instance method (no instance in play here), call the captured prop
-      // and assert the real effect it produces.
-      assert.isTrue(store.getState().videoUi.analyticsOverlayIsVisible)
-      spy.lastCall.thisValue.props.onClose()
-      assert.isFalse(store.getState().videoUi.analyticsOverlayIsVisible)
-    })
-
-    it("passes showCloseButton", () => {
-      assert.isTrue(spy.lastCall.thisValue.props.showCloseButton)
     })
   })
 

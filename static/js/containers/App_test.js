@@ -132,12 +132,12 @@ describe("App", () => {
     // videos/:videoKey/embed/ and embeds/:videoKey/ -- and they are the four
     // Task 4 did NOT have to change (bound class-property arrow functions are
     // real typeof "function", so react-router 4's `component: PropTypes.func`
-    // check never tripped on them). Every target page mounts video.js and
-    // fires GA calls; VideoDetailPage_test.js and VideoEmbedPage_test.js
-    // already cover that behavior exhaustively with the stubs it requires
-    // (videojs, dropbox, api). Duplicating that here would only re-test
-    // those pages, not App's routing, so render() and componentDidMount()
-    // are replaced with cheap stand-ins and this only proves what's actually
+    // check never tripped on them). Every target page mounts video.js;
+    // VideoDetailPage_test.js and VideoEmbedPage_test.js already cover that
+    // behavior exhaustively with the stubs it requires (videojs, dropbox,
+    // api). Duplicating that here would only re-test those pages, not App's
+    // routing, so render() (and VideoDetailPage's componentDidMount()) are
+    // replaced with cheap stand-ins and this only proves what's actually
     // in scope: that the route resolves to the right page component, with
     // the SETTINGS-derived props and the spread routeProps both reaching it.
     //
@@ -202,7 +202,6 @@ describe("App", () => {
         // is the property worth pinning: a non-exact sibling would make
         // /videos/abc/embed/ render the detail page instead.
         let captured
-        sandbox.stub(UnwrappedVideoEmbedPage.prototype, "componentDidMount")
         sandbox
           .stub(UnwrappedVideoEmbedPage.prototype, "render")
           .callsFake(function() {
@@ -222,7 +221,6 @@ describe("App", () => {
 
       it("routes /embeds/:videoKey/ to VideoEmbedPage", () => {
         let captured
-        sandbox.stub(UnwrappedVideoEmbedPage.prototype, "componentDidMount")
         sandbox
           .stub(UnwrappedVideoEmbedPage.prototype, "render")
           .callsFake(function() {

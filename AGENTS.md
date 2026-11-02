@@ -148,7 +148,7 @@ The `web` service runs `uwsgi`, the `watch` service runs webpack in dev mode wit
 ## Key Architectural Patterns
 
 ### Authentication and Authorization
-- Keycloak OIDC via `social-auth-app-django` backend (`social_core.backends.keycloak.KeycloakOAuth2`)
+- Keycloak OIDC via `social-auth-app-django` backend (`odl_video.backends.KeycloakJWKSOAuth2`, a `KeycloakOAuth2` subclass that verifies access tokens against the realm JWKS)
 - `USE_KEYCLOAK=True` (default) enables Keycloak; set `False` for local dev without Keycloak (falls back to `ModelBackend`)
 - Keycloak groups from the JWT `user_groups` claim are synced to Django `is_staff`/`is_superuser` via `odl_video.pipeline.assign_user_groups`
 - Access to Collections/Videos is controlled via `KeycloakGroup` M2M fields (`view_lists`, `admin_lists`, `video_view_lists`)

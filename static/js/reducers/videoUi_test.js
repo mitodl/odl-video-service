@@ -18,9 +18,7 @@ const {
   setEditVideoDesc,
   setEditVideoTitle,
   setUploadSubtitle,
-  setVideoTime,
-  setVideoDuration,
-  toggleAnalyticsOverlay
+  setVideoTime
 } = actionCreators
 import { PERM_CHOICE_NONE } from "../lib/dialog"
 import { DESCRIPTION_FORMAT_TEXT } from "../constants"
@@ -34,15 +32,13 @@ describe("videoUi", () => {
 
   it("has some initial state", () => {
     assert.deepEqual(store.getState().videoUi, {
-      videoSubtitleForm:         INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
-      editVideoForm:             INITIAL_EDIT_VIDEO_FORM_STATE,
-      shareVideoForm:            INITIAL_SHARE_VIDEO_FORM_STATE,
-      corner:                    "camera1",
-      duration:                  0,
-      videoTime:                 0,
-      analyticsOverlayIsVisible: false,
-      currentVideoKey:           null,
-      currentSubtitlesKey:       null
+      videoSubtitleForm:   INITIAL_UPLOAD_SUBTITLE_FORM_STATE,
+      editVideoForm:       INITIAL_EDIT_VIDEO_FORM_STATE,
+      shareVideoForm:      INITIAL_SHARE_VIDEO_FORM_STATE,
+      corner:              "camera1",
+      videoTime:           0,
+      currentVideoKey:     null,
+      currentSubtitlesKey: null
     })
   })
 
@@ -98,31 +94,12 @@ describe("videoUi", () => {
     assert.equal(store.getState().videoUi.videoTime, videoTime)
   })
 
-  it("has an action that sets the duration,", () => {
-    const duration = 42
-    assert.notEqual(store.getState().videoUi.duration, duration)
-    store.dispatch(setVideoDuration(42))
-    assert.equal(store.getState().videoUi.duration, duration)
-  })
-
-  it("has an action that toggles analytics overlay", () => {
-    const _selectValue = () =>
-      store.getState().videoUi.analyticsOverlayIsVisible
-    assert.equal(_selectValue(), false)
-    store.dispatch(toggleAnalyticsOverlay())
-    assert.equal(_selectValue(), true)
-    store.dispatch(toggleAnalyticsOverlay())
-    assert.equal(_selectValue(), false)
-  })
-
   describe("CLEAR_VIDEO_FORM", () => {
     const initialVideoUiState = {
       ...INITIAL_UI_STATE,
-      videoTime:                 42,
-      duration:                  42,
-      analyticsOverlayIsVisible: true,
-      corner:                    42,
-      editVideoForm:             {
+      videoTime:     42,
+      corner:        42,
+      editVideoForm: {
         ...INITIAL_EDIT_VIDEO_FORM_STATE,
         key: "someKey"
       },

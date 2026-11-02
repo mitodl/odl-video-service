@@ -123,7 +123,9 @@ FLOWFIX=$(grep -rho 'FlowFixMe' static/js --include='*.js' 2>/dev/null | wc -l |
 # le 40 -> le 22 (final review fix wave, hq#12640): current actual is 22 after
 # the full Enzyme -> RTL migration; ratchet the ceiling down to that measured
 # value so it can't silently creep back up.
-check "FlowFixMe occurrences" "$FLOWFIX" le 22
+# le 22 -> le 20: removing the Universal Analytics code deleted two of them
+# (both in google_analytics_test.js).
+check "FlowFixMe occurrences" "$FLOWFIX" le 20
 
 # Frozen. Adding a line here is how React 18 act() warnings get silenced --
 # turning a real signal about un-batched state updates into future flaky tests.
@@ -132,8 +134,10 @@ check "FlowFixMe occurrences" "$FLOWFIX" le 22
 # were removed from the react package and nothing in static/js references
 # either. Leaving the cap at 7 would have left two slots of silent headroom
 # in a check whose whole value is having none.
+# le 5 -> le 4: the `[react-ga]` line went with the react-ga dependency, and
+# the cap moves with the line in the same commit.
 ALLOWLIST=$(grep -c 'grep -v' scripts/test/js_test.sh)
-check "js_test.sh allowlist lines" "$ALLOWLIST" le 5
+check "js_test.sh allowlist lines" "$ALLOWLIST" le 4
 
 # The same guarantee for the other suppression surface. Capping js_test.sh at 5
 # and then leaving testUtils/suppressVendorLifecycleWarnings.js uncapped would

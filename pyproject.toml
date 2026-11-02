@@ -20,7 +20,7 @@ dependencies = [
     "cryptography>=50,<51",
     "dj-database-url>=3.0.0,<4",
     "dj-static>=0.0.6,<0.0.7",
-    "django==5.2.17",
+    "django==5.2.18",
     "django-encrypted-model-fields>=0.6.5,<0.7",
     "django-health-check>=3.24.0,<4",
     "django-hijack>=3.7.1,<4",
@@ -32,10 +32,11 @@ dependencies = [
     "google-auth-oauthlib>=1.0.0,<2",
     "html5lib>=1.1,<2",
     "httplib2>=0.32,<0.33",
-    "Pillow>=10.0.0,<13",
+    "Pillow>=13,<14",
     "ipython>=9.0.0,<10",
     "psycopg2>=2.9.10,<3",
     "pycountry>=24.0.0,<25",
+    "pyjwt>=2.12.1,<3",
     "python-dateutil>=2.8.1,<3",
     "pytz>=2025.2,<2026",
     "redis>=6.0.0,<7",
@@ -88,17 +89,17 @@ dev = [
     "semantic-version>=2.10.0,<3",
     "ruff>=0.16,<0.17",
     "mitol-drf-lint==2026.8.28",
+    "granian[reload]>=2.5.4,<3",
 ]
 
 [tool.uv]
+constraint-dependencies = ["certifi>=2026.10.19"]  # eMudhra CA compromise: never resolve a certifi that trusts the compromised CAs
 package = false
 default-groups = "all"
 exclude-newer = "7d"
 required-version = ">=0.9.17"
 
 [tool.uv.exclude-newer-package]
-# CA bundle: skip cool-down so revocations (e.g. eMudhra, Oct 2026) land promptly
-certifi = "0d"
 mitol-django-common = "0d"
 mitol-django-observability = "0d"
 mitol-django-transcoding = "0d"
