@@ -94,10 +94,7 @@ def record_exception(summary, identifier, exc):
 
 _SUMMARY_LABELS = (
     ("assigned", "Assigned"),
-    ("created", "Created"),
     ("existing_skipped", "Existing skipped"),
-    ("invalid_skipped", "Invalid records skipped"),
-    ("missing_groups", "Missing groups skipped"),
     ("missing_users", "Missing users skipped"),
     ("failed", "Failed"),
 )
