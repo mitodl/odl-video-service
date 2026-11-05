@@ -219,6 +219,7 @@ class VideoSerializer(RichTextDescriptionMixin, serializers.ModelSerializer):
     key = serializers.SerializerMethodField()
     collection_key = serializers.SerializerMethodField()
     collection_title = serializers.SerializerMethodField()
+    collection_for_shorts = serializers.SerializerMethodField()
     cloudfront_url = serializers.SerializerMethodField()
     videofile_set = VideoFileSerializer(many=True, read_only=True)
     videothumbnail_set = VideoThumbnailSerializer(many=True, read_only=True)
@@ -239,6 +240,10 @@ class VideoSerializer(RichTextDescriptionMixin, serializers.ModelSerializer):
     def get_collection_title(self, obj):
         """Get collection title"""
         return obj.collection.title
+
+    def get_collection_for_shorts(self, obj):
+        """Get whether the video is in a shorts (portrait) collection"""
+        return obj.collection.for_shorts
 
     def get_collection_view_lists(self, obj):
         """Get collection view lists"""
@@ -279,6 +284,7 @@ class VideoSerializer(RichTextDescriptionMixin, serializers.ModelSerializer):
             "description_format",
             "collection_key",
             "collection_title",
+            "collection_for_shorts",
             "multiangle",
             "status",
             "videofile_set",
@@ -330,6 +336,7 @@ class SimpleVideoSerializer(VideoSerializer):
             "videothumbnail_set",
             "status",
             "collection_key",
+            "collection_for_shorts",
             "cloudfront_url",
             "cta_link",
         )

@@ -18,6 +18,12 @@ declare var SETTINGS: {
   dropbox_key: string,
   support_email_address: string,
   status_code?: number,
+  ga_dimension_camera: string,
+  thumbnail_upload_max_size: number,
+  thumbnail_min_width: number,
+  thumbnail_min_height: number,
+  thumbnail_aspect_ratio: number,
+  thumbnail_aspect_ratio_error_margin: number,
   sentry_dsn: string,
   release_version: string,
   environment: string

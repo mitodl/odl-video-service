@@ -91,6 +91,7 @@ export const makeVideo = (
   description_format:    DESCRIPTION_FORMAT_TEXT,
   collection_key:        collectionKey,
   collection_title:      casual.text,
+  collection_for_shorts: false,
   collection_view_lists: [],
   multiangle:            casual.coin_flip,
   videofile_set:         [
