@@ -12,8 +12,11 @@ KEYCLOAK_CERTS_PATH = "/protocol/openid-connect/certs"
 
 @cache
 def _jwks_client(jwks_url):
-    """Return a per-process JWKS client, which caches the key set for 5 minutes"""
-    return jwt.PyJWKClient(jwks_url)
+    """
+    Return a per-process JWKS client, which caches the key set for 5 minutes
+    Refetch on an unknown kid right away, so a rotated key works on first use.
+    """
+    return jwt.PyJWKClient(jwks_url, cooldown_duration=0)
 
 
 class KeycloakJWKSOAuth2(KeycloakOAuth2):
