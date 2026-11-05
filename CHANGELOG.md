@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2026.11.5.2] - 2026-11-05
+
+### Changes
+
+- **Raise Keycloak request timeout to 30s** (#1650) by mrbertrand@gmail.com
+
 ## [2026.11.5.1] - 2026-11-05
 
 ### Changes
