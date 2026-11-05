@@ -99,6 +99,13 @@ def test_jwks_url(backend, realm):
     assert backend.jwks_url() == f"{url}/protocol/openid-connect/certs"
 
 
+def test_requests_timeout(backend, mocker):
+    """Calls to Keycloak use SOCIAL_AUTH_REQUESTS_TIMEOUT, not social-core's 5s default"""
+    request = mocker.patch("social_core.backends.base.requests.request")
+    backend.request(backend.access_token_url(), method="POST")
+    assert request.call_args.kwargs["timeout"] == 30
+
+
 def test_jwks_url_rejects_non_keycloak_token_url(backend, settings):
     """A token URL that isn't a Keycloak realm endpoint fails loudly"""
     settings.SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL = "https://example.com/token"

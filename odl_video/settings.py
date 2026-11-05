@@ -190,6 +190,9 @@ SOCIAL_AUTH_KEYCLOAK_ID_KEY = "email"
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_KEYCLOAK_SCOPE = ["openid", "profile", "email"]
 SOCIAL_AUTH_KEYCLOAK_EXTRA_DATA = ["user_groups"]
+# social-auth-core 4.9+ otherwise times out Keycloak calls after 5s, which a slow
+# token exchange can exceed
+SOCIAL_AUTH_REQUESTS_TIMEOUT = get_int("SOCIAL_AUTH_REQUESTS_TIMEOUT", 30)
 
 LOGOUT_REDIRECT_URL = "/"
 
