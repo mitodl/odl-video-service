@@ -9,12 +9,8 @@ from io import StringIO
 import pytest
 import requests
 
-from ui.factories import KeycloakGroupFactory
-from ui.management.commands.conftest import FakeAsyncResult, conflict_error
+from ui.management.commands.conftest import conflict_error
 from ui.management.commands.keycloak_command_utils import (
-    chunked,
-    drain_async_chunks,
-    get_ovs_keycloak_group_names,
     keycloak_config_from_options,
     parse_comma_list,
     print_summary,
@@ -22,48 +18,6 @@ from ui.management.commands.keycloak_command_utils import (
 )
 
 pytestmark = pytest.mark.django_db
-
-
-def test_get_ovs_keycloak_group_names_returns_all_groups():
-    """All KeycloakGroup names should be returned regardless of Collection/Video references."""
-    KeycloakGroupFactory.create(name="group-a")
-    KeycloakGroupFactory.create(name="group-b")
-    KeycloakGroupFactory.create(name="group-c")
-
-    assert sorted(get_ovs_keycloak_group_names()) == ["group-a", "group-b", "group-c"]
-
-
-def test_get_ovs_keycloak_group_names_honors_limit_lists():
-    """``limit_lists`` should restrict the result to the named groups."""
-    KeycloakGroupFactory.create(name="group-a")
-    KeycloakGroupFactory.create(name="group-b")
-    KeycloakGroupFactory.create(name="group-c")
-
-    assert sorted(
-        get_ovs_keycloak_group_names(limit_lists=["group-a", "group-c", "missing"])
-    ) == ["group-a", "group-c"]
-
-
-def test_drain_async_chunks_yields_in_completion_order(mocker):
-    """Slow first chunk must not block collection of later chunks that finish first."""
-    # Chunk 1 isn't ready until the third ready() probe; chunks 2 and 3 are
-    # ready immediately. A submission-order drain would return 1, 2, 3 — we
-    # expect 2, 3, 1.
-    slow = FakeAsyncResult({"id": 1}, ready_after=2)
-    fast_a = FakeAsyncResult({"id": 2})
-    fast_b = FakeAsyncResult({"id": 3})
-
-    mocker.patch(
-        "ui.management.commands.keycloak_command_utils.time.sleep", return_value=None
-    )
-
-    completed = list(drain_async_chunks([slow, fast_a, fast_b]))
-
-    assert [(idx, payload["id"], is_error) for idx, payload, is_error in completed] == [
-        (2, 2, False),
-        (3, 3, False),
-        (1, 1, False),
-    ]
 
 
 @pytest.mark.parametrize(
@@ -77,25 +31,6 @@ def test_drain_async_chunks_yields_in_completion_order(mocker):
 def test_parse_comma_list_handles_blanks_and_duplicates(raw, expected):
     """Blank entries and duplicates are dropped; order is preserved."""
     assert parse_comma_list(raw) == expected
-
-
-@pytest.mark.parametrize(
-    "items,size,expected",
-    [
-        ([1, 2, 3, 4], 2, [[1, 2], [3, 4]]),
-        ([1, 2, 3, 4, 5], 2, [[1, 2], [3, 4], [5]]),
-        ([], 3, []),
-    ],
-)
-def test_chunked_splits_into_batches(items, size, expected):
-    """chunked yields exact-multiple batches plus any remainder."""
-    assert list(chunked(items, size)) == expected
-
-
-def test_chunked_rejects_non_positive_size():
-    """size <= 0 must raise ValueError."""
-    with pytest.raises(ValueError):
-        list(chunked([1, 2], 0))
 
 
 def test_keycloak_config_from_options_prefers_options_then_settings(settings):

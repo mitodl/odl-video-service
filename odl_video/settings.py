@@ -143,8 +143,9 @@ SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL = SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL.replace
     "/protocol/openid-connect/auth", "/protocol/openid-connect/logout"
 )
 
-# Keycloak admin-API settings — consumed by the moira-to-keycloak migration
-# management commands, not by the runtime login flow.
+# Keycloak admin-API settings. The request path reads groups and members with
+# them (ui.keycloak_utils.get_keycloak_client), and assign_group_users falls
+# back to them for any value not given on the command line.
 # KEYCLOAK_SERVER_URL and KEYCLOAK_REALM fall back to values parsed from
 # SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL so that they work even before the
 # Vault secret is updated with the explicit server_url/realm_name fields.
