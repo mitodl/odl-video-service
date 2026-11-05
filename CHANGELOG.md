@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2026.11.5.1] - 2026-11-05
+
+### Changes
+
+- **Update dependency autoprefixer to v10.6.2** (#1646) by 29139614+renovate[bot]@users.noreply.github.com
+- **Update dependency pyjwt to v2.15.0 [SECURITY]** (#1645) by 29139614+renovate[bot]@users.noreply.github.com
+
 ## [2026.11.4.1] - 2026-11-04
 
 ### Changes
