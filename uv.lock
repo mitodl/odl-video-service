@@ -1448,7 +1448,7 @@ wheels = [
 
 [[package]]
 name = "odl-video-service"
-version = "2026.11.4.1"
+version = "2026.11.5.1"
 source = { virtual = "." }
 default-groups = "all"
 dependencies = [
