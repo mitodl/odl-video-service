@@ -3,7 +3,6 @@ Keycloak Management Utility
 """
 
 import logging
-from dataclasses import dataclass
 
 import requests
 from django.conf import settings
@@ -24,22 +23,6 @@ def is_keycloak_conflict_error(exc):
         isinstance(exc, requests.exceptions.HTTPError)
         and getattr(exc.response, "status_code", None) == 409
     )
-
-
-@dataclass
-class KeycloakUser:
-    """Data class for Keycloak user"""
-
-    username: str
-    email: str
-    first_name: str = ""
-    last_name: str = ""
-    enabled: bool = True
-    email_verified: bool = False
-    password: str | None = None
-    temporary_password: bool = True
-    groups: list[str] | None = None
-    attributes: dict[str, list[str]] | None = None
 
 
 class KeycloakManager:
@@ -191,19 +174,6 @@ class KeycloakManager:
         groups = self.get_groups(params)
         return groups[0] if groups else None
 
-    def create_group(self, group_name: str, attributes: dict | None = None) -> dict:
-        """Create a new group"""
-        endpoint = f"/admin/realms/{self.realm}/groups"
-
-        group_data = {
-            "name": group_name,
-            "attributes": attributes or {"source": ["odl_video_service"]},
-        }
-
-        self._make_api_request("post", endpoint, json_data=group_data)
-
-        return self.find_group_by_name(group_name)
-
     def get_group_members(self, group_id: str) -> list[dict]:
         """Get all members of a specific group"""
         endpoint = f"/admin/realms/{self.realm}/groups/{group_id}/members"
@@ -344,61 +314,6 @@ class KeycloakManager:
 
         users = self._make_api_request("get", endpoint, params=params)
         return users[0] if users else None
-
-    def create_user(self, user: KeycloakUser) -> dict:
-        """Create a new user"""
-        user_data = {
-            "username": user.username,
-            "email": user.email,
-            "firstName": user.first_name,
-            "lastName": user.last_name,
-            "enabled": user.enabled,
-            "emailVerified": True,
-            "attributes": user.attributes or {"source": ["odl_video_service"]},
-        }
-
-        # Create the user
-        endpoint = f"/admin/realms/{self.realm}/users"
-        try:
-            self._make_api_request("post", endpoint, json_data=user_data)
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 409:  # User already exists
-                logger.warning(f"User '{user.username}' already exists")
-                return self.find_user_by_email(user.email)
-            raise KeycloakException(
-                f"Failed to create user {user.username}: {e.response.text}"
-            ) from e
-
-        created_user = self.find_user_by_email(user.email)
-        if not created_user:
-            raise KeycloakException("Failed to retrieve created user")
-
-        # Set password if provided
-        if user.password:
-            self.set_user_password(
-                created_user["id"], user.password, user.temporary_password
-            )
-
-        for group_name in user.groups or []:
-            group = self.find_group_by_name(group_name)
-            if group:
-                self.add_user_to_group(created_user["id"], group["id"])
-            else:
-                logger.warning(
-                    f"Group '{group_name}' not found, skipping group assignment"
-                )
-
-        return created_user
-
-    def set_user_password(
-        self, user_id: str, password: str, temporary: bool = False
-    ) -> bool:
-        """Set user password"""
-        endpoint = f"/admin/realms/{self.realm}/users/{user_id}/reset-password"
-        password_data = {"type": "password", "value": password, "temporary": temporary}
-
-        response = self._make_api_request("put", endpoint, json_data=password_data)
-        return response.get("status_code") == 204
 
 
 def get_keycloak_client() -> KeycloakManager:
