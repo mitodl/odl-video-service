@@ -1,5 +1,7 @@
 """Task tests"""
 
+import time
+
 import factory
 import pytest
 from django.db.models import signals
@@ -55,3 +57,27 @@ def test_batch_update_video_on_edx(mocker):
     assert group_mock.call_count == 1
     for i in list(range(10)):
         mock_batch.assert_any_call(all_ids[i * 10 : i * 10 + 10])
+
+
+@pytest.mark.django_db
+def test_clear_social_auth_state():
+    """Stale social-auth OAuth state is deleted and recent state is kept"""
+    from social_django.models import Nonce
+
+    now = int(time.time())
+    Nonce.objects.create(
+        server_url="keycloak", timestamp=now - 15 * 24 * 60 * 60, salt="stale"
+    )
+    Nonce.objects.create(server_url="keycloak", timestamp=now, salt="fresh")
+
+    tasks.clear_social_auth_state()
+
+    assert list(Nonce.objects.values_list("salt", flat=True)) == ["fresh"]
+
+
+def test_clear_social_auth_state_is_scheduled():
+    """celery beat runs the cleanup task when Keycloak is enabled"""
+    from odl_video import settings as project_settings
+
+    entry = project_settings.CELERY_BEAT_SCHEDULE["clear-social-auth-state"]
+    assert entry["task"] == tasks.clear_social_auth_state.name
