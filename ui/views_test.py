@@ -195,6 +195,55 @@ def test_video_embed(logged_in_client, settings):
     }
 
 
+@pytest.mark.parametrize(
+    "video_flags", [{}, {"is_logged_in_only": True}, {"is_private": True}]
+)
+@pytest.mark.parametrize("techtv", [False, True])
+def test_video_embed_anonymous_restricted(
+    client, user_view_list_data, video_flags, techtv
+):
+    """
+    An anonymous viewer of a restricted embed gets a link that opens login in the
+    top window, instead of a redirect to the login page, which refuses to be framed
+    """
+    video = user_view_list_data.video
+    for name, value in video_flags.items():
+        setattr(video, name, value)
+    video.save()
+    if techtv:
+        url = f"/embeds/{TechTVVideoFactory(video=video).ttv_id}"
+    else:
+        url = reverse("video-embed", kwargs={"video_key": video.hexkey})
+
+    response = client.get(url)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert "X-Frame-Options" not in response
+    detail_url = reverse("video-detail", kwargs={"video_key": video.hexkey})
+    assert (
+        f'href="/login/?next={detail_url}" target="_top"' in response.content.decode()
+    )
+
+
+def test_video_embed_anonymous_public(client, user_view_list_data):
+    """An anonymous viewer of a public embed gets the player"""
+    video = user_view_list_data.video
+    video.is_public = True
+    video.save()
+    response = client.get(reverse("video-embed", kwargs={"video_key": video.hexkey}))
+    assert response.status_code == status.HTTP_200_OK
+    assert response.template_name == ["ui/video_embed.html"]
+
+
+def test_video_embed_no_permission(
+    mock_user_groups, logged_in_client, user_view_list_data
+):
+    """A logged-in viewer without access to a restricted embed is still denied"""
+    client, _ = logged_in_client
+    url = reverse("video-embed", kwargs={"video_key": user_view_list_data.video.hexkey})
+    assert client.get(url).status_code == status.HTTP_403_FORBIDDEN
+
+
 def test_upload_dropbox_videos_authentication(mock_user_groups, logged_in_apiclient):
     """
     Tests that only authenticated users with collection admin permissions can call UploadVideosFromDropbox

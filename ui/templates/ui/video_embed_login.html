@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Log in to watch</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      color: #fff;
+      font-family: Roboto, Arial, sans-serif;
+      text-align: center;
+    }
+    a {
+      margin-top: 12px;
+      padding: 10px 20px;
+      border: 1px solid #fff;
+      border-radius: 4px;
+      color: #fff;
+      text-decoration: none;
+    }
+    a:hover, a:focus { background: #fff; color: #000; }
+  </style>
+</head>
+<body>
+  <p>You need to log in to watch this video.</p>
+  {# Login can't happen inside the iframe, so open it in the top window #}
+  <a href="{{ login_url }}" target="_top">Log in to watch</a>
+</body>
+</html>
