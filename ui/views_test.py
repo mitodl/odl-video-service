@@ -598,6 +598,23 @@ def test_login_next(mock_user_groups, logged_in_apiclient, user_admin_list_data)
     assert status_code == 302
 
 
+@pytest.mark.parametrize(
+    "next_url",
+    [
+        "https://evil.example.com/x",
+        "//evil.example.com/x",
+        "/\\evil.example.com/x",
+        "javascript:alert(1)",
+    ],
+)
+def test_login_next_rejects_offsite_url(logged_in_client, next_url):
+    """The login page never sends a logged-in user to another site via `next`"""
+    client, _ = logged_in_client
+    response = client.get("/login/", {"next": next_url})
+    assert response.status_code == 302
+    assert response["Location"] == "/"
+
+
 def test_login_nonext(mock_user_groups, logged_in_apiclient):
     """
     Tests that the login page redirects to the collections page if authenticated

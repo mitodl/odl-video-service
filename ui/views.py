@@ -12,7 +12,7 @@ from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Prefetch, Q
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -654,11 +654,8 @@ class LoginView(DjangoLoginView):
     def get(self, request, *args, **kwargs):
         """Login entry point — redirect to Keycloak (or honor `next`) if already authenticated."""
         if request.user.is_authenticated:
-            next_redirect = request.GET.get("next")
-            if next_redirect:
-                return redirect(next_redirect)
-            else:
-                return redirect("/")
+            # get_redirect_url() returns "" for a `next` that leads to another site
+            return HttpResponseRedirect(self.get_redirect_url() or "/")
 
         if getattr(settings, "USE_KEYCLOAK", False):
             return redirect("social:begin", "keycloak")
