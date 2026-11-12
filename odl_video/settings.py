@@ -188,6 +188,10 @@ SOCIAL_AUTH_PIPELINE = [
 ]
 
 SOCIAL_AUTH_KEYCLOAK_ID_KEY = "email"
+# social_django's 0020 migration fills UserSocialAuth.id_key on existing rows with
+# each provider's old default ("username" for keycloak). Login looks rows up by
+# ID_KEY, so the backfill has to record "email" or existing users can't log in.
+SOCIAL_AUTH_OLD_ID_KEYS = {"keycloak": SOCIAL_AUTH_KEYCLOAK_ID_KEY}
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_KEYCLOAK_SCOPE = ["openid", "profile", "email"]
 SOCIAL_AUTH_KEYCLOAK_EXTRA_DATA = ["user_groups"]
