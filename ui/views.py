@@ -181,14 +181,16 @@ class VideoEmbed(TemplateView):
         Render the embed, or a login link for an anonymous viewer of a restricted video.
 
         Logging in inside the iframe doesn't work: browsers won't store or send OVS's
-        SameSite=Lax session cookie in a cross-site frame, and OVS's /login/ page
-        refuses to be framed. So the link opens login in the top window and returns
-        to the video's page.
+        SameSite=Lax session cookie in a cross-site frame. So the link opens login in
+        the top window and returns to the video's page, keeping the embed's query
+        string (such as ?start=) the way the video page keeps it.
         """
         if not self.request.user.is_authenticated and (
             not ui_permissions.has_video_view_permission(video, self.request)
         ):
             detail_url = reverse("video-detail", kwargs={"video_key": video.hexkey})
+            if query := self.request.GET.urlencode():
+                detail_url = f"{detail_url}?{query}"
             return render(
                 self.request,
                 "ui/video_embed_login.html",

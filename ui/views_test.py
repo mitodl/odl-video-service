@@ -225,6 +225,26 @@ def test_video_embed_anonymous_restricted(
     )
 
 
+@pytest.mark.parametrize("techtv", [False, True])
+def test_video_embed_anonymous_restricted_keeps_start(
+    client, user_view_list_data, techtv
+):
+    """The login link returns to the video page at the embed's start time"""
+    video = user_view_list_data.video
+    if techtv:
+        url = f"/embeds/{TechTVVideoFactory(video=video).ttv_id}?start=42"
+    else:
+        url = reverse("video-embed", kwargs={"video_key": video.hexkey}) + "?start=42"
+
+    response = client.get(url)
+
+    detail_url = reverse("video-detail", kwargs={"video_key": video.hexkey})
+    assert (
+        f'href="/login/?next={detail_url}%3Fstart%3D42" target="_top"'
+        in response.content.decode()
+    )
+
+
 def test_video_embed_anonymous_public(client, user_view_list_data):
     """An anonymous viewer of a public embed gets the player"""
     video = user_view_list_data.video
