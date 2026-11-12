@@ -1,9 +1,13 @@
 """Task tests"""
 
+import os
+import subprocess
+import sys
 import time
 
 import factory
 import pytest
+from django.conf import settings as django_settings
 from django.db.models import signals
 
 from ui import tasks
@@ -75,9 +79,26 @@ def test_clear_social_auth_state():
     assert list(Nonce.objects.values_list("salt", flat=True)) == ["fresh"]
 
 
-def test_clear_social_auth_state_is_scheduled():
-    """celery beat runs the cleanup task when Keycloak is enabled"""
-    from odl_video import settings as project_settings
-
-    entry = project_settings.CELERY_BEAT_SCHEDULE["clear-social-auth-state"]
-    assert entry["task"] == tasks.clear_social_auth_state.name
+@pytest.mark.parametrize("use_keycloak", [True, False])
+def test_clear_social_auth_state_is_scheduled(use_keycloak):
+    """
+    celery beat runs the cleanup task only when Keycloak is enabled, because
+    clearsocial comes from social_django, which is only installed then
+    """
+    # The settings module is loaded once per process, so load it fresh in a
+    # subprocess to see what it does with USE_KEYCLOAK off
+    code = (
+        "from odl_video import settings; "
+        "entry = settings.CELERY_BEAT_SCHEDULE.get('clear-social-auth-state'); "
+        "print(entry and entry['task'])"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        env={**os.environ, "USE_KEYCLOAK": str(use_keycloak)},
+        cwd=django_settings.BASE_DIR,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    expected = tasks.clear_social_auth_state.name if use_keycloak else "None"
+    assert result.stdout.splitlines()[-1] == expected
