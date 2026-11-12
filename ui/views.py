@@ -12,7 +12,7 @@ from django.contrib.auth.views import LoginView as DjangoLoginView
 from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Prefetch, Q
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -677,11 +677,8 @@ class LoginView(DjangoLoginView):
     def get(self, request, *args, **kwargs):
         """Login entry point — honor `next` if already authenticated, else render the login page."""
         if request.user.is_authenticated:
-            next_redirect = request.GET.get("next")
-            if next_redirect:
-                return redirect(next_redirect)
-            else:
-                return redirect("/")
+            # get_success_url() ignores a `next` that leads to another site and falls back to LOGIN_REDIRECT_URL
+            return HttpResponseRedirect(self.get_success_url())
 
         return super().get(request, *args, **kwargs)
 
