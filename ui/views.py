@@ -14,6 +14,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Prefetch, Q
 from django.http import Http404
 from django.shortcuts import get_list_or_404, get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -173,6 +174,28 @@ class VideoEmbed(TemplateView):
 
     def get(self, request, *args, **kwargs):
         video = get_object_or_404(Video, key=kwargs["video_key"])
+        return self.embed_response(video, *args, **kwargs)
+
+    def embed_response(self, video, *args, **kwargs):
+        """
+        Render the embed, or a login link for an anonymous viewer of a restricted video.
+
+        Logging in inside the iframe doesn't work: browsers won't store or send OVS's
+        SameSite=Lax session cookie in a cross-site frame. So the link opens login in
+        the top window and returns to the video's page, keeping the embed's query
+        string (such as ?start=) the way the video page keeps it.
+        """
+        if not self.request.user.is_authenticated and (
+            not ui_permissions.has_video_view_permission(video, self.request)
+        ):
+            detail_url = reverse("video-detail", kwargs={"video_key": video.hexkey})
+            if query := self.request.GET.urlencode():
+                detail_url = f"{detail_url}?{query}"
+            return render(
+                self.request,
+                "ui/video_embed_login.html",
+                {"login_url": redirect_to_login(detail_url).url},
+            )
         return conditional_response(self, video, *args, **kwargs)
 
     def get_context_data(self, video, **kwargs):
@@ -252,7 +275,7 @@ class TechTVEmbed(VideoEmbed):
         ttv_videos = get_list_or_404(
             TechTVVideo.objects.filter(ttv_id=kwargs["video_key"])
         )
-        return conditional_response(self, ttv_videos[0].video, *args, **kwargs)
+        return self.embed_response(ttv_videos[0].video, *args, **kwargs)
 
 
 class TechTVDownload(VideoDownload):
