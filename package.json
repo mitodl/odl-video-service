@@ -106,6 +106,7 @@
     "sass-loader": "^16.0.0",
     "sinon": "^21.0.0",
     "style-loader": "^4.0.0",
+    "terser-webpack-plugin": "^5.4.0",
     "typescript": "^5.9.3",
     "url-loader": "^4.1.0",
     "video.js": "^8.0.0",
