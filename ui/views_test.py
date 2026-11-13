@@ -3,6 +3,7 @@ Tests for views
 """
 
 import json
+import re
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -10,7 +11,8 @@ import pytest
 from django.contrib.auth.models import AnonymousUser, Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponseRedirect
-from django.test import RequestFactory, override_settings
+from django.shortcuts import resolve_url
+from django.test import Client, RequestFactory, override_settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -607,6 +609,43 @@ def test_login_nonext(mock_user_groups, logged_in_apiclient):
     final_url, status_code = response.redirect_chain[-1]
     assert final_url == "/collections/"
     assert status_code == 302
+
+
+def test_login_url_is_login_page():
+    """login_required sends anonymous users to the login page, not to social:begin"""
+    from odl_video import settings as project_settings
+
+    assert resolve_url(project_settings.LOGIN_URL) == reverse("login")
+
+
+def test_keycloak_login_page_posts_to_social_begin(settings):
+    """
+    With Keycloak on, the login page starts the login with a CSRF-protected POST,
+    since social-auth's begin view only accepts POST
+    """
+    settings.USE_KEYCLOAK = True
+    settings.SOCIAL_AUTH_KEYCLOAK_KEY = "odl-video-app"
+    settings.SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL = (
+        "https://kc.example.com/realms/ovs/protocol/openid-connect/auth"
+    )
+    client = Client(enforce_csrf_checks=True)
+    begin_url = reverse("social:begin", args=["keycloak"])
+
+    response = client.get("/login/?next=/collections/")
+    assert response.status_code == 200
+    html = response.content.decode()
+    assert f'method="post" action="{begin_url}"' in html
+    assert 'name="next" value="/collections/"' in html
+    token = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', html).group(1)
+
+    response = client.post(
+        begin_url, {"csrfmiddlewaretoken": token, "next": "/collections/"}
+    )
+    assert response.status_code == 302
+    assert response["Location"].startswith(
+        settings.SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL
+    )
+    assert client.session["next"] == "/collections/"
 
 
 def test_video_detail_view_permission(

@@ -15,6 +15,7 @@ Django setting (set to ``"email"``) and the Keycloak backend's ``id_key()`` reso
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import IntegrityError
@@ -142,6 +143,7 @@ class Command(BaseCommand):
                     user=user,
                     provider=KEYCLOAK_PROVIDER,
                     uid=email,
+                    id_key=settings.SOCIAL_AUTH_KEYCLOAK_ID_KEY,
                     extra_data={},
                 )
                 existing_uids.add(email)

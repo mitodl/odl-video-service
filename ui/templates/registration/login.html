@@ -10,11 +10,16 @@
   <div class="login-container">
     <h2>Redirecting to Login...</h2>
     <p>You will be redirected to the authentication page automatically.</p>
-    <p>If you are not redirected, <a href="{% url 'social:begin' 'keycloak' %}">click here</a>.</p>
+    <form id="keycloak-login-form" method="post" action="{% url 'social:begin' 'keycloak' %}">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}" />{% endif %}
+      <p>If you are not redirected, <button type="submit">click here</button>.</p>
+    </form>
   </div>
   <script>
-    // Automatically redirect to Keycloak login
-    window.location.href = "{% url 'social:begin' 'keycloak' %}";
+    // social-auth only starts a login on POST, so submit the form instead of
+    // navigating to the begin URL
+    document.getElementById("keycloak-login-form").submit();
   </script>
   <style>
   .login-container {

@@ -122,8 +122,6 @@ if USE_KEYCLOAK:
     AUTHENTICATION_BACKENDS = [
         "odl_video.backends.KeycloakJWKSOAuth2",
     ]
-
-    LOGIN_URL = "/auth/login/keycloak/"
 else:
     AUTHENTICATION_BACKENDS = [
         "django.contrib.auth.backends.ModelBackend",
@@ -188,6 +186,12 @@ SOCIAL_AUTH_PIPELINE = [
 ]
 
 SOCIAL_AUTH_KEYCLOAK_ID_KEY = "email"
+# social_django's 0020 migration fills UserSocialAuth.id_key on existing rows with
+# each provider's old default ("username" for keycloak). Login looks rows up by
+# ID_KEY, so the backfill has to record "email" or existing users can't log in.
+# This is the key existing rows were created with, so keep it literal even if
+# SOCIAL_AUTH_KEYCLOAK_ID_KEY changes later.
+SOCIAL_AUTH_OLD_ID_KEYS = {"keycloak": "email"}
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_KEYCLOAK_SCOPE = ["openid", "profile", "email"]
 SOCIAL_AUTH_KEYCLOAK_EXTRA_DATA = ["user_groups"]
@@ -554,6 +558,14 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": get_int("STUCK_UPLOADING_CHECK_FREQUENCY", 3600),
     },
 }
+
+if USE_KEYCLOAK:
+    # social-auth stores OAuth state in social_auth_nonce on every login start;
+    # rows from logins that never complete are only removed by clearsocial
+    CELERY_BEAT_SCHEDULE["clear-social-auth-state"] = {
+        "task": "ui.tasks.clear_social_auth_state",
+        "schedule": 24 * 60 * 60,
+    }
 
 if ENVIRONMENT.lower() == "dev":
     CELERY_BEAT_SCHEDULE["update-statuses"] = {

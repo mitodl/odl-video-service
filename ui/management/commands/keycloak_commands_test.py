@@ -148,10 +148,10 @@ def test_create_keycloak_social_auth_creates_bindings():
     call_command("create_keycloak_social_auth", stdout=out)
 
     assert UserSocialAuth.objects.filter(
-        user=u1, provider="keycloak", uid="alice@example.com"
+        user=u1, provider="keycloak", uid="alice@example.com", id_key="email"
     ).exists()
     assert UserSocialAuth.objects.filter(
-        user=u2, provider="keycloak", uid="bob@example.com"
+        user=u2, provider="keycloak", uid="bob@example.com", id_key="email"
     ).exists()
     assert "Created: 2" in out.getvalue()
 

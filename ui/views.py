@@ -652,16 +652,13 @@ class LoginView(DjangoLoginView):
         return context
 
     def get(self, request, *args, **kwargs):
-        """Login entry point — redirect to Keycloak (or honor `next`) if already authenticated."""
+        """Login entry point — honor `next` if already authenticated, else render the login page."""
         if request.user.is_authenticated:
             next_redirect = request.GET.get("next")
             if next_redirect:
                 return redirect(next_redirect)
             else:
                 return redirect("/")
-
-        if getattr(settings, "USE_KEYCLOAK", False):
-            return redirect("social:begin", "keycloak")
 
         return super().get(request, *args, **kwargs)
 
