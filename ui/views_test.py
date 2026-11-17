@@ -245,6 +245,30 @@ def test_video_embed_anonymous_restricted_keeps_start(
     )
 
 
+@pytest.mark.parametrize("techtv", [False, True])
+def test_video_embed_login_prompt_fits_logged_in_viewer(
+    client, user_view_list_data, techtv
+):
+    """
+    A cross-site frame doesn't get the session cookie, so a logged-in viewer gets the
+    prompt too. Its wording can't tell them to log in, since the link skips login.
+    """
+    video = user_view_list_data.video
+    if techtv:
+        url = f"/embeds/{TechTVVideoFactory(video=video).ttv_id}?start=7"
+    else:
+        url = reverse("video-embed", kwargs={"video_key": video.hexkey}) + "?start=7"
+
+    content = client.get(url).content.decode()
+
+    assert "log in to watch" not in content.lower()
+    assert 'target="_top">Watch on ODL Video Services</a>' in content
+    detail_url = reverse("video-detail", kwargs={"video_key": video.hexkey})
+    client.force_login(UserFactory())
+    response = client.get(f"/login/?next={detail_url}%3Fstart%3D7")
+    assert response["Location"] == f"{detail_url}?start=7"
+
+
 def test_video_embed_anonymous_public(client, user_view_list_data):
     """An anonymous viewer of a public embed gets the player"""
     video = user_view_list_data.video
