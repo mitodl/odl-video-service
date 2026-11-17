@@ -1,5 +1,6 @@
 """Tests for social auth backends"""
 
+import importlib
 import json
 import threading
 import time
@@ -8,11 +9,16 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
-from social_core.exceptions import AuthTokenError
+from django.apps import apps
+from django.contrib.auth import get_user_model
+from django.db import connection
+from social_core.exceptions import AuthResponseError
+from social_django.models import UserSocialAuth
 from social_django.utils import load_backend, load_strategy
 
 from odl_video import backends
 from odl_video.backends import KeycloakJWKSOAuth2
+from ui.factories import UserFactory
 
 REALM_PATH = "/realms/ovs-local"
 CLIENT_ID = "odl-video-app"
@@ -26,7 +32,7 @@ def _signing_key(kid):
     return private_key, jwk
 
 
-def _access_token(private_key, kid, audience=CLIENT_ID):
+def _access_token(private_key, kid, audience=CLIENT_ID, **extra_claims):
     """Sign an access token the way Keycloak would"""
     now = int(time.time())
     claims = {
@@ -34,6 +40,7 @@ def _access_token(private_key, kid, audience=CLIENT_ID):
         "exp": now + 300,
         "iat": now,
         "preferred_username": "jdoe",
+        **extra_claims,
     }
     return jwt.encode(claims, private_key, algorithm="RS256", headers={"kid": kid})
 
@@ -144,16 +151,50 @@ def test_user_data_survives_key_rotation(backend, realm):
     ],
 )
 def test_user_data_rejects_bad_tokens(backend, realm, kid, signed_by_realm, audience):
-    """Invalid tokens raise AuthTokenError rather than a bare PyJWT error"""
+    """Invalid tokens raise AuthResponseError rather than a bare PyJWT error"""
     _, keys, _ = realm
     realm_private, realm_jwk = _signing_key("realm")
     keys.append(realm_jwk)
     private_key = realm_private if signed_by_realm else _signing_key("x")[0]
-    with pytest.raises(AuthTokenError):
+    with pytest.raises(AuthResponseError):
         backend.user_data(_access_token(private_key, kid, audience=audience))
 
 
 def test_user_data_rejects_malformed_token(backend):
-    """A malformed token raises AuthTokenError"""
-    with pytest.raises(AuthTokenError):
+    """A malformed token raises AuthResponseError"""
+    with pytest.raises(AuthResponseError):
         backend.user_data("not-a-jwt")
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("preferred_username", ["jdoe", "jdoe@example.com"])
+def test_existing_user_logs_in_after_id_key_backfill(
+    backend, realm, preferred_username
+):
+    """
+    A binding made before social_django had UserSocialAuth.id_key still logs in
+    to the same user once its 0020 migration has backfilled the key.
+    """
+    _, keys, _ = realm
+    private_key, jwk = _signing_key("realm")
+    keys.append(jwk)
+    user = UserFactory.create(username="jdoe@example.com", email="jdoe@example.com")
+    UserSocialAuth.objects.create(
+        user=user, provider="keycloak", uid="jdoe@example.com", extra_data={}
+    )
+    migration = importlib.import_module(
+        "social_django.migrations.0020_backfill_id_keys"
+    )
+    with connection.schema_editor() as schema_editor:
+        migration.backfill_id_keys(apps, schema_editor)
+
+    token = _access_token(
+        private_key,
+        "realm",
+        sub="0b1c2d3e-0000-4000-8000-000000000001",
+        email="jdoe@example.com",
+        preferred_username=preferred_username,
+    )
+    assert backend.do_auth(token) == user
+    assert get_user_model().objects.count() == 1
+    assert UserSocialAuth.objects.get(user=user).id_key == "email"

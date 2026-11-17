@@ -6,6 +6,7 @@ from itertools import groupby
 
 import celery
 import structlog
+from django.core.management import call_command
 from django.db.models import Q
 
 from mail.utils import chunks
@@ -102,3 +103,9 @@ def post_collection_videos_to_edx(video_ids):
                 for endpoint, resp in responses.items()
             },
         )
+
+
+@app.task
+def clear_social_auth_state():
+    """Delete stale social-auth state, such as OAuth state from abandoned logins"""
+    call_command("clearsocial")

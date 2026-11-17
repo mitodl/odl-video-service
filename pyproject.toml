@@ -43,7 +43,7 @@ dependencies = [
     "requests>=2.20.0,<3",
     "sentry-sdk>=2.0.0,<3",
     "smart-open>=7.1.0,<8",
-    "social-auth-app-django>=5.4.0,<6",
+    "social-auth-app-django>=7.2.0,<8",
     "structlog>=25.0.0,<26",
     "mitol-django-observability>=2026.8.19",
     # OTel instrumentors. mitol-django-observability auto-discovers these through
