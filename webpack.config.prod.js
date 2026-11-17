@@ -4,7 +4,7 @@ var BundleTracker = require('webpack-bundle-tracker');
 const glob = require('glob');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const { config, babelSharedLoader } = require(path.resolve("./webpack.config.shared.js"));
-const TerserPlugin = require("terser-webpack-plugin");
+const MinimizerPlugin = require("minimizer-webpack-plugin");
 
 const prodBabelConfig = Object.assign({}, babelSharedLoader);
 
@@ -79,7 +79,7 @@ module.exports = Object.assign(prodConfig, {
     },
     minimize: true,
     minimizer: [
-    new TerserPlugin({
+    new MinimizerPlugin({
       terserOptions: {
         ecma: 2020,
         compress: true,
