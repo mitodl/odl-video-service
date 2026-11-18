@@ -66,6 +66,10 @@ class KeycloakManager:
             "grant_type": "client_credentials",
             "client_id": self.client_id,
             "client_secret": self.client_secret,
+            # Keycloak 26.8.2+ rejects Admin API tokens without this scope's
+            # audience. odl-video-app also signs users in, so the scope is optional
+            # on the client and has to be requested here.
+            "scope": "kc-admin-api",
         }
 
         try:
