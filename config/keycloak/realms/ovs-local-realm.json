@@ -1011,7 +1011,8 @@
         "phone",
         "organization",
         "offline_access",
-        "microprofile-jwt"
+        "microprofile-jwt",
+        "kc-admin-api"
       ],
       "authorizationSettings": {
         "allowRemoteResourceManagement": true,
@@ -1146,6 +1147,16 @@
     }
   ],
   "clientScopes": [
+    {
+      "id": "3f1e9c52-7a4b-4d8e-9b06-2c5d8e7f1a34",
+      "name": "kc-admin-api",
+      "description": "Stand-in for Keycloak 26.8.2's built-in Admin API scope, which ui/keycloak_utils.py requests",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
     {
       "id": "e740298d-5d16-4254-b2a4-ca6532a5c32c",
       "name": "role_list",
