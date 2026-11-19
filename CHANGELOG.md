@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2026.11.19.1] - 2026-11-19
+
+### Changes
+
+- **Request the kc-admin-api scope for the Keycloak admin token** (#1683) by tmacey@mit.edu
+- **Don't redirect logged-in users off-site from the login page** (#1672) by ahtisham300@gmail.com
+- **Update dependency webpack to v5.112.2** (#1613) by 29139614+renovate[bot]@users.noreply.github.com
+
 ## [2026.11.17.1] - 2026-11-17
 
 ### Changes
