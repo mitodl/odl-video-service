@@ -28,8 +28,10 @@ RUN chown mitodl:mitodl /src/pyproject.toml /src/uv.lock
 USER mitodl
 WORKDIR /src
 # BuildKit cache mount keeps the uv download cache across builds.
+# --no-default-groups, not --no-dev: pyproject's `default-groups = "all"` also
+# selects the prek group, which --no-dev leaves in.
 RUN --mount=type=cache,target=/opt/uv-cache,uid=1000,gid=1000 \
-    uv sync --frozen --no-install-project --no-dev
+    uv sync --frozen --no-install-project --no-default-groups
 
 # ─── Runtime base ─────────────────────────────────────────────────────────────
 FROM deps AS production
