@@ -13,7 +13,7 @@ RUN yarn install --frozen-lockfile --ignore-engines --prefer-offline && \
     node node_modules/webpack/bin/webpack.js --config webpack.config.prod.js --bail
 
 # ─── Python base ─────────────────────────────────────────────────────────────
-FROM mitodl/ol-python-base:3.13@sha256:bed30417e5474b2902fd7a274d91e706314ea041f88121ae9afad831fc6e4bc9 AS base
+FROM mitodl/ol-python-base:3.13@sha256:8fc6306d7944b1505df49100f424679c9772a4c2843dee4067523402fdae9f8a AS base
 LABEL maintainer="ODL DevOps <mitx-devops@mit.edu>"
 
 # odl-video-service has no app-specific apt extras; all required packages
