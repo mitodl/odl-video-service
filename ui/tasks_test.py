@@ -1,19 +1,19 @@
 """Task tests"""
 
+import os
+import subprocess
+import sys
+import time
+
 import factory
 import pytest
-import requests
+from django.conf import settings as django_settings
 from django.db.models import signals
 
 from ui import tasks
 from ui.constants import VideoStatus
 from ui.encodings import EncodingNames
 from ui.factories import VideoFactory, VideoFileFactory
-
-
-def _conflict_error():
-    response = type("Response", (), {"status_code": 409, "text": "conflict"})()
-    return requests.exceptions.HTTPError(response=response)
 
 
 @pytest.mark.django_db
@@ -85,148 +85,41 @@ def test_batch_update_video_on_edx(mocker):
 
 
 @pytest.mark.django_db
-def test_migrate_keycloak_groups_chunk_handles_conflict_and_errors(mocker):
-    """Group chunk task should count 409s as skipped and record other failures."""
-    mock_manager = mocker.Mock()
-    mock_manager.create_group.side_effect = [
-        {"id": "created"},
-        _conflict_error(),
-        _conflict_error(),
-        Exception("boom"),
-    ]
+def test_clear_social_auth_state():
+    """Stale social-auth OAuth state is deleted and recent state is kept"""
+    from social_django.models import Nonce
 
-    mocker.patch(
-        "ui.tasks.build_keycloak_manager",
-        return_value=mock_manager,
+    now = int(time.time())
+    Nonce.objects.create(
+        server_url="keycloak", timestamp=now - 15 * 24 * 60 * 60, salt="stale"
     )
+    Nonce.objects.create(server_url="keycloak", timestamp=now, salt="fresh")
 
-    result = tasks.migrate_keycloak_groups_chunk(
-        ["create-me", "dup-a", "dup-b", "bad-group"],
-        keycloak_config={},
+    tasks.clear_social_auth_state()
+
+    assert list(Nonce.objects.values_list("salt", flat=True)) == ["fresh"]
+
+
+@pytest.mark.parametrize("use_keycloak", [True, False])
+def test_clear_social_auth_state_is_scheduled(use_keycloak):
+    """
+    celery beat runs the cleanup task only when Keycloak is enabled, because
+    clearsocial comes from social_django, which is only installed then
+    """
+    # The settings module is loaded once per process, so load it fresh in a
+    # subprocess to see what it does with USE_KEYCLOAK off
+    code = (
+        "from odl_video import settings; "
+        "entry = settings.CELERY_BEAT_SCHEDULE.get('clear-social-auth-state'); "
+        "print(entry and entry['task'])"
     )
-
-    assert result["created"] == 1
-    assert result["existing_skipped"] == 2
-    assert result["failed"] == 1
-    assert len(result["errors"]) == 1
-
-
-@pytest.mark.django_db
-def test_migrate_keycloak_users_chunk_handles_conflict_and_errors(mocker):
-    """User chunk task should count 409s as skipped and record other failures."""
-    mock_manager = mocker.Mock()
-    mock_manager.create_user.side_effect = [
-        {"id": "created"},
-        _conflict_error(),
-        _conflict_error(),
-        Exception("boom"),
-    ]
-
-    mocker.patch(
-        "ui.tasks.build_keycloak_manager",
-        return_value=mock_manager,
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        env={**os.environ, "USE_KEYCLOAK": str(use_keycloak)},
+        cwd=django_settings.BASE_DIR,
+        capture_output=True,
+        text=True,
+        check=True,
     )
-
-    payload = [
-        {
-            "id": 1,
-            "username": "create",
-            "email": "create@example.com",
-            "first_name": "Create",
-            "last_name": "User",
-        },
-        {
-            "id": 2,
-            "username": "dup-a",
-            "email": "dup-a@example.com",
-            "first_name": "Dup",
-            "last_name": "A",
-        },
-        {
-            "id": 3,
-            "username": "dup-b",
-            "email": "dup-b@example.com",
-            "first_name": "Dup",
-            "last_name": "B",
-        },
-        {
-            "id": 4,
-            "username": "bad",
-            "email": "bad@example.com",
-            "first_name": "Bad",
-            "last_name": "User",
-        },
-    ]
-
-    result = tasks.migrate_keycloak_users_chunk(
-        payload,
-        keycloak_config={},
-    )
-
-    assert result["created"] == 1
-    assert result["existing_skipped"] == 2
-    assert result["invalid_skipped"] == 0
-    assert result["failed"] == 1
-    assert len(result["errors"]) == 1
-    """Task should skip malformed user payload entries and continue."""
-    mock_manager = mocker.Mock()
-    mock_manager.create_user.return_value = {"id": "created"}
-
-    mocker.patch(
-        "ui.tasks.build_keycloak_manager",
-        return_value=mock_manager,
-    )
-
-    payload = [
-        {
-            "id": 1,
-            "username": "ok",
-            "email": "ok@example.com",
-            "first_name": "Ok",
-            "last_name": "User",
-        },
-        {
-            "id": 2,
-            "username": "",
-            "email": "",
-            "first_name": "Bad",
-            "last_name": "User",
-        },
-    ]
-
-    result = tasks.migrate_keycloak_users_chunk(
-        payload,
-        keycloak_config={},
-    )
-
-    assert result["created"] == 1
-    assert result["invalid_skipped"] == 1
-    assert result["failed"] == 0
-
-
-@pytest.mark.django_db
-def test_migrate_keycloak_users_chunk_creates_user_without_password(mocker):
-    """Migrated users must be created with no password so Keycloak does not add
-    UPDATE_PASSWORD as a required action (which would prompt SAML-authed users
-    to set a local password after login)."""
-    mock_manager = mocker.Mock()
-    mock_manager.create_user.return_value = {"id": "created"}
-    mocker.patch("ui.tasks.build_keycloak_manager", return_value=mock_manager)
-
-    tasks.migrate_keycloak_users_chunk(
-        [
-            {
-                "id": 1,
-                "username": "alice",
-                "email": "alice@example.com",
-                "first_name": "Alice",
-                "last_name": "A",
-            }
-        ],
-        keycloak_config={},
-    )
-
-    mock_manager.create_user.assert_called_once()
-    user_arg = mock_manager.create_user.call_args[0][0]
-    assert user_arg.password is None
-    assert user_arg.temporary_password is False
+    expected = tasks.clear_social_auth_state.name if use_keycloak else "None"
+    assert result.stdout.splitlines()[-1] == expected

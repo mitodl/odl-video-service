@@ -15,7 +15,7 @@ from redbeat import RedBeatScheduler
 from odl_video.envs import get_any, get_bool, get_int, get_key, get_string, parse_env
 from odl_video.sentry import init_sentry
 
-VERSION = "0.97.3"
+VERSION = "2026.11.19.1"
 
 ENVIRONMENT = get_string("ODL_VIDEO_ENVIRONMENT", "dev")
 
@@ -122,8 +122,6 @@ if USE_KEYCLOAK:
     AUTHENTICATION_BACKENDS = [
         "odl_video.backends.KeycloakJWKSOAuth2",
     ]
-
-    LOGIN_URL = "/auth/login/keycloak/"
 else:
     AUTHENTICATION_BACKENDS = [
         "django.contrib.auth.backends.ModelBackend",
@@ -143,8 +141,9 @@ SOCIAL_AUTH_KEYCLOAK_LOGOUT_URL = SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL.replace
     "/protocol/openid-connect/auth", "/protocol/openid-connect/logout"
 )
 
-# Keycloak admin-API settings — consumed by the moira-to-keycloak migration
-# management commands, not by the runtime login flow.
+# Keycloak admin-API settings. The request path reads groups and members with
+# them (ui.keycloak_utils.get_keycloak_client), and assign_group_users falls
+# back to them for any value not given on the command line.
 # KEYCLOAK_SERVER_URL and KEYCLOAK_REALM fall back to values parsed from
 # SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL so that they work even before the
 # Vault secret is updated with the explicit server_url/realm_name fields.
@@ -187,9 +186,18 @@ SOCIAL_AUTH_PIPELINE = [
 ]
 
 SOCIAL_AUTH_KEYCLOAK_ID_KEY = "email"
+# social_django's 0020 migration fills UserSocialAuth.id_key on existing rows with
+# each provider's old default ("username" for keycloak). Login looks rows up by
+# ID_KEY, so the backfill has to record "email" or existing users can't log in.
+# This is the key existing rows were created with, so keep it literal even if
+# SOCIAL_AUTH_KEYCLOAK_ID_KEY changes later.
+SOCIAL_AUTH_OLD_ID_KEYS = {"keycloak": "email"}
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_KEYCLOAK_SCOPE = ["openid", "profile", "email"]
 SOCIAL_AUTH_KEYCLOAK_EXTRA_DATA = ["user_groups"]
+# social-auth-core 4.9+ otherwise times out Keycloak calls after 5s, which a slow
+# token exchange can exceed
+SOCIAL_AUTH_REQUESTS_TIMEOUT = get_int("SOCIAL_AUTH_REQUESTS_TIMEOUT", 30)
 
 LOGOUT_REDIRECT_URL = "/"
 
@@ -550,6 +558,14 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": get_int("STUCK_UPLOADING_CHECK_FREQUENCY", 3600),
     },
 }
+
+if USE_KEYCLOAK:
+    # social-auth stores OAuth state in social_auth_nonce on every login start;
+    # rows from logins that never complete are only removed by clearsocial
+    CELERY_BEAT_SCHEDULE["clear-social-auth-state"] = {
+        "task": "ui.tasks.clear_social_auth_state",
+        "schedule": 24 * 60 * 60,
+    }
 
 if ENVIRONMENT.lower() == "dev":
     CELERY_BEAT_SCHEDULE["update-statuses"] = {

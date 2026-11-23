@@ -96,6 +96,7 @@ def test_get_admin_token_uses_client_credentials():
     assert body["grant_type"] == "client_credentials"
     assert body["client_id"] == "odl-video-app"
     assert body["client_secret"] == "secret"
+    assert body["scope"] == "kc-admin-api"
 
 
 def test_query_lists(mock_keycloak):

@@ -86,7 +86,7 @@ SOCIAL_AUTH_KEYCLOAK_SECRET=odl-video-secret-2025
 SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL=http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/auth
 SOCIAL_AUTH_KEYCLOAK_ACCESS_TOKEN_URL=http://kc.odl.local:7080/realms/ovs-local/protocol/openid-connect/token
 
-# Admin-API access — consumed by the moira-to-keycloak migration commands.
+# Admin-API access: group and member lookups, and the assign_group_users command.
 KEYCLOAK_SERVER_URL=http://kc.odl.local:7080
 KEYCLOAK_REALM=ovs-local
 KEYCLOAK_SVC_ADMIN=admin

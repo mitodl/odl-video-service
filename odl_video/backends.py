@@ -4,7 +4,7 @@ from functools import cache
 
 import jwt
 from social_core.backends.keycloak import KeycloakOAuth2
-from social_core.exceptions import AuthTokenError
+from social_core.backends.utils import jwt_error
 
 KEYCLOAK_TOKEN_PATH = "/protocol/openid-connect/token"
 KEYCLOAK_CERTS_PATH = "/protocol/openid-connect/certs"
@@ -12,8 +12,11 @@ KEYCLOAK_CERTS_PATH = "/protocol/openid-connect/certs"
 
 @cache
 def _jwks_client(jwks_url):
-    """Return a per-process JWKS client, which caches the key set for 5 minutes"""
-    return jwt.PyJWKClient(jwks_url)
+    """
+    Return a per-process JWKS client, which caches the key set for 5 minutes
+    Refetch on an unknown kid right away, so a rotated key works on first use.
+    """
+    return jwt.PyJWKClient(jwks_url, cooldown_duration=0)
 
 
 class KeycloakJWKSOAuth2(KeycloakOAuth2):
@@ -47,4 +50,4 @@ class KeycloakJWKSOAuth2(KeycloakOAuth2):
                 leeway=self.setting("JWT_LEEWAY", default=0),
             )
         except jwt.PyJWTError as error:
-            raise AuthTokenError(self, error) from error
+            raise jwt_error(self, error) from error

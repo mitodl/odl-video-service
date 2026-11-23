@@ -4,6 +4,7 @@ Tests for views
 
 import io
 import json
+import re
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -13,7 +14,8 @@ from django.contrib.auth.models import AnonymousUser, Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import signals
 from django.http import HttpResponseRedirect
-from django.test import RequestFactory, override_settings
+from django.shortcuts import resolve_url
+from django.test import Client, RequestFactory, override_settings
 from PIL import Image
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -205,6 +207,99 @@ def test_video_embed(logged_in_client, settings):
             "VIDEOJS_ANNOTATIONS": False,
         },
     }
+
+
+@pytest.mark.parametrize(
+    "video_flags", [{}, {"is_logged_in_only": True}, {"is_private": True}]
+)
+@pytest.mark.parametrize("techtv", [False, True])
+def test_video_embed_anonymous_restricted(
+    client, user_view_list_data, video_flags, techtv
+):
+    """
+    An anonymous viewer of a restricted embed gets a link that opens login in the
+    top window, instead of a redirect to the login page, which refuses to be framed
+    """
+    video = user_view_list_data.video
+    for name, value in video_flags.items():
+        setattr(video, name, value)
+    video.save()
+    if techtv:
+        url = f"/embeds/{TechTVVideoFactory(video=video).ttv_id}"
+    else:
+        url = reverse("video-embed", kwargs={"video_key": video.hexkey})
+
+    response = client.get(url)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert "X-Frame-Options" not in response
+    detail_url = reverse("video-detail", kwargs={"video_key": video.hexkey})
+    assert (
+        f'href="/login/?next={detail_url}" target="_top"' in response.content.decode()
+    )
+
+
+@pytest.mark.parametrize("techtv", [False, True])
+def test_video_embed_anonymous_restricted_keeps_start(
+    client, user_view_list_data, techtv
+):
+    """The login link returns to the video page at the embed's start time"""
+    video = user_view_list_data.video
+    if techtv:
+        url = f"/embeds/{TechTVVideoFactory(video=video).ttv_id}?start=42"
+    else:
+        url = reverse("video-embed", kwargs={"video_key": video.hexkey}) + "?start=42"
+
+    response = client.get(url)
+
+    detail_url = reverse("video-detail", kwargs={"video_key": video.hexkey})
+    assert (
+        f'href="/login/?next={detail_url}%3Fstart%3D42" target="_top"'
+        in response.content.decode()
+    )
+
+
+@pytest.mark.parametrize("techtv", [False, True])
+def test_video_embed_login_prompt_fits_logged_in_viewer(
+    client, user_view_list_data, techtv
+):
+    """
+    A cross-site frame doesn't get the session cookie, so a logged-in viewer gets the
+    prompt too. Its wording can't tell them to log in, since the link skips login.
+    """
+    video = user_view_list_data.video
+    if techtv:
+        url = f"/embeds/{TechTVVideoFactory(video=video).ttv_id}?start=7"
+    else:
+        url = reverse("video-embed", kwargs={"video_key": video.hexkey}) + "?start=7"
+
+    content = client.get(url).content.decode()
+
+    assert "log in to watch" not in content.lower()
+    assert 'target="_top">Watch on ODL Video Services</a>' in content
+    detail_url = reverse("video-detail", kwargs={"video_key": video.hexkey})
+    client.force_login(UserFactory())
+    response = client.get(f"/login/?next={detail_url}%3Fstart%3D7")
+    assert response["Location"] == f"{detail_url}?start=7"
+
+
+def test_video_embed_anonymous_public(client, user_view_list_data):
+    """An anonymous viewer of a public embed gets the player"""
+    video = user_view_list_data.video
+    video.is_public = True
+    video.save()
+    response = client.get(reverse("video-embed", kwargs={"video_key": video.hexkey}))
+    assert response.status_code == status.HTTP_200_OK
+    assert response.template_name == ["ui/video_embed.html"]
+
+
+def test_video_embed_no_permission(
+    mock_user_groups, logged_in_client, user_view_list_data
+):
+    """A logged-in viewer without access to a restricted embed is still denied"""
+    client, _ = logged_in_client
+    url = reverse("video-embed", kwargs={"video_key": user_view_list_data.video.hexkey})
+    assert client.get(url).status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_upload_dropbox_videos_authentication(mock_user_groups, logged_in_apiclient):
@@ -610,6 +705,23 @@ def test_login_next(mock_user_groups, logged_in_apiclient, user_admin_list_data)
     assert status_code == 302
 
 
+@pytest.mark.parametrize(
+    "next_url",
+    [
+        "https://evil.example.com/x",
+        "//evil.example.com/x",
+        "/\\evil.example.com/x",
+        "javascript:alert(1)",
+    ],
+)
+def test_login_next_rejects_offsite_url(logged_in_client, next_url):
+    """The login page never sends a logged-in user to another site via `next`"""
+    client, _ = logged_in_client
+    response = client.get("/login/", {"next": next_url})
+    assert response.status_code == 302
+    assert response["Location"] == "/"
+
+
 def test_login_nonext(mock_user_groups, logged_in_apiclient):
     """
     Tests that the login page redirects to the collections page if authenticated
@@ -619,6 +731,43 @@ def test_login_nonext(mock_user_groups, logged_in_apiclient):
     final_url, status_code = response.redirect_chain[-1]
     assert final_url == "/collections/"
     assert status_code == 302
+
+
+def test_login_url_is_login_page():
+    """login_required sends anonymous users to the login page, not to social:begin"""
+    from odl_video import settings as project_settings
+
+    assert resolve_url(project_settings.LOGIN_URL) == reverse("login")
+
+
+def test_keycloak_login_page_posts_to_social_begin(settings):
+    """
+    With Keycloak on, the login page starts the login with a CSRF-protected POST,
+    since social-auth's begin view only accepts POST
+    """
+    settings.USE_KEYCLOAK = True
+    settings.SOCIAL_AUTH_KEYCLOAK_KEY = "odl-video-app"
+    settings.SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL = (
+        "https://kc.example.com/realms/ovs/protocol/openid-connect/auth"
+    )
+    client = Client(enforce_csrf_checks=True)
+    begin_url = reverse("social:begin", args=["keycloak"])
+
+    response = client.get("/login/?next=/collections/")
+    assert response.status_code == 200
+    html = response.content.decode()
+    assert f'method="post" action="{begin_url}"' in html
+    assert 'name="next" value="/collections/"' in html
+    token = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', html).group(1)
+
+    response = client.post(
+        begin_url, {"csrfmiddlewaretoken": token, "next": "/collections/"}
+    )
+    assert response.status_code == 302
+    assert response["Location"].startswith(
+        settings.SOCIAL_AUTH_KEYCLOAK_AUTHORIZATION_URL
+    )
+    assert client.session["next"] == "/collections/"
 
 
 def test_video_detail_view_permission(
