@@ -640,6 +640,33 @@ def upload_subtitle_to_s3(caption_data, file_data):
     return vt
 
 
+def get_displayed_image_size(file_data):
+    """
+    Return an image's size as it is displayed (after its EXIF orientation), which is the size
+    the upload dialog shows, without decoding the pixels. Leaves the file at position 0.
+
+    Args:
+        file_data: A file-like object containing the image.
+
+    Returns:
+        tuple[int, int]: ``(width, height)``.
+
+    Raises:
+        ValueError: If the file cannot be read as an image.
+    """
+    try:
+        with Image.open(file_data) as img:
+            width, height = img.size
+            # Orientations 5-8 turn the image a quarter turn for display
+            if img.getexif().get(ExifTags.Base.Orientation, 1) in (5, 6, 7, 8):
+                width, height = height, width
+    except Exception as exc:
+        raise ValueError(f"Could not decode image: {exc}") from exc
+    finally:
+        file_data.seek(0)
+    return width, height
+
+
 def convert_image_to_jpeg(file_data, max_width=None, max_height=None):
     """
     Convert an uploaded image to JPEG format using PIL, downscaling it if

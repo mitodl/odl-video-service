@@ -1997,19 +1997,20 @@ def test_upload_thumbnail_corrupt_file_returns_400(mocker, logged_in_apiclient):
 
 
 @pytest.mark.parametrize(
-    "size,stored_size",
+    "size,uploaded_size",
     [
-        ((1600, 1200), "960x720"),  # 4:3, scaled down to fit 1280x720
+        ((1600, 1200), "1600x1200"),  # 4:3, larger than the 1280x720 OVS stores
         ((1280, 615), "1280x615"),  # wider than 16:9
         ((480, 270), "480x270"),  # 16:9 but below the 640x360 minimum
     ],
 )
 def test_upload_thumbnail_rejects_wrong_dimensions(
-    mocker, logged_in_apiclient, size, stored_size
+    mocker, logged_in_apiclient, size, uploaded_size
 ):
     """
     Thumbnails must be 16:9 and at least 640x360 so they can be shown in edX. Anything else
-    is rejected with a message that names the requirement and the size OVS would store.
+    is rejected with a message that names the requirement and the size of the upload, as the
+    upload dialog does, not the size OVS would scale it to.
     """
     mocker.patch("ui.utils.get_keycloak_client")
     mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
@@ -2026,7 +2027,7 @@ def test_upload_thumbnail_rejects_wrong_dimensions(
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert "16:9" in response.data["error"]
     assert "640x360" in response.data["error"]
-    assert stored_size in response.data["error"]
+    assert f"This image is {uploaded_size}." in response.data["error"]
     mock_replace.assert_not_called()
 
 
@@ -2078,8 +2079,8 @@ def test_upload_thumbnail_checks_dimensions_after_exif_rotation(
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    # displayed as 720x1280, then scaled down to fit 1280x720
-    assert "405x720" in response.data["error"]
+    # reported as displayed (720x1280), not as stored after scaling down to fit 1280x720
+    assert "This image is 720x1280." in response.data["error"]
     mock_replace.assert_not_called()
 
 
@@ -2107,11 +2108,17 @@ def test_upload_thumbnail_checks_size_of_converted_image(mocker, logged_in_apicl
     mock_replace.assert_called_once_with(thumbnail, mocker.ANY)
 
 
-@pytest.mark.parametrize("size", [(1080, 1920), (720, 1280)])
+@pytest.mark.parametrize(
+    "size,stored_size",
+    [((1080, 1920), (720, 1280)), ((720, 1280), (720, 1280)), ((540, 960), (540, 960))],
+)
 def test_upload_thumbnail_accepts_portrait_for_shorts(
-    mocker, logged_in_apiclient, size
+    mocker, logged_in_apiclient, size, stored_size
 ):
-    """Shorts are portrait, so their thumbnails are not held to edX's 16:9 rule"""
+    """
+    Shorts are portrait, so their thumbnails are not held to edX's 16:9 rule, and they are
+    capped at 720x1280 rather than squeezed into the 1280x720 landscape limit.
+    """
     mocker.patch("ui.utils.get_keycloak_client")
     mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
 
@@ -2126,6 +2133,31 @@ def test_upload_thumbnail_accepts_portrait_for_shorts(
 
     assert response.status_code == status.HTTP_200_OK
     mock_replace.assert_called_once()
+    stored = mock_replace.call_args[0][1]
+    stored.seek(0)
+    with Image.open(stored) as image:
+        assert image.size == stored_size
+
+
+def test_upload_thumbnail_caps_landscape_at_1280x720(mocker, logged_in_apiclient):
+    """Outside Shorts, an upload larger than 1280x720 is still scaled down to fit it"""
+    mocker.patch("ui.utils.get_keycloak_client")
+    mock_replace = mocker.patch("ui.views.cloudapi.replace_thumbnail_in_s3")
+
+    client, user = logged_in_apiclient
+    video = VideoFactory(collection=CollectionFactory(owner=user))
+    VideoThumbnailFactory(video=video)
+
+    url = reverse("models-api:video-upload-thumbnail", kwargs={"key": video.hexkey})
+    response = client.patch(
+        url, {"thumbnail": _make_image_file(size=(1920, 1080))}, format="multipart"
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    stored = mock_replace.call_args[0][1]
+    stored.seek(0)
+    with Image.open(stored) as image:
+        assert image.size == (1280, 720)
 
 
 @pytest.mark.parametrize(

@@ -595,9 +595,20 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
                 {"error": f"The uploaded image is too large (max {size_str})."},
                 status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )
+        # Shorts are portrait, so their cap is 720x1280 instead of 1280x720
+        max_width, max_height = (
+            settings.THUMBNAIL_UPLOAD_MAX_WIDTH,
+            settings.THUMBNAIL_UPLOAD_MAX_HEIGHT,
+        )
+        if video.collection.for_shorts:
+            max_width, max_height = max_height, max_width
         try:
+            # Errors name the size the user uploaded, as the upload dialog does
+            uploaded_size = cloudapi.get_displayed_image_size(thumbnail_file)
             # Check what OVS will store and push (resized, EXIF-rotated JPEG), not the upload
-            jpeg_data, _, _ = cloudapi.convert_image_to_jpeg(thumbnail_file)
+            jpeg_data, _, _ = cloudapi.convert_image_to_jpeg(
+                thumbnail_file, max_width=max_width, max_height=max_height
+            )
         except ValueError as exc:
             log.warning("Thumbnail upload could not be decoded", exc_info=exc)
             return Response(
@@ -606,7 +617,9 @@ class VideoViewSet(mixins.ListModelMixin, ModelDetailViewset):
             )
         # Shorts are portrait; their thumbnail is padded to 16:9 when pushed to edX
         if not video.collection.for_shorts:
-            image_error = api.get_edx_video_image_error(jpeg_data.getvalue())
+            image_error = api.get_edx_video_image_error(
+                jpeg_data.getvalue(), shown_size=uploaded_size
+            )
             if image_error:
                 return Response(
                     {"error": image_error}, status=status.HTTP_400_BAD_REQUEST

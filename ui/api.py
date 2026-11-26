@@ -250,12 +250,14 @@ def post_video_to_edx(video_files):
     return responses
 
 
-def get_edx_video_image_error(image_bytes):
+def get_edx_video_image_error(image_bytes, shown_size=None):
     """
     Check an image against the limits Studio enforces on video images
 
     Args:
         image_bytes (bytes): The image file content
+        shown_size (tuple[int, int] | None): The size to report in a dimension error, when the
+            user knows the image by another size (the upload, before OVS scaled it down)
 
     Returns:
         str or None: A description of why edX would reject the image, or None if it is acceptable
@@ -275,7 +277,7 @@ def get_edx_video_image_error(image_bytes):
             width, height = image.size
     except Exception:  # noqa: BLE001
         return "This image could not be decoded."
-    return get_thumbnail_dimension_error(width, height)
+    return get_thumbnail_dimension_error(width, height, shown_size=shown_size)
 
 
 def pad_image_for_edx(image_bytes):
@@ -309,13 +311,15 @@ def pad_image_for_edx(image_bytes):
     return output.getvalue()
 
 
-def get_thumbnail_dimension_error(width, height):
+def get_thumbnail_dimension_error(width, height, shown_size=None):
     """
     Check image dimensions against the size and aspect ratio edX requires for video images
 
     Args:
         width (int): Image width in pixels
         height (int): Image height in pixels
+        shown_size (tuple[int, int] | None): The size to name in the message instead of
+            width x height (defaults to the checked size)
 
     Returns:
         str or None: A user-facing description of the requirement, or None if the dimensions are acceptable
@@ -323,10 +327,11 @@ def get_thumbnail_dimension_error(width, height):
     too_small = width < EDX_VIDEO_IMAGE_MIN_WIDTH or height < EDX_VIDEO_IMAGE_MIN_HEIGHT
     aspect_ratio_delta = abs(width / height - EDX_VIDEO_IMAGE_ASPECT_RATIO)
     if too_small or aspect_ratio_delta > EDX_VIDEO_IMAGE_ASPECT_RATIO_ERROR_MARGIN:
+        shown_width, shown_height = shown_size or (width, height)
         return (
             f"Thumbnails must be 16:9 and at least "
             f"{EDX_VIDEO_IMAGE_MIN_WIDTH}x{EDX_VIDEO_IMAGE_MIN_HEIGHT} pixels. "
-            f"This image is {width}x{height}."
+            f"This image is {shown_width}x{shown_height}."
         )
     return None
 
