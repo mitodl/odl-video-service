@@ -3,6 +3,7 @@ Models for UI app
 """
 
 import os
+import re
 from datetime import timedelta
 from urllib.parse import urlparse
 from uuid import uuid4
@@ -17,7 +18,11 @@ from encrypted_model_fields.fields import EncryptedTextField
 from pycountry import languages
 
 from mail import tasks
-from odl_video.constants import DEFAULT_EDX_VIDEO_API_PATH
+from odl_video.constants import (
+    DEFAULT_EDX_VIDEO_API_PATH,
+    EDX_COURSE_KEY_PATTERN,
+    EDX_VIDEO_IMAGE_API_PATH,
+)
 from odl_video.models import TimestampedModel, TimestampedModelManager
 from ui import utils
 from ui.constants import (
@@ -82,6 +87,12 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
 
     name = models.CharField(max_length=20, unique=True, blank=False, null=False)
     base_url = models.CharField(max_length=100, blank=False, null=False)
+    studio_base_url = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Studio (CMS) base URL. Video thumbnails are only pushed when this is set.",
+    )
     access_token = models.CharField(max_length=2048)
     expires_in = models.IntegerField(default=0)
     edx_video_api_path = models.CharField(
@@ -100,6 +111,20 @@ class EdxEndpoint(ValidateOnSaveMixin, TimestampedModel):
             self.base_url,
             self.edx_video_api_path or DEFAULT_EDX_VIDEO_API_PATH,
             add_trailing_slash=True,
+        )
+
+    def video_image_api_url(self, course_id, edx_video_id):
+        """
+        Returns the Studio URL for uploading the image of a course video
+
+        Raises:
+            ValueError: if course_id is not a course-v1 key, since it becomes part of the URL path
+        """
+        if not re.fullmatch(EDX_COURSE_KEY_PATTERN, course_id or ""):
+            msg = f"Not a valid edX course key: {course_id!r}"
+            raise ValueError(msg)
+        return multi_urljoin(
+            self.studio_base_url, EDX_VIDEO_IMAGE_API_PATH, course_id, str(edx_video_id)
         )
 
     def update_access_token(self, data):
@@ -684,6 +709,22 @@ class VideoThumbnail(VideoS3):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class EdxVideoImageUpload(TimestampedModel):
+    """
+    The last thumbnail image sent to one Studio video image URL, so that later pushes don't
+    re-send an unchanged image. It is kept until a different image is sent there.
+    """
+
+    video = models.ForeignKey(Video, on_delete=models.CASCADE)
+    edx_endpoint = models.ForeignKey(EdxEndpoint, on_delete=models.CASCADE)
+    # SHA-256 of the full upload URL (Studio host, course, video), so a new destination is a new upload
+    destination = models.CharField(max_length=64, unique=True)
+    image_hash = models.CharField(max_length=64)
+
+    def __str__(self):
+        return f"{self.video.title}: {self.edx_endpoint.name}"
 
 
 class VideoSubtitle(VideoS3):

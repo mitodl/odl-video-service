@@ -44,6 +44,7 @@ export type Video = {
   description_format:     DescriptionFormat,
   collection_key:         string,
   collection_title:       string,
+  collection_for_shorts:  boolean,
   multiangle:             boolean,
   videofile_set:          Array<VideoFile>,
   videothumbnail_set:     Array<VideoThumbnail>,

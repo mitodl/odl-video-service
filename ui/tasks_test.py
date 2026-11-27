@@ -49,6 +49,27 @@ def test_post_video_to_edx_missing(mocker):
 
 
 @pytest.mark.django_db
+@factory.django.mute_signals(signals.post_save)
+def test_post_video_thumbnail_to_edx(mocker):
+    """post_video_thumbnail_to_edx task should load a Video and call the API function that uploads its thumbnail"""
+    patched_api_method = mocker.patch("ui.tasks.ovs_api.post_video_thumbnail_to_edx")
+    video = VideoFactory.create(status=VideoStatus.COMPLETE)
+    tasks.post_video_thumbnail_to_edx.delay(video.id)
+    patched_api_method.assert_called_once_with(video)
+
+
+@pytest.mark.django_db
+def test_post_video_thumbnail_to_edx_missing(mocker):
+    """post_video_thumbnail_to_edx task should log an error if a Video doesn't exist with the given id"""
+    patched_api_method = mocker.patch("ui.tasks.ovs_api.post_video_thumbnail_to_edx")
+    patched_log_error = mocker.patch("ui.tasks.log.error")
+    tasks.post_video_thumbnail_to_edx.delay(123)
+    patched_log_error.assert_called_once()
+    assert "doesn't exist" in patched_log_error.call_args[0][0]
+    patched_api_method.assert_not_called()
+
+
+@pytest.mark.django_db
 def test_batch_update_video_on_edx(mocker):
     """
     batch_update_video_on_edx should call batch_update_video_on_edx_chunked for each chunk of video keys

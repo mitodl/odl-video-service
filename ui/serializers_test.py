@@ -180,6 +180,7 @@ def get_expected_result(video):
         "key": video.hexkey,
         "collection_key": video.collection.hexkey,
         "collection_title": video.collection.title,
+        "collection_for_shorts": video.collection.for_shorts,
         "created_at": DateTimeField().to_representation(video.created_at),
         "multiangle": video.multiangle,
         "title": video.title,
@@ -380,6 +381,7 @@ def test_simplevideo_serializer():
         ).data,
         "status": video.status,
         "collection_key": video.collection.hexkey,
+        "collection_for_shorts": video.collection.for_shorts,
         "cloudfront_url": "",
         "cta_link": video.cta_link,
     }

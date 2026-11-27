@@ -15,6 +15,12 @@ import { actions } from "../../actions"
 import { getVideoWithKey } from "../../lib/collection"
 import { uploadThumbnail } from "../../lib/api"
 import {
+  getExistingThumbnailNote,
+  getImageDimensions,
+  getThumbnailDimensionError,
+  getThumbnailRequirements
+} from "../../lib/thumbnail"
+import {
   PERM_CHOICE_NONE,
   PERM_CHOICE_LISTS,
   PERM_CHOICE_PUBLIC,
@@ -41,6 +47,9 @@ type DialogState = {
   thumbnailFile: ?File,
   thumbnailPreviewUrl: ?string,
   thumbnailError: ?string,
+  // Natural size of the video's current (already uploaded) thumbnail, measured when it loads,
+  // with the src it was measured from so it is never applied to another video's thumbnail
+  existingThumbnailSize: ?{ src: string, width: number, height: number },
   upgradingDescription: boolean,
   upgradeError: ?string
 }
@@ -53,7 +62,7 @@ function sanitizeImgSrc(url: ?string): string {
   if (!url) return ""
   try {
     const parsed = new URL(url)
-    if (parsed.protocol === "blob:" || parsed.protocol === "https:") {
+    if (["blob:", "http:", "https:"].includes(parsed.protocol)) {
       return parsed.href
     }
   } catch (_) {
@@ -65,11 +74,12 @@ function sanitizeImgSrc(url: ?string): string {
 class EditVideoFormDialog extends React.Component<*, DialogState> {
   props: DialogProps
   state: DialogState = {
-    thumbnailFile:        null,
-    thumbnailPreviewUrl:  null,
-    thumbnailError:       null,
-    upgradingDescription: false,
-    upgradeError:         null
+    thumbnailFile:         null,
+    thumbnailPreviewUrl:   null,
+    thumbnailError:        null,
+    existingThumbnailSize: null,
+    upgradingDescription:  false,
+    upgradeError:          null
   }
 
   /*
@@ -92,6 +102,13 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
    * decide whether the bug appears.
    */
   closing = false
+
+  // The thumbnail picked most recently; checks for any earlier pick are ignored
+  pendingThumbnail: ?File = null
+
+  // The dimension check for pendingThumbnail. Save awaits it and uses the file it resolves to
+  // (null if rejected), because the setState it triggers may not have landed yet.
+  thumbnailCheck: ?Promise<?File> = null
 
   // Set on unmount so an upgrade that resolves afterwards does not setState on
   // a dead component. withDialogs keeps this mounted while closed, so this is
@@ -302,6 +319,8 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
   handleThumbnailChange = (event: Object) => {
     const file = event.target.files[0]
     if (!file) return
+    this.pendingThumbnail = file
+    this.thumbnailCheck = null
     if (
       file.type !== "image/jpeg" &&
       file.type !== "image/jpg" &&
@@ -335,15 +354,38 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       event.target.value = ""
       return
     }
-    const { thumbnailPreviewUrl } = this.state
-    if (thumbnailPreviewUrl) {
-      URL.revokeObjectURL(thumbnailPreviewUrl)
-    }
-    this.setState({
-      thumbnailFile:       file,
-      thumbnailPreviewUrl: URL.createObjectURL(file),
-      thumbnailError:      null
-    })
+    const input = event.target
+    // Shorts are portrait, so edX's 16:9 rule doesn't apply to them
+    const forShorts = this.isForShorts()
+    this.thumbnailCheck = getImageDimensions(file)
+      .then(({ width, height }) =>
+        forShorts ? null : getThumbnailDimensionError(width, height)
+      )
+      .catch(err => err.message)
+      .then(error => {
+        if (file !== this.pendingThumbnail || this.closing) return null
+        const { thumbnailPreviewUrl } = this.state
+        if (thumbnailPreviewUrl) {
+          URL.revokeObjectURL(thumbnailPreviewUrl)
+        }
+        if (error) {
+          this.setState({
+            thumbnailError:      error,
+            thumbnailFile:       null,
+            thumbnailPreviewUrl: null
+          })
+          input.value = ""
+          // A Save waiting on this check stops; a later Save saves the other fields
+          this.thumbnailCheck = null
+          return null
+        }
+        this.setState({
+          thumbnailFile:       file,
+          thumbnailPreviewUrl: URL.createObjectURL(file),
+          thumbnailError:      null
+        })
+        return file
+      })
   }
 
   onClose = () => {
@@ -357,7 +399,11 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
       thumbnailPreviewUrl: null,
       thumbnailError:      null
     })
+    // existingThumbnailSize is kept: the Dialog stays mounted while hidden, so the same thumbnail
+    // won't fire load again on reopen, and its src check stops it applying to another thumbnail
     this.closing = true
+    this.pendingThumbnail = null
+    this.thumbnailCheck = null
     dispatch(actions.videoUi.clearVideoForm())
     hideDialog()
   }
@@ -377,6 +423,14 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
 
   submitForm = async () => {
     if (this.state.upgradingDescription) {
+      return
+    }
+    const pendingCheck = this.thumbnailCheck
+    const thumbnailFile = pendingCheck ?
+      await pendingCheck :
+      this.state.thumbnailFile
+    if (pendingCheck && !thumbnailFile) {
+      // The image picked just before Save was rejected; keep the dialog open with its error
       return
     }
     const {
@@ -424,8 +478,9 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     }
 
     try {
-      const { thumbnailFile } = this.state
       if (thumbnailFile) {
+        // Picked files are uploaded at most once; a failed upload needs a new pick
+        this.thumbnailCheck = null
         const formData = new FormData()
         formData.append("thumbnail", thumbnailFile)
         try {
@@ -466,9 +521,27 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     dispatch(actions.toast.addMessage(...args))
   }
 
+  isForShorts = (): boolean => {
+    const { video } = this.props
+    return !!(video && video.collection_for_shorts)
+  }
+
+  handleThumbnailLoad = (event: Object) => {
+    if (this.state.thumbnailPreviewUrl) return
+    const { naturalWidth, naturalHeight } = event.target
+    this.setState({
+      existingThumbnailSize: {
+        src:    event.target.getAttribute("src"),
+        width:  naturalWidth,
+        height: naturalHeight
+      }
+    })
+  }
+
   renderThumbnail() {
     const { video } = this.props
-    const { thumbnailPreviewUrl, thumbnailError } = this.state
+    const { thumbnailPreviewUrl, thumbnailError, existingThumbnailSize } =
+      this.state
     const existingThumbnail =
       video && video.videothumbnail_set && video.videothumbnail_set.length > 0 ?
         video.videothumbnail_set[0] :
@@ -477,6 +550,20 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
     const previewUrl =
       thumbnailPreviewUrl ||
       (existingThumbnail ? existingThumbnail.cloudfront_url : null)
+
+    const forShorts = this.isForShorts()
+    const existingThumbnailNote =
+      !forShorts &&
+      !thumbnailPreviewUrl &&
+      existingThumbnail &&
+      existingThumbnailSize &&
+      existingThumbnailSize.src ===
+        sanitizeImgSrc(existingThumbnail.cloudfront_url) ?
+        getExistingThumbnailNote(
+          existingThumbnailSize.width,
+          existingThumbnailSize.height
+        ) :
+        null
 
     const buttonLabel = existingThumbnail ?
       "Replace thumbnail" :
@@ -490,6 +577,7 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
             <img
               src={sanitizeImgSrc(previewUrl)}
               alt="Video thumbnail"
+              onLoad={this.handleThumbnailLoad}
               style={{
                 width:        "120px",
                 height:       "68px",
@@ -512,12 +600,31 @@ class EditVideoFormDialog extends React.Component<*, DialogState> {
               {thumbnailError}
             </p>
           ) : (
-            <p
-              style={{ color: "#666", margin: "4px 0 0 0", fontSize: "0.8em" }}
-            >
-              JPEG or PNG, max{" "}
-              {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
-            </p>
+            <div>
+              {existingThumbnailNote && (
+                <p
+                  className="thumbnail-note"
+                  style={{
+                    color:    "#8a5300",
+                    margin:   "4px 0 0 0",
+                    fontSize: "0.85em"
+                  }}
+                >
+                  {existingThumbnailNote}
+                </p>
+              )}
+              <p
+                style={{
+                  color:    "#666",
+                  margin:   "4px 0 0 0",
+                  fontSize: "0.8em"
+                }}
+              >
+                JPEG or PNG,{" "}
+                {forShorts ? "" : `${getThumbnailRequirements()}, `}max{" "}
+                {SETTINGS.thumbnail_upload_max_size / (1024 * 1024)} MB
+              </p>
+            </div>
           )}
         </div>
       </section>
